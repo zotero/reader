@@ -1,0 +1,80 @@
+#sidebarContent {
+    background-color: #373737;
+}
+
+.Sidebar-block {
+    padding: 10px 5px;
+    font-size: 13px;
+}
+
+.Sidebar-block-active {
+    background-color: #563939;
+}
+
+.Sidebar-block-external {
+    color: #9e9e9e;
+}
+
+.Sidebar-block:hover {
+    /*background-color: #474747;*/
+    cursor: pointer;
+}
+
+.Sidebar-image {
+    width: 100%;
+}
+
+.Sidebar-page {
+    text-align: left;
+}
+
+.Sidebar-text {
+    background-color: #4c4c4c;
+    padding: 5px;
+}
+
+.Sidebar-search {
+    padding: 5px 5px;
+    display: flex;
+}
+
+.Sidebar-search input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.Sidebar-search-input {
+    box-sizing: border-box;
+    flex: 1;
+}
+
+.Sidebar-search-clear {
+    padding: 0 5px;
+}
+
+.Sidebar-block textarea {
+    height: 60px;
+    background-color: white;
+    padding: 5px;
+}
+
+#annotationsView {
+    position: absolute;
+    width: calc(100% - 8px);
+    top: 0;
+    bottom: 0;
+    overflow: auto;
+    padding: 3px 4px 0;
+    z-index: 5555555;
+}
+
+#annotationsView {
+    color: white;
+}
+
+#annotationsView:focus {
+    outline: none;
+}
+
+
+

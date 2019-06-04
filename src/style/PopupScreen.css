@@ -1,0 +1,17 @@
+
+.PopupScreenContainer {
+    position: absolute;
+    z-index: 10;
+}
+
+.PopupScreen {
+    position: absolute;
+    box-sizing: border-box;
+    background-color: #ffffff;
+    border: 1px solid gray;
+    padding: 5px;
+}
+
+.PopupScreen .Meta-picker {
+    width: 200px;
+}

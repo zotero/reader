@@ -1,0 +1,21 @@
+
+.Meta textarea {
+    width: 100%;
+    height: 50px;
+    background-color: transparent;
+    box-sizing: border-box;
+    resize: none;
+}
+
+.Meta__toolbar {
+    display: flex;
+    justify-content: space-between;
+}
+
+.Meta__toolbar__delete {
+
+}
+
+.Meta__toolbar__color {
+    width: 30px;
+}

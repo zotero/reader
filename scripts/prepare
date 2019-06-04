@@ -1,0 +1,21 @@
+#!/bin/bash
+npm i
+cd pdf.js
+npm i
+npx gulp generic
+cd ..
+
+mkdir -p build/web
+cp -r pdf.js/build/generic/web/* build/web/
+cp -r pdf.js/build/generic/build/* build/web/
+cp -r pdf.js/build/generic/LICENSE build/web/
+rm -r build/web/locale
+
+mkdir -p build/zotero
+cp -r pdf.js/build/generic/web/* build/zotero/
+cp -r pdf.js/build/generic/build/* build/zotero/
+cp -r pdf.js/build/generic/LICENSE build/zotero/
+rm -r build/zotero/locale
+rm build/zotero/*.pdf
+
+node scripts/modify_viewer.js

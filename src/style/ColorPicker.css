@@ -1,0 +1,11 @@
+
+.ColorPicker {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.ColorPicker div {
+    width: 30px;
+    height: 20px;
+    margin: 5px;
+}
