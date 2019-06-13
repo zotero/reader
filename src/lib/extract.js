@@ -1,3 +1,6 @@
+
+import {extractText, getRange} from "./extractText"
+
 function quadPointsToRects(quadPoints) {
   let rects = [];
   for (let j = 0; j < quadPoints.length; j += 8) {
@@ -75,37 +78,14 @@ export async function extractExternalAnnotations() {
         
         let quadPoints = annotation.quadPoints;
         
-        let quads = [];
-        for (let j = 0; j < quadPoints.length; j += 8) {
-          let topLeft = { x: quadPoints[j + 4], y: quadPoints[j + 5] };
-          let bottomRight = { x: quadPoints[j + 2], y: quadPoints[j + 3] };
-          let x = Math.min(topLeft.x, bottomRight.x);
-          let y = Math.min(topLeft.y, bottomRight.y);
-          let width = Math.abs(topLeft.x - bottomRight.x);
-          let height = Math.abs(topLeft.y - bottomRight.y);
-          quads.push({
-            minX: x,
-            maxX: x + width,
-            minY: y,
-            maxY: y + height
-          });
-        }
-        
-        let items = textContent.items;
-        
-        let text = "";
-        for (let quad of quads) {
-          for (let item of items) {
-            for (let char of item.chars) {
-              if (
-                quad.minY < char.y1 + 1 && quad.maxY > char.y1 + 1 &&
-                quad.minX < char.x1 && quad.maxX > char.x2
-              ) {
-                text += char.glyphUnicode;
-              }
-            }
+        let chs = [];
+        for (let item of textContent.items) {
+          for (let ch of item.chars) {
+            chs.push(ch);
           }
         }
+  
+        let highlightedText = extractText(chs, quadPointsToRects(quadPoints));
         
         externalAnnotations.push({
           type: "highlight",
@@ -114,7 +94,7 @@ export async function extractExternalAnnotations() {
             pageNumber: i,
             rects: quadPointsToRects(quadPoints)
           },
-          text: text,
+          text: highlightedText,
           comment: annotation.contents,
           dateModified: pdfDateToIsoDate(annotation.dateModified),
           label: annotation.title,
@@ -139,4 +119,25 @@ export async function extractExternalAnnotations() {
   }
   
   return externalAnnotations;
+}
+
+export async function extractRange(position) {
+	let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(position.pageNumber);
+	
+	let textContent = await page.getTextContent();
+	
+	let chs = [];
+	for (let item of textContent.items) {
+		for (let ch of item.chars) {
+			chs.push(ch);
+		}
+	}
+	let range = getRange(chs, position.rects);
+	return {
+		position: {
+			pageNumber: position.pageNumber,
+			rects: range.rects
+		},
+		text: range.text
+	};
 }

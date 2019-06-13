@@ -10,7 +10,6 @@ import SelectionMenu from "./SelectionMenu";
 import PopupPage from "./PopupPage";
 import Meta from "./Meta";
 
-import getClientRects from "../lib/get-client-rects";
 import {
   getPageFromRange,
   getPageFromElement,
@@ -18,7 +17,8 @@ import {
 } from "../lib/pdfjs-dom";
 
 import { p2v, v2p, wx, hy } from "../lib/coordinates";
-
+import {extractRange} from "../lib/extract";
+import {copyToClipboard, getClientRects, debounce} from "../lib/utilities";
 
 import "../style/Layer.css";
 
@@ -226,13 +226,11 @@ class Layer extends React.Component {
       this.setState({ selectionFinished: !!this.state.range });
     });
     
-    this.containerNode.addEventListener("mouseup", e => {
-      
-      let selection = this.getSelection();
+    this.containerNode.addEventListener("mouseup", async e => {
+      let selection = await this.getSelection();
       if (!selection) return;
       selection.position = this.v2p(selection.position);
       onMouseSelection(selection);
-      
     });
     
     this.containerNode.addEventListener("mousedown", e => {
@@ -343,14 +341,40 @@ class Layer extends React.Component {
     scrollRef(this.scrollTo);
   };
   
+  selectionChangeDebounce = debounce(async () => {
+    this.setState({ selection: await this.getSelection() });
+  }, 250);
+  
   onSelectionChange = () => {
-    setTimeout(() => {
-      this.setState({ selection: this.getSelection() });
-    }, 100);
+    this.setState({ selection: null });
+    this.selectionChangeDebounce();
   };
   
-  getSelection() {
+  async getSelection() {
     const selection = window.getSelection();
+	
+	  if (selection.anchorNode && selection.focusNode) {
+		  let a = selection.anchorNode;
+		  if (a.nodeType === Node.TEXT_NODE) {
+			  a = a.parentElement;
+		  }
+		
+		  let b = selection.focusNode;
+		  if (b.nodeType === Node.TEXT_NODE) {
+			  b = b.parentElement;
+		  }
+		
+		  if (
+			  !a.parentNode.className.includes('textLayer') ||
+			  !b.parentNode.className.includes('textLayer')
+		  ) {
+			  return null;
+		  }
+		
+		  if (a.parentNode !== b.parentNode) {
+			  return null;
+		  }
+	  }
     
     let range = null;
     
@@ -365,7 +389,6 @@ class Layer extends React.Component {
     if (!page) {
       return null;
     }
-    
     const rects = getClientRects(range, page.node);
     
     if (rects.length === 0) {
@@ -374,9 +397,11 @@ class Layer extends React.Component {
     
     const position = { rects, pageNumber: page.number };
     
-    const text = range.toString();
+    let extractedRange = await extractRange(this.v2p(position));
+    if(!extractedRange) return null;
     
-    return { position, text };
+    extractedRange.position = this.p2v(extractedRange.position);
+    return extractedRange;
   }
   
   toggleTextSelection(flag) {
@@ -517,7 +542,7 @@ class Layer extends React.Component {
                 }}
                 onCopy={() => {
                   if (this.state.selection) {
-                    this.copyToClipboard(this.state.selection.text);
+                    copyToClipboard(this.state.selection.text);
                   }
                 }}
               />
