@@ -11,7 +11,7 @@ let wordSpacing = 0.1;
 // Compute the inter-word spacing threshold for a line of chars.
 // Spaces greater than this threshold will be considered inter-word
 // spaces.
-function computeWordSpacingThreshold(chs, rot) {
+function computeWordSpacingThreshold(chs, vertical) {
 	let ch, ch2;
 	let avgFontSize;
 	let minAdjGap, maxAdjGap, minSpGap, maxSpGap, minGap, maxGap, gap, gap2;
@@ -26,7 +26,7 @@ function computeWordSpacingThreshold(chs, rot) {
 		avgFontSize += ch.fontSize;
 		if (i < chs.length - 1) {
 			ch2 = chs[i + 1];
-			gap = (rot & 1) ? (ch2.rect[1] - ch.rect[3]) : (ch2.rect[0] - ch.rect[2]);
+			gap = vertical ? (ch2.rect[1] - ch.rect[3]) : (ch2.rect[0] - ch.rect[2]);
 			if (ch.spaceAfter) {
 				if (minSpGap > maxSpGap) {
 					minSpGap = maxSpGap = gap;
@@ -173,29 +173,66 @@ function quickIntersectRect(r1, r2) {
 		r2[3] < r1[1]);
 }
 
-function overlaps(ch1, ch2, rotation) {
-	if (rotation === 0) {
-		if (
-			ch1.rect[1] <= ch2.rect[1] && ch2.rect[1] <= ch1.rect[3] ||
-			ch2.rect[1] <= ch1.rect[1] && ch1.rect[1] <= ch2.rect[3]
-		) {
-			return true;
-		}
-	}
-	else {
-		if (
-			ch1.rect[0] <= ch2.rect[0] && ch2.rect[0] <= ch1.rect[2] ||
-			ch2.rect[0] <= ch1.rect[0] && ch1.rect[0] <= ch2.rect[2]
-		) {
-			return true;
-		}
-	}
-	return false;
-}
-
 function isDash(c) {
 	let re = /[\x2D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]/;
 	return re.test(c);
+}
+
+function filter(chs) {
+	return chs.filter(ch => {
+		ch.rotation = ch.rotation / 90;
+		if (ch.rotation && ch.rotation % 1 !== 0) return false;
+		if (ch.c === ' ') return false;
+		return true;
+	})
+}
+
+function overlaps(rect1, rect2) {
+	let xo = Math.max(0, Math.min(rect1[2], rect2[2]) - Math.max(rect1[0], rect2[0]));
+	let yo = Math.max(0, Math.min(rect1[3], rect2[3]) - Math.max(rect1[1], rect2[1]));
+	return {xo, yo};
+}
+
+function getDirection(chs, c) {
+	let ch1 = chs[c];
+	let l = c - 1;
+	let h = 0;
+	let v = 0;
+	while (l >= 0) {
+		let ch2 = chs[l];
+		let {xo, yo} = overlaps(ch1.rect, ch2.rect);
+		if (xo || yo) {
+			if (yo > xo) {
+				h++;
+			}
+			else {
+				v++;
+			}
+		}
+		else {
+			break;
+		}
+		l--;
+	}
+	
+	let r = c + 1;
+	while (r < chs.length) {
+		let ch2 = chs[r];
+		let {xo, yo} = overlaps(ch1.rect, ch2.rect);
+		if (xo || yo) {
+			if (yo > xo) {
+				h++;
+			}
+			else {
+				v++;
+			}
+		}
+		else {
+			break;
+		}
+		r++;
+	}
+	ch1.vertical = v >= h;
 }
 
 function getStructure(chs) {
@@ -203,40 +240,26 @@ function getStructure(chs) {
 	let line = {
 		chs: []
 	};
-	for (let ch of chs) {
+	
+	let dir = null;
+	for (let i = 0; i < chs.length; i++) {
+		let ch = chs[i];
 		let prevCh = line.chs[line.chs.length - 1];
-		if (ch.rotation && ch.rotation % 90 !== 0) continue;
-		if (ch.c === ' ') {
-			if (line.length) {
-				line[line.length - 1].spaceAfter = true;
-			}
-			continue
-		}
+		getDirection(chs, i);
 		
 		if (!line.chs.length) {
 			line.chs.push(ch);
 		}
 		else {
-			
 			let newLine = false;
 			
-			if (!ch.rotation) {
-				if (prevCh.rect[0] > ch.rect[0]) {
+			if (!ch.vertical) {
+				if (prevCh.rect[0] > ch.rect[0] + 5) {
 					newLine = true;
 				}
 			}
-			else if (ch.rotation === 90) {
+			else if (ch.vertical) {
 				if (prevCh.rect[1] > ch.rect[1]) {
-					newLine = true;
-				}
-			}
-			else if (ch.rotation === 270) {
-				if (prevCh.rect[1] < ch.rect[1]) {
-					newLine = true;
-				}
-			}
-			if (ch.rotation === 180) {
-				if (prevCh.rect[0] < ch.rect[0]) {
 					newLine = true;
 				}
 			}
@@ -244,8 +267,10 @@ function getStructure(chs) {
 			if (
 				newLine ||
 				prevCh.rotation !== ch.rotation ||
-				!overlaps(prevCh, ch, ch.rotation)
+				prevCh.vertical !== ch.vertical ||
+				Math.sqrt((prevCh.rect[0] - ch.rect[0]) ** 2 + (prevCh.rect[3] - ch.rect[1]) ** 2) > 5 * ch.fontSize
 			) {
+				line.vertical = line.chs[0].vertical;
 				lines.push(line);
 				line = {chs: [ch]};
 			}
@@ -255,7 +280,10 @@ function getStructure(chs) {
 		}
 	}
 	
-	if (line.chs.length) lines.push(line);
+	if (line.chs.length) {
+		line.vertical = line.chs[0].vertical;
+		lines.push(line);
+	}
 	
 	for (let line of lines) {
 		line.rect = line.chs[0].rect.slice();
@@ -269,24 +297,7 @@ function getStructure(chs) {
 	
 	for (let line of lines) {
 		line.words = [];
-		
-		let rot;
-		let rotation = line.chs[0].rotation;
-		if (!rotation) {
-			rot = 0;
-		}
-		else if (rotation === 90) {
-			rot = 1;
-		}
-		else if (rotation === 180) {
-			rot = 2;
-		}
-		else if (rotation === 270) {
-			rot = 3;
-		}
-		
-		let wordSp = computeWordSpacingThreshold(line.chs, rot);
-		
+		let wordSp = computeWordSpacingThreshold(line.chs, line.rotation);
 		let i = 0;
 		while (i < line.chs.length) {
 			let sp = wordSp - 1;
@@ -295,7 +306,7 @@ function getStructure(chs) {
 			for (j = i + 1; j < line.chs.length; ++j) {
 				let ch = line.chs[j - 1];
 				let ch2 = line.chs[j];
-				sp = (rot & 1) ? (ch2.rect[1] - ch.rect[3]) : (ch2.rect[0] - ch.rect[2]);
+				sp = line.vertical ? (ch2.rect[1] - ch.rect[3]) : (ch2.rect[0] - ch.rect[2]);
 				if (sp > wordSp) {
 					spaceAfter = true;
 					break;
@@ -316,7 +327,6 @@ function getStructure(chs) {
 			i = j;
 		}
 	}
-	
 	return lines;
 }
 
@@ -363,48 +373,68 @@ exports.extractText = function (chs, rects) {
 	return text || null;
 };
 
-exports.getRange = function (chs, rects) {
-	if (!rects.length) return;
-	
-	let r = rects[0];
-	let startPoint = [r[0], r[1] + (r[3] - r[1]) / 2];
-	
-	r = rects.slice(-1)[0];
-	
-	let endPoint = [r[2], r[1] + (r[3] - r[1]) / 2];
-	
-	let lines = getStructure(chs);
+function getPoints(chs, rects) {
+	let r;
+	r = rects[0];
+	let n = 0;
 	
 	let chStart = null;
-	let chStartDist;
-	for (let line of lines) {
-		for (let word of line.words) {
-			for (let ch of line.chs) {
-				if (!chStart || Math.abs(ch.rect[0] - startPoint[0]) <= chStartDist && ch.rect[1] < startPoint[1] && startPoint[1] < ch.rect[3]) {
-					chStart = ch;
-					chStartDist = Math.abs(ch.rect[0] - startPoint[0]);
-				}
-			}
+	let chStartNum = Infinity;
+	
+	let chPrev = null;
+	for (let ch of chs) {
+		n++;
+		let centerRect = [
+			ch.rect[0] + (ch.rect[2] - ch.rect[0]) / 2,
+			ch.rect[1] + (ch.rect[3] - ch.rect[1]) / 2,
+			ch.rect[0] + (ch.rect[2] - ch.rect[0]) / 2,
+			ch.rect[1] + (ch.rect[3] - ch.rect[1]) / 2,
+		];
+		if (quickIntersectRect(centerRect, r) && chStartNum > n) {
+			chStart = ch;
+			chStartNum = n;
 		}
+		chPrev = ch;
 	}
 	
-	let chStartFound = false;
-	
+	n = 0;
+	r = rects.slice(-1)[0];
 	let chEnd = null;
-	let chEndDist;
-	for (let line of lines) {
-		for (let word of line.words) {
-			for (let ch of line.chs) {
-				if (ch === chStart) chStartFound = true;
-				if (!chEnd || Math.abs(ch.rect[2] - endPoint[0]) <= chEndDist && ch.rect[1] < endPoint[1] && endPoint[1] < ch.rect[3]) {
-					chEnd = ch;
-					chEndDist = Math.abs(ch.rect[2] - endPoint[0]);
-				}
-			}
+	let chEndNum = 0;
+	
+	chPrev = null;
+	for (let i = 0; i < chs.length; i++) {
+		let ch = chs[i];
+		n++;
+		let centerRect = [
+			ch.rect[0] + (ch.rect[2] - ch.rect[0]) / 2,
+			ch.rect[1] + (ch.rect[3] - ch.rect[1]) / 2,
+			ch.rect[0] + (ch.rect[2] - ch.rect[0]) / 2,
+			ch.rect[1] + (ch.rect[3] - ch.rect[1]) / 2,
+		];
+		
+		if (quickIntersectRect(centerRect, r) && n > chEndNum) {
+			chEnd = ch;
+			chEndNum = n;
+			chPrev = ch;
 		}
 	}
 	
-	if (!chStartFound) return null;
+	if (chStartNum < chEndNum) {
+		return {chStart, chEnd}
+	}
+	else {
+		return null;
+	}
+}
+
+exports.getRange = function (chs, rects) {
+	if (!rects.length) return;
+	chs = filter(chs);
+	let lines = getStructure(chs);
+	let chPoints = getPoints(chs, rects);
+	if (!chPoints) return;
+	let {chStart, chEnd} = chPoints;
 	
 	let text = '';
 	let extracting = false;
@@ -445,34 +475,47 @@ exports.getRange = function (chs, rects) {
 	
 	let allRects = [];
 	extracting = false;
-	let rect = null;
+	let lineChStart = null;
+	let lineChEnd = null;
 	for (let line of lines) {
-		if (extracting) {
-			rect = [line.rect[0], line.rect[1], 0, line.rect[3]];
-		}
-		
 		for (let j = 0; j < line.words.length; j++) {
 			let word = line.words[j];
 			for (let i = 0; i < word.chs.length; i++) {
 				let ch = word.chs[i];
 				
-				if (ch === chStart) {
+				if (ch === chStart || extracting && !lineChStart) {
 					extracting = true;
-					rect = [ch.rect[0], line.rect[1], 0, line.rect[3]];
+					lineChStart = ch;
+				}
+				
+				if (extracting) {
+					lineChEnd = ch;
 				}
 				
 				if (ch === chEnd) {
 					extracting = false;
-					if (rect) {
-						rect[2] = ch.rect[2];
-						allRects.push(rect);
-						rect = null;
+					let rect;
+					if (line.vertical) {
+						rect = [line.rect[0], Math.min(lineChStart.rect[1], lineChEnd.rect[1]), line.rect[2], Math.max(lineChStart.rect[3], lineChEnd.rect[3])];
 					}
+					else {
+						rect = [Math.min(lineChStart.rect[0], lineChEnd.rect[0]), line.rect[1], Math.max(lineChStart.rect[2], lineChEnd.rect[2]), line.rect[3]];
+					}
+					
+					allRects.push(rect);
 				}
 			}
 		}
-		if (rect) {
-			rect[2] = line.rect[2];
+		
+		if (extracting) {
+			let rect;
+			if (line.vertical) {
+				rect = [line.rect[0], Math.min(lineChStart.rect[1], lineChEnd.rect[1]), line.rect[2], Math.max(lineChStart.rect[3], lineChEnd.rect[3])];
+			}
+			else {
+				rect = [Math.min(lineChStart.rect[0], lineChEnd.rect[0]), line.rect[1], Math.max(lineChStart.rect[2], lineChEnd.rect[2]), line.rect[3]];
+			}
+			lineChStart = null;
 			allRects.push(rect);
 			rect = null;
 		}

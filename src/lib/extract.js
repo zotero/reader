@@ -123,7 +123,6 @@ export async function extractExternalAnnotations() {
 
 export async function extractRange(position) {
 	let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(position.pageNumber);
-	
 	let textContent = await page.getTextContent();
 	
 	let chs = [];
@@ -133,6 +132,7 @@ export async function extractRange(position) {
 		}
 	}
 	let range = getRange(chs, position.rects);
+	if(!range) return;
 	return {
 		position: {
 			pageNumber: position.pageNumber,
