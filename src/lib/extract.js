@@ -16,6 +16,8 @@ function quadPointsToRects(quadPoints) {
 }
 
 function pdfDateToIsoDate(str) {
+  if(typeof str !== "string") return;
+  
   let m = str.match(/([0-9]{4})([0-9]{2}|)([0-9]{2}|)([0-9]{2}|)([0-9]{2}|)([0-9]{2}|)/);
   if (!m) return;
   let d = [];
