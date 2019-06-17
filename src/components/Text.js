@@ -44,7 +44,7 @@ class Text extends React.Component {
         onDrag={() => {
           this.setState({ dragged: true });
         }}
-        bounds=".textLayer"
+        bounds={"div[data-page-number=\"" + annotation.position.pageNumber + "\"] > .textLayer"}
         position={this.state.changed ? null : {
           x: annotation.position.rects[0][0],
           y: annotation.position.rects[0][1]
