@@ -77,6 +77,14 @@ class Annotator extends React.Component {
         let el = document.querySelector("div[data-sidebar-id=\"" + this.state.activeAnnotationId + "\"");
         let container = document.getElementById("annotationsView");
         if (!el || !container) return;
+        
+        if(
+          window.PDFViewerApplication.pdfSidebar.isOpen &&
+          window.PDFViewerApplication.pdfSidebar.active !== 9
+        ) {
+          window.PDFViewerApplication.pdfSidebar.switchView(9);
+        }
+        
         this.ensureInView(container, el);
       }, 50);
     }
