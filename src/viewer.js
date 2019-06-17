@@ -2,14 +2,16 @@ import React from "react";
 import { render } from "react-dom";
 import Annotator from "./components/Annotator";
 import AnnotationsStore from "./AnnotationsStore";
-
+import {debounce} from "./lib/utilities";
 
 class Viewer {
   constructor(options) {
     this._loaded = false;
     this._onSetAnnotation = options.onSetAnnotation;
     this._onDeleteAnnotation = options.onDeleteAnnotation;
-    this._onSetState = options.onSetState;
+    this._onSetState = debounce(function(state) {
+      options.onSetState(state);
+    }, 100);
     this._userId = options.userId;
     this._label = options.label;
     this._lastState = null;
