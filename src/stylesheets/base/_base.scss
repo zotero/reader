@@ -1,0 +1,41 @@
+//
+// Base
+//
+
+:root {
+  --sidebar-width: 200px;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+}
+
+html {
+  height: 100%;
+  width: 100%;
+  /* Font size is needed to make the activity bar the correct size. */
+  font-size: 10px;
+}
+
+body {
+  height: 100%;
+  width: 100%;
+  background-color: $body-bg;
+  background-image: url(images/texture.png);
+}
+
+body,
+input,
+button,
+select {
+  font: message-box;
+  outline: none;
+}
+
+.hidden {
+  display: none !important;
+}
+[hidden] {
+  display: none !important;
+}
