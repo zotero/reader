@@ -6,8 +6,6 @@ import Editor from "./Editor";
 
 import { searchAnnotations } from "../lib/search";
 
-import "../style/Sidebar.css";
-
 class Sidebar extends React.Component {
   state = {
     filteredAnnotations: null,

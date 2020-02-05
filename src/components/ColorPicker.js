@@ -2,8 +2,6 @@ import React from "react";
 
 import { annotationColors } from "../lib/colors";
 
-import "../style/ColorPicker.css";
-
 class ColorPicker extends React.Component {
   
   render() {

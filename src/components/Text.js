@@ -3,8 +3,6 @@ import { Rnd } from "react-rnd";
 
 import { wx, hy } from "../lib/coordinates";
 
-import "../style/Text.css";
-
 class Text extends React.Component {
   state = {
     changed: false,

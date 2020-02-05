@@ -1,8 +1,12 @@
 const path = require('path');
-const ExtractTextPlugin = require('extract-text-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const WriteFilePlugin = require('write-file-webpack-plugin');
 
 const configWeb = {
-	entry: ['./src/index.web.js'],
+	entry: [
+		'./src/index.web.js',
+		'./src/stylesheets/main.scss'
+	],
 	output: {
 		path: path.join(__dirname, './build'),
 		filename: 'web/annotator.js',
@@ -33,31 +37,53 @@ const configWeb = {
 				}
 			},
 			{
-				test: /\.css$/,
-				use: ExtractTextPlugin.extract({
-					fallback: 'style-loader',
-					use: 'css-loader',
-					
-				})
+				test: /\.scss$/,
+				use: [
+					{
+						loader: 'file-loader',
+						options: {
+							name: 'web/viewer.css',
+						}
+					},
+					{
+						loader: 'extract-loader'
+					},
+					{
+						loader: 'css-loader?-url'
+					},
+					{
+						loader: 'sass-loader'
+					}
+				]
 			}
 		]
 	},
 	resolve: {
 		extensions: ['*', '.js']
 	},
+	plugins: [
+		new CopyWebpackPlugin([
+				{from: 'res/', to: 'web/'}
+			], {copyUnmodified: true}
+		),
+		new WriteFilePlugin()
+	],
 	devServer: {
 		port: 3000,
 		contentBase: path.join(__dirname, 'build/'),
 		openPage: 'web/viewer.html',
-		open: true
-	},
-	plugins: [
-		new ExtractTextPlugin("web/annotator.css"),
-	]
+		open: false,
+		watchOptions: {
+			poll: true
+		}
+	}
 };
 
 const configZotero = {
-	entry: ['./src/index.zotero.js'],
+	entry: [
+		'./src/index.web.js',
+		'./src/stylesheets/main.scss'
+	],
 	output: {
 		path: path.join(__dirname, './build/zotero'),
 		filename: 'annotator.js',
@@ -91,21 +117,35 @@ const configZotero = {
 				}
 			},
 			{
-				test: /\.css$/,
-				use: ExtractTextPlugin.extract({
-					fallback: 'style-loader',
-					use: 'css-loader',
-					
-				})
+				test: /\.scss$/,
+				use: [
+					{
+						loader: 'file-loader',
+						options: {
+							name: 'viewer.css',
+						}
+					},
+					{
+						loader: 'extract-loader'
+					},
+					{
+						loader: 'css-loader?-url'
+					},
+					{
+						loader: 'sass-loader'
+					}
+				]
 			}
 		]
 	},
 	resolve: {
 		extensions: ['*', '.js']
 	},
-	
 	plugins: [
-		new ExtractTextPlugin("annotator.css")
+		new CopyWebpackPlugin([
+				{from: 'res/', to: ''}
+			], {copyUnmodified: true}
+		)
 	],
 	externals: {
 		"react": "React",

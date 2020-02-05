@@ -1,8 +1,6 @@
 import React from "react";
 import ReactDom from "react-dom";
 
-import "../style/Toolbar.css";
-
 class Toolbar extends React.Component {
   getContainerNode() {
     return document.getElementById("toolbarViewerMiddle");

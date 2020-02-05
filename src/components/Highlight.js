@@ -1,7 +1,5 @@
 import React, { Component } from "react";
 
-import "../style/Highlight.css";
-
 class Highlight extends Component {
   render() {
     const { annotation, active } = this.props;

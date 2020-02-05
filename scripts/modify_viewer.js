@@ -5,7 +5,6 @@ function modifyWeb() {
 	let html = fs.readFileSync(filename).toString();
 	
 	let ins = `
-<link rel="stylesheet" href="annotator.css">
 <link rel="resource" type="application/l10n" href="data:text/plain,">
 <script src="pdf.js"></script>
 <script src="viewer.js"></script>

@@ -22,8 +22,6 @@ import { p2v, v2p, wx, hy } from "../lib/coordinates";
 import {extractRange} from "../lib/extract";
 import {copyToClipboard, getClientRects, debounce} from "../lib/utilities";
 
-import "../style/Layer.css";
-
 class PageLayerHighlight extends React.Component {
   getContainerNode(viewport) {
     const textLayer = viewport.textLayer;

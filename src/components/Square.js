@@ -3,8 +3,6 @@ import { Rnd } from "react-rnd";
 
 import { wx, hy } from "../lib/coordinates";
 
-import "../style/Square.css";
-
 class Square extends React.Component {
   state = {
     changed: false,

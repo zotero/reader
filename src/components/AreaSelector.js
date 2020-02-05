@@ -1,6 +1,5 @@
 import React from "react";
 import { getPageFromElement } from "../lib/pdfjs-dom";
-import "../style/AreaSelector.css";
 
 class AreaSelector extends React.Component {
   state = {

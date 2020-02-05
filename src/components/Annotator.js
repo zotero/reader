@@ -8,9 +8,6 @@ import ColorPicker from "./ColorPicker";
 
 import { annotationColors } from "../lib/colors";
 
-import "../style/pdfjs.css";
-import "../style/Annotator.css"
-
 class Annotator extends React.Component {
   state = {
     activeAnnotationId: null,

@@ -1,8 +1,6 @@
 import React from "react";
 import ReactDom from "react-dom";
 
-import "../style/PopupPage.css";
-
 class PopupPage extends React.Component {
   state = {
     dimensions: null

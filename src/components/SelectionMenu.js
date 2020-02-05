@@ -1,7 +1,5 @@
 import React from "react";
 
-import "../style/SelectionMenu.css";
-
 class SelectionMenu extends React.Component {
   
   render() {
