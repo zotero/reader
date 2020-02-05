@@ -26,10 +26,7 @@
   overflow: visible;
   border: 9px solid transparent;
   background-clip: content-box;
-  -webkit-border-image: url(images/shadow.png) 9 9 repeat;
-       -o-border-image: url(images/shadow.png) 9 9 repeat;
-          border-image: url(images/shadow.png) 9 9 repeat;
-  background-color: rgba(255, 255, 255, 1);
+  background-color: $page-bg;
 }
 
 .pdfViewer.removePageBorders .page {
