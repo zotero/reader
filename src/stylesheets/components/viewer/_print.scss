@@ -1,0 +1,98 @@
+/* Copyright 2014 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Part 1
+
+@page {
+  margin: 0;
+}
+
+#printContainer {
+  display: none;
+}
+
+// Part 2
+
+@page {
+  margin: 0;
+}
+
+#printContainer {
+  display: none;
+}
+
+@media print {
+  /* General rules for printing. */
+  body {
+    background: rgba(0, 0, 0, 0) none;
+  }
+
+  /* Rules for browsers that don't support mozPrintCallback. */
+  #sidebarContainer, #secondaryToolbar, .toolbar, #loadingBox, #errorWrapper, .textLayer {
+    display: none;
+  }
+  #viewerContainer {
+    overflow: visible;
+  }
+
+  #mainContainer, #viewerContainer, .page, .page canvas {
+    position: static;
+    padding: 0;
+    margin: 0;
+  }
+
+  .page {
+    float: left;
+    display: none;
+    border: none;
+    box-shadow: none;
+    background-clip: content-box;
+    background-color: rgba(255, 255, 255, 1);
+  }
+
+  .page[data-loaded] {
+    display: block;
+  }
+
+  .fileInput {
+    display: none;
+  }
+
+  /* Rules for browsers that support PDF.js printing */
+  body[data-pdfjsprinting] #outerContainer {
+    display: none;
+  }
+  body[data-pdfjsprinting] #printContainer {
+    display: block;
+  }
+  #printContainer {
+    height: 100%;
+  }
+  /* wrapper around (scaled) print canvas elements */
+  #printContainer > div {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 1px;
+    height: 1px;
+    overflow: visible;
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+  #printContainer canvas,
+  #printContainer img {
+    display: block;
+  }
+}

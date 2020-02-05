@@ -116,60 +116,6 @@
   position: relative;
 }
 
-#sidebarContainer {
-  position: absolute;
-  top: 32px;
-  bottom: 0;
-  width: 200px; /* Here, and elsewhere below, keep the constant value for compatibility
-                   with older browsers that lack support for CSS variables. */
-  width: var(--sidebar-width);
-  visibility: hidden;
-  z-index: 100;
-  border-top: 1px solid rgba(51, 51, 51, 1);
-  -webkit-transition-duration: 200ms;
-          transition-duration: 200ms;
-  -webkit-transition-timing-function: ease;
-          transition-timing-function: ease;
-}
-html[dir='ltr'] #sidebarContainer {
-  -webkit-transition-property: left;
-  transition-property: left;
-  left: -200px;
-  left: calc(-1 * var(--sidebar-width));
-}
-html[dir='rtl'] #sidebarContainer {
-  -webkit-transition-property: right;
-  transition-property: right;
-  right: -200px;
-  right: calc(-1 * var(--sidebar-width));
-}
-
-.loadingInProgress #sidebarContainer {
-  top: 36px;
-}
-
-#outerContainer.sidebarResizing #sidebarContainer {
-  /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
-  -webkit-transition-duration: 0s;
-          transition-duration: 0s;
-  /* Prevent e.g. the thumbnails being selected when the sidebar is resized. */
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-}
-
-#outerContainer.sidebarMoving #sidebarContainer,
-#outerContainer.sidebarOpen #sidebarContainer {
-  visibility: visible;
-}
-html[dir='ltr'] #outerContainer.sidebarOpen #sidebarContainer {
-  left: 0px;
-}
-html[dir='rtl'] #outerContainer.sidebarOpen #sidebarContainer {
-  right: 0px;
-}
-
 #mainContainer {
   position: absolute;
   top: 0;
@@ -177,24 +123,6 @@ html[dir='rtl'] #outerContainer.sidebarOpen #sidebarContainer {
   bottom: 0;
   left: 0;
   min-width: 320px;
-}
-
-#sidebarContent {
-  top: 32px;
-  bottom: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  position: absolute;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.1);
-}
-html[dir='ltr'] #sidebarContent {
-  left: 0;
-  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.25);
-}
-html[dir='rtl'] #sidebarContent {
-  right: 0;
-  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.25);
 }
 
 #viewerContainer {
@@ -239,54 +167,9 @@ html[dir='rtl'] #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentatio
   right: var(--sidebar-width);
 }
 
-.toolbar {
-  position: relative;
-  left: 0;
-  right: 0;
-  z-index: 9999;
-  cursor: default;
-}
+// > Toolbar styles position 1 <
 
-#toolbarContainer {
-  width: 100%;
-}
-
-#toolbarSidebar {
-  width: 100%;
-  height: 32px;
-  background-color: rgba(66, 66, 66, 1); /* fallback */
-  background-image: url(images/texture.png),
-                    -webkit-gradient(linear, left top, left bottom, from(rgba(77, 77, 77, 0.99)), to(rgba(64, 64, 64, 0.95)));
-  background-image: url(images/texture.png),
-                    linear-gradient(rgba(77, 77, 77, 0.99), rgba(64, 64, 64, 0.95));
-}
-html[dir='ltr'] #toolbarSidebar {
-  box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.25),
-              inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-              0 1px 0 rgba(0, 0, 0, 0.15),
-              0 0 1px rgba(0, 0, 0, 0.1);
-}
-html[dir='rtl'] #toolbarSidebar {
-  box-shadow: inset 1px 0 0 rgba(0, 0, 0, 0.25),
-              inset 0 1px 0 rgba(255, 255, 255, 0.05),
-              0 1px 0 rgba(0, 0, 0, 0.15),
-              0 0 1px rgba(0, 0, 0, 0.1);
-}
-
-#sidebarResizer {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  z-index: 200;
-  cursor: ew-resize;
-}
-html[dir='ltr'] #sidebarResizer {
-  right: -6px;
-}
-html[dir='rtl'] #sidebarResizer {
-  left: -6px;
-}
+// > Toolbar sidebar styles position <
 
 #toolbarContainer, .findbar, .secondaryToolbar {
   position: relative;
@@ -310,59 +193,7 @@ html[dir='rtl'] #toolbarContainer, .findbar, .secondaryToolbar {
               0 1px 1px rgba(0, 0, 0, 0.1);
 }
 
-#toolbarViewer {
-  height: 32px;
-}
-
-#loadingBar {
-  position: relative;
-  width: 100%;
-  height: 4px;
-  background-color: rgba(51, 51, 51, 1);
-  border-bottom: 1px solid rgba(51, 51, 51, 1);
-}
-
-#loadingBar .progress {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 0%;
-  height: 100%;
-  background-color: rgba(221, 221, 221, 1);
-  overflow: hidden;
-  -webkit-transition: width 200ms;
-  transition: width 200ms;
-}
-
-@-webkit-keyframes progressIndeterminate {
-  0% { left: -142px; }
-  100% { left: 0; }
-}
-
-@keyframes progressIndeterminate {
-  0% { left: -142px; }
-  100% { left: 0; }
-}
-
-#loadingBar .progress.indeterminate {
-  background-color: rgba(153, 153, 153, 1);
-  -webkit-transition: none;
-  transition: none;
-}
-
-#loadingBar .progress.indeterminate .glimmer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: calc(100% + 150px);
-  background: repeating-linear-gradient(135deg,
-                                        rgba(187, 187, 187, 1) 0, rgba(153, 153, 153, 1) 5px,
-                                        rgba(153, 153, 153, 1) 45px, rgba(221, 221, 221, 1) 55px,
-                                        rgba(221, 221, 221, 1) 95px, rgba(187, 187, 187, 1) 100px);
-  -webkit-animation: progressIndeterminate 950ms linear infinite;
-          animation: progressIndeterminate 950ms linear infinite;
-}
+// > Toolbar styles position 2 <
 
 .findbar, .secondaryToolbar {
   top: 32px;
@@ -379,134 +210,11 @@ html[dir='rtl'] #toolbarContainer, .findbar, .secondaryToolbar {
   cursor: default;
 }
 
-.findbar {
-  min-width: 300px;
-}
-.findbar > div {
-  height: 32px;
-}
-.findbar.wrapContainers > div {
-  clear: both;
-}
-.findbar.wrapContainers > div#findbarMessageContainer {
-  height: auto;
-}
-html[dir='ltr'] .findbar {
-  left: 68px;
-}
-html[dir='rtl'] .findbar {
-  right: 68px;
-}
+// > Findbar styles position <
 
-.findbar label {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-}
+// > Secondary toolbar styles position <
 
-#findInput {
-  width: 200px;
-}
-#findInput::-webkit-input-placeholder {
-  color: rgba(191, 191, 191, 1);
-}
-#findInput::-moz-placeholder {
-  font-style: italic;
-}
-#findInput:-ms-input-placeholder {
-  font-style: italic;
-}
-#findInput::-ms-input-placeholder {
-  font-style: italic;
-}
-#findInput::placeholder {
-  font-style: italic;
-}
-#findInput[data-status="pending"] {
-  background-image: url(images/loading-small.png);
-  background-repeat: no-repeat;
-  background-position: right;
-}
-html[dir='rtl'] #findInput[data-status="pending"] {
-  background-position: left;
-}
-
-.secondaryToolbar {
-  padding: 6px;
-  height: auto;
-  z-index: 30000;
-}
-html[dir='ltr'] .secondaryToolbar {
-  right: 4px;
-}
-html[dir='rtl'] .secondaryToolbar {
-  left: 4px;
-}
-
-#secondaryToolbarButtonContainer {
-  max-width: 200px;
-  max-height: 400px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  margin-bottom: -4px;
-}
-
-#secondaryToolbarButtonContainer.hiddenScrollModeButtons > .scrollModeButtons,
-#secondaryToolbarButtonContainer.hiddenSpreadModeButtons > .spreadModeButtons {
-  display: none !important;
-}
-
-.doorHanger,
-.doorHangerRight {
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  border-radius: 2px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
-}
-.doorHanger:after, .doorHanger:before,
-.doorHangerRight:after, .doorHangerRight:before {
-  bottom: 100%;
-  border: solid rgba(0, 0, 0, 0);
-  content: " ";
-  height: 0;
-  width: 0;
-  position: absolute;
-  pointer-events: none;
-}
-.doorHanger:after,
-.doorHangerRight:after {
-  border-bottom-color: rgba(82, 82, 82, 0.99);
-  border-width: 8px;
-}
-.doorHanger:before,
-.doorHangerRight:before {
-  border-bottom-color: rgba(0, 0, 0, 0.5);
-  border-width: 9px;
-}
-
-html[dir='ltr'] .doorHanger:after,
-html[dir='rtl'] .doorHangerRight:after {
-  left: 13px;
-  margin-left: -8px;
-}
-
-html[dir='ltr'] .doorHanger:before,
-html[dir='rtl'] .doorHangerRight:before {
-  left: 13px;
-  margin-left: -9px;
-}
-
-html[dir='rtl'] .doorHanger:after,
-html[dir='ltr'] .doorHangerRight:after {
-  right: 13px;
-  margin-right: -8px;
-}
-
-html[dir='rtl'] .doorHanger:before,
-html[dir='ltr'] .doorHangerRight:before {
-  right: 13px;
-  margin-right: -9px;
-}
+// > Doorhanger styles position <
 
 #findResultsCount {
   background-color: rgba(217, 217, 217, 1);
@@ -527,35 +235,7 @@ html[dir='ltr'] .doorHangerRight:before {
   background-color: rgba(255, 102, 102, 1);
 }
 
-#toolbarViewerMiddle {
-  position: absolute;
-  left: 50%;
-  -webkit-transform: translateX(-50%);
-          transform: translateX(-50%);
-}
-
-html[dir='ltr'] #toolbarViewerLeft,
-html[dir='rtl'] #toolbarViewerRight {
-  float: left;
-}
-html[dir='ltr'] #toolbarViewerRight,
-html[dir='rtl'] #toolbarViewerLeft {
-  float: right;
-}
-html[dir='ltr'] #toolbarViewerLeft > *,
-html[dir='ltr'] #toolbarViewerMiddle > *,
-html[dir='ltr'] #toolbarViewerRight > *,
-html[dir='ltr'] .findbar * {
-  position: relative;
-  float: left;
-}
-html[dir='rtl'] #toolbarViewerLeft > *,
-html[dir='rtl'] #toolbarViewerMiddle > *,
-html[dir='rtl'] #toolbarViewerRight > *,
-html[dir='rtl'] .findbar * {
-  position: relative;
-  float: right;
-}
+// > Toolbar styles position 3 <
 
 html[dir='ltr'] .splitToolbarButton {
   margin: 3px 2px 4px 0;
@@ -869,76 +549,6 @@ html[dir="rtl"] .secondaryToolbarButton::before {
   right: 4px;
 }
 
-html[dir='ltr'] .toolbarButton#sidebarToggle::before {
-  content: url(images/toolbarButton-sidebarToggle.png);
-}
-html[dir='rtl'] .toolbarButton#sidebarToggle::before {
-  content: url(images/toolbarButton-sidebarToggle-rtl.png);
-}
-
-html[dir='ltr'] .toolbarButton#secondaryToolbarToggle::before {
-  content: url(images/toolbarButton-secondaryToolbarToggle.png);
-}
-html[dir='rtl'] .toolbarButton#secondaryToolbarToggle::before {
-  content: url(images/toolbarButton-secondaryToolbarToggle-rtl.png);
-}
-
-html[dir='ltr'] .toolbarButton.findPrevious::before {
-  content: url(images/findbarButton-previous.png);
-}
-html[dir='rtl'] .toolbarButton.findPrevious::before {
-  content: url(images/findbarButton-previous-rtl.png);
-}
-
-html[dir='ltr'] .toolbarButton.findNext::before {
-  content: url(images/findbarButton-next.png);
-}
-html[dir='rtl'] .toolbarButton.findNext::before {
-  content: url(images/findbarButton-next-rtl.png);
-}
-
-html[dir='ltr'] .toolbarButton.pageUp::before {
-  content: url(images/toolbarButton-pageUp.png);
-}
-html[dir='rtl'] .toolbarButton.pageUp::before {
-  content: url(images/toolbarButton-pageUp-rtl.png);
-}
-
-html[dir='ltr'] .toolbarButton.pageDown::before {
-  content: url(images/toolbarButton-pageDown.png);
-}
-html[dir='rtl'] .toolbarButton.pageDown::before {
-  content: url(images/toolbarButton-pageDown-rtl.png);
-}
-
-.toolbarButton.zoomOut::before {
-  content: url(images/toolbarButton-zoomOut.png);
-}
-
-.toolbarButton.zoomIn::before {
-  content: url(images/toolbarButton-zoomIn.png);
-}
-
-.toolbarButton.presentationMode::before,
-.secondaryToolbarButton.presentationMode::before {
-  content: url(images/toolbarButton-presentationMode.png);
-}
-
-.toolbarButton.print::before,
-.secondaryToolbarButton.print::before {
-  content: url(images/toolbarButton-print.png);
-}
-
-.toolbarButton.openFile::before,
-.secondaryToolbarButton.openFile::before {
-  content: url(images/toolbarButton-openFile.png);
-}
-
-.toolbarButton.download::before,
-.secondaryToolbarButton.download::before {
-  content: url(images/toolbarButton-download.png);
-}
-
 .toolbarButton.bookmark,
 .secondaryToolbarButton.bookmark {
   box-sizing: border-box;
@@ -953,30 +563,6 @@ html[dir='rtl'] .toolbarButton.pageDown::before {
 .bookmark[href='#'] {
   opacity: .5;
   pointer-events: none;
-}
-
-.toolbarButton.bookmark::before,
-.secondaryToolbarButton.bookmark::before {
-  content: url(images/toolbarButton-bookmark.png);
-}
-
-#viewThumbnail.toolbarButton::before {
-  content: url(images/toolbarButton-viewThumbnail.png);
-}
-
-html[dir="ltr"] #viewOutline.toolbarButton::before {
-  content: url(images/toolbarButton-viewOutline.png);
-}
-html[dir="rtl"] #viewOutline.toolbarButton::before {
-  content: url(images/toolbarButton-viewOutline-rtl.png);
-}
-
-#viewAttachments.toolbarButton::before {
-  content: url(images/toolbarButton-viewAttachments.png);
-}
-
-#viewFind.toolbarButton::before {
-  content: url(images/toolbarButton-search.png);
 }
 
 .toolbarButton.pdfSidebarNotification::after {
@@ -1027,58 +613,6 @@ html[dir="ltr"] .secondaryToolbarButton > span {
 }
 html[dir="rtl"] .secondaryToolbarButton > span {
   padding-left: 4px;
-}
-
-.secondaryToolbarButton.firstPage::before {
-  content: url(images/secondaryToolbarButton-firstPage.png);
-}
-
-.secondaryToolbarButton.lastPage::before {
-  content: url(images/secondaryToolbarButton-lastPage.png);
-}
-
-.secondaryToolbarButton.rotateCcw::before {
-  content: url(images/secondaryToolbarButton-rotateCcw.png);
-}
-
-.secondaryToolbarButton.rotateCw::before {
-  content: url(images/secondaryToolbarButton-rotateCw.png);
-}
-
-.secondaryToolbarButton.selectTool::before {
-  content: url(images/secondaryToolbarButton-selectTool.png);
-}
-
-.secondaryToolbarButton.handTool::before {
-  content: url(images/secondaryToolbarButton-handTool.png);
-}
-
-.secondaryToolbarButton.scrollVertical::before {
-  content: url(images/secondaryToolbarButton-scrollVertical.png);
-}
-
-.secondaryToolbarButton.scrollHorizontal::before {
-  content: url(images/secondaryToolbarButton-scrollHorizontal.png);
-}
-
-.secondaryToolbarButton.scrollWrapped::before {
-  content: url(images/secondaryToolbarButton-scrollWrapped.png);
-}
-
-.secondaryToolbarButton.spreadNone::before {
-  content: url(images/secondaryToolbarButton-spreadNone.png);
-}
-
-.secondaryToolbarButton.spreadOdd::before {
-  content: url(images/secondaryToolbarButton-spreadOdd.png);
-}
-
-.secondaryToolbarButton.spreadEven::before {
-  content: url(images/secondaryToolbarButton-spreadEven.png);
-}
-
-.secondaryToolbarButton.documentProperties::before {
-  content: url(images/secondaryToolbarButton-documentProperties.png);
 }
 
 .verticalToolbarSeparator {
@@ -1181,90 +715,7 @@ html[dir='rtl'] .verticalToolbarSeparator {
   cursor: default;
 }
 
-#thumbnailView {
-  position: absolute;
-  width: calc(100% - 60px);
-  top: 0;
-  bottom: 0;
-  padding: 10px 30px 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-#thumbnailView > a:active,
-#thumbnailView > a:focus {
-  outline: 0;
-}
-
-.thumbnail {
-  margin: 0 10px 5px 10px;
-}
-html[dir='ltr'] .thumbnail {
-  float: left;
-}
-html[dir='rtl'] .thumbnail {
-  float: right;
-}
-
-#thumbnailView > a:last-of-type > .thumbnail {
-  margin-bottom: 10px;
-}
-
-#thumbnailView > a:last-of-type > .thumbnail:not([data-loaded]) {
-  margin-bottom: 9px;
-}
-
-.thumbnail:not([data-loaded]) {
-  border: 1px dashed rgba(255, 255, 255, 0.5);
-  margin: -1px 9px 4px 9px;
-}
-
-.thumbnailImage {
-  border: 1px solid rgba(0, 0, 0, 0);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
-  opacity: 0.8;
-  z-index: 99;
-  background-color: rgba(255, 255, 255, 1);
-  background-clip: content-box;
-}
-
-.thumbnailSelectionRing {
-  border-radius: 2px;
-  padding: 7px;
-}
-
-a:focus > .thumbnail > .thumbnailSelectionRing > .thumbnailImage,
-.thumbnail:hover > .thumbnailSelectionRing > .thumbnailImage {
-  opacity: .9;
-}
-
-a:focus > .thumbnail > .thumbnailSelectionRing,
-.thumbnail:hover > .thumbnailSelectionRing {
-  background-color: rgba(255, 255, 255, 0.15);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.2) inset,
-              0 0 1px rgba(0, 0, 0, 0.2);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.thumbnail.selected > .thumbnailSelectionRing > .thumbnailImage {
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
-  opacity: 1;
-}
-
-.thumbnail.selected > .thumbnailSelectionRing {
-  background-color: rgba(255, 255, 255, 0.3);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.1) inset,
-              0 0 1px rgba(0, 0, 0, 0.2);
-  color: rgba(255, 255, 255,1);
-}
+// > Thumbnail view styles postion <
 
 #outlineView,
 #attachmentsView {
@@ -1345,17 +796,6 @@ html[dir='rtl'] .attachmentsItem > button {
   height: 0;
   width: 0;
   color: rgba(255, 255, 255, 0.5);
-}
-.outlineItemToggler::before {
-  content: url(images/treeitem-expanded.png);
-  display: inline-block;
-  position: absolute;
-}
-html[dir='ltr'] .outlineItemToggler.outlineItemsHidden::before {
-  content: url(images/treeitem-collapsed.png);
-}
-html[dir='rtl'] .outlineItemToggler.outlineItemsHidden::before {
-  content: url(images/treeitem-collapsed-rtl.png);
 }
 .outlineItemToggler.outlineItemsHidden ~ .outlineItems {
   display: none;
@@ -1564,52 +1004,7 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
   top: 0;
 }
 
-#PDFBug {
-  background: none repeat scroll 0 0 rgba(255, 255, 255, 1);
-  border: 1px solid rgba(102, 102, 102, 1);
-  position: fixed;
-  top: 32px;
-  right: 0;
-  bottom: 0;
-  font-size: 10px;
-  padding: 0;
-  width: 300px;
-}
-#PDFBug .controls {
-  background: rgba(238, 238, 238, 1);
-  border-bottom: 1px solid rgba(102, 102, 102, 1);
-  padding: 3px;
-}
-#PDFBug .panels {
-  bottom: 0;
-  left: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  position: absolute;
-  right: 0;
-  top: 27px;
-}
-#PDFBug button.active {
-  font-weight: bold;
-}
-.debuggerShowText {
-  background: none repeat scroll 0 0 rgba(255, 255, 0, 1);
-  color: rgba(0, 0, 255, 1);
-}
-.debuggerHideText:hover {
-  background: none repeat scroll 0 0 rgba(255, 255, 0, 1);
-}
-#PDFBug .stats {
-  font-family: courier;
-  font-size: 10px;
-  white-space: pre;
-}
-#PDFBug .stats .title {
-    font-weight: bold;
-}
-#PDFBug table {
-  font-size: 10px;
-}
+// > PDFBug styles position <
 
 #viewer.textLayer-visible .textLayer {
   opacity: 1.0;
@@ -1664,13 +1059,7 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
   z-index: 50000; /* should be higher than anything else in PDF.js! */
 }
 
-@page {
-  margin: 0;
-}
-
-#printContainer {
-  display: none;
-}
+// > Print styles position 1 <
 
 @media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
   /* Rules for Retina screens */
@@ -1709,164 +1098,6 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
     background-size: 7px 16px;
   }
 
-  html[dir='ltr'] .toolbarButton#sidebarToggle::before {
-    content: url(images/toolbarButton-sidebarToggle@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton#sidebarToggle::before {
-    content: url(images/toolbarButton-sidebarToggle-rtl@2x.png);
-  }
-
-  html[dir='ltr'] .toolbarButton#secondaryToolbarToggle::before {
-    content: url(images/toolbarButton-secondaryToolbarToggle@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton#secondaryToolbarToggle::before {
-    content: url(images/toolbarButton-secondaryToolbarToggle-rtl@2x.png);
-  }
-
-  html[dir='ltr'] .toolbarButton.findPrevious::before {
-    content: url(images/findbarButton-previous@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton.findPrevious::before {
-    content: url(images/findbarButton-previous-rtl@2x.png);
-  }
-
-  html[dir='ltr'] .toolbarButton.findNext::before {
-    content: url(images/findbarButton-next@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton.findNext::before {
-    content: url(images/findbarButton-next-rtl@2x.png);
-  }
-
-  html[dir='ltr'] .toolbarButton.pageUp::before {
-    content: url(images/toolbarButton-pageUp@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton.pageUp::before {
-    content: url(images/toolbarButton-pageUp-rtl@2x.png);
-  }
-
-  html[dir='ltr'] .toolbarButton.pageDown::before {
-    content: url(images/toolbarButton-pageDown@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton.pageDown::before {
-    content: url(images/toolbarButton-pageDown-rtl@2x.png);
-  }
-
-  .toolbarButton.zoomIn::before {
-    content: url(images/toolbarButton-zoomIn@2x.png);
-  }
-
-  .toolbarButton.zoomOut::before {
-    content: url(images/toolbarButton-zoomOut@2x.png);
-  }
-
-  .toolbarButton.presentationMode::before,
-  .secondaryToolbarButton.presentationMode::before {
-    content: url(images/toolbarButton-presentationMode@2x.png);
-  }
-
-  .toolbarButton.print::before,
-  .secondaryToolbarButton.print::before {
-    content: url(images/toolbarButton-print@2x.png);
-  }
-
-  .toolbarButton.openFile::before,
-  .secondaryToolbarButton.openFile::before {
-    content: url(images/toolbarButton-openFile@2x.png);
-  }
-
-  .toolbarButton.download::before,
-  .secondaryToolbarButton.download::before {
-    content: url(images/toolbarButton-download@2x.png);
-  }
-
-  .toolbarButton.bookmark::before,
-  .secondaryToolbarButton.bookmark::before {
-    content: url(images/toolbarButton-bookmark@2x.png);
-  }
-
-  #viewThumbnail.toolbarButton::before {
-    content: url(images/toolbarButton-viewThumbnail@2x.png);
-  }
-
-  html[dir="ltr"] #viewOutline.toolbarButton::before {
-    content: url(images/toolbarButton-viewOutline@2x.png);
-  }
-  html[dir="rtl"] #viewOutline.toolbarButton::before {
-    content: url(images/toolbarButton-viewOutline-rtl@2x.png);
-  }
-
-  #viewAttachments.toolbarButton::before {
-    content: url(images/toolbarButton-viewAttachments@2x.png);
-  }
-
-  #viewFind.toolbarButton::before {
-    content: url(images/toolbarButton-search@2x.png);
-  }
-
-  .secondaryToolbarButton.firstPage::before {
-    content: url(images/secondaryToolbarButton-firstPage@2x.png);
-  }
-
-  .secondaryToolbarButton.lastPage::before {
-    content: url(images/secondaryToolbarButton-lastPage@2x.png);
-  }
-
-  .secondaryToolbarButton.rotateCcw::before {
-    content: url(images/secondaryToolbarButton-rotateCcw@2x.png);
-  }
-
-  .secondaryToolbarButton.rotateCw::before {
-    content: url(images/secondaryToolbarButton-rotateCw@2x.png);
-  }
-
-  .secondaryToolbarButton.selectTool::before {
-    content: url(images/secondaryToolbarButton-selectTool@2x.png);
-  }
-
-  .secondaryToolbarButton.handTool::before {
-    content: url(images/secondaryToolbarButton-handTool@2x.png);
-  }
-
-  .secondaryToolbarButton.scrollVertical::before {
-    content: url(images/secondaryToolbarButton-scrollVertical@2x.png);
-  }
-
-  .secondaryToolbarButton.scrollHorizontal::before {
-    content: url(images/secondaryToolbarButton-scrollHorizontal@2x.png);
-  }
-
-  .secondaryToolbarButton.scrollWrapped::before {
-    content: url(images/secondaryToolbarButton-scrollWrapped@2x.png);
-  }
-
-  .secondaryToolbarButton.spreadNone::before {
-    content: url(images/secondaryToolbarButton-spreadNone@2x.png);
-  }
-
-  .secondaryToolbarButton.spreadOdd::before {
-    content: url(images/secondaryToolbarButton-spreadOdd@2x.png);
-  }
-
-  .secondaryToolbarButton.spreadEven::before {
-    content: url(images/secondaryToolbarButton-spreadEven@2x.png);
-  }
-
-  .secondaryToolbarButton.documentProperties::before {
-    content: url(images/secondaryToolbarButton-documentProperties@2x.png);
-  }
-
-  .outlineItemToggler::before {
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    top: -1px;
-    content: url(images/treeitem-expanded@2x.png);
-  }
-  html[dir='ltr'] .outlineItemToggler.outlineItemsHidden::before {
-    content: url(images/treeitem-collapsed@2x.png);
-  }
-  html[dir='rtl'] .outlineItemToggler.outlineItemsHidden::before {
-    content: url(images/treeitem-collapsed-rtl@2x.png);
-  }
   html[dir='ltr'] .outlineItemToggler::before {
     right: 0;
   }
@@ -1875,69 +1106,7 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
   }
 }
 
-@media print {
-  /* General rules for printing. */
-  body {
-    background: rgba(0, 0, 0, 0) none;
-  }
-
-  /* Rules for browsers that don't support mozPrintCallback. */
-  #sidebarContainer, #secondaryToolbar, .toolbar, #loadingBox, #errorWrapper, .textLayer {
-    display: none;
-  }
-  #viewerContainer {
-    overflow: visible;
-  }
-
-  #mainContainer, #viewerContainer, .page, .page canvas {
-    position: static;
-    padding: 0;
-    margin: 0;
-  }
-
-  .page {
-    float: left;
-    display: none;
-    border: none;
-    box-shadow: none;
-    background-clip: content-box;
-    background-color: rgba(255, 255, 255, 1);
-  }
-
-  .page[data-loaded] {
-    display: block;
-  }
-
-  .fileInput {
-    display: none;
-  }
-
-  /* Rules for browsers that support PDF.js printing */
-  body[data-pdfjsprinting] #outerContainer {
-    display: none;
-  }
-  body[data-pdfjsprinting] #printContainer {
-    display: block;
-  }
-  #printContainer {
-    height: 100%;
-  }
-  /* wrapper around (scaled) print canvas elements */
-  #printContainer > div {
-    position: relative;
-    top: 0;
-    left: 0;
-    width: 1px;
-    height: 1px;
-    overflow: visible;
-    page-break-after: always;
-    page-break-inside: avoid;
-  }
-  #printContainer canvas,
-  #printContainer img {
-    display: block;
-  }
-}
+// > Print styles position 2 <
 
 .visibleLargeView,
 .visibleMediumView,

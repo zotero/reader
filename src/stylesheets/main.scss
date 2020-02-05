@@ -28,6 +28,16 @@ $theme: "light";
 @import "components/viewer/annotation-layer-builder";
 @import "components/viewer/pdf-viewer";
 @import "components/viewer/viewer";
+@import "components/viewer/icons";
+@import "components/viewer/toolbar";
+@import "components/viewer/secondary-toolbar";
+@import "components/viewer/doorhanger";
+@import "components/viewer/sidebar";
+@import "components/viewer/toolbar-sidebar";
+@import "components/viewer/findbar";
+@import "components/viewer/thumbnail-view";
+@import "components/viewer/pdf-bug";
+@import "components/viewer/print";
 @import "components/viewer/viewer-override";
 
 //
