@@ -26,7 +26,6 @@ function modifyZotero() {
 <script src="viewer.js"></script>
 
 
-<link rel="stylesheet" href="annotator.css">
 <style>
   * {
     transition-property: none !important;
