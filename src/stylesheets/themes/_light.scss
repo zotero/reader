@@ -12,5 +12,13 @@ $body-bg: #ebebeb;
 // Components
 //
 
+// Sidebar
+$sidebar-bg:           $body-bg;
+$sidebar-shadow-color: #bdbdbd;
+
+// Thumbnail view
+$thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
+$thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
+
 // PDF viewer
 $page-bg: #fff;
