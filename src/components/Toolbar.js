@@ -35,7 +35,7 @@ class Toolbar extends React.Component {
           className={`toolbarButton ${active === "square" ? `active` : ``}`}
           onClick={() => {
             onMode("square");
-          }}>S
+          }}>A
         </button>
       </React.Fragment>,
       containerNode

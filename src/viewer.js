@@ -7,8 +7,6 @@ import {debounce} from "./lib/utilities";
 class Viewer {
   constructor(options) {
     this._loaded = false;
-    this._onSetAnnotation = options.onSetAnnotation;
-    this._onDeleteAnnotation = options.onDeleteAnnotation;
     this._onSetState = debounce(function(state) {
       options.onSetState(state);
     }, 100);
@@ -21,13 +19,62 @@ class Viewer {
       userId: options.userId,
       label: options.label
     });
+  
+  
+    window.PDFViewerApplication.eventBus.on("textlayerrendered", e => {
+      return;
+      // let pageIndex = e.pageNumber;
+      // let pageView = window.PDFViewerApplication.pdfViewer.getPageView(e.pageNumber - 1);
+      // let data = pageView.textLayer.textDivs.map(x => parseFloat(x.style.left)).filter(x => x).sort((a, b) => a - b);
+      //
+      // let result = data.reduce(function (r, a, i, aa) {
+      //   if (a - aa[i - 1] < 5) {
+      //     if (!Array.isArray(r[r.length - 1])) {
+      //       r[r.length - 1] = [r[r.length - 1]];
+      //     }
+      //     r[r.length - 1].push(a);
+      //     return r;
+      //   }
+      //   r.push(a);
+      //   return r;
+      // }, []);
+      //
+      // let b = result.map(ar => {
+      //   if (!Array.isArray(ar)) ar = [ar];
+      //   let sum = ar.reduce((a, b) => a + b, 0);
+      //   let avg = sum / ar.length;
+      //   return [avg, ar.length];
+      // });
+      //
+      // b = b.filter(x => x[1] >= 10);
+      //
+      // let res = null;
+      // if (b.length) {
+      //   res = b[0][0];
+      // }
+      //
+      // let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex).width;
+      // let margins = [res, pageWidth - res];
+    });
+    
+    if (options.password) {
+     window.PDFViewerApplication.passwordPrompt.open = function () {
+       this.updateCallback(options.password);
+     }
+    }
+    
+    let _password = null;
     
     this._annotationsStore.annotations = options.annotations;
-    
-    document.addEventListener("localized", (e) => {
-      if (!window.PDFViewerApplication.pdfViewer || this._loaded) return;
-      this._loaded = true;
-      
+
+      window.PDFViewerApplication.passwordPrompt.verify = function () {
+        const password = this.input.value;
+        _password = password;
+        if (password && password.length > 0) {
+          this.close();
+          this.updateCallback(password);
+        }
+      }
       
       window.PDFViewerApplication.eventBus.on("updateviewarea", (e) => {
         // console.log(e);
@@ -67,7 +114,14 @@ class Viewer {
       
       
       window.PDFViewerApplication.eventBus.on("documentinit", (e) => {
+        window.isDocumentReady = true;
         this._setState(options.state);
+      });
+      
+      window.PDFViewerApplication.eventBus.on("pagesinit", (e) => {
+        if (_password) {
+          options.onEnterPassword(_password);
+        }
       });
       
       // window.PDFViewerApplication.eventBus.on("pagesinit", () => {
@@ -79,12 +133,18 @@ class Viewer {
           onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
           onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
           onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
+          onClickTags={options.onClickTags}
+          onImport={this._annotationsStore.importAnnotations.bind(this._annotationsStore)}
           onInitialized={() => {
             this._annotationsStore.onUpdateAnnotations = this.setAnnotations;
+            this._annotationsStore.onImportableAnnotationsNum = this.importableAnnotationsNum;
             this.setAnnotations(this._annotationsStore.getAnnotations());
           }}
           setAnnotationsRef={(ref) => {
             this.setAnnotations = ref;
+          }}
+          importableAnnotationsNumRef={(ref) => {
+            this.importableAnnotationsNum = ref;
           }}
           navigateRef={(ref) => {
             this.navigate = ref;
@@ -92,18 +152,48 @@ class Viewer {
         />,
         document.createElement("div")
       );
+  
+  
+      let tvl = document.getElementById('toolbarViewerLeft');
+      let vf = document.getElementById('viewFind');
+      let st = document.getElementById('sidebarToggle');
+  
+      let arrowLeft = document.createElement('button');
+      arrowLeft.className = 'toolbarButton';
+      arrowLeft.appendChild(document.createTextNode('🢀'));
+      arrowLeft.addEventListener('click', () => {
+        window.history.back();
+      });
+      tvl.insertBefore(arrowLeft, st);
+  
+      let arrowRight = document.createElement('button');
+      arrowRight.className = 'toolbarButton';
+      arrowRight.appendChild(document.createTextNode('🢂'));
+      arrowRight.addEventListener('click', () => {
+        window.history.forward();
+      });
+      tvl.insertBefore(arrowRight, st);
       
-      window.PDFViewerApplication.open(options.url);
-    });
+      setTimeout(function() {
+        window.PDFViewerApplication.open(options.url);
+      },0);
   }
   
   setAnnotations = (annotations) => {
+  
+  };
+    
+  importableAnnotationsNum = (num) => {
   
   };
   
   navigate = (annotation) => {
   
   };
+  
+  setAnnotation(annotation) {
+    this._annotationsStore.updateAnnotation(annotation);
+  }
   
   _setState(options) {
     window.PDFViewerApplication.pdfSidebar.switchView(options.sidebarView, true);

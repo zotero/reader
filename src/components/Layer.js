@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDom from "react-dom";
 
+import cn from "classnames"
+
 import Highlight from "./Highlight";
 import Text from "./Text";
 import Square from "./Square";
@@ -42,7 +44,7 @@ class PageLayerHighlight extends React.Component {
     if (!node) return null;
     
     return ReactDom.createPortal(
-      <div>
+      <div className={cn({'selecting-annotation': !!activeAnnotationId})}>
         {annotations.map(
           (annotation, index) => {
             const { position, ...rest } = annotation;
@@ -197,6 +199,178 @@ class AreaSelectorLayer extends React.Component {
   }
 }
 
+
+class MarginNoteLayer extends React.Component {
+  getContainerNode(viewport) {
+    return findOrCreateContainerLayer(
+      viewport.div,
+      "Layer__marginNote"
+    );
+  }
+  
+  getDirection(pageWidth, position) {
+    let min = Infinity;
+    let max = 0;
+  
+    for (let rect of position.rects) {
+      if (rect[0] < min) {
+        min = rect[0];
+      }
+    
+      if (rect[2] > max) {
+        max = rect[2];
+      }
+    }
+    
+    if (min + (max-min)/2 < pageWidth / 2) {
+      return 'left';
+    }
+    
+    return 'right';
+  }
+  
+  getStackedMarginNotes(marginNotes, isRight) {
+    let scale = PDFViewerApplication.pdfViewer._currentScale;
+    marginNotes.sort((a, b) => b.top - a.top);
+    
+    let marginNotesGrouped = [];
+    
+    for (let marginNote of marginNotes) {
+      if (marginNotesGrouped.length) {
+        let prev = marginNotesGrouped[marginNotesGrouped.length - 1];
+        
+        if (prev[0].rect.top + prev[0].rect.height >= marginNote.rect.top) {
+          prev.push(marginNote);
+        }
+        else {
+          marginNotesGrouped.push([marginNote]);
+        }
+      }
+      else {
+        marginNotesGrouped.push([marginNote]);
+      }
+    }
+    
+    let marginNotesStacked = [];
+    
+    for (let mg of marginNotesGrouped) {
+      let first = mg[0];
+      marginNotesStacked.push(first);
+      for (let i = 1; i < mg.length; i++) {
+        let m = mg[i];
+        m.rect.top = first.rect.top;
+        if (isRight) {
+          m.rect.left -= i * m.rect.width/2
+        }
+        else {
+          m.rect.left += i * m.rect.width/2;
+        }
+        marginNotesStacked.push(m)
+      }
+    }
+    
+    return marginNotesStacked;
+  }
+  
+  getMarginNotes(marginLeft, marginRight, pageWidth, annotations, viewport) {
+    let marginLeftNotes = [];
+    let marginRightNotes = [];
+    
+    let scale = PDFViewerApplication.pdfViewer._currentScale;
+    
+    const width = 15 * scale;
+    const height = 15 * scale;
+    
+    for (let annotation of annotations) {
+      let viewportPosition = p2v(annotation.position, viewport);
+      let direction = this.getDirection(pageWidth, viewportPosition)
+      console.log({direction})
+      let left;
+      if (direction === 'right') {
+        left = marginRight + (pageWidth - marginRight) / 2 - width / 2;
+        marginRightNotes.push({
+            annotation,
+            rect: {
+              left: left,
+              top: viewportPosition.rects[0][1],
+              width: width,
+              height: height
+            }
+          }
+        );
+      }
+      else {
+        left = marginLeft / 2 - width / 2;
+        marginLeftNotes.push({
+            annotation,
+            rect: {
+              left: left,
+              top: viewportPosition.rects[0][1],
+              width: width,
+              height: height
+            }
+          }
+        );
+      }
+    }
+		console.log({marginLeftNotes, marginRightNotes})
+   let marginNotes = this.getStackedMarginNotes(marginLeftNotes).concat(this.getStackedMarginNotes(marginRightNotes, true));
+		marginNotes = marginNotes.reverse();
+    console.log('marginNotes', marginNotes);
+    return marginNotes;
+  }
+  
+  render() {
+    const {
+      view,
+      annotations,
+      activeAnnotationId,
+      marginLeft,
+      marginRight,
+      pageWidth,
+      onClick
+    } = this.props;
+    
+    let node = this.getContainerNode(view);
+    if (!node) return null;
+    
+    let comentedAnnotations = annotations.filter(x => x.comment)
+    let marginNotes = this.getMarginNotes(marginLeft, marginRight, pageWidth, comentedAnnotations, view.viewport);
+    
+    console.log('marginNotes', marginNotes);
+    
+    return ReactDom.createPortal(
+      <div>
+        {marginNotes.map(
+          (marginNote) => {
+            let active = activeAnnotationId === marginNote.annotation.id;
+            return (
+              <div
+                key={marginNote.annotation.id}
+                className={`MarginNote ${active ? "MarginNote-active" : ""}`}
+                style={{
+                  left: marginNote.rect.left,
+                  top: marginNote.rect.top,
+                  width: marginNote.rect.width,
+                  height: marginNote.rect.height,
+                  backgroundColor: marginNote.annotation.color,
+                  zIndex: active?2:1
+                }}
+                onClick={e => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClick(marginNote.annotation.id);
+                }}
+              />
+            );
+          }
+        )}
+      </div>,
+      node
+    );
+  }
+}
+
 class Layer extends React.Component {
   state = {
     selection: null,
@@ -265,6 +439,10 @@ class Layer extends React.Component {
         return;
       }
       
+      if (e.target.classList.contains('MarginNote')) {
+        return;
+      }
+      
       let containerEl = page.node;
       const offset = containerEl.getBoundingClientRect();
       
@@ -290,6 +468,37 @@ class Layer extends React.Component {
     }, true);
     
     document.addEventListener("selectionchange", this.onSelectionChange);
+  
+    let viewerNode = document.getElementById('viewer');
+    viewerNode.addEventListener('dragstart', (e) => {
+      let annotation = {
+        itemId: window.itemId,
+        text: this.state.selection.text,
+        position: this.state.selection.position
+      };
+      
+      // Todo: Move this out from here
+      let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
+  
+      if (pageLabels && pageLabels[annotation.position.pageNumber - 1]) {
+        annotation.page = pageLabels[annotation.position.pageNumber - 1];
+      }
+      else {
+        annotation.page = annotation.position.pageNumber;
+      }
+      
+      e.dataTransfer.setData('zotero/annotation', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
+      e.dataTransfer.setData('text/plain', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
+    });
+    
+    viewerNode.addEventListener('dragend', (e) => {
+      if (window.getSelection().empty) {  // Chrome
+        window.getSelection().empty();
+      }
+      else if (window.getSelection().removeAllRanges) {  // Firefox
+        window.getSelection().removeAllRanges();
+      }
+    });
   }
   
   componentWillUnmount() {
@@ -343,6 +552,7 @@ class Layer extends React.Component {
   
   selectionChangeDebounce = debounce(async () => {
     this.setState({ selection: await this.getSelection() });
+    console.log('sell', await this.getSelection());
   }, 250);
   
   onSelectionChange = () => {
@@ -421,6 +631,53 @@ class Layer extends React.Component {
     return p2v(position, viewport);
   }
   
+  getMargins(pageNumber) {
+    let pageView = window.PDFViewerApplication.pdfViewer.getPageView(pageNumber - 1);
+    
+    let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageNumber - 1).width;
+
+    
+    if (!pageView.textLayer || !pageView.textLayer.textDivs) {
+      return [0, pageWidth];
+    }
+    
+    let data = pageView.textLayer.textDivs.map(x => parseFloat(x.style.left)).filter(x => x).sort((a, b) => a - b);
+
+    let result = data.reduce(function (r, a, i, aa) {
+      if (a - aa[i - 1] < 5) {
+        if (!Array.isArray(r[r.length - 1])) {
+          r[r.length - 1] = [r[r.length - 1]];
+        }
+        r[r.length - 1].push(a);
+        return r;
+      }
+      r.push(a);
+      return r;
+    }, []);
+    
+    console.log(result);
+    
+    let b = result.map(ar => {
+      if (!Array.isArray(ar)) ar = [ar];
+      let sum = ar.reduce((a, b) => a + b, 0);
+      let avg = sum / ar.length;
+      return [avg, ar.length];
+    });
+    
+    b = b.filter(x => x[1] >= 10);
+    
+    let res = null;
+    if (b.length) {
+      res = b[0][0];
+    }
+    
+    let margins = [res, pageWidth - res];
+    
+    console.log('margins', margins)
+    
+    return margins;
+  }
+  
   render() {
     let {
       annotations,
@@ -433,7 +690,9 @@ class Layer extends React.Component {
       onSelection,
       onChange,
       onDelete,
-      onHighlight
+      onHighlight,
+      onClickTags,
+      onClickMarginNote
     } = this.props;
     
     if (!this.viewer || !this.viewer.pdfDocument || !this.state.initialized) return null;
@@ -446,6 +705,9 @@ class Layer extends React.Component {
       if (!annotationsByPage[String(pageNumber)] && !annotationsByPagePrev[String(pageNumber)]) continue;
       
       let view = this.viewer.getPageView(pageNumber - 1);
+      
+      let margins = this.getMargins(pageNumber);
+      let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageNumber - 1).width;
       
       pageLayers.push(
         <PageLayerHighlight
@@ -484,6 +746,16 @@ class Layer extends React.Component {
           onDragStop={() => {
             this.setState({ dragging: false });
           }}
+        />,
+        <MarginNoteLayer
+          key={"m_" + pageNumber}
+          view={view}
+          activeAnnotationId={activeAnnotationId}
+          annotations={(annotationsByPage[String(pageNumber)].filter(x => ["highlight", "square"].includes(x.type)) || [])}
+          marginLeft={margins[0]}
+          marginRight={margins[1]}
+          pageWidth={pageWidth}
+          onClick={onClickMarginNote}
         />
       );
     }
@@ -510,13 +782,20 @@ class Layer extends React.Component {
             <PopupPage
               className="AnnotationPopup"
               position={popupAnnotation.position}
+              // onDragStart={(event)=> {
+              //     let annotation = popupAnnotation;
+              //     annotation.itemId = window.itemId;
+              //     event.dataTransfer.setData('zotero/annotation', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
+              //     event.dataTransfer.setData('text/plain', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
+              //   }}
             >
-              <div className="AnnotationPopup__title">
-                <div>{popupAnnotation.label}</div>
-                <div>{popupAnnotation.dateModified.split("T")[0]}</div>
-              </div>
+              {/*<div className="AnnotationPopup__title">*/}
+              {/*  <div>{popupAnnotation.label}</div>*/}
+              {/*  <div>{popupAnnotation.dateModified.split("T")[0]}</div>*/}
+              {/*</div>*/}
               <Meta
                 annotation={popupAnnotation}
+                isLayer={true}
                 onUpdate={(comment) => {
                   onChange({ id: popupAnnotation.id, comment });
                 }}
@@ -525,6 +804,14 @@ class Layer extends React.Component {
                 }}
                 onDelete={() => {
                   onDelete(popupAnnotation.id);
+                }}
+                onClickTags={onClickTags}
+                onChange={onChange}
+                onDragStart={(event) => {
+                  let annotation = popupAnnotation;
+                  annotation.itemId = window.itemId;
+                  event.dataTransfer.setData('zotero/annotation', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
+                  event.dataTransfer.setData('text/plain', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
                 }}
               />
             

@@ -8,6 +8,7 @@ document.addEventListener("webviewerloaded", (e) => {
 	window.PDFViewerApplicationOptions.set("cMapUrl", 'cmaps/');
 	window.PDFViewerApplicationOptions.set("cMapPacked", true);
 	window.PDFViewerApplicationOptions.set("workerSrc", 'pdf.worker.js');
+	window.PDFViewerApplicationOptions.set("historyUpdateUrl", false);
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
 		return window.PDFViewerApplicationOptions;
@@ -18,11 +19,16 @@ document.addEventListener("webviewerloaded", (e) => {
 var viewer;
 
 window.addEventListener('message', function (message) {
+	if (message.source === parent) return;
+	
 	if (message.data.parent) return;
 	let data = message.data;
+
 	if (data.op === 'open') {
+		window.itemId = data.itemId;
 		viewer = new Viewer({
 			onSetAnnotation: function (annotation) {
+				if (annotation.temp) return;
 				console.log("Set annotation", annotation);
 				parent.postMessage({op: 'setAnnotation', parent: true, annotation}, '*');
 			},
@@ -34,11 +40,18 @@ window.addEventListener('message', function (message) {
 				console.log("Set state", state);
 				parent.postMessage({op: 'setState', parent: true, state}, '*');
 			},
+			onClickTags(annotationId, screenX, screenY) {
+				parent.postMessage({op: 'tagsPopup', x: screenX, y: screenY}, '*');
+			},
+			onEnterPassword(password) {
+				parent.postMessage({op: 'enterPassword', password}, '*');
+			},
 			userId: data.userId,
 			label: data.label,
-			url: data.url,
+			url: 'zotero://pdf.js/pdf/' + data.libraryID + '/' + data.key,
 			annotations: data.annotations,
-			state: data.state
+			state: data.state,
+			password: data.password
 		});
 	}
 	else if (data.op === 'navigate') {
@@ -52,4 +65,20 @@ window.addEventListener('message', function (message) {
 	}
 });
 
+let localized = false;
+
+document.addEventListener("localized", (e) => {
+	if (!window.PDFViewerApplication.pdfViewer || localized) return;
+	localized = true;
+	
+	window.PDFViewerApplication.eventBus.on("documentinit", (e) => {
+	});
+	                                                                                                                                                                                                                         
+	var url = new URL(window.location.href);
+	var libraryID = url.searchParams.get("libraryID");
+	var key = url.searchParams.get("key");
+	parent.postMessage({op: 'load', libraryID, key}, '*');
+});
+
 window.isViewerReady = true;
+

@@ -45,17 +45,60 @@ class Annotator extends React.Component {
     this.scrollViewerTo(this.state.annotations.find(x => x.id === annotation.id));
   };
   
+  navigate2 = (annotation) => {
+    // this.setState({ activeAnnotationId: annotation.id });
+
+	  let tempAnnotation = this.props.onAddAnnotation({
+		  type: 'highlight',
+		  temp: true,
+		  position: annotation.position,
+		  color: '#DD00AA',
+		  text: '',
+		  comment: '',
+		  page: '',
+		  tags: []
+	  });
+    
+    
+    let that = this;
+	  function fade(element) {
+		  var op = 1;  // initial opacity
+		  var timer = setInterval(() => {
+		  
+		    let element = document.getElementById('annotation-'+tempAnnotation.id);
+		    if(!element) return;
+			  if (op <= 0.1) {
+				  clearInterval(timer);
+				  that.props.onDeleteAnnotation(tempAnnotation.id);
+			  }
+			  element.style.opacity = op;
+			  element.style.filter = 'alpha(opacity=' + op * 100 + ")";
+			  op -= op * 0.1;
+		  }, 100);
+	  }
+    
+    fade();
+    
+    this.scrollViewerTo(tempAnnotation);
+  };
+  
   setAnnotations = (annotations) => {
     this.setState({ annotations });
   };
   
+  setImportableAnnotationsNum = (importableAnnotationsNum) => {
+    this.setState({ importableAnnotationsNum });
+    console.log('importableAnnotationsNum', importableAnnotationsNum);
+  };
+  
   componentDidMount() {
-    let { onInitialized, navigateRef, setAnnotationsRef } = this.props;
+    let { onInitialized, navigateRef, setAnnotationsRef, importableAnnotationsNumRef } = this.props;
     
     this.initKeyboard();
     
-    navigateRef(this.navigate);
+    navigateRef(this.navigate2);
     setAnnotationsRef(this.setAnnotations);
+    importableAnnotationsNumRef(this.setImportableAnnotationsNum);
     
     document.addEventListener("click", (e) => {
       if (!e.target.closest(".PopupScreen") && !e.target.closest(".toolbarButton")) {
@@ -216,7 +259,7 @@ class Annotator extends React.Component {
   }
   
   render() {
-    const { onAddAnnotation, onUpdateAnnotation, onDeleteAnnotation } = this.props;
+    const { onAddAnnotation, onUpdateAnnotation, onDeleteAnnotation, onClickTags, onImport } = this.props;
     const { annotations } = this.state;
     
     return (
@@ -241,6 +284,7 @@ class Annotator extends React.Component {
           </PopupScreen>
         ) : null}
         <Sidebar
+          importableAnnotationsNum={this.state.importableAnnotationsNum}
           annotations={this.state.annotations}
           activeAnnotationId={this.state.activeAnnotationId}
           onSelectAnnotation={(id) => {
@@ -254,6 +298,8 @@ class Annotator extends React.Component {
           onDelete={(id) => {
             onDeleteAnnotation(id);
           }}
+          onClickTags={onClickTags}
+          onImport={onImport}
         />
         <Layer
           scrollRef={scrollTo => {
@@ -267,7 +313,8 @@ class Annotator extends React.Component {
                 color: this.state.color,
                 position: selection.position,
                 text: selection.text,
-                comment: ""
+                comment: "",
+                tags: []
               });
               
               this.setState({ recentlyCreatedAnnotationId: annotation.id });
@@ -280,7 +327,8 @@ class Annotator extends React.Component {
               color: this.state.color,
               position: selection.position,
               text: selection.text,
-              comment: ""
+              comment: "",
+              tags: []
             });
             
             this.setState({ recentlyCreatedAnnotationId: annotation.id });
@@ -294,7 +342,8 @@ class Annotator extends React.Component {
               type: "square",
               color: this.state.color,
               position: position,
-              comment: ""
+              comment: "",
+              tags: []
             });
             this.setState({ recentlyCreatedAnnotationId: annotation.id });
             this.setState({ mode: null });
@@ -327,12 +376,17 @@ class Annotator extends React.Component {
                 type: "text",
                 position: position,
                 color: this.state.color,
-                comment: ""
+                comment: "",
+                tags: []
               });
               this.setState({ recentlyCreatedAnnotationId: annotation.id });
               this.setState({ activeAnnotationId: annotation.id });
               this.setState({ mode: null });
             }
+          }}
+          onClickTags={onClickTags}
+          onClickMarginNote={annotationId => {
+            this.setState({ activeAnnotationId: annotationId });
           }}
           popupAnnotation={this.state.activeAnnotationId ? this.state.annotations.find(x => x.id === this.state.activeAnnotationId) : null}
           popupSelection={this.state.selection ? { position: this.state.selection.position } : null}

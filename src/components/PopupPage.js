@@ -59,7 +59,7 @@ class PopupPage extends React.Component {
   }
   
   render() {
-    const { position, children, className } = this.props;
+    const { position, children, className, onDragStart } = this.props;
     const { dimensions } = this.state;
     
     let popupContainer = document.getElementById("popupPageContainer");
@@ -76,7 +76,10 @@ class PopupPage extends React.Component {
       <div
         ref={el => (this.container = el)}
         className={"PopupPage "+className}
-        style={dimensions ? this.getRect(position, dimensions) : {}}>
+        style={dimensions ? this.getRect(position, dimensions) : {}}
+        // draggable={true}
+        // onDragStart={onDragStart}
+        >
         {children}
       </div>,
       popupContainer);

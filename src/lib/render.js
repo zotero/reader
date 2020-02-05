@@ -3,7 +3,7 @@ import { p2v, v2p, wx, hy } from "./coordinates";
 
 export async function renderSquareImage(position) {
   let page = await PDFViewerApplication.pdfDocument.getPage(position.pageNumber);
-  let viewport = page.getViewport({ scale: 1.5 });
+  let viewport = page.getViewport({ scale: 2 });
   
   position = p2v(position, viewport);
   
@@ -28,7 +28,7 @@ export async function renderSquareImage(position) {
     viewport: viewport
   };
   
-  await page.render(renderContext);
+  await page.render(renderContext).promise;
   
   const rect = position.rects[0];
   

@@ -6,7 +6,7 @@ class Highlight extends Component {
   render() {
     const { annotation, active } = this.props;
     return (
-      <div className="Highlight">
+      <div className="Highlight" id={'annotation-'+annotation.id}>
         {annotation.position.rects.map((rect, index) => (
           <div
             key={index}

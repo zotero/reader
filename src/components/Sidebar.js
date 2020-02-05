@@ -2,6 +2,7 @@ import React from "react";
 import ReactDom from "react-dom";
 
 import Meta from "./Meta";
+import Editor from "./Editor";
 
 import { searchAnnotations } from "../lib/search";
 
@@ -28,7 +29,7 @@ class Sidebar extends React.Component {
   }
   
   render() {
-    let { annotations, onSelectAnnotation, onChange, onDelete, activeAnnotationId } = this.props;
+    let { importableAnnotationsNum, annotations, onSelectAnnotation, onChange, onDelete, activeAnnotationId, onClickTags, onImport } = this.props;
     const annotationsView = document.getElementById('annotationsView');
     if (this.state.filteredAnnotations) {
       let newFilteredAnnotations = [];
@@ -65,6 +66,12 @@ class Sidebar extends React.Component {
               }}>X
               </div>
             </div>
+            {/*<button*/}
+            {/*  className="Sidebar-import"*/}
+            {/*  onClick={onImport}*/}
+            {/*>*/}
+            {/*  Import annotations ({importableAnnotationsNum})*/}
+            {/*</button>*/}
             {annotations.map((annotation, index) => (
               <div
                 key={annotation.id}
@@ -73,38 +80,35 @@ class Sidebar extends React.Component {
                 onClick={() => {
                   onSelectAnnotation(annotation.id);
                 }}
+                // draggable={false}
+                // onDragStart={(event)=> {
+                //   // annotation.itemId = window.itemId;
+                //   // event.dataTransfer.setData('zotero/annotation', JSON.stringify(annotation));
+                //   // event.dataTransfer.setData('text/plain', JSON.stringify(annotation));
+                // }}
               >
-                <div className="Sidebar-page">
-                  Page {annotation.position.pageNumber}
-                </div>
-                {annotation.image ? (<img className="Sidebar-image" src={annotation.image}/>) : null}
-                {annotation.text ? (
-                  <div className="Sidebar-text">
-                    {annotation.text.slice(0, 120).trim() + (annotation.text.length > 120 ? "…" : "")}
-                  </div>) : null}
-                {annotation.external ? (
-                  
-                  annotation.comment ? (
-                    <div>
-                      {annotation.comment.slice(0, 90).trim() + (annotation.comment.length > 90 ? "…" : "")}
-                    </div>) : null
-                
-                ) : (annotation.comment || annotation.id === activeAnnotationId) ? (<Meta
+                <Meta
                   annotation={annotation}
                   onUpdate={(comment) => {
-                    onChange({ id: annotation.id, comment });
+                    onChange({id: annotation.id, comment});
                   }}
                   onColorChange={(color) => {
-                    onChange({ id: annotation.id, color });
+                    onChange({id: annotation.id, color});
                   }}
                   onDelete={() => {
                     onDelete(annotation.id);
                   }}
-                  
+    
                   onFocus={() => {
                   }}
-                />) : null}
-              
+                  onClickTags={onClickTags}
+                  onChange={onChange}
+                  onDragStart={(event) => {
+                    annotation.itemId = window.itemId;
+                    event.dataTransfer.setData('zotero/annotation', JSON.stringify(annotation));
+                    event.dataTransfer.setData('text/plain', JSON.stringify(annotation));
+                  }}
+                />
               </div>
             ))}
           
