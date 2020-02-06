@@ -1,0 +1,13 @@
+//
+// Icon
+//
+
+@mixin icon($icon) {
+  &::before {
+    content: icon-url("#{$icon}.png");
+
+    @include retina {
+      content: icon-url("#{$icon}@2x.png");
+    }
+  }
+}
