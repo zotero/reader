@@ -1,73 +1,63 @@
 .Sidebar-block {
-    padding: 10px 5px;
-    font-size: 13px;
-    border-bottom: 1px solid gray;
+  padding: 10px 5px;
+  font-size: 13px;
+  border-bottom: 1px solid gray;
 }
 
 .Sidebar-block-active {
-    /*background-color: #563939;*/
-    background-color: #4a4a4a;
+  /*background-color: #563939;*/
+  background-color: #4a4a4a;
 }
 
 .Sidebar-block:hover {
-    /*background-color: #474747;*/
-    cursor: pointer;
+  /*background-color: #474747;*/
+  cursor: pointer;
 }
 
 .Sidebar-image {
-    width: 100%;
+  width: 100%;
 }
 
 .Sidebar-page {
-    text-align: left;
+  text-align: left;
 }
 
 .Sidebar-text {
-    background-color: #4c4c4c;
-    padding: 5px;
+  background-color: #4c4c4c;
+  padding: 5px;
 }
 
 .Sidebar-search {
-    padding: 5px 5px;
-    display: flex;
+  padding: 5px 5px;
+  display: flex;
 }
 
 .Sidebar-search input {
-    box-sizing: border-box;
-    width: 100%;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .Sidebar-search-input {
-    box-sizing: border-box;
-    flex: 1;
+  box-sizing: border-box;
+  flex: 1;
 }
 
 .Sidebar-search-clear {
-    padding: 0 5px;
+  padding: 0 5px;
 }
 
 .Sidebar-block textarea {
-    height: 60px;
-    background-color: white;
-    padding: 5px;
+  height: 60px;
+  background-color: white;
+  padding: 5px;
 }
 
 #annotationsView {
-    position: absolute;
-    width: calc(100% - 8px);
-    top: 0;
-    bottom: 0;
-    overflow: auto;
-    padding: 3px 4px 0;
-    z-index: 5555555;
-}
-
-#annotationsView {
-    color: white;
+  @extend %sidebar-view;
 }
 
 #annotationsView:focus {
-    outline: none;
+  outline: none;
 }
 
 

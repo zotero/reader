@@ -15,7 +15,6 @@
 
 #outlineView {
   @extend %sidebar-view;
-  padding: 4px;
 }
 
 html[dir='ltr'] .outlineWithDeepNesting > .outlineItem,
