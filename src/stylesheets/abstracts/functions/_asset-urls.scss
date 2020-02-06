@@ -1,0 +1,11 @@
+//
+// Asset URLs
+//
+
+@function asset-url($type, $path) {
+  @return url(unquote("#{$type}/#{$path}"));
+}
+
+@function icon-url($path) {
+  @return asset-url("icons", $path);
+}
