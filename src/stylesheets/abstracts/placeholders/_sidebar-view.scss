@@ -1,0 +1,17 @@
+//
+// Sidebar view
+//
+
+%sidebar-view {
+  box-sizing: border-box;
+  position: absolute;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+      -ms-user-select: none;
+          user-select: none;
+}

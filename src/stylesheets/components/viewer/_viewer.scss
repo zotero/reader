@@ -717,55 +717,18 @@ html[dir='rtl'] .verticalToolbarSeparator {
 
 // > Thumbnail view styles postion <
 
-#outlineView,
 #attachmentsView {
-  position: absolute;
-  width: calc(100% - 8px);
-  top: 0;
-  bottom: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+  @extend %sidebar-view;
 }
 
-#outlineView {
-  padding: 4px 4px 0;
-}
+// > Outline view styles position <
+
 #attachmentsView {
   padding: 3px 4px 0;
 }
 
-html[dir='ltr'] .outlineWithDeepNesting > .outlineItem,
-html[dir='ltr'] .outlineItem > .outlineItems {
-  margin-left: 20px;
-}
-
-html[dir='rtl'] .outlineWithDeepNesting > .outlineItem,
-html[dir='rtl'] .outlineItem > .outlineItems {
-  margin-right: 20px;
-}
-
-.outlineItem > a,
 .attachmentsItem > button {
-  text-decoration: none;
-  display: inline-block;
-  min-width: 95%;
-  min-width: calc(100% - 4px); /* Subtract the right padding (left, in RTL mode)
-                                  of the container. */
-  height: auto;
-  margin-bottom: 1px;
-  border-radius: 2px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
-  line-height: 15px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-  white-space: normal;
+  @extend %sidebar-item-link-btn;
 }
 
 .attachmentsItem > button {
@@ -775,77 +738,23 @@ html[dir='rtl'] .outlineItem > .outlineItems {
   width: 100%;
 }
 
-html[dir='ltr'] .outlineItem > a {
-  padding: 2px 0 5px 4px;
-}
 html[dir='ltr'] .attachmentsItem > button {
   padding: 2px 0 3px 7px;
   text-align: left;
 }
 
-html[dir='rtl'] .outlineItem > a {
-  padding: 2px 4px 5px 0;
-}
 html[dir='rtl'] .attachmentsItem > button {
   padding: 2px 7px 3px 0;
   text-align: right;
 }
 
-.outlineItemToggler {
-  position: relative;
-  height: 0;
-  width: 0;
-  color: rgba(255, 255, 255, 0.5);
-}
-.outlineItemToggler.outlineItemsHidden ~ .outlineItems {
-  display: none;
-}
-html[dir='ltr'] .outlineItemToggler {
-  float: left;
-}
-html[dir='rtl'] .outlineItemToggler {
-  float: right;
-}
-html[dir='ltr'] .outlineItemToggler::before {
-  right: 4px;
-}
-html[dir='rtl'] .outlineItemToggler::before {
-  left: 4px;
-}
-
-.outlineItemToggler:hover,
-.outlineItemToggler:hover + a,
-.outlineItemToggler:hover ~ .outlineItems,
-.outlineItem > a:hover,
-.attachmentsItem > button:hover {
-  background-color: rgba(255, 255, 255, 0.02);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.2) inset,
-              0 0 1px rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.outlineItem.selected {
-  background-color: rgba(255, 255, 255, 0.08);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.1) inset,
-              0 0 1px rgba(0, 0, 0, 0.2);
-  color: rgba(255, 255, 255, 1);
-}
-
-.noResults {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  font-style: italic;
-  cursor: default;
-}
+// Class does not seem to be used anywhere
+//.noResults {
+//  font-size: 12px;
+//  color: rgba(255, 255, 255, 0.8);
+//  font-style: italic;
+//  cursor: default;
+//}
 
 /* TODO: file FF bug to support ::-moz-selection:window-inactive
    so we can override the opaque grey background when the window is inactive;
@@ -1096,13 +1005,6 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
   .dropdownToolbarButton {
     background: url(images/toolbarButton-menuArrows@2x.png) no-repeat;
     background-size: 7px 16px;
-  }
-
-  html[dir='ltr'] .outlineItemToggler::before {
-    right: 0;
-  }
-  html[dir='rtl'] .outlineItemToggler::before {
-    left: 0;
   }
 }
 
