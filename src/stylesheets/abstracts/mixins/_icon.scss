@@ -5,6 +5,10 @@
 @mixin icon($icon) {
   &::before {
     content: icon-url("#{$icon}.png");
+    font-size: 1px;
+    line-height: 1;
+    display: inline-block;
+    vertical-align: top;
 
     @include retina {
       content: icon-url("#{$icon}@2x.png");

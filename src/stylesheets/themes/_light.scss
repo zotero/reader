@@ -6,7 +6,8 @@
 // Base
 //
 
-$body-bg: #ebebeb;
+$body-bg:    #ebebeb;
+$text-color: #000;
 
 //
 // Components
@@ -19,6 +20,10 @@ $sidebar-shadow-color: #bdbdbd;
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
 $thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
+
+// Outline & attachment view
+$sidebar-item-link-btn-color: $text-color;
+
 
 // PDF viewer
 $page-bg: #fff;

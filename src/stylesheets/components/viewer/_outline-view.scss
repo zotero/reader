@@ -15,7 +15,7 @@
 
 #outlineView {
   @extend %sidebar-view;
-  padding: 4px 4px 0;
+  padding: 4px;
 }
 
 html[dir='ltr'] .outlineWithDeepNesting > .outlineItem,
@@ -30,71 +30,64 @@ html[dir='rtl'] .outlineItem > .outlineItems {
 
 .outlineItem > a {
   @extend %sidebar-item-link-btn;
-}
+  @include icon("document-bookmark");
+  display: flex;
+  position: relative;
 
-html[dir='ltr'] .outlineItem > a {
-  padding: 2px 0 5px 4px;
-}
+  &::before {
+    position: absolute;
+    left: 0;
+    top: rem(10);
+    margin-top: -8px;
+  }
 
-html[dir='rtl'] .outlineItem > a {
-  padding: 2px 4px 5px 0;
+  html[dir='ltr'] & {
+    padding: rem(3.5) 0 rem(3.5) 19px;
+  }
+
+  html[dir='rtl'] & {
+    padding: rem(3.5) 19px rem(3.5) 0;
+  }
 }
 
 .outlineItemToggler {
   position: relative;
-  height: 0;
+  height: $outline-item-height;
   width: 0;
   color: rgba(255, 255, 255, 0.5);
-}
-.outlineItemToggler.outlineItemsHidden ~ .outlineItems {
-  display: none;
-}
-html[dir='ltr'] .outlineItemToggler {
-  float: left;
-}
-html[dir='rtl'] .outlineItemToggler {
-  float: right;
-}
 
-html[dir='ltr'] .outlineItemToggler::before {
-  right: 4px;
-
-  @include retina {
-    right: 0;
+  &::before {
+    position: absolute;
+    height: 9px;
+    top: 50%;
+    margin-top: -4.5px;
   }
-}
 
-html[dir='rtl'] .outlineItemToggler::before {
-  left: 4px;
+  html[dir='ltr'] & {
+    float: left;
 
-  @include retina {
-    left: 0;
+    &::before {
+      right: 4px;
+
+      @include retina {
+        right: 0;
+      }
+    }
   }
-}
 
-.outlineItemToggler:hover,
-.outlineItemToggler:hover + a,
-.outlineItemToggler:hover ~ .outlineItems,
-.outlineItem > a:hover,
-.attachmentsItem > button:hover {
-  background-color: rgba(255, 255, 255, 0.02);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.2) inset,
-              0 0 1px rgba(0, 0, 0, 0.2);
-  border-radius: 2px;
-  color: rgba(255, 255, 255, 0.9);
-}
+  html[dir='rtl'] & {
+    float: right;
 
-.outlineItem.selected {
-  background-color: rgba(255, 255, 255, 0.08);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.1) inset,
-              0 0 1px rgba(0, 0, 0, 0.2);
-  color: rgba(255, 255, 255, 1);
+    &::before {
+      left: 4px;
+
+      @include retina {
+        left: 0;
+      }
+    }
+  }
+
+  &.outlineItemsHidden ~ .outlineItems {
+    display: none;
+  }
 }

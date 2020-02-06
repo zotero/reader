@@ -13,21 +13,17 @@
  * limitations under the License.
  */
 
- %sidebar-item-link-btn {
-   text-decoration: none;
-  display: inline-block;
-  min-width: 95%;
-  min-width: calc(100% - 4px); /* Subtract the right padding (left, in RTL mode)
-                                  of the container. */
-  height: auto;
-  margin-bottom: 1px;
-  border-radius: 2px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 13px;
-  line-height: 15px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-  white-space: normal;
- }
+%sidebar-item-link-btn {
+ text-decoration: none;
+ display: inline-block;
+ vertical-align: top;
+ height: auto;
+ color: $sidebar-item-link-btn-color;
+ font-size: $font-size-base;
+ line-height: 1.2;
+ -webkit-user-select: none;
+    -moz-user-select: none;
+     -ms-user-select: none;
+         user-select: none;
+ white-space: normal;
+}
