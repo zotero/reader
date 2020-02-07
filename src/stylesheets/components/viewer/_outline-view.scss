@@ -34,6 +34,8 @@
 }
 
 .outlineItems {
+  flex: 1 1 100%;
+
   .outlineItem > & {
     html[dir='ltr'] & {
       margin-left: 12px;
@@ -48,7 +50,7 @@
 .outlineItem > a {
   @extend %sidebar-item-link-btn;
   @include icon("document-bookmark");
-  flex: 1 1 0;
+  flex: 1 1 100%;
   display: flex;
   position: relative;
 
