@@ -576,7 +576,7 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
 
 @media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
   /* Rules for Retina screens */
-  .toolbarButton::before {
+  .toolbar .toolbarButton::before {
     -webkit-transform: scale(0.5);
             transform: scale(0.5);
     top: -5px;

@@ -57,7 +57,8 @@ html[dir='rtl'] .outlineItem > .outlineItems {
 
   &::before {
     position: absolute;
-    height: 9px;
+    width: 9px !important;
+    height: 9px !important;
     top: 50%;
     margin-top: -4.5px;
   }
@@ -67,10 +68,6 @@ html[dir='rtl'] .outlineItem > .outlineItems {
 
     &::before {
       right: 4px;
-
-      @include retina {
-        right: 0;
-      }
     }
   }
 
@@ -79,10 +76,6 @@ html[dir='rtl'] .outlineItem > .outlineItems {
 
     &::before {
       left: 4px;
-
-      @include retina {
-        left: 0;
-      }
     }
   }
 

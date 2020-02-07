@@ -301,17 +301,4 @@ html[dir='rtl'] .outlineItemToggler.outlineItemsHidden {
   .secondaryToolbarButton.documentProperties::before {
     content: url(images/secondaryToolbarButton-documentProperties@2x.png);
   }
-
-  .outlineItemToggler::before {
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    top: -1px;
-    content: url(images/treeitem-expanded@2x.png);
-  }
-  html[dir='ltr'] .outlineItemToggler.outlineItemsHidden::before {
-    content: url(images/treeitem-collapsed@2x.png);
-  }
-  html[dir='rtl'] .outlineItemToggler.outlineItemsHidden::before {
-    content: url(images/treeitem-collapsed-rtl@2x.png);
-  }
 }

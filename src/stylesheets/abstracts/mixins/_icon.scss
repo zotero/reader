@@ -4,14 +4,16 @@
 
 @mixin icon($icon) {
   &::before {
-    content: icon-url("#{$icon}.png");
-    font-size: 1px;
-    line-height: 1;
+    content: "";
     display: inline-block;
     vertical-align: top;
+    width: 16px;
+    height: 16px;
+    background-image: icon-url("#{$icon}.png");
+    background-size: 100%;
 
     @include retina {
-      content: icon-url("#{$icon}@2x.png");
+      background-image: icon-url("#{$icon}@2x.png");
     }
   }
 }
