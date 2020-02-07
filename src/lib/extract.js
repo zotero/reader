@@ -160,6 +160,86 @@ export async function extractRange(position) {
 			pageNumber: position.pageNumber,
 			rects: range.rects
 		},
-		text: range.text
+		text: range.text,
+		offset: range.offset
 	};
+}
+
+function pointsDist([x1, y1], [x2, y2]) {
+  return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+}
+
+function rectsDist([ax1, ay1, ax2, ay2], [bx1, by1, bx2, by2]) {
+  let left = bx2 < ax1;
+  let right = ax2 < bx1;
+  let bottom = by2 < ay1;
+  let top = ay2 < by1;
+  
+  if (top && left) {
+    return pointsDist([ax1, ay2], [bx2, by1]);
+  }
+  else if (left && bottom) {
+    return pointsDist([ax1, ay1], [bx2, by2]);
+  }
+  else if (bottom && right) {
+    return pointsDist([ax2, ay1], [bx1, by2]);
+  }
+  else if (right && top) {
+    return pointsDist([ax2, ay2], [bx1, by1]);
+  }
+  else if (left) {
+    return ax1 - bx2;
+  }
+  else if (right) {
+    return bx1 - ax2;
+  }
+  else if (bottom) {
+    return ay1 - by2;
+  }
+  else if (top) {
+    return by1 - ay2;
+  }
+  
+  return 0;
+}
+
+export async function getClosestOffset(position) {
+  let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(position.pageNumber);
+  let textContent = await page.getTextContent();
+  let positionRect = position.rects[0];
+  
+  let chs = [];
+  for (let item of textContent.items) {
+    for (let ch of item.chars) {
+      chs.push(ch);
+    }
+  }
+  
+  let minDist = Infinity;
+  let minDistChIndex = 0;
+  
+  for (let i=0;i<chs.length;i++) {
+    let ch = chs[i];
+    
+    let distance = rectsDist(ch.rect, positionRect);
+    
+    if (distance < minDist) {
+      minDist = distance;
+      minDistChIndex = i;
+    }
+  }
+
+  return minDistChIndex;
+}
+
+export async function getSortIndex(position) {
+  let page = position.pageNumber;
+  let offset = await getClosestOffset(position);
+  let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(position.pageNumber)).view[3];
+  let top = pageHeight - position.rects[0][3];
+  return [
+    page.toString().padStart(6,'0'),
+    offset.toString().padStart(7,'0'),
+    parseFloat(top).toFixed(3).padStart(10,'0')
+  ].join('|');
 }

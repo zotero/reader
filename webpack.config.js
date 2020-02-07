@@ -81,7 +81,7 @@ const configWeb = {
 
 const configZotero = {
 	entry: [
-		'./src/index.web.js',
+		'./src/index.zotero.js',
 		'./src/stylesheets/main.scss'
 	],
 	output: {

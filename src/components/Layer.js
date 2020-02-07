@@ -282,7 +282,7 @@ class MarginNoteLayer extends React.Component {
     for (let annotation of annotations) {
       let viewportPosition = p2v(annotation.position, viewport);
       let direction = this.getDirection(pageWidth, viewportPosition)
-      console.log({direction})
+
       let left;
       if (direction === 'right') {
         left = marginRight + (pageWidth - marginRight) / 2 - width / 2;
@@ -311,10 +311,8 @@ class MarginNoteLayer extends React.Component {
         );
       }
     }
-		console.log({marginLeftNotes, marginRightNotes})
-   let marginNotes = this.getStackedMarginNotes(marginLeftNotes).concat(this.getStackedMarginNotes(marginRightNotes, true));
-		marginNotes = marginNotes.reverse();
-    console.log('marginNotes', marginNotes);
+    let marginNotes = this.getStackedMarginNotes(marginLeftNotes).concat(this.getStackedMarginNotes(marginRightNotes, true));
+    marginNotes = marginNotes.reverse();
     return marginNotes;
   }
   
@@ -334,8 +332,6 @@ class MarginNoteLayer extends React.Component {
     
     let comentedAnnotations = annotations.filter(x => x.comment)
     let marginNotes = this.getMarginNotes(marginLeft, marginRight, pageWidth, comentedAnnotations, view.viewport);
-    
-    console.log('marginNotes', marginNotes);
     
     return ReactDom.createPortal(
       <div>
@@ -550,7 +546,6 @@ class Layer extends React.Component {
   
   selectionChangeDebounce = debounce(async () => {
     this.setState({ selection: await this.getSelection() });
-    console.log('sell', await this.getSelection());
   }, 250);
   
   onSelectionChange = () => {
@@ -609,6 +604,17 @@ class Layer extends React.Component {
     if(!extractedRange) return null;
     
     extractedRange.position = this.p2v(extractedRange.position);
+    
+    // TODO: Unify all annotations sort index calculation
+    let offset = extractedRange.offset;
+    extractedRange.sortIndex = [
+      position.pageNumber.toString().padStart(6, '0'),
+      offset.toString().padStart(7, '0'),
+      '0'.padStart(10, '0')
+    ].join('|');
+    
+    delete extractedRange.offset;
+    
     return extractedRange;
   }
   
@@ -653,8 +659,6 @@ class Layer extends React.Component {
       return r;
     }, []);
     
-    console.log(result);
-    
     let b = result.map(ar => {
       if (!Array.isArray(ar)) ar = [ar];
       let sum = ar.reduce((a, b) => a + b, 0);
@@ -670,8 +674,6 @@ class Layer extends React.Component {
     }
     
     let margins = [res, pageWidth - res];
-    
-    console.log('margins', margins)
     
     return margins;
   }

@@ -1,5 +1,5 @@
 import queue from "queue";
-import { extractExternalAnnotations, getAnnotationsCount } from "./lib/extract";
+import { extractExternalAnnotations, getAnnotationsCount, getSortIndex } from "./lib/extract";
 import { renderSquareImage } from "./lib/render";
 import { p2v, v2p, wx, hy } from "./lib/coordinates";
 
@@ -54,10 +54,10 @@ class AnnotationsStore {
   
   sortAnnotations(annotations) {
     annotations.sort((a, b) => {
-      return (
-        a.position.pageNumber - b.position.pageNumber ||
-        b.position.rects[0][1] - a.position.rects[0][1]
-      );
+      // TODO: Remove
+      a = a.sortIndex || '';
+      b = b.sortIndex || '';
+      return a.localeCompare(b);
     });
     return annotations;
   }
@@ -94,7 +94,7 @@ class AnnotationsStore {
     }
   };
   
-  addAnnotation(annotation) {
+  async addAnnotation(annotation) {
     annotation.id = this.genId();
     annotation.dateCreated = annotation.dateModified = (new Date()).toISOString(); // TODO: external?
     annotation.userId = this.userId || null;
@@ -127,6 +127,10 @@ class AnnotationsStore {
     this.onSetAnnotation(annotation);
     // this.setState({ recentlyCreatedAnnotationId: annotation.id });
     
+    if (annotation.type === 'text' || annotation.type === 'square') {
+      annotation.sortIndex = await getSortIndex(annotation.position);
+    }
+    
     this.onUpdateAnnotations(this.annotations);
     
     if (updateImage) {
@@ -136,7 +140,7 @@ class AnnotationsStore {
     return annotation;
   }
   
-  updateAnnotation(annotation) {
+  async updateAnnotation(annotation) {
     let prevAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
     let prevAnnotation = this.annotations[prevAnnotationIdx];
     annotation = { ...this.annotations[prevAnnotationIdx], ...annotation };
@@ -150,6 +154,14 @@ class AnnotationsStore {
     ) {
       annotation.image = "";
       updateImage = true;
+    }
+    
+    if (
+      ["text", "square"].includes(annotation.type) &&
+      prevAnnotation.position.pageNumber === annotation.position.pageNumber &&
+      JSON.stringify(prevAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
+    ) {
+      annotation.sortIndex = await getSortIndex(annotation.position);
     }
     
     this.annotations.splice(prevAnnotationIdx, 1, annotation);

@@ -522,6 +522,7 @@ exports.getRange = function (chs, rects) {
 	}
 	
 	return {
+	  offset: chs.indexOf(chStart),
 		rects: allRects,
 		text
 	};

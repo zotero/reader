@@ -48,6 +48,7 @@ class Annotator extends React.Component {
 	  let tempAnnotation = this.props.onAddAnnotation({
 		  type: 'highlight',
 		  temp: true,
+		  sortIndex: 0,
 		  position: annotation.position,
 		  color: '#DD00AA',
 		  text: '',
@@ -85,7 +86,6 @@ class Annotator extends React.Component {
   
   setImportableAnnotationsNum = (importableAnnotationsNum) => {
     this.setState({ importableAnnotationsNum });
-    console.log('importableAnnotationsNum', importableAnnotationsNum);
   };
   
   componentDidMount() {
@@ -308,6 +308,7 @@ class Annotator extends React.Component {
               let annotation = onAddAnnotation({
                 type: "highlight",
                 color: this.state.color,
+                sortIndex: selection.sortIndex,
                 position: selection.position,
                 text: selection.text,
                 comment: "",
@@ -322,6 +323,7 @@ class Annotator extends React.Component {
             let annotation = onAddAnnotation({
               type: "highlight",
               color: this.state.color,
+              sortIndex: selection.sortIndex,
               position: selection.position,
               text: selection.text,
               comment: "",
