@@ -23,6 +23,9 @@ document.addEventListener("localized", (e) => {
 		onEnterPassword(password) {
 			console.log("Entered password", password);
 		},
+		onDownload() {
+		  alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');
+		},
 		userId: 123,
 		label: "john",
 		url: "compressed.tracemonkey-pldi-09.pdf",

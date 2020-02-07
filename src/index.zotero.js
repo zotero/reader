@@ -46,6 +46,9 @@ window.addEventListener('message', function (message) {
 			onEnterPassword(password) {
 				parent.postMessage({op: 'enterPassword', password}, '*');
 			},
+      onDownload() {
+			  parent.postMessage({op: 'save'}, '*');
+      },
 			userId: data.userId,
 			label: data.label,
 			url: 'zotero://pdf.js/pdf/' + data.libraryID + '/' + data.key,
@@ -73,7 +76,7 @@ document.addEventListener("localized", (e) => {
 	
 	window.PDFViewerApplication.eventBus.on("documentinit", (e) => {
 	});
-	                                                                                                                                                                                                                         
+	
 	var url = new URL(window.location.href);
 	var libraryID = url.searchParams.get("libraryID");
 	var key = url.searchParams.get("key");

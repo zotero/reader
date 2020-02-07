@@ -19,6 +19,13 @@ class Viewer {
       userId: options.userId,
       label: options.label
     });
+    
+    // Takeover the download button
+    PDFViewerApplication.download = function () {};
+    let downloadButton = document.getElementById('download');
+    downloadButton.addEventListener('click', (event) => {
+      options.onDownload();
+    });
   
   
     window.PDFViewerApplication.eventBus.on("textlayerrendered", e => {
@@ -182,7 +189,7 @@ class Viewer {
   setAnnotations = (annotations) => {
   
   };
-    
+  
   importableAnnotationsNum = (num) => {
   
   };
