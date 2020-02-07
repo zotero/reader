@@ -17,27 +17,53 @@
   @extend %sidebar-view;
 }
 
-html[dir='ltr'] .outlineWithDeepNesting > .outlineItem,
-html[dir='ltr'] .outlineItem > .outlineItems {
-  margin-left: 20px;
+.outlineItem {
+  display: flex;
+  flex-wrap: wrap;
+  position: relative;
+
+  .outlineWithDeepNesting > & {
+    html[dir='ltr'] & {
+      margin-left: 20px;
+    }
+
+    html[dir='rtl'] & {
+      margin-right: 20px;
+    }
+  }
 }
 
-html[dir='rtl'] .outlineWithDeepNesting > .outlineItem,
-html[dir='rtl'] .outlineItem > .outlineItems {
-  margin-right: 20px;
+.outlineItems {
+  .outlineItem > & {
+    html[dir='ltr'] & {
+      margin-left: 12px;
+    }
+
+    html[dir='ltr'] & {
+      margin-right: 12px;
+    }
+  }
 }
 
 .outlineItem > a {
   @extend %sidebar-item-link-btn;
   @include icon("document-bookmark");
+  flex: 1 1 0;
   display: flex;
   position: relative;
 
   &::before {
     position: absolute;
-    left: 0;
     top: rem(10);
     margin-top: -8px;
+
+    html[dir="ltr"] & {
+      left: 0;
+    }
+
+    html[dir="rtl"] & {
+      right: 0;
+    }
   }
 
   html[dir='ltr'] & {
@@ -50,9 +76,9 @@ html[dir='rtl'] .outlineItem > .outlineItems {
 }
 
 .outlineItemToggler {
-  position: relative;
+  position: absolute;
   height: $outline-item-height;
-  width: 0;
+  width: 9px;
   color: rgba(255, 255, 255, 0.5);
 
   &::before {
@@ -64,19 +90,11 @@ html[dir='rtl'] .outlineItem > .outlineItems {
   }
 
   html[dir='ltr'] & {
-    float: left;
-
-    &::before {
-      right: 4px;
-    }
+    left: -13px;
   }
 
   html[dir='rtl'] & {
-    float: right;
-
-    &::before {
-      left: 4px;
-    }
+    right: -13px;
   }
 
   &.outlineItemsHidden ~ .outlineItems {
