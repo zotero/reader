@@ -27,6 +27,8 @@
   border: 9px solid transparent;
   background-clip: content-box;
   background-color: $page-bg;
+  outline: $page-outline;
+  outline-offset: $page-outline-offset;
 }
 
 .pdfViewer.removePageBorders .page {

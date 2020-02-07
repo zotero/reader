@@ -23,10 +23,12 @@ $sidebar-border-color: #bdbdbd;
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
 $thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
+$thumbnail-image-border-color: transparent;
 
 // Outline & attachment view
 $sidebar-item-link-btn-color: $text-color;
 
-
 // PDF viewer
 $page-bg: #fff;
+$page-outline: none;
+$page-outline-offset: initial;

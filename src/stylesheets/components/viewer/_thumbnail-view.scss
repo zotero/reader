@@ -51,10 +51,15 @@ html[dir='rtl'] .thumbnail {
 }
 
 .thumbnailImage {
-  border: 1px solid rgba(0, 0, 0, 0);
+  border: 1px solid $thumbnail-image-border-color;
   z-index: 99;
   background-color: $page-bg;
   background-clip: content-box;
+
+  .thumbnail.selected &,
+  a:focus > .thumbnail & {
+    border-color: transparent;
+  }
 }
 
 .thumbnailSelectionRing {
