@@ -3,6 +3,12 @@ $platform: "generic";
 $theme: "light";
 
 //
+// Functions
+//
+
+@import "abstracts/functions";
+
+//
 // Theme
 //
 
@@ -12,8 +18,6 @@ $theme: "light";
 // Abstracts
 //
 
-@import "abstracts/functions";
-@import "abstracts/variables";
 @import "abstracts/placeholders";
 @import "abstracts/mixins";
 

@@ -3,14 +3,14 @@
 //
 
 //
-// Base
+// Base colors
 //
 
 $body-bg:    #fff;
 $text-color: #000;
 
 //
-// Components
+// Component colors
 //
 
 // Toolbar
@@ -37,3 +37,22 @@ $sidebar-item-link-btn-color: $text-color;
 $page-bg: #fff;
 $page-outline: 1px solid #e5e5e5;
 $page-outline-offset: -9px;
+
+//
+// Spacing and typography
+//
+
+:root {
+  --sidebar-width: 200px;
+}
+
+// Base
+
+$font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
+//$font-family-monospace: TBD
+$font-family-base:        $font-family-sans-serif;
+
+$font-size-base: rem(11);
+
+// Outline view
+$outline-item-height: rem(20);

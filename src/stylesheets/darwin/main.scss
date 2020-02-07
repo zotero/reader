@@ -3,17 +3,21 @@ $platform: "darwin";
 $theme: "light";
 
 //
+// Functions
+//
+
+@import "abstracts/functions";
+
+//
 // Theme
 //
 
-@import "themes/light";
+@import "themes/light-darwin";
 
 //
 // Abstracts
 //
 
-@import "abstracts/functions";
-@import "abstracts/variables";
 @import "abstracts/placeholders";
 @import "abstracts/mixins";
 
