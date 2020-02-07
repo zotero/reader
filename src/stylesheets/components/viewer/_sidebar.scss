@@ -14,60 +14,57 @@
  */
 
 #sidebarContainer {
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   position: absolute;
   top: 32px + 1px;
   bottom: 0;
-  width: 200px; /* Here, and elsewhere below, keep the constant value for compatibility
-                   with older browsers that lack support for CSS variables. */
   width: var(--sidebar-width);
   visibility: hidden;
   z-index: 100;
-  -webkit-transition-duration: 200ms;
-          transition-duration: 200ms;
-  -webkit-transition-timing-function: ease;
-          transition-timing-function: ease;
-}
-html[dir='ltr'] #sidebarContainer {
-  -webkit-transition-property: left;
-  transition-property: left;
-  left: -200px;
-  left: calc(-1 * var(--sidebar-width));
-}
-html[dir='rtl'] #sidebarContainer {
-  -webkit-transition-property: right;
-  transition-property: right;
-  right: -200px;
-  right: calc(-1 * var(--sidebar-width));
-}
+  transition-duration: 200ms;
+  transition-timing-function: ease;
 
-.loadingInProgress #sidebarContainer {
-  top: 36px;
-}
+  html[dir='ltr'] & {
+    transition-property: left;
+    left: calc(-1 * var(--sidebar-width));
+    border-right: 1px solid $sidebar-border-color;
+  }
 
-#outerContainer.sidebarResizing #sidebarContainer {
-  /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
-  -webkit-transition-duration: 0s;
-          transition-duration: 0s;
-  /* Prevent e.g. the thumbnails being selected when the sidebar is resized. */
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-}
+  html[dir='rtl'] & {
+    transition-property: right;
+    right: calc(-1 * var(--sidebar-width));
+    border-left: 1px solid $sidebar-border-color;
+  }
 
-#outerContainer.sidebarMoving #sidebarContainer,
-#outerContainer.sidebarOpen #sidebarContainer {
-  visibility: visible;
-}
-html[dir='ltr'] #outerContainer.sidebarOpen #sidebarContainer {
-  left: 0px;
-}
-html[dir='rtl'] #outerContainer.sidebarOpen #sidebarContainer {
-  right: 0px;
-}
+  loadingInProgress & {
+    top: 36px;
+  }
 
+  #outerContainer.sidebarResizing & {
+    /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
+    transition-duration: 0s;
+    /* Prevent e.g. the thumbnails being selected when the sidebar is resized. */
+    -moz-user-select: none;
+         user-select: none;
+  }
+
+  #outerContainer.sidebarMoving &,
+  #outerContainer.sidebarOpen & {
+    visibility: visible;
+  }
+
+  #outerContainer.sidebarOpen & {
+    html[dir='ltr'] & {
+      left: 0;
+    }
+
+    html[dir='rtl'] & {
+      right: 0;
+    }
+  }
+}
 
 #sidebarContent {
   flex: 1 1 0;
@@ -75,15 +72,6 @@ html[dir='rtl'] #outerContainer.sidebarOpen #sidebarContainer {
   -webkit-overflow-scrolling: touch;
   background-color: $sidebar-bg;
 }
-html[dir='ltr'] #sidebarContent {
-  left: 0;
-  box-shadow: inset -1px 0 0 $sidebar-border-color;
-}
-html[dir='rtl'] #sidebarContent {
-  right: 0;
-  box-shadow: inset 1px 0 0 $sidebar-border-color;
-}
-
 
 #sidebarResizer {
   position: absolute;
@@ -92,10 +80,12 @@ html[dir='rtl'] #sidebarContent {
   width: 6px;
   z-index: 200;
   cursor: ew-resize;
-}
-html[dir='ltr'] #sidebarResizer {
-  right: -6px;
-}
-html[dir='rtl'] #sidebarResizer {
-  left: -6px;
+
+  html[dir='ltr'] & {
+    right: -4px;
+  }
+
+  html[dir='rtl'] & {
+    left: -4px;
+  }
 }
