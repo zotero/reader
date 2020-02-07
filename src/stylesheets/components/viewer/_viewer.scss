@@ -129,7 +129,7 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   position: absolute;
-  top: 32px;
+  top: 32px + 1px;
   right: 0;
   bottom: 0;
   left: 0;
@@ -171,22 +171,20 @@ html[dir='rtl'] #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentatio
 
 // > Toolbar sidebar styles position <
 
-#toolbarContainer, .findbar, .secondaryToolbar {
+.findbar, .secondaryToolbar {
   position: relative;
   height: 32px;
-  background-color: rgba(71, 71, 71, 1); /* fallback */
-  background-image: url(images/texture.png),
-                    -webkit-gradient(linear, left top, left bottom, from(rgba(82, 82, 82, 0.99)), to(rgba(69, 69, 69, 0.95)));
-  background-image: url(images/texture.png),
-                    linear-gradient(rgba(82, 82, 82, 0.99), rgba(69, 69, 69, 0.95));
+  background-color: $body-bg;
 }
-html[dir='ltr'] #toolbarContainer, .findbar, .secondaryToolbar {
+
+html[dir='ltr'] .findbar, .secondaryToolbar {
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15),
               inset 0 -1px 0 rgba(255, 255, 255, 0.05),
               0 1px 0 rgba(0, 0, 0, 0.15),
               0 1px 1px rgba(0, 0, 0, 0.1);
 }
-html[dir='rtl'] #toolbarContainer, .findbar, .secondaryToolbar {
+
+html[dir='rtl'] .findbar, .secondaryToolbar {
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15),
               inset 0 -1px 0 rgba(255, 255, 255, 0.05),
               0 1px 0 rgba(0, 0, 0, 0.15),
@@ -196,7 +194,7 @@ html[dir='rtl'] #toolbarContainer, .findbar, .secondaryToolbar {
 // > Toolbar styles position 2 <
 
 .findbar, .secondaryToolbar {
-  top: 32px;
+  top: 32px + 1px;
   position: absolute;
   z-index: 10000;
   height: auto;
@@ -237,406 +235,12 @@ html[dir='rtl'] #toolbarContainer, .findbar, .secondaryToolbar {
 
 // > Toolbar styles position 3 <
 
-html[dir='ltr'] .splitToolbarButton {
-  margin: 3px 2px 4px 0;
-  display: inline-block;
-}
-html[dir='rtl'] .splitToolbarButton {
-  margin: 3px 0 4px 2px;
-  display: inline-block;
-}
-html[dir='ltr'] .splitToolbarButton > .toolbarButton {
-  border-radius: 0;
-  float: left;
-}
-html[dir='rtl'] .splitToolbarButton > .toolbarButton {
-  border-radius: 0;
-  float: right;
-}
-
-.toolbarButton,
-.secondaryToolbarButton,
-.overlayButton {
-  border: 0 none;
-  background: none;
-  width: 32px;
-  height: 25px;
-}
-
-.toolbarButton > span {
-  display: inline-block;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-}
-
-.toolbarButton[disabled],
-.secondaryToolbarButton[disabled],
-.overlayButton[disabled] {
-  opacity: .5;
-}
-
-.splitToolbarButton.toggled .toolbarButton {
-  margin: 0;
-}
-
-.splitToolbarButton:hover > .toolbarButton,
-.splitToolbarButton:focus > .toolbarButton,
-.splitToolbarButton.toggled > .toolbarButton,
-.toolbarButton.textButton {
-  background-color: rgba(0, 0, 0, 0.12);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  border: 1px solid rgba(0, 0, 0, 0.35);
-  border-color: rgba(0, 0, 0, 0.32) rgba(0, 0, 0, 0.38) rgba(0, 0, 0, 0.42);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.15) inset,
-              0 1px 0 rgba(255, 255, 255, 0.05);
-  -webkit-transition-property: background-color, border-color, box-shadow;
-  transition-property: background-color, border-color, box-shadow;
-  -webkit-transition-duration: 150ms;
-          transition-duration: 150ms;
-  -webkit-transition-timing-function: ease;
-          transition-timing-function: ease;
-
-}
-.splitToolbarButton > .toolbarButton:hover,
-.splitToolbarButton > .toolbarButton:focus,
-.dropdownToolbarButton:hover,
-.overlayButton:hover,
-.overlayButton:focus,
-.toolbarButton.textButton:hover,
-.toolbarButton.textButton:focus {
-  background-color: rgba(0,0,0,0.2);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.15) inset,
-              0 0 1px rgba(0, 0, 0, 0.05);
-  z-index: 199;
-}
-.splitToolbarButton > .toolbarButton {
-  position: relative;
-}
-html[dir='ltr'] .splitToolbarButton > .toolbarButton:first-child,
-html[dir='rtl'] .splitToolbarButton > .toolbarButton:last-child {
-  position: relative;
-  margin: 0;
-  margin-right: -1px;
-  border-top-left-radius: 2px;
-  border-bottom-left-radius: 2px;
-  border-right-color: rgba(0, 0, 0, 0);
-}
-html[dir='ltr'] .splitToolbarButton > .toolbarButton:last-child,
-html[dir='rtl'] .splitToolbarButton > .toolbarButton:first-child {
-  position: relative;
-  margin: 0;
-  margin-left: -1px;
-  border-top-right-radius: 2px;
-  border-bottom-right-radius: 2px;
-  border-left-color: rgba(0, 0, 0, 0);
-}
-.splitToolbarButtonSeparator {
-  padding: 8px 0;
-  width: 1px;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 99;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
-  display: inline-block;
-  margin: 5px 0;
-}
-html[dir='ltr'] .splitToolbarButtonSeparator {
-  float: left;
-}
-html[dir='rtl'] .splitToolbarButtonSeparator {
-  float: right;
-}
-.splitToolbarButton:hover > .splitToolbarButtonSeparator,
-.splitToolbarButton.toggled > .splitToolbarButtonSeparator {
-  padding: 12px 0;
-  margin: 1px 0;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03);
-  -webkit-transition-property: padding;
-  transition-property: padding;
-  -webkit-transition-duration: 10ms;
-          transition-duration: 10ms;
-  -webkit-transition-timing-function: ease;
-          transition-timing-function: ease;
-}
-
-.toolbarButton,
-.dropdownToolbarButton,
-.secondaryToolbarButton,
-.overlayButton {
-  min-width: 16px;
-  padding: 2px 6px 0;
-  border: 1px solid rgba(0, 0, 0, 0);
-  border-radius: 2px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 12px;
-  line-height: 14px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-  /* Opera does not support user-select, use <... unselectable="on"> instead */
-  cursor: default;
-  -webkit-transition-property: background-color, border-color, box-shadow;
-  transition-property: background-color, border-color, box-shadow;
-  -webkit-transition-duration: 150ms;
-          transition-duration: 150ms;
-  -webkit-transition-timing-function: ease;
-          transition-timing-function: ease;
-}
-
-html[dir='ltr'] .toolbarButton,
-html[dir='ltr'] .overlayButton,
-html[dir='ltr'] .dropdownToolbarButton {
-  margin: 3px 2px 4px 0;
-}
-html[dir='rtl'] .toolbarButton,
-html[dir='rtl'] .overlayButton,
-html[dir='rtl'] .dropdownToolbarButton {
-  margin: 3px 0 4px 2px;
-}
-
-.toolbarButton:hover,
-.toolbarButton:focus,
-.dropdownToolbarButton,
-.overlayButton,
-.secondaryToolbarButton:hover,
-.secondaryToolbarButton:focus {
-  background-color: rgba(0, 0, 0, 0.12);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  background-clip: padding-box;
-  border: 1px solid rgba(0, 0, 0, 0.35);
-  border-color: rgba(0, 0, 0, 0.32) rgba(0, 0, 0, 0.38) rgba(0, 0, 0, 0.42);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset,
-              0 0 1px rgba(255, 255, 255, 0.15) inset,
-              0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.toolbarButton:hover:active,
-.overlayButton:hover:active,
-.dropdownToolbarButton:hover:active,
-.secondaryToolbarButton:hover:active {
-  background-color: rgba(0, 0, 0, 0.2);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  border-color: rgba(0, 0, 0, 0.35) rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.45);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset,
-              0 0 1px rgba(0, 0, 0, 0.2) inset,
-              0 1px 0 rgba(255, 255, 255, 0.05);
-  -webkit-transition-property: background-color, border-color, box-shadow;
-  transition-property: background-color, border-color, box-shadow;
-  -webkit-transition-duration: 10ms;
-          transition-duration: 10ms;
-  -webkit-transition-timing-function: linear;
-          transition-timing-function: linear;
-}
-
-.toolbarButton.toggled,
-.splitToolbarButton.toggled > .toolbarButton.toggled,
-.secondaryToolbarButton.toggled {
-  background-color: rgba(0, 0, 0, 0.3);
-  background-image: -webkit-gradient(linear, left top, left bottom, from(rgba(255, 255, 255, 0.05)), to(rgba(255, 255, 255, 0)));
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0));
-  border-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.45) rgba(0, 0, 0, 0.5);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1) inset,
-              0 0 1px rgba(0, 0, 0, 0.2) inset,
-              0 1px 0 rgba(255, 255, 255, 0.05);
-  -webkit-transition-property: background-color, border-color, box-shadow;
-  transition-property: background-color, border-color, box-shadow;
-  -webkit-transition-duration: 10ms;
-          transition-duration: 10ms;
-  -webkit-transition-timing-function: linear;
-          transition-timing-function: linear;
-}
-
-.toolbarButton.toggled:hover:active,
-.splitToolbarButton.toggled > .toolbarButton.toggled:hover:active,
-.secondaryToolbarButton.toggled:hover:active {
-  background-color: rgba(0, 0, 0, 0.4);
-  border-color: rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.5) rgba(0, 0, 0, 0.55);
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2) inset,
-              0 0 1px rgba(0, 0, 0, 0.3) inset,
-              0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.dropdownToolbarButton {
-  width: 120px;
-  max-width: 120px;
-  padding: 0;
-  overflow: hidden;
-  background: url(images/toolbarButton-menuArrows.png) no-repeat;
-}
-html[dir='ltr'] .dropdownToolbarButton {
-  background-position: 95%;
-}
-html[dir='rtl'] .dropdownToolbarButton {
-  background-position: 5%;
-}
-
-.dropdownToolbarButton > select {
-  min-width: 140px;
-  font-size: 12px;
-  color: rgba(242, 242, 242, 1);
-  margin: 0;
-  padding: 3px 2px 2px;
-  border: none;
-  background: rgba(0,0,0,0); /* Opera does not support 'transparent' <select> background */
-}
-
-.dropdownToolbarButton > select > option {
-  background: rgba(61, 61, 61, 1);
-}
-
 #customScaleOption {
   display: none;
 }
 
 #pageWidthOption {
   border-bottom: 1px rgba(255, 255, 255, 0.5) solid;
-}
-
-html[dir='ltr'] .splitToolbarButton:first-child,
-html[dir='ltr'] .toolbarButton:first-child,
-html[dir='rtl'] .splitToolbarButton:last-child,
-html[dir='rtl'] .toolbarButton:last-child {
-  margin-left: 4px;
-}
-html[dir='ltr'] .splitToolbarButton:last-child,
-html[dir='ltr'] .toolbarButton:last-child,
-html[dir='rtl'] .splitToolbarButton:first-child,
-html[dir='rtl'] .toolbarButton:first-child {
-  margin-right: 4px;
-}
-
-.toolbarButtonSpacer {
-  width: 30px;
-  display: inline-block;
-  height: 1px;
-}
-
-html[dir='ltr'] #findPrevious {
-  margin-left: 3px;
-}
-html[dir='ltr'] #findNext {
-  margin-right: 3px;
-}
-
-html[dir='rtl'] #findPrevious {
-  margin-right: 3px;
-}
-html[dir='rtl'] #findNext {
-  margin-left: 3px;
-}
-
-.toolbarButton::before,
-.secondaryToolbarButton::before {
-  /* All matching images have a size of 16x16
-   * All relevant containers have a size of 32x25 */
-  position: absolute;
-  display: inline-block;
-  top: 4px;
-  left: 7px;
-}
-
-html[dir="ltr"] .secondaryToolbarButton::before {
-  left: 4px;
-}
-html[dir="rtl"] .secondaryToolbarButton::before {
-  right: 4px;
-}
-
-.toolbarButton.bookmark,
-.secondaryToolbarButton.bookmark {
-  box-sizing: border-box;
-  outline: none;
-  padding-top: 4px;
-  text-decoration: none;
-}
-.secondaryToolbarButton.bookmark {
-  padding-top: 5px;
-}
-
-.bookmark[href='#'] {
-  opacity: .5;
-  pointer-events: none;
-}
-
-.toolbarButton.pdfSidebarNotification::after {
-  position: absolute;
-  display: inline-block;
-  top: 1px;
-  /* Create a filled circle, with a diameter of 9 pixels, using only CSS: */
-  content: '';
-  background-color: rgba(112, 219, 85, 1);
-  height: 9px;
-  width: 9px;
-  border-radius: 50%;
-}
-html[dir='ltr'] .toolbarButton.pdfSidebarNotification::after {
-  left: 17px;
-}
-html[dir='rtl'] .toolbarButton.pdfSidebarNotification::after {
-  right: 17px;
-}
-
-.secondaryToolbarButton {
-  position: relative;
-  margin: 0 0 4px 0;
-  padding: 3px 0 1px 0;
-  height: auto;
-  min-height: 25px;
-  width: auto;
-  min-width: 100%;
-  white-space: normal;
-}
-html[dir="ltr"] .secondaryToolbarButton {
-  padding-left: 24px;
-  text-align: left;
-}
-html[dir="rtl"] .secondaryToolbarButton {
-  padding-right: 24px;
-  text-align: right;
-}
-html[dir="ltr"] .secondaryToolbarButton.bookmark {
-  padding-left: 27px;
-}
-html[dir="rtl"] .secondaryToolbarButton.bookmark {
-  padding-right: 27px;
-}
-
-html[dir="ltr"] .secondaryToolbarButton > span {
-  padding-right: 4px;
-}
-html[dir="rtl"] .secondaryToolbarButton > span {
-  padding-left: 4px;
-}
-
-.verticalToolbarSeparator {
-  display: block;
-  padding: 8px 0;
-  margin: 8px 4px;
-  width: 1px;
-  background-color: rgba(0, 0, 0, 0.5);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-html[dir='ltr'] .verticalToolbarSeparator {
-  margin-left: 2px;
-}
-html[dir='rtl'] .verticalToolbarSeparator {
-  margin-right: 2px;
-}
-
-.horizontalToolbarSeparator {
-  display: block;
-  margin: 0 0 4px 0;
-  height: 1px;
-  width: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .toolbarField {

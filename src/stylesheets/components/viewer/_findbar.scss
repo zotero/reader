@@ -65,3 +65,18 @@ html[dir='rtl'] .findbar {
 html[dir='rtl'] #findInput[data-status="pending"] {
   background-position: left;
 }
+
+
+html[dir='ltr'] #findPrevious {
+  margin-left: 3px;
+}
+html[dir='ltr'] #findNext {
+  margin-right: 3px;
+}
+
+html[dir='rtl'] #findPrevious {
+  margin-right: 3px;
+}
+html[dir='rtl'] #findNext {
+  margin-left: 3px;
+}

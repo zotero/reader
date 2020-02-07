@@ -1,0 +1,68 @@
+
+$platform: "darwin";
+$theme: "light";
+
+//
+// Theme
+//
+
+@import "themes/light";
+
+//
+// Abstracts
+//
+
+@import "abstracts/functions";
+@import "abstracts/variables";
+@import "abstracts/placeholders";
+@import "abstracts/mixins";
+
+//
+// Base
+//
+
+@import "base/base";
+
+//
+// pdf.js components
+//
+
+@import "components/viewer/text-layer-builder";
+@import "components/viewer/pdf-viewer";
+@import "components/viewer/viewer";
+@import "components/viewer/icons";
+@import "components/viewer/toolbar";
+@import "components/viewer/toolbar-buttons";
+@import "components/viewer/secondary-toolbar";
+@import "components/viewer/doorhanger";
+@import "components/viewer/sidebar";
+@import "components/viewer/toolbar-sidebar-generic";
+@import "components/viewer/findbar";
+@import "components/viewer/thumbnail-view";
+@import "components/viewer/outline-view";
+@import "components/viewer/pdf-bug";
+@import "components/viewer/print";
+@import "components/viewer/viewer-override";
+
+//
+// Annotator components
+//
+
+@import "components/annotator/annotator";
+@import "components/annotator/area-selector";
+@import "components/annotator/color-picker";
+@import "components/annotator/editor";
+@import "components/annotator/highlight";
+@import "components/annotator/layer";
+@import "components/annotator/meta";
+@import "components/annotator/popup-page";
+@import "components/annotator/popup-screen";
+@import "components/annotator/selection-menu";
+@import "components/annotator/sidebar";
+@import "components/annotator/square";
+@import "components/annotator/text";
+@import "components/annotator/toolbar";
+@import "components/annotator/icons";
+
+
+

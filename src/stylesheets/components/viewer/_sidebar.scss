@@ -14,15 +14,16 @@
  */
 
 #sidebarContainer {
+  display: flex;
+  flex-direction: column;
   position: absolute;
-  top: 32px;
+  top: 32px + 1px;
   bottom: 0;
   width: 200px; /* Here, and elsewhere below, keep the constant value for compatibility
                    with older browsers that lack support for CSS variables. */
   width: var(--sidebar-width);
   visibility: hidden;
   z-index: 100;
-  border-top: 1px solid rgba(51, 51, 51, 1);
   -webkit-transition-duration: 200ms;
           transition-duration: 200ms;
   -webkit-transition-timing-function: ease;
@@ -69,21 +70,18 @@ html[dir='rtl'] #outerContainer.sidebarOpen #sidebarContainer {
 
 
 #sidebarContent {
-  top: 32px;
-  bottom: 0;
+  flex: 1 1 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
-  position: absolute;
-  width: 100%;
   background-color: $sidebar-bg;
 }
 html[dir='ltr'] #sidebarContent {
   left: 0;
-  box-shadow: inset -1px 0 0 $sidebar-shadow-color;
+  box-shadow: inset -1px 0 0 $sidebar-border-color;
 }
 html[dir='rtl'] #sidebarContent {
   right: 0;
-  box-shadow: inset 1px 0 0 $sidebar-shadow-color;
+  box-shadow: inset 1px 0 0 $sidebar-border-color;
 }
 
 

@@ -4,10 +4,8 @@
 
 %sidebar-view {
   box-sizing: border-box;
-  position: absolute;
   width: 100%;
-  top: 0;
-  bottom: 0;
+  height: 100%;
   padding: 4px;
   overflow: auto;
   -webkit-overflow-scrolling: touch;

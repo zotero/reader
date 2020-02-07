@@ -89,19 +89,16 @@ html[dir='rtl'] .toolbarButton.pageDown::before {
   content: url(images/toolbarButton-bookmark.png);
 }
 
-#viewThumbnail.toolbarButton::before {
-  content: url(images/toolbarButton-viewThumbnail.png);
+#viewThumbnail.toolbarButton {
+  @include icon("view-thumbnail");
 }
 
-html[dir="ltr"] #viewOutline.toolbarButton::before {
-  content: url(images/toolbarButton-viewOutline.png);
-}
-html[dir="rtl"] #viewOutline.toolbarButton::before {
-  content: url(images/toolbarButton-viewOutline-rtl.png);
+#viewOutline.toolbarButton {
+  @include icon("bookmark");
 }
 
-#viewAttachments.toolbarButton::before {
-  content: url(images/toolbarButton-viewAttachments.png);
+#viewAttachments.toolbarButton {
+  @include icon("attach");
 }
 
 #viewFind.toolbarButton::before {
@@ -247,21 +244,6 @@ html[dir='rtl'] .outlineItemToggler.outlineItemsHidden {
   .toolbarButton.bookmark::before,
   .secondaryToolbarButton.bookmark::before {
     content: url(images/toolbarButton-bookmark@2x.png);
-  }
-
-  #viewThumbnail.toolbarButton::before {
-    content: url(images/toolbarButton-viewThumbnail@2x.png);
-  }
-
-  html[dir="ltr"] #viewOutline.toolbarButton::before {
-    content: url(images/toolbarButton-viewOutline@2x.png);
-  }
-  html[dir="rtl"] #viewOutline.toolbarButton::before {
-    content: url(images/toolbarButton-viewOutline-rtl@2x.png);
-  }
-
-  #viewAttachments.toolbarButton::before {
-    content: url(images/toolbarButton-viewAttachments@2x.png);
   }
 
   #viewFind.toolbarButton::before {

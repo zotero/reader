@@ -17,11 +17,14 @@
 // Part 1
 
 .toolbar {
-  position: relative;
+  height: 32px;
   left: 0;
   right: 0;
   z-index: 9999;
   cursor: default;
+  background-color: $toolbar-bg;
+  border-bottom: 1px solid $toolbar-border-color;
+  position: relative;
 }
 
 #toolbarContainer {
