@@ -79,7 +79,7 @@
   bottom: 0;
   width: 6px;
   z-index: 200;
-  cursor: ew-resize;
+  cursor: $sidebar-resizer-cursor;
 
   html[dir='ltr'] & {
     right: -4px;
