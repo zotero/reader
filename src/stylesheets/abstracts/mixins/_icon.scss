@@ -2,18 +2,18 @@
 // Icon
 //
 
-@mixin icon($icon) {
+@mixin icon($file-name, $size: 16px) {
   &::before {
     content: "";
     display: inline-block;
     vertical-align: top;
-    width: 16px;
-    height: 16px;
-    background-image: icon-url("#{$icon}.png");
+    width: $size;
+    height: $size;
+    background-image: icon-url("#{$file-name}.png");
     background-size: 100%;
 
     @include retina {
-      background-image: icon-url("#{$icon}@2x.png");
+      background-image: icon-url("#{$file-name}@2x.png");
     }
   }
 }

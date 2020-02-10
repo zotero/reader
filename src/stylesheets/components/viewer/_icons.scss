@@ -159,15 +159,15 @@ html[dir='rtl'] .toolbarButton.pageDown::before {
 }
 
 .outlineItemToggler {
-  @include icon("treeitem-expanded");
+  @include icon("treeitem-expanded", 9px);
 }
 
 html[dir='ltr'] .outlineItemToggler.outlineItemsHidden {
-  @include icon("treeitem-collapsed");
+  @include icon("treeitem-collapsed", 9px);
 }
 
 html[dir='rtl'] .outlineItemToggler.outlineItemsHidden {
-  @include icon("treeitem-collapsed-rtl");
+  @include icon("treeitem-collapsed-rtl", 9px);
 }
 
 @media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
