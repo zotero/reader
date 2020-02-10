@@ -132,6 +132,9 @@ const configZotero = {
 						loader: 'css-loader?-url'
 					},
 					{
+						loader: 'postcss-loader'
+					},
+					{
 						loader: 'sass-loader'
 					}
 				]
