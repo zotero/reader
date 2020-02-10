@@ -3,7 +3,7 @@
 //
 
 .toolbar {
-  height: 32px;
+  height: $toolbar-height;
   left: 0;
   right: 0;
   z-index: 9999;
@@ -12,6 +12,7 @@
   border-bottom: 1px solid $toolbar-border-color;
   position: relative;
 
+  &,
   * {
     box-sizing: border-box;
   }
@@ -19,7 +20,7 @@
   #toolbarViewer {
     display: flex;
     justify-content: space-between;
-    height: 32px;
+    height: $toolbar-height;
   }
 
   #toolbarViewerLeft,
