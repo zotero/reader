@@ -6,6 +6,9 @@
 // Colors
 //
 
+$highlight-color: #0078d7;
+$blue-btn: #90c8f6;
+
 //
 // Base
 //
@@ -23,6 +26,9 @@ $font-family-base:        $font-family-sans-serif;
 
 $font-size-base: rem(11);
 
+$selection-color: #fff;
+$selection-bg:    rgba($highlight-color, 0.99);
+
 //
 // Components
 //
@@ -30,6 +36,28 @@ $font-size-base: rem(11);
 // Toolbar
 $toolbar-bg:           #f0f0f0;
 $toolbar-border-color: #cecece;
+
+// Toolbar button
+$toolbar-btn-padding:             2px 4px 1px 4px;
+$toolbar-btn-margin:              0 3px;
+$toolbar-btn-bg:                  transparent;
+$toolbar-btn-border:              1px solid transparent;
+$toolbar-btn-hover-bg:            rgba($blue-btn, 0.25);
+$toolbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
+$toolbar-btn-active-bg:           rgba($blue-btn, 0.5);
+$toolbar-btn-border-active-color: $blue-btn;
+$toolbar-btn-icon-active-offset:  1px;
+
+// Toolbar field
+$toolbar-field-width:              40px;
+$toolbar-field-height:             22px;
+$toolbar-field-padding:            0 5px;
+$toolbar-field-border:             1px solid #7a7a7a;
+$toolbar-field-color:              #000;
+$toolbar-field-hover-border-color: #171717;
+$toolbar-field-focus-border-color: $highlight-color;
+$toolbar-field-font-size:          $font-size-base;
+$toolbar-label-color:              #777;
 
 // Sidebar
 $sidebar-bg:           #fff;
@@ -42,7 +70,7 @@ $toolbar-sidebar-border-color: #cecece;
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
 $thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
-$thumbnail-image-border-color: #e5e5e5;
+$thumbnail-image-border-color:         #e5e5e5;
 
 // Outline & attachment view
 $sidebar-item-link-btn-color: $text-color;
@@ -51,6 +79,6 @@ $sidebar-item-link-btn-color: $text-color;
 $outline-item-height: rem(20);
 
 // PDF viewer
-$page-bg: #fff;
-$page-outline: 1px solid #e5e5e5;
+$page-bg:             #fff;
+$page-outline:        1px solid #e5e5e5;
 $page-outline-offset: -9px;

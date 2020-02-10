@@ -32,9 +32,8 @@
       background-color: #fff;
     }
 
-    &[disabled],
-    &[disabled]:hover {
-      background-color: transparent;
+    &[disabled] {
+      pointer-events: none;
 
       &::before {
         opacity: 0.5;
