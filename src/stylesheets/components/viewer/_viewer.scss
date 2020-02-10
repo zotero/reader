@@ -129,7 +129,7 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   position: absolute;
-  top: 32px + 1px;
+  top: $toolbar-height;
   right: 0;
   bottom: 0;
   left: 0;
