@@ -3,22 +3,41 @@
 //
 
 //
-// Base colors
+// Colors
 //
+
+//
+// Base
+//
+
+:root {
+  --sidebar-width: 200px;
+}
 
 $body-bg:    #ebebeb;
 $text-color: #000;
 
+$font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
+//$font-family-monospace: TBD
+$font-family-base:        $font-family-sans-serif;
+
+$font-size-base: rem(11);
+
 //
-// Component colors
+// Components
 //
 
 // Toolbar
+$toolbar-bg:           #f0f0f0;
 $toolbar-border-color: #bdbdbd;
 
 // Sidebar
 $sidebar-bg:           $body-bg;
-$sidebar-border-color: #bdbdbd;
+$sidebar-border-color: #cecece;
+
+// Toolbar sidebar
+$toolbar-sidebar-bg:           #f0f0f0;
+$toolbar-sidebar-border-color: #cecece;
 
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
@@ -28,26 +47,10 @@ $thumbnail-image-border-color: transparent;
 // Outline & attachment view
 $sidebar-item-link-btn-color: $text-color;
 
+// Outline view
+$outline-item-height: rem(20);
+
 // PDF viewer
 $page-bg: #fff;
 $page-outline: none;
 $page-outline-offset: initial;
-
-//
-// Spacing and typography
-//
-
-:root {
-  --sidebar-width: 200px;
-}
-
-// Base
-
-$font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
-//$font-family-monospace: TBD
-$font-family-base:        $font-family-sans-serif;
-
-$font-size-base: rem(11);
-
-// Outline view
-$outline-item-height: rem(20);

@@ -3,14 +3,28 @@
 //
 
 //
-// Base colors
+// Colors
 //
+
+//
+// Base
+//
+
+:root {
+  --sidebar-width: 200px;
+}
 
 $body-bg:    #fff;
 $text-color: #000;
 
+$font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
+//$font-family-monospace: TBD
+$font-family-base:        $font-family-sans-serif;
+
+$font-size-base: rem(11);
+
 //
-// Component colors
+// Components
 //
 
 // Toolbar
@@ -33,26 +47,10 @@ $thumbnail-image-border-color: #e5e5e5;
 // Outline & attachment view
 $sidebar-item-link-btn-color: $text-color;
 
+// Outline view
+$outline-item-height: rem(20);
+
 // PDF viewer
 $page-bg: #fff;
 $page-outline: 1px solid #e5e5e5;
 $page-outline-offset: -9px;
-
-//
-// Spacing and typography
-//
-
-:root {
-  --sidebar-width: 200px;
-}
-
-// Base
-
-$font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
-//$font-family-monospace: TBD
-$font-family-base:        $font-family-sans-serif;
-
-$font-size-base: rem(11);
-
-// Outline view
-$outline-item-height: rem(20);
