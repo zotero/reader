@@ -36,4 +36,23 @@
   .splitToolbarButton {
     display: flex;
   }
+
+  @if $toolbar-btn-separator-list {
+    @each $btn in $toolbar-btn-separator-list {
+      #{$btn} {
+        margin-right: $toolbar-btn-separator-spacing;
+        position: relative;
+
+        &::after {
+          content: if($toolbar-btn-visual-separator, "", none);
+          position: absolute;
+          top: $toolbar-btn-separator-top;
+          right: $toolbar-btn-separator-right;
+          width: $toolbar-btn-separator-width;
+          background-color: $toolbar-btn-separator-bg;
+          height: $toolbar-btn-separator-height;
+        }
+      }
+    }
+  }
 }

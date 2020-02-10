@@ -18,7 +18,7 @@
     background-color: $toolbar-btn-bg;
     border: $toolbar-btn-border;
     padding: $toolbar-btn-padding;
-    margin: $toolbar-btn-margin;
+    margin: 0 $toolbar-btn-margin-x;
 
     &:hover {
       background-color: $toolbar-btn-hover-bg;
