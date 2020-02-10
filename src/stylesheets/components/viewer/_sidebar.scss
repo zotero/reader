@@ -38,7 +38,7 @@
     border-left: 1px solid $sidebar-border-color;
   }
 
-  loadingInProgress & {
+  .loadingInProgress & {
     top: 36px;
   }
 
