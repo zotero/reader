@@ -85,11 +85,10 @@ html[dir='rtl'] .toolbarButton.findNext::before {
   content: url(images/toolbarButton-openFile.png);
 }
 
-.toolbarButton.download::before,
-.secondaryToolbarButton.download::before {
-  content: url(images/toolbarButton-download.png);
+.toolbarButton.download,
+.secondaryToolbarButton.download {
+  @include icon("disk");
 }
-
 
 .toolbarButton.bookmark::before,
 .secondaryToolbarButton.bookmark::before {
@@ -199,11 +198,6 @@ html[dir='rtl'] .outlineItemToggler.outlineItemsHidden {
   .toolbarButton.openFile::before,
   .secondaryToolbarButton.openFile::before {
     content: url(images/toolbarButton-openFile@2x.png);
-  }
-
-  .toolbarButton.download::before,
-  .secondaryToolbarButton.download::before {
-    content: url(images/toolbarButton-download@2x.png);
   }
 
   .toolbarButton.bookmark::before,
