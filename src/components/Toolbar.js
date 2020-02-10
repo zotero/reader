@@ -5,7 +5,7 @@ class Toolbar extends React.Component {
   getContainerNode() {
     return document.getElementById("toolbarViewerMiddle");
   }
-  
+
   render() {
     const { active, onMode, color, onColorClick } = this.props;
     let containerNode = this.getContainerNode();
@@ -18,23 +18,21 @@ class Toolbar extends React.Component {
           onClick={onColorClick}
         />
         <button
-          className={`toolbarButton ${active === "highlight" ? `active` : ``}`}
+          className={`toolbarButton highlight ${active === "highlight" ? `active` : ``}`}
           onClick={() => {
             onMode("highlight");
-          }}>H
-        </button>
+          }} />
         <button
-          className={`toolbarButton ${active === "text" ? `active` : ``}`}
+          className={`toolbarButton note ${active === "text" ? `active` : ``}`}
+
           onClick={() => {
             onMode("text");
-          }}>N
-        </button>
+          }} />
         <button
-          className={`toolbarButton ${active === "square" ? `active` : ``}`}
+          className={`toolbarButton area ${active === "square" ? `active` : ``}`}
           onClick={() => {
             onMode("square");
-          }}>A
-        </button>
+          }} />
       </React.Fragment>,
       containerNode
     );

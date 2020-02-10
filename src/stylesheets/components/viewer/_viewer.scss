@@ -576,22 +576,6 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
 
 @media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
   /* Rules for Retina screens */
-  .toolbar .toolbarButton::before {
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    top: -5px;
-  }
-
-  .secondaryToolbarButton::before {
-    -webkit-transform: scale(0.5);
-            transform: scale(0.5);
-    top: -4px;
-  }
-
-  html[dir='ltr'] .toolbarButton::before,
-  html[dir='rtl'] .toolbarButton::before {
-    left: -1px;
-  }
 
   html[dir='ltr'] .secondaryToolbarButton::before {
     left: -2px;
@@ -694,3 +678,4 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
     display: none;
   }
 }
+
