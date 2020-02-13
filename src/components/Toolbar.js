@@ -14,7 +14,7 @@ class Toolbar extends React.Component {
         <button
           id="globalColorButton"
           className="toolbarButton"
-          style={{ backgroundColor: color }}
+          style={{ color: color }}
           onClick={onColorClick}
         />
         <button
