@@ -19,20 +19,20 @@ body {
 }
 
 html {
-  font-family: $font-family-base;
   /* Font size is needed to make the activity bar the correct size. */
 }
 
 body {
   background-color: $body-bg;
+  font-family: $font-family-base;
   font-size: $font-size-base;
 }
 
-body,
 input,
 button,
 select {
-  //font: message-box;
+  font-family: inherit;
+  font-size: inherit;
   outline: none;
 }
 
