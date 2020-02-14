@@ -12,8 +12,7 @@
   border-bottom: 1px solid $toolbar-border-color;
   position: relative;
 
-  &,
-  * {
+  & {
     box-sizing: border-box;
   }
 
@@ -39,21 +38,26 @@
   }
 
   @if $toolbar-btn-separator-list {
-    @each $btn in $toolbar-btn-separator-list {
-      #{$btn} {
-        margin-right: $toolbar-btn-separator-spacing;
-        position: relative;
+    #{$toolbar-btn-separator-list} {
+      margin-right: $toolbar-btn-separator-spacing;
+      position: relative;
 
-        &::after {
-          content: if($toolbar-btn-visual-separator, "", none);
-          position: absolute;
-          top: $toolbar-btn-separator-top;
-          right: $toolbar-btn-separator-right;
-          width: $toolbar-btn-separator-width;
-          background-color: $toolbar-btn-separator-bg;
-          height: $toolbar-btn-separator-height;
-        }
+      &::after {
+        content: if($toolbar-btn-visual-separator, "", none);
+        position: absolute;
+        top: $toolbar-btn-separator-top;
+        right: $toolbar-btn-separator-right;
+        width: $toolbar-btn-separator-width;
+        background-color: $toolbar-btn-separator-bg;
+        height: $toolbar-btn-separator-height;
       }
+    }
+  }
+
+  .dropdownToolbarButton {
+    &::after {
+      top: $toolbar-btn-separator-top + $toolbar-field-height - $toolbar-btn-separator-height;
+      right: $toolbar-btn-separator-right + 1px;
     }
   }
 

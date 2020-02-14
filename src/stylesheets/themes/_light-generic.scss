@@ -50,7 +50,7 @@ $toolbar-btn-border-active-color: $blue-btn;
 $toolbar-btn-icon-active-offset:  1px;
 
 // Toolbar separators
-$toolbar-btn-separator-list:    ".toolbarButton#forward", ".toolbarButton#sidebarToggle", ".toolbarButton#download";
+$toolbar-btn-separator-list:    ".toolbarButton#forward, .toolbarButton#sidebarToggle, .toolbarButton#download, .dropdownToolbarButton";
 $toolbar-btn-separator-spacing: 10px;
 $toolbar-btn-visual-separator:  true;
 $toolbar-btn-separator-width:   1px;
@@ -61,7 +61,7 @@ $toolbar-btn-separator-bg:      #848484;
 
 // Toolbar field
 $toolbar-field-width:              40px;
-$toolbar-field-height:             22px;
+$toolbar-field-height:             24px;
 $toolbar-field-padding:            0 5px;
 $toolbar-field-border:             1px solid #7a7a7a;
 $toolbar-field-color:              #000;
@@ -70,6 +70,20 @@ $toolbar-field-focus-border-color: $highlight-color;
 $toolbar-field-font-size:          $font-size-base;
 $toolbar-label-color:              #777;
 $numPages-min-width:               76px;
+
+// Dropdown toolbar button
+$dropdown-toolbar-btn-margin-x:           3px;
+$dropdown-toolbar-btn-height:             24px;
+$dropdown-toolbar-btn-font-size:          $font-size-base;
+$dropdown-toolbar-btn-padding:            0 20px 0 5px;
+$dropdown-toolbar-btn-bg:                 icon-url("chevron-8.png") no-repeat right 4px center #e1e1e1;
+$dropdown-toolbar-btn-bg-blend-mode:      multiply;
+$dropdown-toolbar-btn-border:             1px solid #adadad;
+$dropdown-toolbar-btn-border-radius:      0;
+$dropdown-toolbar-btn-hover-bg:           tint($highlight-color, 90%);
+$dropdown-toolbar-btn-hover-border-color: $highlight-color;
+$dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
+$dropdown-toolbar-btn-focus-border-color: #005499;
 
 // Sidebar
 $sidebar-bg:             #fff;

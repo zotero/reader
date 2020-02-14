@@ -14,12 +14,14 @@
  */
 
 .toolbarField {
+  box-sizing: border-box;
   width: $toolbar-field-width;
   height: $toolbar-field-height;
   padding: $toolbar-field-padding;
   margin: 0 3px;
   border: $toolbar-field-border;
   color: $toolbar-field-color;
+  font-family: inherit;
   font-size: $toolbar-field-font-size;
 
   &:hover {
