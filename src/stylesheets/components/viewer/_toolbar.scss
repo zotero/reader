@@ -29,7 +29,15 @@
     align-items: center;
   }
 
+  #toolbarViewerLeft,
   #toolbarViewerRight {
+    @media all and (min-width: 901px) {
+      flex: 1 1 0; // Center middle viewer on large screens
+    }
+  }
+
+  #toolbarViewerRight {
+    justify-content: flex-end;
     order: 2;
   }
 

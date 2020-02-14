@@ -160,7 +160,7 @@
 
 // > Toolbar sidebar styles position <
 
-.findbar, .secondaryToolbar {
+.findbar {
   position: relative;
   height: 32px;
   background-color: $body-bg;
@@ -172,7 +172,7 @@
 
 // > Toolbar styles position 2 <
 
-.findbar, .secondaryToolbar {
+.findbar {
   top: 32px + 1px;
   position: absolute;
   z-index: 10000;
@@ -472,79 +472,3 @@
 }
 
 // > Print styles position 2 <
-
-.visibleLargeView,
-.visibleMediumView,
-.visibleSmallView {
-  display: none;
-}
-
-@media all and (max-width: 900px) {
-  #toolbarViewerMiddle {
-    display: table;
-    margin: auto;
-    left: auto;
-    position: inherit;
-    -webkit-transform: none;
-            transform: none;
-  }
-}
-
-@media all and (max-width: 840px) {
-  #sidebarContent {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
-
-  #outerContainer.sidebarOpen #viewerContainer {
-    left: 0px !important;
-  }
-
-  #outerContainer .hiddenLargeView,
-  #outerContainer .hiddenMediumView {
-    display: inherit;
-  }
-  #outerContainer .visibleLargeView,
-  #outerContainer .visibleMediumView {
-    display: none;
-  }
-}
-
-@media all and (max-width: 770px) {
-  #outerContainer .hiddenLargeView {
-    display: none;
-  }
-  #outerContainer .visibleLargeView {
-    display: inherit;
-  }
-}
-
-@media all and (max-width: 700px) {
-  #outerContainer .hiddenMediumView {
-    display: none;
-  }
-  #outerContainer .visibleMediumView {
-    display: inherit;
-  }
-}
-
-@media all and (max-width: 640px) {
-  .hiddenSmallView, .hiddenSmallView * {
-    display: none;
-  }
-  .visibleSmallView {
-    display: inherit;
-  }
-  .toolbarButtonSpacer {
-    width: 0;
-  }
-  .findbar {
-    left: 38px;
-  }
-}
-
-@media all and (max-width: 535px) {
-  #scaleSelectContainer {
-    display: none;
-  }
-}
-

@@ -9,6 +9,8 @@
 $highlight-color: #0078d7;
 $blue-btn: #90c8f6;
 
+$gray-lightest: #f0f0f0;
+
 //
 // Base
 //
@@ -35,7 +37,7 @@ $selection-bg:    rgba($highlight-color, 0.99);
 
 // Toolbar
 $toolbar-height:       30px;
-$toolbar-bg:           #f0f0f0;
+$toolbar-bg:           $gray-lightest;
 $toolbar-border-color: #cecece;
 
 // Toolbar button
@@ -84,6 +86,23 @@ $dropdown-toolbar-btn-hover-bg:           tint($highlight-color, 90%);
 $dropdown-toolbar-btn-hover-border-color: $highlight-color;
 $dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
 $dropdown-toolbar-btn-focus-border-color: #005499;
+
+// Secondary toolbar
+$secondary-toolbar-offset-x:          3px;
+$secondary-toolbar-offset-y:          $toolbar-height - 3px;
+$secondary-toolbar-padding:           2px;
+$secondary-toolbar-bg:                $gray-lightest;
+$secondary-toolbar-border:            1px solid #ccc;
+$secondary-toolbar-border-radius:     0;
+$secondary-toolbar-btn-height:        22px;
+$secondary-toolbar-btn-padding:       0 5px 0 32px;
+$secondary-toolbar-btn-bg:            transparent;
+$secondary-toolbar-btn-hover-bg:      $blue-btn;
+$secondary-toolbar-btn-icon-offset-x: 5px;
+$horizontal-toolbar-separator:        true;
+$horizontal-toolbar-separator-height: 1px;
+$horizontal-toolbar-separator-bg:     #d7d7d7;
+$horizontal-toolbar-separator-margin: 2px 0 2px 28px;
 
 // Sidebar
 $sidebar-bg:             #fff;

@@ -25,7 +25,8 @@
       border-color: $toolbar-btn-border-hover-color;
     }
 
-    &:active {
+    &:active,
+    &.toggled:not(#sidebarToggle) {
       background-color: $toolbar-btn-active-bg;
       border-color: $toolbar-btn-border-active-color;
 
