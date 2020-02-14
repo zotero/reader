@@ -3,6 +3,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const WriteFilePlugin = require('write-file-webpack-plugin');
 
 const configWeb = {
+  devtool: 'source-map',
 	entry: [
 		'./src/index.web.js',
 		'./src/stylesheets/main.scss'
@@ -49,10 +50,17 @@ const configWeb = {
 						loader: 'extract-loader'
 					},
 					{
-						loader: 'css-loader?-url'
+						loader: 'css-loader',
+						options: {
+							sourceMap: true,
+							url: false
+						},
 					},
 					{
-						loader: 'sass-loader'
+						loader: 'sass-loader',
+						options: {
+							sourceMap: true,
+						}
 					}
 				]
 			}
