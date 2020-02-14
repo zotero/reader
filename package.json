@@ -2,6 +2,10 @@
 	"name": "pdf-reader",
 	"version": "1.0.0",
 	"description": "PDF.js based Zotero PDF reader and annotator",
+	"browserslist": [
+		"last 2 version",
+		"ff >= 60.8.0"
+	],
 	"scripts": {
 		"build": "./scripts/prepare && npm run build-reader",
 		"build-reader": "webpack --display-modules",
