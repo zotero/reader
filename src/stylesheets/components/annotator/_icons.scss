@@ -2,6 +2,26 @@
 // Icons
 //
 
-#viewAnnotations.toolbarButton {
-  @include icon("note");
+// Toolbar
+
+.toolbar {
+  .highlight {
+    @include icon("highlight");
+  }
+
+  .note {
+    @include icon("note");
+  }
+
+  .area {
+    @include icon("area");
+  }
+}
+
+// Toolbar sidebar
+
+#toolbarSidebar {
+  #viewAnnotations {
+    @include icon("note");
+  }
 }
