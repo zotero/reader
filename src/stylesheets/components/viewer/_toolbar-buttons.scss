@@ -48,26 +48,12 @@
 
 //.toolbar {
 //  .splitToolbarButton {
-//    html[dir='ltr'] & {
-//      margin: 3px 2px 3px 0;
-//      display: inline-block;
-//    }
-//
-//    html[dir='rtl'] & {
-//      margin: 3px 0 3px 2px;
-//      display: inline-block;
-//    }
+//    margin: 3px 2px 3px 0;
+//    display: inline-block;
 //
 //    > .toolbarButton {
-//      html[dir='ltr'] & {
-//        border-radius: 0;
-//        float: left;
-//      }
-//
-//      html[dir='rtl'] & {
-//        border-radius: 0;
-//        float: right;
-//      }
+//      border-radius: 0;
+//      float: left;
 //    }
 //  }
 //}
@@ -147,8 +133,7 @@
 //  }
 //}
 //
-//html[dir='ltr'] .toolbar .splitToolbarButton > .toolbarButton:first-child,
-//html[dir='rtl'] .toolbar .splitToolbarButton > .toolbarButton:last-child {
+//.toolbar .splitToolbarButton > .toolbarButton:first-child {
 //  position: relative;
 //  margin: 0;
 //  margin-right: -1px;
@@ -156,8 +141,7 @@
 //  border-bottom-left-radius: 2px;
 //  border-right-color: rgba(0, 0, 0, 0);
 //}
-//html[dir='ltr'] .toolbar .splitToolbarButton > .toolbarButton:last-child,
-//html[dir='rtl'] .toolbar .splitToolbarButton > .toolbarButton:first-child {
+//.toolbar .splitToolbarButton > .toolbarButton:last-child {
 //  position: relative;
 //  margin: 0;
 //  margin-left: -1px;
@@ -176,11 +160,8 @@
 //  margin: 5px 0;
 //}
 //
-//html[dir='ltr'] .toolbar .splitToolbarButtonSeparator {
+//.toolbar .splitToolbarButtonSeparator {
 //  float: left;
-//}
-//html[dir='rtl'] .toolbar .splitToolbarButtonSeparator {
-//  float: right;
 //}
 //
 //.toolbar {
@@ -223,15 +204,10 @@
 //          transition-timing-function: ease;
 //}
 //
-//html[dir='ltr'] .toolbar .toolbarButton,
-//html[dir='ltr'] .overlayButton,
-//html[dir='ltr'] .dropdownToolbarButton {
+//.toolbar .toolbarButton,
+//.overlayButton,
+//.dropdownToolbarButton {
 //  margin: 3px 2px 4px 0;
-//}
-//html[dir='rtl'] .toolbar .toolbarButton,
-//html[dir='rtl'] .overlayButton,
-//html[dir='rtl'] .dropdownToolbarButton {
-//  margin: 3px 0 4px 2px;
 //}
 //
 //.toolbar .toolbarButton:hover,
@@ -305,11 +281,8 @@
 //  overflow: hidden;
 //  background: url(images/toolbarButton-menuArrows.png) no-repeat;
 //}
-//html[dir='ltr'] .dropdownToolbarButton {
+//.dropdownToolbarButton {
 //  background-position: 95%;
-//}
-//html[dir='rtl'] .dropdownToolbarButton {
-//  background-position: 5%;
 //}
 //
 //.dropdownToolbarButton > select {
@@ -326,17 +299,13 @@
 //  background: rgba(61, 61, 61, 1);
 //}
 //
-//html[dir='ltr'] .toolbar .splitToolbarButton:first-child,
-//html[dir='ltr'] .toolbar .toolbarButton:first-child,
-//html[dir='rtl'] .toolbar .splitToolbarButton:last-child,
-//html[dir='rtl'] .toolbar .toolbarButton:last-child {
+//.toolbar .splitToolbarButton:first-child,
+//.toolbar .toolbarButton:first-child {
 //  margin-left: 4px;
 //}
 //
-//html[dir='ltr'] .toolbar .splitToolbarButton:last-child,
-//html[dir='ltr'] .toolbar .toolbarButton:last-child,
-//html[dir='rtl'] .toolbar .splitToolbarButton:first-child,
-//html[dir='rtl'] .toolbar .toolbarButton:first-child {
+//.toolbar .splitToolbarButton:last-child,
+//.toolbar .toolbarButton:last-child {
 //  margin-right: 4px;
 //}
 //
@@ -356,11 +325,8 @@
 //  left: 7px;
 //}
 //
-//html[dir="ltr"] .secondaryToolbarButton::before {
+//.secondaryToolbarButton::before {
 //  left: 4px;
-//}
-//html[dir="rtl"] .secondaryToolbarButton::before {
-//  right: 4px;
 //}
 //
 //.toolbarButton.bookmark,
@@ -390,11 +356,8 @@
 //  width: 9px;
 //  border-radius: 50%;
 //}
-//html[dir='ltr'] .toolbarButton.pdfSidebarNotification::after {
+//.toolbarButton.pdfSidebarNotification::after {
 //  left: 17px;
-//}
-//html[dir='rtl'] .toolbarButton.pdfSidebarNotification::after {
-//  right: 17px;
 //}
 //
 //.secondaryToolbarButton {
@@ -407,26 +370,16 @@
 //  min-width: 100%;
 //  white-space: normal;
 //}
-//html[dir="ltr"] .secondaryToolbarButton {
+//.secondaryToolbarButton {
 //  padding-left: 24px;
 //  text-align: left;
 //}
-//html[dir="rtl"] .secondaryToolbarButton {
-//  padding-right: 24px;
-//  text-align: right;
-//}
-//html[dir="ltr"] .secondaryToolbarButton.bookmark {
+//.secondaryToolbarButton.bookmark {
 //  padding-left: 27px;
 //}
-//html[dir="rtl"] .secondaryToolbarButton.bookmark {
-//  padding-right: 27px;
-//}
 //
-//html[dir="ltr"] .secondaryToolbarButton > span {
+//.secondaryToolbarButton > span {
 //  padding-right: 4px;
-//}
-//html[dir="rtl"] .secondaryToolbarButton > span {
-//  padding-left: 4px;
 //}
 //
 //.verticalToolbarSeparator {
@@ -437,11 +390,8 @@
 //  background-color: rgba(0, 0, 0, 0.5);
 //  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08);
 //}
-//html[dir='ltr'] .verticalToolbarSeparator {
+//.verticalToolbarSeparator {
 //  margin-left: 2px;
-//}
-//html[dir='rtl'] .verticalToolbarSeparator {
-//  margin-right: 2px;
 //}
 //
 //.horizontalToolbarSeparator {

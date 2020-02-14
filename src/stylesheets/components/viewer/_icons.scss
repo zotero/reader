@@ -14,32 +14,50 @@
  */
 
 html[dir="ltr"] .toolbarButton#back {
+  /*rtl:ignore*/
   @include icon("back");
 }
 
-html[dir="ltr"] .toolbarButton#forward {
+html[dir="rtl"] .toolbarButton#back {
+  /*rtl:ignore*/
   @include icon("forward");
 }
 
+html[dir="ltr"] .toolbarButton#forward {
+  /*rtl:ignore*/
+  @include icon("forward");
+}
+
+html[dir="rtl"] .toolbarButton#forward {
+  /*rtl:ignore*/
+  @include icon("back");
+}
+
 html[dir="ltr"] .toolbarButton#sidebarToggle {
+  /*rtl:ignore*/
   @include icon("application-side-expand");
 }
 
 html[dir="ltr"] .toolbarButton#sidebarToggle.toggled {
+  /*rtl:ignore*/
   @include icon("application-side-contract");
 }
 
 html[dir='ltr'] .toolbarButton.findPrevious::before {
+  /*rtl:ignore*/
   content: url(images/findbarButton-previous.png);
 }
 html[dir='rtl'] .toolbarButton.findPrevious::before {
+  /*rtl:ignore*/
   content: url(images/findbarButton-previous-rtl.png);
 }
 
 html[dir='ltr'] .toolbarButton.findNext::before {
+  /*rtl:ignore*/
   content: url(images/findbarButton-next.png);
 }
 html[dir='rtl'] .toolbarButton.findNext::before {
+  /*rtl:ignore*/
   content: url(images/findbarButton-next-rtl.png);
 }
 
@@ -168,92 +186,11 @@ html[dir='rtl'] .toolbarButton.findNext::before {
 }
 
 html[dir='ltr'] .outlineItemToggler.outlineItemsHidden {
+  /*rtl:ignore*/
   @include icon("treeitem-collapsed", 9px);
 }
 
 html[dir='rtl'] .outlineItemToggler.outlineItemsHidden {
+  /*rtl:ignore*/
   @include icon("treeitem-collapsed-rtl", 9px);
-}
-
-@media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
-  html[dir='ltr'] .toolbarButton.findPrevious::before {
-    content: url(images/findbarButton-previous@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton.findPrevious::before {
-    content: url(images/findbarButton-previous-rtl@2x.png);
-  }
-
-  html[dir='ltr'] .toolbarButton.findNext::before {
-    content: url(images/findbarButton-next@2x.png);
-  }
-  html[dir='rtl'] .toolbarButton.findNext::before {
-    content: url(images/findbarButton-next-rtl@2x.png);
-  }
-
-  .toolbarButton.presentationMode::before,
-  .secondaryToolbarButton.presentationMode::before {
-    content: url(images/toolbarButton-presentationMode@2x.png);
-  }
-
-  .toolbarButton.openFile::before,
-  .secondaryToolbarButton.openFile::before {
-    content: url(images/toolbarButton-openFile@2x.png);
-  }
-
-  .toolbarButton.bookmark::before,
-  .secondaryToolbarButton.bookmark::before {
-    content: url(images/toolbarButton-bookmark@2x.png);
-  }
-
-  .secondaryToolbarButton.firstPage::before {
-    content: url(images/secondaryToolbarButton-firstPage@2x.png);
-  }
-
-  .secondaryToolbarButton.lastPage::before {
-    content: url(images/secondaryToolbarButton-lastPage@2x.png);
-  }
-
-  .secondaryToolbarButton.rotateCcw::before {
-    content: url(images/secondaryToolbarButton-rotateCcw@2x.png);
-  }
-
-  .secondaryToolbarButton.rotateCw::before {
-    content: url(images/secondaryToolbarButton-rotateCw@2x.png);
-  }
-
-  .secondaryToolbarButton.selectTool::before {
-    content: url(images/secondaryToolbarButton-selectTool@2x.png);
-  }
-
-  .secondaryToolbarButton.handTool::before {
-    content: url(images/secondaryToolbarButton-handTool@2x.png);
-  }
-
-  .secondaryToolbarButton.scrollVertical::before {
-    content: url(images/secondaryToolbarButton-scrollVertical@2x.png);
-  }
-
-  .secondaryToolbarButton.scrollHorizontal::before {
-    content: url(images/secondaryToolbarButton-scrollHorizontal@2x.png);
-  }
-
-  .secondaryToolbarButton.scrollWrapped::before {
-    content: url(images/secondaryToolbarButton-scrollWrapped@2x.png);
-  }
-
-  .secondaryToolbarButton.spreadNone::before {
-    content: url(images/secondaryToolbarButton-spreadNone@2x.png);
-  }
-
-  .secondaryToolbarButton.spreadOdd::before {
-    content: url(images/secondaryToolbarButton-spreadOdd@2x.png);
-  }
-
-  .secondaryToolbarButton.spreadEven::before {
-    content: url(images/secondaryToolbarButton-spreadEven@2x.png);
-  }
-
-  .secondaryToolbarButton.documentProperties::before {
-    content: url(images/secondaryToolbarButton-documentProperties@2x.png);
-  }
 }

@@ -23,13 +23,7 @@
   position: relative;
 
   .outlineWithDeepNesting > & {
-    html[dir='ltr'] & {
-      margin-left: 20px;
-    }
-
-    html[dir='rtl'] & {
-      margin-right: 20px;
-    }
+    margin-left: 20px;
   }
 }
 
@@ -37,13 +31,7 @@
   flex: 1 1 100%;
 
   .outlineItem > & {
-    html[dir='ltr'] & {
-      margin-left: 12px;
-    }
-
-    html[dir='ltr'] & {
-      margin-right: 12px;
-    }
+    margin-left: 12px;
   }
 }
 
@@ -52,28 +40,14 @@
   @include icon("document-bookmark");
   flex: 1 1 100%;
   display: flex;
+  padding: rem(3.5) 0 rem(3.5) 19px;
   position: relative;
 
   &::before {
     position: absolute;
     top: rem(10);
     margin-top: -8px;
-
-    html[dir="ltr"] & {
-      left: 0;
-    }
-
-    html[dir="rtl"] & {
-      right: 0;
-    }
-  }
-
-  html[dir='ltr'] & {
-    padding: rem(3.5) 0 rem(3.5) 19px;
-  }
-
-  html[dir='rtl'] & {
-    padding: rem(3.5) 19px rem(3.5) 0;
+    left: 0;
   }
 }
 
@@ -82,19 +56,12 @@
   height: $outline-item-height;
   width: 9px;
   color: rgba(255, 255, 255, 0.5);
+  left: -13px;
 
   &::before {
     position: absolute;
     top: 50%;
     margin-top: -4.5px;
-  }
-
-  html[dir='ltr'] & {
-    left: -13px;
-  }
-
-  html[dir='rtl'] & {
-    right: -13px;
   }
 
   &.outlineItemsHidden ~ .outlineItems {

@@ -17,12 +17,7 @@
   padding: 6px;
   height: auto;
   z-index: 30000;
-}
-html[dir='ltr'] .secondaryToolbar {
   right: 4px;
-}
-html[dir='rtl'] .secondaryToolbar {
-  left: 4px;
 }
 
 #secondaryToolbarButtonContainer {

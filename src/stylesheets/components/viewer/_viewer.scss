@@ -140,12 +140,7 @@
           transition-duration: 200ms;
   -webkit-transition-timing-function: ease;
           transition-timing-function: ease;
-}
-html[dir='ltr'] #viewerContainer {
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
-}
-html[dir='rtl'] #viewerContainer {
-  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.05);
+          box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
 #outerContainer.sidebarResizing #viewerContainer {
@@ -154,17 +149,11 @@ html[dir='rtl'] #viewerContainer {
           transition-duration: 0s;
 }
 
-html[dir='ltr'] #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentationMode) {
+#outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentationMode) {
   -webkit-transition-property: left;
   transition-property: left;
   left: 200px;
   left: var(--sidebar-width);
-}
-html[dir='rtl'] #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentationMode) {
-  -webkit-transition-property: right;
-  transition-property: right;
-  right: 200px;
-  right: var(--sidebar-width);
 }
 
 // > Toolbar styles position 1 <
@@ -175,16 +164,6 @@ html[dir='rtl'] #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentatio
   position: relative;
   height: 32px;
   background-color: $body-bg;
-}
-
-html[dir='ltr'] .findbar, .secondaryToolbar {
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15),
-              inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-              0 1px 0 rgba(0, 0, 0, 0.15),
-              0 1px 1px rgba(0, 0, 0, 0.1);
-}
-
-html[dir='rtl'] .findbar, .secondaryToolbar {
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15),
               inset 0 -1px 0 rgba(255, 255, 255, 0.05),
               0 1px 0 rgba(0, 0, 0, 0.15),
@@ -264,16 +243,8 @@ html[dir='rtl'] .findbar, .secondaryToolbar {
   background: none;
   cursor: pointer;
   width: 100%;
-}
-
-html[dir='ltr'] .attachmentsItem > button {
   padding: 2px 0 3px 7px;
   text-align: left;
-}
-
-html[dir='rtl'] .attachmentsItem > button {
-  padding: 2px 7px 3px 0;
-  text-align: right;
 }
 
 // Class does not seem to be used anywhere
@@ -399,11 +370,8 @@ html[dir='rtl'] .attachmentsItem > button {
 #documentPropertiesOverlay .row > * {
   min-width: 100px;
 }
-html[dir='ltr'] #documentPropertiesOverlay .row > * {
+#documentPropertiesOverlay .row > * {
   text-align: left;
-}
-html[dir='rtl'] #documentPropertiesOverlay .row > * {
-  text-align: right;
 }
 #documentPropertiesOverlay .row > span {
   width: 125px;
@@ -491,13 +459,6 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
 @media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
   /* Rules for Retina screens */
 
-  html[dir='ltr'] .secondaryToolbarButton::before {
-    left: -2px;
-  }
-  html[dir='rtl'] .secondaryToolbarButton::before {
-    left: 186px;
-  }
-
   .toolbarField.pageNumber.visiblePageIsLoading,
   #findInput[data-status="pending"] {
     background-image: url(images/loading-small@2x.png);
@@ -534,11 +495,8 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
     background-color: rgba(0, 0, 0, 0.7);
   }
 
-  html[dir='ltr'] #outerContainer.sidebarOpen #viewerContainer {
+  #outerContainer.sidebarOpen #viewerContainer {
     left: 0px !important;
-  }
-  html[dir='rtl'] #outerContainer.sidebarOpen #viewerContainer {
-    right: 0px !important;
   }
 
   #outerContainer .hiddenLargeView,
@@ -579,11 +537,8 @@ html[dir='rtl'] #documentPropertiesOverlay .row > * {
   .toolbarButtonSpacer {
     width: 0;
   }
-  html[dir='ltr'] .findbar {
+  .findbar {
     left: 38px;
-  }
-  html[dir='rtl'] .findbar {
-    right: 38px;
   }
 }
 

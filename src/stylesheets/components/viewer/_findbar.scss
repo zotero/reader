@@ -15,6 +15,7 @@
 
 .findbar {
   min-width: 300px;
+  left: 68px;
 }
 .findbar > div {
   height: 32px;
@@ -24,12 +25,6 @@
 }
 .findbar.wrapContainers > div#findbarMessageContainer {
   height: auto;
-}
-html[dir='ltr'] .findbar {
-  left: 68px;
-}
-html[dir='rtl'] .findbar {
-  right: 68px;
 }
 
 .findbar label {
@@ -62,21 +57,11 @@ html[dir='rtl'] .findbar {
   background-repeat: no-repeat;
   background-position: right;
 }
-html[dir='rtl'] #findInput[data-status="pending"] {
-  background-position: left;
-}
 
-
-html[dir='ltr'] #findPrevious {
+#findPrevious {
   margin-left: 3px;
 }
-html[dir='ltr'] #findNext {
-  margin-right: 3px;
-}
 
-html[dir='rtl'] #findPrevious {
+#findNext {
   margin-right: 3px;
-}
-html[dir='rtl'] #findNext {
-  margin-left: 3px;
 }
