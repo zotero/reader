@@ -412,19 +412,4 @@
 
 // > Print styles position 1 <
 
-@media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
-  /* Rules for Retina screens */
-
-  .toolbarField.pageNumber.visiblePageIsLoading,
-  #findInput[data-status="pending"] {
-    background-image: url(images/loading-small@2x.png);
-    background-size: 16px 17px;
-  }
-
-  .dropdownToolbarButton {
-    background: url(images/toolbarButton-menuArrows@2x.png) no-repeat;
-    background-size: 7px 16px;
-  }
-}
-
 // > Print styles position 2 <

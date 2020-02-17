@@ -56,13 +56,11 @@
     width: $find-input-width;
 
     &[data-status="pending"] {
-      background-image: url(images/loading-small.png);
-      background-repeat: no-repeat;
+      background-image: url("images/loading-small.png");
       background-position: center right 3px;
 
       @include retina {
-        background-image: url(images/loading-small@2x.png);
-        background-size: 16px 17px;
+        background-image: url("images/loading-small@2x.png");
       }
     }
 
