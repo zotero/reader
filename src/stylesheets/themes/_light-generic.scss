@@ -7,7 +7,7 @@
 //
 
 $highlight-color: #0078d7;
-$blue-btn: #90c8f6;
+$blue-btn:        #90c8f6;
 
 $gray-lightest: #f0f0f0;
 
@@ -107,9 +107,13 @@ $findbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
 $findbar-btn-active-bg:           rgba($blue-btn, 0.5);
 $findbar-btn-border-active-color: $blue-btn;
 $findbar-btn-icon-active-offset:  1px;
-$find-input-width:   200px;
-$find-results-count-color:        #777;
+$find-input-width:                200px;
+$find-input-not-found-color:      $text-color;
+$find-input-not-found-bg:         tint(#f66, 75%);
 $find-results-count-margin:       0 10px 0 3px;
+$find-results-count-color:        #777;
+$find-message-margin:             0 10px 0 3px;
+$find-message-color:              rgba(#777, 0.5);
 
 // Secondary toolbar
 $secondary-toolbar-offset-x:          3px;

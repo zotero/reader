@@ -1,17 +1,6 @@
-/* Copyright 2014 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+// Findbar
+//
 
 .findbar {
   &,
@@ -76,6 +65,11 @@
         background-size: 16px 17px;
       }
     }
+
+    &.notFound {
+      color: $find-input-not-found-color;
+      background-color: $find-input-not-found-bg;
+    }
   }
 
   button {
@@ -118,16 +112,13 @@
     color: $find-results-count-color;
     margin: $find-results-count-margin;
   }
-}
 
-#findMsg {
-  font-style: italic;
-  color: rgba(166, 183, 208, 1);
-}
-#findMsg:empty {
-  display: none;
-}
+  #findMsg {
+    color: $find-message-color;
+    margin: $find-message-margin;
 
-#findInput.notFound {
-  background-color: rgba(255, 102, 102, 1);
+    &:empty {
+      display: none;
+    }
+  }
 }
