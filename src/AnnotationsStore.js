@@ -1,7 +1,8 @@
-import queue from "queue";
-import { extractExternalAnnotations, getAnnotationsCount, getSortIndex } from "./lib/extract";
-import { renderSquareImage } from "./lib/render";
-import { p2v, v2p, wx, hy } from "./lib/coordinates";
+'use strict';
+
+import queue from 'queue';
+import { getAnnotationsCount, getSortIndex } from './lib/extract';
+import { renderAreaImage } from './lib/render';
 
 class AnnotationsStore {
   constructor(options) {
@@ -20,22 +21,9 @@ class AnnotationsStore {
       autostart: true
     });
     
-    document.addEventListener("pagesinit", async (e) => {
+    document.addEventListener('pagesinit', async (e) => {
       let count = await getAnnotationsCount();
       this.onImportableAnnotationsNum(count);
-      // console.time("extracted external annotations");
-      // let externalAnnotations = await extractExternalAnnotations();
-      // for (let externalAnnotation of externalAnnotations) {
-      //   externalAnnotation.id = this.genId();
-      //   // annotation.dateCreated = annotation.dateModified = (new Date()).toISOString(); // TODO: external?
-      //   // annotation.userId = userId || null;
-      //   // annotation.label = label || "";
-      //   // annotation.color = color;
-      //   this.annotations.push(externalAnnotation);
-      // }
-      // this.sortAnnotations(this.annotations);
-      // this.onUpdateAnnotations(this.annotations);
-      // console.timeEnd("extracted external annotations");
     });
     
   }
@@ -96,28 +84,28 @@ class AnnotationsStore {
   
   async addAnnotation(annotation) {
     annotation.id = this.genId();
-    annotation.dateCreated = annotation.dateModified = (new Date()).toISOString(); // TODO: external?
+    annotation.dateCreated = annotation.dateModified = (new Date()).toISOString();
     annotation.userId = this.userId || null;
-    annotation.label = this.label || "";
+    annotation.label = this.label || '';
     // annotation.color = color;
     
     annotation.position.rects = annotation.position.rects.map(rect => rect.map(value => parseFloat(value.toFixed(3))));
-  
-  
+    
+    
     // Todo: Move this out from here
     let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-  
-    if (pageLabels && pageLabels[annotation.position.pageNumber - 1]) {
-      annotation.page = pageLabels[annotation.position.pageNumber - 1];
+    
+    if (pageLabels && pageLabels[annotation.position.pageIndex]) {
+      annotation.page = pageLabels[annotation.position.pageIndex];
     }
     else {
-      annotation.page = annotation.position.pageNumber;
+      annotation.page = annotation.position.pageIndex + 1;
     }
     
     
     let updateImage = false;
-    if (annotation.type === "square" && !annotation.image) {
-      annotation.image = "";
+    if (annotation.type === 'area' && !annotation.image) {
+      annotation.image = '';
       updateImage = true;
     }
     
@@ -127,7 +115,7 @@ class AnnotationsStore {
     this.onSetAnnotation(annotation);
     // this.setState({ recentlyCreatedAnnotationId: annotation.id });
     
-    if (annotation.type === 'text' || annotation.type === 'square') {
+    if (annotation.type === 'note' || annotation.type === 'area') {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
     
@@ -140,6 +128,23 @@ class AnnotationsStore {
     return annotation;
   }
   
+  async setAnnotation(annotation) {
+    let prevAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
+    if (prevAnnotationIdx) {
+      this.annotations.splice(prevAnnotationIdx, 1, annotation);
+    }
+    
+    this.annotations.push(annotation);
+    
+    this.sortAnnotations(this.annotations);
+    
+    this.onUpdateAnnotations(this.annotations);
+    
+    // if (updateImage) {
+    //   this.updateAnnotationImage(annotation.id);
+    // }
+  }
+  
   async updateAnnotation(annotation) {
     let prevAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
     let prevAnnotation = this.annotations[prevAnnotationIdx];
@@ -149,16 +154,16 @@ class AnnotationsStore {
     
     let updateImage = false;
     if (
-      annotation.type === "square" &&
+      annotation.type === 'area' &&
       JSON.stringify(prevAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
     ) {
-      annotation.image = "";
+      annotation.image = '';
       updateImage = true;
     }
     
     if (
-      ["text", "square"].includes(annotation.type) &&
-      prevAnnotation.position.pageNumber === annotation.position.pageNumber &&
+      ['note', 'area'].includes(annotation.type) &&
+      prevAnnotation.position.pageIndex === annotation.position.pageIndex &&
       JSON.stringify(prevAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
     ) {
       annotation.sortIndex = await getSortIndex(annotation.position);
@@ -190,30 +195,13 @@ class AnnotationsStore {
     this.renderQueue.push(async () => {
       let annotation = this.getAnnotationById(annotationId);
       if (!annotation || annotation.image) return;
-      let image = await renderSquareImage(annotation.position);
+      let image = await renderAreaImage(annotation.position);
       if (!image) return;
       this.updateAnnotation({
         id: annotation.id,
         image
       });
     });
-  }
-  
-  async importAnnotations() {
-    console.time("imported annotations");
-    let externalAnnotations = await extractExternalAnnotations();
-    for (let externalAnnotation of externalAnnotations) {
-      externalAnnotation.id = this.genId();
-      // annotation.dateCreated = annotation.dateModified = (new Date()).toISOString(); // TODO: external?
-      // annotation.userId = userId || null;
-      // annotation.label = label || "";
-      // annotation.color = color;
-      this.annotations.push(externalAnnotation);
-      this.onSetAnnotation(externalAnnotation);
-    }
-    this.sortAnnotations(this.annotations);
-    this.onUpdateAnnotations(this.annotations);
-    console.timeEnd("imported annotations");
   }
 }
 

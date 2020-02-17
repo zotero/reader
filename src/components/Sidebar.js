@@ -1,24 +1,22 @@
-import React from "react";
-import ReactDom from "react-dom";
+'use strict';
 
-import Meta from "./Meta";
-import Editor from "./Editor";
+import React from 'react';
+import ReactDOM from 'react-dom';
+import Meta from './Meta';
 
-import { searchAnnotations } from "../lib/search";
+import { searchAnnotations } from '../lib/search';
 
 class Sidebar extends React.Component {
   state = {
     filteredAnnotations: null,
-    query: ""
+    query: ''
   };
-
+  
   search(query) {
     const { annotations } = this.props;
     
     if (query) {
-      console.time("annotations search");
       let filteredAnnotations = searchAnnotations(annotations, query);
-      console.timeEnd("annotations search");
       this.setState({ filteredAnnotations });
     }
     else {
@@ -43,7 +41,7 @@ class Sidebar extends React.Component {
     }
     
     if (annotationsView) {
-      return ReactDom.createPortal(
+      return ReactDOM.createPortal(
         (
           <div>
             <div className="Sidebar-search">
@@ -59,21 +57,21 @@ class Sidebar extends React.Component {
                 />
               </div>
               <div className="Sidebar-search-clear" onClick={() => {
-                this.setState({ query: "" });
+                this.setState({ query: '' });
                 this.search();
               }}>X
               </div>
             </div>
-            {/*<button*/}
-            {/*  className="Sidebar-import"*/}
-            {/*  onClick={onImport}*/}
-            {/*>*/}
-            {/*  Import annotations ({importableAnnotationsNum})*/}
-            {/*</button>*/}
+            <button
+              className="Sidebar-import"
+              onClick={onImport}
+            >
+              Import annotations ({importableAnnotationsNum})
+            </button>
             {annotations.map((annotation, index) => (
               <div
                 key={annotation.id}
-                className={`Sidebar-block ${annotation.external ? "Sidebar-block-external" : ""} ${annotation.id === activeAnnotationId ? "Sidebar-block-active" : ""}`}
+                className={`Sidebar-block ${annotation.id === activeAnnotationId ? 'Sidebar-block-active' : ''}`}
                 data-sidebar-id={annotation.id}
                 onClick={() => {
                   onSelectAnnotation(annotation.id);
@@ -88,15 +86,15 @@ class Sidebar extends React.Component {
                 <Meta
                   annotation={annotation}
                   onUpdate={(comment) => {
-                    onChange({id: annotation.id, comment});
+                    onChange({ id: annotation.id, comment });
                   }}
                   onColorChange={(color) => {
-                    onChange({id: annotation.id, color});
+                    onChange({ id: annotation.id, color });
                   }}
                   onDelete={() => {
                     onDelete(annotation.id);
                   }}
-    
+                  
                   onFocus={() => {
                   }}
                   onClickTags={onClickTags}

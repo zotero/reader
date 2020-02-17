@@ -1,5 +1,7 @@
-import React from "react";
-import { getPageFromElement } from "../lib/pdfjs-dom";
+'use strict';
+
+import React from 'react';
+import { getPageFromElement } from '../lib/pdfjs-dom';
 
 class AreaSelector extends React.Component {
   state = {
@@ -8,13 +10,13 @@ class AreaSelector extends React.Component {
     end: null,
     bounds: null,
     page: null
-  };
+  }
   
   reset = () => {
     const { onDragEnd } = this.props;
     onDragEnd();
     this.setState({ start: null, end: null, locked: false });
-  };
+  }
   
   getBoundingRect(start, end) {
     return {
@@ -31,11 +33,8 @@ class AreaSelector extends React.Component {
     }
     
     const that = this;
-    
     const { onSelection, onDragStart, onDragEnd, shouldStart } = this.props;
-    
     const container = this.root.parentElement.parentElement;
-    
     let scrollTimeout = null;
     
     if (!(container instanceof HTMLElement)) {
@@ -48,24 +47,20 @@ class AreaSelector extends React.Component {
       if (!containerBoundingRect) {
         containerBoundingRect = container.getBoundingClientRect();
       }
-      
       return {
         x: pageX - containerBoundingRect.left + container.scrollLeft,
         y: pageY - containerBoundingRect.top + container.scrollTop
       };
     };
     
-    window.addEventListener("mousemove", (event) => {
-      
+    window.addEventListener('mousemove', (event) => {
       const { start, locked } = this.state;
-      
       if (!start || locked) {
         return;
       }
       
       const selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
       if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
-      
       
       let end = containerCoords(event.pageX, event.pageY);
       
@@ -92,33 +87,33 @@ class AreaSelector extends React.Component {
         let v = null;
         let h = null;
         if (event.clientY < br.y && this.state.bounds[1] < container.scrollTop) {
-          v = "top";
+          v = 'top';
         }
         else if (event.clientY > br.y + br.height && this.state.bounds[3] > container.scrollTop + document.body.offsetHeight) {
-          v = "bottom";
+          v = 'bottom';
         }
         
         if (event.clientX < br.x && this.state.bounds[0] < container.scrollLeft) {
-          h = "left";
+          h = 'left';
         }
         else if (event.clientX > br.x + br.width && this.state.bounds[2] > container.scrollLeft + container.offsetWidth) {
-          h = "right";
+          h = 'right';
         }
         
-        if (v === "top") {
+        if (v === 'top') {
           container.scrollTop -= 1;
           scrolled = true;
         }
-        else if (v === "bottom") {
+        else if (v === 'bottom') {
           container.scrollTop += 1;
           scrolled = true;
         }
         
-        if (h === "left") {
+        if (h === 'left') {
           container.scrollLeft -= 1;
           scrolled = true;
         }
-        else if (h === "right") {
+        else if (h === 'right') {
           container.scrollLeft += 1;
           scrolled = true;
         }
@@ -134,7 +129,7 @@ class AreaSelector extends React.Component {
       this.setState({ end });
     });
     
-    container.addEventListener("mousedown", (event) => {
+    container.addEventListener('mousedown', (event) => {
       containerBoundingRect = null;
       clearTimeout(scrollTimeout);
       if (!this.props.shouldStart) {
@@ -151,7 +146,6 @@ class AreaSelector extends React.Component {
       onDragStart();
       
       let page = getPageFromElement(event.target);
-      
       if (!page) return;
       
       let { node, number } = page;
@@ -177,10 +171,9 @@ class AreaSelector extends React.Component {
       });
       
       const onMouseUp = (event) => {
-        
         clearTimeout(scrollTimeout);
         // emulate listen once
-        event.currentTarget.removeEventListener("mouseup", onMouseUp);
+        event.currentTarget.removeEventListener('mouseup', onMouseUp);
         
         const { start } = this.state;
         
@@ -241,7 +234,7 @@ class AreaSelector extends React.Component {
             
             let position = {
               rects: [rect],
-              pageNumber: pg.number
+              pageIndex: pg.number - 1
             };
             
             this.reset();
@@ -253,7 +246,7 @@ class AreaSelector extends React.Component {
       };
       
       // if (document.body) {
-      window.addEventListener("mouseup", onMouseUp);
+      window.addEventListener('mouseup', onMouseUp);
       // }
     });
   }

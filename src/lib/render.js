@@ -1,27 +1,28 @@
-import { p2v, v2p, wx, hy } from "./coordinates";
+'use strict';
 
+import { p2v, v2p, wx, hy } from './coordinates';
 
-export async function renderSquareImage(position) {
-  let page = await PDFViewerApplication.pdfDocument.getPage(position.pageNumber);
-  let viewport = page.getViewport({ scale: 2 });
+export async function renderAreaImage(position) {
+  let page = await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
+  let viewport = page.getViewport({ scale: 4 });
   
   position = p2v(position, viewport);
   
   let canvasWidth = viewport.width;
   let canvasHeight = viewport.height;
   
-  let canvas = document.createElement("canvas");
+  let canvas = document.createElement('canvas');
   
-  if (typeof PDFJSDev === "undefined" ||
-    PDFJSDev.test("MOZCENTRAL || FIREFOX || GENERIC")) {
+  if (typeof PDFJSDev === 'undefined' ||
+    PDFJSDev.test('MOZCENTRAL || FIREFOX || GENERIC')) {
     canvas.mozOpaque = true;
   }
-  let ctx = canvas.getContext("2d", { alpha: false });
+  let ctx = canvas.getContext('2d', { alpha: false });
   
   canvas.width = (canvasWidth * 1) | 0;
   canvas.height = (canvasHeight * 1) | 0;
-  canvas.style.width = canvasWidth + "px";
-  canvas.style.height = canvasHeight + "px";
+  canvas.style.width = canvasWidth + 'px';
+  canvas.style.height = canvasHeight + 'px';
   
   let renderContext = {
     canvasContext: ctx,
@@ -37,19 +38,19 @@ export async function renderSquareImage(position) {
   const width = wx(rect);
   const height = hy(rect);
   
-  const newCanvas = document.createElement("canvas");
+  const newCanvas = document.createElement('canvas');
   
   if (!(newCanvas instanceof HTMLCanvasElement)) {
-    return "";
+    return '';
   }
   
   newCanvas.width = width;
   newCanvas.height = height;
   
-  const newCanvasContext = newCanvas.getContext("2d");
+  const newCanvasContext = newCanvas.getContext('2d');
   
   if (!newCanvasContext || !canvas) {
-    return "";
+    return '';
   }
   
   newCanvasContext.drawImage(
@@ -64,5 +65,5 @@ export async function renderSquareImage(position) {
     height
   );
   
-  return newCanvas.toDataURL("image/jpeg", 1);
+  return newCanvas.toDataURL('image/png', 1);
 }

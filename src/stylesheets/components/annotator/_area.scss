@@ -1,16 +1,16 @@
 
-.Square {
+.Area {
     border: 1px solid gray;
     opacity: 0.3;
     pointer-events: none;
 }
 
-.Square-active {
+.Area-active {
     border: 2px dashed black;
     pointer-events: all;
 }
 
-/*.Square-comment::before {*/
+/*.Area-comment::before {*/
 /*    content: "";*/
 /*    position: absolute;*/
 /*    top: -10px;*/

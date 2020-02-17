@@ -5,7 +5,7 @@ function modifyWeb() {
 	let html = fs.readFileSync(filename).toString();
 	
 	let ins = `
-<link rel="resource" type="application/l10n" href="data:text/plain,">
+<link rel="resource" type="application/l10n" href="locale/locale.properties">
 <script src="pdf.js"></script>
 <script src="viewer.js"></script>
 <script src="annotator.js"></script>
@@ -21,7 +21,7 @@ function modifyZotero() {
 	let html = fs.readFileSync(filename).toString();
 	
 	let ins = `
-<link rel="resource" type="application/l10n" href="data:text/plain,">
+<link rel="resource" type="application/l10n" href="locale/locale.properties">
 <script src="pdf.js"></script>
 <script src="viewer.js"></script>
 

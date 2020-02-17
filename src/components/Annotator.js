@@ -1,12 +1,13 @@
-import React from "react";
+'use strict';
 
-import Layer from "./Layer";
-import Sidebar from "./Sidebar";
-import Toolbar from "./Toolbar";
-import PopupScreen from "./PopupScreen";
-import ColorPicker from "./ColorPicker";
+import React from 'react';
+import Layer from './Layer';
+import Sidebar from './Sidebar';
+import Toolbar from './Toolbar';
+import PopupScreen from './PopupScreen';
+import ColorPicker from './ColorPicker';
 
-import { annotationColors } from "../lib/colors";
+import { annotationColors } from '../lib/colors';
 
 class Annotator extends React.Component {
   state = {
@@ -24,12 +25,12 @@ class Annotator extends React.Component {
   };
   
   initKeyboard() {
-    window.addEventListener("keydown", e => {
-      let viewerContainer = document.getElementById("viewerContainer");
-      let annotationsView = document.getElementById("annotationsView");
+    window.addEventListener('keydown', e => {
+      let viewerContainer = document.getElementById('viewerContainer');
+      let annotationsView = document.getElementById('annotationsView');
       if ([8, 46].includes(e.keyCode)) {
         if (e.target === viewerContainer || e.target === annotationsView) {
-          if (e.key === "Delete" || e.key === "Backspace") {
+          if (e.key === 'Delete' || e.key === 'Backspace') {
             this.deleteAnnotation(this.state.activeAnnotationId);
           }
         }
@@ -44,36 +45,37 @@ class Annotator extends React.Component {
   
   navigate2 = (annotation) => {
     // this.setState({ activeAnnotationId: annotation.id });
-
-	  let tempAnnotation = this.props.onAddAnnotation({
-		  type: 'highlight',
-		  temp: true,
-		  sortIndex: 0,
-		  position: annotation.position,
-		  color: '#DD00AA',
-		  text: '',
-		  comment: '',
-		  page: '',
-		  tags: []
-	  });
+    
+    let tempAnnotation = this.props.onAddAnnotation({
+      type: 'highlight',
+      temp: true,
+      sortIndex: 0,
+      position: annotation.position,
+      color: '#DD00AA',
+      text: '',
+      comment: '',
+      page: '',
+      tags: []
+    });
     
     
     let that = this;
-	  function fade(element) {
-		  var op = 1;  // initial opacity
-		  var timer = setInterval(() => {
-		  
-		    let element = document.getElementById('annotation-'+tempAnnotation.id);
-		    if(!element) return;
-			  if (op <= 0.1) {
-				  clearInterval(timer);
-				  that.props.onDeleteAnnotation(tempAnnotation.id);
-			  }
-			  element.style.opacity = op;
-			  element.style.filter = 'alpha(opacity=' + op * 100 + ")";
-			  op -= op * 0.1;
-		  }, 100);
-	  }
+    
+    function fade(element) {
+      var op = 1;  // initial opacity
+      var timer = setInterval(() => {
+        
+        let element = document.getElementById('annotation-' + tempAnnotation.id);
+        if (!element) return;
+        if (op <= 0.1) {
+          clearInterval(timer);
+          that.props.onDeleteAnnotation(tempAnnotation.id);
+        }
+        element.style.opacity = op;
+        element.style.filter = 'alpha(opacity=' + op * 100 + ')';
+        op -= op * 0.1;
+      }, 100);
+    }
     
     fade();
     
@@ -97,14 +99,13 @@ class Annotator extends React.Component {
     setAnnotationsRef(this.setAnnotations);
     importableAnnotationsNumRef(this.setImportableAnnotationsNum);
     
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest(".PopupScreen") && !e.target.closest(".toolbarButton")) {
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.PopupScreen') && !e.target.closest('.toolbarButton')) {
         this.setState({ colorPicking: false });
       }
     });
     
-    
-    document.addEventListener("mousedown", (e) => {
+    document.addEventListener('mousedown', (e) => {
     
     });
     
@@ -114,11 +115,11 @@ class Annotator extends React.Component {
   componentDidUpdate(prevProps, prevState) {
     if (prevState.activeAnnotationId !== this.state.activeAnnotationId) {
       setTimeout(() => {
-        let el = document.querySelector("div[data-sidebar-id=\"" + this.state.activeAnnotationId + "\"");
-        let container = document.getElementById("annotationsView");
+        let el = document.querySelector(`div[data-sidebar-id="${this.state.activeAnnotationId}"]`);
+        let container = document.getElementById('annotationsView');
         if (!el || !container) return;
         
-        if(
+        if (
           window.PDFViewerApplication.pdfSidebar.isOpen &&
           window.PDFViewerApplication.pdfSidebar.active !== 9
         ) {
@@ -141,11 +142,11 @@ class Annotator extends React.Component {
   }
   
   hasSelectedText() {
-    let text = "";
+    let text = '';
     if (window.getSelection) {
       text = window.getSelection().toString();
     }
-    else if (document.selection && document.selection.type != "Control") {
+    else if (document.selection && document.selection.type != 'Control') {
       text = document.selection.createRange().text;
     }
     return !!text;
@@ -156,7 +157,6 @@ class Annotator extends React.Component {
     if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
   }
   
-  
   getAnnotationsAtPoint(position) {
     let found = [];
     let x = position.rects[0][0];
@@ -165,7 +165,7 @@ class Annotator extends React.Component {
     for (let annotation of this.state.annotations) {
       for (let rect of annotation.position.rects) {
         if (
-          annotation.position.pageNumber === position.pageNumber &&
+          annotation.position.pageIndex === position.pageIndex &&
           rect[0] <= x && x <= rect[2] &&
           rect[1] <= y && y <= rect[3]
         ) {
@@ -185,7 +185,7 @@ class Annotator extends React.Component {
     
     if (this.state.recentlyCreatedAnnotationId) {
       let annotation = this.state.annotations.find(x => x.id === this.state.recentlyCreatedAnnotationId);
-      if (annotation && annotation.type !== "text") {
+      if (annotation && annotation.type !== 'note') {
         return;
       }
     }
@@ -204,7 +204,7 @@ class Annotator extends React.Component {
     
     for (let annotation of this.state.annotations) {
       for (let rect of annotation.position.rects) {
-        if (annotation.position.pageNumber === position.pageNumber && rect[0] <= x && x <= rect[2] &&
+        if (annotation.position.pageIndex === position.pageIndex && rect[0] <= x && x <= rect[2] &&
           rect[1] <= y && y <= rect[3]) {
           found.push(annotation);
           break;
@@ -304,14 +304,14 @@ class Annotator extends React.Component {
           }}
           onMouseSelection={(selection) => {
             // this.setState({ selection });
-            if (this.state.mode === "highlight") {
+            if (this.state.mode === 'highlight') {
               let annotation = onAddAnnotation({
-                type: "highlight",
+                type: 'highlight',
                 color: this.state.color,
                 sortIndex: selection.sortIndex,
                 position: selection.position,
                 text: selection.text,
-                comment: "",
+                comment: '',
                 tags: []
               });
               
@@ -321,27 +321,27 @@ class Annotator extends React.Component {
           }}
           onHighlight={(selection) => {
             let annotation = onAddAnnotation({
-              type: "highlight",
+              type: 'highlight',
               color: this.state.color,
               sortIndex: selection.sortIndex,
               position: selection.position,
               text: selection.text,
-              comment: "",
+              comment: '',
               tags: []
             });
             
             this.setState({ recentlyCreatedAnnotationId: annotation.id });
             this.clearSelection();
           }}
-          enableAreaSelector={this.state.mode === "square" && !this.state.activeAnnotationId}
+          enableAreaSelector={this.state.mode === 'area' && !this.state.activeAnnotationId}
           enableMouseSelection={!this.state.mode}
-          enableInactiveTextDragging={this.state.mode !== "square"}
+          enableInactiveTextDragging={this.state.mode !== 'area'}
           onSelection={(position) => {
             let annotation = onAddAnnotation({
-              type: "square",
+              type: 'area',
               color: this.state.color,
               position: position,
-              comment: "",
+              comment: '',
               tags: []
             });
             this.setState({ recentlyCreatedAnnotationId: annotation.id });
@@ -366,16 +366,16 @@ class Annotator extends React.Component {
           onPointerUp={(position) => {
             // console.log(position);
             this.inClick(position);
-            if (this.state.mode === "text") {
+            if (this.state.mode === 'note') {
               position.rects[0][0] -= 10;
               position.rects[0][1] -= 10;
               position.rects[0][2] += 10;
               position.rects[0][3] += 10;
               let annotation = onAddAnnotation({
-                type: "text",
+                type: 'note',
                 position: position,
                 color: this.state.color,
-                comment: "",
+                comment: '',
                 tags: []
               });
               this.setState({ recentlyCreatedAnnotationId: annotation.id });

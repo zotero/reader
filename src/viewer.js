@@ -1,13 +1,15 @@
-import React from "react";
-import { render } from "react-dom";
-import Annotator from "./components/Annotator";
-import AnnotationsStore from "./AnnotationsStore";
-import {debounce} from "./lib/utilities";
+'use strict';
+
+import React from 'react';
+import { render } from 'react-dom';
+import Annotator from './components/Annotator';
+import AnnotationsStore from './AnnotationsStore';
+import { debounce } from './lib/utilities';
 
 class Viewer {
   constructor(options) {
     this._loaded = false;
-    this._onSetState = debounce(function(state) {
+    this._onSetState = debounce(function (state) {
       options.onSetState(state);
     }, 100);
     this._userId = options.userId;
@@ -19,16 +21,17 @@ class Viewer {
       userId: options.userId,
       label: options.label
     });
-
+    
     // Takeover the download button
-    PDFViewerApplication.download = function () {};
+    PDFViewerApplication.download = function () {
+    };
     let downloadButton = document.getElementById('download');
     downloadButton.addEventListener('click', (event) => {
       options.onDownload();
     });
-
-
-    window.PDFViewerApplication.eventBus.on("textlayerrendered", e => {
+    
+    
+    window.PDFViewerApplication.eventBus.on('textlayerrendered', e => {
       return;
       // let pageIndex = e.pageNumber;
       // let pageView = window.PDFViewerApplication.pdfViewer.getPageView(e.pageNumber - 1);
@@ -63,165 +66,165 @@ class Viewer {
       // let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex).width;
       // let margins = [res, pageWidth - res];
     });
-
+    
     if (options.password) {
-     window.PDFViewerApplication.passwordPrompt.open = function () {
-       this.updateCallback(options.password);
-     }
-    }
-
-    let _password = null;
-
-    this._annotationsStore.annotations = options.annotations;
-
-      window.PDFViewerApplication.passwordPrompt.verify = function () {
-        const password = this.input.value;
-        _password = password;
-        if (password && password.length > 0) {
-          this.close();
-          this.updateCallback(password);
-        }
+      window.PDFViewerApplication.passwordPrompt.open = function () {
+        this.updateCallback(options.password);
       }
-
-      window.PDFViewerApplication.eventBus.on("updateviewarea", (e) => {
-        // console.log(e);
-        let state = {
-          page: e.location.pageNumber,
-          scale: e.location.scale,
-          rotation: e.location.rotation,
-          top: e.location.top,
-          left: e.location.left,
-          sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen ?
-            window.PDFViewerApplication.pdfSidebar.active : 0,
-          sidebarWidth: window.PDFViewerApplication.pdfSidebarResizer._width || 200,
-          scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
-          spreadMode: PDFViewerApplication.pdfViewer.spreadMode
-        };
-        this._lastState = state;
-        this._onSetState(state);
-      });
-
-      window.PDFViewerApplication.eventBus.on("sidebarviewchanged", (e) => {
-        if (this._lastState) {
-          this._lastState.sidebarView = e.view;
-          this._onSetState(this._lastState);
-        }
-        setTimeout(() => {
-          PDFViewerApplication.eventBus.dispatch("resize");
-        }, 50);
-      });
-
-      //
-      // window.PDFViewerApplication.eventBus.on("colorchange", (e) => {
-      //   if (this._lastState) {
-      //     this._lastState.sidebarView = e.view;
-      //     this._onSetState(this._lastState);
-      //   }
-      // });
-
-
-      window.PDFViewerApplication.eventBus.on("documentinit", (e) => {
-        window.isDocumentReady = true;
-        this._setState(options.state);
-      });
-
-      window.PDFViewerApplication.eventBus.on("pagesinit", (e) => {
-        if (_password) {
-          options.onEnterPassword(_password);
-        }
-      });
-
-      // window.PDFViewerApplication.eventBus.on("pagesinit", () => {
-      //   window.PDFViewerApplication.pdfDocument._transport.messageHandler.sendWithPromise("setIgnoredAnnotationIds", options.ignoredAnnotationIds);
-      // });
-
-      render(
-        <Annotator
-          onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
-          onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
-          onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
-          onClickTags={options.onClickTags}
-          onImport={this._annotationsStore.importAnnotations.bind(this._annotationsStore)}
-          onInitialized={() => {
-            this._annotationsStore.onUpdateAnnotations = this.setAnnotations;
-            this._annotationsStore.onImportableAnnotationsNum = this.importableAnnotationsNum;
-            this.setAnnotations(this._annotationsStore.getAnnotations());
-          }}
-          setAnnotationsRef={(ref) => {
-            this.setAnnotations = ref;
-          }}
-          importableAnnotationsNumRef={(ref) => {
-            this.importableAnnotationsNum = ref;
-          }}
-          navigateRef={(ref) => {
-            this.navigate = ref;
-          }}
-        />,
-        document.createElement("div")
-      );
-
-
-      let tvl = document.getElementById('toolbarViewerLeft');
-      let vf = document.getElementById('viewFind');
-      let st = document.getElementById('sidebarToggle');
-
-      let labelArrowLeft = document.createElement('span');
-      let arrowLeft = document.createElement('button');
-      labelArrowLeft.setAttribute('data-l10n-id', 'back_label');
-      labelArrowLeft.appendChild(document.createTextNode('Back'));
-      arrowLeft.className = 'toolbarButton';
-      arrowLeft.id = 'back';
-      arrowLeft.appendChild(labelArrowLeft);
-      arrowLeft.addEventListener('click', () => {
-        window.history.back();
-      });
-      tvl.insertBefore(arrowLeft, st);
-
-      let labelArrowRight = document.createElement('span');
-      let arrowRight = document.createElement('button');
-      labelArrowRight.setAttribute('data-l10n-id', 'forward_label');
-      labelArrowRight.appendChild(document.createTextNode('Forward'));
-      arrowRight.className = 'toolbarButton';
-      arrowRight.id = 'forward';
-      arrowRight.appendChild(labelArrowRight);
-      arrowRight.addEventListener('click', () => {
-        window.history.forward();
-      });
-      tvl.insertBefore(arrowRight, st);
-
-      setTimeout(function() {
-        window.PDFViewerApplication.open(options.url);
-      },0);
+    }
+    
+    let _password = null;
+    
+    this._annotationsStore.annotations = options.annotations;
+    
+    window.PDFViewerApplication.passwordPrompt.verify = function () {
+      const password = this.input.value;
+      _password = password;
+      if (password && password.length > 0) {
+        this.close();
+        this.updateCallback(password);
+      }
+    }
+    
+    window.PDFViewerApplication.eventBus.on('updateviewarea', (e) => {
+      // console.log(e);
+      let state = {
+        page: e.location.pageNumber,
+        scale: e.location.scale,
+        rotation: e.location.rotation,
+        top: e.location.top,
+        left: e.location.left,
+        sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen ?
+          window.PDFViewerApplication.pdfSidebar.active : 0,
+        sidebarWidth: window.PDFViewerApplication.pdfSidebarResizer._width || 200,
+        scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
+        spreadMode: PDFViewerApplication.pdfViewer.spreadMode
+      };
+      this._lastState = state;
+      this._onSetState(state);
+    });
+    
+    window.PDFViewerApplication.eventBus.on('sidebarviewchanged', (e) => {
+      if (this._lastState) {
+        this._lastState.sidebarView = e.view;
+        this._onSetState(this._lastState);
+      }
+      setTimeout(() => {
+        PDFViewerApplication.eventBus.dispatch('resize');
+      }, 50);
+    });
+    
+    //
+    // window.PDFViewerApplication.eventBus.on("colorchange", (e) => {
+    //   if (this._lastState) {
+    //     this._lastState.sidebarView = e.view;
+    //     this._onSetState(this._lastState);
+    //   }
+    // });
+    
+    
+    window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
+      window.isDocumentReady = true;
+      this._setState(options.state);
+    });
+    
+    window.PDFViewerApplication.eventBus.on('pagesinit', (e) => {
+      if (_password) {
+        options.onEnterPassword(_password);
+      }
+    });
+    
+    // window.PDFViewerApplication.eventBus.on("pagesinit", () => {
+    //   window.PDFViewerApplication.pdfDocument._transport.messageHandler.sendWithPromise("setIgnoredAnnotationIds", options.ignoredAnnotationIds);
+    // });
+    
+    render(
+      <Annotator
+        onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
+        onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
+        onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
+        onClickTags={options.onClickTags}
+        onImport={options.onImport}
+        onInitialized={() => {
+          this._annotationsStore.onUpdateAnnotations = this.setAnnotations;
+          this._annotationsStore.onImportableAnnotationsNum = this.importableAnnotationsNum;
+          this.setAnnotations(this._annotationsStore.getAnnotations());
+        }}
+        setAnnotationsRef={(ref) => {
+          this.setAnnotations = ref;
+        }}
+        importableAnnotationsNumRef={(ref) => {
+          this.importableAnnotationsNum = ref;
+        }}
+        navigateRef={(ref) => {
+          this.navigate = ref;
+        }}
+      />,
+      document.createElement('div')
+    );
+    
+    
+    let tvl = document.getElementById('toolbarViewerLeft');
+    let vf = document.getElementById('viewFind');
+    let st = document.getElementById('sidebarToggle');
+    
+    let labelArrowLeft = document.createElement('span');
+    let arrowLeft = document.createElement('button');
+    labelArrowLeft.setAttribute('data-l10n-id', 'back_label');
+    labelArrowLeft.appendChild(document.createTextNode('Back'));
+    arrowLeft.className = 'toolbarButton';
+    arrowLeft.id = 'back';
+    arrowLeft.appendChild(labelArrowLeft);
+    arrowLeft.addEventListener('click', () => {
+      window.history.back();
+    });
+    tvl.insertBefore(arrowLeft, st);
+    
+    let labelArrowRight = document.createElement('span');
+    let arrowRight = document.createElement('button');
+    labelArrowRight.setAttribute('data-l10n-id', 'forward_label');
+    labelArrowRight.appendChild(document.createTextNode('Forward'));
+    arrowRight.className = 'toolbarButton';
+    arrowRight.id = 'forward';
+    arrowRight.appendChild(labelArrowRight);
+    arrowRight.addEventListener('click', () => {
+      window.history.forward();
+    });
+    tvl.insertBefore(arrowRight, st);
+    
+    setTimeout(function () {
+      window.PDFViewerApplication.open(options.url);
+    }, 0);
   }
-
+  
   setAnnotations = (annotations) => {
-
+  
   };
-
+  
   importableAnnotationsNum = (num) => {
-
+  
   };
-
+  
   navigate = (annotation) => {
-
+  
   };
-
+  
   setAnnotation(annotation) {
-    this._annotationsStore.updateAnnotation(annotation);
+    this._annotationsStore.setAnnotation(annotation);
   }
-
+  
   _setState(options) {
     window.PDFViewerApplication.pdfSidebar.switchView(options.sidebarView, true);
     window.PDFViewerApplication.pdfSidebarResizer._updateWidth(options.sidebarWidth);
-
+    
     window.PDFViewerApplication.pdfViewer.scrollMode = options.scrollMode;
     window.PDFViewerApplication.pdfViewer.spreadMode = options.spreadMode;
-
+    
     window.PDFViewerApplication.pdfViewer.pagesRotation = options.rotation;
-
-    let dest = [null, { name: "XYZ" }, options.left,
+    
+    let dest = [null, { name: 'XYZ' }, options.left,
       options.top, parseInt(options.scale) ? options.scale / 100 : options.scale];
-
+    
     window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
       pageNumber: options.page,
       destArray: dest,

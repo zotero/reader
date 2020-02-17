@@ -1,38 +1,52 @@
-import React from "react";
-import ReactDom from "react-dom";
+'use strict';
+
+import React from 'react';
+import ReactDOM from 'react-dom';
+import cx from 'classnames'
 
 class Toolbar extends React.Component {
   getContainerNode() {
-    return document.getElementById("toolbarViewerMiddle");
+    return document.getElementById('toolbarViewerMiddle');
   }
-
+  
   render() {
-    const { active, onMode, color, onColorClick } = this.props;
+    let { active, color, onColorClick, onMode } = this.props;
     let containerNode = this.getContainerNode();
-    return ReactDom.createPortal(
+    return ReactDOM.createPortal(
       <React.Fragment>
         <button
           id="globalColorButton"
           className="toolbarButton"
-          style={{ color: color }}
+          style={{ color }}
           onClick={onColorClick}
         />
         <button
-          className={`toolbarButton highlight ${active === "highlight" ? `active` : ``}`}
+          className={cx({
+            toolbarButton: true,
+            highlight: true,
+            active: active === 'highlight'
+          })}
           onClick={() => {
-            onMode("highlight");
-          }} />
+            onMode('highlight');
+          }}/>
         <button
-          className={`toolbarButton note ${active === "text" ? `active` : ``}`}
-
+          className={cx({
+            toolbarButton: true,
+            note: true,
+            active: active === 'note'
+          })}
           onClick={() => {
-            onMode("text");
-          }} />
+            onMode('note');
+          }}/>
         <button
-          className={`toolbarButton area ${active === "square" ? `active` : ``}`}
+          className={cx({
+            toolbarButton: true,
+            area: true,
+            active: active === 'area'
+          })}
           onClick={() => {
-            onMode("square");
-          }} />
+            onMode('area');
+          }}/>
       </React.Fragment>,
       containerNode
     );

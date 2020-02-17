@@ -1,5 +1,7 @@
-import React from "react";
-import ReactDom from "react-dom";
+'use strict';
+
+import React from 'react';
+import ReactDOM from 'react-dom';
 
 class PopupPage extends React.Component {
   state = {
@@ -16,13 +18,11 @@ class PopupPage extends React.Component {
   }
   
   getRect(position, dimensions) {
-    let node = PDFViewerApplication.pdfViewer.getPageView(position.pageNumber - 1).div;
+    let node = PDFViewerApplication.pdfViewer.getPageView(position.pageIndex).div;
     
     let left;
     let top;
-    
     let rectMax = [];
-    
     for (let rect of position.rects) {
       rectMax[0] = rectMax[0] ? Math.min(rectMax[0], rect[0]) : rect[0];
       rectMax[1] = rectMax[1] ? Math.min(rectMax[1], rect[1]) : rect[1];
@@ -39,9 +39,7 @@ class PopupPage extends React.Component {
     
     let annotationCenterLeft = node.offsetLeft + 9 + rectMax[0] + ((rectMax[2] - rectMax[0])) / 2;
     
-    
     left = annotationCenterLeft - dimensions.width / 2;
-    
     
     if (node.offsetTop + 10 + rectMax[3] + 20 + dimensions.height <= visibleRect[3]) {
       top = node.offsetTop + 10 + rectMax[3] + 20;
@@ -60,27 +58,28 @@ class PopupPage extends React.Component {
     const { position, children, className, onDragStart } = this.props;
     const { dimensions } = this.state;
     
-    let popupContainer = document.getElementById("popupPageContainer");
+    let popupContainer = document.getElementById('popupPageContainer');
     if (!popupContainer) {
-      let viewerContainer = document.getElementById("viewerContainer");
+      let viewerContainer = document.getElementById('viewerContainer');
       if (!viewerContainer) return;
-      popupContainer = document.createElement("div");
-      popupContainer.className = "PopupPageContainer";
-      popupContainer.id = "popupPageContainer";
+      popupContainer = document.createElement('div');
+      popupContainer.className = 'PopupPageContainer';
+      popupContainer.id = 'popupPageContainer';
       viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
     }
     
-    return ReactDom.createPortal(
+    return ReactDOM.createPortal(
       <div
         ref={el => (this.container = el)}
-        className={"PopupPage "+className}
+        className={'PopupPage ' + className}
         style={dimensions ? this.getRect(position, dimensions) : {}}
         // draggable={true}
         // onDragStart={onDragStart}
-        >
+      >
         {children}
       </div>,
-      popupContainer);
+      popupContainer
+    );
   }
 }
 

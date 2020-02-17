@@ -1,23 +1,30 @@
-import React, { Component } from "react";
+'use strict';
 
-class Highlight extends Component {
+import React from 'react';
+import cx from 'classnames';
+
+class Highlight extends React.Component {
   render() {
-    const { annotation, active } = this.props;
+    let { annotation, active } = this.props;
+    
     return (
-      <div className="Highlight" id={'annotation-'+annotation.id}>
+      <div id={'annotation-' + annotation.id} className="Highlight">
         {annotation.position.rects.map((rect, index) => (
-          <div
-            key={index}
-            style={{
-              left: rect[0],
-              top: rect[1],
-              width: rect[2] - rect[0],
-              height: rect[3] - rect[1],
-              backgroundColor: annotation.color
-            }}
-            className={`Highlight__rect ${active ? "Highlight__rect-active" : ""} ${(annotation.comment && index === 0) ? "Highlight__rect-comment" : ""}`}
-          />
-        ))}
+      <div
+        key={index}
+        style={{
+          left: rect[0],
+          top: rect[1],
+          width: rect[2] - rect[0],
+          height: rect[3] - rect[1],
+          backgroundColor: annotation.color
+        }}
+        className={cx({
+          'Highlight__rect': true,
+          'Highlight__rect-active': active
+        })}
+      />
+    ))}
       </div>
     );
   }

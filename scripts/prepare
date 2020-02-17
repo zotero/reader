@@ -2,20 +2,20 @@
 npm i
 cd pdf.js
 npm i
-npx gulp generic
+# in production use the `generic` build 
+# npx gulp generic
+npx gulp generic-es5
 cd ..
 
 mkdir -p build/web
-cp -r pdf.js/build/generic/web/* build/web/
-cp -r pdf.js/build/generic/build/* build/web/
-cp -r pdf.js/build/generic/LICENSE build/web/
-rm -r build/web/locale
+cp -r pdf.js/build/generic-es5/web/* build/web/
+cp -r pdf.js/build/generic-es5/build/* build/web/
+cp -r pdf.js/build/generic-es5/LICENSE build/web/
 
 mkdir -p build/zotero
-cp -r pdf.js/build/generic/web/* build/zotero/
-cp -r pdf.js/build/generic/build/* build/zotero/
-cp -r pdf.js/build/generic/LICENSE build/zotero/
-rm -r build/zotero/locale
+cp -r pdf.js/build/generic-es5/web/* build/zotero/
+cp -r pdf.js/build/generic-es5/build/* build/zotero/
+cp -r pdf.js/build/generic-es5/LICENSE build/zotero/
 rm build/zotero/*.pdf
 
 node scripts/modify_viewer.js

@@ -1,6 +1,7 @@
-import React from "react";
+'use strict';
 
-import { annotationColors } from "../lib/colors";
+import React from 'react';
+import { annotationColors } from '../lib/colors';
 
 class ColorPicker extends React.Component {
   

@@ -1,5 +1,7 @@
-import React from "react";
-import ReactDom from "react-dom";
+'use strict';
+
+import React from 'react';
+import ReactDOM from 'react-dom';
 
 class PopupScreen extends React.Component {
   state = {
@@ -28,24 +30,25 @@ class PopupScreen extends React.Component {
     const { children, parentId, className } = this.props;
     const { dimensions } = this.state;
     
-    let popupContainer = document.getElementById("popupScreenContainer");
+    let popupContainer = document.getElementById('popupScreenContainer');
     if (!popupContainer) {
-      let viewerContainer = document.getElementById("mainContainer");
+      let viewerContainer = document.getElementById('mainContainer');
       if (!viewerContainer) return;
-      popupContainer = document.createElement("div");
-      popupContainer.className = "PopupScreenContainer";
-      popupContainer.id = "popupScreenContainer";
+      popupContainer = document.createElement('div');
+      popupContainer.className = 'PopupScreenContainer';
+      popupContainer.id = 'popupScreenContainer';
       viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
     }
     
-    return ReactDom.createPortal(
+    return ReactDOM.createPortal(
       <div
         ref={el => (this.container = el)}
-        className={"PopupScreen "+className}
+        className={'PopupScreen ' + className}
         style={dimensions ? this.getPosition(parentId, dimensions) : {}}>
         {children}
       </div>,
-      popupContainer);
+      popupContainer
+    );
   }
 }
 

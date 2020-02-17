@@ -40,7 +40,7 @@ function approximateMatch(text, pattern, maxErrors) {
    */
   
   function reverse(s) {
-    return s.split("").reverse().join("");
+    return s.split('').reverse().join('');
   }
   
   function fill(ary, x) {
@@ -59,14 +59,14 @@ function approximateMatch(text, pattern, maxErrors) {
    * @return Matches with the `start` property set.
    */
   function findMatchStarts(text, pattern, matches, findEndFn) {
-    var minCost = Math.min.apply(Math, matches.map(function(m) {
+    var minCost = Math.min.apply(Math, matches.map(function (m) {
       return m.errors;
     }));
     return matches
-      .filter(function(m) {
+      .filter(function (m) {
         return m.errors === minCost;
       })
-      .map(function(m) {
+      .map(function (m) {
         // Find start of each match by reversing the pattern and matching segment
         // of text and searching for an approx match with the same number of
         // errors.
@@ -75,7 +75,7 @@ function approximateMatch(text, pattern, maxErrors) {
         var patRev = reverse(pattern);
         // If there are multiple possible start points, choose the one that
         // maximizes the length of the match.
-        var start = findEndFn(textRev, patRev, m.errors).reduce(function(min, rm) {
+        var start = findEndFn(textRev, patRev, m.errors).reduce(function (min, rm) {
           if (m.end - rm.end < min) {
             return m.end - rm.end;
           }
