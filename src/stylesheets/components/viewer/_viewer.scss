@@ -83,28 +83,8 @@
 
 // > Thumbnail view styles postion <
 
-#attachmentsView {
-  @extend %sidebar-view;
-}
-
 // > Outline view styles position <
 
-#attachmentsView {
-  padding: 3px 4px 0;
-}
-
-.attachmentsItem > button {
-  @extend %sidebar-item-link-btn;
-}
-
-.attachmentsItem > button {
-  border: 0 none;
-  background: none;
-  cursor: pointer;
-  width: 100%;
-  padding: 2px 0 3px 7px;
-  text-align: left;
-}
 
 // Class does not seem to be used anywhere
 //.noResults {
