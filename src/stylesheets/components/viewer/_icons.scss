@@ -87,22 +87,26 @@
 
 // Findbar
 
-html[dir='ltr'] .toolbarButton.findPrevious::before {
-  /*rtl:ignore*/
-  content: url(images/findbarButton-previous.png);
-}
-html[dir='rtl'] .toolbarButton.findPrevious::before {
-  /*rtl:ignore*/
-  content: url(images/findbarButton-previous-rtl.png);
-}
+.findbar {
+  .findPrevious {
+    /*rtl:ignore*/
+    @include icon("previous");
 
-html[dir='ltr'] .toolbarButton.findNext::before {
-  /*rtl:ignore*/
-  content: url(images/findbarButton-next.png);
-}
-html[dir='rtl'] .toolbarButton.findNext::before {
-  /*rtl:ignore*/
-  content: url(images/findbarButton-next-rtl.png);
+    html[dir="rtl"] & {
+      /*rtl:ignore*/
+      @include icon("previous-rtl");
+    }
+  }
+
+  .findNext {
+    /*rtl:ignore*/
+    @include icon("next");
+
+    html[dir="rtl"] & {
+      /*rtl:ignore*/
+      @include icon("next-rtl");
+    }
+  }
 }
 
 // Secondary toolbar

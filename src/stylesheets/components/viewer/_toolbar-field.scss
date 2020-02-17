@@ -15,7 +15,6 @@
 
 .toolbarField {
   box-sizing: border-box;
-  width: $toolbar-field-width;
   height: $toolbar-field-height;
   padding: $toolbar-field-padding;
   margin: 0 3px;
@@ -24,6 +23,11 @@
   font-family: inherit;
   font-size: $toolbar-field-font-size;
 
+  &::placeholder {
+    color: $toolbar-field-placeholder-color;
+    opacity: 1;
+  }
+
   &:hover {
     border-color: $toolbar-field-hover-border-color;
   }
@@ -31,11 +35,17 @@
   &:focus {
     border-color: $toolbar-field-focus-border-color;
   }
+
+  &[type="checkbox"] {
+    height: auto;
+  }
 }
 
 .toolbarLabel {
   color: $toolbar-label-color;
   white-space: nowrap;
+  margin-left: 1px;
+  user-select: none;
 }
 
 //.toolbarField {

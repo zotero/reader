@@ -14,54 +14,117 @@
  */
 
 .findbar {
-  min-width: 300px;
-  left: 68px;
-}
-.findbar > div {
-  height: 32px;
-}
-.findbar.wrapContainers > div {
-  clear: both;
-}
-.findbar.wrapContainers > div#findbarMessageContainer {
-  height: auto;
+  &,
+  > *,
+  .splitToolbarButton {
+    display: flex;
+    align-items: center;
+  }
+
+  &,
+  *,
+  &::before,
+  &::after {
+    box-sizing: border-box;
+  }
+
+  position: absolute;
+  left: $findbar-offset-x;
+  top: $findbar-offset-y;
+  z-index: $z-index-findbar;
+  height: 30px;
+  padding: 0 3px 0 0;
+  background-color: $findbar-bg;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: -9px;
+    border: solid transparent;
+    border-width: 0 8px 8px 8px;
+    border-bottom-color: rgba(0, 0, 0, 0.2);
+
+    @include retina {
+      border-bottom-color: rgba(0, 0, 0, 0.15);
+      filter: blur(0.5px);
+    }
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: -8px;
+    width: 16px;
+    border: solid transparent;
+    border-width: 0 8px 8px 8px;
+    border-bottom-color: #fff;
+  }
+
+  #findInput {
+    width: $find-input-width;
+
+    &[data-status="pending"] {
+      background-image: url(images/loading-small.png);
+      background-repeat: no-repeat;
+      background-position: right;
+    }
+  }
+
+  button {
+    background-color: $findbar-btn-bg;
+    border: $findbar-btn-border;
+    padding: $findbar-btn-padding;
+    margin: 0 $findbar-btn-margin-x;
+
+    &:hover {
+      background-color: $findbar-btn-hover-bg;
+      border-color: $findbar-btn-border-hover-color;
+    }
+
+    &:active,
+    &.toggled:not(#sidebarToggle) {
+      background-color: $findbar-btn-active-bg;
+      border-color: $findbar-btn-border-active-color;
+
+      &::before {
+        position: relative;
+        top: $findbar-btn-icon-active-offset;
+      }
+    }
+
+    &[disabled] {
+      pointer-events: none;
+
+      &::before {
+        opacity: 0.5;
+      }
+    }
+  }
+
+  label {
+    margin-right: 13px;
+    line-height: 1.273; // Center vertically
+  }
 }
 
-.findbar label {
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+#findResultsCount {
+  background-color: rgba(217, 217, 217, 1);
+  color: rgba(82, 82, 82, 1);
+  text-align: center;
+  padding: 3px 4px;
 }
 
-#findInput {
-  width: 200px;
-}
-#findInput::-webkit-input-placeholder {
-  color: rgba(191, 191, 191, 1);
-}
-#findInput::-moz-placeholder {
+#findMsg {
   font-style: italic;
+  color: rgba(166, 183, 208, 1);
 }
-#findInput:-ms-input-placeholder {
-  font-style: italic;
-}
-#findInput::-ms-input-placeholder {
-  font-style: italic;
-}
-#findInput::placeholder {
-  font-style: italic;
-}
-#findInput[data-status="pending"] {
-  background-image: url(images/loading-small.png);
-  background-repeat: no-repeat;
-  background-position: right;
+#findMsg:empty {
+  display: none;
 }
 
-#findPrevious {
-  margin-left: 3px;
-}
-
-#findNext {
-  margin-right: 3px;
+#findInput.notFound {
+  background-color: rgba(255, 102, 102, 1);
 }

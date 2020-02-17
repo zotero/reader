@@ -160,57 +160,13 @@
 
 // > Toolbar sidebar styles position <
 
-.findbar {
-  position: relative;
-  height: 32px;
-  background-color: $body-bg;
-  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.15),
-              inset 0 -1px 0 rgba(255, 255, 255, 0.05),
-              0 1px 0 rgba(0, 0, 0, 0.15),
-              0 1px 1px rgba(0, 0, 0, 0.1);
-}
-
 // > Toolbar styles position 2 <
-
-.findbar {
-  top: 32px + 1px;
-  position: absolute;
-  z-index: 10000;
-  height: auto;
-  min-width: 16px;
-  padding: 0px 6px 0px 6px;
-  margin: 4px 2px 4px 2px;
-  color: rgba(217, 217, 217, 1);
-  font-size: 12px;
-  line-height: 14px;
-  text-align: left;
-  cursor: default;
-}
 
 // > Findbar styles position <
 
 // > Secondary toolbar styles position <
 
 // > Doorhanger styles position <
-
-#findResultsCount {
-  background-color: rgba(217, 217, 217, 1);
-  color: rgba(82, 82, 82, 1);
-  text-align: center;
-  padding: 3px 4px;
-}
-
-#findMsg {
-  font-style: italic;
-  color: rgba(166, 183, 208, 1);
-}
-#findMsg:empty {
-  display: none;
-}
-
-#findInput.notFound {
-  background-color: rgba(255, 102, 102, 1);
-}
 
 // > Toolbar styles position 3 <
 

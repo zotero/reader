@@ -69,7 +69,13 @@
     }
   }
 
+  #pageNumber {
+    width: $page-number-width;
+  }
+
   #numPages {
-    min-width: $numPages-min-width;
+    min-width: $num-pages-min-width;
+    color: $num-pages-color;
+    margin-left: 0;
   }
 }

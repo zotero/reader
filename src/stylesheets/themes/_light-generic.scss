@@ -31,6 +31,9 @@ $font-size-base: rem(11);
 $selection-color: #fff;
 $selection-bg:    rgba($highlight-color, 0.99);
 
+// Z-index master list
+$z-index-findbar: 10000;
+
 //
 // Components
 //
@@ -39,6 +42,9 @@ $selection-bg:    rgba($highlight-color, 0.99);
 $toolbar-height:       30px;
 $toolbar-bg:           $gray-lightest;
 $toolbar-border-color: #cecece;
+$page-number-width:    40px;
+$num-pages-min-width:  76px;
+$num-pages-color:      #777;
 
 // Toolbar button
 $toolbar-btn-padding:             2px 4px 1px 4px;
@@ -62,7 +68,6 @@ $toolbar-btn-separator-right:   -8px;
 $toolbar-btn-separator-bg:      #848484;
 
 // Toolbar field
-$toolbar-field-width:              40px;
 $toolbar-field-height:             24px;
 $toolbar-field-padding:            0 5px;
 $toolbar-field-border:             1px solid #7a7a7a;
@@ -70,8 +75,8 @@ $toolbar-field-color:              #000;
 $toolbar-field-hover-border-color: #171717;
 $toolbar-field-focus-border-color: $highlight-color;
 $toolbar-field-font-size:          $font-size-base;
-$toolbar-label-color:              #777;
-$numPages-min-width:               76px;
+$toolbar-label-color:              #000;
+$toolbar-field-placeholder-color:  #777;
 
 // Dropdown toolbar button
 $dropdown-toolbar-btn-margin-x:           3px;
@@ -88,6 +93,21 @@ $dropdown-toolbar-btn-hover-bg:           tint($highlight-color, 90%);
 $dropdown-toolbar-btn-hover-border-color: $highlight-color;
 $dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
 $dropdown-toolbar-btn-focus-border-color: #005499;
+
+// Findbar
+$findbar-offset-x:                111px;
+$findbar-offset-y:                45px;
+$findbar-bg:                      #fff;
+$findbar-btn-padding:             2px 4px 1px 4px;
+$findbar-btn-margin-x:            3px;
+$findbar-btn-bg:                  transparent;
+$findbar-btn-border:              1px solid transparent;
+$findbar-btn-hover-bg:            rgba($blue-btn, 0.25);
+$findbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
+$findbar-btn-active-bg:           rgba($blue-btn, 0.5);
+$findbar-btn-border-active-color: $blue-btn;
+$findbar-btn-icon-active-offset:  1px;
+$find-input-width:   200px;
 
 // Secondary toolbar
 $secondary-toolbar-offset-x:          3px;
