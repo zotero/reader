@@ -10,13 +10,6 @@
     align-items: center;
   }
 
-  &,
-  *,
-  &::before,
-  &::after {
-    box-sizing: border-box;
-  }
-
   position: absolute;
   left: $findbar-offset-x;
   top: $findbar-offset-y;

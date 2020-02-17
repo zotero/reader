@@ -14,7 +14,6 @@
  */
 
 #thumbnailView {
-  box-sizing: border-box;
   display: flex;
   flex-wrap: wrap;
   width: 100%;
@@ -46,7 +45,22 @@
   margin: -1px 9px 4px 9px;
 }
 
+.thumbnailSelectionRing {
+  box-sizing: content-box;
+  border-radius: 3px;
+  padding: 5px;
+
+  .thumbnail.selected & {
+    background-color: $thumbnail-selection-ring-selected-bg;
+  }
+
+  a:focus > .thumbnail & {
+    background-color: $thumbnail-selection-ring-focus-bg;
+  }
+}
+
 .thumbnailImage {
+  box-sizing: content-box;
   border: 1px solid $thumbnail-image-border-color;
   z-index: 99;
   background-color: $page-bg;
@@ -56,17 +70,4 @@
   a:focus > .thumbnail & {
     border-color: transparent;
   }
-}
-
-.thumbnailSelectionRing {
-  border-radius: 3px;
-  padding: 5px;
-}
-
-.thumbnail.selected > .thumbnailSelectionRing {
-  background-color: $thumbnail-selection-ring-selected-bg;
-}
-
-a:focus > .thumbnail > .thumbnailSelectionRing {
-  background-color: $thumbnail-selection-ring-focus-bg;
 }

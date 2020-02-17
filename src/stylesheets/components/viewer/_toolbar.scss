@@ -12,10 +12,6 @@
   border-bottom: 1px solid $toolbar-border-color;
   position: relative;
 
-  & {
-    box-sizing: border-box;
-  }
-
   #toolbarViewer {
     display: flex;
     justify-content: space-between;
