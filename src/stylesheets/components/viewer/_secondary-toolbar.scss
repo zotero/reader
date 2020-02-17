@@ -63,3 +63,8 @@
   background-color: $horizontal-toolbar-separator-bg;
   margin: $horizontal-toolbar-separator-margin;
 }
+
+.horizontalToolbarSeparator.spreadModeButtons,
+.secondaryToolbarButton#documentProperties {
+  display: none !important;
+}
