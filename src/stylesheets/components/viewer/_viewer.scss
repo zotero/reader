@@ -38,6 +38,7 @@
   left: 0;
   outline: none;
 }
+
 #viewerContainer:not(.pdfPresentationMode) {
   -webkit-transition-duration: 200ms;
           transition-duration: 200ms;
@@ -59,33 +60,12 @@
   left: var(--sidebar-width);
 }
 
-// > Toolbar styles position 1 <
-
-// > Toolbar sidebar styles position <
-
-// > Toolbar styles position 2 <
-
-// > Findbar styles position <
-
-// > Secondary toolbar styles position <
-
-// > Doorhanger styles position <
-
-// > Toolbar styles position 3 <
-
-
-// > Thumbnail view styles postion <
-
-// > Outline view styles position <
-
-
-// Class does not seem to be used anywhere
-//.noResults {
-//  font-size: 12px;
-//  color: rgba(255, 255, 255, 0.8);
-//  font-style: italic;
-//  cursor: default;
-//}
+.noResults {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+  cursor: default;
+}
 
 .fileInput {
   background: rgba(255, 255, 255, 1);
@@ -96,8 +76,6 @@
   right: 0;
   top: 0;
 }
-
-// > PDFBug styles position <
 
 #viewer.textLayer-visible .textLayer {
   opacity: 1.0;
@@ -133,9 +111,11 @@
   cursor: -webkit-grab !important;
   cursor: grab !important;
 }
+
 .grab-to-pan-grab *:not(input):not(textarea):not(button):not(select):not(:link) {
   cursor: inherit !important;
 }
+
 .grab-to-pan-grab:active,
 .grab-to-pan-grabbing {
   cursor: url("images/grabbing.cur"), move !important;
@@ -151,7 +131,3 @@
   overflow: hidden;
   z-index: 50000; /* should be higher than anything else in PDF.js! */
 }
-
-// > Print styles position 1 <
-
-// > Print styles position 2 <
