@@ -104,17 +104,15 @@
     }
   }
 
-  label {
+  .toolbarLabel {
     margin-right: 13px;
     line-height: 1.273; // Center vertically
   }
-}
 
-#findResultsCount {
-  background-color: rgba(217, 217, 217, 1);
-  color: rgba(82, 82, 82, 1);
-  text-align: center;
-  padding: 3px 4px;
+  #findResultsCount {
+    color: $find-results-count-color;
+    margin: $find-results-count-margin;
+  }
 }
 
 #findMsg {
