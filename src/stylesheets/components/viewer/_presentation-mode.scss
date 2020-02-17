@@ -22,42 +22,6 @@
   background-color: rgba(0, 0, 0, 1);
 }
 
-#viewerContainer.pdfPresentationMode:-webkit-full-screen {
-  top: 0px;
-  border-top: 2px solid rgba(0, 0, 0, 0);
-  background-color: rgba(0, 0, 0, 1);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  cursor: none;
-  -webkit-user-select: none;
-          user-select: none;
-}
-
-#viewerContainer.pdfPresentationMode:-moz-full-screen {
-  top: 0px;
-  border-top: 2px solid rgba(0, 0, 0, 0);
-  background-color: rgba(0, 0, 0, 1);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  cursor: none;
-  -moz-user-select: none;
-       user-select: none;
-}
-
-#viewerContainer.pdfPresentationMode:-ms-fullscreen {
-  top: 0px;
-  border-top: 2px solid rgba(0, 0, 0, 0);
-  background-color: rgba(0, 0, 0, 1);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  cursor: none;
-  -ms-user-select: none;
-      user-select: none;
-}
-
 #viewerContainer.pdfPresentationMode:fullscreen {
   top: 0px;
   border-top: 2px solid rgba(0, 0, 0, 0);
@@ -66,38 +30,11 @@
   height: 100%;
   overflow: hidden;
   cursor: none;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
-}
-
-.pdfPresentationMode:-webkit-full-screen a:not(.internalLink) {
-  display: none;
-}
-
-.pdfPresentationMode:-moz-full-screen a:not(.internalLink) {
-  display: none;
-}
-
-.pdfPresentationMode:-ms-fullscreen a:not(.internalLink) {
-  display: none;
+  user-select: none;
 }
 
 .pdfPresentationMode:fullscreen a:not(.internalLink) {
   display: none;
-}
-
-.pdfPresentationMode:-webkit-full-screen .textLayer > span {
-  cursor: none;
-}
-
-.pdfPresentationMode:-moz-full-screen .textLayer > span {
-  cursor: none;
-}
-
-.pdfPresentationMode:-ms-fullscreen .textLayer > span {
-  cursor: none;
 }
 
 .pdfPresentationMode:fullscreen .textLayer > span {

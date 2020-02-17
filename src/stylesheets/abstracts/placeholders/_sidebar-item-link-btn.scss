@@ -14,16 +14,13 @@
  */
 
 %sidebar-item-link-btn {
- text-decoration: none;
- display: inline-block;
- vertical-align: top;
- height: auto;
- color: $sidebar-item-link-btn-color;
- font-size: $font-size-base;
- line-height: 1.2;
- -webkit-user-select: none;
-    -moz-user-select: none;
-     -ms-user-select: none;
-         user-select: none;
- white-space: normal;
+  text-decoration: none;
+  display: inline-block;
+  vertical-align: top;
+  height: auto;
+  color: $sidebar-item-link-btn-color;
+  font-size: $font-size-base;
+  line-height: 1.2;
+  user-select: none;
+  white-space: normal;
 }

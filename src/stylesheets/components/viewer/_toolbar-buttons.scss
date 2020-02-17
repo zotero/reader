@@ -64,8 +64,7 @@
     margin: 0 $dropdown-toolbar-btn-margin-x;
 
     select {
-      -webkit-appearance: none;
-         -moz-appearance: none;
+      appearance: none;
       min-width: initial !important;
       display: block;
       width: 100%;

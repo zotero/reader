@@ -29,8 +29,7 @@
   position: absolute;
   white-space: pre;
   cursor: text;
-  -webkit-transform-origin: 0% 0%;
-          transform-origin: 0% 0%;
+  transform-origin: 0% 0%;
 }
 
 .textLayer .highlight {
@@ -56,10 +55,6 @@
   background-color: rgba(0, 100, 0, 1);
 }
 
-.textLayer ::-moz-selection {
-  background: rgba(0, 0, 255, 1);
-}
-
 .textLayer ::selection {
   background: rgba(0, 0, 255, 1);
 }
@@ -73,10 +68,7 @@
   bottom: 0px;
   z-index: -1;
   cursor: default;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-      -ms-user-select: none;
-          user-select: none;
+  user-select: none;
 }
 
 .textLayer .endOfContent.active {

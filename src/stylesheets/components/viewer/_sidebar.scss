@@ -37,8 +37,7 @@
     /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
     transition-duration: 0s;
     /* Prevent e.g. the thumbnails being selected when the sidebar is resized. */
-    -moz-user-select: none;
-         user-select: none;
+    user-select: none;
   }
 
   #outerContainer.sidebarMoving &,

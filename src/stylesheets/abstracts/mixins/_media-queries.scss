@@ -3,7 +3,7 @@
 //
 
 @mixin retina {
-  @media screen and (-webkit-min-device-pixel-ratio: 1.1), screen and (min-resolution: 1.1dppx) {
+  @media screen and (min-resolution: 1.1dppx) {
     @content;
   }
 }

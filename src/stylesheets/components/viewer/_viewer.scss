@@ -40,23 +40,18 @@
 }
 
 #viewerContainer:not(.pdfPresentationMode) {
-  -webkit-transition-duration: 200ms;
-          transition-duration: 200ms;
-  -webkit-transition-timing-function: ease;
-          transition-timing-function: ease;
-          box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
 #outerContainer.sidebarResizing #viewerContainer {
   /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
-  -webkit-transition-duration: 0s;
-          transition-duration: 0s;
+  transition-duration: 0s;
 }
 
 #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentationMode) {
-  -webkit-transition-property: left;
   transition-property: left;
-  left: 200px;
   left: var(--sidebar-width);
 }
 
@@ -108,7 +103,6 @@
 
 .grab-to-pan-grab {
   cursor: url("images/grab.cur"), move !important;
-  cursor: -webkit-grab !important;
   cursor: grab !important;
 }
 
@@ -119,7 +113,6 @@
 .grab-to-pan-grab:active,
 .grab-to-pan-grabbing {
   cursor: url("images/grabbing.cur"), move !important;
-  cursor: -webkit-grabbing !important;
   cursor: grabbing !important;
   position: fixed;
   background: rgba(0, 0, 0, 0);

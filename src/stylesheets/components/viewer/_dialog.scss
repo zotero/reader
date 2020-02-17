@@ -47,8 +47,6 @@
   line-height: 14px;
   background-color: rgba(71, 71, 71, 1); /* fallback */
   background-image: url(images/texture.png),
-                    -webkit-gradient(linear, left top, left bottom, from(rgba(82, 82, 82,0.99)), to(rgba(69, 69, 69, 0.95)));
-  background-image: url(images/texture.png),
                     linear-gradient(rgba(82, 82, 82,0.99), rgba(69, 69, 69, 0.95));
   border: 1px solid rgba(0, 0, 0, 0.5);
   border-radius: 4px;

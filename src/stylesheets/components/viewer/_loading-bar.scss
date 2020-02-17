@@ -30,7 +30,6 @@
   height: 100%;
   background-color: rgba(221, 221, 221, 1);
   overflow: hidden;
-  -webkit-transition: width 200ms;
   transition: width 200ms;
 }
 
@@ -46,7 +45,6 @@
 
 #loadingBar .progress.indeterminate {
   background-color: rgba(153, 153, 153, 1);
-  -webkit-transition: none;
   transition: none;
 }
 
@@ -60,6 +58,5 @@
                                         rgba(187, 187, 187, 1) 0, rgba(153, 153, 153, 1) 5px,
                                         rgba(153, 153, 153, 1) 45px, rgba(221, 221, 221, 1) 55px,
                                         rgba(221, 221, 221, 1) 95px, rgba(187, 187, 187, 1) 100px);
-  -webkit-animation: progressIndeterminate 950ms linear infinite;
           animation: progressIndeterminate 950ms linear infinite;
 }
