@@ -98,6 +98,14 @@
         border-color: $toolbar-field-focus-border-color;
       }
     }
+
+    #customScaleOption {
+      display: none;
+    }
+
+    #pageWidthOption {
+      border-bottom: 1px rgba(255, 255, 255, 0.5) solid;
+    }
   }
 }
 
