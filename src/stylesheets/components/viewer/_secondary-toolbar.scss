@@ -27,13 +27,15 @@
   text-align: left;
   border: 0;
   background-color: $secondary-toolbar-btn-bg;
-  height: $secondary-toolbar-btn-height;
+  line-height: $secondary-toolbar-btn-line-height;
   padding: $secondary-toolbar-btn-padding;
+  white-space: normal; // Avoid horizontal scrollbar bug in Firefox
   position: relative;
 
   &::before {
     position: absolute;
-    top: calc(50% - 8px);
+    top: rem(11);
+    margin-top: -8px;
     left: $secondary-toolbar-btn-icon-offset-x;
   }
 
