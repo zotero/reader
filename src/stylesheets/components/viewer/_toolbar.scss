@@ -75,4 +75,9 @@
     color: $num-pages-color;
     margin-left: 0;
   }
+
+  #openFile,
+  #viewBookmark {
+    display: none !important;
+  }
 }

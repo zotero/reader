@@ -37,7 +37,6 @@
 
 .outlineItem > a {
   @extend %sidebar-item-link-btn;
-  @include icon("document-bookmark");
   flex: 1 1 100%;
   padding: rem(3.5) 0 rem(3.5) 19px;
   position: relative;
