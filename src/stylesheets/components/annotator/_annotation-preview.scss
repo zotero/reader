@@ -1,0 +1,52 @@
+
+.annotation-preview {
+  .main-view {
+    .color-line {
+      height: 4px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+
+      .page {
+        width: 30px;
+      }
+
+      .settings {
+        font-size: 18px;
+        cursor: pointer;
+      }
+    }
+
+    .image {
+      width: 100%;
+    }
+
+    .tags {
+      &:empty::before {
+        content: 'Add tags..';
+        color: #999;
+      }
+
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+
+  .settings-view {
+    .back {
+       font-size: 20px;
+       cursor: pointer;
+    }
+
+    .button {
+      text-align: center;
+      padding: 5px 0;
+      margin: 5px 0;
+      border: 1px solid gray;
+      cursor: pointer;
+    }
+  }
+}

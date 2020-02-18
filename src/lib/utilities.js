@@ -1,7 +1,7 @@
 'use strict';
 
 export function copyToClipboard(str) {
-  const el = document.createElement('textarea');
+  let el = document.createElement('textarea');
   el.value = str;
   document.body.appendChild(el);
   el.select();
@@ -11,7 +11,7 @@ export function copyToClipboard(str) {
 
 export function getClientRects(range, containerEl) {
   let clientRects = Array.from(range.getClientRects());
-  const offset = containerEl.getBoundingClientRect();
+  let offset = containerEl.getBoundingClientRect();
   let rects = clientRects.map(rect => {
     return {
       top: rect.top + containerEl.scrollTop - offset.top - 10,
@@ -52,7 +52,7 @@ export function getPageFromElement(target) {
     return null;
   }
   
-  const number = parseInt(node.dataset.pageNumber);
+  let number = parseInt(node.dataset.pageNumber);
   return { node, number };
 }
 
@@ -75,4 +75,18 @@ export function findOrCreateContainerLayer(container, className) {
   }
   
   return layer;
+}
+
+export function formatAnnotationText(annotation) {
+  let parts = [];
+  
+  if (annotation.comment) {
+    parts.push(annotation.comment + ':');
+  }
+  
+  if (annotation.text) {
+    parts.push('"' + annotation.text + '"');
+  }
+  
+  return parts.join(' ');
 }

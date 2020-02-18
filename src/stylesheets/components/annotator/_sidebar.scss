@@ -1,51 +1,32 @@
-.Sidebar-block {
-  padding: 10px 5px;
-  font-size: 13px;
-  border-bottom: 1px solid gray;
-}
 
-.Sidebar-block-active {
-  background-color: #f4f4f4;
-}
+.sidebar {
+  .search {
+    padding: 5px 5px;
+    display: flex;
 
-.Sidebar-block:hover {
-  cursor: pointer;
-}
+    .input-container {
+      flex: 1;
 
-.Sidebar-image {
-  width: 100%;
-}
+      input {
+        width: 100%;
+      }
+    }
 
-.Sidebar-page {
-  text-align: left;
-}
+    .clear {
+      padding: 0 5px;
+    }
+  }
 
-.Sidebar-text {
-  background-color: #4c4c4c;
-  padding: 5px;
-}
+  .block {
+    padding: 10px 5px;
+    font-size: 13px;
+    border-bottom: 1px solid gray;
+    cursor: pointer;
 
-.Sidebar-search {
-  padding: 5px 5px;
-  display: flex;
-}
-
-.Sidebar-search input {
-  width: 100%;
-}
-
-.Sidebar-search-input {
-  flex: 1;
-}
-
-.Sidebar-search-clear {
-  padding: 0 5px;
-}
-
-.Sidebar-block textarea {
-  height: 60px;
-  background-color: white;
-  padding: 5px;
+    &.active {
+      background-color: #f4f4f4
+    }
+  }
 }
 
 #annotationsView {
@@ -55,6 +36,3 @@
 #annotationsView:focus {
   outline: none;
 }
-
-
-

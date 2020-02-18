@@ -3,7 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-class PopupScreen extends React.Component {
+class ScreenPopup extends React.Component {
   state = {
     dimensions: null
   };
@@ -17,6 +17,19 @@ class PopupScreen extends React.Component {
     });
   }
   
+  getContainer() {
+    let popupContainer = document.getElementById('popupScreenContainer');
+    if (!popupContainer) {
+      let viewerContainer = document.getElementById('mainContainer');
+      if (!viewerContainer) return;
+      popupContainer = document.createElement('div');
+      popupContainer.className = 'screen-popup-container';
+      popupContainer.id = 'popupScreenContainer';
+      viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
+    }
+    return popupContainer;
+  }
+  
   getPosition(parentId) {
     let node = document.getElementById(parentId);
     if (!node) return null;
@@ -27,29 +40,19 @@ class PopupScreen extends React.Component {
   }
   
   render() {
-    const { children, parentId, className } = this.props;
-    const { dimensions } = this.state;
-    
-    let popupContainer = document.getElementById('popupScreenContainer');
-    if (!popupContainer) {
-      let viewerContainer = document.getElementById('mainContainer');
-      if (!viewerContainer) return;
-      popupContainer = document.createElement('div');
-      popupContainer.className = 'PopupScreenContainer';
-      popupContainer.id = 'popupScreenContainer';
-      viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
-    }
+    let { children, parentId, className } = this.props;
+    let { dimensions } = this.state;
     
     return ReactDOM.createPortal(
       <div
         ref={el => (this.container = el)}
-        className={'PopupScreen ' + className}
+        className={'screen-popup ' + className}
         style={dimensions ? this.getPosition(parentId, dimensions) : {}}>
         {children}
       </div>,
-      popupContainer
+      this.getContainer()
     );
   }
 }
 
-export default PopupScreen;
+export default ScreenPopup;

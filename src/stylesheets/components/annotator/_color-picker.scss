@@ -1,15 +1,12 @@
 
-.ColorPicker {
-    display: flex;
-    flex-wrap: wrap;
-}
+.color-picker {
+  display: flex;
+  flex-wrap: wrap;
 
-.ColorPicker div {
+  div {
     width: 30px;
     height: 20px;
     margin: 5px;
-}
-
-.ColorPicker div:hover {
     cursor: pointer;
+  }
 }

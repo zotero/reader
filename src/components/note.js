@@ -53,7 +53,7 @@ class Note extends React.Component {
     
     return (
       <Rnd
-        className={cx({ 'Note': true, 'Note-active': active })}
+        className={cx('note-annotation', { active })}
         style={{ backgroundColor: annotation.color }}
         disableDragging={!(enableInactiveDragging || active)}
         enableResizing={false}

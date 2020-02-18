@@ -10,7 +10,7 @@
   },
   "author": "Martynas Bagdonas",
   "license": "AGPL-3.0",
-    "browserslist": [
+  "browserslist": [
     "last 2 version",
     "ff >= 60.8.0"
   ],

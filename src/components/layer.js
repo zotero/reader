@@ -3,13 +3,13 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames'
-import Highlight from './Highlight';
-import Note from './Note';
-import Area from './Area';
-import AreaSelector from './AreaSelector';
-import SelectionMenu from './SelectionMenu';
-import PopupPage from './PopupPage';
-import Meta from './Meta';
+import Highlight from './highlight';
+import Note from './note';
+import Area from './area';
+import AreaSelector from './area-selector';
+import SelectionMenu from './selection-menu';
+import PagePopup from './page-popup';
+import AnnotationPreview from './annotation-preview';
 
 import {
   getPageFromRange,
@@ -19,23 +19,28 @@ import {
 
 import { p2v, v2p, wx, hy } from '../lib/coordinates';
 import { extractRange } from '../lib/extract';
-import { copyToClipboard, getClientRects, debounce } from '../lib/utilities';
+import {
+  copyToClipboard,
+  getClientRects,
+  debounce,
+  formatAnnotationText
+} from '../lib/utilities';
 
 class PageLayerHighlight extends React.Component {
   getContainerNode(viewport) {
-    const textLayer = viewport.textLayer;
+    let textLayer = viewport.textLayer;
     if (!textLayer) {
       return;
     }
     
     return findOrCreateContainerLayer(
       textLayer.textLayerDiv,
-      'Layer__highlight'
+      'layer-highlight'
     );
   }
   
   render() {
-    const { view, annotations, activeAnnotationId } = this.props;
+    let { view, annotations, activeAnnotationId } = this.props;
     
     let node = this.getContainerNode(view);
     if (!node) return null;
@@ -44,9 +49,9 @@ class PageLayerHighlight extends React.Component {
       <div className={cx({ 'selecting-annotation': !!activeAnnotationId })}>
         {annotations.map(
           (annotation, index) => {
-            const { position, ...rest } = annotation;
+            let { position, ...rest } = annotation;
             
-            const viewportAnnotation = {
+            let viewportAnnotation = {
               position: p2v(position, view.viewport),
               ...rest
             };
@@ -71,12 +76,12 @@ class PageLayerNote extends React.Component {
   getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
-      'Layer__note'
+      'layer-note'
     );
   }
   
   render() {
-    const {
+    let {
       view,
       annotations,
       activeAnnotationId,
@@ -91,9 +96,9 @@ class PageLayerNote extends React.Component {
       <div>
         {annotations.map(
           (annotation, index) => {
-            const { position, ...rest } = annotation;
+            let { position, ...rest } = annotation;
             
-            const viewportAnnotation = {
+            let viewportAnnotation = {
               position: p2v(position, view.viewport),
               ...rest
             };
@@ -122,12 +127,12 @@ class PageLayerArea extends React.Component {
   getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
-      'Layer__area'
+      'layer-area'
     );
   }
   
   render() {
-    const {
+    let {
       view,
       annotations,
       activeAnnotationId,
@@ -141,9 +146,9 @@ class PageLayerArea extends React.Component {
       <div>
         {annotations.map(
           (annotation, index) => {
-            const { position, ...rest } = annotation;
+            let { position, ...rest } = annotation;
             
-            const viewportAnnotation = {
+            let viewportAnnotation = {
               position: p2v(position, view.viewport),
               ...rest
             };
@@ -192,7 +197,8 @@ class AreaSelectorLayer extends React.Component {
         shouldStart={enableAreaSelector}
         onSelection={onSelection}
       />,
-      areaSelectorContainer);
+      areaSelectorContainer
+    );
   }
 }
 
@@ -201,7 +207,7 @@ class MarginNoteLayer extends React.Component {
   getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
-      'Layer__marginNote'
+      'layer-margin-note'
     );
   }
   
@@ -275,8 +281,8 @@ class MarginNoteLayer extends React.Component {
     
     let scale = PDFViewerApplication.pdfViewer._currentScale;
     
-    const width = 15 * scale;
-    const height = 15 * scale;
+    let width = 15 * scale;
+    let height = 15 * scale;
     
     for (let annotation of annotations) {
       let viewportPosition = p2v(annotation.position, viewport);
@@ -316,7 +322,7 @@ class MarginNoteLayer extends React.Component {
   }
   
   render() {
-    const {
+    let {
       view,
       annotations,
       activeAnnotationId,
@@ -340,7 +346,7 @@ class MarginNoteLayer extends React.Component {
             return (
               <div
                 key={marginNote.annotation.id}
-                className={cx({ 'MarginNote': true, 'MarginNote-active': active })}
+                className={cx('margin-note', { active })}
                 style={{
                   left: marginNote.rect.left,
                   top: marginNote.rect.top,
@@ -377,7 +383,7 @@ class Layer extends React.Component {
   containerNode = null;
   
   componentDidMount() {
-    const { onMouseSelection, onPointerUp, onPointerDown } = this.props;
+    let { onMouseSelection, onPointerUp, onPointerDown } = this.props;
     this.debouncedAfterSelection = this.afterSelection;
     
     this.viewer = window.PDFViewerApplication.pdfViewer;
@@ -387,7 +393,6 @@ class Layer extends React.Component {
     
     
     this.containerNode = document.getElementById('viewerContainer');
-    // this.renderAnnotations();
     
     this.containerNode.addEventListener('click', e => {
       this.setState({ selectionFinished: !!this.state.range });
@@ -401,18 +406,18 @@ class Layer extends React.Component {
     });
     
     this.containerNode.addEventListener('mousedown', e => {
-      const page = getPageFromElement(e.target);
+      let page = getPageFromElement(e.target);
       if (!page) {
         return;
       }
       
       let containerEl = page.node;
-      const offset = containerEl.getBoundingClientRect();
+      let offset = containerEl.getBoundingClientRect();
       
-      const x = e.clientX + containerEl.scrollLeft - offset.left - 9;
-      const y = e.clientY + containerEl.scrollTop - offset.top - 10;
+      let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
+      let y = e.clientY + containerEl.scrollTop - offset.top - 10;
       
-      const position = {
+      let position = {
         pageIndex: page.number - 1,
         rects: [[x, y, x, y]]
       };
@@ -427,22 +432,22 @@ class Layer extends React.Component {
     });
     
     this.containerNode.addEventListener('mouseup', e => {
-      const page = getPageFromElement(e.target);
+      let page = getPageFromElement(e.target);
       if (!page) {
         return;
       }
       
-      if (e.target.classList.contains('MarginNote')) {
+      if (e.target.classList.contains('margin-note')) {
         return;
       }
       
       let containerEl = page.node;
-      const offset = containerEl.getBoundingClientRect();
+      let offset = containerEl.getBoundingClientRect();
       
-      const x = e.clientX + containerEl.scrollLeft - offset.left - 9;
-      const y = e.clientY + containerEl.scrollTop - offset.top - 10;
+      let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
+      let y = e.clientY + containerEl.scrollTop - offset.top - 10;
       
-      const position = {
+      let position = {
         pageIndex: page.number - 1,
         rects: [[x, y, x, y]]
       };
@@ -511,7 +516,7 @@ class Layer extends React.Component {
     return [...annotations]
       .filter(Boolean)
       .reduce((res, annotation) => {
-        const { pageIndex } = annotation.position;
+        let { pageIndex } = annotation.position;
         
         res[pageIndex] = res[pageIndex] || [];
         res[pageIndex].push(annotation);
@@ -541,7 +546,7 @@ class Layer extends React.Component {
   };
   
   onDocumentReady = () => {
-    const { scrollRef } = this.props;
+    let { scrollRef } = this.props;
     scrollRef(this.scrollTo);
   };
   
@@ -555,7 +560,7 @@ class Layer extends React.Component {
   };
   
   async getSelection() {
-    const selection = window.getSelection();
+    let selection = window.getSelection();
     
     if (selection.anchorNode && selection.focusNode) {
       let a = selection.anchorNode;
@@ -588,17 +593,17 @@ class Layer extends React.Component {
     
     if (!range) return null;
     
-    const page = getPageFromRange(range);
+    let page = getPageFromRange(range);
     if (!page) {
       return null;
     }
-    const rects = getClientRects(range, page.node);
+    let rects = getClientRects(range, page.node);
     
     if (rects.length === 0) {
       return null;
     }
     
-    const position = { rects, pageIndex: page.number - 1 };
+    let position = { rects, pageIndex: page.number - 1 };
     
     let extractedRange = await extractRange(this.v2p(position));
     if (!extractedRange) return null;
@@ -618,20 +623,13 @@ class Layer extends React.Component {
     return extractedRange;
   }
   
-  toggleTextSelection(flag) {
-    this.viewer.viewer.classList.toggle(
-      'Layer--disable-selection',
-      flag
-    );
-  }
-  
   v2p(position) {
-    const viewport = this.viewer.getPageView(position.pageIndex).viewport;
+    let viewport = this.viewer.getPageView(position.pageIndex).viewport;
     return v2p(position, viewport);
   }
   
   p2v(position) {
-    const viewport = this.viewer.getPageView(position.pageIndex).viewport;
+    let viewport = this.viewer.getPageView(position.pageIndex).viewport;
     return p2v(position, viewport);
   }
   
@@ -697,8 +695,8 @@ class Layer extends React.Component {
     
     if (!this.viewer || !this.viewer.pdfDocument || !this.state.initialized) return null;
     
-    const annotationsByPage = this.groupAnnotationsByPage(annotations);
-    const annotationsByPagePrev = this.groupAnnotationsByPage(this.props.annotations);
+    let annotationsByPage = this.groupAnnotationsByPage(annotations);
+    let annotationsByPagePrev = this.groupAnnotationsByPage(this.props.annotations);
     
     let pageLayers = [];
     for (let pageIndex = 0; pageIndex <= this.viewer.pdfDocument.numPages; pageIndex++) {
@@ -761,7 +759,7 @@ class Layer extends React.Component {
     }
     
     if (popupAnnotation) {
-      const { position, ...rest } = popupAnnotation;
+      let { position, ...rest } = popupAnnotation;
       popupAnnotation = {
         position: this.p2v(position),
         ...rest
@@ -779,21 +777,11 @@ class Layer extends React.Component {
         />
         {
           popupAnnotation && !this.state.dragging && !window.PDFViewerApplication.pdfSidebar.isOpen ? (
-            <PopupPage
-              className="AnnotationPopup"
+            <PagePopup
+              className="annotation-preview-popup"
               position={popupAnnotation.position}
-              // onDragStart={(event)=> {
-              //     let annotation = popupAnnotation;
-              //     annotation.itemId = window.itemId;
-              //     event.dataTransfer.setData('zotero/annotation', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
-              //     event.dataTransfer.setData('text/plain', JSON.stringify({...annotation, position: this.v2p(annotation.position)}));
-              //   }}
             >
-              {/*<div className="AnnotationPopup__title">*/}
-              {/*  <div>{popupAnnotation.label}</div>*/}
-              {/*  <div>{popupAnnotation.dateModified.split("T")[0]}</div>*/}
-              {/*</div>*/}
-              <Meta
+              <AnnotationPreview
                 annotation={popupAnnotation}
                 isLayer={true}
                 onUpdate={(comment) => {
@@ -814,19 +802,16 @@ class Layer extends React.Component {
                     ...annotation,
                     position: this.v2p(annotation.position)
                   }));
-                  event.dataTransfer.setData('text/plain', JSON.stringify({
-                    ...annotation,
-                    position: this.v2p(annotation.position)
-                  }));
+                  event.dataTransfer.setData('text/plain', formatAnnotationText(annotation));
                 }}
               />
             
-            </PopupPage>
+            </PagePopup>
           ) : null
         }
         {
-          this.state.selection && this.props.enableMouseSelection ? (
-            <PopupPage position={this.state.selection.position}>
+          this.state.selection && this.props.enableMouseSelection && (
+            <PagePopup position={this.state.selection.position}>
               <SelectionMenu
                 onHighlight={() => {
                   let selection = this.state.selection;
@@ -839,8 +824,8 @@ class Layer extends React.Component {
                   }
                 }}
               />
-            </PopupPage>
-          ) : null
+            </PagePopup>
+          )
         }
         {pageLayers}
       </React.Fragment>

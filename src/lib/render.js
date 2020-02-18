@@ -31,14 +31,14 @@ export async function renderAreaImage(position) {
   
   await page.render(renderContext).promise;
   
-  const rect = position.rects[0];
+  let rect = position.rects[0];
   
-  const left = rect[0];
-  const top = rect[1];
-  const width = wx(rect);
-  const height = hy(rect);
+  let left = rect[0];
+  let top = rect[1];
+  let width = wx(rect);
+  let height = hy(rect);
   
-  const newCanvas = document.createElement('canvas');
+  let newCanvas = document.createElement('canvas');
   
   if (!(newCanvas instanceof HTMLCanvasElement)) {
     return '';
@@ -47,7 +47,7 @@ export async function renderAreaImage(position) {
   newCanvas.width = width;
   newCanvas.height = height;
   
-  const newCanvasContext = newCanvas.getContext('2d');
+  let newCanvasContext = newCanvas.getContext('2d');
   
   if (!newCanvasContext || !canvas) {
     return '';

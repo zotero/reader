@@ -6,7 +6,7 @@ export function getPageFromElement(target) {
     return null;
   }
   
-  const number = parseInt(node.dataset.pageNumber);
+  let number = parseInt(node.dataset.pageNumber);
   return { node, number };
 }
 

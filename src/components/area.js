@@ -82,10 +82,9 @@ class Area extends React.Component {
     
     return (
       <Rnd
-        className={cx({
-          'Area': true,
-          'Area-active': active,
-          'Area-comment': annotation.comment
+        className={cx('area-annotation', {
+          active,
+          comment: annotation.comment
         })}
         style={{ backgroundColor: annotation.color }}
         onDragStart={this.handleDragStart}

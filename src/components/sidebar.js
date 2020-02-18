@@ -2,8 +2,8 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Meta from './Meta';
-
+import cx from 'classnames';
+import AnnotationPreview from './annotation-preview';
 import { searchAnnotations } from '../lib/search';
 
 class Sidebar extends React.Component {
@@ -13,7 +13,7 @@ class Sidebar extends React.Component {
   };
   
   search(query) {
-    const { annotations } = this.props;
+    let { annotations } = this.props;
     
     if (query) {
       let filteredAnnotations = searchAnnotations(annotations, query);
@@ -26,7 +26,7 @@ class Sidebar extends React.Component {
   
   render() {
     let { importableAnnotationsNum, annotations, onSelectAnnotation, onChange, onDelete, activeAnnotationId, onClickTags, onImport } = this.props;
-    const annotationsView = document.getElementById('annotationsView');
+    let annotationsView = document.getElementById('annotationsView');
     if (this.state.filteredAnnotations) {
       let newFilteredAnnotations = [];
       
@@ -43,9 +43,9 @@ class Sidebar extends React.Component {
     if (annotationsView) {
       return ReactDOM.createPortal(
         (
-          <div>
-            <div className="Sidebar-search">
-              <div className="Sidebar-search-input">
+          <div className="sidebar">
+            <div className="search">
+              <div className="input-container">
                 <input
                   type="text"
                   placeholder="Search.."
@@ -56,14 +56,14 @@ class Sidebar extends React.Component {
                   }}
                 />
               </div>
-              <div className="Sidebar-search-clear" onClick={() => {
+              <div className="clear" onClick={() => {
                 this.setState({ query: '' });
                 this.search();
               }}>X
               </div>
             </div>
             <button
-              className="Sidebar-import"
+              className="import"
               onClick={onImport}
             >
               Import annotations ({importableAnnotationsNum})
@@ -71,7 +71,7 @@ class Sidebar extends React.Component {
             {annotations.map((annotation, index) => (
               <div
                 key={annotation.id}
-                className={`Sidebar-block ${annotation.id === activeAnnotationId ? 'Sidebar-block-active' : ''}`}
+                className={cx('block', { active: annotation.id === activeAnnotationId })}
                 data-sidebar-id={annotation.id}
                 onClick={() => {
                   onSelectAnnotation(annotation.id);
@@ -83,7 +83,7 @@ class Sidebar extends React.Component {
                 //   // event.dataTransfer.setData('text/plain', JSON.stringify(annotation));
                 // }}
               >
-                <Meta
+                <AnnotationPreview
                   annotation={annotation}
                   onUpdate={(comment) => {
                     onChange({ id: annotation.id, comment });

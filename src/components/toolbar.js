@@ -21,27 +21,21 @@ class Toolbar extends React.Component {
           onClick={onColorClick}
         />
         <button
-          className={cx({
-            toolbarButton: true,
-            highlight: true,
+          className={cx('toolbarButton highlight', {
             active: active === 'highlight'
           })}
           onClick={() => {
             onMode('highlight');
           }}/>
         <button
-          className={cx({
-            toolbarButton: true,
-            note: true,
+          className={cx('toolbarButton note', {
             active: active === 'note'
           })}
           onClick={() => {
             onMode('note');
           }}/>
         <button
-          className={cx({
-            toolbarButton: true,
-            area: true,
+          className={cx('toolbarButton area', {
             active: active === 'area'
           })}
           onClick={() => {

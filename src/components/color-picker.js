@@ -6,10 +6,10 @@ import { annotationColors } from '../lib/colors';
 class ColorPicker extends React.Component {
   
   render() {
-    const { onColorPick } = this.props;
+    let { onColorPick } = this.props;
     
     return (
-      <div className="ColorPicker">{
+      <div className="color-picker">{
         annotationColors.map((color, index) => {
           return <div
             key={index}
@@ -17,7 +17,7 @@ class ColorPicker extends React.Component {
             onClick={() => {
               onColorPick(color);
             }}
-          ></div>;
+          />;
         })
       }</div>
     );

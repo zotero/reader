@@ -13,7 +13,7 @@ class AreaSelector extends React.Component {
   }
   
   reset = () => {
-    const { onDragEnd } = this.props;
+    let { onDragEnd } = this.props;
     onDragEnd();
     this.setState({ start: null, end: null, locked: false });
   }
@@ -32,9 +32,9 @@ class AreaSelector extends React.Component {
       return;
     }
     
-    const that = this;
-    const { onSelection, onDragStart, onDragEnd, shouldStart } = this.props;
-    const container = this.root.parentElement.parentElement;
+    let that = this;
+    let { onSelection, onDragStart, onDragEnd, shouldStart } = this.props;
+    let container = this.root.parentElement.parentElement;
     let scrollTimeout = null;
     
     if (!(container instanceof HTMLElement)) {
@@ -43,7 +43,7 @@ class AreaSelector extends React.Component {
     
     let containerBoundingRect = null;
     
-    const containerCoords = (pageX, pageY) => {
+    let containerCoords = (pageX, pageY) => {
       if (!containerBoundingRect) {
         containerBoundingRect = container.getBoundingClientRect();
       }
@@ -54,12 +54,12 @@ class AreaSelector extends React.Component {
     };
     
     window.addEventListener('mousemove', (event) => {
-      const { start, locked } = this.state;
+      let { start, locked } = this.state;
       if (!start || locked) {
         return;
       }
       
-      const selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
+      let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
       if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
       
       let end = containerCoords(event.pageX, event.pageY);
@@ -137,7 +137,7 @@ class AreaSelector extends React.Component {
         return;
       }
       
-      const startTarget = event.target;
+      let startTarget = event.target;
       
       if (!(startTarget instanceof HTMLElement)) {
         return;
@@ -170,18 +170,18 @@ class AreaSelector extends React.Component {
         }
       });
       
-      const onMouseUp = (event) => {
+      let onMouseUp = (event) => {
         clearTimeout(scrollTimeout);
         // emulate listen once
         event.currentTarget.removeEventListener('mouseup', onMouseUp);
         
-        const { start } = this.state;
+        let { start } = this.state;
         
         if (!start) {
           return;
         }
         
-        const end = containerCoords(event.pageX, event.pageY);
+        let end = containerCoords(event.pageX, event.pageY);
         
         if (this.state.bounds) {
           if (end.x < this.state.bounds[0]) {
@@ -199,7 +199,7 @@ class AreaSelector extends React.Component {
           }
         }
         
-        const boundingRect = that.getBoundingRect(start, end);
+        let boundingRect = that.getBoundingRect(start, end);
         
         if (
           !that.shouldRender(boundingRect)
@@ -214,14 +214,14 @@ class AreaSelector extends React.Component {
             locked: true
           },
           () => {
-            const { start, end } = that.state;
+            let { start, end } = that.state;
             
             if (!start || !end) {
               return;
             }
             
             
-            const boundingRect = that.getBoundingRect(start, end);
+            let boundingRect = that.getBoundingRect(start, end);
             
             let pg = this.state.page;
             
@@ -256,8 +256,8 @@ class AreaSelector extends React.Component {
   }
   
   render() {
-    const { start, end } = this.state;
-    const { color } = this.props;
+    let { start, end } = this.state;
+    let { color } = this.props;
     
     return (
       <div
@@ -265,8 +265,11 @@ class AreaSelector extends React.Component {
       >
         {start && end ? (
           <div
-            className="AreaSelector"
-            style={{ ...this.getBoundingRect(start, end), backgroundColor: color }}
+            className="area-selector"
+            style={{
+              ...this.getBoundingRect(start, end),
+              backgroundColor: color
+            }}
           />
         ) : null}
       </div>

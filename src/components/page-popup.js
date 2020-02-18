@@ -3,7 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-class PopupPage extends React.Component {
+class PagePopup extends React.Component {
   state = {
     dimensions: null
   };
@@ -15,6 +15,20 @@ class PopupPage extends React.Component {
         height: this.container.offsetHeight
       }
     });
+  }
+  
+  getContainer() {
+    let popupContainer = document.getElementById('pagePopupContainer');
+    if (!popupContainer) {
+      let viewerContainer = document.getElementById('viewerContainer');
+      if (!viewerContainer) return;
+      popupContainer = document.createElement('div');
+      popupContainer.className = 'page-popup-container';
+      popupContainer.id = 'pagePopupContainer';
+      viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
+    }
+    
+    return popupContainer;
   }
   
   getRect(position, dimensions) {
@@ -55,32 +69,22 @@ class PopupPage extends React.Component {
   }
   
   render() {
-    const { position, children, className, onDragStart } = this.props;
-    const { dimensions } = this.state;
-    
-    let popupContainer = document.getElementById('popupPageContainer');
-    if (!popupContainer) {
-      let viewerContainer = document.getElementById('viewerContainer');
-      if (!viewerContainer) return;
-      popupContainer = document.createElement('div');
-      popupContainer.className = 'PopupPageContainer';
-      popupContainer.id = 'popupPageContainer';
-      viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
-    }
+    let { position, children, className, onDragStart } = this.props;
+    let { dimensions } = this.state;
     
     return ReactDOM.createPortal(
       <div
         ref={el => (this.container = el)}
-        className={'PopupPage ' + className}
+        className={'page-popup ' + className}
         style={dimensions ? this.getRect(position, dimensions) : {}}
         // draggable={true}
         // onDragStart={onDragStart}
       >
         {children}
       </div>,
-      popupContainer
+      this.getContainer()
     );
   }
 }
 
-export default PopupPage;
+export default PagePopup;

@@ -95,7 +95,7 @@ class Content extends React.Component {
   
   onSelectionChange = () => {
     let { onSelectionChange, innerRef } = this.props;
-    const selection = window.getSelection();
+    let selection = window.getSelection();
     
     // let range = null;
     
@@ -136,26 +136,23 @@ class Content extends React.Component {
   render() {
     let { plainTextOnly, text, placeholder, onChange, innerRef } = this.props;
     return (
-      <div ref="editor" className="editor">
-        <div
-          ref={innerRef}
-          className="editor-content"
-          contentEditable={true}
-          dangerouslySetInnerHTML={{ __html: text }}
-          onInput={() => {
-            clean(innerRef.current);
-            onChange(innerRef.current.innerHTML);
-          }}
-          placeholder={placeholder}
-          onKeyDown={(event) => {
-            event.stopPropagation();
-          }}
-        />
-      </div>
+      <div
+        ref={innerRef}
+        className="content"
+        contentEditable={true}
+        dangerouslySetInnerHTML={{ __html: text }}
+        onInput={() => {
+          clean(innerRef.current);
+          onChange(innerRef.current.innerHTML);
+        }}
+        placeholder={placeholder}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+        }}
+      />
     );
   }
 }
-
 
 class Editor extends React.Component {
   constructor(props) {
@@ -181,12 +178,12 @@ class Editor extends React.Component {
           placeholder={placeholder}
         />
         {!plainTextOnly && this.state.isSelected ? (
-          <div className="editor-toolbar">
+          <div className="toolbar">
             {
               actions.map((action, idx) => (
                 <button
                   key={idx}
-                  className="editor-button"
+                  className="button"
                   dangerouslySetInnerHTML={{ __html: action.icon }}
                   onClick={() => {
                     document.execCommand(action.command, false, null);

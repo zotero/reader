@@ -1,12 +1,11 @@
 'use strict';
 
 import React from 'react';
-import Layer from './Layer';
-import Sidebar from './Sidebar';
-import Toolbar from './Toolbar';
-import PopupScreen from './PopupScreen';
-import ColorPicker from './ColorPicker';
-
+import Layer from './layer';
+import Sidebar from './sidebar';
+import Toolbar from './toolbar';
+import PopupScreen from './screen-popup';
+import ColorPicker from './color-picker';
 import { annotationColors } from '../lib/colors';
 
 class Annotator extends React.Component {
@@ -153,7 +152,7 @@ class Annotator extends React.Component {
   }
   
   clearSelection() {
-    const selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
+    let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
     if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
   }
   
@@ -256,8 +255,8 @@ class Annotator extends React.Component {
   }
   
   render() {
-    const { onAddAnnotation, onUpdateAnnotation, onDeleteAnnotation, onClickTags, onImport } = this.props;
-    const { annotations } = this.state;
+    let { onAddAnnotation, onUpdateAnnotation, onDeleteAnnotation, onClickTags, onImport } = this.props;
+    let { annotations } = this.state;
     
     return (
       <div>
@@ -272,7 +271,7 @@ class Annotator extends React.Component {
           }}
         />
         {this.state.colorPicking ? (
-          <PopupScreen className="GlobalColorPickerPopup" parentId="globalColorButton">
+          <PopupScreen className="global-color-picker-popup" parentId="globalColorButton">
             <ColorPicker onColorPick={(color) => {
               this.setState({ color });
               this.setState({ colorPicking: false });

@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { render } from 'react-dom';
-import Annotator from './components/Annotator';
-import AnnotationsStore from './AnnotationsStore';
+import Annotator from './components/annotator';
+import AnnotationsStore from './annotations-store';
 import { debounce } from './lib/utilities';
 
 class Viewer {
