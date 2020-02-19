@@ -18,6 +18,7 @@
 }
 
 .pdfViewer .page {
+  box-sizing: content-box;
   direction: ltr;
   width: 816px;
   height: 1056px;
