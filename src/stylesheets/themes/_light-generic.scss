@@ -33,6 +33,7 @@ $selection-bg:    rgba($highlight-color, 0.99);
 
 // Z-index master list
 $z-index-findbar: 10000;
+$z-index-overlay: 40000;
 
 //
 // Components
@@ -157,3 +158,26 @@ $outline-item-height: rem(20);
 $page-bg:             #fff;
 $page-outline:        1px solid #e5e5e5;
 $page-outline-offset: -9px;
+
+// Dialogs
+$overlay-container-bg:      rgba(0, 0, 0, 0.3);
+$dialog-width:              300px;
+$dialog-padding:            16px;
+$dialog-font-size:          $font-size-base;
+$dialog-line-height:        1.2;
+$dialog-bg:                 #fff;
+$dialog-color:              $text-color;
+$dialog-border-radius:      1px;
+$dialog-shadow:             4px 6px 4px gray;
+$btn-row-justify-content:   flex-end;
+$overlay-btn-height:        24px;
+$overlay-btn-min-width:     74px;
+$overlay-btn-margin-x:      6px;
+$overlay-button-bg:         #e1e1e1;
+$overlay-btn-border:        1px solid #adadad;
+$overlay-btn-focus-border:  2px solid $highlight-color;
+$overlay-btn-hover-bg:      tint($highlight-color, 90%);
+$overlay-btn-hover-border:  1px solid $highlight-color;
+$overlay-btn-active-bg:     tint($highlight-color, 80%);
+$overlay-btn-active-border: 1px solid shade($highlight-color, 30%);
+$overlay-btn-border-radius: 0;
