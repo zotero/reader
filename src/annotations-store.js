@@ -3,18 +3,17 @@
 import queue from 'queue';
 import { getAnnotationsCount, getSortIndex } from './lib/extract';
 import { renderAreaImage } from './lib/render';
+import { annotationColors } from './lib/colors';
 
 class AnnotationsStore {
   constructor(options) {
-    this.annotations = [];
+    this.annotations = options.annotations;
     this.onSetAnnotation = options.onSetAnnotation;
     this.onDeleteAnnotation = options.onDeleteAnnotation;
     this.onUpdateAnnotations = () => {
     };
     this.onImportableAnnotationsNum = () => {
     };
-    this.userId = options.userId;
-    this.label = options.label;
     
     this.renderQueue = queue({
       concurrency: 1,
@@ -26,6 +25,7 @@ class AnnotationsStore {
       this.onImportableAnnotationsNum(count);
     });
     
+    this.sortAnnotations(this.annotations);
   }
   
   genId() {
@@ -41,13 +41,9 @@ class AnnotationsStore {
   }
   
   sortAnnotations(annotations) {
-    annotations.sort((a, b) => {
-      // TODO: Remove
-      a = a.sortIndex || '';
-      b = b.sortIndex || '';
-      return a.localeCompare(b);
-    });
-    return annotations;
+    annotations.sort((a, b) =>
+      (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex)
+    );
   }
   
   syncSetAnnotation = (annotation) => {
@@ -83,25 +79,31 @@ class AnnotationsStore {
   };
   
   async addAnnotation(annotation) {
+    // Those properties can be set on creator
+    annotation.color = annotation.color || annotationColors[0];
+    annotation.text = annotation.text || '';
+    annotation.comment = annotation.comment || '';
+    annotation.tags = annotation.tags || [];
+    // annotation.sortIndex
+    
+    // All other are set automatically
     annotation.id = this.genId();
-    annotation.dateCreated = annotation.dateModified = (new Date()).toISOString();
-    annotation.userId = this.userId || null;
-    annotation.label = this.label || '';
-    // annotation.color = color;
+    annotation.dateCreated = (new Date()).toISOString();
+    annotation.dateModified = annotation.dateCreated;
+    annotation.authorName = '';
     
-    annotation.position.rects = annotation.position.rects.map(rect => rect.map(value => parseFloat(value.toFixed(3))));
-    
+    annotation.position.rects = annotation.position.rects.map(
+      rect => rect.map(value => parseFloat(value.toFixed(3)))
+    );
     
     // Todo: Move this out from here
     let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-    
     if (pageLabels && pageLabels[annotation.position.pageIndex]) {
       annotation.page = pageLabels[annotation.position.pageIndex];
     }
     else {
-      annotation.page = annotation.position.pageIndex + 1;
+      annotation.page = (annotation.position.pageIndex + 1).toString();
     }
-    
     
     let updateImage = false;
     if (annotation.type === 'area' && !annotation.image) {
@@ -109,16 +111,13 @@ class AnnotationsStore {
       updateImage = true;
     }
     
-    this.annotations.push(annotation);
-    
-    this.sortAnnotations(this.annotations);
-    this.onSetAnnotation(annotation);
-    // this.setState({ recentlyCreatedAnnotationId: annotation.id });
-    
     if (annotation.type === 'note' || annotation.type === 'area') {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
     
+    this.annotations.push(annotation);
+    this.sortAnnotations(this.annotations);
+    this.onSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
     
     if (updateImage) {
@@ -129,9 +128,9 @@ class AnnotationsStore {
   }
   
   async setAnnotation(annotation) {
-    let prevAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
-    if (prevAnnotationIdx) {
-      this.annotations.splice(prevAnnotationIdx, 1, annotation);
+    let existingAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
+    if (existingAnnotationIdx >= 0) {
+      this.annotations.splice(existingAnnotationIdx, 1);
     }
     
     this.annotations.push(annotation);
@@ -146,38 +145,34 @@ class AnnotationsStore {
   }
   
   async updateAnnotation(annotation) {
-    let prevAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
-    let prevAnnotation = this.annotations[prevAnnotationIdx];
-    annotation = { ...this.annotations[prevAnnotationIdx], ...annotation };
+    let existingAnnotationIdx = this.annotations.findIndex(
+      x => x.id === annotation.id
+    );
+    let existingAnnotation = this.getAnnotationById(annotation.id)
+    annotation = { ...existingAnnotation, ...annotation };
     annotation.dateModified = (new Date()).toISOString();
-    annotation.position.rects = annotation.position.rects.map(rect => rect.map(value => parseFloat(value.toFixed(3))));
-    
-    let updateImage = false;
-    if (
-      annotation.type === 'area' &&
-      JSON.stringify(prevAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
-    ) {
-      annotation.image = '';
-      updateImage = true;
-    }
+    annotation.position.rects = annotation.position.rects.map(
+      rect => rect.map(value => parseFloat(value.toFixed(3)))
+    );
     
     if (
       ['note', 'area'].includes(annotation.type) &&
-      prevAnnotation.position.pageIndex === annotation.position.pageIndex &&
-      JSON.stringify(prevAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
+      existingAnnotation.position.pageIndex === annotation.position.pageIndex &&
+      JSON.stringify(existingAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
     ) {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
     
-    this.annotations.splice(prevAnnotationIdx, 1, annotation);
-    
+    this.annotations.splice(existingAnnotationIdx, 1, annotation);
     this.sortAnnotations(this.annotations);
-    
-    // this.setState({ recentlyUpdatedAnnotationId: annotation.id });
     this.onSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
     
-    if (updateImage) {
+    if (
+      annotation.type === 'area' &&
+      JSON.stringify(existingAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
+    ) {
+      annotation.image = '';
       this.updateAnnotationImage(annotation.id);
     }
   }

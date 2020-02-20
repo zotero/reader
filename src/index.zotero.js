@@ -52,8 +52,6 @@ window.addEventListener('message', function (message) {
       onDownload() {
         parent.postMessage({ op: 'save' }, '*');
       },
-      userId: data.userId,
-      label: data.label,
       url: 'zotero://pdf.js/pdf/' + data.libraryID + '/' + data.key,
       annotations: data.annotations,
       state: data.state,

@@ -28,13 +28,8 @@ import {
 
 class PageLayerHighlight extends React.Component {
   getContainerNode(viewport) {
-    let textLayer = viewport.textLayer;
-    if (!textLayer) {
-      return;
-    }
-    
     return findOrCreateContainerLayer(
-      textLayer.textLayerDiv,
+      viewport.div,
       'layer-highlight'
     );
   }
@@ -370,6 +365,68 @@ class MarginNoteLayer extends React.Component {
   }
 }
 
+class BlinkLayer extends React.Component {
+  interval = null;
+  
+  componentDidUpdate(prevProps) {
+    if (prevProps.id !== this.props.id) {
+      this.fade(this.refs.blink);
+    }
+  }
+  
+  componentDidMount() {
+    this.fade(this.refs.blink);
+  }
+  
+  fade(element) {
+    if (this.interval) clearInterval(this.interval);
+    let op = 1;
+    this.interval = setInterval(() => {
+      
+      if (!element) return;
+      if (op <= 0.05) {
+        clearInterval(this.interval);
+        element.style.opacity = 0;
+        return;
+      }
+      element.style.opacity = op;
+      op -= op * 0.1;
+    }, 100);
+  }
+  
+  getContainerNode(viewport) {
+    return findOrCreateContainerLayer(
+      viewport.div,
+      'layer-blink'
+    );
+  }
+  
+  render() {
+    let { view, position } = this.props;
+    
+    let node = this.getContainerNode(view);
+    if (!node) return null;
+    
+    return ReactDOM.createPortal(
+      <div ref="blink">
+        {position.rects.map((rect, index) => (
+          <div
+            key={index}
+            className="rect"
+            style={{
+              left: rect[0],
+              top: rect[1],
+              width: rect[2] - rect[0],
+              height: rect[3] - rect[1]
+            }}
+          />
+        ))}
+      </div>,
+      node
+    );
+  }
+}
+
 class Layer extends React.Component {
   state = {
     selection: null,
@@ -529,12 +586,12 @@ class Layer extends React.Component {
     this.setState({ initialized: true });
   };
   
-  scrollTo = (annotation) => {
-    let x = annotation.position.rects[0][0];
-    let y = annotation.position.rects[0][3] + 100;
+  scrollTo = (position) => {
+    let x = position.rects[0][0];
+    let y = position.rects[0][3] + 100;
     
     this.viewer.scrollPageIntoView({
-      pageNumber: annotation.position.pageIndex + 1,
+      pageNumber: position.pageIndex + 1,
       destArray: [
         null,
         { name: 'XYZ' },
@@ -685,6 +742,7 @@ class Layer extends React.Component {
       enableAreaSelector,
       enableInactiveTextDragging,
       popupAnnotation,
+      blink,
       onSelection,
       onChange,
       onDelete,
@@ -766,8 +824,17 @@ class Layer extends React.Component {
       };
     }
     
+    let blinkLayer = null;
+    if (blink) {
+      let view = this.viewer.getPageView(blink.position.pageIndex);
+      let id = blink.id;
+      let position = this.p2v(blink.position);
+      blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
+    }
+    
     return (
       <React.Fragment>
+        {blinkLayer}
         <AreaSelectorLayer
           color={color}
           enableAreaSelector={enableAreaSelector}

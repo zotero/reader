@@ -16,10 +16,9 @@ class Viewer {
     this._label = options.label;
     this._lastState = null;
     this._annotationsStore = new AnnotationsStore({
+      annotations: options.annotations,
       onSetAnnotation: options.onSetAnnotation,
-      onDeleteAnnotation: options.onDeleteAnnotation,
-      userId: options.userId,
-      label: options.label
+      onDeleteAnnotation: options.onDeleteAnnotation
     });
     
     // Takeover the download button
@@ -74,8 +73,6 @@ class Viewer {
     }
     
     let _password = null;
-    
-    this._annotationsStore.annotations = options.annotations;
     
     window.PDFViewerApplication.passwordPrompt.verify = function () {
       const password = this.input.value;

@@ -1,8 +1,9 @@
 
 .layer-highlight {
   position: absolute;
-  z-index: -1;
   left: 0;
+  top: 0;
+  mix-blend-mode: multiply;
 }
 
 .layer-note {
@@ -28,6 +29,18 @@
   left: 0;
   top: 0;
   right: 0;
+}
+
+.layer-blink {
+  position: absolute;
+  top: 0;
+  left: 0;
+  mix-blend-mode: multiply;
+
+  .rect {
+    position: absolute;
+    background-color: #DD00AA;
+  }
 }
 
 .annotation-preview-popup {
