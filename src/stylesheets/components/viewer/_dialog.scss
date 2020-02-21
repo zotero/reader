@@ -89,6 +89,45 @@
       width: 100%;
     }
   }
+
+  // Print dialog
+  #printServiceOverlay & {
+    .row:nth-child(2) {
+      display: flex;
+      align-items: center;
+    }
+  }
+
+  progress[value] {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    flex: 1 1 0;
+    height: $progress-height;
+    border: $progress-border;
+    background-color: $progress-bg;
+    border-radius: $progress-border-radius;
+    overflow: hidden;
+    padding: $progress-padding;
+  }
+
+  progress[value] {
+    &::-webkit-progress-bar {
+      background-color: $progress-bg;
+    }
+
+    &::-webkit-progress-value {
+      background-color: $progress-indicator-bg;
+    }
+
+    &::-moz-progress-bar {
+      background-color: $progress-indicator-bg;
+    }
+  }
+
+  .relative-progress {
+    flex: 0 0 $progress-label-width;
+    text-align: right;
+  }
 }
 
 //.dialog .separator {
