@@ -6,6 +6,11 @@
 // Colors
 //
 
+$highlight-color: #0078d7;
+$blue-btn:        #90c8f6;
+
+$gray-lightest: #f0f0f0;
+
 //
 // Base
 //
@@ -23,26 +28,125 @@ $font-family-base:        $font-family-sans-serif;
 
 $font-size-base: rem(11);
 
+$selection-color: #fff;
+$selection-bg:    rgba($highlight-color, 0.99);
+
+// Z-index master list
+$z-index-findbar: 10000;
+$z-index-overlay: 40000;
+
 //
 // Components
 //
 
 // Toolbar
+$toolbar-height:       30px;
 $toolbar-bg:           #f0f0f0;
 $toolbar-border-color: #bdbdbd;
+$page-number-width:    54px;
+$num-pages-min-width:  76px;
+$num-pages-color:      #777;
+
+// Toolbar button
+$toolbar-btn-padding:             2px 4px 1px 4px;
+$toolbar-btn-margin-x:            3px;
+$toolbar-btn-bg:                  transparent;
+$toolbar-btn-border:              1px solid transparent;
+$toolbar-btn-hover-bg:            rgba($blue-btn, 0.25);
+$toolbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
+$toolbar-btn-active-bg:           rgba($blue-btn, 0.5);
+$toolbar-btn-border-active-color: $blue-btn;
+$toolbar-btn-icon-active-offset:  1px;
+
+// Toolbar separators
+$toolbar-btn-separator-list:    ".toolbarButton#forward, .toolbarButton#sidebarToggle, .toolbarButton#download, .dropdownToolbarButton";
+$toolbar-btn-separator-spacing: 10px;
+$toolbar-btn-visual-separator:  true;
+$toolbar-btn-separator-width:   1px;
+$toolbar-btn-separator-height:  21px;
+$toolbar-btn-separator-top:     -1px;
+$toolbar-btn-separator-right:   -8px;
+$toolbar-btn-separator-bg:      #848484;
+
+// Toolbar field
+$toolbar-field-height:             24px;
+$toolbar-field-padding:            0 5px;
+$toolbar-field-border:             1px solid #7a7a7a;
+$toolbar-field-color:              #000;
+$toolbar-field-hover-border-color: #171717;
+$toolbar-field-focus-border-color: $highlight-color;
+$toolbar-field-font-size:          $font-size-base;
+$toolbar-label-color:              #000;
+$toolbar-field-placeholder-color:  #777;
+
+// Dropdown toolbar button
+$dropdown-toolbar-btn-margin-x:           3px;
+$dropdown-toolbar-btn-height:             24px;
+$dropdown-toolbar-btn-font-size:          $font-size-base;
+$dropdown-toolbar-btn-padding:            0 20px 0 5px;
+$dropdown-toolbar-btn-bg:                 icon-url("chevron-8.png") no-repeat right 4px center #e1e1e1;
+$dropdown-toolbar-btn-bg-2x:              icon-url("chevron-8@2x.png");
+$dropdown-toolbar-btn-bg-size:            10px 6px;
+$dropdown-toolbar-btn-bg-blend-mode:      multiply;
+$dropdown-toolbar-btn-border:             1px solid #adadad;
+$dropdown-toolbar-btn-border-radius:      0;
+$dropdown-toolbar-btn-hover-bg:           tint($highlight-color, 90%);
+$dropdown-toolbar-btn-hover-border-color: $highlight-color;
+$dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
+$dropdown-toolbar-btn-focus-border-color: #005499;
+
+// Findbar
+$findbar-offset-x:                111px;
+$findbar-offset-y:                45px;
+$findbar-bg:                      #fff;
+$findbar-btn-padding:             2px 4px 1px 4px;
+$findbar-btn-margin-x:            3px;
+$findbar-btn-bg:                  transparent;
+$findbar-btn-border:              1px solid transparent;
+$findbar-btn-hover-bg:            rgba($blue-btn, 0.25);
+$findbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
+$findbar-btn-active-bg:           rgba($blue-btn, 0.5);
+$findbar-btn-border-active-color: $blue-btn;
+$findbar-btn-icon-active-offset:  1px;
+$find-input-width:                200px;
+$find-input-not-found-color:      $text-color;
+$find-input-not-found-bg:         tint(#f66, 75%);
+$find-results-count-margin:       0 10px 0 3px;
+$find-results-count-color:        #777;
+$find-message-margin:             0 10px 0 3px;
+$find-message-color:              rgba(#777, 0.5);
+
+// Secondary toolbar
+$secondary-toolbar-offset-x:          3px;
+$secondary-toolbar-offset-y:          $toolbar-height - 3px;
+$secondary-toolbar-padding:           2px;
+$secondary-toolbar-bg:                $gray-lightest;
+$secondary-toolbar-border:            1px solid #ccc;
+$secondary-toolbar-border-radius:     0;
+$secondary-toolbar-btn-line-height:   1.2;
+$secondary-toolbar-btn-padding:       rem(4.5) 5px rem(4.5) 32px;
+$secondary-toolbar-btn-bg:            transparent;
+$secondary-toolbar-btn-hover-bg:      $blue-btn;
+$secondary-toolbar-btn-icon-offset-x: 5px;
+$horizontal-toolbar-separator:        true;
+$horizontal-toolbar-separator-height: 1px;
+$horizontal-toolbar-separator-bg:     #d7d7d7;
+$horizontal-toolbar-separator-margin: 2px 0 2px 28px;
 
 // Sidebar
-$sidebar-bg:           $body-bg;
-$sidebar-border-color: #cecece;
+$sidebar-bg:             $body-bg;
+$sidebar-border-color:   #cecece;
+$sidebar-resizer-cursor: ew-resize;
 
 // Toolbar sidebar
+$toolbar-sidebar-height:       30px;
 $toolbar-sidebar-bg:           #f0f0f0;
 $toolbar-sidebar-border-color: #cecece;
 
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
 $thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
-$thumbnail-image-border-color: transparent;
+$thumbnail-image-border-color:         transparent;
 
 // Outline & attachment view
 $sidebar-item-link-btn-color: $text-color;
@@ -51,6 +155,36 @@ $sidebar-item-link-btn-color: $text-color;
 $outline-item-height: rem(20);
 
 // PDF viewer
-$page-bg: #fff;
-$page-outline: none;
+$page-bg:             #fff;
+$page-outline:        none;
 $page-outline-offset: initial;
+
+// Dialogs
+$overlay-container-bg:      rgba(0, 0, 0, 0.3);
+$dialog-width:              300px;
+$dialog-padding:            16px;
+$dialog-font-size:          $font-size-base;
+$dialog-line-height:        1.2;
+$dialog-bg:                 #fff;
+$dialog-color:              $text-color;
+$dialog-border-radius:      1px;
+$dialog-shadow:             4px 6px 4px gray;
+$btn-row-justify-content:   flex-end;
+$overlay-btn-height:        24px;
+$overlay-btn-min-width:     74px;
+$overlay-btn-margin-x:      6px;
+$overlay-button-bg:         #e1e1e1;
+$overlay-btn-border:        1px solid #adadad;
+$overlay-btn-focus-border:  2px solid $highlight-color;
+$overlay-btn-hover-bg:      tint($highlight-color, 90%);
+$overlay-btn-hover-border:  1px solid $highlight-color;
+$overlay-btn-active-bg:     tint($highlight-color, 80%);
+$overlay-btn-active-border: 1px solid shade($highlight-color, 30%);
+$overlay-btn-border-radius: 0;
+$progress-height:           15px;
+$progress-padding:          1px;
+$progress-border:           1px solid #bcbcbc;
+$progress-bg:               #e6e6e6;
+$progress-border-radius:    2px;
+$progress-indicator-bg:     #06b025;
+$progress-label-width:      38px;
