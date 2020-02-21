@@ -34,6 +34,10 @@
     border-color: $toolbar-field-focus-border-color;
   }
 
+  &:invalid {
+    box-shadow: none; // Hide red box-shadow in Firefox while loading
+  }
+
   &[type="checkbox"] {
     height: auto;
   }
