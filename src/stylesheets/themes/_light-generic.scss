@@ -41,8 +41,10 @@ $z-index-overlay: 40000;
 
 // Toolbar
 $toolbar-height:       30px;
+$toolbar-padding:      0;
 $toolbar-bg:           $gray-lightest;
-$toolbar-border-color: #cecece;
+$toolbar-bg-2x:        $toolbar-bg;
+$toolbar-border:       1px solid #cecece;
 $page-number-width:    54px;
 $num-pages-min-width:  76px;
 $num-pages-color:      #777;
@@ -52,6 +54,10 @@ $toolbar-btn-padding:             2px 4px 1px 4px;
 $toolbar-btn-margin-x:            3px;
 $toolbar-btn-bg:                  transparent;
 $toolbar-btn-border:              1px solid transparent;
+$toolbar-btn-border-radius:       0;
+$toolbar-btn-box-shadow:          none;
+$toolbar-btn-box-shadow-2x:       $toolbar-btn-box-shadow;
+$toolbar-btn-hover-state:         true;
 $toolbar-btn-hover-bg:            rgba($blue-btn, 0.25);
 $toolbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
 $toolbar-btn-active-bg:           rgba($blue-btn, 0.5);

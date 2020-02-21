@@ -6,7 +6,7 @@
 // Colors
 //
 
-$highlight-color: #0078d7;
+$highlight-color: #0063e1;
 $blue-btn:        #90c8f6;
 
 $gray-lightest: #f0f0f0;
@@ -40,28 +40,34 @@ $z-index-overlay: 40000;
 //
 
 // Toolbar
-$toolbar-height:       30px;
-$toolbar-bg:           #f0f0f0;
-$toolbar-border-color: #bdbdbd;
+$toolbar-height:       32px;
+$toolbar-padding:      0 4px;
+$toolbar-bg:           linear-gradient(to top, #aeaeae 0, #aeaeae 1px, #d3d3d3 1px, #e3e3e3 100%);
+$toolbar-bg-2x:        linear-gradient(to top, #aeaeae 0, #aeaeae 0.5px, #c4c4c4 0.5px, #c4c4c4 1px, #d3d3d3 1px, #e3e3e3 100%);
+$toolbar-border:       0;
 $page-number-width:    54px;
 $num-pages-min-width:  76px;
-$num-pages-color:      #777;
+$num-pages-color:      #555;
 
 // Toolbar button
-$toolbar-btn-padding:             2px 4px 1px 4px;
-$toolbar-btn-margin-x:            3px;
-$toolbar-btn-bg:                  transparent;
-$toolbar-btn-border:              1px solid transparent;
+$toolbar-btn-padding:             3px 11px 3px 11px;
+$toolbar-btn-margin-x:            4px;
+$toolbar-btn-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
+$toolbar-btn-border:              0;
+$toolbar-btn-border-radius:       3.75px;
+$toolbar-btn-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$toolbar-btn-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$toolbar-btn-hover-state:         false;
 $toolbar-btn-hover-bg:            rgba($blue-btn, 0.25);
 $toolbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
-$toolbar-btn-active-bg:           rgba($blue-btn, 0.5);
+$toolbar-btn-active-bg:           linear-gradient(to bottom, #e4e4e4, #ddd);
 $toolbar-btn-border-active-color: $blue-btn;
-$toolbar-btn-icon-active-offset:  1px;
+$toolbar-btn-icon-active-offset:  0;
 
 // Toolbar separators
 $toolbar-btn-separator-list:    ".toolbarButton#forward, .toolbarButton#sidebarToggle, .toolbarButton#download, .dropdownToolbarButton";
-$toolbar-btn-separator-spacing: 10px;
-$toolbar-btn-visual-separator:  true;
+$toolbar-btn-separator-spacing: 13px;
+$toolbar-btn-visual-separator:  false;
 $toolbar-btn-separator-width:   1px;
 $toolbar-btn-separator-height:  21px;
 $toolbar-btn-separator-top:     -1px;

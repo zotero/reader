@@ -28,19 +28,27 @@
 
 .toolbar {
   .toolbarButton {
-    background-color: $toolbar-btn-bg;
+    background: $toolbar-btn-bg;
     border: $toolbar-btn-border;
     padding: $toolbar-btn-padding;
     margin: 0 $toolbar-btn-margin-x;
+    border-radius: $toolbar-btn-border-radius;
+    box-shadow: $toolbar-btn-box-shadow;
+
+    @include retina {
+      box-shadow: $toolbar-btn-box-shadow-2x;
+    }
 
     &:hover {
-      background-color: $toolbar-btn-hover-bg;
-      border-color: $toolbar-btn-border-hover-color;
+      @if $toolbar-btn-hover-state {
+        background: $toolbar-btn-hover-bg;
+        border-color: $toolbar-btn-border-hover-color;
+      }
     }
 
     &:active,
     &.toggled:not(#sidebarToggle) {
-      background-color: $toolbar-btn-active-bg;
+      background: $toolbar-btn-active-bg;
       border-color: $toolbar-btn-border-active-color;
 
       &::before {

@@ -8,9 +8,14 @@
   right: 0;
   z-index: 9999;
   cursor: default;
-  background-color: $toolbar-bg;
-  border-bottom: 1px solid $toolbar-border-color;
+  background: $toolbar-bg;
+  border-bottom: $toolbar-border;
+  padding: $toolbar-padding;
   position: relative;
+
+  @include retina {
+    background: $toolbar-bg-2x;
+  }
 
   #toolbarViewer {
     display: flex;
