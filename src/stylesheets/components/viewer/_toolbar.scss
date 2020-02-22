@@ -85,4 +85,13 @@
   #viewBookmark {
     display: none !important;
   }
+
+  @if $mode == "production" {
+    #presentationMode,
+    #print,
+    #download,
+    #secondaryToolbarToggle {
+      display: none !important;
+    }
+  }
 }
