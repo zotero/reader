@@ -17,6 +17,14 @@
     background: $toolbar-bg-2x;
   }
 
+  .is-blurred & {
+    background: $toolbar-blurred-bg;
+
+    @include retina {
+      background: $toolbar-blurred-bg-2x;
+    }
+  }
+
   #toolbarViewer {
     display: flex;
     justify-content: space-between;
@@ -51,22 +59,26 @@
       margin-right: $toolbar-btn-separator-spacing;
       position: relative;
 
-      &::after {
-        content: if($toolbar-btn-visual-separator, "", none);
-        position: absolute;
-        top: $toolbar-btn-separator-top;
-        right: $toolbar-btn-separator-right;
-        width: $toolbar-btn-separator-width;
-        background-color: $toolbar-btn-separator-bg;
-        height: $toolbar-btn-separator-height;
+      @if $toolbar-btn-visual-separator {
+        &::after {
+          content: if($toolbar-btn-visual-separator, "", none);
+          position: absolute;
+          top: $toolbar-btn-separator-top;
+          right: $toolbar-btn-separator-right;
+          width: $toolbar-btn-separator-width;
+          background-color: $toolbar-btn-separator-bg;
+          height: $toolbar-btn-separator-height;
+        }
       }
     }
   }
 
-  .dropdownToolbarButton {
-    &::after {
-      top: $toolbar-btn-separator-top + $toolbar-field-height - $toolbar-btn-separator-height;
-      right: $toolbar-btn-separator-right + 1px;
+  @if $toolbar-btn-visual-separator {
+    .dropdownToolbarButton {
+      &::after {
+        top: $toolbar-btn-separator-top + $toolbar-field-height - $toolbar-btn-separator-height;
+        right: $toolbar-btn-separator-right + 1px;
+      }
     }
   }
 

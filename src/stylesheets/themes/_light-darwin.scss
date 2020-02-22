@@ -40,39 +40,44 @@ $z-index-overlay: 40000;
 //
 
 // Toolbar
-$toolbar-height:       32px;
-$toolbar-padding:      0 4px;
-$toolbar-bg:           linear-gradient(to top, #aeaeae 0, #aeaeae 1px, #d3d3d3 1px, #e3e3e3 100%);
-$toolbar-bg-2x:        linear-gradient(to top, #aeaeae 0, #aeaeae 0.5px, #c4c4c4 0.5px, #c4c4c4 1px, #d3d3d3 1px, #e3e3e3 100%);
-$toolbar-border:       0;
-$page-number-width:    54px;
-$num-pages-min-width:  76px;
-$num-pages-color:      #555;
+$toolbar-height:        32px;
+$toolbar-padding:       0 4px;
+$toolbar-bg:            linear-gradient(to top, #aeaeae 0, #aeaeae 1px, #d3d3d3 1px, #e3e3e3 100%);
+$toolbar-bg-2x:         linear-gradient(to top, #aeaeae 0, #aeaeae 0.5px, #c4c4c4 0.5px, #c4c4c4 1px, #d3d3d3 1px, #e3e3e3 100%);
+$toolbar-blurred-bg:    linear-gradient(to top, #d1d1d1 0, #d1d1d1 1px, #f6f6f6 1px);
+$toolbar-blurred-bg-2x: linear-gradient(to top, #cecece 0, #cecece 0.5px, #e7e7e7 0.5px, #e7e7e7 1px, #f6f6f6 1px);
+$toolbar-border:        0;
+$page-number-width:     54px;
+$num-pages-min-width:   76px;
+$num-pages-color:       #555;
 
 // Toolbar button
-$toolbar-btn-padding:             3px 11px 3px 11px;
-$toolbar-btn-margin-x:            4px;
-$toolbar-btn-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
-$toolbar-btn-border:              0;
-$toolbar-btn-border-radius:       3.75px;
-$toolbar-btn-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
-$toolbar-btn-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
-$toolbar-btn-hover-state:         false;
-$toolbar-btn-hover-bg:            rgba($blue-btn, 0.25);
-$toolbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
-$toolbar-btn-active-bg:           linear-gradient(to bottom, #e4e4e4, #ddd);
-$toolbar-btn-border-active-color: $blue-btn;
-$toolbar-btn-icon-active-offset:  0;
+$toolbar-btn-padding:               3px 11px 3px 11px;
+$toolbar-btn-margin-x:              4px;
+$toolbar-btn-bg:                    linear-gradient(to bottom, #fafafa, #f2f2f2);
+$toolbar-btn-border:                0;
+$toolbar-btn-border-radius:         3.75px;
+$toolbar-btn-box-shadow:            inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$toolbar-btn-box-shadow-2x:         inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$toolbar-btn-hover-bg:              null;
+$toolbar-btn-border-hover-color:    null;
+$toolbar-btn-active-bg:             linear-gradient(to bottom, #e4e4e4, #ddd);
+$toolbar-btn-blurred-bg:            transparent;
+$toolbar-btn-blurred-box-shadow:    0 0 0 1px rgba(0, 0, 0, 0.11);
+$toolbar-btn-blurred-box-shadow-2x: inset 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.11);
+$toolbar-btn-border-active-color:   $blue-btn;
+$toolbar-btn-icon-active-offset:    0;
 
 // Toolbar separators
 $toolbar-btn-separator-list:    ".toolbarButton#forward, .toolbarButton#sidebarToggle, .toolbarButton#download, .dropdownToolbarButton";
 $toolbar-btn-separator-spacing: 13px;
 $toolbar-btn-visual-separator:  false;
-$toolbar-btn-separator-width:   1px;
-$toolbar-btn-separator-height:  21px;
-$toolbar-btn-separator-top:     -1px;
-$toolbar-btn-separator-right:   -8px;
-$toolbar-btn-separator-bg:      #848484;
+$toolbar-btn-separator-width:   null;
+$toolbar-btn-separator-height:  null;
+$toolbar-btn-separator-top:     null;
+$toolbar-btn-separator-right:   null;
+$toolbar-btn-separator-bg:      null;
+
 
 // Toolbar field
 $toolbar-field-height:             24px;

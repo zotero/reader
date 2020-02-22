@@ -40,10 +40,8 @@
     }
 
     &:hover {
-      @if $toolbar-btn-hover-state {
-        background: $toolbar-btn-hover-bg;
-        border-color: $toolbar-btn-border-hover-color;
-      }
+      background: $toolbar-btn-hover-bg;
+      border-color: $toolbar-btn-border-hover-color;
     }
 
     &:active,
@@ -62,6 +60,15 @@
 
       &::before {
         opacity: 0.5;
+      }
+    }
+
+    .is-blurred & {
+      background: $toolbar-btn-blurred-bg;
+      box-shadow: $toolbar-btn-blurred-box-shadow;
+
+      @include retina {
+        box-shadow: $toolbar-btn-blurred-box-shadow-2x;
       }
     }
   }
