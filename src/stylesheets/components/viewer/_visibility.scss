@@ -20,14 +20,6 @@
 }
 
 @media all and (max-width: 840px) {
-  #sidebarContent {
-    background-color: rgba(0, 0, 0, 0.7);
-  }
-
-  #outerContainer.sidebarOpen #viewerContainer {
-    left: 0px !important;
-  }
-
   #outerContainer .hiddenLargeView,
   #outerContainer .hiddenMediumView {
     display: inherit;
