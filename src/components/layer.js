@@ -290,8 +290,8 @@ class MarginNoteLayer extends React.Component {
         marginRightNotes.push({
             annotation,
             rect: {
-              left: viewportPosition.rects[0][0]-width/2,
-              top: viewportPosition.rects[0][1]-height+height/3,
+              left: viewportPosition.rects[0][0] - width + 10,
+              top: viewportPosition.rects[0][1]- height,
               width: width,
               height: height
             }
@@ -303,8 +303,8 @@ class MarginNoteLayer extends React.Component {
         marginLeftNotes.push({
             annotation,
             rect: {
-              left: viewportPosition.rects[0][0]-width/2,
-              top: viewportPosition.rects[0][1]-height+height/3,
+              left: viewportPosition.rects[0][0]- width + 10,
+              top: viewportPosition.rects[0][1]- height,
               width: width,
               height: height
             }
