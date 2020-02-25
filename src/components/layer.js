@@ -362,7 +362,7 @@ class MarginNoteLayer extends React.Component {
                 <svg width="12" height="12" viewBox="0 0 12 12">
                   <path fill="currentColor" d="M0,0V6.707L5.293,12H12V0Z"/>
                   <path d="M0,0V6.707L5.293,12H12V0ZM1.707,7H5v3.293ZM11,11H6V6H1V1H11Z" opacity="0.8"/>
-                  <polygon points="1.707 7 5 10.293 5 7 1.707 7" fill="#fff" opacity="0.2"/>
+                  <polygon points="1.707 7 5 10.293 5 7 1.707 7" fill="#fff" opacity="0.4"/>
                 </svg>
               </div>
             );
