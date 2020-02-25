@@ -277,8 +277,8 @@ class MarginNoteLayer extends React.Component {
 
     let scale = PDFViewerApplication.pdfViewer._currentScale;
 
-    let width = 10;
-    let height = 10;
+    let width = 10 * scale;
+    let height = 10 * scale;
 
     for (let annotation of annotations) {
       let viewportPosition = p2v(annotation.position, viewport);
@@ -290,8 +290,8 @@ class MarginNoteLayer extends React.Component {
         marginRightNotes.push({
             annotation,
             rect: {
-              left: viewportPosition.rects[0][0] - width + 10,
-              top: viewportPosition.rects[0][1]- height,
+              left: viewportPosition.rects[0][0]-width/2,
+              top: viewportPosition.rects[0][1]-height+height/3,
               width: width,
               height: height
             }
@@ -303,8 +303,8 @@ class MarginNoteLayer extends React.Component {
         marginLeftNotes.push({
             annotation,
             rect: {
-              left: viewportPosition.rects[0][0]- width + 10,
-              top: viewportPosition.rects[0][1]- height,
+              left: viewportPosition.rects[0][0]-width/2,
+              top: viewportPosition.rects[0][1]-height+height/3,
               width: width,
               height: height
             }
@@ -350,7 +350,7 @@ class MarginNoteLayer extends React.Component {
                   top: marginNote.rect.top,
                   width: marginNote.rect.width,
                   height: marginNote.rect.height,
-                  color: marginNote.annotation.color,
+                  backgroundColor: marginNote.annotation.color,
                   zIndex: active ? 2 : 1
                 }}
                 onClick={e => {
