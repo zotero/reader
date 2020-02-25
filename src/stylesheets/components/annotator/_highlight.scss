@@ -2,13 +2,24 @@
 .highlight-annotation {
   position: absolute;
 
+  .square {
+    position: absolute;
+  }
+
   .rect {
     cursor: pointer;
     position: absolute;
     opacity: 0.5;
+  }
 
-    &.active {
+  &.active {
+    .square {
+      border: 2px dashed cornflowerblue;
+    }
+
+    .rect {
       opacity: 0.7;
     }
   }
+
 }

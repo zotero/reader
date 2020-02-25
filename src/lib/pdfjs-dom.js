@@ -1,7 +1,7 @@
 'use strict';
 
 export function getPageFromElement(target) {
-  let node = target.closest('.page');
+  let node = target.closest('.pdfViewer > .page');
   if (!node) {
     return null;
   }
