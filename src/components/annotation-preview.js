@@ -7,7 +7,8 @@ import Editor from './editor';
 
 class AnnotationPreview extends React.Component {
   state = {
-    showing: 'main'
+    showing: 'main',
+    editingText: false
   };
   
   componentDidMount() {
@@ -20,6 +21,46 @@ class AnnotationPreview extends React.Component {
   
   mainView() {
     let { annotation, isLayer, onChange, onClickTags, onDragStart } = this.props;
+    let textElement = null;
+    if (annotation.type === 'highlight' && !isLayer) {
+      if (this.state.editingText) {
+        textElement = <Editor
+          id={annotation.id}
+          text={annotation.text}
+          placeholder="Extracted text.."
+          onChange={(text) => {
+            onChange({ id: annotation.id, text: text });
+          }}
+          onBlur={() => {
+            this.setState({ editingText: false });
+          }
+          }
+        />
+      }
+      else {
+        
+        let text = annotation.text.slice(0, 70).trim();
+        if (annotation.text.length > 70) {
+          text += '..';
+        }
+        
+        textElement = (
+          <React.Fragment>
+            <div className="text-preview">
+              {text}
+              <span
+                className="text-edit"
+                onClick={() => {
+                  this.setState({ editingText: true })
+                }}
+              >edit</span>
+            </div>
+          
+          </React.Fragment>
+        )
+      }
+    }
+    
     return (
       <div className="main-view">
         <div
@@ -49,21 +90,18 @@ class AnnotationPreview extends React.Component {
         </div>
         {annotation.image && !isLayer ? (<img className="image" src={annotation.image}/>) : null}
         
-        {annotation.type === 'highlight' ? (
-          <Editor
-            text={annotation.text}
-            onChange={(text) => {
-              onChange({ id: annotation.id, text });
-            }}
-            placeholder="Highlighted text.."
-          />) : null}
+        {textElement}
         
         <Editor
+          id={annotation.id}
           text={annotation.comment}
+          placeholder="Comment.."
+          plainTextOnly={true}
           onChange={(text) => {
             onChange({ id: annotation.id, comment: text });
           }}
-          placeholder="Comment.."
+          onBlur={() => {
+          }}
         />
         <div
           className="tags"
@@ -101,9 +139,7 @@ class AnnotationPreview extends React.Component {
         
         <div className="button" onClick={onDelete}>Delete</div>
         
-        <div>Created: {annotation.dateCreated.split('T')[0]}</div>
         <div>Modified: {annotation.dateModified.split('T')[0]}</div>
-        <div>Imported: {annotation.imported ? 'yes' : 'no'}</div>
       </div>
     );
   }

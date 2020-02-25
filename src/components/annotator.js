@@ -8,6 +8,10 @@ import PopupScreen from './screen-popup';
 import ColorPicker from './color-picker';
 import { annotationColors } from '../lib/colors';
 
+// All rects in annotator.js are stored in [left, top, right, bottom] order
+// where the Y axis starts from the bottom:
+// [231.284, 402.126, 293.107, 410.142]
+
 class Annotator extends React.Component {
   state = {
     activeAnnotationId: null,
@@ -21,9 +25,9 @@ class Annotator extends React.Component {
   
   initKeyboard() {
     window.addEventListener('keydown', e => {
-      let viewerContainer = document.getElementById('viewerContainer');
-      let annotationsView = document.getElementById('annotationsView');
       if ([8, 46].includes(e.keyCode)) {
+        let viewerContainer = document.getElementById('viewerContainer');
+        let annotationsView = document.getElementById('annotationsView');
         if (e.target === viewerContainer || e.target === annotationsView) {
           if (e.key === 'Delete' || e.key === 'Backspace') {
             this.props.onDeleteAnnotation(this.state.activeAnnotationId);
@@ -177,11 +181,28 @@ class Annotator extends React.Component {
     let y = position.rects[0][1];
     
     for (let annotation of this.state.annotations) {
+      let isFound = false;
       for (let rect of annotation.position.rects) {
         if (annotation.position.pageIndex === position.pageIndex && rect[0] <= x && x <= rect[2] &&
           rect[1] <= y && y <= rect[3]) {
           found.push(annotation);
+          isFound = true;
           break;
+        }
+      }
+      
+      if (isFound) continue;
+  
+      for (let i = 0; i < annotation.position.rects.length - 1; i++) {
+        let rect = annotation.position.rects[i];
+        let rectNext = annotation.position.rects[i + 1];
+    
+        if (annotation.position.pageIndex === position.pageIndex) {
+          if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2]) &&
+            rectNext[1] <= y && y <= rect[3]) {
+            found.push(annotation);
+            break;
+          }
         }
       }
     }
@@ -208,6 +229,35 @@ class Annotator extends React.Component {
     }
     
     this.setState({ activeAnnotationId: selectedId });
+  }
+  
+  isOver(position) {
+    let found = [];
+    let x = position.rects[0][0];
+    let y = position.rects[0][1];
+    
+    for (let annotation of this.state.annotations) {
+      for (let rect of annotation.position.rects) {
+        if (annotation.position.pageIndex === position.pageIndex && rect[0] <= x && x <= rect[2] &&
+          rect[1] <= y && y <= rect[3]) {
+          return true;
+        }
+      }
+      
+      for (let i = 0; i < annotation.position.rects.length - 1; i++) {
+        let rect = annotation.position.rects[i];
+        let rectNext = annotation.position.rects[i + 1];
+        
+        if (annotation.position.pageIndex === position.pageIndex) {
+          if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2]) &&
+            rectNext[1] <= y && y <= rect[3]) {
+            return true;
+          }
+        }
+      }
+    }
+    
+    return false;
   }
   
   ensureInView(container, element) {
@@ -343,6 +393,15 @@ class Annotator extends React.Component {
               this.setState({ recentlyCreatedAnnotationId: annotation.id });
               this.setState({ activeAnnotationId: annotation.id });
               this.setState({ mode: null });
+            }
+          }}
+          onMouseMove={(position) => {
+            // console.log('pp',position);
+            if(this.isOver(position)) {
+              document.getElementById('viewer').classList.add('force-annotation-pointer');
+            }
+            else {
+              document.getElementById('viewer').classList.remove('force-annotation-pointer');
             }
           }}
           onClickTags={onClickTags}

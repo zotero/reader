@@ -121,7 +121,7 @@ let annotations = [
       'rects': [[231.284, 402.126, 293.107, 410.142], [54, 392.164, 293.107, 400.18], [54, 382.201, 293.107, 390.217], [54, 372.238, 293.107, 380.254], [54, 362.276, 273.955, 370.292]]
     },
     'text': 'We present an alternative compilation technique for dynamically-typed languages that identifies frequently executed loop traces at run-time and then generates machine code on the fly that is specialized for the actual dynamic types occurring on each path through the loop',
-    'comment': 'Sounds promising',
+    'comment': 'Sounds <b>promising</b>',
     'tags': [],
     'id': 91115751444169,
     'dateModified': '2020-02-19T12:56:34.897Z',
@@ -332,6 +332,9 @@ document.addEventListener('localized', (e) => {
     },
     onSetState: function (state) {
       console.log('Set state', state);
+    },
+    onClickTags(annotationId, screenX, screenY) {
+      alert('This will open Zotero tagbox popup at the cursor position');
     },
     onEnterPassword(password) {
       console.log('Entered password', password);

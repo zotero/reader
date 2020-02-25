@@ -63,7 +63,6 @@
 }
 
 .margin-note {
-  border: 2px solid transparent;
   position: absolute;
 
   &::before {
@@ -84,6 +83,6 @@
   }
 
   &.active {
-    border: 2px dashed black;
+
   }
 }

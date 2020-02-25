@@ -2,11 +2,84 @@
 
 import React from 'react';
 
-let map = {
-  'strong': 'b'
-};
+const supportedFormats = ['i', 'b', 'sub', 'sup'];
+const multiline = true;
+
+function getFormatter(str) {
+  let results = supportedFormats.map(format => str.toLowerCase().indexOf('<' + format + '>'));
+  results = results.map((offset, idx) => [supportedFormats[idx], offset]);
+  results.sort((a, b) => a[1] - b[1]);
+  for (let result of results) {
+    let format = result[0];
+    let offset = result[1];
+    if (offset < 0) continue;
+    let lastIndex = str.toLowerCase().indexOf('</' + format + '>', offset);
+    if (lastIndex >= 0) {
+      let parts = [];
+      parts.push(str.slice(0, offset));
+      parts.push(str.slice(offset + format.length + 2, lastIndex));
+      parts.push(str.slice(lastIndex + format.length + 3));
+      return {
+        format,
+        parts
+      }
+    }
+  }
+  return null;
+}
+
+function walkFormat(parent) {
+  let child = parent.firstChild;
+  while (child) {
+    if (child.nodeType === 3) {
+      let text = child.nodeValue;
+      let formatter = getFormatter(text);
+      if (formatter) {
+        let nodes = [];
+        nodes.push(document.createTextNode(formatter.parts[0]));
+        let midNode = document.createElement(formatter.format);
+        midNode.appendChild(document.createTextNode(formatter.parts[1]));
+        nodes.push(midNode);
+        nodes.push(document.createTextNode(formatter.parts[2]));
+        child.replaceWith(...nodes);
+        child = midNode;
+        
+      }
+    }
+    walkFormat(child);
+    child = child.nextSibling;
+  }
+}
+
+function walkUnformat(parent) {
+  let child = parent.firstChild;
+  while (child) {
+    let name = child.nodeName.toLowerCase();
+    if (
+      child.nodeType === 1
+      && supportedFormats.includes(name)
+    ) {
+      if (child.innerText.trim().length) {
+        let all = [];
+        all.push(document.createTextNode('<' + name + '>'));
+        all.push(...child.childNodes);
+        all.push(document.createTextNode('</' + name + '>'));
+        child.replaceWith(...all);
+        child = all[0];
+      }
+    }
+    
+    walkUnformat(child);
+    child = child.nextSibling;
+  }
+}
+
 
 function clean(parent) {
+  let map = {
+    'strong': 'b'
+  };
+  
   let child = parent.firstChild;
   while (child) {
     if (child.nodeType === 1) {
@@ -22,7 +95,8 @@ function clean(parent) {
         }
       }
       
-      if (!['b', 'i', 'sub', 'sup'].includes(child.nodeName.toLowerCase())) {
+      let multilineFormats = multiline ? ['br', 'div'] : [];
+      if (!supportedFormats.concat(multilineFormats).includes(child.nodeName.toLowerCase())) {
         let first = child.firstChild;
         let next = child.nextSibling;
         
@@ -42,7 +116,7 @@ function clean(parent) {
       }
     }
     else if (child.nodeType === 3) {
-    
+      // Keep the text
     }
     else {
       parent.removeChild(child);
@@ -81,16 +155,32 @@ var actions = [
 ];
 
 class Content extends React.Component {
+  currentText = null;
+  
   constructor(props) {
     super(props)
   }
   
   componentDidMount() {
     document.addEventListener('selectionchange', this.onSelectionChange);
+    this.props.innerRef.current.innerText = this.props.text;
+    walkFormat(this.props.innerRef.current);
+    this.currentText = this.props.text;
   }
   
   componentWillUnmount() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
+  }
+  
+  componentDidUpdate(prevProps) {
+    if (
+      this.props.id !== prevProps.id
+      || this.currentText !== prevProps.text
+    ) {
+      this.props.innerRef.current.innerText = this.props.text;
+      walkFormat(this.props.innerRef.current);
+      this.currentText = this.props.text
+    }
   }
   
   onSelectionChange = () => {
@@ -125,31 +215,47 @@ class Content extends React.Component {
   }
   
   shouldComponentUpdate(nextProps) {
-    let { innerRef } = this.props;
-    
-    if (innerRef.current.innerHTML !== nextProps.text) {
+    if (
+      this.props.id !== nextProps.id
+      || this.currentText !== nextProps.text
+    ) {
       return true;
     }
     return false;
   }
   
+  handleChange = (html) => {
+    this.refs.renderer.innerHTML = html;
+    walkUnformat(this.refs.renderer);
+    let text = this.refs.renderer.innerText;
+    text = text.replace(/\n<\//g, '<\/');
+    text = text.trim();
+    this.currentText = text;
+    this.props.onChange(text);
+  }
+  
   render() {
-    let { plainTextOnly, text, placeholder, onChange, innerRef } = this.props;
+    let { plainTextOnly, text, placeholder, onChange, innerRef, onBlur } = this.props;
     return (
-      <div
-        ref={innerRef}
-        className="content"
-        contentEditable={true}
-        dangerouslySetInnerHTML={{ __html: text }}
-        onInput={() => {
-          clean(innerRef.current);
-          onChange(innerRef.current.innerHTML);
-        }}
-        placeholder={placeholder}
-        onKeyDown={(event) => {
-          event.stopPropagation();
-        }}
-      />
+      <React.Fragment>
+        <div
+          ref={innerRef}
+          suppressContentEditableWarning={true}
+          className="content"
+          contentEditable={true}
+          onInput={() => {
+            clean(innerRef.current);
+            this.handleChange(innerRef.current.innerHTML);
+          }}
+          placeholder={placeholder}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+          }}
+          onBlur={() => {
+          }}
+        />
+        <div className="renderer" ref="renderer"></div>
+      </React.Fragment>
     );
   }
 }
@@ -165,19 +271,10 @@ class Editor extends React.Component {
   }
   
   render() {
-    let { plainTextOnly, text, placeholder, onChange } = this.props;
+    let { plainTextOnly, text, placeholder, id, onChange, onBlur } = this.props;
     return (
       <div ref="editor" className="editor">
-        <Content
-          text={text}
-          onChange={onChange}
-          innerRef={this.contentRef}
-          onSelectionChange={(isSelected) => {
-            this.setState({ isSelected });
-          }}
-          placeholder={placeholder}
-        />
-        {!plainTextOnly && this.state.isSelected ? (
+        {!plainTextOnly ? (
           <div className="toolbar">
             {
               actions.map((action, idx) => (
@@ -193,6 +290,17 @@ class Editor extends React.Component {
               ))
             }
           </div>) : null}
+        <Content
+          id={id}
+          text={text}
+          onChange={onChange}
+          innerRef={this.contentRef}
+          onSelectionChange={(isSelected) => {
+            this.setState({ isSelected });
+          }}
+          onBlur={onBlur}
+          placeholder={placeholder}
+        />
       </div>
     );
   }

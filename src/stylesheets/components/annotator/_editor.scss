@@ -6,12 +6,18 @@
     outline: 0;
     padding: 10px;
     max-height: 100px;
-    overflow-y: scroll;
+    overflow-y: auto;
 
     &:empty::before {
       content: attr(placeholder);
       color: #999;
     }
+  }
+
+  .renderer {
+    width: 0;
+    height: 0;
+    overflow: hidden;
   }
 
   .toolbar {

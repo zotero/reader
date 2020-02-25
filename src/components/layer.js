@@ -23,7 +23,8 @@ import {
   copyToClipboard,
   getClientRects,
   debounce,
-  formatAnnotationText
+  formatAnnotationText,
+  throttle
 } from '../lib/utilities';
 
 class PageLayerHighlight extends React.Component {
@@ -276,8 +277,8 @@ class MarginNoteLayer extends React.Component {
     
     let scale = PDFViewerApplication.pdfViewer._currentScale;
     
-    let width = 15 * scale;
-    let height = 15 * scale;
+    let width = 10 * scale;
+    let height = 10 * scale;
     
     for (let annotation of annotations) {
       let viewportPosition = p2v(annotation.position, viewport);
@@ -289,8 +290,8 @@ class MarginNoteLayer extends React.Component {
         marginRightNotes.push({
             annotation,
             rect: {
-              left: left,
-              top: viewportPosition.rects[0][1],
+              left: viewportPosition.rects[0][0]-width/2,
+              top: viewportPosition.rects[0][1]-height+height/3,
               width: width,
               height: height
             }
@@ -302,8 +303,8 @@ class MarginNoteLayer extends React.Component {
         marginLeftNotes.push({
             annotation,
             rect: {
-              left: left,
-              top: viewportPosition.rects[0][1],
+              left: viewportPosition.rects[0][0]-width/2,
+              top: viewportPosition.rects[0][1]-height+height/3,
               width: width,
               height: height
             }
@@ -311,7 +312,9 @@ class MarginNoteLayer extends React.Component {
         );
       }
     }
-    let marginNotes = this.getStackedMarginNotes(marginLeftNotes).concat(this.getStackedMarginNotes(marginRightNotes, true));
+    // let marginNotes = this.getStackedMarginNotes(marginLeftNotes).concat(this.getStackedMarginNotes(marginRightNotes, true));
+    
+    let marginNotes = marginLeftNotes.concat(marginRightNotes)
     marginNotes = marginNotes.reverse();
     return marginNotes;
   }
@@ -440,7 +443,7 @@ class Layer extends React.Component {
   containerNode = null;
   
   componentDidMount() {
-    let { onMouseSelection, onPointerUp, onPointerDown } = this.props;
+    let { onMouseSelection, onPointerUp, onPointerDown, onMouseMove } = this.props;
     this.debouncedAfterSelection = this.afterSelection;
     
     this.viewer = window.PDFViewerApplication.pdfViewer;
@@ -479,12 +482,6 @@ class Layer extends React.Component {
         rects: [[x, y, x, y]]
       };
       
-      let p = this.v2p(position);
-      p.rects[0][0] -= 10;
-      p.rects[0][1] -= 10;
-      p.rects[0][2] += 10;
-      p.rects[0][3] += 10;
-      
       onPointerDown(this.v2p(position));
     });
     
@@ -509,18 +506,32 @@ class Layer extends React.Component {
         rects: [[x, y, x, y]]
       };
       
-      let p = this.v2p(position);
-      p.rects[0][0] -= 10;
-      p.rects[0][1] -= 10;
-      p.rects[0][2] += 10;
-      p.rects[0][3] += 10;
-      
       // Shoot the event after all other events are emitted.
       // Otherwise the resize updating in the area annotation is emitted too late
       setTimeout(() => {
         onPointerUp(this.v2p(position));
       }, 0);
     }, true);
+  
+    this.containerNode.addEventListener('mousemove', throttle(e => {
+      let page = getPageFromElement(e.target);
+      if (!page) {
+        return;
+      }
+    
+      let containerEl = page.node;
+      let offset = containerEl.getBoundingClientRect();
+    
+      let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
+      let y = e.clientY + containerEl.scrollTop - offset.top - 10;
+    
+      let position = {
+        pageIndex: page.number - 1,
+        rects: [[x, y, x, y]]
+      };
+    
+      onMouseMove(this.v2p(position));
+    }, 50), true);
     
     document.addEventListener('selectionchange', this.onSelectionChange);
     
