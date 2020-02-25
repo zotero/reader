@@ -64,25 +64,5 @@
 
 .margin-note {
   position: absolute;
-
-  &::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url('data:image/svg+xml;utf8,%3C%3Fxml%20version%3D%221.0%22%20encoding%3D%22UTF-8%22%20standalone%3D%22no%22%3F%3E%20%3Csvg%20xmlns%3Adc%3D%22http%3A%2F%2Fpurl.org%2Fdc%2Felements%2F1.1%2F%22%20xmlns%3Acc%3D%22http%3A%2F%2Fcreativecommons.org%2Fns%23%22%20xmlns%3Ardf%3D%22http%3A%2F%2Fwww.w3.org%2F1999%2F02%2F22-rdf-syntax-ns%23%22%20xmlns%3Asvg%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20xmlns%3Asodipodi%3D%22http%3A%2F%2Fsodipodi.sourceforge.net%2FDTD%2Fsodipodi-0.dtd%22%20xmlns%3Ainkscape%3D%22http%3A%2F%2Fwww.inkscape.org%2Fnamespaces%2Finkscape%22%20id%3D%22svg7%22%20version%3D%221.1%22%20viewBox%3D%220%200%2040%2040%22%20height%3D%2240%22%20width%3D%2240%22%20sodipodi%3Adocname%3D%22annotation-note2.svg%22%20inkscape%3Aversion%3D%220.92.3%20(2405546%2C%202018-03-11)%22%3E%20%3Csodipodi%3Anamedview%20pagecolor%3D%22%23ffffff%22%20bordercolor%3D%22%23666666%22%20borderopacity%3D%221%22%20objecttolerance%3D%2210%22%20gridtolerance%3D%2210%22%20guidetolerance%3D%2210%22%20inkscape%3Apageopacity%3D%220%22%20inkscape%3Apageshadow%3D%222%22%20inkscape%3Awindow-width%3D%221384%22%20inkscape%3Awindow-height%3D%22760%22%20id%3D%22namedview10%22%20showgrid%3D%22false%22%20inkscape%3Azoom%3D%225.9%22%20inkscape%3Acx%3D%22-6.779661%22%20inkscape%3Acy%3D%2220%22%20inkscape%3Awindow-x%3D%2267%22%20inkscape%3Awindow-y%3D%2233%22%20inkscape%3Awindow-maximized%3D%220%22%20inkscape%3Acurrent-layer%3D%22svg7%22%20showguides%3D%22false%22%20%2F%3E%20%3Cmetadata%20id%3D%22metadata13%22%3E%20%3Crdf%3ARDF%3E%20%3Ccc%3AWork%20rdf%3Aabout%3D%22%22%3E%20%3Cdc%3Aformat%3Eimage%2Fsvg%2Bxml%3C%2Fdc%3Aformat%3E%20%3Cdc%3Atype%20rdf%3Aresource%3D%22http%3A%2F%2Fpurl.org%2Fdc%2Fdcmitype%2FStillImage%22%20%2F%3E%20%3Cdc%3Atitle%3E%3C%2Fdc%3Atitle%3E%20%3C%2Fcc%3AWork%3E%20%3C%2Frdf%3ARDF%3E%20%3C%2Fmetadata%3E%20%3Cdefs%20id%3D%22defs11%22%20%2F%3E%20%3Crect%20style%3D%22fill%3Anone%3Bfill-opacity%3A1%3Bfill-rule%3Aevenodd%3Bstroke%3A%23000000%3Bstroke-width%3A1.41570103%3Bstroke-opacity%3A1%22%20id%3D%22rect4%22%20y%3D%220.84225333%22%20x%3D%220.89908159%22%20height%3D%2238.653671%22%20width%3D%2238.444691%22%20%2F%3E%20%3Crect%20style%3D%22fill%3A%23000000%3Bfill-opacity%3A1%3Bstroke%3Anone%3Bstroke-width%3A1.10716116%22%20id%3D%22rect6%22%20y%3D%2210.285%22%20x%3D%226.0157046%22%20height%3D%221.8401976%22%20width%3D%2227.96859%22%20%2F%3E%20%3Crect%20style%3D%22fill%3A%23000000%3Bfill-opacity%3A1%3Bstroke%3Anone%3Bstroke-width%3A1.40992939%22%20id%3D%22rect8%22%20y%3D%2222.538925%22%20x%3D%226.0157056%22%20height%3D%221.7052945%22%20width%3D%2227.96859%22%20%2F%3E%20%3Crect%20style%3D%22fill%3A%23000000%3Bfill-opacity%3A1%3Bstroke%3Anone%3Bstroke-width%3A1.40992939%22%20id%3D%22rect10%22%20y%3D%2228.116936%22%20x%3D%225.8130345%22%20height%3D%221.7052945%22%20width%3D%2227.96859%22%20%2F%3E%20%3Crect%20style%3D%22fill%3A%23000000%3Bfill-opacity%3A1%3Bstroke%3Anone%3Bstroke-width%3A1.40992939%22%20id%3D%22rect12%22%20y%3D%2216.579035%22%20x%3D%226.0157046%22%20height%3D%221.7052945%22%20width%3D%2227.96859%22%20%2F%3E%20%3C%2Fsvg%3E');
-    background-size: contain;
-    background-repeat: no-repeat;
-  }
-
-  &:hover {
-    cursor: pointer;
-    z-index: 3 !important;
-  }
-
-  &.active {
-
-  }
+  background: icon-url("comment.svg") no-repeat center center;
 }

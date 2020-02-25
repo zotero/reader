@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10" viewBox="0 0 10 10">
+  <defs>
+    <linearGradient id="Unbenannter_Verlauf_9" data-name="Unbenannter Verlauf 9" x1="0.5" y1="5.146" x2="9.5" y2="5.146" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fdf7dd"/>
+      <stop offset="1" stop-color="#f9edb2"/>
+    </linearGradient>
+    <linearGradient id="Unbenannter_Verlauf_19" data-name="Unbenannter Verlauf 19" x1="1.146" y1="0.439" x2="8.561" y2="7.854" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fad2a2"/>
+      <stop offset="1" stop-color="#df7900"/>
+    </linearGradient>
+    <linearGradient id="Unbenannter_Verlauf_6" data-name="Unbenannter Verlauf 6" x1="3" y1="2" x2="7" y2="6" gradientTransform="translate(10 8) rotate(180)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8e8a2"/>
+      <stop offset="1" stop-color="#f2d142"/>
+    </linearGradient>
+  </defs>
+  <path d="M5.793,6.5H9A.5.5,0,0,0,9.5,6V2A.5.5,0,0,0,9,1.5H1A.5.5,0,0,0,.5,2V6a.5.5,0,0,0,.5.5H3.5V8.793Z" fill="url(#Unbenannter_Verlauf_9)"/>
+  <path d="M1,2H9V6H5.586l-.293.293L4,7.586V6H1V2M1,1A1,1,0,0,0,0,2V6A1,1,0,0,0,1,7H3v3L6,7H9a1,1,0,0,0,1-1V2A1,1,0,0,0,9,1Z" fill="url(#Unbenannter_Verlauf_19)"/>
+  <rect x="2" y="3" width="6" height="2" transform="translate(10 8) rotate(-180)" fill="url(#Unbenannter_Verlauf_6)"/>
+</svg>
