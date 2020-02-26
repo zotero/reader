@@ -199,7 +199,10 @@ class Annotator extends React.Component {
     
         if (annotation.position.pageIndex === position.pageIndex) {
           if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2]) &&
-            rectNext[1] <= y && y <= rect[3]) {
+            rectNext[1] <= y && y <= rect[3] &&
+            rect[3] - rect[1] >= rect[1] - rectNext[3] &&
+            rectNext[3] - rectNext[1] >= rect[1] - rectNext[3]
+          ) {
             found.push(annotation);
             break;
           }
@@ -250,7 +253,10 @@ class Annotator extends React.Component {
         
         if (annotation.position.pageIndex === position.pageIndex) {
           if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2]) &&
-            rectNext[1] <= y && y <= rect[3]) {
+            rectNext[1] <= y && y <= rect[3] &&
+            rect[3] - rect[1] >= rect[1] - rectNext[3] &&
+            rectNext[3] - rectNext[1] >= rect[1] - rectNext[3]
+          ) {
             return true;
           }
         }
