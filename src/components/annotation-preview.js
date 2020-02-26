@@ -8,7 +8,8 @@ import Editor from './editor';
 class AnnotationPreview extends React.Component {
   state = {
     showing: 'main',
-    editingText: false
+    editingText: false,
+    editingPage: false
   };
   
   componentDidMount() {
@@ -70,14 +71,18 @@ class AnnotationPreview extends React.Component {
           onDragStart={onDragStart}
         ></div>
         <div className="header">
-          <input
-            className="page"
-            type="edit"
-            value={annotation.page}
-            onChange={(e) => {
-              onChange({ id: annotation.id, page: e.target.value });
-            }}
-          />
+          {
+            this.state.editingPage ? (<input
+              className="page-edit"
+              type="edit"
+              value={annotation.page}
+              onChange={(e) => {
+                onChange({ id: annotation.id, page: e.target.value });
+              }}
+            />) : (<span className="page-display" onClick={() => {
+              this.setState({ editingPage: true })
+            }}>{annotation.page}</span>)
+          }
           <div>{!annotation.isOwner && annotation.displayName}</div>
           <div
             className="settings"
