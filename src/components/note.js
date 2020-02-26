@@ -42,8 +42,8 @@ class Note extends React.Component {
     let bounds = `div[data-page-number="${(annotation.position.pageIndex + 1)}"] > .textLayer`;
     
     let position = this.state.changed ? null : {
-      x: annotation.position.rects[0][0],
-      y: annotation.position.rects[0][1]
+      x: Math.round(annotation.position.rects[0][0]),
+      y: Math.round(annotation.position.rects[0][1])
     }
     
     let size = {
