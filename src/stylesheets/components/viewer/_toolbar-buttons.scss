@@ -88,6 +88,7 @@
       height: $dropdown-toolbar-btn-height;
       font-family: inherit;
       font-size: $dropdown-toolbar-btn-font-size;
+      color: $dropdown-toolbar-btn-color;
       background: $dropdown-toolbar-btn-bg;
       background-blend-mode: $dropdown-toolbar-btn-bg-blend-mode;
       background-size: $dropdown-toolbar-btn-bg-size;
@@ -109,7 +110,7 @@
 
       &:-moz-focusring {
         color: transparent;
-        text-shadow: 0 0 0 #000;
+        text-shadow: 0 0 0 $dropdown-toolbar-btn-color;
       }
 
       &:hover {
