@@ -76,11 +76,13 @@
   .dropdownToolbarButton {
     min-width: initial !important;
     max-width: initial !important;
+    width: auto !important;
     margin: 0 $dropdown-toolbar-btn-margin-x;
 
     select {
       appearance: none;
       min-width: initial !important;
+      width: auto !important;
       display: block;
       width: 100%;
       height: $dropdown-toolbar-btn-height;
@@ -92,9 +94,17 @@
       border: $dropdown-toolbar-btn-border;
       border-radius: $dropdown-toolbar-btn-border-radius;
       padding: $dropdown-toolbar-btn-padding;
+      line-height: 14px; // Center vertically
+      box-shadow: $dropdown-toolbar-btn-box-shadow;
 
       @include retina {
         background-image: $dropdown-toolbar-btn-bg-2x;
+        background-size: $dropdown-toolbar-btn-bg-size-2x;
+        box-shadow: $dropdown-toolbar-btn-box-shadow-2x;
+      }
+
+      @-moz-document url-prefix() {
+        padding: $-moz-dropdown-toolbar-btn-padding; // Compensate additional padding in Firefox
       }
 
       &:-moz-focusring {

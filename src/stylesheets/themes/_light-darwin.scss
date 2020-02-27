@@ -99,20 +99,24 @@ $toolbar-label-color:               #000;
 $toolbar-field-placeholder-color:   #777;
 
 // Dropdown toolbar button
-$dropdown-toolbar-btn-margin-x:           3px;
-$dropdown-toolbar-btn-height:             24px;
+$dropdown-toolbar-btn-margin-x:           4px;
+$dropdown-toolbar-btn-height:             22px;
 $dropdown-toolbar-btn-font-size:          $font-size-base;
-$dropdown-toolbar-btn-padding:            0 20px 0 5px;
-$dropdown-toolbar-btn-bg:                 icon-url("chevron-8.png") no-repeat right 4px center #e1e1e1;
-$dropdown-toolbar-btn-bg-2x:              icon-url("chevron-8@2x.png");
-$dropdown-toolbar-btn-bg-size:            10px 6px;
-$dropdown-toolbar-btn-bg-blend-mode:      multiply;
-$dropdown-toolbar-btn-border:             1px solid #adadad;
-$dropdown-toolbar-btn-border-radius:      0;
-$dropdown-toolbar-btn-hover-bg:           tint($highlight-color, 90%);
-$dropdown-toolbar-btn-hover-border-color: $highlight-color;
-$dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
-$dropdown-toolbar-btn-focus-border-color: #005499;
+$dropdown-toolbar-btn-padding:            0 14px 0 4px;
+$-moz-dropdown-toolbar-btn-padding:       0 11px 0 0px;
+$dropdown-toolbar-btn-bg:                 icon-url("darwin/chevron-7.png") no-repeat right 5px center, $toolbar-btn-bg;
+$dropdown-toolbar-btn-bg-2x:              icon-url("darwin/chevron-7@2x.png"), $toolbar-btn-bg;
+$dropdown-toolbar-btn-bg-size:            7px 4px, auto;
+$dropdown-toolbar-btn-bg-size-2x:         7.5px 4.5px, auto;
+$dropdown-toolbar-btn-bg-blend-mode:      null;
+$dropdown-toolbar-btn-border:             0;
+$dropdown-toolbar-btn-border-radius:      3.75px;
+$dropdown-toolbar-btn-box-shadow:         $toolbar-btn-box-shadow;
+$dropdown-toolbar-btn-box-shadow-2x:      $toolbar-btn-box-shadow-2x;
+$dropdown-toolbar-btn-hover-bg:           null;
+$dropdown-toolbar-btn-hover-border-color: null;
+$dropdown-toolbar-btn-focus-bg:           null;
+$dropdown-toolbar-btn-focus-border-color: null;
 
 // Findbar
 $findbar-offset-x:                111px;
