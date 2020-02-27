@@ -5,7 +5,7 @@
 .toolbarField {
   height: $toolbar-field-height;
   padding: $toolbar-field-padding;
-  margin: 0 3px;
+  margin: $toolbar-field-margin;
   border: $toolbar-field-border;
   color: $toolbar-field-color;
   font-family: inherit;
