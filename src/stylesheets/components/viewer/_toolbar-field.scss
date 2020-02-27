@@ -10,10 +10,14 @@
   color: $toolbar-field-color;
   font-family: inherit;
   font-size: $toolbar-field-font-size;
-  background-repeat: no-repeat;
-  background-position: 3px center;
-  background-size: 16px 17px;
+  background: $toolbar-field-bg;
   -moz-appearance: textfield; // Hide the stepper arrows in Firefox
+  border-radius: $toolbar-field-border-radius;
+  box-shadow: $toolbar-field-box-shadow;
+
+  @include retina {
+    box-shadow: $toolbar-field-box-shadow-2x;
+  }
 
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button {
@@ -32,6 +36,11 @@
 
   &:focus {
     border-color: $toolbar-field-focus-border-color;
+    box-shadow: $toolbar-field-focus-box-shadow;
+
+    @include retina {
+      box-shadow: $toolbar-field-focus-box-shadow-2x;
+    }
   }
 
   &:invalid {
@@ -43,10 +52,13 @@
   }
 
   &.visiblePageIsLoading {
-    background-image: url("images/loading-small.png");
+    background-image: url("images/loading-small.png"), $toolbar-field-bg;
+    background-repeat: no-repeat;
+    background-position: $toolbar-field-loading-x center, left top;
+    background-size: 16px 17px, auto;
 
     @include retina {
-      background-image: url("images/loading-small@2x.png");
+      background-image: url("images/loading-small@2x.png"), $toolbar-field-bg;
     }
   }
 }

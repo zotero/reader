@@ -6,7 +6,8 @@
 // Colors
 //
 
-$highlight-color: #0063e1;
+$accent-color:    #0a6cf5; // 215° 96 96
+$highlight-color: #b3d7ff;
 $blue-btn:        #90c8f6;
 
 $gray-lightest: #f0f0f0;
@@ -28,7 +29,7 @@ $font-family-base:        $font-family-sans-serif;
 
 $font-size-base: rem(11);
 
-$selection-color: #fff;
+$selection-color: null;
 $selection-bg:    rgba($highlight-color, 0.99);
 
 // Z-index master list
@@ -47,7 +48,7 @@ $toolbar-bg-2x:         linear-gradient(to top, #aeaeae 0, #aeaeae 0.5px, #c4c4c
 $toolbar-blurred-bg:    linear-gradient(to top, #d1d1d1 0, #d1d1d1 1px, #f6f6f6 1px);
 $toolbar-blurred-bg-2x: linear-gradient(to top, #cecece 0, #cecece 0.5px, #e7e7e7 0.5px, #e7e7e7 1px, #f6f6f6 1px);
 $toolbar-border:        0;
-$page-number-width:     54px;
+$page-number-width:     52px;
 $num-pages-min-width:   76px;
 $num-pages-color:       #555;
 
@@ -80,15 +81,22 @@ $toolbar-btn-separator-bg:      null;
 
 
 // Toolbar field
-$toolbar-field-height:             24px;
-$toolbar-field-padding:            0 5px;
-$toolbar-field-border:             1px solid #7a7a7a;
-$toolbar-field-color:              #000;
-$toolbar-field-hover-border-color: #171717;
-$toolbar-field-focus-border-color: $highlight-color;
-$toolbar-field-font-size:          $font-size-base;
-$toolbar-label-color:              #000;
-$toolbar-field-placeholder-color:  #777;
+$toolbar-field-height:              22px;
+$toolbar-field-padding:             0 4px;
+$toolbar-field-border:              0;
+$toolbar-field-color:               #000;
+$toolbar-field-hover-border-color:  null;
+$toolbar-field-focus-border-color:  null;
+$toolbar-field-focus-box-shadow:    inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$toolbar-field-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$toolbar-field-font-size:           $font-size-base;
+$toolbar-field-border-radius:       3.75px;
+$toolbar-field-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$toolbar-field-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$toolbar-field-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
+$toolbar-field-loading-x:           2px;
+$toolbar-label-color:               #000;
+$toolbar-field-placeholder-color:   #777;
 
 // Dropdown toolbar button
 $dropdown-toolbar-btn-margin-x:           3px;
