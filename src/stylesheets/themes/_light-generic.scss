@@ -40,16 +40,24 @@ $z-index-overlay: 40000;
 //
 
 // Toolbar
-$toolbar-height:        30px;
-$toolbar-padding:       0;
-$toolbar-bg:            $gray-lightest;
-$toolbar-bg-2x:         $toolbar-bg;
-$toolbar-blurred-bg:    null;
-$toolbar-blurred-bg-2x: null;
-$toolbar-border:        1px solid #cecece;
-$page-number-width:     54px;
-$num-pages-min-width:   76px;
-$num-pages-color:       #777;
+$toolbar-height:         30px;
+$toolbar-padding:        0;
+$toolbar-bg:             $gray-lightest;
+$toolbar-bg-2x:          $toolbar-bg;
+$toolbar-blurred-bg:     null;
+$toolbar-blurred-bg-2x:  null;
+$toolbar-border:         1px solid #cecece;
+$page-number-width:      54px;
+$num-pages-min-width:    76px;
+$num-pages-color:        #777;
+$thumbnail-icon:         "view-thumbnail";
+$thumbnail-icon-toggled: null;
+$note-icon:              "note";
+$note-icon-toggled:      null;
+$bookmark-icon:          "bookmark";
+$bookmark-icon-toggled:  null;
+$attach-icon:            "attach";
+$attach-icon-toggled:    null;
 
 // Toolbar button
 $toolbar-btn-padding:               2px 4px 1px 4px;

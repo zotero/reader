@@ -22,6 +22,12 @@
 
 #toolbarSidebar {
   #viewAnnotations {
-    @include icon("note");
+    @include icon($note-icon);
+
+    @if $note-icon-toggled {
+      &.toggled {
+        @include icon($note-icon-toggled);
+      }
+    }
   }
 }

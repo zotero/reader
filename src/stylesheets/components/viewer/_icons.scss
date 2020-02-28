@@ -173,15 +173,33 @@
 
 #toolbarSidebar {
   #viewThumbnail {
-    @include icon("view-thumbnail");
+    @include icon($thumbnail-icon);
+
+    @if $thumbnail-icon-toggled {
+      &.toggled {
+        @include icon($thumbnail-icon-toggled);
+      }
+    }
   }
 
   #viewOutline {
-    @include icon("bookmark");
+    @include icon($bookmark-icon);
+
+    @if $bookmark-icon-toggled {
+      &.toggled {
+        @include icon($bookmark-icon-toggled);
+      }
+    }
   }
 
   #viewAttachments {
-    @include icon("attach");
+    @include icon($attach-icon);
+
+    @if $attach-icon {
+      &.toggled {
+        @include icon($attach-icon-toggled);
+      }
+    }
   }
 }
 
