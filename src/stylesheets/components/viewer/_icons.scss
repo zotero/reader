@@ -80,6 +80,10 @@
     @include icon("zoom-out");
   }
 
+  .presentationMode {
+    @include icon("full-screen");
+  }
+
   #secondaryToolbarToggle {
     @include icon("secondary-toolbar-toggle");
   }
