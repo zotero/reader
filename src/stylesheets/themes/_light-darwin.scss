@@ -171,9 +171,37 @@ $sidebar-border-color:   #cecece;
 $sidebar-resizer-cursor: col-resize;
 
 // Toolbar sidebar
-$toolbar-sidebar-height:       30px;
-$toolbar-sidebar-bg:           #f0f0f0;
-$toolbar-sidebar-border-color: #cecece;
+$toolbar-sidebar-height:                           31px;
+$toolbar-sidebar-justify-content:                  center;
+$toolbar-sidebar-align-items:                      center;
+$toolbar-sidebar-bg:                               linear-gradient(to bottom, #ececec, #ccc);
+$toolbar-sidebar-border:                           1px solid #bdbdbd;
+$split-toolbar-btn-flex:                           1 0 auto;
+$split-toolbar-btn-height:                         22px;
+$split-toolbar-btn-height-2x:                      21px;
+$split-toolbar-btn-margin:                         0 10px;
+$toolbar-sidebar-btn-bg:                           linear-gradient(#d5d5d5, #acacac);
+$toolbar-sidebar-btn-bg-2x:                        linear-gradient(#d0d0d0, #9f9f9f);
+$toolbar-sidebar-btn-hover-bg:                     null;
+$toolbar-sidebar-btn-active-bg:                    null;
+$toolbar-sidebar-btn-toggled-bg:                   linear-gradient(#6e6e6e, #5a5a5a);
+$toolbar-sidebar-btn-toggled-active-bg:            linear-gradient(#585858, #474747);
+$toolbar-sidebar-btn-border-width:                 0;
+$toolbar-sidebar-btn-border-color:                 null;
+$toolbar-sidebar-btn-border-radius:                $toolbar-btn-border-radius;
+$toolbar-sidebar-btn-spacing:                      null;
+$toolbar-sidebar-gradient-btn:                     true;
+$toolbar-sidebar-label-bg:                         linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center /  1px 20px,
+                                                   linear-gradient(#fbfbfb, #f2f2f2) no-repeat 0 0 / auto auto;
+$toolbar-sidebar-label-bg-first:                   linear-gradient(#fbfbfb, #f2f2f2) 0 0 / auto;
+$toolbar-sidebar-label-toggled-bg:                 linear-gradient(#727272, #656565);
+$toolbar-sidebar-label-toggled-active-bg:          linear-gradient(#5c5c5c, #525252);
+$toolbar-sidebar-label-active-bg:                  linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center /  1px 20px,
+                                                   $toolbar-btn-active-bg;
+$toolbar-sidebar-label-active-bg-first:            $toolbar-btn-active-bg;
+$toolbar-sidebar-btn-toggled-next-label-bg:        linear-gradient(#fbfbfb, #f2f2f2);
+$toolbar-sidebar-btn-toggled-next-label-active-bg: $toolbar-btn-active-bg;
+$toolbar-sidebar-label-border-radius:              $toolbar-btn-border-radius - 1px;
 
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);

@@ -5,30 +5,73 @@
 #toolbarSidebar {
   flex: 0 0 auto;
   display: flex;
-  align-items: flex-end;
+  justify-content: $toolbar-sidebar-justify-content;
+  align-items: $toolbar-sidebar-align-items;
   width: 100%;
   height: $toolbar-sidebar-height;
-  background-color: $toolbar-sidebar-bg;
-  border-bottom: 1px solid $toolbar-sidebar-border-color;
+  background: $toolbar-sidebar-bg;
+  border-bottom: $toolbar-sidebar-border;
 
   .splitToolbarButton {
     display: flex;
-    height: 27px;
+    justify-content: center;
+    height: $split-toolbar-btn-height;
+    margin: $split-toolbar-btn-margin;
+
+    @if $toolbar-sidebar-gradient-btn {
+      @-moz-document url-prefix() {
+        flex: $split-toolbar-btn-flex; // Stretched buttons would be blurry in other browsers
+      }
+
+      @include retina {
+        height: $split-toolbar-btn-height-2x;
+        transform: translateY(-0.5px);
+
+        @-moz-document url-prefix() {
+          transform: none;
+        }
+      }
+    }
   }
 
   .toolbarButton {
-    background-color: transparent;
-    border: 1px solid #d9d9d9;
-    border-bottom: 0;
-    padding: 0 8px;
+    flex: 1 0 auto;
+    background: $toolbar-sidebar-btn-bg;
+    border-color: $toolbar-sidebar-btn-border-color;
+    border-width: $toolbar-sidebar-btn-border-width;
+    border-style: solid;
+    padding: 0 8px 0 9px;
+    position: relative;
 
-    &:hover {
-      background-color: #d8eaf9;
+    @include retina {
+      background: $toolbar-sidebar-btn-bg-2x;
     }
 
-    &:active,
+    &:first-child {
+      border-top-left-radius: $toolbar-sidebar-btn-border-radius;
+      border-bottom-left-radius: $toolbar-sidebar-btn-border-radius;
+    }
+
+    &:last-child {
+      border-top-right-radius: $toolbar-sidebar-btn-border-radius;
+      border-bottom-right-radius: $toolbar-sidebar-btn-border-radius;
+      padding: 0 9px 0 9px;
+    }
+
+    &:hover {
+      background: $toolbar-sidebar-btn-hover-bg;
+    }
+
+    &:active {
+      background: $toolbar-sidebar-btn-active-bg;
+    }
+
     &.toggled {
-      background-color: #fff;
+      background: $toolbar-sidebar-btn-toggled-bg;
+
+      &:active {
+        background: $toolbar-sidebar-btn-toggled-active-bg;
+      }
     }
 
     &[disabled] {
@@ -40,7 +83,98 @@
     }
 
     & + .toolbarButton {
-      margin-left: -1px;
+      margin-left: $toolbar-sidebar-btn-spacing;
+    }
+
+    @if $toolbar-sidebar-gradient-btn {
+      box-shadow: 0 0.5px rgba(0, 0, 0, 0.05);
+
+      // Icon
+      &::before {
+        position: relative;
+        z-index: 1;
+
+        @include retina {
+          transform: translateY(0.5px);
+
+          @-moz-document url-prefix() {
+            transform: none;
+          }
+        }
+      }
+
+      // Label for screen readers
+      > span {
+        position: absolute;
+        width: auto;
+        height: auto;
+        margin: 0;
+        clip: auto;
+        text-indent: -99em;
+        left: 0;
+        top: 1px;
+        width: 100%;
+        height: calc(100% - 2px);
+        background: $toolbar-sidebar-label-bg;
+
+        @include retina {
+          height: calc(100% - 1px);
+          transform: translateY(-0.5px);
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:first-child')} {
+          left: 1px;
+          width: calc(100% - 1px);
+          border-top-left-radius: $toolbar-sidebar-label-border-radius;
+          border-bottom-left-radius: $toolbar-sidebar-label-border-radius;
+          background: $toolbar-sidebar-label-bg-first;
+
+          @include retina {
+            transform: translate(-0.5px, -0.5px);
+            width: calc(100% - 0.5px);
+          }
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:last-child')} {
+          width: calc(100% - 1px);
+          border-top-right-radius: $toolbar-sidebar-label-border-radius;
+          border-bottom-right-radius: $toolbar-sidebar-label-border-radius;
+
+          @include retina {
+            transform: translateY(-0.5px) scaleX(1.01515);
+            transform-origin: left top;
+
+            @-moz-document url-prefix() {
+              transform: translateY(-0.5px);
+              width: calc(100% - 0.5px);
+            }
+          }
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:active')} {
+          background: $toolbar-sidebar-label-active-bg;
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:first-child:active')} {
+          background: $toolbar-sidebar-label-active-bg-first;
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled')} {
+          background: $toolbar-sidebar-label-toggled-bg;
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled:active')} {
+          background: $toolbar-sidebar-label-toggled-active-bg;
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled + .toolbarButton')} {
+          background: $toolbar-sidebar-btn-toggled-next-label-bg;
+        }
+
+        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled + .toolbarButton:active')} {
+          background: $toolbar-sidebar-btn-toggled-next-label-active-bg;
+        }
+      }
     }
   }
 }

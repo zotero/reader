@@ -170,9 +170,26 @@ $sidebar-border-color:   #cecece;
 $sidebar-resizer-cursor: ew-resize;
 
 // Toolbar sidebar
-$toolbar-sidebar-height:       30px;
-$toolbar-sidebar-bg:           #f0f0f0;
-$toolbar-sidebar-border-color: #cecece;
+$toolbar-sidebar-height:                 30px;
+$toolbar-sidebar-justify-content:        null;
+$toolbar-sidebar-align-items:            flex-end;
+$toolbar-sidebar-bg:                     #f0f0f0;
+$toolbar-sidebar-border-color:           #cecece;
+$toolbar-sidebar-border:                 1px solid #cecece;
+$split-toolbar-btn-height:               27px;
+$split-toolbar-btn-height-2x:            null;
+$split-toolbar-btn-margin:               null;
+$toolbar-sidebar-btn-bg:                 transparent;
+$toolbar-sidebar-btn-bg-2x:              null;
+$toolbar-sidebar-btn-hover-bg:           #d8eaf9;
+$toolbar-sidebar-btn-active-bg:          #fff;
+$toolbar-sidebar-btn-toggled-bg:         #fff;
+$toolbar-sidebar-btn-toggled-active-bg:  null;
+$toolbar-sidebar-btn-border-width:       1px 1px 0 1px;
+$toolbar-sidebar-btn-border-color:       #d9d9d9;
+$toolbar-sidebar-btn-border-radius:      null;
+$toolbar-sidebar-btn-spacing:            -1px;
+$toolbar-sidebar-gradient-btn:           false;
 
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
