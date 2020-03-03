@@ -111,7 +111,10 @@ class AnnotationPreview extends React.Component {
         <div
           className="tags"
           onClick={(e) => {
-            onClickTags(annotation.id, e.screenX, e.screenY);
+            let rect = e.currentTarget.getBoundingClientRect();
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+            onClickTags(annotation.id, e.screenX - x, e.screenY - y);
           }}
         >{annotation.tags.map(tag => (
           <span style={{ color: tag.color }}>{tag.name}</span>
