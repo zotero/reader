@@ -8,7 +8,13 @@ let annotations = [
     'position': { 'pageIndex': 0, 'rects': [[178.303, 696.923, 429.452, 713.044]] },
     'text': 'Just-in-Time Type Specialization ',
     'comment': 'Test',
-    'tags': [],
+    'tags': [{
+      'name': 'math',
+      'color': '#ff0000'
+    },
+      {
+        'name': 'chemistry'
+      }],
     'id': 217789960638629,
     'dateModified': '2020-02-19T12:42:20.336Z',
     'dateCreated': '2020-02-19T12:42:13.323Z',

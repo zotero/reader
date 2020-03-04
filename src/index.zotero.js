@@ -1,14 +1,14 @@
-import Viewer from "./viewer.js"
+import Viewer from './viewer.js'
 
-document.addEventListener("webviewerloaded", (e) => {
-  window.PDFViewerApplicationOptions.set("disableHistory", true);
-  window.PDFViewerApplicationOptions.set("eventBusDispatchToDOM", true);
-  window.PDFViewerApplicationOptions.set("isEvalSupported", false);
-  window.PDFViewerApplicationOptions.set("defaultUrl", '');
-  window.PDFViewerApplicationOptions.set("cMapUrl", 'cmaps/');
-  window.PDFViewerApplicationOptions.set("cMapPacked", true);
-  window.PDFViewerApplicationOptions.set("workerSrc", 'pdf.worker.js');
-  window.PDFViewerApplicationOptions.set("historyUpdateUrl", false);
+document.addEventListener('webviewerloaded', (e) => {
+  window.PDFViewerApplicationOptions.set('disableHistory', true);
+  window.PDFViewerApplicationOptions.set('eventBusDispatchToDOM', true);
+  window.PDFViewerApplicationOptions.set('isEvalSupported', false);
+  window.PDFViewerApplicationOptions.set('defaultUrl', '');
+  window.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
+  window.PDFViewerApplicationOptions.set('cMapPacked', true);
+  window.PDFViewerApplicationOptions.set('workerSrc', 'pdf.worker.js');
+  window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {
     return window.PDFViewerApplicationOptions;
@@ -29,15 +29,15 @@ window.addEventListener('message', function (message) {
     viewer = new Viewer({
       onSetAnnotation: function (annotation) {
         if (annotation.temp) return;
-        console.log("Set annotation", annotation);
+        console.log('Set annotation', annotation);
         parent.postMessage({ op: 'setAnnotation', parent: true, annotation }, '*');
       },
       onDeleteAnnotation: function (annotationId) {
-        console.log("Delete annotation", annotationId);
+        console.log('Delete annotation', annotationId);
         parent.postMessage({ op: 'deleteAnnotation', parent: true, annotationId }, '*');
       },
       onSetState: function (state) {
-        console.log("Set state", state);
+        console.log('Set state', state);
         parent.postMessage({ op: 'setState', parent: true, state }, '*');
       },
       onClickTags(annotationId, screenX, screenY) {
@@ -123,16 +123,16 @@ window.addEventListener('message', function (message) {
 
 let localized = false;
 
-document.addEventListener("localized", (e) => {
+document.addEventListener('localized', (e) => {
   if (!window.PDFViewerApplication.pdfViewer || localized) return;
   localized = true;
   
-  window.PDFViewerApplication.eventBus.on("documentinit", (e) => {
+  window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
   });
   
   var url = new URL(window.location.href);
-  var libraryID = url.searchParams.get("libraryID");
-  var key = url.searchParams.get("key");
+  var libraryID = url.searchParams.get('libraryID');
+  var key = url.searchParams.get('key');
   parent.postMessage({ op: 'load', libraryID, key }, '*');
 });
 

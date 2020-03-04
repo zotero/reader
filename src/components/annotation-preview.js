@@ -39,26 +39,28 @@ class AnnotationPreview extends React.Component {
         />
       }
       else {
-        
-        let text = annotation.text.slice(0, 70).trim();
-        if (annotation.text.length > 70) {
-          text += '..';
+  
+        if (annotation.text) {
+          let text = annotation.text.slice(0, 70).trim();
+          if (annotation.text.length > 70) {
+            text += '..';
+          }
+    
+          textElement = (
+            <React.Fragment>
+              <div className="text-preview">
+                {text}
+                <span
+                  className="text-edit"
+                  onClick={() => {
+                    this.setState({ editingText: true })
+                  }}
+                >edit</span>
+              </div>
+      
+            </React.Fragment>
+          )
         }
-        
-        textElement = (
-          <React.Fragment>
-            <div className="text-preview">
-              {text}
-              <span
-                className="text-edit"
-                onClick={() => {
-                  this.setState({ editingText: true })
-                }}
-              >edit</span>
-            </div>
-          
-          </React.Fragment>
-        )
       }
     }
     
