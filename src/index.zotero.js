@@ -67,6 +67,58 @@ window.addEventListener('message', function (message) {
   else if (data.op === 'deleteAnnotation') {
     viewer.deleteAnnotation(data.annotationId, data.dateDeleted);
   }
+  else if (data.op === 'menuCmd') {
+    let cmd = data.cmd;
+    let eb = window.PDFViewerApplication.eventBus;
+    
+    switch (cmd) {
+      case 'presentationmode':
+        eb.dispatch('presentationmode');
+        break;
+      case 'print':
+        eb.dispatch('print');
+        break;
+      case 'download':
+        eb.dispatch('download');
+        break;
+      case 'firstpage':
+        eb.dispatch('firstpage');
+        break;
+      case 'lastpage':
+        eb.dispatch('lastpage');
+        break;
+      case 'rotatecw':
+        eb.dispatch('rotatecw');
+        break;
+      case 'rotateccw':
+        eb.dispatch('rotateccw');
+        break;
+      case 'switchcursortool_select':
+        eb.dispatch('switchcursortool', { tool: 0 });
+        break;
+      case 'switchcursortool_hand':
+        eb.dispatch('switchcursortool', { tool: 1 });
+        break;
+      case 'switchscrollmode_vertical':
+        eb.dispatch('switchscrollmode', { mode: 0 });
+        break;
+      case 'switchscrollmode_horizontal':
+        eb.dispatch('switchscrollmode', { mode: 1 });
+        break;
+      case 'switchscrollmode_wrapped':
+        eb.dispatch('switchscrollmode', { mode: 2 });
+        break;
+      case 'switchspreadmode_none':
+        eb.dispatch('switchspreadmode', { mode: 0 });
+        break;
+      case 'switchspreadmode_odd':
+        eb.dispatch('switchspreadmode', { mode: 1 });
+        break;
+      case 'switchspreadmode_even':
+        eb.dispatch('switchspreadmode', { mode: 2 });
+        break;
+    }
+  }
 });
 
 let localized = false;
