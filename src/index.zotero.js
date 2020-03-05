@@ -27,6 +27,13 @@ window.addEventListener('message', function (message) {
   if (data.op === 'open') {
     window.itemId = data.itemId;
     viewer = new Viewer({
+      askImport: true,
+      onImport() {
+        parent.postMessage({ op: 'import' }, '*');
+      },
+      onDismissImport() {
+        parent.postMessage({ op: 'dismissImport' }, '*');
+      },
       onSetAnnotation: function (annotation) {
         if (annotation.temp) return;
         console.log('Set annotation', annotation);
@@ -45,9 +52,6 @@ window.addEventListener('message', function (message) {
       },
       onEnterPassword(password) {
         parent.postMessage({ op: 'enterPassword', password }, '*');
-      },
-      onImport() {
-        parent.postMessage({ op: 'import' }, '*');
       },
       onDownload() {
         parent.postMessage({ op: 'save' }, '*');

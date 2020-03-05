@@ -25,7 +25,7 @@ class Sidebar extends React.Component {
   }
   
   render() {
-    let { importableAnnotationsNum, annotations, onSelectAnnotation, onChange, onDelete, activeAnnotationId, onClickTags, onImport } = this.props;
+    let { annotations, onSelectAnnotation, onChange, onDelete, activeAnnotationId, onClickTags, onImport } = this.props;
     let annotationsView = document.getElementById('annotationsView');
     if (this.state.filteredAnnotations) {
       let newFilteredAnnotations = [];
@@ -62,12 +62,6 @@ class Sidebar extends React.Component {
               }}>X
               </div>
             </div>
-            <button
-              className="import"
-              onClick={onImport}
-            >
-              Import annotations ({importableAnnotationsNum})
-            </button>
             {annotations.map((annotation, index) => (
               <div
                 key={annotation.id}

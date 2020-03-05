@@ -6,6 +6,7 @@ import Sidebar from './sidebar';
 import Toolbar from './toolbar';
 import PopupScreen from './screen-popup';
 import ColorPicker from './color-picker';
+import ImportBar from './import-bar';
 import { annotationColors } from '../lib/colors';
 
 // All rects in annotator.js are stored in [left, top, right, bottom] order
@@ -282,7 +283,10 @@ class Annotator extends React.Component {
   }
   
   render() {
-    let { onAddAnnotation, onUpdateAnnotation, onDeleteAnnotation, onClickTags, onImport } = this.props;
+    let {
+      askImport, onImport, onDismissImport,
+      onAddAnnotation, onUpdateAnnotation, onDeleteAnnotation, onClickTags
+    } = this.props;
     let { annotations } = this.state;
     
     return (
@@ -305,8 +309,8 @@ class Annotator extends React.Component {
             }}/>
           </PopupScreen>
         ) : null}
+        {askImport && <ImportBar onImport={onImport} onDismiss={onDismissImport}/>}
         <Sidebar
-          importableAnnotationsNum={this.state.importableAnnotationsNum}
           annotations={this.state.annotations}
           activeAnnotationId={this.state.activeAnnotationId}
           onSelectAnnotation={(id) => {

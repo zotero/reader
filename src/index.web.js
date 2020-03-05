@@ -330,6 +330,13 @@ document.addEventListener('localized', (e) => {
   });
   
   const viewer = new Viewer({
+    askImport: true,
+    onImport() {
+      alert('This will call pdf-worker to extract annotations')
+    },
+    onDismissImport() {
+      alert('You won\'t be asked to import annotations until new annotations will be detected in the PDF file');
+    },
     onSetAnnotation: function (annotation) {
       console.log('Set annotation', annotation);
     },
@@ -344,9 +351,6 @@ document.addEventListener('localized', (e) => {
     },
     onEnterPassword(password) {
       console.log('Entered password', password);
-    },
-    onImport() {
-      alert('This will call pdf-worker to extract annotations')
     },
     onDownload() {
       alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');

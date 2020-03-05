@@ -141,7 +141,9 @@ class Viewer {
         onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
         onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
         onClickTags={options.onClickTags}
+        askImport={options.askImport}
         onImport={options.onImport}
+        onDismissImport={options.onDismissImport}
         onInitialized={() => {
           this._annotationsStore.onUpdateAnnotations = this.setAnnotations;
           this._annotationsStore.onImportableAnnotationsNum = this.importableAnnotationsNum;
