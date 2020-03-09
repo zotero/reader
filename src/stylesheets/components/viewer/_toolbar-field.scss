@@ -11,7 +11,6 @@
   font-family: inherit;
   font-size: $toolbar-field-font-size;
   background: $toolbar-field-bg;
-  -moz-appearance: textfield; // Hide the stepper arrows in Firefox
   border-radius: $toolbar-field-border-radius;
   box-shadow: $toolbar-field-box-shadow;
 
@@ -47,10 +46,6 @@
     box-shadow: none; // Hide red box-shadow in Firefox while loading
   }
 
-  &[type="checkbox"] {
-    height: auto;
-  }
-
   &.visiblePageIsLoading {
     background-image: url("images/loading-small.png"), $toolbar-field-bg;
     background-repeat: no-repeat;
@@ -60,6 +55,14 @@
     @include retina {
       background-image: url("images/loading-small@2x.png"), $toolbar-field-bg;
     }
+  }
+
+  &[type="number"] {
+    -moz-appearance: textfield; // Hide the stepper arrows in Firefox
+  }
+
+  &[type="checkbox"] {
+    height: auto;
   }
 }
 
