@@ -103,8 +103,12 @@ $toolbar-field-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0
 $toolbar-field-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
 $toolbar-field-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
 $toolbar-field-loading-x:           2px;
+$toolbar-label-line-height:         null;
 $toolbar-label-color:               #000;
 $toolbar-field-placeholder-color:   #777;
+$checkbox-size:                     14px;
+$-moz-checkbox-size:                16px;
+$checkbox-box-shadow:               none;
 
 // Dropdown toolbar button
 $dropdown-toolbar-btn-margin-x:           4px;

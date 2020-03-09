@@ -62,7 +62,13 @@
   }
 
   &[type="checkbox"] {
-    height: auto;
+    width: $checkbox-size;
+    height: $checkbox-size;
+    box-shadow: $checkbox-box-shadow;
+    @-moz-document url-prefix() {
+      width: $-moz-checkbox-size;
+      height: $-moz-checkbox-size;
+    }
   }
 }
 

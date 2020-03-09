@@ -106,7 +106,7 @@
 
   .toolbarLabel {
     margin-right: 13px;
-    line-height: 1.273; // Center vertically
+    line-height: $toolbar-label-line-height; // Center vertically
   }
 
   #findResultsCount {
