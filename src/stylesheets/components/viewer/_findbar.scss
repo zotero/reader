@@ -14,15 +14,16 @@
   left: $findbar-offset-x;
   top: $findbar-offset-y;
   z-index: $z-index-findbar;
-  height: 30px;
-  padding: 0 3px 0 0;
+  height: $findbar-height;
+  padding: $findbar-padding;
   background-color: $findbar-bg;
+  border-radius: $findbar-border-radius;
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
 
   &::before {
     content: "";
     position: absolute;
-    left: 7px;
+    left: $findbar-pointer-offset-x;
     top: -9px;
     border: solid transparent;
     border-width: 0 8px 8px 8px;
@@ -37,7 +38,7 @@
   &::after {
     content: "";
     position: absolute;
-    left: 7px;
+    left: $findbar-pointer-offset-x;
     top: -8px;
     width: 16px;
     border: solid transparent;

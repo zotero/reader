@@ -128,9 +128,13 @@ $dropdown-toolbar-btn-focus-bg:           null;
 $dropdown-toolbar-btn-focus-border-color: null;
 
 // Findbar
-$findbar-offset-x:                111px;
-$findbar-offset-y:                45px;
+$findbar-offset-x:                130px;
+$findbar-offset-y:                49px;
+$findbar-pointer-offset-x:        16px;
+$findbar-height:                  38px;
+$findbar-padding:                 0 7px 0 4px;
 $findbar-bg:                      #fff;
+$findbar-border-radius:           4px;
 $findbar-btn-padding:             2px 4px 1px 4px;
 $findbar-btn-margin-x:            3px;
 $findbar-btn-bg:                  transparent;
