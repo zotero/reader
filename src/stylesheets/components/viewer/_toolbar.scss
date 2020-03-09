@@ -82,6 +82,25 @@
     }
   }
 
+  @if $platform == "darwin" {
+    #back {
+      padding-left: 5px;
+      padding-right: 6px;
+      margin-right: 1px;
+      clip-path: inset(-1px 0 -1px -1px);
+
+      @include retina {
+        clip-path: inset(-1px -0.5px -1px -1px);
+      }
+    }
+
+    #forward {
+      padding-left: 6px;
+      padding-right: 5px;
+      margin-left: 0;
+    }
+  }
+
   #pageNumber {
     width: $page-number-width;
     text-align: right;

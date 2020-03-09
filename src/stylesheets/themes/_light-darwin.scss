@@ -191,12 +191,12 @@ $toolbar-sidebar-btn-border-color:                 null;
 $toolbar-sidebar-btn-border-radius:                $toolbar-btn-border-radius;
 $toolbar-sidebar-btn-spacing:                      null;
 $toolbar-sidebar-gradient-btn:                     true;
-$toolbar-sidebar-label-bg:                         linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center /  1px 20px,
+$toolbar-sidebar-label-bg:                         linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center / 1px 20px,
                                                    linear-gradient(#fbfbfb, #f2f2f2) no-repeat 0 0 / auto auto;
 $toolbar-sidebar-label-bg-first:                   linear-gradient(#fbfbfb, #f2f2f2) 0 0 / auto;
 $toolbar-sidebar-label-toggled-bg:                 linear-gradient(#727272, #656565);
 $toolbar-sidebar-label-toggled-active-bg:          linear-gradient(#5c5c5c, #525252);
-$toolbar-sidebar-label-active-bg:                  linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center /  1px 20px,
+$toolbar-sidebar-label-active-bg:                  linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center / 1px 20px,
                                                    $toolbar-btn-active-bg;
 $toolbar-sidebar-label-active-bg-first:            $toolbar-btn-active-bg;
 $toolbar-sidebar-btn-toggled-next-label-bg:        linear-gradient(#fbfbfb, #f2f2f2);
