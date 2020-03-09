@@ -122,7 +122,7 @@
           transform: translateY(-0.5px);
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:first-child')} {
+        @include variant(".toolbarButton:first-child") {
           left: 1px;
           width: calc(100% - 1px);
           border-top-left-radius: $toolbar-sidebar-label-border-radius;
@@ -135,7 +135,7 @@
           }
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:last-child')} {
+        @include variant(".toolbarButton:last-child") {
           width: calc(100% - 1px);
           border-top-right-radius: $toolbar-sidebar-label-border-radius;
           border-bottom-right-radius: $toolbar-sidebar-label-border-radius;
@@ -151,27 +151,27 @@
           }
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:active')} {
+        @include state(".toolbarButton:active") {
           background: $toolbar-sidebar-label-active-bg;
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton:first-child:active')} {
+        @include state(".toolbarButton:first-child:active") {
           background: $toolbar-sidebar-label-active-bg-first;
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled')} {
+        @include state(".toolbarButton.toggled") {
           background: $toolbar-sidebar-label-toggled-bg;
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled:active')} {
+        @include state(".toolbarButton.toggled:active") {
           background: $toolbar-sidebar-label-toggled-active-bg;
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled + .toolbarButton')} {
+        @include state(".toolbarButton.toggled + .toolbarButton") {
           background: $toolbar-sidebar-btn-toggled-next-label-bg;
         }
 
-        @at-root #{selector-replace(&, '.toolbarButton', '.toolbarButton.toggled + .toolbarButton:active')} {
+        @include state(".toolbarButton.toggled + .toolbarButton:active") {
           background: $toolbar-sidebar-btn-toggled-next-label-active-bg;
         }
       }
