@@ -139,15 +139,24 @@ $findbar-padding:                 0 3px 0 0;
 $findbar-bg:                      #fff;
 $findbar-border-radius:           null;
 $findbar-box-shadow:              0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
+
 $findbar-btn-padding:             2px 4px 1px 4px;
 $findbar-btn-margin-x:            3px;
 $findbar-btn-bg:                  transparent;
 $findbar-btn-border:              1px solid transparent;
+$findbar-btn-border-radius:       null;
+$findbar-btn-box-shadow:          null;
+$findbar-btn-box-shadow-2x:       null;
 $findbar-btn-hover-bg:            rgba($blue-btn, 0.25);
 $findbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
+$findbar-btn-focus-box-shadow:    null;
+$findbar-btn-focus-box-shadow-2x: null;
 $findbar-btn-active-bg:           rgba($blue-btn, 0.5);
 $findbar-btn-border-active-color: $blue-btn;
 $findbar-btn-icon-active-offset:  1px;
+$findbar-btn-previous-icon:       "previous";
+$findbar-btn-next-icon:           "next";
+
 $find-input-width:                200px;
 $find-input-padding:              null;
 $find-input-bg:                   null;

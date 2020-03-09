@@ -18,6 +18,10 @@
   background-color: $selection-bg;
 }
 
+::-moz-focus-inner {
+  border: 0;
+}
+
 html,
 body {
   width: 100%;

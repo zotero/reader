@@ -74,19 +74,45 @@
   }
 
   button {
-    background-color: $findbar-btn-bg;
+    background: $findbar-btn-bg;
     border: $findbar-btn-border;
+    border-radius: $findbar-btn-border-radius;
     padding: $findbar-btn-padding;
     margin: 0 $findbar-btn-margin-x;
+    box-shadow: $findbar-btn-box-shadow;
+
+    @include retina {
+      box-shadow: $findbar-btn-box-shadow-2x;
+    }
 
     &:hover {
-      background-color: $findbar-btn-hover-bg;
+      background: $findbar-btn-hover-bg;
       border-color: $findbar-btn-border-hover-color;
     }
 
+    &:focus-visible {
+      box-shadow: $findbar-btn-focus-box-shadow;
+      position: relative;
+      z-index: 1;
+
+      @include retina {
+        box-shadow: $findbar-btn-focus-box-shadow-2x;
+      }
+    }
+
+    &:-moz-focusring {
+      box-shadow: $findbar-btn-focus-box-shadow;
+      position: relative;
+      z-index: 1;
+
+      @include retina {
+        box-shadow: $findbar-btn-focus-box-shadow-2x;
+      }
+    }
+
     &:active,
-    &.toggled:not(#sidebarToggle) {
-      background-color: $findbar-btn-active-bg;
+    &.toggled {
+      background: $findbar-btn-active-bg;
       border-color: $findbar-btn-border-active-color;
 
       &::before {
@@ -101,6 +127,20 @@
       &::before {
         opacity: 0.5;
       }
+    }
+  }
+
+  @if $platform == "darwin" {
+    #findPrevious {
+      padding-left: 4px;
+      padding-right: 5px;
+      margin-right: 1px;
+    }
+
+    #findNext {
+      padding-left: 5px;
+      padding-right: 4px;
+      margin-left: 0;
     }
   }
 

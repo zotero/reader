@@ -94,21 +94,21 @@
 .findbar {
   .findPrevious {
     /*rtl:ignore*/
-    @include icon("previous");
+    @include icon($findbar-btn-previous-icon);
 
     html[dir="rtl"] & {
       /*rtl:ignore*/
-      @include icon("previous-rtl");
+      @include icon("#{$findbar-btn-previous-icon}-rtl");
     }
   }
 
   .findNext {
     /*rtl:ignore*/
-    @include icon("next");
+    @include icon($findbar-btn-next-icon);
 
     html[dir="rtl"] & {
       /*rtl:ignore*/
-      @include icon("next-rtl");
+      @include icon("#{$findbar-btn-previous-icon}-rtl");
     }
   }
 }

@@ -90,7 +90,7 @@
       clip-path: inset(-1px 0 -1px -1px);
 
       @include retina {
-        clip-path: inset(-1px -0.5px -1px -1px);
+        clip-path: none;
       }
     }
 
