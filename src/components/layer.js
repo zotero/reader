@@ -206,136 +206,69 @@ class MarginNoteLayer extends React.Component {
       'layer-margin-note'
     );
   }
-
-  getDirection(pageWidth, position) {
-    let min = Infinity;
-    let max = 0;
-
-    for (let rect of position.rects) {
-      if (rect[0] < min) {
-        min = rect[0];
-      }
-
-      if (rect[2] > max) {
-        max = rect[2];
-      }
-    }
-
-    if (min + (max - min) / 2 < pageWidth / 2) {
-      return 'left';
-    }
-
-    return 'right';
+  
+  quickIntersectRect(r1, r2) {
+    return !(r2[0] > r1[2] ||
+      r2[2] < r1[0] ||
+      r2[1] > r1[3] ||
+      r2[3] < r1[1]);
   }
-
-  getStackedMarginNotes(marginNotes, isRight) {
-    let scale = PDFViewerApplication.pdfViewer._currentScale;
-    marginNotes.sort((a, b) => b.top - a.top);
-
-    let marginNotesGrouped = [];
-
+  
+  stackNotes(marginNotes) {
+    marginNotes.sort((a, b) => a.rect[0] - b.rect[0]);
     for (let marginNote of marginNotes) {
-      if (marginNotesGrouped.length) {
-        let prev = marginNotesGrouped[marginNotesGrouped.length - 1];
-
-        if (prev[0].rect.top + prev[0].rect.height >= marginNote.rect.top) {
-          prev.push(marginNote);
+      for (let marginNote2 of marginNotes) {
+        if (marginNote2 === marginNote) break;
+        
+        if (this.quickIntersectRect(marginNote.rect, marginNote2.rect)) {
+          let shift = wx(marginNote2.rect) / 3 * 2;
+          marginNote.rect[0] = marginNote2.rect[0] + shift;
+          marginNote.rect[2] = marginNote2.rect[2] + shift;
         }
-        else {
-          marginNotesGrouped.push([marginNote]);
-        }
-      }
-      else {
-        marginNotesGrouped.push([marginNote]);
       }
     }
-
-    let marginNotesStacked = [];
-
-    for (let mg of marginNotesGrouped) {
-      let first = mg[0];
-      marginNotesStacked.push(first);
-      for (let i = 1; i < mg.length; i++) {
-        let m = mg[i];
-        m.rect.top = first.rect.top;
-        if (isRight) {
-          m.rect.left -= i * m.rect.width / 2
-        }
-        else {
-          m.rect.left += i * m.rect.width / 2;
-        }
-        marginNotesStacked.push(m)
-      }
-    }
-
-    return marginNotesStacked;
   }
-
-  getMarginNotes(marginLeft, marginRight, pageWidth, annotations, viewport) {
-    let marginLeftNotes = [];
-    let marginRightNotes = [];
-
+  
+  getMarginNotes(annotations, viewport) {
+    let notes = [];
     let scale = PDFViewerApplication.pdfViewer._currentScale;
-
-    let width = 12;
-    let height = 12;
-
+    
+    let width = 9.6 * scale;
+    let height = 9.6 * scale;
+    
     for (let annotation of annotations) {
       let viewportPosition = p2v(annotation.position, viewport);
-      let direction = this.getDirection(pageWidth, viewportPosition)
-
-      let left;
-      if (direction === 'right') {
-        left = marginRight + (pageWidth - marginRight) / 2 - width / 2;
-        marginRightNotes.push({
-            annotation,
-            rect: {
-              left: viewportPosition.rects[0][0]-width/2,
-              top: viewportPosition.rects[0][1]-height+height/3,
-              width: width,
-              height: height
-            }
-          }
-        );
-      }
-      else {
-        left = marginLeft / 2 - width / 2;
-        marginLeftNotes.push({
-            annotation,
-            rect: {
-              left: viewportPosition.rects[0][0]-width/2,
-              top: viewportPosition.rects[0][1]-height+height/3,
-              width: width,
-              height: height
-            }
-          }
-        );
-      }
+      let left = viewportPosition.rects[0][0] - width / 2;
+      let top = viewportPosition.rects[0][1] - height + height / 3;
+      notes.push({
+          annotation,
+          rect: [
+            left, top,
+            left + width, top + height
+          ]
+        }
+      );
     }
-    // let marginNotes = this.getStackedMarginNotes(marginLeftNotes).concat(this.getStackedMarginNotes(marginRightNotes, true));
-
-    let marginNotes = marginLeftNotes.concat(marginRightNotes)
-    marginNotes = marginNotes.reverse();
-    return marginNotes;
+    
+    notes.reverse();
+    return notes;
   }
-
+  
   render() {
     let {
       view,
       annotations,
       activeAnnotationId,
-      marginLeft,
-      marginRight,
-      pageWidth,
       onClick
     } = this.props;
-
+    
     let node = this.getContainerNode(view);
     if (!node) return null;
-
+    
     let commentedAnnotations = annotations.filter(x => x.comment)
-    let marginNotes = this.getMarginNotes(marginLeft, marginRight, pageWidth, commentedAnnotations, view.viewport);
-
+    let marginNotes = this.getMarginNotes(commentedAnnotations, view.viewport);
+    this.stackNotes(marginNotes);
+    
     return ReactDOM.createPortal(
       <div>
         {marginNotes.map(
@@ -346,10 +279,10 @@ class MarginNoteLayer extends React.Component {
                 key={marginNote.annotation.id}
                 className={cx('margin-note', { active })}
                 style={{
-                  left: marginNote.rect.left,
-                  top: marginNote.rect.top,
-                  width: marginNote.rect.width,
-                  height: marginNote.rect.height,
+                  left: marginNote.rect[0],
+                  top: marginNote.rect[1],
+                  width: wx(marginNote.rect),
+                  height: hy(marginNote.rect),
                   color: marginNote.annotation.color,
                   zIndex: active ? 2 : 1
                 }}
@@ -359,7 +292,7 @@ class MarginNoteLayer extends React.Component {
                   onClick(marginNote.annotation.id);
                 }}
               >
-                <svg width="12" height="12" viewBox="0 0 12 12">
+                <svg width={wx(marginNote.rect)} height={hy(marginNote.rect)} viewBox="0 0 12 12">
                   <path fill="currentColor" d="M0,0V6.707L5.293,12H12V0Z"/>
                   <path d="M0,0V6.707L5.293,12H12V0ZM1.707,7H5v3.293ZM11,11H6V6H1V1H11Z" opacity="0.67"/>
                   <polygon points="1.707 7 5 10.293 5 7 1.707 7" fill="#fff" opacity="0.4"/>
@@ -778,8 +711,7 @@ class Layer extends React.Component {
       if (!annotationsByPage[String(pageIndex)] && !annotationsByPagePrev[String(pageIndex)]) continue;
 
       let view = this.viewer.getPageView(pageIndex);
-
-      let margins = this.getMargins(pageIndex);
+      
       let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex).width;
 
       pageLayers.push(
@@ -825,8 +757,6 @@ class Layer extends React.Component {
           view={view}
           activeAnnotationId={activeAnnotationId}
           annotations={(annotationsByPage[String(pageIndex)].filter(x => ['highlight', 'area'].includes(x.type)) || [])}
-          marginLeft={margins[0]}
-          marginRight={margins[1]}
           pageWidth={pageWidth}
           onClick={onClickMarginNote}
         />
