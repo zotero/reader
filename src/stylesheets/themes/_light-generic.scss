@@ -60,6 +60,7 @@ $attach-icon:            "attach";
 $attach-icon-toggled:    null;
 
 // Toolbar button
+$toolbar-btn-height:                21px;
 $toolbar-btn-padding:               2px 4px 1px 4px;
 $toolbar-btn-margin-x:              3px;
 $toolbar-btn-bg:                    transparent;
@@ -145,6 +146,7 @@ $findbar-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 
 $options-one-container-margin: 0;
 $options-two-container-margin: 0;
 
+$findbar-btn-height:              21px;
 $findbar-btn-padding:             2px 4px 1px 4px;
 $findbar-btn-margin-x:            3px;
 $findbar-btn-bg:                  transparent;
@@ -214,6 +216,8 @@ $toolbar-sidebar-border:                 1px solid #cecece;
 $split-toolbar-btn-height:               27px;
 $split-toolbar-btn-height-2x:            null;
 $split-toolbar-btn-margin:               null;
+$toolbar-sidebar-btn-padding:            5px 8px 5px 9px;
+$toolbar-sidebar-btn-padding-last:       5px 9px;
 $toolbar-sidebar-btn-bg:                 transparent;
 $toolbar-sidebar-btn-bg-2x:              null;
 $toolbar-sidebar-btn-hover-bg:           #d8eaf9;
