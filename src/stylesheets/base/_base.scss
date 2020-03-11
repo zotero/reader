@@ -38,7 +38,7 @@ body {
   font-size: $font-size-base;
 }
 
-input,
+input:not([type="checkbox"]),
 button,
 select {
   font-family: inherit;
