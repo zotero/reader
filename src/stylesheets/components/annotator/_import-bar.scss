@@ -8,3 +8,9 @@
   text-align: center;
   z-index: 4;
 }
+
+.pdfPresentationMode {
+  .import-bar {
+    display: none;
+  }
+}
