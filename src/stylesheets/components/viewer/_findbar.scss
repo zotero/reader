@@ -103,6 +103,10 @@
     }
   }
 
+  .splitToolbarButton {
+    margin: $split-toolbar-btn-margin;
+  }
+
   button {
     background: $findbar-btn-bg;
     border: $findbar-btn-border;
@@ -175,7 +179,7 @@
   }
 
   .toolbarLabel {
-    margin-right: 13px;
+    margin: $findbar-toolbar-label-margin;
     line-height: $toolbar-label-line-height; // Center vertically
   }
 
