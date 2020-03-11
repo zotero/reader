@@ -131,14 +131,17 @@ $dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
 $dropdown-toolbar-btn-focus-border-color: #005499;
 
 // Findbar
-$findbar-offset-x:                111px;
-$findbar-offset-y:                45px;
-$findbar-pointer-offset-x:        7px;
-$findbar-height:                  30px;
-$findbar-padding:                 0 3px 0 0;
-$findbar-bg:                      #fff;
-$findbar-border-radius:           null;
-$findbar-box-shadow:              0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
+$findbar-offset-x:         111px;
+$findbar-offset-y:         45px;
+$findbar-pointer-offset-x: 7px;
+$findbar-height:           30px;
+$findbar-padding:          0 3px 0 0;
+$findbar-bg:               #fff;
+$findbar-border-radius:    null;
+$findbar-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
+
+$options-one-container-margin: 0;
+$options-two-container-margin: 0;
 
 $findbar-btn-padding:             2px 4px 1px 4px;
 $findbar-btn-margin-x:            3px;
@@ -157,19 +160,20 @@ $findbar-btn-icon-active-offset:  1px;
 $findbar-btn-previous-icon:       "previous";
 $findbar-btn-next-icon:           "next";
 
-$find-input-width:                200px;
-$find-input-padding:              null;
-$find-input-bg:                   null;
-$find-input-box-shadow:           null;
-$find-input-border-radius:        null;
-$find-input-focus-box-shadow:     null;
-$find-input-loading-x:            null;
-$find-input-not-found-color:      $text-color;
-$find-input-not-found-bg:         tint(#f66, 75%);
-$find-results-count-margin:       0 10px 0 3px;
-$find-results-count-color:        #777;
-$find-message-margin:             0 10px 0 3px;
-$find-message-color:              rgba(#777, 0.5);
+$find-input-width:                    200px;
+$find-input-padding:                  null;
+$find-input-bg:                       null;
+$find-input-box-shadow:               null;
+$find-input-border-radius:            null;
+$find-input-focus-box-shadow:         null;
+$find-input-loading-x:                null;
+$find-input-not-found-color:          $text-color;
+$find-input-not-found-bg:             tint(#f66, 75%);
+$find-results-count-margin:           0 10px 0 3px;
+$find-results-count-color:            #777;
+$find-message-margin:                 0 10px 0 3px;
+$find-message-wrap-containers-margin: 0 10px 0 3px;
+$find-message-color:                  rgba(#777, 0.5);
 
 // Secondary toolbar
 $secondary-toolbar-offset-x:          3px;

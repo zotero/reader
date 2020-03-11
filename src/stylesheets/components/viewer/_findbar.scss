@@ -3,22 +3,20 @@
 //
 
 .findbar {
-  &,
-  > *,
-  .splitToolbarButton {
-    display: flex;
-    align-items: center;
-  }
-
+  flex-wrap: wrap;
   position: absolute;
   left: $findbar-offset-x;
   top: $findbar-offset-y;
   z-index: $z-index-findbar;
-  height: $findbar-height;
   padding: $findbar-padding;
   background-color: $findbar-bg;
   border-radius: $findbar-border-radius;
   box-shadow: $findbar-box-shadow;
+
+  &.wrapContainers {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
   &::before {
     content: "";
@@ -46,10 +44,42 @@
     border-bottom-color: #fff;
   }
 
+  &,
+  > *,
+  .splitToolbarButton {
+    display: flex;
+    align-items: center;
+  }
+
+  > * {
+    height: $findbar-height;
+    pointer-events: none;
+
+    > * {
+      pointer-events: all;
+    }
+  }
+
+  #findbarOptionsOneContainer {
+    @include state(".findbar.wrapContainers") {
+      margin: $options-one-container-margin;
+    }
+  }
+
+  #findbarOptionsTwoContainer {
+    @include state(".findbar.wrapContainers") {
+      margin: $options-two-container-margin;
+    }
+  }
+
+  #findbarMessageContainer {
+    height: auto;
+  }
+
   #findInput {
     width: $find-input-width;
-    background: $find-input-bg;
     padding: $find-input-padding;
+    background: $find-input-bg;
     box-shadow: $find-input-box-shadow;
     border-radius: $find-input-border-radius;
 
@@ -157,6 +187,10 @@
   #findMsg {
     color: $find-message-color;
     margin: $find-message-margin;
+
+    @include state(".findbar.wrapContainers") {
+      margin: $find-message-wrap-containers-margin;
+    }
 
     &:empty {
       display: none;
