@@ -42,6 +42,10 @@
     }
 
     .tags {
+      .tag {
+        padding-right: 5px;
+      }
+
       &:empty::before {
         content: 'Add tags..';
         color: #999;

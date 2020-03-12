@@ -9,11 +9,11 @@ let annotations = [
     'text': 'Just-in-Time Type Specialization ',
     'comment': 'Test',
     'tags': [{
-      'name': 'math',
+      'name': 'programming languages',
       'color': '#ff0000'
     },
       {
-        'name': 'chemistry'
+        'name': 'compiler'
       }],
     'id': 217789960638629,
     'dateModified': '2020-02-19T12:42:20.336Z',
@@ -142,7 +142,7 @@ let annotations = [
     'color': '#589fee',
     'position': { 'pageIndex': 0, 'rects': [[54, 199.237, 293.1, 207.253], [54, 189.274, 67.943, 197.29]] },
     'text': 'Dynamic languages such as JavaScript, Python, and Ruby, are popular ',
-    'comment': 'Comment 2',
+    'comment': 'This is a very long comment.. pioneered the idea of compiling multipleversions of a procedure specialized for the input types in the lan-guage Self. In one implementation, they generated a specializedmethod online each time a method was called with new input types.In another, they used an offline whole-program static analysis toinfer input types and constant receiver types at call sites',
     'tags': [],
     'id': 690898672271502,
     'dateModified': '2020-02-07T07:24:37.870Z',

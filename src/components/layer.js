@@ -289,7 +289,10 @@ class MarginNoteLayer extends React.Component {
                 onClick={e => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onClick(marginNote.annotation.id);
+                  // Call after all other events
+                  setTimeout(() => {
+                    onClick(marginNote.annotation.id);
+                  },0);
                 }}
               >
                 <svg width={wx(marginNote.rect)} height={hy(marginNote.rect)} viewBox="0 0 12 12">

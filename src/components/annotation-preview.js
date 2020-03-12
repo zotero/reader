@@ -20,136 +20,136 @@ class AnnotationPreview extends React.Component {
     // }
   }
   
+  handleTagsClick = (event) => {
+    let rect = event.currentTarget.getBoundingClientRect();
+    let x = event.clientX - rect.left;
+    let y = event.clientY - rect.top;
+    this.props.onClickTags(this.props.annotation.id, event.screenX - x, event.screenY - y);
+  }
+  
+  handleDelete = () => {
+    this.props.onDelete();
+  }
+  
+  handleColorPick = (color) => {
+    this.setState({ showing: 'main' });
+    this.props.onColorChange(color);
+  }
+  
+  handlePageEdit = (event) => {
+    this.props.onChange({ id: this.props.annotation.id, page: event.target.value });
+  }
+  
+  handleTextChange = (text) => {
+    this.props.onChange({ id: this.props.annotation.id, text });
+  }
+  
+  handleCommentChange = (text) => {
+    this.props.onChange({ id: this.props.annotation.id, comment: text });
+  }
+  
+  handleBeginEditingText = () => {
+    this.setState({ editingText: true })
+  }
+  
+  handleEndEditingText = () => {
+    this.setState({ editingText: false })
+  }
+  
+  handleBeginEditingPage = () => {
+    this.setState({ editingPage: true })
+  }
+  
+  handleShowMain = () => {
+    this.setState({ showing: 'main' });
+  }
+  
+  handleShowSettings = () => {
+    this.setState({ showing: 'settings' });
+  }
+  
+  sliceText(text) {
+    let slicedText = text.slice(0, 70).trim();
+    if (text.length > 70) {
+      slicedText += '..';
+    }
+  }
+  
   mainView() {
-    let { annotation, isLayer, onChange, onClickTags, onDragStart } = this.props;
-    let textElement = null;
+    let { annotation, isLayer, onDragStart } = this.props;
+    let page;
+    if (this.state.editingPage) {
+      page = <input
+        className="page-edit" type="edit"
+        value={annotation.page} onChange={this.handlePageEdit}
+      />;
+    }
+    else {
+      page = <span className="page-display"
+                   onClick={this.handleBeginEditingPage}>Page {annotation.page}</span>
+    }
+    
+    let text;
     if (annotation.type === 'highlight' && !isLayer) {
       if (this.state.editingText) {
-        textElement = <Editor
+        text = <Editor
           id={annotation.id}
           text={annotation.text}
           placeholder="Extracted text.."
-          onChange={(text) => {
-            onChange({ id: annotation.id, text: text });
-          }}
-          onBlur={() => {
-            this.setState({ editingText: false });
-          }
-          }
+          onChange={this.handleTextChange}
+          onBlur={this.handleEndEditingText}
         />
       }
       else {
-  
         if (annotation.text) {
-          let text = annotation.text.slice(0, 70).trim();
-          if (annotation.text.length > 70) {
-            text += '..';
-          }
-    
-          textElement = (
-            <React.Fragment>
-              <div className="text-preview">
-                {text}
-                <span
-                  className="text-edit"
-                  onClick={() => {
-                    this.setState({ editingText: true })
-                  }}
-                >edit</span>
-              </div>
-      
-            </React.Fragment>
+          text = (
+            <div className="text-preview">
+              {this.sliceText(annotation.text)}
+              <span className="text-edit" onClick={this.handleBeginEditingText}
+              >edit</span>
+            </div>
           )
         }
       }
     }
     
+    let tags = annotation.tags.map((tag, index) => (
+      <span className="tag" key={index} style={{ color: tag.color }}
+      >{tag.name}</span>
+    ));
+    
+    let comment = <Editor
+      id={annotation.id} text={annotation.comment} placeholder="Comment.."
+      plainTextOnly={true} onChange={this.handleCommentChange}
+      onBlur={() => {
+      }}
+    />;
+    
     return (
       <div className="main-view">
         <div
-          className="color-line"
-          style={{ backgroundColor: annotation.color }}
-          draggable={true}
-          onDragStart={onDragStart}
-        ></div>
-        <div className="header">
-          {
-            this.state.editingPage ? (<input
-              className="page-edit"
-              type="edit"
-              value={annotation.page}
-              onChange={(e) => {
-                onChange({ id: annotation.id, page: e.target.value });
-              }}
-            />) : (<span className="page-display" onClick={() => {
-              this.setState({ editingPage: true })
-            }}>{annotation.page}</span>)
-          }
-          <div>{!annotation.isOwner && annotation.displayName}</div>
-          <div
-            className="settings"
-            onClick={() => {
-              this.setState({ showing: 'settings' });
-            }}
-          >
-            ⚙
-          </div>
-        </div>
-        {annotation.image && !isLayer ? (<img className="image" src={annotation.image}/>) : null}
-        
-        {textElement}
-        
-        <Editor
-          id={annotation.id}
-          text={annotation.comment}
-          placeholder="Comment.."
-          plainTextOnly={true}
-          onChange={(text) => {
-            onChange({ id: annotation.id, comment: text });
-          }}
-          onBlur={() => {
-          }}
+          className="color-line" style={{ backgroundColor: annotation.color }}
+          draggable={true} onDragStart={onDragStart}
         />
-        <div
-          className="tags"
-          onClick={(e) => {
-            let rect = e.currentTarget.getBoundingClientRect();
-            let x = e.clientX - rect.left;
-            let y = e.clientY - rect.top;
-            onClickTags(annotation.id, e.screenX - x, e.screenY - y);
-          }}
-        >{annotation.tags.map(tag => (
-          <span style={{ color: tag.color }}>{tag.name}</span>
-        ))
-        }</div>
+        <div className="header" title={'Modified' + annotation.dateModified.split('T')[0]}>
+          {page}
+          <div>{!annotation.isOwner && annotation.displayName}</div>
+          <div className="settings" onClick={this.handleShowSettings}>⚙</div>
+        </div>
+        {!isLayer && annotation.image && (<img className="image" src={annotation.image}/>)}
+        {text}
+        {comment}
+        <div className="tags" onClick={this.handleTagsClick}>{tags}</div>
       </div>
     );
   }
   
   settingsView() {
-    let { annotation, onColorChange, onDelete } = this.props;
-    
     return (
       <div className="settings-view">
-        <div
-          className="back"
-          onClick={() => {
-            this.setState({ showing: 'main' });
-          }}
-        >←
-        </div>
-        
-        <ColorPicker
-          onColorPick={(color) => {
-            this.setState({ showing: 'main' });
-            onColorChange(color);
-          }}
-        />
-        
-        
-        <div className="button" onClick={onDelete}>Delete</div>
-        
-        <div>Modified: {annotation.dateModified.split('T')[0]}</div>
+        <div className="back" onClick={this.handleShowMain}>←</div>
+        <ColorPicker onColorPick={this.handleColorPick}/>
+        <div className="button" onClick={this.handleDelete}>Delete</div>
       </div>
     );
   }

@@ -64,4 +64,9 @@
 
 .margin-note {
   position: absolute;
+  cursor: pointer;
+
+  &:hover {
+    z-index: 2 !important;
+  }
 }
