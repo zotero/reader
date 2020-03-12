@@ -105,7 +105,7 @@ class Annotator extends React.Component {
           window.PDFViewerApplication.pdfSidebar.switchView(9);
         }
         
-        this.ensureInView(container, el);
+        el.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"});
       }, 50);
     }
   }
@@ -265,21 +265,6 @@ class Annotator extends React.Component {
     }
     
     return false;
-  }
-  
-  ensureInView(container, element) {
-    let containerTop = container.scrollTop;
-    let containerBottom = containerTop + container.clientHeight;
-    
-    let elementTop = element.offsetTop;
-    let elementBottom = elementTop + element.clientHeight;
-    
-    if (elementTop < containerTop) {
-      container.scrollTop -= (containerTop - elementTop);
-    }
-    else if (elementBottom > containerBottom) {
-      container.scrollTop += (elementBottom - containerBottom);
-    }
   }
   
   render() {
