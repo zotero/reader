@@ -69,6 +69,7 @@
     @-moz-document url-prefix() {
       width: $-moz-checkbox-size;
       height: $-moz-checkbox-size;
+      margin: $-moz-checkbox-margin;
     }
   }
 }
@@ -76,6 +77,6 @@
 .toolbarLabel {
   color: $toolbar-label-color;
   white-space: nowrap;
-  margin-left: 1px;
+  margin: $toolbar-label-margin;
   user-select: none;
 }

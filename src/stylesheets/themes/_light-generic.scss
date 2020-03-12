@@ -60,6 +60,7 @@ $attach-icon:            "attach";
 $attach-icon-toggled:    null;
 
 // Toolbar button
+$toolbar-btn-height:                21px;
 $toolbar-btn-padding:               2px 4px 1px 4px;
 $toolbar-btn-margin-x:              3px;
 $toolbar-btn-bg:                    transparent;
@@ -102,11 +103,13 @@ $toolbar-field-box-shadow:          null;
 $toolbar-field-box-shadow-2x:       null;
 $toolbar-field-loading-x:           3px;
 $toolbar-field-bg:                  #fff;
+$toolbar-label-margin:              0 0 0 1px;
 $toolbar-label-line-height:         1.273;
 $toolbar-label-color:               #000;
 $toolbar-field-placeholder-color:   #777;
 $checkbox-size:                     null;
 $-moz-checkbox-size:                null;
+$-moz-checkbox-margin:              null;
 $checkbox-box-shadow:               null;
 
 // Dropdown toolbar button
@@ -143,6 +146,7 @@ $findbar-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 
 $options-one-container-margin: 0;
 $options-two-container-margin: 0;
 
+$findbar-btn-height:              21px;
 $findbar-btn-padding:             2px 4px 1px 4px;
 $findbar-btn-margin-x:            3px;
 $findbar-btn-bg:                  transparent;
@@ -160,15 +164,20 @@ $findbar-btn-icon-active-offset:  1px;
 $findbar-btn-previous-icon:       "previous";
 $findbar-btn-next-icon:           "next";
 
-$find-input-width:                    200px;
-$find-input-padding:                  null;
-$find-input-bg:                       null;
-$find-input-box-shadow:               null;
-$find-input-border-radius:            null;
-$find-input-focus-box-shadow:         null;
-$find-input-loading-x:                null;
-$find-input-not-found-color:          $text-color;
-$find-input-not-found-bg:             tint(#f66, 75%);
+$find-input-width:            200px;
+$find-input-padding:          null;
+$find-input-bg:               null;
+$find-input-box-shadow:       null;
+$find-input-border-radius:    null;
+$find-input-focus-box-shadow: null;
+$find-input-loading-x:        null;
+$find-input-not-found-color:  $text-color;
+$find-input-not-found-bg:     tint(#f66, 75%);
+
+$split-toolbar-btn-margin: null;
+
+$findbar-toolbar-label-margin: 0 13px 0 0;
+
 $find-results-count-margin:           0 10px 0 3px;
 $find-results-count-color:            #777;
 $find-message-margin:                 0 10px 0 3px;
@@ -207,6 +216,8 @@ $toolbar-sidebar-border:                 1px solid #cecece;
 $split-toolbar-btn-height:               27px;
 $split-toolbar-btn-height-2x:            null;
 $split-toolbar-btn-margin:               null;
+$toolbar-sidebar-btn-padding:            5px 8px 5px 9px;
+$toolbar-sidebar-btn-padding-last:       5px 9px;
 $toolbar-sidebar-btn-bg:                 transparent;
 $toolbar-sidebar-btn-bg-2x:              null;
 $toolbar-sidebar-btn-hover-bg:           #d8eaf9;

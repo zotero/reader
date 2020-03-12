@@ -28,6 +28,7 @@
 
 .toolbar {
   .toolbarButton {
+    height: $toolbar-btn-height;
     background: $toolbar-btn-bg;
     border: $toolbar-btn-border;
     padding: $toolbar-btn-padding;

@@ -40,7 +40,7 @@
     border-color: $toolbar-sidebar-btn-border-color;
     border-width: $toolbar-sidebar-btn-border-width;
     border-style: solid;
-    padding: 0 8px 0 9px;
+    padding: $toolbar-sidebar-btn-padding;
     position: relative;
 
     @include retina {
@@ -55,7 +55,7 @@
     &:last-child {
       border-top-right-radius: $toolbar-sidebar-btn-border-radius;
       border-bottom-right-radius: $toolbar-sidebar-btn-border-radius;
-      padding: 0 9px 0 9px;
+      padding: $toolbar-sidebar-btn-padding-last;
     }
 
     &:hover {
