@@ -33,7 +33,7 @@ class AnnotationPreview extends React.Component {
   
   handleColorPick = (color) => {
     this.setState({ showing: 'main' });
-    this.props.onColorChange(color);
+    this.props.onChange({ id: this.props.annotation.id, color });
   }
   
   handlePageEdit = (event) => {
@@ -73,6 +73,7 @@ class AnnotationPreview extends React.Component {
     if (text.length > 70) {
       slicedText += '..';
     }
+    return slicedText;
   }
   
   mainView() {
@@ -96,6 +97,7 @@ class AnnotationPreview extends React.Component {
           id={annotation.id}
           text={annotation.text}
           placeholder="Extracted text.."
+          isReadOnly={!!annotation.ownerName}
           onChange={this.handleTextChange}
           onBlur={this.handleEndEditingText}
         />
@@ -105,8 +107,8 @@ class AnnotationPreview extends React.Component {
           text = (
             <div className="text-preview">
               {this.sliceText(annotation.text)}
-              <span className="text-edit" onClick={this.handleBeginEditingText}
-              >edit</span>
+              {!annotation.ownerName && <span className="text-edit" onClick={this.handleBeginEditingText}
+              >edit</span>}
             </div>
           )
         }
@@ -123,6 +125,7 @@ class AnnotationPreview extends React.Component {
       plainTextOnly={true} onChange={this.handleCommentChange}
       onBlur={() => {
       }}
+      isReadOnly={!!annotation.ownerName}
     />;
     
     return (
@@ -131,10 +134,10 @@ class AnnotationPreview extends React.Component {
           className="color-line" style={{ backgroundColor: annotation.color }}
           draggable={true} onDragStart={onDragStart}
         />
-        <div className="header" title={'Modified' + annotation.dateModified.split('T')[0]}>
+        <div className="header" title={'Modified on ' + annotation.dateModified.split('T')[0]}>
           {page}
-          <div>{!annotation.isOwner && annotation.displayName}</div>
-          <div className="settings" onClick={this.handleShowSettings}>⚙</div>
+          <div>{annotation.ownerName}</div>
+          {annotation.ownerName ? <div></div> : <div className="settings" onClick={this.handleShowSettings}>⚙</div>}
         </div>
         {!isLayer && annotation.image && (<img className="image" src={annotation.image}/>)}
         {text}
@@ -166,7 +169,7 @@ class AnnotationPreview extends React.Component {
     }
     
     return (
-      <div className={cx('annotation-preview', { owner: annotation.isOwner })}>
+      <div className={cx('annotation-preview', { 'read-only': annotation.ownerName })}>
         {content}
       </div>
     );

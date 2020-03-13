@@ -242,7 +242,7 @@ class Content extends React.Component {
           ref={innerRef}
           suppressContentEditableWarning={true}
           className="content"
-          contentEditable={true}
+          contentEditable={!this.props.isReadOnly}
           onInput={() => {
             clean(innerRef.current);
             this.handleChange(innerRef.current.innerHTML);
@@ -295,6 +295,7 @@ class Editor extends React.Component {
           text={text}
           onChange={onChange}
           innerRef={this.contentRef}
+          isReadOnly={this.props.isReadOnly}
           onSelectionChange={(isSelected) => {
             this.setState({ isSelected });
           }}

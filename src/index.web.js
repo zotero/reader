@@ -127,14 +127,13 @@ let annotations = [
       'rects': [[231.284, 402.126, 293.107, 410.142], [54, 392.164, 293.107, 400.18], [54, 382.201, 293.107, 390.217], [54, 372.238, 293.107, 380.254], [54, 362.276, 273.955, 370.292]]
     },
     'text': 'We present an alternative compilation technique for dynamically-typed languages that identifies frequently executed loop traces at run-time and then generates machine code on the fly that is specialized for the actual dynamic types occurring on each path through the loop',
-    'comment': 'Sounds <b>promising</b>',
+    'comment': 'This is a read-only annotation from another peer in your group library',
     'tags': [],
     'id': 91115751444169,
     'dateModified': '2020-02-19T12:56:34.897Z',
     'dateCreated': '2020-02-03T11:07:16.181Z',
     'userId': 123,
-    'displayName': 'John',
-    'isOwner': true,
+    'ownerName': 'Alfred',
     'page': '1',
     'sortIndex': '000000|0000779|000381.858'
   }, {
@@ -184,8 +183,6 @@ let annotations = [
     'dateModified': '2020-02-07T07:23:32.569Z',
     'dateCreated': '2020-02-03T11:21:18.167Z',
     'userId': 123,
-    'displayName': 'Alfred',
-    'isOwner': false,
     'page': '1',
     'sortIndex': '000000|0003552|000587.088'
   }, {

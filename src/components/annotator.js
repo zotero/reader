@@ -84,7 +84,7 @@ class Annotator extends React.Component {
       }
     });
     
-    document.addEventListener('mousedown', (e) => {
+    document.addEventListener('pointerdown', (e) => {
     
     });
     

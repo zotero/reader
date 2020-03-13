@@ -1,5 +1,10 @@
 
 .annotation-preview {
+
+  &.read-only {
+    color: gray;
+  }
+
   .main-view {
     .color-line {
       height: 4px;

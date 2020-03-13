@@ -400,14 +400,14 @@ class Layer extends React.Component {
       this.setState({ selectionFinished: !!this.state.range });
     });
 
-    this.containerNode.addEventListener('mouseup', async e => {
+    this.containerNode.addEventListener('pointerup', async e => {
       let selection = await this.getSelection();
       if (!selection) return;
       selection.position = this.v2p(selection.position);
       onMouseSelection(selection);
     });
 
-    this.containerNode.addEventListener('mousedown', e => {
+    this.containerNode.addEventListener('pointerdown', e => {
       let page = getPageFromElement(e.target);
       if (!page) {
         return;
@@ -427,7 +427,7 @@ class Layer extends React.Component {
       onPointerDown(this.v2p(position));
     });
 
-    this.containerNode.addEventListener('mouseup', e => {
+    this.containerNode.addEventListener('pointerup', e => {
       let page = getPageFromElement(e.target);
       if (!page) {
         return;

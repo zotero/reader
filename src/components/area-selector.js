@@ -129,7 +129,7 @@ class AreaSelector extends React.Component {
       this.setState({ end });
     });
     
-    container.addEventListener('mousedown', (event) => {
+    container.addEventListener('pointerdown', (event) => {
       containerBoundingRect = null;
       clearTimeout(scrollTimeout);
       if (!this.props.shouldStart) {
@@ -173,7 +173,7 @@ class AreaSelector extends React.Component {
       let onMouseUp = (event) => {
         clearTimeout(scrollTimeout);
         // emulate listen once
-        event.currentTarget.removeEventListener('mouseup', onMouseUp);
+        event.currentTarget.removeEventListener('pointerup', onMouseUp);
         
         let { start } = this.state;
         
@@ -246,7 +246,7 @@ class AreaSelector extends React.Component {
       };
       
       // if (document.body) {
-      window.addEventListener('mouseup', onMouseUp);
+      window.addEventListener('pointerup', onMouseUp);
       // }
     });
   }
