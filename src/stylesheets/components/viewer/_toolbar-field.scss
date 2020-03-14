@@ -42,8 +42,10 @@
     }
   }
 
-  &:invalid {
-    box-shadow: none; // Hide red box-shadow in Firefox while loading
+  @if $platform == "generic" {
+    &:invalid {
+      box-shadow: none; // Hide red box-shadow in Firefox while loading
+    }
   }
 
   &.visiblePageIsLoading {
