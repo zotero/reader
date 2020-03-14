@@ -48,17 +48,6 @@
     }
   }
 
-  &.visiblePageIsLoading {
-    background-image: url("images/loading-small.png"), $toolbar-field-bg;
-    background-repeat: no-repeat;
-    background-position: $toolbar-field-loading-x center, left top;
-    background-size: 16px 17px, auto;
-
-    @include retina {
-      background-image: url("images/loading-small@2x.png"), $toolbar-field-bg;
-    }
-  }
-
   &[type="number"] {
     -moz-appearance: textfield; // Hide the stepper arrows in Firefox
   }

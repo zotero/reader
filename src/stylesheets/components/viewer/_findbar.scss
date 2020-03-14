@@ -78,15 +78,12 @@
 
   #findInput {
     width: $find-input-width;
-    padding: $find-input-padding;
-    background: $find-input-bg;
-    box-shadow: $find-input-box-shadow;
-    border-radius: $find-input-border-radius;
 
     &[data-status="pending"] {
-      background:
-        url("images/loading-small.png") no-repeat center right #{$find-input-loading-x} / 16px 17px,
-        $find-input-bg;
+      background-image: url("images/loading-small.png");
+      background-repeat: no-repeat;
+      background-position: center right $find-input-loading-x;
+      background-size: 16px 17px;
 
       @include retina {
         background-image: url("images/loading-small@2x.png");
@@ -96,10 +93,6 @@
     &.notFound {
       color: $find-input-not-found-color;
       background-color: $find-input-not-found-bg;
-    }
-
-    &:focus {
-      box-shadow: $find-input-focus-box-shadow;
     }
   }
 

@@ -40,16 +40,27 @@ $z-index-overlay: 40000;
 //
 
 // Toolbar
-$toolbar-height:         30px;
-$toolbar-padding:        0;
-$toolbar-bg:             $gray-lightest;
-$toolbar-bg-2x:          $toolbar-bg;
-$toolbar-blurred-bg:     null;
-$toolbar-blurred-bg-2x:  null;
-$toolbar-border:         1px solid #cecece;
-$page-number-width:      54px;
-$num-pages-min-width:    76px;
-$num-pages-color:        #777;
+$toolbar-height:        30px;
+$toolbar-padding:       0;
+$toolbar-bg:            $gray-lightest;
+$toolbar-bg-2x:         $toolbar-bg;
+$toolbar-blurred-bg:    null;
+$toolbar-blurred-bg-2x: null;
+$toolbar-border:        1px solid #cecece;
+
+$page-number-width:               54px;
+$page-number-padding:             0 5px;
+$page-number-bg:                  #fff;
+$page-number-border-radius:       0;
+$page-number-box-shadow:          null;
+$page-number-box-shadow-2x:       null;
+$page-number-focus-box-shadow:    null;
+$page-number-focus-box-shadow-2x: null;
+$page-number-loading-x:           3px;
+
+$num-pages-min-width: 76px;
+$num-pages-color:     #777;
+
 $thumbnail-icon:         "view-thumbnail";
 $thumbnail-icon-toggled: null;
 $note-icon:              "note";
@@ -90,19 +101,18 @@ $toolbar-btn-separator-bg:      #848484;
 // Toolbar field
 $toolbar-field-height:              24px;
 $toolbar-field-padding:             0 5px;
-$toolbar-field-border:              1px solid #7a7a7a;
 $toolbar-field-margin:              0 3px;
+$toolbar-field-border:              1px solid #7a7a7a;
 $toolbar-field-color:               #000;
-$toolbar-field-hover-border-color:  #171717;
-$toolbar-field-focus-border-color:  $highlight-color;
-$toolbar-field-focus-box-shadow:    null;
-$toolbar-field-focus-box-shadow-2x: null;
+$toolbar-field-bg:                  #fff;
 $toolbar-field-font-size:           $font-size-base;
 $toolbar-field-border-radius:       0;
 $toolbar-field-box-shadow:          null;
 $toolbar-field-box-shadow-2x:       null;
-$toolbar-field-loading-x:           3px;
-$toolbar-field-bg:                  #fff;
+$toolbar-field-hover-border-color:  #171717;
+$toolbar-field-focus-border-color:  $highlight-color;
+$toolbar-field-focus-box-shadow:    null;
+$toolbar-field-focus-box-shadow-2x: null;
 $toolbar-label-margin:              0 0 0 1px;
 $toolbar-label-line-height:         1.273;
 $toolbar-label-color:               #000;
@@ -165,11 +175,6 @@ $findbar-btn-previous-icon:       "previous";
 $findbar-btn-next-icon:           "next";
 
 $find-input-width:            200px;
-$find-input-padding:          null;
-$find-input-bg:               null;
-$find-input-box-shadow:       null;
-$find-input-border-radius:    null;
-$find-input-focus-box-shadow: null;
 $find-input-loading-x:        null;
 $find-input-not-found-color:  $text-color;
 $find-input-not-found-bg:     tint(#f66, 75%);

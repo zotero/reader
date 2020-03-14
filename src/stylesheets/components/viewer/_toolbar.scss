@@ -103,7 +103,34 @@
 
   #pageNumber {
     width: $page-number-width;
+    padding: $page-number-padding;
+    background: $page-number-bg;
     text-align: right;
+    border-radius: $page-number-border-radius;
+    box-shadow: $page-number-box-shadow;
+
+    @include retina {
+      box-shadow: $page-number-box-shadow-2x;
+    }
+
+    &:focus {
+      box-shadow: $page-number-focus-box-shadow;
+
+      @include retina {
+        box-shadow: $page-number-focus-box-shadow-2x;
+      }
+    }
+
+    &.visiblePageIsLoading {
+      background-image: url("images/loading-small.png"), $page-number-bg;
+      background-repeat: no-repeat;
+      background-position: $page-number-loading-x center, left top;
+      background-size: 16px 17px, auto;
+
+      @include retina {
+        background-image: url("images/loading-small@2x.png"), $page-number-bg;
+      }
+    }
   }
 
   #numPages {

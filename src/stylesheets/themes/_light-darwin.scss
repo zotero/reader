@@ -48,9 +48,20 @@ $toolbar-bg-2x:         linear-gradient(to top, #aeaeae 0, #aeaeae 0.5px, #c4c4c
 $toolbar-blurred-bg:    linear-gradient(to top, #d1d1d1 0, #d1d1d1 1px, #f6f6f6 1px);
 $toolbar-blurred-bg-2x: linear-gradient(to top, #cecece 0, #cecece 0.5px, #e7e7e7 0.5px, #e7e7e7 1px, #f6f6f6 1px);
 $toolbar-border:        0;
-$page-number-width:     52px;
-$num-pages-min-width:   76px;
-$num-pages-color:       #555;
+
+$page-number-width:               52px;
+$page-number-padding:             0 4px;
+$page-number-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
+$page-number-border-radius:       3.75px;
+$page-number-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$page-number-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$page-number-focus-box-shadow:    inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$page-number-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$page-number-loading-x:           2px;
+
+$num-pages-min-width: 76px;
+$num-pages-color:     #555;
+
 $thumbnail-icon:         "darwin/view-thumbnail-linear";
 $thumbnail-icon-toggled: "darwin/view-thumbnail-linear-white";
 $note-icon:              "darwin/note-linear";
@@ -90,20 +101,19 @@ $toolbar-btn-separator-bg:      null;
 
 // Toolbar field
 $toolbar-field-height:              22px;
-$toolbar-field-padding:             0 4px;
-$toolbar-field-border:              0;
+$toolbar-field-padding:             0 5px;
 $toolbar-field-margin:              0 4px;
+$toolbar-field-border:              0;
 $toolbar-field-color:               #000;
+$toolbar-field-bg:                  #fff;
+$toolbar-field-font-size:           $font-size-base;
+$toolbar-field-border-radius:       0.5px;
+$toolbar-field-box-shadow:          inset 0 0 0 1px #bdbdbd;
+$toolbar-field-box-shadow-2x:       inset 0 0 0.2px 0.5px #999;
 $toolbar-field-hover-border-color:  null;
 $toolbar-field-focus-border-color:  null;
-$toolbar-field-focus-box-shadow:    inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
-$toolbar-field-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
-$toolbar-field-font-size:           $font-size-base;
-$toolbar-field-border-radius:       3.75px;
-$toolbar-field-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
-$toolbar-field-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
-$toolbar-field-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
-$toolbar-field-loading-x:           2px;
+$toolbar-field-focus-box-shadow:    inset 0 0 0 1px rgba($accent-color, 0.5), inset 0 0 0 1px #bdbdbd, 0 0 0 3px rgba($accent-color, 0.5);
+$toolbar-field-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), inset 0 0 0.2px 0.5px #999, 0 0 0 3px rgba($accent-color, 0.5);
 $toolbar-label-margin:              null;
 $toolbar-label-line-height:         null;
 $toolbar-label-color:               #000;
@@ -166,11 +176,6 @@ $findbar-btn-previous-icon:       "back";
 $findbar-btn-next-icon:           "forward";
 
 $find-input-width:            200px;
-$find-input-padding:          0 5px;
-$find-input-bg:               #fff;
-$find-input-box-shadow:       inset 0 0 0 1px #bdbdbd;
-$find-input-border-radius:    0.5px;
-$find-input-focus-box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), inset 0 0 0 1px #bdbdbd, 0 0 0 3px rgba($accent-color, 0.5);
 $find-input-loading-x:        4px;
 $find-input-not-found-color:  $text-color;
 $find-input-not-found-bg:     tint(#f66, 75%);
