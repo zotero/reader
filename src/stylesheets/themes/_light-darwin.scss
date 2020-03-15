@@ -6,9 +6,10 @@
 // Colors
 //
 
-$accent-color:    #0a6cf5; // 215° 96 96
-$highlight-color: #b3d7ff;
-$blue-btn:        #90c8f6;
+$accent-color:          #0a6cf5; // 215° 96 96
+$accent-color-darken-6: darken($accent-color, 6%);
+$highlight-color:       #b3d7ff;
+$blue-btn:              #90c8f6;
 
 $gray-lightest: #f0f0f0;
 
@@ -275,17 +276,39 @@ $dialog-color:              $text-color;
 $dialog-border-radius:      1px;
 $dialog-shadow:             4px 6px 4px gray;
 $btn-row-justify-content:   flex-end;
-$overlay-btn-height:        24px;
-$overlay-btn-min-width:     74px;
-$overlay-btn-margin-x:      6px;
-$overlay-button-bg:         #e1e1e1;
-$overlay-btn-border:        1px solid #adadad;
-$overlay-btn-focus-border:  2px solid $highlight-color;
-$overlay-btn-hover-bg:      tint($highlight-color, 90%);
-$overlay-btn-hover-border:  1px solid $highlight-color;
-$overlay-btn-active-bg:     tint($highlight-color, 80%);
-$overlay-btn-active-border: 1px solid shade($highlight-color, 30%);
-$overlay-btn-border-radius: 0;
+
+$overlay-btn-height:           19px;
+$overlay-btn-min-width:        94px;
+$overlay-btn-margin-x:         6px;
+$overlay-button-bg:            #fff;
+$overlay-btn-border:           0;
+$overlay-btn-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12);
+$overlay-btn-box-shadow-2x:    0 0 0 0.5px rgba(0, 0, 0, 0.125), 0 0 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 0.5px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.06), 0 0.5px 0 rgba(0, 0, 0, 0.05);
+$overlay-btn-focus-border:     null;
+$overlay-btn-focus-box-shadow: 0 0 0 4px rgba($accent-color, 0.5), $overlay-btn-box-shadow;
+$overlay-btn-hover-bg:         null;
+$overlay-btn-hover-border:     null;
+$overlay-btn-active-bg:        null;
+$overlay-btn-active-border:    null;
+$overlay-btn-border-radius:    $toolbar-btn-border-radius;
+
+$dialog-gradient-btn:              true;
+$gradient-btn-height:              $overlay-btn-height + 2px;
+$gradient-btn-height-2x:           $overlay-btn-height + 1px;
+$gradient-btn-min-width:           $overlay-btn-min-width + 2px;
+$gradient-btn-min-width-2x:        $overlay-btn-min-width + 1px;
+$gradient-btn-color:               #fff;
+$gradient-btn-active-bg:           linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), $accent-color-darken-6;
+$gradient-btn-border-radius:       $toolbar-btn-border-radius;
+$gradient-btn-box-shadow:          none;
+$gradient-btn-box-shadow-2x:       0 1px 0 rgba(0, 0, 0, 0.03), 0 0.5px 0 rgba(0, 0, 0, 0.09);
+$gradient-btn-focus-box-shadow:    inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+$gradient-btn-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+$gradient-label-active-bg:         linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)), $accent-color-darken-6;
+$gradient-label-border-radius:     $gradient-btn-border-radius - 1px;
+$submit-btn-bg:                    linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), $accent-color;
+$submit-btn-label-bg:              linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)), $accent-color;
+
 $progress-height:           15px;
 $progress-padding:          1px;
 $progress-border:           1px solid #bcbcbc;

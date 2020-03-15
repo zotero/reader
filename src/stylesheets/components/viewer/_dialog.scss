@@ -59,6 +59,11 @@
     background-color: $overlay-button-bg;
     border: $overlay-btn-border;
     border-radius: $overlay-btn-border-radius;
+    box-shadow: $overlay-btn-box-shadow;
+
+    @include retina {
+      box-shadow: $overlay-btn-box-shadow-2x;
+    }
 
     &:not(:first-child) {
       margin-left: $overlay-btn-margin-x;
@@ -68,18 +73,96 @@
       margin-right: $overlay-btn-margin-x;
     }
 
-    &:focus {
+    &:-moz-focusring {
       border: $overlay-btn-focus-border;
+      box-shadow: $overlay-btn-focus-box-shadow;
+    }
+
+    &:focus-visible {
+      border: $overlay-btn-focus-border;
+      box-shadow: $overlay-btn-focus-box-shadow;
     }
 
     &:hover {
-      background-color: $overlay-btn-hover-bg;
+      background: $overlay-btn-hover-bg;
       border: $overlay-btn-hover-border;
     }
 
     &:active {
-      background-color: $overlay-btn-active-bg;
+      background: $overlay-btn-active-bg;
       border: $overlay-btn-active-border;
+    }
+  }
+
+  @if $dialog-gradient-btn {
+    #passwordSubmit,
+    .overlayButton:active {
+      height: $gradient-btn-height;
+      min-width: $gradient-btn-min-width;
+      color: $gradient-btn-color;
+      background: $gradient-btn-active-bg;
+      box-shadow: $gradient-btn-box-shadow;
+      border-radius: $gradient-btn-border-radius;
+      margin-top: -1px;
+      margin-bottom: -1px;
+      position: relative;
+
+      @include retina {
+        height: $gradient-btn-height-2x;
+        min-width: $gradient-btn-min-width-2x;
+        box-shadow: $gradient-btn-box-shadow-2x;
+        margin-top: 0;
+        transform: translateY(-0.5px);
+
+        @-moz-document url-prefix() {
+          transform: none;
+        }
+      }
+
+      &:-moz-focusring {
+        box-shadow: $gradient-btn-focus-box-shadow;
+
+        @include retina {
+          box-shadow: $gradient-btn-focus-box-shadow-2x;
+        }
+      }
+
+      &:focus-visible {
+        box-shadow: $gradient-btn-focus-box-shadow;
+
+        @include retina {
+          box-shadow: $gradient-btn-focus-box-shadow-2x;
+        }
+      }
+
+      span {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 1px;
+        left: 1px;
+        width: calc(100% - 2px);
+        height: calc(100% - 2px);
+        background: $gradient-label-active-bg;
+        opacity: 0.9;
+        border-radius: $gradient-label-border-radius;
+
+        @include retina {
+          width: calc(100% - 1px);
+          height: calc(100% - 1px);
+          transform: translate(-0.5px, -0.5px);
+        }
+      }
+    }
+
+    #passwordSubmit:not(:active) {
+      background: $submit-btn-bg;
+
+      span {
+        background: $submit-btn-label-bg;
+        opacity: 1;
+      }
     }
   }
 
