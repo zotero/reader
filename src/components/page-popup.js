@@ -69,7 +69,7 @@ class PagePopup extends React.Component {
   }
   
   render() {
-    let { position, children, className, onDragStart } = this.props;
+    let { position, children, className } = this.props;
     let { dimensions } = this.state;
     
     return ReactDOM.createPortal(
@@ -77,8 +77,6 @@ class PagePopup extends React.Component {
         ref={el => (this.container = el)}
         className={'page-popup ' + className}
         style={dimensions ? this.getRect(position, dimensions) : {}}
-        // draggable={true}
-        // onDragStart={onDragStart}
       >
         {children}
       </div>,

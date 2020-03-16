@@ -52,7 +52,7 @@
       }
 
       &:empty::before {
-        content: 'Add tags..';
+        content: attr(placeholder);
         color: #999;
       }
 

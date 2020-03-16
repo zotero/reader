@@ -99,10 +99,10 @@ class AnnotationsStore {
     // Todo: Move this out from here
     let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
     if (pageLabels && pageLabels[annotation.position.pageIndex]) {
-      annotation.page = pageLabels[annotation.position.pageIndex];
+      annotation.pageLabel = pageLabels[annotation.position.pageIndex];
     }
     else {
-      annotation.page = (annotation.position.pageIndex + 1).toString();
+      annotation.pageLabel = (annotation.position.pageIndex + 1).toString();
     }
     
     let updateImage = false;
@@ -154,6 +154,12 @@ class AnnotationsStore {
     annotation.position.rects = annotation.position.rects.map(
       rect => rect.map(value => parseFloat(value.toFixed(3)))
     );
+   
+    // Immediately update area annotation to prevent flickering when resizing
+    if (['area'].includes(annotation.type)) {
+      this.annotations.splice(existingAnnotationIdx, 1, annotation);
+      this.onUpdateAnnotations(this.annotations);
+    }
     
     if (
       ['note', 'area'].includes(annotation.type) &&

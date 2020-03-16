@@ -488,10 +488,10 @@ class Layer extends React.Component {
       // Todo: Move this out from here
       let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
       if (pageLabels && pageLabels[annotation.position.pageIndex]) {
-        annotation.page = pageLabels[annotation.position.pageIndex];
+        annotation.pageLabel = pageLabels[annotation.position.pageIndex];
       }
       else {
-        annotation.page = annotation.position.pageIndex + 1;
+        annotation.pageLabel = annotation.position.pageIndex + 1;
       }
 
       e.dataTransfer.setData('zotero/annotation', JSON.stringify({

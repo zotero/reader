@@ -3,6 +3,7 @@
   border: 1px solid gray;
   opacity: 0.3;
   pointer-events: none;
+  cursor: inherit !important;
 
   &.active {
     border: 2px dashed cornflowerblue;

@@ -37,7 +37,7 @@ class AnnotationPreview extends React.Component {
   }
   
   handlePageEdit = (event) => {
-    this.props.onChange({ id: this.props.annotation.id, page: event.target.value });
+    this.props.onChange({ id: this.props.annotation.id, pageLabel: event.target.value });
   }
   
   handleTextChange = (text) => {
@@ -82,12 +82,14 @@ class AnnotationPreview extends React.Component {
     if (this.state.editingPage) {
       page = <input
         className="page-edit" type="edit"
-        value={annotation.page} onChange={this.handlePageEdit}
+        value={annotation.pageLabel} onChange={this.handlePageEdit}
       />;
     }
     else {
-      page = <span className="page-display"
-                   onClick={this.handleBeginEditingPage}>Page {annotation.page}</span>
+      page = <span
+        className="page-display"
+        onClick={this.handleBeginEditingPage}
+      >Page {annotation.pageLabel}</span>
     }
     
     let text;
@@ -97,7 +99,7 @@ class AnnotationPreview extends React.Component {
           id={annotation.id}
           text={annotation.text}
           placeholder="Extracted text.."
-          isReadOnly={!!annotation.ownerName}
+          isReadOnly={!!annotation.readOnly}
           onChange={this.handleTextChange}
           onBlur={this.handleEndEditingText}
         />
@@ -107,7 +109,7 @@ class AnnotationPreview extends React.Component {
           text = (
             <div className="text-preview">
               {this.sliceText(annotation.text)}
-              {!annotation.ownerName && <span className="text-edit" onClick={this.handleBeginEditingText}
+              {!annotation.readOnly && <span className="text-edit" onClick={this.handleBeginEditingText}
               >edit</span>}
             </div>
           )
@@ -116,16 +118,18 @@ class AnnotationPreview extends React.Component {
     }
     
     let tags = annotation.tags.map((tag, index) => (
-      <span className="tag" key={index} style={{ color: tag.color }}
+      <span
+        className="tag" key={index}
+        style={{ color: tag.color }}
       >{tag.name}</span>
     ));
     
-    let comment = <Editor
+    let comment = !(annotation.readOnly  && !annotation.comment) && <Editor
       id={annotation.id} text={annotation.comment} placeholder="Comment.."
       plainTextOnly={true} onChange={this.handleCommentChange}
       onBlur={() => {
       }}
-      isReadOnly={!!annotation.ownerName}
+      isReadOnly={annotation.readOnly}
     />;
     
     return (
@@ -135,14 +139,15 @@ class AnnotationPreview extends React.Component {
           draggable={true} onDragStart={onDragStart}
         />
         <div className="header" title={'Modified on ' + annotation.dateModified.split('T')[0]}>
-          {page}
-          <div>{annotation.ownerName}</div>
-          {annotation.ownerName ? <div></div> : <div className="settings" onClick={this.handleShowSettings}>⚙</div>}
+          {isLayer ? <div></div> : page}
+          <div>{annotation.authorName}</div>
+          {annotation.readOnly ? <div></div> : <div className="settings" onClick={this.handleShowSettings}>⚙</div>}
         </div>
         {!isLayer && annotation.image && (<img className="image" src={annotation.image}/>)}
         {text}
         {comment}
-        <div className="tags" onClick={this.handleTagsClick}>{tags}</div>
+        {!annotation.readOnly &&
+        <div className="tags" onClick={this.handleTagsClick} placeholder="Add tags..">{tags}</div>}
       </div>
     );
   }
@@ -169,7 +174,7 @@ class AnnotationPreview extends React.Component {
     }
     
     return (
-      <div className={cx('annotation-preview', { 'read-only': annotation.ownerName })}>
+      <div className={cx('annotation-preview', { 'read-only': annotation.readOnly })}>
         {content}
       </div>
     );

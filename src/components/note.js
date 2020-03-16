@@ -55,7 +55,7 @@ class Note extends React.Component {
       <Rnd
         className={cx('note-annotation', { active })}
         style={{ backgroundColor: annotation.color }}
-        disableDragging={!(enableInactiveDragging || active)}
+        disableDragging={!enableInactiveDragging && !active || annotation.readOnly}
         enableResizing={false}
         onDragStart={this.handleDragStart}
         onDragStop={this.handleDragStop}

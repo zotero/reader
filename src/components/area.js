@@ -79,12 +79,11 @@ class Area extends React.Component {
       height: hy(annotation.position.rects[0])
     };
     
-    
     return (
       <Rnd
         className={cx('area-annotation', {
           active,
-          comment: annotation.comment
+          comment: !!annotation.comment
         })}
         style={{ backgroundColor: annotation.color }}
         onDragStart={this.handleDragStart}
@@ -96,6 +95,8 @@ class Area extends React.Component {
         bounds={bounds}
         position={position}
         size={size}
+        disableDragging={annotation.readOnly}
+        enableResizing={!annotation.readOnly && undefined}
       />
     );
   }

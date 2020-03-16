@@ -2,6 +2,7 @@
 .note-annotation {
   border: 2px solid transparent;
   opacity: 0.7;
+  cursor: inherit !important;
 
   &::before {
     content: "";
