@@ -4,6 +4,7 @@ import React from 'react';
 import Layer from './layer';
 import Sidebar from './sidebar';
 import Toolbar from './toolbar';
+import Findbar from './findbar';
 import PopupScreen from './screen-popup';
 import ColorPicker from './color-picker';
 import ImportBar from './import-bar';
@@ -286,6 +287,7 @@ class Annotator extends React.Component {
             this.setState({ colorPicking: true });
           }}
         />
+        <Findbar/>
         {this.state.colorPicking ? (
           <PopupScreen className="global-color-picker-popup" parentId="globalColorButton">
             <ColorPicker onColorPick={(color) => {
