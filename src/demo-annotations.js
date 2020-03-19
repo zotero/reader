@@ -2,60 +2,6 @@ let annotations = [
   {
     'type': 'highlight',
     'color': '#f8c348',
-    'sortIndex': '000000|0000011|0000000000',
-    'position': { 'pageIndex': 0, 'rects': [[178.303, 696.923, 429.452, 713.044]] },
-    'text': 'Just-in-Time Type Specialization ',
-    'comment': 'Test',
-    'tags': [{
-      'name': 'programming languages',
-      'color': '#ff0000'
-    },
-      {
-        'name': 'compiler'
-      }],
-    'id': 217789960638629,
-    'authorName': '',
-    'dateModified': '2020-02-19T12:42:20.336Z',
-    'pageLabel': '1'
-  }, {
-    'type': 'highlight',
-    'color': '#6cc055',
-    'sortIndex': '000000|0000060|0000000000',
-    'position': { 'pageIndex': 0, 'rects': [[120.322, 642.513, 252.654, 654.816]] },
-    'text': 'Andreas Gal∗+, Brendan Eich',
-    'comment': 'Test',
-    'tags': [],
-    'id': 248571641177045,
-    'authorName': '',
-    'dateModified': '2020-02-19T12:54:34.879Z',
-    'pageLabel': '1'
-  }, {
-    'type': 'highlight',
-    'color': '#f8c348',
-    'sortIndex': '000000|0000447|0000000000',
-    'position': { 'pageIndex': 0, 'rects': [[271.978, 549.48, 337.641, 559.375]] },
-    'text': 'Intel Corporation$ ',
-    'comment': 'Test',
-    'tags': [],
-    'id': 293840938336832,
-    'authorName': '',
-    'dateModified': '2020-02-19T12:50:32.466Z',
-    'abel': '1'
-  }, {
-    'type': 'highlight',
-    'color': '#f8c348',
-    'sortIndex': '000000|0002574|0000000000',
-    'position': { 'pageIndex': 0, 'rects': [[341.635, 386.186, 456.244, 394.202]] },
-    'text': 'generate efficient machine code. ',
-    'comment': 'This is important',
-    'tags': [],
-    'id': 26056936261557,
-    'authorName': '',
-    'dateModified': '2020-02-19T12:48:45.882Z',
-    'abel': '1'
-  }, {
-    'type': 'highlight',
-    'color': '#f8c348',
     'sortIndex': '000000|0003202|0000000000',
     'position': { 'pageIndex': 0, 'rects': [[371.395, 266.635, 486.075, 274.651]] },
     'text': 'reconciles speed of compilation ',
@@ -122,7 +68,7 @@ let annotations = [
     'color': '#589fee',
     'position': { 'pageIndex': 0, 'rects': [[54, 199.237, 293.1, 207.253], [54, 189.274, 67.943, 197.29]] },
     'text': 'Dynamic languages such as JavaScript, Python, and Ruby, are popular ',
-    'comment': 'This is a very long comment.. pioneered the idea of compiling multipleversions of a procedure specialized for the input types in the lan-guage Self. In one implementation, they generated a specializedmethod online each time a method was called with new input types.In another, they used an offline whole-program static analysis toinfer input types and constant receiver types at call sites',
+    'comment': 'This demonstrates pdf-reader highlighted text and comments editing capabilities.\n\nNew lines are supported\nAs well as <b>rich-text</b>.\n\nTo format text select it and use the popped-up bubble toolbar',
     'tags': [],
     'id': 690898672271502,
     'dateModified': '2020-02-07T07:24:37.870Z',
@@ -229,7 +175,7 @@ let annotations = [
     'type': 'area',
     'color': '#f8c348',
     'position': { 'pageIndex': 1, 'rects': [[314.4, 412.8, 556.2, 609.6]] },
-    'comment': '',
+    'comment': 'Another read-only annotation',
     'tags': [],
     'id': 264064849535784,
     'dateModified': '2020-02-07T07:24:18.716Z',

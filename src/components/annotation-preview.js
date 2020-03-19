@@ -5,6 +5,87 @@ import cx from 'classnames';
 import ColorPicker from './color-picker';
 import Editor from './editor';
 
+class MinimizeEditor extends React.Component {
+  state = {
+    overflowed: false,
+    expanded: false
+  }
+  
+  observeVisibility(element, callback) {
+    var options = {
+      root: document.documentElement
+    };
+    var observer = new IntersectionObserver(([entry], observer) => {
+      if (entry && entry.isIntersecting) {
+        callback();
+      }
+    }, options);
+    observer.observe(element);
+    return observer;
+  }
+  
+  componentDidMount() {
+    this.observer = this.observeVisibility(document.getElementById('annotationsView'), () => {
+      if (!this.refs.outer) return;
+      let outerHeight = this.refs.outer.offsetHeight;
+      let innerHeight = this.refs.inner.offsetHeight;
+      let overflowed = !(outerHeight === innerHeight);
+      if (overflowed !== this.state.overflowed) {
+        this.setState({ overflowed });
+      }
+    })
+    
+    document
+      .getElementById('viewer')
+      .addEventListener('pointerdown', this.handleBlur)
+  }
+  
+  componentWillUnmount() {
+    this.observer.disconnect();
+    document
+      .getElementById('viewer')
+      .removeEventListener(this.handleBlur);
+  }
+  
+  componentDidUpdate() {
+    let outerHeight = this.refs.outer.offsetHeight;
+    let innerHeight = this.refs.inner.offsetHeight;
+    let overflowed = !(outerHeight === innerHeight);
+    if (overflowed !== this.state.overflowed) {
+      this.setState({ overflowed });
+    }
+  }
+  
+  handleBlur = () => {
+    this.setState({ expanded: false });
+  }
+  
+  handleExpand = () => {
+    this.setState({ expanded: true });
+  }
+  
+  render() {
+    return (
+      <div className="minimizer">
+        <div ref="outer" className={cx('outer', { expanded: this.state.expanded })}>
+          <div ref="inner" className="inner">
+            <Editor {...this.props} onChange={(text) => {
+              this.setState({ expanded: true });
+              this.props.onChange(text);
+            }}/>
+          </div>
+        </div>
+        <div
+          className={cx('expander', { hidden: !this.state.overflowed })}
+          onClick={this.handleExpand}
+        >˅
+        </div>
+      </div>
+    )
+  }
+  
+}
+
 class AnnotationPreview extends React.Component {
   state = {
     showing: 'main',
@@ -94,27 +175,14 @@ class AnnotationPreview extends React.Component {
     
     let text;
     if (annotation.type === 'highlight' && !isLayer) {
-      if (this.state.editingText) {
-        text = <Editor
-          id={annotation.id}
-          text={annotation.text}
-          placeholder="Extracted text.."
-          isReadOnly={!!annotation.readOnly}
-          onChange={this.handleTextChange}
-          onBlur={this.handleEndEditingText}
-        />
-      }
-      else {
-        if (annotation.text) {
-          text = (
-            <div className="text-preview">
-              {this.sliceText(annotation.text)}
-              {!annotation.readOnly && <span className="text-edit" onClick={this.handleBeginEditingText}
-              >edit</span>}
-            </div>
-          )
-        }
-      }
+      text = <MinimizeEditor
+        id={annotation.id}
+        text={annotation.text}
+        placeholder="Extracted text.."
+        isReadOnly={!!annotation.readOnly}
+        onChange={this.handleTextChange}
+        onBlur={this.handleEndEditingText}
+      />
     }
     
     let tags = annotation.tags.map((tag, index) => (
@@ -123,14 +191,24 @@ class AnnotationPreview extends React.Component {
         style={{ color: tag.color }}
       >{tag.name}</span>
     ));
-    
-    let comment = !(annotation.readOnly  && !annotation.comment) && <Editor
-      id={annotation.id} text={annotation.comment} placeholder="Comment.."
-      plainTextOnly={true} onChange={this.handleCommentChange}
-      onBlur={() => {
-      }}
-      isReadOnly={annotation.readOnly}
-    />;
+  
+    let comment;
+    if (this.props.isLayer) {
+      comment = !(annotation.readOnly && !annotation.comment) && <Editor
+        id={annotation.id} text={annotation.comment} placeholder="Comment.."
+        plainTextOnly={true} onChange={this.handleCommentChange}
+        onBlur={this.handleEndEditingText}
+        isReadOnly={annotation.readOnly}
+      />;
+    }
+    else {
+      comment = !(annotation.readOnly && !annotation.comment) && <div className="comment"><MinimizeEditor
+        id={annotation.id} text={annotation.comment} placeholder="Comment.."
+        plainTextOnly={true} onChange={this.handleCommentChange}
+        onBlur={this.handleEndEditingText}
+        isReadOnly={annotation.readOnly}
+      /></div>;
+    }
     
     return (
       <div className="main-view">

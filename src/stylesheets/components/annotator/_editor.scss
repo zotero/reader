@@ -1,12 +1,16 @@
 
 .editor {
-  border: 1px solid rgba(10, 10, 10, 0.1);
+  cursor: pointer;
+  position: relative;
+  padding: 0 5px;
 
   .content {
     outline: 0;
-    padding: 10px;
-    max-height: 100px;
-    overflow-y: auto;
+    word-wrap: break-word;
+
+    &:focus:hover {
+      cursor: text;
+    }
 
     &:empty::before {
       content: attr(placeholder);
@@ -20,18 +24,25 @@
     overflow: hidden;
   }
 
-  .toolbar {
+  .bubble {
+    font-size: 12px;
+    position: absolute;
     background-color: #FFF;
     border-bottom: 1px solid rgba(10, 10, 10, 0.1);
+    left: calc(50% - 50px);
 
     .button {
       background-color: transparent;
       border: none;
       cursor: pointer;
-      height: 30px;
+      height: 15px;
       outline: 0;
-      width: 30px;
+      width: 20px;
       vertical-align: bottom;
+
+      &:hover {
+        background-color: lightgrey;
+      }
     }
   }
 }

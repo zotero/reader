@@ -1,6 +1,7 @@
 'use strict';
 
 import React from 'react';
+import cx from 'classnames';
 
 const supportedFormats = ['i', 'b', 'sub', 'sup'];
 const multiline = true;
@@ -145,7 +146,7 @@ var actions = [
   {
     icon: 'X<sup>2</sup>',
     title: 'Superscript',
-    command: 'subscript'
+    command: 'superscript'
   },
   {
     icon: 'T<sub>x</sub>',
@@ -251,8 +252,7 @@ class Content extends React.Component {
           onKeyDown={(event) => {
             event.stopPropagation();
           }}
-          onBlur={() => {
-          }}
+          onBlur={onBlur}
         />
         <div className="renderer" ref="renderer"></div>
       </React.Fragment>
@@ -267,22 +267,48 @@ class Editor extends React.Component {
   
   contentRef = React.createRef();
   state = {
-    isSelected: false
+    isSelected: false,
+    bubbleTop: null
+  }
+  
+  componentDidMount() {
+    window.addEventListener('pointerup', this.handleSelection);
+  }
+  
+  getSelectionTop() {
+    let selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return null;
+    let range = selection.getRangeAt(0);
+    let selectionRect = range.getBoundingClientRect();
+    
+    let editorNode = range.startContainer.parentNode.closest('.editor');
+    if (editorNode !== this.refs.editor) return null;
+    let editorRect = editorNode.getBoundingClientRect();
+    return selectionRect.y - editorRect.y;
+  }
+  
+  handleSelection = () => {
+    this.setState({ bubbleTop: this.getSelectionTop() });
   }
   
   render() {
     let { plainTextOnly, text, placeholder, id, onChange, onBlur } = this.props;
+    plainTextOnly = false;
     return (
       <div ref="editor" className="editor">
         {!plainTextOnly ? (
-          <div className="toolbar">
+          <div
+            className={cx('bubble', { hidden: this.state.bubbleTop === null })}
+            style={{ top: this.state.bubbleTop - 12 }}
+          >
             {
               actions.map((action, idx) => (
                 <button
                   key={idx}
                   className="button"
                   dangerouslySetInnerHTML={{ __html: action.icon }}
-                  onClick={() => {
+                  onMouseDown={(event) => {
+                    event.preventDefault();
                     document.execCommand(action.command, false, null);
                     this.contentRef.current.focus();
                   }}
