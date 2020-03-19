@@ -45,10 +45,10 @@ class Note extends React.Component {
       x: Math.round(annotation.position.rects[0][0]),
       y: Math.round(annotation.position.rects[0][1])
     }
-    
+  
     let size = {
-      width: wx(annotation.position.rects[0]),
-      height: hy(annotation.position.rects[0])
+      width: 20 * PDFViewerApplication.pdfViewer._currentScale,
+      height: 20 * PDFViewerApplication.pdfViewer._currentScale
     }
     
     return (
