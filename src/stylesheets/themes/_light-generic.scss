@@ -280,10 +280,12 @@ $overlay-btn-border-radius:    0;
 
 $dialog-gradient-btn:       false;
 
-$progress-height:           15px;
-$progress-padding:          1px;
-$progress-border:           1px solid #bcbcbc;
-$progress-bg:               #e6e6e6;
-$progress-border-radius:    2px;
-$progress-indicator-bg:     #06b025;
-$progress-label-width:      38px;
+$progress-height:        15px;
+$progress-padding:       1px;
+$progress-border:        1px solid #bcbcbc;
+$progress-box-shadow:    null;
+$progress-box-shadow-2x: null;
+$progress-bg:            #e6e6e6;
+$progress-border-radius: 2px;
+$progress-indicator-bg:  #06b025;
+$progress-label-width:   38px;

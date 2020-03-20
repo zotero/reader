@@ -191,6 +191,7 @@
     border-radius: $progress-border-radius;
     overflow: hidden;
     padding: $progress-padding;
+    position: relative;
   }
 
   progress[value] {
@@ -204,6 +205,21 @@
 
     &::-moz-progress-bar {
       background-color: $progress-indicator-bg;
+    }
+
+    &::after {
+      content: if($progress-box-shadow, "", none);
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      box-shadow: $progress-box-shadow;
+      border-radius: $progress-border-radius;
+
+      @include retina {
+        box-shadow: $progress-box-shadow-2x;
+      }
     }
   }
 
