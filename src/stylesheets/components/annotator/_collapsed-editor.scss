@@ -1,0 +1,37 @@
+
+.collapsed-editor {
+  .outer {
+    max-height: 3rem;
+    overflow-y: hidden;
+
+    &.expanded {
+      max-height: none;
+      overflow-y: visible;
+    }
+  }
+
+  .expander {
+    font-size: 20px;
+    text-align: center;
+    border-top: 1px dashed gray;
+    height: 12px;
+
+    &:hover {
+      background-color: lightgray;
+    }
+
+    &.hidden {
+      display: none;
+    }
+  }
+
+  .editor {
+    .content {
+      cursor: pointer;
+
+      &:focus:hover {
+        cursor: text;
+      }
+    }
+  }
+}

@@ -27,7 +27,7 @@ document.addEventListener('localized', (e) => {
       console.log('Set state', state);
     },
     onClickTags(annotationId, screenX, screenY) {
-      alert('This will open Zotero tagbox popup at the cursor position');
+      alert('This will open Zotero tagbox popup');
     },
     onEnterPassword(password) {
       console.log('Entered password', password);

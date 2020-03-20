@@ -1,30 +1,4 @@
 
-.minimizer {
-  .outer {
-    max-height: 3rem;
-    overflow-y: hidden;
-
-    &.expanded {
-      max-height: none;
-    }
-  }
-
-  .expander {
-    font-size: 20px;
-    text-align: center;
-    border-top: 1px dashed gray;
-    height: 12px;
-
-    &:hover {
-      background-color: lightgray;
-    }
-
-    &.hidden {
-      display: none;
-    }
-  }
-}
-
 .annotation-preview {
 
   &.read-only {
@@ -68,16 +42,6 @@
       padding-left: 5px;
     }
 
-    .comment {
-      margin-top: 10px;
-      margin-bottom: 5px;
-
-      .editor {
-        border-radius: 5px;
-        background-color: #dedede;
-      }
-    }
-
     .tags {
       .tag {
         padding-right: 5px;
@@ -96,8 +60,8 @@
 
   .settings-view {
     .back {
-       font-size: 20px;
-       cursor: pointer;
+      font-size: 20px;
+      cursor: pointer;
     }
 
     .button {
@@ -106,6 +70,29 @@
       margin: 5px 0;
       border: 1px solid gray;
       cursor: pointer;
+    }
+  }
+}
+
+.page-popup {
+  .annotation-preview {
+    .editor {
+      border: 1px solid lightgray;
+      padding: 5px;
+    }
+  }
+}
+
+.sidebar {
+  .annotation-preview {
+    .comment {
+      margin-top: 10px;
+      margin-bottom: 5px;
+
+      .editor {
+        border-radius: 5px;
+        background-color: #dedede;
+      }
     }
   }
 }

@@ -4,87 +4,7 @@ import React from 'react';
 import cx from 'classnames';
 import ColorPicker from './color-picker';
 import Editor from './editor';
-
-class MinimizeEditor extends React.Component {
-  state = {
-    overflowed: false,
-    expanded: false
-  }
-  
-  observeVisibility(element, callback) {
-    var options = {
-      root: document.documentElement
-    };
-    var observer = new IntersectionObserver(([entry], observer) => {
-      if (entry && entry.isIntersecting) {
-        callback();
-      }
-    }, options);
-    observer.observe(element);
-    return observer;
-  }
-  
-  componentDidMount() {
-    this.observer = this.observeVisibility(document.getElementById('annotationsView'), () => {
-      if (!this.refs.outer) return;
-      let outerHeight = this.refs.outer.offsetHeight;
-      let innerHeight = this.refs.inner.offsetHeight;
-      let overflowed = !(outerHeight === innerHeight);
-      if (overflowed !== this.state.overflowed) {
-        this.setState({ overflowed });
-      }
-    })
-    
-    document
-      .getElementById('viewer')
-      .addEventListener('pointerdown', this.handleBlur)
-  }
-  
-  componentWillUnmount() {
-    this.observer.disconnect();
-    document
-      .getElementById('viewer')
-      .removeEventListener(this.handleBlur);
-  }
-  
-  componentDidUpdate() {
-    let outerHeight = this.refs.outer.offsetHeight;
-    let innerHeight = this.refs.inner.offsetHeight;
-    let overflowed = !(outerHeight === innerHeight);
-    if (overflowed !== this.state.overflowed) {
-      this.setState({ overflowed });
-    }
-  }
-  
-  handleBlur = () => {
-    this.setState({ expanded: false });
-  }
-  
-  handleExpand = () => {
-    this.setState({ expanded: true });
-  }
-  
-  render() {
-    return (
-      <div className="minimizer">
-        <div ref="outer" className={cx('outer', { expanded: this.state.expanded })}>
-          <div ref="inner" className="inner">
-            <Editor {...this.props} onChange={(text) => {
-              this.setState({ expanded: true });
-              this.props.onChange(text);
-            }}/>
-          </div>
-        </div>
-        <div
-          className={cx('expander', { hidden: !this.state.overflowed })}
-          onClick={this.handleExpand}
-        >˅
-        </div>
-      </div>
-    )
-  }
-  
-}
+import CollapsedEditor from './collapsed-editor';
 
 class AnnotationPreview extends React.Component {
   state = {
@@ -175,7 +95,7 @@ class AnnotationPreview extends React.Component {
     
     let text;
     if (annotation.type === 'highlight' && !isLayer) {
-      text = <MinimizeEditor
+      text = <CollapsedEditor
         id={annotation.id}
         text={annotation.text}
         placeholder="Extracted text.."
@@ -191,7 +111,7 @@ class AnnotationPreview extends React.Component {
         style={{ color: tag.color }}
       >{tag.name}</span>
     ));
-  
+    
     let comment;
     if (this.props.isLayer) {
       comment = !(annotation.readOnly && !annotation.comment) && <Editor
@@ -202,7 +122,7 @@ class AnnotationPreview extends React.Component {
       />;
     }
     else {
-      comment = !(annotation.readOnly && !annotation.comment) && <div className="comment"><MinimizeEditor
+      comment = !(annotation.readOnly && !annotation.comment) && <div className="comment"><CollapsedEditor
         id={annotation.id} text={annotation.comment} placeholder="Comment.."
         plainTextOnly={true} onChange={this.handleCommentChange}
         onBlur={this.handleEndEditingText}

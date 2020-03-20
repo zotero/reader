@@ -1,16 +1,12 @@
 
 .editor {
-  cursor: pointer;
   position: relative;
   padding: 0 5px;
 
   .content {
+    cursor: text;
     outline: 0;
     word-wrap: break-word;
-
-    &:focus:hover {
-      cursor: text;
-    }
 
     &:empty::before {
       content: attr(placeholder);

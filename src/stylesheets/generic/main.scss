@@ -62,6 +62,7 @@ $mode:     "production" !default;
 @import "components/annotator/annotator";
 @import "components/annotator/area-selector";
 @import "components/annotator/color-picker";
+@import "components/annotator/collapsed-editor";
 @import "components/annotator/editor";
 @import "components/annotator/highlight";
 @import "components/annotator/layer";

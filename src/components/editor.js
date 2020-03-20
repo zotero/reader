@@ -307,7 +307,7 @@ class Editor extends React.Component {
                   key={idx}
                   className="button"
                   dangerouslySetInnerHTML={{ __html: action.icon }}
-                  onMouseDown={(event) => {
+                  onPointerDown={(event) => {
                     event.preventDefault();
                     document.execCommand(action.command, false, null);
                     this.contentRef.current.focus();
@@ -322,9 +322,7 @@ class Editor extends React.Component {
           onChange={onChange}
           innerRef={this.contentRef}
           isReadOnly={this.props.isReadOnly}
-          onSelectionChange={(isSelected) => {
-            this.setState({ isSelected });
-          }}
+          onSelectionChange={this.props.onSelectionChange}
           onBlur={onBlur}
           placeholder={placeholder}
         />
