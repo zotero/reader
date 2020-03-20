@@ -424,21 +424,21 @@
 //}
 //
 
-.toolbarButton.pdfSidebarNotification::after {
-  position: absolute;
-  display: inline-block;
-  top: 1px;
-  /* Create a filled circle, with a diameter of 9 pixels, using only CSS: */
-  content: '';
-  background-color: rgba(112, 219, 85, 1);
-  height: 9px;
-  width: 9px;
-  border-radius: 50%;
-}
-
-.toolbarButton.pdfSidebarNotification::after {
-  left: 17px;
-}
+//.toolbarButton.pdfSidebarNotification::after {
+//  position: absolute;
+//  display: inline-block;
+//  top: 1px;
+//  /* Create a filled circle, with a diameter of 9 pixels, using only CSS: */
+//  content: '';
+//  background-color: rgba(112, 219, 85, 1);
+//  height: 9px;
+//  width: 9px;
+//  border-radius: 50%;
+//}
+//
+//.toolbarButton.pdfSidebarNotification::after {
+//  left: 17px;
+//}
 
 //
 //.secondaryToolbarButton {
