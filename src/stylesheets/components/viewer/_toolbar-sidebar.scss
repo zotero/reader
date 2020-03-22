@@ -93,14 +93,6 @@
       &::before {
         position: relative;
         z-index: 1;
-
-        @include retina {
-          transform: translateY(0.5px);
-
-          @-moz-document url-prefix() {
-            transform: none;
-          }
-        }
       }
 
       // Label for screen readers

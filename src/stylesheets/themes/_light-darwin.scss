@@ -309,12 +309,12 @@ $gradient-label-border-radius:     $gradient-btn-border-radius - 1px;
 $submit-btn-bg:                    linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), $accent-color;
 $submit-btn-label-bg:              linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)), $accent-color;
 
-$progress-height:           6px;
-$progress-padding:          0;
-$progress-border:           0;
-$progress-box-shadow:       inset 0 0 0 1px rgba(0, 0, 0, 0.125);
-$progress-box-shadow-2x:    inset 0 0 0 0.5px rgba(0, 0, 0, 0.125);
-$progress-bg:               #dbdbdb;
-$progress-border-radius:    3px;
-$progress-indicator-bg:     #1388ff; // Hard-coded like Zotero’s initial loading bar
-$progress-label-width:      38px;
+$progress-height:        6px;
+$progress-padding:       0;
+$progress-border:        0;
+$progress-box-shadow:    inset 0 0 0 1px rgba(0, 0, 0, 0.125);
+$progress-box-shadow-2x: inset 0 0 0 0.5px rgba(0, 0, 0, 0.125);
+$progress-bg:            #dbdbdb;
+$progress-border-radius: 3px;
+$progress-indicator-bg:  #1388ff; // Hard-coded like Zotero’s initial loading bar
+$progress-label-width:   38px;
