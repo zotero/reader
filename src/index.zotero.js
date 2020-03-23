@@ -1,5 +1,7 @@
 import Viewer from './viewer.js'
 
+let loaded = false;
+
 document.addEventListener('webviewerloaded', (e) => {
   window.PDFViewerApplicationOptions.set('disableHistory', true);
   window.PDFViewerApplicationOptions.set('eventBusDispatchToDOM', true);
@@ -14,7 +16,20 @@ document.addEventListener('webviewerloaded', (e) => {
     return window.PDFViewerApplicationOptions;
   };
   window.PDFViewerApplication.isViewerEmbedded = true;
-}, true);
+  
+  PDFViewerApplication.initializedPromise.then(function () {
+    if (!window.PDFViewerApplication.pdfViewer || loaded) return;
+    loaded = true;
+    
+    window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
+    });
+    
+    var url = new URL(window.location.href);
+    var libraryID = url.searchParams.get('libraryID');
+    var key = url.searchParams.get('key');
+    parent.postMessage({ op: 'load', libraryID, key }, '*');
+  });
+});
 
 var viewer;
 
@@ -125,20 +140,4 @@ window.addEventListener('message', function (message) {
   }
 });
 
-let localized = false;
-
-document.addEventListener('localized', (e) => {
-  if (!window.PDFViewerApplication.pdfViewer || localized) return;
-  localized = true;
-  
-  window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-  });
-  
-  var url = new URL(window.location.href);
-  var libraryID = url.searchParams.get('libraryID');
-  var key = url.searchParams.get('key');
-  parent.postMessage({ op: 'load', libraryID, key }, '*');
-});
-
 window.isViewerReady = true;
-
