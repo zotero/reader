@@ -710,7 +710,7 @@ class Layer extends React.Component {
     let annotationsByPagePrev = this.groupAnnotationsByPage(this.props.annotations);
 
     let pageLayers = [];
-    for (let pageIndex = 0; pageIndex <= this.viewer.pdfDocument.numPages; pageIndex++) {
+    for (let pageIndex = 0; pageIndex < this.viewer.pdfDocument.numPages; pageIndex++) {
       if (!annotationsByPage[String(pageIndex)] && !annotationsByPagePrev[String(pageIndex)]) continue;
 
       let view = this.viewer.getPageView(pageIndex);
