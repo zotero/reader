@@ -115,16 +115,20 @@ class AnnotationPreview extends React.Component {
     let comment;
     if (this.props.isLayer) {
       comment = !(annotation.readOnly && !annotation.comment) && <Editor
-        id={annotation.id} text={annotation.comment} placeholder="Comment.."
-        plainTextOnly={true} onChange={this.handleCommentChange}
-        onBlur={this.handleEndEditingText}
+        id={annotation.id}
+        text={annotation.comment}
+        placeholder="Comment.."
+        isPlainText={false}
         isReadOnly={annotation.readOnly}
+        onChange={this.handleCommentChange}
+        onBlur={this.handleEndEditingText}
+        onSelectionChange={()=>{}}
       />;
     }
     else {
       comment = !(annotation.readOnly && !annotation.comment) && <div className="comment"><CollapsedEditor
         id={annotation.id} text={annotation.comment} placeholder="Comment.."
-        plainTextOnly={true} onChange={this.handleCommentChange}
+        isPlainText={false} onChange={this.handleCommentChange}
         onBlur={this.handleEndEditingText}
         isReadOnly={annotation.readOnly}
       /></div>;

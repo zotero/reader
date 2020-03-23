@@ -79,6 +79,8 @@
     .editor {
       border: 1px solid lightgray;
       padding: 5px;
+      max-height: 300px;
+      overflow-y: scroll;
     }
   }
 }

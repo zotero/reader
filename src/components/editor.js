@@ -75,7 +75,6 @@ function walkUnformat(parent) {
   }
 }
 
-
 function clean(parent) {
   let map = {
     'strong': 'b'
@@ -150,10 +149,48 @@ var actions = [
   },
   {
     icon: 'T<sub>x</sub>',
-    title: 'Superscript',
+    title: 'Remove Format',
     command: 'removeformat'
   }
 ];
+
+class BalloonButton extends React.Component {
+  handleClick = (event) => {
+    event.preventDefault();
+    this.props.onCommand(this.props.action.command)
+  }
+  
+  render() {
+    return (
+      <button
+        className={cx('button', 'icon-' + this.props.action.command)}
+        dangerouslySetInnerHTML={{ __html: this.props.action.icon }}
+        onPointerDown={this.handleClick}
+      />
+    );
+  }
+}
+
+class Balloon extends React.Component {
+  render() {
+    return (
+      <div
+        className="balloon"
+        style={{ top: this.props.top }}
+      >
+        {
+          actions.map((action, idx) => (
+            <BalloonButton
+              key={idx}
+              action={action}
+              onCommand={this.props.onCommand}
+            />
+          ))
+        }
+      </div>
+    )
+  }
+}
 
 class Content extends React.Component {
   currentText = null;
@@ -275,6 +312,10 @@ class Editor extends React.Component {
     window.addEventListener('pointerup', this.handleSelection);
   }
   
+  componentWillUnmount() {
+    window.removeEventListener('pointerup', this.handleSelection)
+  }
+  
   getSelectionTop() {
     let selection = window.getSelection();
     if (!selection || selection.isCollapsed) return null;
@@ -291,40 +332,32 @@ class Editor extends React.Component {
     this.setState({ bubbleTop: this.getSelectionTop() });
   }
   
+  handleBalloonCommand = (command) => {
+    this.contentRef.current.focus();
+    document.execCommand(command, false, null);
+  }
+  
   render() {
-    let { plainTextOnly, text, placeholder, id, onChange, onBlur } = this.props;
-    plainTextOnly = false;
     return (
-      <div ref="editor" className="editor">
-        {!plainTextOnly ? (
-          <div
-            className={cx('bubble', { hidden: this.state.bubbleTop === null })}
-            style={{ top: this.state.bubbleTop - 12 }}
-          >
-            {
-              actions.map((action, idx) => (
-                <button
-                  key={idx}
-                  className="button"
-                  dangerouslySetInnerHTML={{ __html: action.icon }}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    document.execCommand(action.command, false, null);
-                    this.contentRef.current.focus();
-                  }}
-                />
-              ))
-            }
-          </div>) : null}
+      <div ref="editor" className={cx('editor', { 'read-only': this.props.isReadOnly })}>
+        {
+          !this.props.isPlainText &&
+          !this.props.isReadOnly &&
+          this.state.bubbleTop !== null &&
+          <Balloon
+            top={this.state.bubbleTop}
+            onCommand={this.handleBalloonCommand}
+          />
+        }
         <Content
-          id={id}
-          text={text}
-          onChange={onChange}
+          id={this.props.id}
+          text={this.props.text}
+          onChange={this.props.onChange}
           innerRef={this.contentRef}
           isReadOnly={this.props.isReadOnly}
           onSelectionChange={this.props.onSelectionChange}
-          onBlur={onBlur}
-          placeholder={placeholder}
+          onBlur={this.props.onBlur}
+          placeholder={this.props.placeholder}
         />
       </div>
     );

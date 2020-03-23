@@ -7,6 +7,7 @@
     cursor: text;
     outline: 0;
     word-wrap: break-word;
+    height: 100%;
 
     &:empty::before {
       content: attr(placeholder);
@@ -20,20 +21,24 @@
     overflow: hidden;
   }
 
-  .bubble {
+  .balloon {
     font-size: 12px;
     position: absolute;
     background-color: #FFF;
-    border-bottom: 1px solid rgba(10, 10, 10, 0.1);
+    border: 1px solid lightgrey;
+
+    // 5 (buttons) x 20px / 2 = 50px
     left: calc(50% - 50px);
 
+    margin-top: -15px;
+
     .button {
+      width: 20px;
+      height: 15px;
       background-color: transparent;
       border: none;
       cursor: pointer;
-      height: 15px;
       outline: 0;
-      width: 20px;
       vertical-align: bottom;
 
       &:hover {
