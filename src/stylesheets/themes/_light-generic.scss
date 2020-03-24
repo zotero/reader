@@ -56,7 +56,7 @@ $page-number-box-shadow:          null;
 $page-number-box-shadow-2x:       null;
 $page-number-focus-box-shadow:    null;
 $page-number-focus-box-shadow-2x: null;
-$page-number-loading-x:           3px;
+$page-number-loading-x:           4px;
 
 $num-pages-min-width: 76px;
 $num-pages-color:     #777;
@@ -175,7 +175,7 @@ $findbar-btn-previous-icon:       "previous";
 $findbar-btn-next-icon:           "next";
 
 $find-input-width:            200px;
-$find-input-loading-x:        null;
+$find-input-loading-x:        3px;
 $find-input-not-found-color:  $text-color;
 $find-input-not-found-bg:     tint(#f66, 75%);
 

@@ -80,13 +80,13 @@
     width: $find-input-width;
 
     &[data-status="pending"] {
-      background-image: url("images/loading-small.png");
+      background-image: icon-url("spinner-14px.png");
       background-repeat: no-repeat;
       background-position: center right $find-input-loading-x;
-      background-size: 16px 17px;
+      background-size: 14px 14px;
 
       @include retina {
-        background-image: url("images/loading-small@2x.png");
+        background-image: icon-url("spinner-14px@2x.png");
       }
     }
 

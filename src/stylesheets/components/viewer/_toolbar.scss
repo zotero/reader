@@ -122,13 +122,13 @@
     }
 
     &.visiblePageIsLoading {
-      background-image: url("images/loading-small.png"), $page-number-bg;
+      background: icon-url("spinner-14px.png"), $page-number-bg;
       background-repeat: no-repeat;
       background-position: $page-number-loading-x center, left top;
-      background-size: 16px 17px, auto;
+      background-size: 14px 14px, auto;
 
       @include retina {
-        background-image: url("images/loading-small@2x.png"), $page-number-bg;
+        background-image: icon-url("spinner-14px@2x.png"), $page-number-bg;
       }
     }
   }

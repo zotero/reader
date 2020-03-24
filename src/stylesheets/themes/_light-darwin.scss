@@ -58,7 +58,7 @@ $page-number-box-shadow:          inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0
 $page-number-box-shadow-2x:       inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
 $page-number-focus-box-shadow:    inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
 $page-number-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
-$page-number-loading-x:           2px;
+$page-number-loading-x:           4px;
 
 $num-pages-min-width: 76px;
 $num-pages-color:     #555;
