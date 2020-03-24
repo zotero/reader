@@ -48,7 +48,7 @@ $toolbar-blurred-bg:    null;
 $toolbar-blurred-bg-2x: null;
 $toolbar-border:        1px solid #cecece;
 
-$page-number-width:               54px;
+$page-number-width:               calc(#{rem(28)} + 26px);
 $page-number-padding:             0 5px;
 $page-number-bg:                  #fff;
 $page-number-border-radius:       0;

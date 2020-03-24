@@ -50,7 +50,7 @@ $toolbar-blurred-bg:    linear-gradient(to top, #d1d1d1 0, #d1d1d1 1px, #f6f6f6 
 $toolbar-blurred-bg-2x: linear-gradient(to top, #cecece 0, #cecece 0.5px, #e7e7e7 0.5px, #e7e7e7 1px, #f6f6f6 1px);
 $toolbar-border:        0;
 
-$page-number-width:               52px;
+$page-number-width:               calc(#{rem(28)} + 24px);
 $page-number-padding:             0 4px;
 $page-number-bg:                  linear-gradient(to bottom, #fafafa, #f2f2f2);
 $page-number-border-radius:       3.75px;
