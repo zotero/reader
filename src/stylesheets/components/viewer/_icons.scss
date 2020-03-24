@@ -28,35 +28,37 @@
 .toolbar {
   #back {
     html[dir="ltr"] & {
-      /*rtl:ignore*/
       @include icon("back");
     }
 
     html[dir="rtl"] & {
-      /*rtl:ignore*/
       @include icon("forward");
     }
   }
 
   #forward {
     html[dir="ltr"] & {
-      /*rtl:ignore*/
       @include icon("forward");
     }
 
     html[dir="rtl"] & {
-      /*rtl:ignore*/
       @include icon("back");
     }
   }
 
   #sidebarToggle {
-    /*rtl:ignore*/
     @include icon("application-side-expand");
 
+    html[dir="rtl"] & {
+      @include icon("application-side-expand-rtl");
+    }
+
     &.toggled {
-      /*rtl:ignore*/
       @include icon("application-side-contract");
+
+      html[dir="rtl"] & {
+        @include icon("application-side-contract-rtl");
+      }
     }
   }
 
@@ -93,21 +95,17 @@
 
 .findbar {
   .findPrevious {
-    /*rtl:ignore*/
     @include icon($findbar-btn-previous-icon);
 
     html[dir="rtl"] & {
-      /*rtl:ignore*/
       @include icon("#{$findbar-btn-previous-icon}-rtl");
     }
   }
 
   .findNext {
-    /*rtl:ignore*/
     @include icon($findbar-btn-next-icon);
 
     html[dir="rtl"] & {
-      /*rtl:ignore*/
       @include icon("#{$findbar-btn-previous-icon}-rtl");
     }
   }
@@ -210,12 +208,10 @@
 
   &.outlineItemsHidden {
     html[dir='ltr'] & {
-      /*rtl:ignore*/
       @include icon("treeitem-collapsed", 9px);
     }
 
     html[dir='rtl'] & {
-      /*rtl:ignore*/
       @include icon("treeitem-collapsed-rtl", 9px);
     }
   }
