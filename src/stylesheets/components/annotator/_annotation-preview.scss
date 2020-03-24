@@ -78,9 +78,16 @@
   .annotation-preview {
     .editor {
       border: 1px solid lightgray;
-      padding: 5px;
-      max-height: 300px;
+      padding: 0;
+      max-height: 150px;
       overflow-y: scroll;
+
+      .content {
+        // Ugly, but for now it's necessary to keep around 15px
+        // space at the top, since otherwise the balloon menu
+        // would be hidden when the first line is selected
+        padding: 15px 5px;
+      }
     }
   }
 }

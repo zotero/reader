@@ -793,8 +793,9 @@ class Layer extends React.Component {
           }}
         />
         {
-          popupAnnotation && !this.state.dragging && !window.PDFViewerApplication.pdfSidebar.isOpen ? (
+          popupAnnotation && !this.state.dragging && !window.PDFViewerApplication.pdfSidebar.isOpen && (
             <PagePopup
+              id={popupAnnotation.id}
               className="annotation-preview-popup"
               position={popupAnnotation.position}
             >
@@ -822,13 +823,12 @@ class Layer extends React.Component {
                   event.dataTransfer.setData('text/plain', formatAnnotationText(annotation));
                 }}
               />
-
             </PagePopup>
-          ) : null
+          )
         }
         {
           this.state.selection && this.props.enableMouseSelection && (
-            <PagePopup position={this.state.selection.position}>
+            <PagePopup id={1} position={this.state.selection.position}>
               <SelectionMenu
                 onHighlight={() => {
                   let selection = this.state.selection;

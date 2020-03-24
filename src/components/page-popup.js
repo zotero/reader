@@ -5,16 +5,24 @@ import ReactDOM from 'react-dom';
 
 class PagePopup extends React.Component {
   state = {
-    dimensions: null
+    popupPosition: null
   };
   
   componentDidMount() {
-    this.setState({
-      dimensions: {
-        width: this.container.offsetWidth,
-        height: this.container.offsetHeight
-      }
-    });
+    this.updatePopupPosition();
+  }
+  
+  componentDidUpdate() {
+    if (!this.state.popupPosition) {
+      this.updatePopupPosition();
+    }
+  }
+  
+  static getDerivedStateFromProps(nextProps, prevState) {
+    if (nextProps.id !== prevState.id) {
+      return { id: nextProps.id, popupPosition: null };
+    }
+    else return null;
   }
   
   getContainer() {
@@ -31,13 +39,20 @@ class PagePopup extends React.Component {
     return popupContainer;
   }
   
-  getRect(position, dimensions) {
-    let node = PDFViewerApplication.pdfViewer.getPageView(position.pageIndex).div;
+  updatePopupPosition() {
+    let dimensions = {
+      width: this.refs.container.offsetWidth,
+      height: this.refs.container.offsetHeight
+    };
+    
+    let annotationPosition = this.props.position;
+    
+    let node = PDFViewerApplication.pdfViewer.getPageView(annotationPosition.pageIndex).div;
     
     let left;
     let top;
     let rectMax = [];
-    for (let rect of position.rects) {
+    for (let rect of annotationPosition.rects) {
       rectMax[0] = rectMax[0] ? Math.min(rectMax[0], rect[0]) : rect[0];
       rectMax[1] = rectMax[1] ? Math.min(rectMax[1], rect[1]) : rect[1];
       rectMax[2] = rectMax[2] ? Math.max(rectMax[2], rect[2]) : rect[2];
@@ -65,20 +80,17 @@ class PagePopup extends React.Component {
       top = visibleRect[3] - dimensions.height;
     }
     
-    return { left, top };
+    this.setState({ popupPosition: { top, left } });
   }
   
   render() {
-    let { position, children, className } = this.props;
-    let { dimensions } = this.state;
-    
     return ReactDOM.createPortal(
       <div
-        ref={el => (this.container = el)}
-        className={'page-popup ' + className}
-        style={dimensions ? this.getRect(position, dimensions) : {}}
+        ref="container"
+        className={'page-popup ' + this.props.className}
+        style={this.state.popupPosition && { ...this.state.popupPosition }}
       >
-        {children}
+        {this.props.children}
       </div>,
       this.getContainer()
     );
