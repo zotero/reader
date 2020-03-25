@@ -113,6 +113,18 @@ class Annotator extends React.Component {
     
     });
     
+    window.PDFViewerApplication.eventBus.on('sidebarviewchanged', (e) => {
+      // Delay until sidebar finishes transitioning
+      // and allows us to properly position page popup
+      if (e.view === 0) {
+        setTimeout(() => {
+          this.setState({});
+        }, 300);
+      } else {
+        this.setState({});
+      }
+    });
+    
     onInitialized();
   }
   
