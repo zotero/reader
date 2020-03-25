@@ -27,12 +27,36 @@ class Annotator extends React.Component {
   
   initKeyboard() {
     window.addEventListener('keydown', e => {
-      if ([8, 46].includes(e.keyCode)) {
-        let viewerContainer = document.getElementById('viewerContainer');
-        let annotationsView = document.getElementById('annotationsView');
-        if (e.target === viewerContainer || e.target === annotationsView) {
-          if (e.key === 'Delete' || e.key === 'Backspace') {
-            this.props.onDeleteAnnotation(this.state.activeAnnotationId);
+      let viewerContainer = document.getElementById('viewerContainer');
+      let annotationsView = document.getElementById('annotationsView');
+      if (e.target === viewerContainer || e.target === annotationsView) {
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          this.props.onDeleteAnnotation(this.state.activeAnnotationId);
+        }
+        else if (e.key === 'ArrowUp') {
+          if (this.state.activeAnnotationId) {
+            let currentIndex = this.state.annotations.indexOf(
+              this.state.annotations.find(x => x.id === this.state.activeAnnotationId));
+            
+            if (currentIndex > 0) {
+              let annotation = this.state.annotations[currentIndex - 1];
+              this.setState({ activeAnnotationId: annotation.id });
+              this.scrollViewerTo(annotation.position);
+            }
+            e.preventDefault();
+          }
+        }
+        else if (e.key === 'ArrowDown') {
+          if (this.state.activeAnnotationId) {
+            let currentIndex = this.state.annotations.indexOf(
+              this.state.annotations.find(x => x.id === this.state.activeAnnotationId));
+            
+            if (currentIndex >= 0 && currentIndex < this.state.annotations.length - 1) {
+              let annotation = this.state.annotations[currentIndex + 1];
+              this.setState({ activeAnnotationId: annotation.id });
+              this.scrollViewerTo(annotation.position);
+            }
+            e.preventDefault();
           }
         }
       }
