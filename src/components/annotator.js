@@ -5,7 +5,7 @@ import Layer from './layer';
 import Sidebar from './sidebar';
 import Toolbar from './toolbar';
 import Findbar from './findbar';
-import PopupScreen from './screen-popup';
+import ScreenPopup from './screen-popup';
 import ColorPicker from './color-picker';
 import ImportBar from './import-bar';
 import { annotationColors } from '../lib/colors';
@@ -106,7 +106,7 @@ class Annotator extends React.Component {
           window.PDFViewerApplication.pdfSidebar.switchView(9);
         }
         
-        el.scrollIntoView({behavior: "smooth", block: "nearest", inline: "nearest"});
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
       }, 50);
     }
   }
@@ -194,11 +194,11 @@ class Annotator extends React.Component {
       }
       
       if (isFound) continue;
-  
+      
       for (let i = 0; i < annotation.position.rects.length - 1; i++) {
         let rect = annotation.position.rects[i];
         let rectNext = annotation.position.rects[i + 1];
-    
+        
         if (annotation.position.pageIndex === position.pageIndex) {
           if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2]) &&
             rectNext[1] <= y && y <= rect[3] &&
@@ -288,14 +288,17 @@ class Annotator extends React.Component {
           }}
         />
         <Findbar/>
-        {this.state.colorPicking ? (
-          <PopupScreen className="global-color-picker-popup" parentId="globalColorButton">
+        {this.state.colorPicking && (
+          <ScreenPopup
+            className="global-color-picker-popup"
+            parentId="globalColorButton"
+          >
             <ColorPicker onColorPick={(color) => {
               this.setState({ color });
               this.setState({ colorPicking: false });
             }}/>
-          </PopupScreen>
-        ) : null}
+          </ScreenPopup>
+        )}
         {askImport && <ImportBar onImport={onImport} onDismiss={onDismissImport}/>}
         <Sidebar
           annotations={this.state.annotations}
@@ -394,7 +397,7 @@ class Annotator extends React.Component {
           }}
           onMouseMove={(position) => {
             // console.log('pp',position);
-            if(this.isOver(position)) {
+            if (this.isOver(position)) {
               document.getElementById('viewer').classList.add('force-annotation-pointer');
             }
             else {

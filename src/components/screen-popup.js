@@ -5,16 +5,26 @@ import ReactDOM from 'react-dom';
 
 class ScreenPopup extends React.Component {
   state = {
-    dimensions: null
+    popupPosition: null
   };
   
   componentDidMount() {
-    this.setState({
-      dimensions: {
-        width: this.container.offsetWidth,
-        height: this.container.offsetHeight
-      }
-    });
+    this.updatePopupPosition();
+  }
+  
+  componentDidUpdate() {
+    if (!this.state.popupPosition) {
+      this.updatePopupPosition();
+    }
+  }
+  
+  static getDerivedStateFromProps(nextProps, prevState) {
+    // Trigger popup re-positioning only if another popup
+    // with a different class name is being opened
+    if (nextProps.className !== prevState.className) {
+      return { className: nextProps.className, popupPosition: null };
+    }
+    return null;
   }
   
   getContainer() {
@@ -30,25 +40,22 @@ class ScreenPopup extends React.Component {
     return popupContainer;
   }
   
-  getPosition(parentId) {
-    let node = document.getElementById(parentId);
-    if (!node) return null;
+  updatePopupPosition() {
+    let node = document.getElementById(this.props.parentId);
+    if (!node) return;
     let rect = node.getBoundingClientRect();
     let top = rect.y + rect.height + 10;
-    let left = rect.x;
-    return { top, left };
+    let left = rect.x + rect.width / 2 - this.refs.container.offsetWidth / 2;
+    this.setState({ popupPosition: { top, left } });
   }
   
   render() {
-    let { children, parentId, className } = this.props;
-    let { dimensions } = this.state;
-    
     return ReactDOM.createPortal(
       <div
-        ref={el => (this.container = el)}
-        className={'screen-popup ' + className}
-        style={dimensions ? this.getPosition(parentId, dimensions) : {}}>
-        {children}
+        ref="container"
+        className={'screen-popup ' + this.props.className}
+        style={this.state.popupPosition && { ...this.state.popupPosition }}>
+        {this.props.children}
       </div>,
       this.getContainer()
     );
