@@ -309,10 +309,15 @@ class Editor extends React.Component {
   }
   
   componentDidMount() {
-    window.addEventListener('pointerup', this.handleSelection);
+    this._isMounted = true;
+    window.addEventListener('pointerup', () => {
+      // Delay a little bit to allow selection to take in place
+      setTimeout(this.handleSelection.bind(this), 50);
+    });
   }
   
   componentWillUnmount() {
+    this._isMounted = false;
     window.removeEventListener('pointerup', this.handleSelection)
   }
   
@@ -329,6 +334,7 @@ class Editor extends React.Component {
   }
   
   handleSelection = () => {
+    if (!this._isMounted) return;
     this.setState({ bubbleTop: this.getSelectionTop() });
   }
   
