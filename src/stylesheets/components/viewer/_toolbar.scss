@@ -40,7 +40,7 @@
 
   #toolbarViewerLeft,
   #toolbarViewerRight {
-    @media all and (min-width: 1400px) {
+    @media all and (min-width: $toolbar-middle-viewer-bp) {
       flex: 1 1 0; // Center middle viewer on large screens
     }
   }
@@ -137,6 +137,12 @@
     min-width: $num-pages-min-width;
     color: $num-pages-color;
     margin-left: 0;
+  }
+
+  #scaleSelectContainer {
+    @media all and (max-width: $scale-select-container-bp) {
+      display: none;
+    }
   }
 
   #openFile,

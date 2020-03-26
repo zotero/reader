@@ -19,16 +19,16 @@
   display: none;
 }
 
-@media all and (max-width: 840px) {
-  #outerContainer .hiddenLargeView,
-  #outerContainer .hiddenMediumView {
-    display: inherit;
-  }
-  #outerContainer .visibleLargeView,
-  #outerContainer .visibleMediumView {
-    display: none;
-  }
-}
+//@media all and (max-width: 840px) {
+//  #outerContainer .hiddenLargeView,
+//  #outerContainer .hiddenMediumView {
+//    display: inherit;
+//  }
+//  #outerContainer .visibleLargeView,
+//  #outerContainer .visibleMediumView {
+//    display: none;
+//  }
+//}
 
 @media all and (max-width: 770px) {
   #outerContainer .hiddenLargeView {
@@ -48,20 +48,12 @@
   }
 }
 
-@media all and (max-width: 640px) {
+@media all and (max-width: $visibility-bp-sm) {
   .hiddenSmallView, .hiddenSmallView * {
     display: none;
   }
   .visibleSmallView {
     display: inherit;
   }
-  .toolbarButtonSpacer {
-    width: 0;
-  }
 }
 
-@media all and (max-width: 535px) {
-  #scaleSelectContainer {
-    display: none;
-  }
-}

@@ -37,6 +37,11 @@ $selection-bg:    rgba($highlight-color, 0.99);
 $z-index-findbar: 10000;
 $z-index-overlay: 40000;
 
+// Visibility breakpoints
+$visibility-bp-lg: null;
+$visibility-bp-md: null;
+$visibility-bp-sm: 840px;
+
 //
 // Components
 //
@@ -63,14 +68,8 @@ $page-number-loading-x:           4px;
 $num-pages-min-width: 76px;
 $num-pages-color:     #555;
 
-$thumbnail-icon:         "darwin/view-thumbnail-linear";
-$thumbnail-icon-toggled: "darwin/view-thumbnail-linear-white";
-$note-icon:              "darwin/note-linear";
-$note-icon-toggled:      "darwin/note-linear-white";
-$bookmark-icon:          "darwin/bookmark-linear";
-$bookmark-icon-toggled:  "darwin/bookmark-linear-white";
-$attach-icon:            "darwin/attach-linear";
-$attach-icon-toggled:    "darwin/attach-linear-white";
+$toolbar-middle-viewer-bp:  1300px;
+$scale-select-container-bp: 750px;
 
 // Toolbar button
 $toolbar-btn-height:                22px;
@@ -248,6 +247,15 @@ $toolbar-sidebar-label-active-bg-first:            $toolbar-btn-active-bg;
 $toolbar-sidebar-btn-toggled-next-label-bg:        linear-gradient(#fbfbfb, #f2f2f2);
 $toolbar-sidebar-btn-toggled-next-label-active-bg: $toolbar-btn-active-bg;
 $toolbar-sidebar-label-border-radius:              $toolbar-btn-border-radius - 1px;
+
+$thumbnail-icon:         "darwin/view-thumbnail-linear";
+$thumbnail-icon-toggled: "darwin/view-thumbnail-linear-white";
+$note-icon:              "darwin/note-linear";
+$note-icon-toggled:      "darwin/note-linear-white";
+$bookmark-icon:          "darwin/bookmark-linear";
+$bookmark-icon-toggled:  "darwin/bookmark-linear-white";
+$attach-icon:            "darwin/attach-linear";
+$attach-icon-toggled:    "darwin/attach-linear-white";
 
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);

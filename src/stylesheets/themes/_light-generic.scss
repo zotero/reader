@@ -35,6 +35,11 @@ $selection-bg:    rgba($highlight-color, 0.99);
 $z-index-findbar: 10000;
 $z-index-overlay: 40000;
 
+// Visibility breakpoints
+$visibility-bp-lg: null;
+$visibility-bp-md: null;
+$visibility-bp-sm: 700px;
+
 //
 // Components
 //
@@ -61,14 +66,8 @@ $page-number-loading-x:           4px;
 $num-pages-min-width: 76px;
 $num-pages-color:     #777;
 
-$thumbnail-icon:         "view-thumbnail";
-$thumbnail-icon-toggled: null;
-$note-icon:              "note";
-$note-icon-toggled:      null;
-$bookmark-icon:          "bookmark";
-$bookmark-icon-toggled:  null;
-$attach-icon:            "attach";
-$attach-icon-toggled:    null;
+$toolbar-middle-viewer-bp:  1050px;
+$scale-select-container-bp: 0;
 
 // Toolbar button
 $toolbar-btn-height:                21px;
@@ -234,6 +233,15 @@ $toolbar-sidebar-btn-border-color:       #d9d9d9;
 $toolbar-sidebar-btn-border-radius:      null;
 $toolbar-sidebar-btn-spacing:            -1px;
 $toolbar-sidebar-gradient-btn:           false;
+
+$thumbnail-icon:         "view-thumbnail";
+$thumbnail-icon-toggled: null;
+$note-icon:              "note";
+$note-icon-toggled:      null;
+$bookmark-icon:          "bookmark";
+$bookmark-icon-toggled:  null;
+$attach-icon:            "attach";
+$attach-icon-toggled:    null;
 
 // Thumbnail view
 $thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
