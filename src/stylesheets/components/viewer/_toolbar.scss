@@ -40,7 +40,7 @@
 
   #toolbarViewerLeft,
   #toolbarViewerRight {
-    @media all and (min-width: 901px) {
+    @media all and (min-width: 1400px) {
       flex: 1 1 0; // Center middle viewer on large screens
     }
   }
