@@ -1,7 +1,10 @@
 'use strict';
 
 import queue from 'queue';
-import { getAnnotationsCount, getSortIndex } from './lib/extract';
+import {
+  getAnnotationsCount, getSortIndex,
+  extractPageLabelPoints, extractPageLabel
+} from './lib/extract';
 import { renderAreaImage } from './lib/render';
 import { annotationColors } from './lib/colors';
 
@@ -26,6 +29,14 @@ class AnnotationsStore {
     });
     
     this.sortAnnotations(this.annotations);
+  }
+  
+  async getPageLabelPoints() {
+    if (!this.pageLabelPoints) {
+      this.pageLabelPoints = await extractPageLabelPoints();
+    }
+    
+    return this.pageLabelPoints;
   }
   
   genId() {
@@ -97,12 +108,22 @@ class AnnotationsStore {
     );
     
     // Todo: Move this out from here
-    let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-    if (pageLabels && pageLabels[annotation.position.pageIndex]) {
-      annotation.pageLabel = pageLabels[annotation.position.pageIndex];
+    let points = await this.getPageLabelPoints();
+    if (points) {
+      annotation.pageLabel = '-';
+      let pageLabel = await extractPageLabel(annotation.position.pageIndex, points);
+      if (pageLabel) {
+        annotation.pageLabel = pageLabel;
+      }
     }
     else {
-      annotation.pageLabel = (annotation.position.pageIndex + 1).toString();
+      let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
+      if (pageLabels && pageLabels[annotation.position.pageIndex]) {
+        annotation.pageLabel = pageLabels[annotation.position.pageIndex];
+      }
+      else {
+        annotation.pageLabel = (annotation.position.pageIndex + 1).toString();
+      }
     }
     
     let updateImage = false;
