@@ -347,6 +347,7 @@ class Annotator extends React.Component {
             onUpdateAnnotation(annotation);
             this.setState({ recentlyUpdatedAnnotationId: annotation.id });
           }}
+          onResetPageLabels={this.props.onResetPageLabels}
           onDelete={(id) => {
             onDeleteAnnotation(id);
           }}

@@ -37,8 +37,21 @@ class AnnotationPreview extends React.Component {
     this.props.onChange({ id: this.props.annotation.id, color });
   }
   
-  handlePageEdit = (event) => {
-    this.props.onChange({ id: this.props.annotation.id, pageLabel: event.target.value });
+  handlePageLabelChange = () => {
+    this.props.onChange({
+      id: this.props.annotation.id,
+      pageLabel: this.refs.pageLabel.value
+    });
+    this.setState({ showing: 'main' });
+  }
+  
+  handleResetPageLabels = () => {
+    this.props.onResetPageLabels(
+      this.props.annotation.position.pageIndex,
+      this.refs.pageLabel.value
+    );
+    
+    this.setState({ showing: 'main' });
   }
   
   handleTextChange = (text) => {
@@ -69,6 +82,12 @@ class AnnotationPreview extends React.Component {
     this.setState({ showing: 'settings' });
   }
   
+  handleShowPage = () => {
+    if (!this.props.annotation.readOnly) {
+      this.setState({ showing: 'page' });
+    }
+  }
+  
   sliceText(text) {
     let slicedText = text.slice(0, 70).trim();
     if (text.length > 70) {
@@ -79,19 +98,6 @@ class AnnotationPreview extends React.Component {
   
   mainView() {
     let { annotation, isLayer, onDragStart } = this.props;
-    let page;
-    if (this.state.editingPage) {
-      page = <input
-        className="page-edit" type="edit"
-        value={annotation.pageLabel} onChange={this.handlePageEdit}
-      />;
-    }
-    else {
-      page = <span
-        className="page-display"
-        onClick={this.handleBeginEditingPage}
-      >Page {annotation.pageLabel}</span>
-    }
     
     let text;
     if (annotation.type === 'highlight' && !isLayer) {
@@ -141,8 +147,8 @@ class AnnotationPreview extends React.Component {
           draggable={true} onDragStart={onDragStart}
         />
         <div className="header" title={'Modified on ' + annotation.dateModified.split('T')[0]}>
-          {isLayer ? <div></div> : page}
-          <div>{annotation.authorName}</div>
+          <div className="page" onClick={this.handleShowPage}>Page {annotation.pageLabel}</div>
+          <div className="author">{annotation.authorName}</div>
           {annotation.readOnly ? <div></div> : <div className="settings" onClick={this.handleShowSettings}>⚙</div>}
         </div>
         {!isLayer && annotation.image && (<img className="image" src={annotation.image}/>)}
@@ -164,6 +170,18 @@ class AnnotationPreview extends React.Component {
     );
   }
   
+  pageView() {
+    return (
+      <div className="page-view">
+        <div className="back" onClick={this.handleShowMain}>←</div>
+        <div>Page label:</div>
+        <input ref="pageLabel" type="text" defaultValue={this.props.annotation.pageLabel} />
+        <div className="button" onClick={this.handlePageLabelChange}>Update this annotation</div>
+        <div className="button" onClick={this.handleResetPageLabels}>Update all annotations</div>
+      </div>
+    );
+  }
+  
   render() {
     let { annotation } = this.props;
     let { showing } = this.state;
@@ -173,6 +191,9 @@ class AnnotationPreview extends React.Component {
     }
     else if (showing === 'settings') {
       content = this.settingsView();
+    }
+    else if (showing === 'page') {
+      content = this.pageView();
     }
     
     return (

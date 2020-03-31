@@ -140,6 +140,7 @@ class Viewer {
         onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
         onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
         onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
+        onResetPageLabels={this._annotationsStore.resetPageLabels.bind(this._annotationsStore)}
         onClickTags={options.onClickTags}
         askImport={options.askImport}
         onImport={options.onImport}

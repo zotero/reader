@@ -12,17 +12,25 @@
 
     .header {
       display: flex;
-      justify-content: space-between;
 
-      .page-display {
-        cursor: pointer;
+      div {
+        flex-basis: 100%;
       }
 
-      .page-edit {
-        width: 30px;
+      .page {
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      .author {
+        text-align: center;
+        font-weight: bold;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
 
       .settings {
+        text-align: right;
         font-size: 18px;
         cursor: pointer;
       }
@@ -51,10 +59,6 @@
         content: attr(placeholder);
         color: #999;
       }
-
-      &:hover {
-        cursor: pointer;
-      }
     }
   }
 
@@ -62,6 +66,25 @@
     .back {
       font-size: 20px;
       cursor: pointer;
+    }
+
+    .button {
+      text-align: center;
+      padding: 5px 0;
+      margin: 5px 0;
+      border: 1px solid gray;
+      cursor: pointer;
+    }
+  }
+
+  .page-view {
+    .back {
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    input {
+      width: 100%;
     }
 
     .button {

@@ -54,6 +54,7 @@ class SidebarItem extends React.Component {
           }}
           onClickTags={this.props.onClickTags}
           onChange={this.props.onChange}
+          onResetPageLabels={this.props.onResetPageLabels}
           onDragStart={(event) => {
             let annotation = JSON.stringify(JSON.parse(this.props.annotation));
             annotation.itemId = window.itemId;
@@ -127,6 +128,7 @@ class Sidebar extends React.Component {
             annotation={annotation}
             onSelect={this.props.onSelectAnnotation}
             onChange={this.props.onChange}
+            onResetPageLabels={this.props.onResetPageLabels}
             onDelete={this.props.onDelete}
             onClickTags={this.props.onClickTags}
           />

@@ -225,6 +225,22 @@ class AnnotationsStore {
       });
     });
   }
+  
+  resetPageLabels(pageIndex, pageLabel) {
+    if (parseInt(pageLabel).toString() !== pageLabel) {
+      return;
+    }
+  
+    let startPageNumber = parseInt(pageLabel) - pageIndex;
+  
+    for (let annotation of this.annotations) {
+      let pageNumber = startPageNumber + annotation.position.pageIndex;
+      annotation.pageLabel = pageNumber.toString();
+      this.onSetAnnotation(annotation);
+    }
+    
+    this.onUpdateAnnotations(this.annotations);
+  }
 }
 
 export default AnnotationsStore;
