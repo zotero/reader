@@ -99,13 +99,13 @@ export async function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) 
     points.length > 0 && getSurroundedNumberAtPos(chsNext, points[0].x, points[0].y) ||
     points.length > 1 && getSurroundedNumberAtPos(chsNext, points[1].x, points[1].y);
   
-  if (pageIndex > 0) {
+  if (chsPrev) {
     numPrev = getNum(chsPrev, points);
   }
 
   numCur = getNum(chsCur, points);
   
-  if (pageIndex < PDFViewerApplication.pdfDocument.numPages - 1) {
+  if (chsNext) {
     numNext = getNum(chsNext, points);
   }
   

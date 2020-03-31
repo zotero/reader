@@ -83,8 +83,14 @@ export async function extractPageLabelPoints() {
 }
 
 export async function extractPageLabel(pageIndex, points) {
-  let chsPrev = await getPageChs(pageIndex - 1);
-  let chsCur = await getPageChs(pageIndex);
-  let chsNext = await getPageChs(pageIndex + 1);
+  let chsPrev, chsCur, chsNext;
+  if (pageIndex > 0) {
+    chsPrev = await getPageChs(pageIndex - 1);
+  }
+  chsCur = await getPageChs(pageIndex);
+  
+  if (pageIndex < PDFViewerApplication.pdfDocument.numPages - 1) {
+    chsNext = await getPageChs(pageIndex + 1);
+  }
   return getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points);
 }
