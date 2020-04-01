@@ -10,7 +10,7 @@ let annotations = [
     'id': 283037608769393,
     'authorName': '',
     'dateModified': '2020-02-19T12:52:52.190Z',
-    'abel': '1'
+    'pageLabel': '1'
   }, {
     'type': 'highlight',
     'color': '#f64276',

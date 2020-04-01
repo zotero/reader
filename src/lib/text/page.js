@@ -110,10 +110,10 @@ export async function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) 
   }
   
   if (numCur && (numCur - 1 === numPrev || numCur + 1 === numNext)) {
-    return numCur;
+    return numCur.toString();
   }
   
   if (pageIndex < points[0].idx) {
-    return points[0].num - (points[0].idx - pageIndex);
+    return (points[0].num - (points[0].idx - pageIndex)).toString();
   }
 }

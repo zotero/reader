@@ -813,6 +813,7 @@ class Layer extends React.Component {
                 }}
                 onClickTags={onClickTags}
                 onChange={onChange}
+                onResetPageLabels={this.props.onResetPageLabels}
                 onDragStart={(event) => {
                   let annotation = popupAnnotation;
                   annotation.itemId = window.itemId;
