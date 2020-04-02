@@ -131,3 +131,12 @@ export function formatAnnotationText(annotation) {
   
   return parts.join(' ');
 }
+
+export function equalPositions(annotation1, annotation2) {
+  let p1 = annotation1.position;
+  let p2 = annotation2.position;
+  return (
+    p1.pageIndex === p2.pageIndex &&
+    JSON.stringify(p1.rects) === JSON.stringify(p2.rects)
+  );
+}

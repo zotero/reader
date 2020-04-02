@@ -7,6 +7,7 @@ import {
 } from './lib/extract';
 import { renderAreaImage } from './lib/render';
 import { annotationColors } from './lib/colors';
+import {equalPositions} from './lib/utilities';
 
 class AnnotationsStore {
   constructor(options) {
@@ -90,7 +91,7 @@ class AnnotationsStore {
   };
   
   async addAnnotation(annotation) {
-    // Those properties can be set on creator
+    // Those properties can be set on creation
     annotation.color = annotation.color || annotationColors[0];
     annotation.text = annotation.text || '';
     annotation.comment = annotation.comment || '';
@@ -102,15 +103,19 @@ class AnnotationsStore {
     annotation.dateCreated = (new Date()).toISOString();
     annotation.dateModified = annotation.dateCreated;
     annotation.authorName = '';
+    annotation.pageLabel = '-';
     
     annotation.position.rects = annotation.position.rects.map(
       rect => rect.map(value => parseFloat(value.toFixed(3)))
     );
     
-    // Todo: Move this out from here
+    // Immediately render the annotation to prevent
+    // delay from the further async calls
+    this.annotations.push(annotation);
+    this.onUpdateAnnotations(this.annotations);
+    
     let points = await this.getPageLabelPoints();
     if (points) {
-      annotation.pageLabel = '-';
       let pageLabel = await extractPageLabel(annotation.position.pageIndex, points);
       if (pageLabel) {
         annotation.pageLabel = pageLabel;
@@ -126,26 +131,17 @@ class AnnotationsStore {
       }
     }
     
-    let updateImage = false;
-    if (annotation.type === 'area' && !annotation.image) {
-      annotation.image = '';
-      updateImage = true;
-    }
-    
     if (annotation.type === 'note' || annotation.type === 'area') {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
     
-    this.annotations.push(annotation);
+    if (annotation.type === 'area') {
+      annotation.image = this.getAnnotationImage(annotation.id);
+    }
+    
     this.sortAnnotations(this.annotations);
     this.onSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
-    
-    if (updateImage) {
-      this.updateAnnotationImage(annotation.id);
-    }
-    
-    return annotation;
   }
   
   async setAnnotation(annotation) {
@@ -155,14 +151,14 @@ class AnnotationsStore {
     }
     
     this.annotations.push(annotation);
-    
     this.sortAnnotations(this.annotations);
-    
     this.onUpdateAnnotations(this.annotations);
     
-    // if (updateImage) {
-    //   this.updateAnnotationImage(annotation.id);
-    // }
+    if (!annotation.image) {
+      annotation.image = await this.getAnnotationImage(annotation.id);
+      this.onSetAnnotation(annotation);
+      this.onUpdateAnnotations(this.annotations);
+    }
   }
   
   async updateAnnotation(annotation) {
@@ -175,33 +171,29 @@ class AnnotationsStore {
     annotation.position.rects = annotation.position.rects.map(
       rect => rect.map(value => parseFloat(value.toFixed(3)))
     );
-   
-    // Immediately update area annotation to prevent flickering when resizing
-    if (['area'].includes(annotation.type)) {
-      this.annotations.splice(existingAnnotationIdx, 1, annotation);
-      this.onUpdateAnnotations(this.annotations);
-    }
     
+    // Immediately render the annotation to prevent
+    // delay from the further async calls
+    this.annotations.splice(existingAnnotationIdx, 1, annotation);
+    this.onUpdateAnnotations(this.annotations);
+  
     if (
       ['note', 'area'].includes(annotation.type) &&
-      existingAnnotation.position.pageIndex === annotation.position.pageIndex &&
-      JSON.stringify(existingAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
+      !equalPositions(existingAnnotation, annotation)
     ) {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
     
-    this.annotations.splice(existingAnnotationIdx, 1, annotation);
+    if (
+      annotation.type === 'area' &&
+      !equalPositions(existingAnnotation, annotation)
+    ) {
+      annotation.image = await this.getAnnotationImage(annotation.id);
+    }
+    
     this.sortAnnotations(this.annotations);
     this.onSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
-    
-    if (
-      annotation.type === 'area' &&
-      JSON.stringify(existingAnnotation.position.rects) !== JSON.stringify(annotation.position.rects)
-    ) {
-      annotation.image = '';
-      this.updateAnnotationImage(annotation.id);
-    }
   }
   
   deleteAnnotation(id) {
@@ -213,15 +205,19 @@ class AnnotationsStore {
     this.onUpdateAnnotations(this.annotations);
   }
   
-  updateAnnotationImage(annotationId) {
-    this.renderQueue.push(async () => {
-      let annotation = this.getAnnotationById(annotationId);
-      if (!annotation || annotation.image) return;
-      let image = await renderAreaImage(annotation.position);
-      if (!image) return;
-      this.updateAnnotation({
-        id: annotation.id,
-        image
+  async getAnnotationImage(annotationId) {
+    return new Promise((resolve) => {
+      this.renderQueue.push(async () => {
+        let image = '';
+        try {
+          let annotation = this.getAnnotationById(annotationId);
+          if (annotation) {
+            image = await renderAreaImage(annotation.position);
+          }
+        }
+        catch (e) {
+        }
+        resolve(image);
       });
     });
   }
@@ -230,9 +226,9 @@ class AnnotationsStore {
     if (parseInt(pageLabel).toString() !== pageLabel) {
       return;
     }
-  
+    
     let startPageNumber = parseInt(pageLabel) - pageIndex;
-  
+    
     for (let annotation of this.annotations) {
       let pageNumber = startPageNumber + annotation.position.pageIndex;
       annotation.pageLabel = pageNumber.toString();
