@@ -1,0 +1,88 @@
+
+.preview {
+  overflow: hidden;
+
+  .header {
+    display: flex;
+
+    .left {
+      flex-basis: 100%;
+      // Allow left side to grow because in some cases
+      // page label can be long i.e. 10002 or S44P12
+      white-space: nowrap;
+
+      .color {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+      }
+
+      .page {
+        display: inline-block;
+        cursor: pointer;
+        font-weight: bold;
+      }
+    }
+
+    .middle {
+      flex-basis: 100%;
+      overflow: hidden;
+
+      .author {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: center;
+      }
+    }
+
+    .right {
+      flex-basis: 100%;
+
+      .more {
+        text-align: right;
+        cursor: pointer;
+        &:before {
+          content: '...';
+        }
+      }
+    }
+  }
+
+  .image {
+    width: 100%;
+  }
+
+  .tags {
+    cursor: pointer;
+
+    .tag {
+      padding-right: 5px;
+    }
+
+    &:empty::before {
+      content: attr(placeholder);
+    }
+  }
+
+    &.read-only {
+    .header {
+      .more::before {
+        content: 'L';
+      }
+    }
+  }
+}
+
+.page-popup {
+  .preview {
+    .editor {
+      border: 1px solid lightgray;
+      padding: 0;
+
+      .content {
+        max-height: 150px;
+        overflow-y: auto;
+      }
+    }
+  }
+}

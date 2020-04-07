@@ -9,6 +9,10 @@ class Toolbar extends React.Component {
     return document.getElementById('toolbarViewerMiddle');
   }
   
+  handleColorPick = (event) => {
+    this.props.onColorPick(event.pageX, event.pageY)
+  }
+  
   render() {
     let { active, color, onColorClick, onMode } = this.props;
     let containerNode = this.getContainerNode();
@@ -18,7 +22,7 @@ class Toolbar extends React.Component {
           id="globalColorButton"
           className="toolbarButton"
           style={{ color }}
-          onClick={onColorClick}
+          onClick={this.handleColorPick}
         />
         <button
           className={cx('toolbarButton highlight', {

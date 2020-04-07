@@ -1,7 +1,6 @@
 
 .editor {
   position: relative;
-  padding: 0 5px;
 
   .content {
     cursor: text;
@@ -21,7 +20,7 @@
     overflow: hidden;
   }
 
-  .balloon {
+  .bubble {
     font-size: 12px;
     position: absolute;
     background-color: #FFF;

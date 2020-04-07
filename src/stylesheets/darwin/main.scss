@@ -61,14 +61,13 @@ $mode:     "production" !default;
 
 @import "components/annotator/annotator";
 @import "components/annotator/area-selector";
-@import "components/annotator/color-picker";
-@import "components/annotator/collapsed-editor";
+@import "components/annotator/expandable-editor";
 @import "components/annotator/editor";
 @import "components/annotator/highlight";
 @import "components/annotator/layer";
-@import "components/annotator/annotation-preview";
+@import "components/annotator/preview";
 @import "components/annotator/page-popup";
-@import "components/annotator/screen-popup";
+@import "components/annotator/context-menu";
 @import "components/annotator/selection-menu";
 @import "components/annotator/sidebar";
 @import "components/annotator/area";

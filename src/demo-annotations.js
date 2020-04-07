@@ -69,7 +69,13 @@ let annotations = [
     'position': { 'pageIndex': 0, 'rects': [[54, 199.237, 293.1, 207.253], [54, 189.274, 67.943, 197.29]] },
     'text': 'Dynamic languages such as JavaScript, Python, and Ruby, are popular ',
     'comment': 'This demonstrates pdf-reader highlighted text and comments editing capabilities.\n\nNew lines are supported\nAs well as <b>rich-text</b>.\n\nTo format text select it and use the popped-up bubble toolbar',
-    'tags': [],
+    'tags': [{
+      'name': 'programming languages',
+      'color': '#ff0000'
+    },
+      {
+        'name': 'compiler'
+      }],
     'id': 690898672271502,
     'dateModified': '2020-02-07T07:24:37.870Z',
     'authorName': '',

@@ -18,13 +18,26 @@
   }
 
   .item {
-    padding: 10px 5px;
+    margin: 4px 0;
+    padding: 0 4px;
+    border: 1px solid gray;
     font-size: 13px;
-    border-bottom: 1px solid gray;
     cursor: pointer;
 
-    &.active {
-      background-color: #f4f4f4
+    .expandable-editor .outer  {
+      pointer-events: none;
+    }
+
+    &.selected {
+      background-color: #f4f4f4;
+
+      .expandable-editor .outer {
+        pointer-events: all;
+
+        .content:focus {
+          background-color: #fdfdfd;
+        }
+      }
     }
   }
 }

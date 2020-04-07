@@ -3,7 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames';
-import AnnotationPreview from './annotation-preview';
+import Preview from './preview';
 import { searchAnnotations } from '../lib/search';
 
 class SidebarSearch extends React.Component {
@@ -31,28 +31,40 @@ class SidebarSearch extends React.Component {
 }
 
 class SidebarItem extends React.Component {
-  handleSelectAnnotation = () => {
-    this.props.onSelect(this.props.annotation.id);
+  handleClickAnnotation = (event) => {
+    if (!this.props.isSelected) {
+      this.props.onSelect(this.props.annotation.id);
+    }
   }
   
   handleDelete = () => {
     this.props.onDelete(this.props.annotation.id);
   }
   
+  handleEditPage = () => {
+    this.props.onPageMenu(this.props.annotation.id);
+  }
+  
   render() {
+    let annotation = this.props.annotation;
     return (
       <div
         key={this.props.annotation.id}
-        className={cx('item', { active: this.props.isActive })}
+        className={cx('item', { selected: this.props.isSelected })}
         data-sidebar-id={this.props.annotation.id}
-        onClick={this.handleSelectAnnotation}
+        onClick={this.handleClickAnnotation}
       >
-        <AnnotationPreview
+        <Preview
           annotation={this.props.annotation}
+          isExpandable={true}
+          enableText={true}
+          enableImage={true}
+          enableComment={this.props.isSelected && !annotation.readOnly || annotation.comment}
+          enableTags={this.props.isSelected && !annotation.readOnly || annotation.tags.length > 0}
           onDelete={this.handleDelete}
-          onFocus={() => {
-          }}
           onClickTags={this.props.onClickTags}
+          onPageMenu={this.props.onPageMenu}
+          onMoreMenu={this.props.onMoreMenu}
           onChange={this.props.onChange}
           onResetPageLabels={this.props.onResetPageLabels}
           onDragStart={(event) => {
@@ -124,13 +136,15 @@ class Sidebar extends React.Component {
         {annotations.map((annotation) => (
           <SidebarItem
             key={annotation.id}
-            isActive={annotation.id === this.props.activeAnnotationId}
+            isSelected={annotation.id === this.props.activeAnnotationId}
             annotation={annotation}
             onSelect={this.props.onSelectAnnotation}
             onChange={this.props.onChange}
             onResetPageLabels={this.props.onResetPageLabels}
             onDelete={this.props.onDelete}
             onClickTags={this.props.onClickTags}
+            onPageMenu={this.props.onPageMenu}
+            onMoreMenu={this.props.onMoreMenu}
           />
         ))}
       </div>,

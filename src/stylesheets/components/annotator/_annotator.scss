@@ -1,4 +1,50 @@
 
-.global-color-picker-popup {
-    width: 220px;
+.global-color-menu {
+
+    .check-box {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+
+      &.checked::before {
+        content: 'x'
+      }
+    }
+
+    .color {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+    }
+
+    .label {
+      display: inline-block;
+    }
+}
+
+.more-menu {
+
+    .item.delete {
+      padding-left: 10px;
+    }
+
+    .check-box {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+
+      &.checked::before {
+        content: 'x'
+      }
+    }
+
+    .color {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+    }
+
+    .label {
+      display: inline-block;
+    }
 }

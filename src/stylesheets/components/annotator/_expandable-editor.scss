@@ -1,0 +1,49 @@
+
+.expandable-editor {
+  .outer {
+    max-height: 3rem;
+    overflow-y: hidden;
+
+    &.expanded {
+      max-height: none;
+      overflow-y: visible;
+    }
+  }
+
+  .content {
+    cursor: text;
+  }
+
+  &.overflowed {
+    position: relative;
+    border-bottom: 1px dashed black;
+
+    .content {
+      cursor: pointer;
+      pointer-events: none;
+    }
+
+    &:after {
+      content: '';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      height: 1rem;
+      width: 30%;
+      background: linear-gradient(to left, rgba(255, 255, 255, 1) 0%,
+        rgba(255, 255, 255, 0) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    //&:before {
+    //  content: '';
+    //  position: absolute;
+    //  right: 0;
+    //  bottom: 0;
+    //  height: 1rem;
+    //  width: 20%;
+    //  background-color: gray;
+    //}
+  }
+}

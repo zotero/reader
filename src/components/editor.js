@@ -154,7 +154,7 @@ var actions = [
   }
 ];
 
-class BalloonButton extends React.Component {
+class BubbleButton extends React.Component {
   handleClick = (event) => {
     event.preventDefault();
     this.props.onCommand(this.props.action.command)
@@ -171,16 +171,16 @@ class BalloonButton extends React.Component {
   }
 }
 
-class Balloon extends React.Component {
+class Bubble extends React.Component {
   render() {
     return (
       <div
-        className="balloon"
+        className="bubble"
         style={{ top: this.props.top }}
       >
         {
           actions.map((action, idx) => (
-            <BalloonButton
+            <BubbleButton
               key={idx}
               action={action}
               onCommand={this.props.onCommand}
@@ -221,8 +221,8 @@ class Content extends React.Component {
     }
   }
   
-  onSelectionChange = () => {
-    let { onSelectionChange, innerRef } = this.props;
+  onSelectionChange = (event) => {
+    let { innerRef } = this.props;
     let selection = window.getSelection();
     
     // let range = null;
@@ -249,7 +249,7 @@ class Content extends React.Component {
       isSelected = true;
     }
     
-    onSelectionChange(isSelected);
+    this.props.onSelectionChange(isSelected);
   }
   
   shouldComponentUpdate(nextProps) {
@@ -290,6 +290,7 @@ class Content extends React.Component {
             event.stopPropagation();
           }}
           onBlur={onBlur}
+          onScroll={this.props.onScroll}
         />
         <div className="renderer" ref="renderer"></div>
       </React.Fragment>
@@ -310,15 +311,10 @@ class Editor extends React.Component {
   
   componentDidMount() {
     this._isMounted = true;
-    window.addEventListener('pointerup', () => {
-      // Delay a little bit to allow selection to take in place
-      setTimeout(this.handleSelection.bind(this), 50);
-    });
   }
   
   componentWillUnmount() {
     this._isMounted = false;
-    window.removeEventListener('pointerup', this.handleSelection)
   }
   
   getSelectionTop() {
@@ -335,6 +331,13 @@ class Editor extends React.Component {
   
   handleSelection = () => {
     if (!this._isMounted) return;
+    let top = this.getSelectionTop();
+    if (this.state.bubbleTop !== top) {
+      this.setState({ bubbleTop: top });
+    }
+  }
+  
+  handleScroll = () => {
     this.setState({ bubbleTop: this.getSelectionTop() });
   }
   
@@ -350,7 +353,7 @@ class Editor extends React.Component {
           !this.props.isPlainText &&
           !this.props.isReadOnly &&
           this.state.bubbleTop !== null &&
-          <Balloon
+          <Bubble
             top={this.state.bubbleTop}
             onCommand={this.handleBalloonCommand}
           />
@@ -361,9 +364,10 @@ class Editor extends React.Component {
           onChange={this.props.onChange}
           innerRef={this.contentRef}
           isReadOnly={this.props.isReadOnly}
-          onSelectionChange={this.props.onSelectionChange}
+          onSelectionChange={this.handleSelection}
           onBlur={this.props.onBlur}
           placeholder={this.props.placeholder}
+          onScroll={this.handleScroll}
         />
       </div>
     );

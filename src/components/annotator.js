@@ -5,10 +5,11 @@ import Layer from './layer';
 import Sidebar from './sidebar';
 import Toolbar from './toolbar';
 import Findbar from './findbar';
-import ScreenPopup from './screen-popup';
-import ColorPicker from './color-picker';
+import ContextMenu from './context-menu';
 import ImportBar from './import-bar';
 import { annotationColors } from '../lib/colors';
+import cx from 'classnames';
+
 
 // All rects in annotator.js are stored in [left, top, right, bottom] order
 // where the Y axis starts from the bottom:
@@ -20,8 +21,7 @@ class Annotator extends React.Component {
     recentlyCreatedAnnotationId: null,
     recentlyUpdatedAnnotationId: null,
     mode: null,
-    color: annotationColors[0],
-    colorPicking: false,
+    color: annotationColors[1][1],
     annotations: []
   };
   
@@ -104,13 +104,20 @@ class Annotator extends React.Component {
     importableAnnotationsNumRef(this.setImportableAnnotationsNum);
     
     document.addEventListener('click', (e) => {
-      if (!e.target.closest('.screen-popup') && !e.target.closest('.toolbarButton')) {
-        this.setState({ colorPicking: false });
+      if (
+        !e.target.closest('.context-menu') &&
+        !e.target.closest('.toolbarButton') &&
+        !e.target.closest('.page') &&
+        !e.target.closest('.more')
+      ) {
+        this.setState({ contextMenu: null });
       }
     });
     
-    document.addEventListener('pointerdown', (e) => {
-    
+    document.getElementById('viewer').addEventListener('pointerdown', (event) => {
+      if (event.target === document.getElementById('viewer')) {
+        this.setState({ activeAnnotationId: null });
+      }
     });
     
     window.PDFViewerApplication.eventBus.on('sidebarviewchanged', (e) => {
@@ -120,7 +127,8 @@ class Annotator extends React.Component {
         setTimeout(() => {
           this.setState({});
         }, 300);
-      } else {
+      }
+      else {
         this.setState({});
       }
     });
@@ -319,21 +327,59 @@ class Annotator extends React.Component {
             this.toggleMode(mode);
           }}
           color={this.state.color}
-          onColorClick={() => {
-            this.setState({ colorPicking: true });
+          onColorPick={(x, y) => {
+            this.setState({ contextMenu: { type: 'globalColorMenu', x, y } });
           }}
         />
         <Findbar/>
-        {this.state.colorPicking && (
-          <ScreenPopup
-            className="global-color-picker-popup"
-            parentId="globalColorButton"
-          >
-            <ColorPicker onColorPick={(color) => {
-              this.setState({ color });
-              this.setState({ colorPicking: false });
-            }}/>
-          </ScreenPopup>
+        {this.state.contextMenu && this.state.contextMenu.type === 'globalColorMenu' && (
+          <ContextMenu className="global-color-menu" x={this.state.contextMenu.x} y={this.state.contextMenu.y}>
+            {annotationColors.map((color, index) => {
+              return <div className="item" key={index} onClick={() => {
+                this.setState({ color: color[1], contextMenu: null });
+              }}>
+                <div className={cx('check-box', { checked: color[1] === this.state.color })}/>
+                <div className="color" style={{ backgroundColor: color[1] }}/>
+                <div className="label">{color[0]}</div>
+              </div>
+            })}
+          </ContextMenu>
+        )}
+        {this.state.contextMenu && this.state.contextMenu.type === 'moreMenu' && (
+          <ContextMenu className="more-menu" x={this.state.contextMenu.x} y={this.state.contextMenu.y}>
+            <div className="item delete" onClick={() => {
+              this.props.onDeleteAnnotation(this.state.contextMenu.annotationId);
+              this.setState({ contextMenu: null });
+            }}>Delete
+            </div>
+            <hr/>
+            {annotationColors.map((color, index) => {
+              return <div className="item" key={index} onClick={() => {
+                onUpdateAnnotation({
+                  id: this.state.contextMenu.annotationId,
+                  color: color[1]
+                });
+                this.setState({ contextMenu: null });
+              }}>
+                <div
+                  className={cx('check-box', { checked: color[1] === this.state.annotations.find(x => x.id === this.state.contextMenu.annotationId).color })}/>
+                <div className="color" style={{ backgroundColor: color[1] }}/>
+                <div className="label">{color[0]}</div>
+              </div>
+            })}
+          </ContextMenu>
+        )}
+        {this.state.contextMenu && this.state.contextMenu.type === 'pageMenu' && (
+          <ContextMenu className="pageMenu" x={this.state.contextMenu.x} y={this.state.contextMenu.y}>
+            <div className="item" onClick={() => {
+              this.setState({ contextMenu: null })
+            }}>Update this
+            </div>
+            <div className="item" onClick={() => {
+              this.setState({ contextMenu: null })
+            }}>Update all
+            </div>
+          </ContextMenu>
         )}
         {askImport && <ImportBar onImport={onImport} onDismiss={onDismissImport}/>}
         <Sidebar
@@ -353,6 +399,26 @@ class Annotator extends React.Component {
           }}
           onClickTags={onClickTags}
           onImport={onImport}
+          onPageMenu={(id, x, y) => {
+            this.setState({
+              contextMenu: {
+                type: 'pageMenu',
+                annotationId: id,
+                x,
+                y
+              }
+            });
+          }}
+          onMoreMenu={(id, x, y) => {
+            this.setState({
+              contextMenu: {
+                type: 'moreMenu',
+                annotationId: id,
+                x,
+                y
+              }
+            });
+          }}
         />
         <Layer
           scrollRef={scrollTo => {
@@ -402,7 +468,26 @@ class Annotator extends React.Component {
             onUpdateAnnotation(annotation);
             this.setState({ recentlyUpdatedAnnotationId: annotation.id });
           }}
-          onResetPageLabels={this.props.onResetPageLabels}
+          onPageMenu={(id, x, y) => {
+            this.setState({
+              contextMenu: {
+                type: 'pageMenu',
+                annotationId: id,
+                x,
+                y
+              }
+            });
+          }}
+          onMoreMenu={(id, x, y) => {
+            this.setState({
+              contextMenu: {
+                type: 'moreMenu',
+                annotationId: id,
+                x,
+                y
+              }
+            });
+          }}
           onDelete={(id) => {
             onDeleteAnnotation(id);
           }}
