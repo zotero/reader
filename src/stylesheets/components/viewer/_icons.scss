@@ -109,6 +109,10 @@
       @include icon("#{$findbar-btn-previous-icon}-rtl");
     }
   }
+
+  .close {
+    @include icon($findbar-close-btn-icon, $findbar-close-btn-icon-size);
+  }
 }
 
 // Secondary toolbar

@@ -180,7 +180,8 @@ $find-input-loading-x:        4px;
 $find-input-not-found-color:  $text-color;
 $find-input-not-found-bg:     tint(#f66, 75%);
 
-$split-toolbar-btn-margin: 0 8px;
+$split-toolbar-btn-margin:                 0 6px;
+$split-toolbar-btn-wrap-containers-margin: 0 33px 0 8px;
 
 $findbar-toolbar-label-margin: 0 11px 0 0;
 
@@ -190,6 +191,19 @@ $find-results-count-color:  #777;
 $find-message-margin:                 0 11px 0 4px;
 $find-message-wrap-containers-margin: 2px 11px 8px 4px;
 $find-message-color:                  rgba(#777, 0.5);
+
+$findbar-close-container-offset-x: 4px;
+
+$findbar-close-btn-size:          12px;
+$findbar-close-btn-padding:       2px;
+$findbar-close-btn-border:        0;
+$findbar-close-btn-border-radius: 50%;
+$findbar-close-btn-margin:        0 9px 0 4px;
+$findbar-close-btn-bg:            #808080;
+$findbar-close-btn-hover-bg:      null;
+$findbar-close-btn-active-bg:     #252525;
+$findbar-close-btn-icon:          "darwin/x";
+$findbar-close-btn-icon-size:     8px;
 
 // Secondary toolbar
 $secondary-toolbar-offset-x:          3px;

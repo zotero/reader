@@ -178,15 +178,30 @@ $find-input-loading-x:        3px;
 $find-input-not-found-color:  $text-color;
 $find-input-not-found-bg:     tint(#f66, 75%);
 
-$split-toolbar-btn-margin: null;
+$split-toolbar-btn-margin:                 null;
+$split-toolbar-btn-wrap-containers-margin: 0 31px 0 8px;
 
 $findbar-toolbar-label-margin: 0 13px 0 0;
 
-$find-results-count-margin:           0 10px 0 3px;
-$find-results-count-color:            #777;
+$find-results-count-margin: 0 10px 0 3px;
+$find-results-count-color:  #777;
+
 $find-message-margin:                 0 10px 0 3px;
 $find-message-wrap-containers-margin: 0 10px 0 3px;
 $find-message-color:                  rgba(#777, 0.5);
+
+$findbar-close-container-offset-x: 3px;
+
+$findbar-close-btn-size:          16px;
+$findbar-close-btn-padding:       4px;
+$findbar-close-btn-border:        0;
+$findbar-close-btn-border-radius: 2px;
+$findbar-close-btn-margin:        0 4px 0 3px;
+$findbar-close-btn-bg:            transparent;
+$findbar-close-btn-hover-bg:      rgba(0, 0, 0, 0.1);
+$findbar-close-btn-active-bg:     rgba(0, 0, 0, 0.2);
+$findbar-close-btn-icon:          "win/x";
+$findbar-close-btn-icon-size:     8px;
 
 // Secondary toolbar
 $secondary-toolbar-offset-x:          3px;

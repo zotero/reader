@@ -98,9 +98,13 @@
 
   .splitToolbarButton {
     margin: $split-toolbar-btn-margin;
+
+    @include state(".findbar.wrapContainers") {
+      margin: $split-toolbar-btn-wrap-containers-margin;
+    }
   }
 
-  button {
+  .toolbarButton {
     height: $findbar-btn-height;
     background: $findbar-btn-bg;
     border: $findbar-btn-border;
@@ -192,6 +196,32 @@
 
     &:empty {
       display: none;
+    }
+  }
+
+  .close-container {
+    @include state(".findbar.wrapContainers") {
+      position: absolute;
+      top: 0;
+      right: $findbar-close-container-offset-x;
+    }
+  }
+
+  .close {
+    width: $findbar-close-btn-size;
+    height: $findbar-close-btn-size;
+    background-color: $findbar-close-btn-bg;
+    padding: $findbar-close-btn-padding;
+    border: $findbar-close-btn-border;
+    border-radius: $findbar-close-btn-border-radius;
+    margin: $findbar-close-btn-margin;
+
+    &:hover {
+      background-color: $findbar-close-btn-hover-bg;
+    }
+
+    &:active {
+      background-color: $findbar-close-btn-active-bg;
     }
   }
 }
