@@ -1,8 +1,11 @@
+//
+// Preview
+//
 
 .preview {
   overflow: hidden;
 
-  .header {
+  header {
     display: flex;
 
     .left {
@@ -47,6 +50,23 @@
       }
     }
   }
+
+  .expandable-editor {
+    .outer {
+      pointer-events: none;
+
+      .selected & {
+        pointer-events: all;
+      }
+    }
+
+    .content {
+      &:focus {
+        background-color: #fff;
+      }
+    }
+  }
+
 
   .image {
     width: 100%;

@@ -340,3 +340,11 @@ $progress-bg:            #dbdbdb;
 $progress-border-radius: 3px;
 $progress-indicator-bg:  #1388ff; // Hard-coded like Zotero’s initial loading bar
 $progress-label-width:   38px;
+
+// Annotation
+$annotation-bg:                  #fff;
+$annotation-selected-bg:         #e4ebf9; // 8% K
+$annotation-border:              1px solid #bcc4d2;
+$annotation-selected-border:     1px solid #6d95e0;
+$annotation-border-radius:       5px;
+$annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
