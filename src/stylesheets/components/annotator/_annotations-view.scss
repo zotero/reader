@@ -1,5 +1,5 @@
 
-.sidebar {
+#annotationsView {
   .search {
     padding: 5px 5px;
     display: flex;
@@ -17,7 +17,7 @@
     }
   }
 
-  .item {
+  .annotation {
     margin: 4px 0;
     padding: 0 4px;
     border: 1px solid gray;

@@ -6,15 +6,15 @@ import cx from 'classnames';
 import Preview from './preview';
 import { searchAnnotations } from '../lib/search';
 
-class SidebarSearch extends React.Component {
+class AnnotationsViewSearch extends React.Component {
   handleInput = (event) => {
     this.props.onInput(event.target.value);
   }
-  
+
   handleClear = () => {
     this.props.onClear();
   }
-  
+
   render() {
     return (
       <div className="search">
@@ -30,27 +30,27 @@ class SidebarSearch extends React.Component {
   }
 }
 
-class SidebarItem extends React.Component {
+class Annotation extends React.Component {
   handleClickAnnotation = (event) => {
     if (!this.props.isSelected) {
       this.props.onSelect(this.props.annotation.id);
     }
   }
-  
+
   handleDelete = () => {
     this.props.onDelete(this.props.annotation.id);
   }
-  
+
   handleEditPage = () => {
     this.props.onPageMenu(this.props.annotation.id);
   }
-  
+
   render() {
     let annotation = this.props.annotation;
     return (
       <div
         key={this.props.annotation.id}
-        className={cx('item', { selected: this.props.isSelected })}
+        className={cx('annotation', { selected: this.props.isSelected })}
         data-sidebar-id={this.props.annotation.id}
         onClick={this.handleClickAnnotation}
       >
@@ -79,16 +79,16 @@ class SidebarItem extends React.Component {
   }
 }
 
-class Sidebar extends React.Component {
+class AnnotationsView extends React.Component {
   state = {
     filteredAnnotations: null,
     query: ''
   };
-  
+
   getContainerNode() {
     return document.getElementById('annotationsView');
   }
-  
+
   search(query) {
     let { annotations } = this.props;
     if (query) {
@@ -99,21 +99,21 @@ class Sidebar extends React.Component {
       this.setState({ filteredAnnotations: null });
     }
   }
-  
+
   handleSearchInput = (query) => {
     this.setState({ query });
     this.search(query);
   }
-  
+
   handleSearchClear = () => {
     this.setState({ query: '' });
     this.search();
   }
-  
+
   render() {
     let containerNode = this.getContainerNode();
     if (!containerNode) return null;
-    
+
     let { annotations } = this.props;
     if (this.state.filteredAnnotations) {
       let newFilteredAnnotations = [];
@@ -125,16 +125,16 @@ class Sidebar extends React.Component {
       }
       annotations = newFilteredAnnotations;
     }
-    
+
     return ReactDOM.createPortal(
-      <div className="sidebar">
-        <SidebarSearch
+      <React.Fragment>
+        <AnnotationsViewSearch
           query={this.state.query}
           onInput={this.handleSearchInput}
           onClear={this.handleSearchClear}
         />
         {annotations.map((annotation) => (
-          <SidebarItem
+          <Annotation
             key={annotation.id}
             isSelected={annotation.id === this.props.activeAnnotationId}
             annotation={annotation}
@@ -147,12 +147,12 @@ class Sidebar extends React.Component {
             onMoreMenu={this.props.onMoreMenu}
           />
         ))}
-      </div>,
+      </React.Fragment>,
       containerNode
     );
-    
+
     return null;
   }
 }
 
-export default Sidebar;
+export default AnnotationsView;
