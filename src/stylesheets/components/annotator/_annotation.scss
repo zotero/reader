@@ -1,0 +1,27 @@
+//
+// Annotation
+//
+
+.annotation {
+  margin: 4px 0;
+  padding: 0 4px;
+  border: 1px solid gray;
+  font-size: 13px;
+  cursor: pointer;
+
+  .expandable-editor .outer  {
+    pointer-events: none;
+  }
+
+  &.selected {
+    background-color: #f4f4f4;
+
+    .expandable-editor .outer {
+      pointer-events: all;
+
+      .content:focus {
+        background-color: #fdfdfd;
+      }
+    }
+  }
+}
