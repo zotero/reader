@@ -62,3 +62,7 @@ document.addEventListener('webviewerloaded', function () {
     // }, 3000);
   });
 });
+
+setTimeout(function () {
+  PDFViewerApplication.pdfSidebar.switchView(9, true);
+}, 1000);
