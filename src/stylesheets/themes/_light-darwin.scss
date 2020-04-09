@@ -355,3 +355,6 @@ $annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
 $preview-header-height: 21px;
 $preview-header-border: 1px solid #d7dad7;
 $preview-header-selected-border: 1px solid rgba(#6d95e0, 0.4);
+
+$comment-bg: tint($sidebar-bg, 60%);
+$tags-bg:    tint($sidebar-bg, 60%);

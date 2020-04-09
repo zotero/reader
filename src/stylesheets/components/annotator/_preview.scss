@@ -3,7 +3,6 @@
 //
 
 .preview {
-  overflow: hidden;
   cursor: default;
 
   header {
@@ -66,12 +65,60 @@
     }
   }
 
+  .highlight {
+    .expandable-editor {
+      border-bottom: 1px solid #d7dad7;
+
+      @include variant(".highlight:last-child") {
+        border-bottom: 0;
+      }
+
+      &.overflowed {
+        border-bottom: 1px dashed #707070;
+      }
+
+      @include variant(".highlight:last-child") {
+        border-bottom: 0;
+        position: relative;
+
+        &::before {
+          content: "";
+          position: absolute;
+          left: 4px;
+          right: 4px;
+          bottom: -1px;
+          height: 1px;
+          background-color: #fff;
+        }
+
+        &::after {
+          content: "";
+          position: absolute;
+          left: 6px;
+          right: 6px;
+          bottom: -1px;
+          border-bottom: 1px dashed #64738f;
+        }
+      }
+    }
+  }
+
+  .comment {
+    background-color: $comment-bg;
+
+    &:last-child {
+      border-bottom-left-radius: $annotation-border-radius - 1px;
+      border-bottom-right-radius: $annotation-border-radius - 1px;
+    }
+  }
+
   .image {
     width: 100%;
   }
 
   .tags {
     padding: 0 8px;
+    background-color: $tags-bg;
 
     .tag {
       padding-right: 5px;

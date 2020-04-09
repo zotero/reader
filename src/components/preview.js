@@ -41,13 +41,17 @@ class Preview extends React.Component {
 
     let text;
     if (annotation.type === 'highlight' && this.props.enableText) {
-      text = <ExpandableEditor
-        id={annotation.id}
-        text={annotation.text}
-        placeholder="Add extracted text.."
-        isReadOnly={!!annotation.readOnly}
-        onChange={this.handleTextChange}
-      />
+      text = (
+        <div className="highlight">
+          <ExpandableEditor
+            id={annotation.id}
+            text={annotation.text}
+            placeholder="Add extracted text.."
+            isReadOnly={!!annotation.readOnly}
+            onChange={this.handleTextChange}
+          />
+        </div>
+      )
     }
 
     let tags = this.props.enableTags && annotation.tags.map((tag, index) => (
