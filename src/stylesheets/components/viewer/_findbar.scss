@@ -97,10 +97,10 @@
   }
 
   .splitToolbarButton {
-    margin: $split-toolbar-btn-margin;
+    margin: $findbar-split-toolbar-btn-margin;
 
     @include state(".findbar.wrapContainers") {
-      margin: $split-toolbar-btn-wrap-containers-margin;
+      margin: $findbar-split-toolbar-btn-wrap-containers-margin;
     }
   }
 
