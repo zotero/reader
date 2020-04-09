@@ -6,7 +6,6 @@
   background-color: $annotation-bg;
   border: $annotation-border;
   border-radius: $annotation-border-radius;
-  cursor: pointer;
 
   &.selected {
     background-color: $annotation-selected-bg;

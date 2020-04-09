@@ -88,9 +88,11 @@ class Preview extends React.Component {
             <div className="color" style={{ backgroundColor: annotation.color }}/>
             <div className="page" onClick={this.handleClickPage}>Page {annotation.pageLabel}</div>
           </div>
-          <div className="middle">
-            <div className="author">{annotation.authorName}</div>
-          </div>
+          {annotation.authorName && (
+            <div className="center">
+              <div className="author">{annotation.authorName}</div>
+            </div>
+          )}
           <div className="right">
             <div className="more" onClick={this.handleClickMore}/>
           </div>

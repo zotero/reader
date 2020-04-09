@@ -31,3 +31,19 @@
     }
   }
 }
+
+// Annotations view
+
+#annotationsView {
+  .more {
+    @include icon("more", 12px);
+
+    @include state(".selected .more") {
+      @include icon("more-selected", 12px);
+    }
+
+    @include variant(".read-only .more") {
+      @include icon("padlock", 12px);
+    }
+  }
+}
