@@ -19,6 +19,7 @@ $gray-lightest: #f0f0f0;
 
 :root {
   --sidebar-width: 240px;
+  --note-font-size: 12px;
 }
 
 $body-bg:    #ebebeb;
@@ -29,6 +30,7 @@ $font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
 $font-family-base:        $font-family-sans-serif;
 
 $font-size-base: rem(11);
+$note-font-size: var(--note-font-size);
 
 $selection-color: null;
 $selection-bg:    rgba($highlight-color, 0.99);

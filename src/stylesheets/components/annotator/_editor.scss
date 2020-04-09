@@ -1,5 +1,7 @@
 
 .editor {
+  font-size: $note-font-size;
+  line-height: 1.33; // = normal for Lucida Grande
   position: relative;
 
   .content {
