@@ -1,5 +1,11 @@
 
 .expandable-editor {
+  pointer-events: none;
+
+  .selected & {
+    pointer-events: all;
+  }
+
   .outer {
     max-height: 3rem;
     overflow-y: hidden;
@@ -8,10 +14,6 @@
       max-height: none;
       overflow-y: visible;
     }
-  }
-
-  .content {
-    cursor: text;
   }
 
   &.overflowed {

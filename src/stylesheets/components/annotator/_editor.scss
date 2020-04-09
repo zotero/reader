@@ -3,10 +3,15 @@
   position: relative;
 
   .content {
-    cursor: text;
     outline: 0;
     word-wrap: break-word;
     height: 100%;
+    padding: 0 8px;
+
+    &:focus {
+      cursor: text;
+      background-color: #fff;
+    }
 
     &:empty::before {
       content: attr(placeholder);

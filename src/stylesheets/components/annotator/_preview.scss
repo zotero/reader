@@ -4,6 +4,7 @@
 
 .preview {
   overflow: hidden;
+  cursor: default;
 
   header {
     display: flex;
@@ -62,24 +63,6 @@
 
     .more {
       margin-right: -4px;
-    }
-  }
-
-  .expandable-editor {
-    .outer {
-      pointer-events: none;
-
-      .selected & {
-        pointer-events: all;
-      }
-    }
-
-    .content {
-      padding: 0 8px;
-
-      &:focus {
-        background-color: #fff;
-      }
     }
   }
 
