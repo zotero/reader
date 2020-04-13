@@ -65,6 +65,9 @@ window.addEventListener('message', function (message) {
       onClickTags(annotationId, screenX, screenY) {
         parent.postMessage({ op: 'tagsPopup', x: screenX, y: screenY }, '*');
       },
+      onPopup(name, data) {
+        parent.postMessage({ op: name, ...data }, '*');
+      },
       onEnterPassword(password) {
         parent.postMessage({ op: 'enterPassword', password }, '*');
       },
@@ -85,6 +88,22 @@ window.addEventListener('message', function (message) {
   }
   else if (data.op === 'deleteAnnotation') {
     viewer.deleteAnnotation(data.annotationId, data.dateDeleted);
+  }
+  else if (data.op === 'popupCmd') {
+    switch (data.cmd) {
+      case 'deleteAnnotation':
+        viewer._annotationsStore.deleteAnnotation(data.id);
+        break;
+      case 'setAnnotationColor':
+        viewer._annotationsStore.updateAnnotation({
+          id: data.id,
+          color: data.color
+        });
+        break;
+      case 'setColor':
+        viewer.setColor(data.color);
+        break;
+    }
   }
   else if (data.op === 'menuCmd') {
     let cmd = data.cmd;

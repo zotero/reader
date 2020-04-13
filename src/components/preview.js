@@ -25,14 +25,14 @@ class Preview extends React.Component {
   handleClickPage = (event) => {
     if (!this.props.annotation.readOnly) {
       event.stopPropagation();
-      this.props.onPageMenu(this.props.annotation.id, event.pageX, event.pageY);
+      this.props.onPageMenu(this.props.annotation.id, event.screenX, event.screenY);
     }
   }
 
   handleClickMore = (event) => {
     if (!this.props.annotation.readOnly) {
       event.stopPropagation();
-      this.props.onMoreMenu(this.props.annotation.id, event.pageX, event.pageY);
+      this.props.onMoreMenu(this.props.annotation.id, event.screenX, event.screenY);
     }
   }
 

@@ -451,7 +451,7 @@ class Layer extends React.Component {
       // Shoot the event after all other events are emitted.
       // Otherwise the resize updating in the area annotation is emitted too late
       setTimeout(() => {
-        onPointerUp(this.v2p(position));
+        onPointerUp(this.v2p(position), e.which === 3, e.screenX, e.screenY);
       }, 0);
     }, true);
     
@@ -793,7 +793,7 @@ class Layer extends React.Component {
           }}
         />
         {
-          popupAnnotation && !this.state.dragging && !window.PDFViewerApplication.pdfSidebar.isOpen && (
+          popupAnnotation && !this.state.dragging && (
             <PagePopup
               id={popupAnnotation.id}
               className="annotation-preview-popup"

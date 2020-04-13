@@ -10,7 +10,7 @@ class Toolbar extends React.Component {
   }
   
   handleColorPick = (event) => {
-    this.props.onColorPick(event.pageX, event.pageY)
+    this.props.onColorPick(event.screenX, event.screenY)
   }
   
   render() {

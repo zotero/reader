@@ -22,7 +22,8 @@ class Annotator extends React.Component {
     recentlyUpdatedAnnotationId: null,
     mode: null,
     color: annotationColors[1][1],
-    annotations: []
+    annotations: [],
+    isLastClickRight: false
   };
 
   initKeyboard() {
@@ -85,6 +86,10 @@ class Annotator extends React.Component {
     this.setState({ importableAnnotationsNum });
   }
 
+  setColor = (color) => {
+    this.setState({ color });
+  }
+
   blink(position) {
     this.setState({
       blink: {
@@ -101,6 +106,7 @@ class Annotator extends React.Component {
 
     navigateRef(this.navigate);
     setAnnotationsRef(this.setAnnotations);
+    this.props.setColorRef(this.setColor);
     importableAnnotationsNumRef(this.setImportableAnnotationsNum);
 
     document.addEventListener('click', (e) => {
@@ -278,6 +284,8 @@ class Annotator extends React.Component {
     }
 
     this.setState({ activeAnnotationId: selectedId });
+
+    return selectedId;
   }
 
   isOver(position) {
@@ -328,7 +336,11 @@ class Annotator extends React.Component {
           }}
           color={this.state.color}
           onColorPick={(x, y) => {
-            this.setState({ contextMenu: { type: 'globalColorMenu', x, y } });
+            this.props.onPopup("colorPopup", {
+              x,
+              y,
+              selectedColor: this.state.color,
+            });
           }}
         />
         <Findbar/>
@@ -410,13 +422,22 @@ class Annotator extends React.Component {
             });
           }}
           onMoreMenu={(id, x, y) => {
-            this.setState({
-              contextMenu: {
-                type: 'moreMenu',
-                annotationId: id,
-                x,
-                y
-              }
+            // this.setState({
+            //   contextMenu: {
+            //     type: 'moreMenu',
+            //     annotationId: id,
+            //     x,
+            //     y
+            //   }
+            // });
+
+            let selectedColor = this.state.annotations.find(x => x.id === id).color;
+
+            this.props.onPopup('annotationPopup', {
+              x,
+              y,
+              annotationId: id,
+              selectedColor
             });
           }}
         />
@@ -479,13 +500,22 @@ class Annotator extends React.Component {
             });
           }}
           onMoreMenu={(id, x, y) => {
-            this.setState({
-              contextMenu: {
-                type: 'moreMenu',
-                annotationId: id,
-                x,
-                y
-              }
+            // this.setState({
+            //   contextMenu: {
+            //     type: 'moreMenu',
+            //     annotationId: id,
+            //     x,
+            //     y
+            //   }
+            // });
+
+            let selectedColor = this.state.annotations.find(x => x.id === id).color;
+
+            this.props.onPopup("annotationPopup", {
+              x,
+              y,
+              annotationId: id,
+              selectedColor,
             });
           }}
           onDelete={(id) => {
@@ -500,9 +530,9 @@ class Annotator extends React.Component {
               this.setState({ activeAnnotationId: null });
             }
           }}
-          onPointerUp={(position) => {
+          onPointerUp={(position, isRight, x, y) => {
             // console.log(position);
-            this.inClick(position);
+            let selectedId = this.inClick(position);
             if (this.state.mode === 'note') {
               position.rects[0][0] -= 10;
               position.rects[0][1] -= 10;
@@ -516,6 +546,16 @@ class Annotator extends React.Component {
               this.setState({ recentlyCreatedAnnotationId: annotation.id });
               this.setState({ activeAnnotationId: annotation.id });
               this.setState({ mode: null });
+            }
+            this.setState({ isLastClickRight: isRight });
+            if (selectedId && isRight) {
+              let selectedColor = this.state.annotations.find(x => x.id === selectedId).color;
+              this.props.onPopup('annotationPopup', {
+                x,
+                y,
+                annotationId: selectedId,
+                selectedColor
+              });
             }
           }}
           onMouseMove={(position) => {
@@ -531,7 +571,7 @@ class Annotator extends React.Component {
           onClickMarginNote={annotationId => {
             this.setState({ activeAnnotationId: annotationId });
           }}
-          popupAnnotation={this.state.activeAnnotationId ? this.state.annotations.find(x => x.id === this.state.activeAnnotationId) : null}
+          popupAnnotation={ !this.state.isLastClickRight && !window.PDFViewerApplication.pdfSidebar.isOpen && this.state.activeAnnotationId ? this.state.annotations.find(x => x.id === this.state.activeAnnotationId) : null}
           popupSelection={this.state.selection ? { position: this.state.selection.position } : null}
           activeAnnotationId={this.state.activeAnnotationId}
           annotations={annotations}

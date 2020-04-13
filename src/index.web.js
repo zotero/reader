@@ -45,6 +45,10 @@ document.addEventListener('webviewerloaded', function () {
       onClickTags(annotationId, screenX, screenY) {
         alert('This will open Zotero tagbox popup');
       },
+      onPopup(name, data) {
+        console.log(name, data);
+        alert('This will open ' + name);
+      },
       onEnterPassword(password) {
         console.log('Entered password', password);
       },

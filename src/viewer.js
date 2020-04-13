@@ -142,6 +142,7 @@ class Viewer {
         onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
         onResetPageLabels={this._annotationsStore.resetPageLabels.bind(this._annotationsStore)}
         onClickTags={options.onClickTags}
+        onPopup={options.onPopup}
         askImport={options.askImport}
         onImport={options.onImport}
         onDismissImport={options.onDismissImport}
@@ -152,6 +153,9 @@ class Viewer {
         }}
         setAnnotationsRef={(ref) => {
           this.setAnnotations = ref;
+        }}
+        setColorRef={(ref) => {
+          this.setColor = ref;
         }}
         importableAnnotationsNumRef={(ref) => {
           this.importableAnnotationsNum = ref;
@@ -198,6 +202,10 @@ class Viewer {
   }
   
   setAnnotations = (annotations) => {
+  
+  };
+  
+  setColor = (color) => {
   
   };
   
