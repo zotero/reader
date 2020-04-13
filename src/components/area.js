@@ -85,7 +85,7 @@ class Area extends React.Component {
           active,
           comment: !!annotation.comment
         })}
-        style={{ backgroundColor: annotation.color }}
+        style={{ borderColor: annotation.color }}
         onDragStart={this.handleDragStart}
         onDrag={this.handleDrag}
         onDragStop={this.handleDragStop}

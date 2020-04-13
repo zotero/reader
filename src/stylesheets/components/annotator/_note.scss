@@ -1,7 +1,6 @@
 
 .note-annotation {
   border: 2px solid transparent;
-  opacity: 0.7;
   cursor: inherit !important;
 
   &::before {
@@ -15,8 +14,14 @@
     background-size: contain;
     background-repeat: no-repeat;
   }
-
-  &.active {
+  
+  &.active::after {
+    content: '';
+    position: absolute;
+    width: 160%;
+    height: 160%;
     border: 2px dashed cornflowerblue;
+    margin-left: -30%;
+    margin-top: -30%;
   }
 }

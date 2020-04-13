@@ -1,12 +1,11 @@
 
 .area-annotation {
-  border: 1px solid gray;
-  opacity: 0.3;
+  border: 3px solid;
   pointer-events: none;
   cursor: inherit !important;
 
   &.active {
-    border: 2px dashed cornflowerblue;
+    border: 3px dashed cornflowerblue !important;
     pointer-events: all;
   }
 }

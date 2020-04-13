@@ -3,7 +3,6 @@
   position: absolute;
   left: 0;
   top: 0;
-  mix-blend-mode: multiply;
 }
 
 .layer-note {
@@ -20,7 +19,6 @@
   top: 0;
   right: 0;
   z-index: 3;
-  mix-blend-mode: multiply;
 }
 
 .layer-margin-note {
@@ -47,17 +45,16 @@
   width: 220px;
 }
 
-//.selecting-annotation {
-//  .rect:not(.active) {
-//    opacity: 0.4;
-//    background-color: #d1d1d1 !important;
-//  }
-//}
+.selecting-annotation {
+  .rect:not(.active) {
+    //opacity: 0.3;
+  }
+}
 
 .selecting-annotation {
-  .rect {
-    .active {
-      opacity: 0.7;
+  .active {
+    .rect {
+      //opacity: 1;
     }
   }
 }

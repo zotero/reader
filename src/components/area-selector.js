@@ -268,7 +268,7 @@ class AreaSelector extends React.Component {
             className="area-selector"
             style={{
               ...this.getBoundingRect(start, end),
-              backgroundColor: color
+              borderColor: color
             }}
           />
         ) : null}
