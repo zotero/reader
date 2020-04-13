@@ -154,7 +154,7 @@ class AnnotationsStore {
     this.sortAnnotations(this.annotations);
     this.onUpdateAnnotations(this.annotations);
     
-    if (!annotation.image) {
+    if (annotation.type === 'area' && !annotation.image) {
       annotation.image = await this.getAnnotationImage(annotation.id);
       this.onSetAnnotation(annotation);
       this.onUpdateAnnotations(this.annotations);

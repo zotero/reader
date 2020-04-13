@@ -643,50 +643,6 @@ class Layer extends React.Component {
     return p2v(position, viewport);
   }
   
-  getMargins(pageIndex) {
-    let pageView = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex);
-    let pageWidth = pageView.width;
-    
-    if (!pageView.textLayer || !pageView.textLayer.textDivs) {
-      return [0, pageWidth];
-    }
-    
-    let data = pageView.textLayer.textDivs
-      .map(x => parseFloat(x.style.left))
-      .filter(x => x)
-      .sort((a, b) => a - b);
-    
-    let result = data.reduce(function (r, a, i, aa) {
-      if (a - aa[i - 1] < 5) {
-        if (!Array.isArray(r[r.length - 1])) {
-          r[r.length - 1] = [r[r.length - 1]];
-        }
-        r[r.length - 1].push(a);
-        return r;
-      }
-      r.push(a);
-      return r;
-    }, []);
-    
-    let b = result.map(ar => {
-      if (!Array.isArray(ar)) ar = [ar];
-      let sum = ar.reduce((a, b) => a + b, 0);
-      let avg = sum / ar.length;
-      return [avg, ar.length];
-    });
-    
-    b = b.filter(x => x[1] >= 10);
-    
-    let res = null;
-    if (b.length) {
-      res = b[0][0];
-    }
-    
-    let margins = [res, pageWidth - res];
-    
-    return margins;
-  }
-  
   render() {
     let {
       annotations,
