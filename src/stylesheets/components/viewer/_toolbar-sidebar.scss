@@ -52,7 +52,7 @@
       border-bottom-left-radius: $toolbar-sidebar-btn-border-radius;
     }
 
-    &:last-child {
+    &:nth-last-child(2) {
       border-top-right-radius: $toolbar-sidebar-btn-border-radius;
       border-bottom-right-radius: $toolbar-sidebar-btn-border-radius;
       padding: $toolbar-sidebar-btn-padding-last;
@@ -127,7 +127,7 @@
           }
         }
 
-        @include variant(".toolbarButton:last-child") {
+        @include variant(".toolbarButton:nth-last-child(2)") {
           width: calc(100% - 1px);
           border-top-right-radius: $toolbar-sidebar-label-border-radius;
           border-bottom-right-radius: $toolbar-sidebar-label-border-radius;
@@ -168,5 +168,9 @@
         }
       }
     }
+  }
+  
+  #viewAttachments {
+    display: none;
   }
 }
