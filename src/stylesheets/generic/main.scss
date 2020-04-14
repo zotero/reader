@@ -32,6 +32,7 @@ $mode:     "production" !default;
 // pdf.js components
 //
 
+@import "components/viewer/annotation-layer-builder";
 @import "components/viewer/text-layer-builder";
 @import "components/viewer/pdf-viewer";
 @import "components/viewer/viewer";

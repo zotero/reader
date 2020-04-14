@@ -131,6 +131,27 @@ class Viewer {
       }
     });
     
+    // Prevent dragging for internal links
+    window.addEventListener('dragstart', (event) => {
+      if (event.target.closest('.annotationLayer')) {
+        event.preventDefault();
+      }
+    });
+    
+    // Takeover external link click handling
+    window.addEventListener('click', (event) => {
+      if (
+        event.button === 0 && event.target.closest('.annotationLayer') &&
+        !event.target.classList.contains('internalLink')
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!PDFViewerApplication.pdfViewer.isInPresentationMode) {
+          options.onExternalLink(event.target.href);
+        }
+      }
+    }, true);
+    
     // window.PDFViewerApplication.eventBus.on("pagesinit", () => {
     //   window.PDFViewerApplication.pdfDocument._transport.messageHandler.sendWithPromise("setIgnoredAnnotationIds", options.ignoredAnnotationIds);
     // });

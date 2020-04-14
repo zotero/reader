@@ -68,6 +68,9 @@ window.addEventListener('message', function (message) {
       onPopup(name, data) {
         parent.postMessage({ op: name, ...data }, '*');
       },
+      onExternalLink(url) {
+        parent.postMessage({ op: 'externalLink', url }, '*');
+      }, 
       onEnterPassword(password) {
         parent.postMessage({ op: 'enterPassword', password }, '*');
       },
