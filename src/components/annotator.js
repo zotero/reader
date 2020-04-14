@@ -21,7 +21,7 @@ class Annotator extends React.Component {
     recentlyCreatedAnnotationId: null,
     recentlyUpdatedAnnotationId: null,
     mode: null,
-    color: annotationColors[1][1],
+    color: annotationColors[0][1],
     annotations: [],
     isLastClickRight: false
   };

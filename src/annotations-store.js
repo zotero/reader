@@ -136,7 +136,7 @@ class AnnotationsStore {
     }
     
     if (annotation.type === 'area') {
-      annotation.image = this.getAnnotationImage(annotation.id);
+      annotation.image = await this.getAnnotationImage(annotation.id);
     }
     
     this.sortAnnotations(this.annotations);
