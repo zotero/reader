@@ -221,10 +221,6 @@
   }
 }
 
-.outlineItem > a {
-  @include icon("document-bookmark");
-}
-
 .attachmentsItem > button {
   @include icon("page-white");
 }
