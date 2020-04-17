@@ -185,11 +185,11 @@
   }
 
   #viewOutline {
-    @include icon($bookmark-icon);
+    @include icon($outline-icon);
 
-    @if $bookmark-icon-toggled {
+    @if $outline-icon-toggled {
       &.toggled {
-        @include icon($bookmark-icon-toggled);
+        @include icon($outline-icon-toggled);
       }
     }
   }
