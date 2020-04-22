@@ -11,12 +11,12 @@
     align-items: center;
     height: $preview-header-height;
     padding: 0 8px;
-    border-bottom: $preview-header-border;
+    border-bottom: $preview-border;
     line-height: rem(12);
     white-space: nowrap;
 
     .selected & {
-      border-bottom: $preview-header-selected-border;
+      border-bottom: $preview-selected-border;
     }
 
     // Allow left side to grow because in some cases
@@ -65,57 +65,18 @@
     }
   }
 
-  .highlight {
-    .expandable-editor {
-      border-bottom: 1px solid #d7dad7;
-
-      @include variant(".highlight:last-child") {
-        border-bottom: 0;
-      }
-
-      &.overflowed {
-        border-bottom: 1px dashed #707070;
-      }
-
-      @include variant(".highlight:last-child") {
-        border-bottom: 0;
-        position: relative;
-
-        &::before {
-          content: "";
-          position: absolute;
-          left: 4px;
-          right: 4px;
-          bottom: -1px;
-          height: 1px;
-          background-color: #fff;
-        }
-
-        &::after {
-          content: "";
-          position: absolute;
-          left: 6px;
-          right: 6px;
-          bottom: -1px;
-          border-bottom: 1px dashed #64738f;
-          mask: linear-gradient(
-            to right,
-            rgba(0, 0, 0, 0.4) 0%,
-            #64738f 6px,
-            #64738f calc(100% - 6px),
-            rgba(0, 0, 0, 0.4) 100%
-          );
-        }
-      }
-    }
-  }
-
   .comment {
-    background-color: $comment-bg;
+    .expandable-editor {
+      background-color: $comment-bg;
 
-    &:last-child {
-      border-bottom-left-radius: $annotation-border-radius - 1px;
-      border-bottom-right-radius: $annotation-border-radius - 1px;
+      .selected & {
+        background-color: $comment-selected-bg;
+      }
+
+      @include variant(".comment:last-child") {
+        border-bottom-left-radius: $annotation-border-radius - 1px;
+        border-bottom-right-radius: $annotation-border-radius - 1px;
+      }
     }
   }
 
@@ -124,8 +85,13 @@
   }
 
   .tags {
-    padding: 0 8px;
+    padding: 4px 8px 6px;
     background-color: $tags-bg;
+    border-radius: 0 0 4px 4px;
+
+    .selected & {
+      background-color: $tags-selected-bg;
+    }
 
     .tag {
       padding-right: 5px;
@@ -133,6 +99,7 @@
 
     &:empty::before {
       content: attr(placeholder);
+      color: $tags-placeholder-color;
     }
   }
 }

@@ -16,7 +16,7 @@
 
     &:empty::before {
       content: attr(placeholder);
-      color: #999;
+      color: $editor-placeholder-color;
     }
 
     .overflowed & {

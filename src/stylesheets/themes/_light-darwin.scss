@@ -31,7 +31,7 @@ $font-family-base:        $font-family-sans-serif;
 
 $font-size-base: rem(11);
 $note-font-size: var(--note-font-size);
-$note-line-height: 1.34; // = normal for Lucida Grande
+$note-line-height: 1.34;
 
 $selection-color: null;
 $selection-bg:    rgba($highlight-color, 0.99);
@@ -353,9 +353,19 @@ $annotation-border-radius:       5px;
 $annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
 
 // Preview
-$preview-header-height: 21px;
-$preview-header-border: 1px solid #d7dad7;
-$preview-header-selected-border: 1px solid rgba(#6d95e0, 0.4);
+$preview-header-height:            21px;
+$preview-border:                   1px solid #d7dad7;
+$preview-selected-border:          1px solid rgba(#6d95e0, 0.4);
 
-$comment-bg: tint($sidebar-bg, 60%);
-$tags-bg:    tint($sidebar-bg, 60%);
+$comment-bg:             tint($sidebar-bg, 60%);
+$comment-selected-bg:    #dde6f8; // 10% K
+$tags-bg:                tint($sidebar-bg, 60%);
+$tags-selected-bg:       #dde6f8; // 10% K
+$tags-placeholder-color: #6d95e0;
+
+// Editor
+$editor-border:                    $preview-border;
+$editor-selected-border:           $preview-selected-border;
+$editor-overflow-border:           1px dashed #707070;
+$editor-overflow-selected-border:  1px dashed #6d95e0;
+$editor-placeholder-color:         #6d95e0;

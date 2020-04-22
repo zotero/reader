@@ -1,9 +1,54 @@
+//
+// Expandable editor
+//
 
 .expandable-editor {
+  border-bottom: $editor-border;
   pointer-events: none;
 
   .selected & {
+    border-bottom: $editor-selected-border;
     pointer-events: all;
+  }
+
+
+  &.overflowed {
+    border-bottom: $editor-overflow-border;
+
+    .selected & {
+      border-bottom: $editor-overflow-selected-border;
+    }
+
+    *:last-child > & {
+      border-bottom: 0;
+      position: relative;
+
+      &::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        right: 4px;
+        bottom: -1px;
+        height: 1px;
+        background-color: #fff;
+      }
+
+      &::after {
+        content: "";
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        bottom: -1px;
+        border-bottom: 1px dashed #64738f;
+        mask: linear-gradient(
+          to right,
+          rgba(0, 0, 0, 0.4) 0%,
+          #64738f 6px,
+          #64738f calc(100% - 6px),
+          rgba(0, 0, 0, 0.4) 100%
+        );
+      }
+    }
   }
 
   .outer {
