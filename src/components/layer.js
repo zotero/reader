@@ -36,13 +36,13 @@ class PageLayerHighlight extends React.Component {
   }
   
   render() {
-    let { view, annotations, activeAnnotationId } = this.props;
+    let { view, annotations, selectedAnnotationIds } = this.props;
     
     let node = this.getContainerNode(view);
     if (!node) return null;
     
     return ReactDOM.createPortal(
-      <div className={cx({ 'selecting-annotation': !!activeAnnotationId })}>
+      <div className={cx({ 'selecting-annotation': !!selectedAnnotationIds.length })}>
         {annotations.map(
           (annotation, index) => {
             let { position, ...rest } = annotation;
@@ -56,7 +56,9 @@ class PageLayerHighlight extends React.Component {
               <div key={annotation.id}>
                 <Highlight
                   annotation={viewportAnnotation}
-                  active={activeAnnotationId === annotation.id}
+                  active={selectedAnnotationIds.includes(annotation.id)}
+                  onDragStart={this.props.onDragStart}
+                  onDragEnd={this.props.onDragEnd}
                 />
               </div>
             );
@@ -80,7 +82,7 @@ class PageLayerNote extends React.Component {
     let {
       view,
       annotations,
-      activeAnnotationId,
+      selectedAnnotationIds,
       enableInactiveDragging,
       onChangePosition
     } = this.props;
@@ -103,8 +105,11 @@ class PageLayerNote extends React.Component {
               <div key={annotation.id}>
                 <Note
                   annotation={viewportAnnotation}
-                  active={activeAnnotationId === annotation.id}
+                  active={selectedAnnotationIds.includes(annotation.id)}
+                  move={selectedAnnotationIds.length === 1}
                   enableInactiveDragging={enableInactiveDragging}
+                  onDragStart={this.props.onDragStart}
+                  onDragEnd={this.props.onDragEnd}
                   onChangePosition={(position) => {
                     onChangePosition(annotation.id, position);
                   }}
@@ -131,7 +136,7 @@ class PageLayerArea extends React.Component {
     let {
       view,
       annotations,
-      activeAnnotationId,
+      selectedAnnotationIds,
       onChangePosition
     } = this.props;
     
@@ -153,7 +158,10 @@ class PageLayerArea extends React.Component {
               <div key={annotation.id}>
                 <Area
                   annotation={viewportAnnotation}
-                  active={activeAnnotationId === annotation.id}
+                  active={selectedAnnotationIds.includes(annotation.id)}
+                  move={selectedAnnotationIds.length === 1}
+                  onDragStart={this.props.onDragStart}
+                  onDragEnd={this.props.onDragEnd}
                   onChangePosition={(position) => {
                     onChangePosition(annotation.id, position);
                   }}
@@ -180,15 +188,6 @@ class AreaSelectorLayer extends React.Component {
     }
     return ReactDOM.createPortal(
       <AreaSelector
-        onDragStart={() => {
-          // console.log("dragstart");
-        }}
-        onDragEnd={() => {
-          // console.log("dragstop");
-        }}
-        onChange={isVisible => {
-          // console.log({ isVisible });
-        }}
         color={color}
         shouldStart={enableAreaSelector}
         onSelection={onSelection}
@@ -258,7 +257,7 @@ class MarginNoteLayer extends React.Component {
     let {
       view,
       annotations,
-      activeAnnotationId,
+      selectedAnnotationIds,
       onClick
     } = this.props;
     
@@ -273,7 +272,7 @@ class MarginNoteLayer extends React.Component {
       <div>
         {marginNotes.map(
           (marginNote) => {
-            let active = activeAnnotationId === marginNote.annotation.id;
+            let active = selectedAnnotationIds.includes(marginNote.annotation.id);
             return (
               <div
                 key={marginNote.annotation.id}
@@ -451,7 +450,7 @@ class Layer extends React.Component {
       // Shoot the event after all other events are emitted.
       // Otherwise the resize updating in the area annotation is emitted too late
       setTimeout(() => {
-        onPointerUp(this.v2p(position), e.button === 2, e.screenX, e.screenY);
+        onPointerUp(this.v2p(position), e.button === 2, e.ctrlKey || e.metaKey, e.shiftKey, e.screenX, e.screenY, e);
       }, 0);
     }, true);
     
@@ -479,6 +478,7 @@ class Layer extends React.Component {
     
     let viewerNode = document.getElementById('viewer');
     viewerNode.addEventListener('dragstart', (e) => {
+      return;
       let annotation = {
         itemId: window.itemId,
         text: this.state.selection.text,
@@ -647,7 +647,7 @@ class Layer extends React.Component {
     let {
       annotations,
       color,
-      activeAnnotationId,
+      selectedAnnotationIds,
       enableAreaSelector,
       enableInactiveTextDragging,
       popupAnnotation,
@@ -677,44 +677,53 @@ class Layer extends React.Component {
         <PageLayerHighlight
           key={'h_' + pageIndex}
           view={view}
-          activeAnnotationId={activeAnnotationId}
+          selectedAnnotationIds={selectedAnnotationIds}
           annotations={(annotationsByPage[String(pageIndex)].filter(x => x.type === 'highlight') || [])}
+          onDragStart={(event) => {
+            this.props.onDragStart(event);
+            this.setState({ dragging: true });
+          }}
+          onDragEnd={() => {
+            this.setState({ dragging: false });
+          }}
         />,
         <PageLayerNote
           key={'n_' + pageIndex}
           view={view}
-          activeAnnotationId={activeAnnotationId}
+          selectedAnnotationIds={selectedAnnotationIds}
           enableInactiveDragging={enableInactiveTextDragging}
           annotations={(annotationsByPage[String(pageIndex)].filter(x => x.type === 'note') || [])}
           onChangePosition={(id, position) => {
             onChange({ id, position: this.v2p(position) });
           }}
           onDragStart={() => {
+            this.props.onDragStart(event);
             this.setState({ dragging: true });
           }}
-          onDragStop={() => {
+          onDragEnd={() => {
             this.setState({ dragging: false });
           }}
         />,
         <PageLayerArea
           key={'a_' + pageIndex}
           view={view}
-          activeAnnotationId={activeAnnotationId}
+          selectedAnnotationIds={selectedAnnotationIds}
           annotations={(annotationsByPage[String(pageIndex)].filter(x => x.type === 'area') || [])}
           onChangePosition={(id, position) => {
             onChange({ id, position: this.v2p(position) });
           }}
-          onDragStart={() => {
+          onDragStart={(event) => {
+            this.props.onDragStart(event);
             this.setState({ dragging: true });
           }}
-          onDragStop={() => {
+          onDragEnd={() => {
             this.setState({ dragging: false });
           }}
         />,
         <MarginNoteLayer
           key={'m_' + pageIndex}
           view={view}
-          activeAnnotationId={activeAnnotationId}
+          selectedAnnotationIds={selectedAnnotationIds}
           annotations={(annotationsByPage[String(pageIndex)].filter(x => ['highlight', 'area'].includes(x.type)) || [])}
           pageWidth={pageWidth}
           onClick={onClickMarginNote}

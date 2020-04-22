@@ -174,7 +174,7 @@ let annotations = [
     'id': 612943892296834,
     'dateModified': '2020-02-07T07:23:40.634Z',
     'authorName': 'John',
-    'readOnly': true,
+    // 'readOnly': true,
     'pageLabel': '2',
     'sortIndex': '000001|0003310|000074.000'
   }, {

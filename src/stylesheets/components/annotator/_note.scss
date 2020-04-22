@@ -1,7 +1,13 @@
 
 .note-annotation {
-  border: 2px solid transparent;
+  //border: 2px solid transparent;
   cursor: inherit !important;
+  position: absolute;
+  
+  .square {
+    position: absolute;
+    pointer-events: none;
+  }
 
   &::before {
     content: "";
@@ -15,13 +21,21 @@
     background-repeat: no-repeat;
   }
   
-  &.active::after {
-    content: '';
-    position: absolute;
-    width: 160%;
-    height: 160%;
-    border: 2px dashed cornflowerblue;
-    margin-left: -30%;
-    margin-top: -30%;
+  //&.active::after {
+  //  content: '';
+  //  position: absolute;
+  //  width: 160%;
+  //  height: 160%;
+  //  border: 2px dashed cornflowerblue;
+  //  margin-left: -30%;
+  //  margin-top: -30%;
+  //}
+  
+  &.active {
+    .square {
+      border: 2px dashed cornflowerblue;
+      pointer-events: auto;
+      z-index: 1;
+    }
   }
 }

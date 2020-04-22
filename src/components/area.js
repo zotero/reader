@@ -1,105 +1,133 @@
 'use strict';
 
-import React from 'react';
-import { Rnd } from 'react-rnd';
+import React, { Fragment, useState, useCallback, useEffect, useRef } from 'react';
 import cx from 'classnames';
 import { wx, hy } from '../lib/coordinates';
+import DraggableBox from './draggable-box';
 
-class Area extends React.Component {
-  state = {
-    changed: false,
-    dragged: false,
-    resized: false
-  }
+const PADDING_LEFT = 9;
+const PADDING_TOP = 9;
+
+// TODO: Multiple from zoom level
+const MIN_WIDTH = 30;
+const MIN_HEIGHT = 30;
+
+function Area({ annotation, move, active, onDragStart, onDragEnd, onChangePosition }) {
+  const [resizingRect, setResizingRect] = useState();
+  const draggableRef = useRef();
+  const resizingDirections = useRef();
+  const container = useRef(
+    document.querySelector('div.page[data-page-number="' + (annotation.position.pageIndex + 1) + '"]')
+  );
   
-  handleDragStart = () => {
-    this.setState({
-      changed: true,
-      resized: false,
-      dragged: false
-    });
-  }
+  // TODO: Fix `annotation` triggering useEffect on each render
+  const handlePointerMoveCallback = useCallback(handlePointerMove, [annotation]);
+  const handlePointerUpCallback = useCallback(handlePointerUp, [annotation]);
   
-  handleDrag = () => {
-    this.setState({ dragged: true });
-  }
-  
-  handleDragStop = (_, data) => {
-    let { annotation } = this.props;
-    let rect = [
-      data.x,
-      data.y,
-      data.x + wx(annotation.position.rects[0]),
-      data.y + hy(annotation.position.rects[0])
-    ];
-    if (this.state.dragged) {
-      this.props.onChangePosition({
-        pageIndex: annotation.position.pageIndex,
-        rects: [rect]
-      });
+  useEffect(() => {
+    window.addEventListener('mousemove', handlePointerMoveCallback);
+    window.addEventListener('mouseup', handlePointerUpCallback);
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMoveCallback);
+      window.removeEventListener('mouseup', handlePointerUpCallback);
     }
-  }
+  }, [handlePointerMoveCallback, handlePointerUpCallback]);
   
-  handleResizeStart = () => {
-    this.setState({ changed: true });
-    this.setState({ resized: false, dragged: false });
-  }
-  
-  handleResize = () => {
-    this.setState({ resized: true });
-  }
-  
-  handleResizeStop = (_, direction, ref, delta, position) => {
-    let { annotation, onChangePosition } = this.props;
+  function getResizedRect(rect, clientX, clientY) {
+    let clientRect = container.current.getBoundingClientRect();
+    let pageWidth = clientRect.width;
+    let pageHeight = clientRect.height;
+    let x = clientX - clientRect.left - PADDING_LEFT;
+    let y = clientY - clientRect.top - PADDING_TOP;
     
-    let rect = [
-      position.x,
-      position.y,
-      position.x + ref.offsetWidth,
-      position.y + ref.offsetHeight
-    ];
+    rect = rect.slice();
     
-    if (this.state.resized) {
-      onChangePosition({ pageIndex: annotation.position.pageIndex, rects: [rect] });
+    if (resizingDirections.current.includes('left')) {
+      rect[0] = x > rect[2] - MIN_WIDTH && rect[2] - MIN_WIDTH || x > 0 && x || 0;
     }
+    else if (resizingDirections.current.includes('right')) {
+      rect[2] = x < rect[0] + MIN_WIDTH && rect[0] + MIN_WIDTH || x < pageWidth - PADDING_LEFT * 2 && x || pageWidth - PADDING_LEFT * 2;
+    }
+    
+    if (resizingDirections.current.includes('top')) {
+      rect[1] = y > rect[3] - MIN_HEIGHT && rect[3] - MIN_HEIGHT || y > 0 && y || 0;
+    }
+    else if (resizingDirections.current.includes('bottom')) {
+      rect[3] = y < rect[1] + MIN_HEIGHT && rect[1] + MIN_HEIGHT || y < pageHeight - PADDING_TOP * 2 && y || pageHeight - PADDING_TOP * 2;
+    }
+    
+    return rect;
   }
   
-  render() {
-    let { annotation, active } = this.props;
-    
-    let bounds = `div[data-page-number="${(annotation.position.pageIndex + 1)}"] > .textLayer`;
-    
-    let position = this.state.changed ? null : {
-      x: Math.round(annotation.position.rects[0][0]),
-      y: Math.round(annotation.position.rects[0][1])
-    };
-    
-    let size = {
-      width: wx(annotation.position.rects[0]),
-      height: hy(annotation.position.rects[0])
-    };
-    
-    return (
-      <Rnd
+  function handleResizeStart(directions) {
+    resizingDirections.current = directions;
+  }
+  
+  function handlePointerMove(event) {
+    if (!resizingDirections.current) return;
+    let rect = getResizedRect(annotation.position.rects[0], event.clientX, event.clientY)
+    setResizingRect(rect);
+  }
+  
+  function handlePointerUp(event) {
+    if (!resizingDirections.current) return;
+    let rect = getResizedRect(annotation.position.rects[0], event.clientX, event.clientY);
+    onChangePosition({ ...annotation.position, rects: [rect] });
+    resizingDirections.current = null;
+    setResizingRect();
+  }
+  
+  let rect = resizingRect || annotation.position.rects[0];
+
+  return (
+    <Fragment>
+      <div
+        ref={draggableRef}
+        draggable={true}
         className={cx('area-annotation', {
           active,
           comment: !!annotation.comment
         })}
-        style={{ borderColor: annotation.color }}
-        onDragStart={this.handleDragStart}
-        onDrag={this.handleDrag}
-        onDragStop={this.handleDragStop}
-        onResizeStart={this.handleResizeStart}
-        onResize={this.handleResize}
-        onResizeStop={this.handleResizeStop}
-        bounds={bounds}
-        position={position}
-        size={size}
-        disableDragging={annotation.readOnly}
-        enableResizing={!annotation.readOnly && undefined}
-      />
-    );
-  }
+        style={{
+          borderColor: annotation.color,
+          left: Math.round(rect[0]),
+          top: Math.round(rect[1]),
+          width: wx(rect),
+          height: hy(rect)
+        }}
+      >
+        <div className="resizer" onMouseDown={(event) => event.preventDefault()}>
+          <div className="line top" onMouseDown={(event) => handleResizeStart(['top'])}/>
+          <div className="line right" onMouseDown={(event) => handleResizeStart(['right'])}/>
+          <div className="line bottom" onMouseDown={(event) => handleResizeStart(['bottom'])}/>
+          <div className="line left" onMouseDown={(event) => handleResizeStart(['left'])}/>
+          <div className="edge top-right" onMouseDown={(event) => handleResizeStart(['top', 'right'])}/>
+          <div className="edge bottom-right" onMouseDown={(event) => handleResizeStart(['bottom', 'right'])}/>
+          <div className="edge bottom-left" onMouseDown={(event) => handleResizeStart(['bottom', 'left'])}/>
+          <div className="edge top-left" onMouseDown={(event) => handleResizeStart(['top', 'left'])}/>
+        </div>
+      </div>
+      
+      <DraggableBox
+        draggableRef={draggableRef}
+        pageIndex={annotation.position.pageIndex}
+        onDragStart={onDragStart}
+        onDragEnd={onDragEnd}
+        onMove={(rect) => {
+          onChangePosition({ ...annotation.position, rects: [rect] });
+        }}
+      >
+        {move && <div
+          style={{
+            border: '2px dashed gray',
+            width: wx(annotation.position.rects[0]),
+            height: hy(annotation.position.rects[0])
+          }}
+        />}
+      </DraggableBox>
+    </Fragment>
+  );
+  
 }
 
 export default Area;

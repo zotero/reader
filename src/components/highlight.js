@@ -2,8 +2,18 @@
 
 import React from 'react';
 import cx from 'classnames';
+import DraggableBox from './draggable-box';
 
 class Highlight extends React.Component {
+
+  handleDragStart = (event) => {
+    event.dataTransfer.setData('zotero/annotation', 'ddf');
+    var img = document.createElement('img')
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+    event.dataTransfer.setDragImage(img, 0, 0)
+  }
+  draggableRef = React.createRef();
+
   render() {
     let { annotation, active } = this.props;
     
@@ -22,6 +32,7 @@ class Highlight extends React.Component {
         className={cx('highlight-annotation', { active })}
       >
         <div
+          ref={this.draggableRef}
           className="square"
           style={{
             left: squareRect[0],
@@ -29,7 +40,17 @@ class Highlight extends React.Component {
             width: squareRect[2] - squareRect[0],
             height: squareRect[3] - squareRect[1]
           }}
+          draggable={true}
         />
+        <DraggableBox
+          draggableRef={this.draggableRef}
+          pageIndex={this.props.annotation.position.pageIndex}
+          onDragStart={this.props.onDragStart}
+          onDragEnd={this.props.onDragEnd}
+          onMove={(rect)=> {
+          }}
+        >
+        </DraggableBox>
         {annotation.position.rects.map((rect, index) => (
           <div
             key={index}

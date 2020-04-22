@@ -17,7 +17,7 @@ import cx from 'classnames';
 
 class Annotator extends React.Component {
   state = {
-    activeAnnotationId: null,
+    selectedAnnotationIds: [],
     recentlyCreatedAnnotationId: null,
     recentlyUpdatedAnnotationId: null,
     mode: null,
@@ -71,7 +71,7 @@ class Annotator extends React.Component {
   navigate = (annotation) => {
     let existingAnnotation = this.state.annotations.find(x => x.id === annotation.id);
     if (existingAnnotation) {
-      this.setState({ activeAnnotationId: annotation.id });
+      this.setState({ selectedAnnotationIds: [annotation.id] });
     }
 
     this.blink(annotation.position);
@@ -122,8 +122,13 @@ class Annotator extends React.Component {
 
     document.getElementById('viewer').addEventListener('pointerdown', (event) => {
       if (event.target === document.getElementById('viewer')) {
-        this.setState({ activeAnnotationId: null });
+        // this.setState({ selectedAnnotationIds: [] });
       }
+    });
+    
+    document.getElementById('viewer').addEventListener('pointerup', (event) => {
+          let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
+          if (!!selection && selection.isCollapsed) selection.empty ? selection.empty() : selection.removeAllRanges();
     });
 
     window.PDFViewerApplication.eventBus.on('sidebarviewchanged', (e) => {
@@ -168,7 +173,7 @@ class Annotator extends React.Component {
     else {
       this.setState({ mode });
     }
-    this.setState({ activeAnnotationId: null });
+    this.setState({ selectedAnnotationIds: [] });
   }
 
   hasSelectedText() {
@@ -207,9 +212,9 @@ class Annotator extends React.Component {
     return found;
   }
 
-  inClick(position) {
+  getAnnotationToSelectId(position, hasModifier) {
     if (this.state.recentlyUpdatedAnnotationId) {
-      this.setState({ activeAnnotationId: this.state.recentlyUpdatedAnnotationId });
+      this.setState({ selectedAnnotationIds: [this.state.recentlyUpdatedAnnotationId] });
       return;
     }
 
@@ -220,12 +225,12 @@ class Annotator extends React.Component {
       }
     }
 
-    if (this.hasSelectedText()) {
-      this.setState({ activeAnnotationId: null });
-      return;
-    }
+    // if (this.hasSelectedText()) {
+    //   this.setState({ selectedAnnotationIds: [] });
+    //   return;
+    // }
 
-    let hl = this.state.annotations.find(hl => hl.id == this.state.activeAnnotationId);
+    let hl = this.state.annotations.find(x => this.state.selectedAnnotationIds.includes(x.id) );
     if (!hl) hl = {};
 
     let found = [];
@@ -263,8 +268,27 @@ class Annotator extends React.Component {
     }
 
     let selectedId = null;
+    
+    if (!found.length) return;
+    
+    
+    function getAnnotationAreaSize(annotation) {
+      let areaSize = 0;
+      for (let rect of annotation.position.rects) {
+        areaSize += (rect[2]-rect[0]) * (rect[3] - rect[1]);
+      }
+      return areaSize;
+    }
+    
+    found.sort((a, b) => {
+      return getAnnotationAreaSize(a) - getAnnotationAreaSize(b);
+    });
+    
+    if (hasModifier) {
+      return found[0].id;
+    }
 
-    let indexOfCurrentId = found.indexOf(found.find(annotation => annotation.id === this.state.activeAnnotationId));
+    let indexOfCurrentId = found.indexOf(found.find(annotation => this.state.selectedAnnotationIds.slice(-1)[0] === annotation.id));
 
     if (indexOfCurrentId >= 0) {
       if (indexOfCurrentId < found.length - 1) {
@@ -282,10 +306,49 @@ class Annotator extends React.Component {
         selectedId = found[0].id;
       }
     }
-
-    this.setState({ activeAnnotationId: selectedId });
-
+    
     return selectedId;
+  }
+  
+  selectAnnotation(id, ctrl, shift) {
+    let selectedIds = this.state.selectedAnnotationIds;
+    if (shift && selectedIds.length) {
+      let annotationIndex = this.state.annotations.findIndex(x => x.id === id);
+      let lastSelectedIndex = this.state.annotations.findIndex(x => x.id === selectedIds.slice(-1)[0]);
+      let selectedIndices = selectedIds.map(id => this.state.annotations.findIndex(annotation => annotation.id === id));
+      let minSelectedIndex = Math.min(...selectedIndices);
+      let maxSelectedIndex = Math.max(...selectedIndices);
+      if (annotationIndex < minSelectedIndex) {
+        for (let i = annotationIndex; i < minSelectedIndex; i++) {
+          selectedIds.push(this.state.annotations[i].id);
+        }
+      }
+      else if (annotationIndex > maxSelectedIndex) {
+        for (let i = maxSelectedIndex; i <= annotationIndex; i++) {
+          selectedIds.push(this.state.annotations[i].id);
+        }
+      }
+      else {
+        for (let i = Math.min(annotationIndex, lastSelectedIndex); i <= Math.max(annotationIndex, lastSelectedIndex); i++) {
+          if (i === lastSelectedIndex) continue;
+          selectedIds.push(this.state.annotations[i].id);
+        }
+      }
+    }
+    else if (ctrl && selectedIds.length) {
+      let existingIndex = selectedIds.indexOf(id)
+      if (existingIndex >= 0) {
+        selectedIds.splice(existingIndex, 1);
+      }
+      else {
+        selectedIds.push(id);
+      }
+    }
+    else {
+      selectedIds = [id];
+    }
+    
+    this.setState({ selectedAnnotationIds: selectedIds });
   }
 
   isOver(position) {
@@ -318,6 +381,15 @@ class Annotator extends React.Component {
     }
 
     return false;
+  }
+  
+  handleDragStart = (event) => {
+    // annotation.itemId = window.itemId;
+    event.dataTransfer.setData('zotero/annotation', JSON.stringify(this.state.selectedAnnotationIds));
+    event.dataTransfer.setData('text/plain', JSON.stringify(this.state.selectedAnnotationIds));
+    var img = document.createElement('img');
+    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    event.dataTransfer.setDragImage(img, 0, 0);
   }
 
   render() {
@@ -396,15 +468,26 @@ class Annotator extends React.Component {
         {askImport && <ImportBar onImport={onImport} onDismiss={onDismissImport}/>}
         <AnnotationsView
           annotations={this.state.annotations}
-          activeAnnotationId={this.state.activeAnnotationId}
-          onSelectAnnotation={(id) => {
-            this.setState({ activeAnnotationId: id });
+          selectedAnnotationIds={this.state.selectedAnnotationIds}
+          onSelectAnnotation={(id, ctrl, shift) => {
+            if (ctrl) {
+              let selectedIds = this.state.selectedAnnotationIds;
+              if (!selectedIds.includes(id)) {
+                selectedIds.push(id);
+              }
+              this.setState({ selectedAnnotationIds: selectedIds });
+            }
+            else {
+              this.setState({ selectedAnnotationIds: [id] });
+            }
+          
             this.scrollViewerTo(this.state.annotations.find(x => x.id === id).position);
           }}
           onChange={(annotation) => {
             onUpdateAnnotation(annotation);
             this.setState({ recentlyUpdatedAnnotationId: annotation.id });
           }}
+          onDragStart={this.handleDragStart}
           onResetPageLabels={this.props.onResetPageLabels}
           onDelete={(id) => {
             onDeleteAnnotation(id);
@@ -472,7 +555,7 @@ class Annotator extends React.Component {
             this.setState({ recentlyCreatedAnnotationId: annotation.id });
             this.clearSelection();
           }}
-          enableAreaSelector={this.state.mode === 'area' && !this.state.activeAnnotationId}
+          enableAreaSelector={this.state.mode === 'area' && !this.state.selectedAnnotationIds.length}
           enableMouseSelection={!this.state.mode}
           enableInactiveTextDragging={this.state.mode !== 'area'}
           blink={this.state.blink}
@@ -526,13 +609,13 @@ class Annotator extends React.Component {
               recentlyCreatedAnnotationId: null,
               recentlyUpdatedAnnotationId: null
             });
-            if (!this.getAnnotationsAtPoint(position).length) {
-              this.setState({ activeAnnotationId: null });
-            }
+            // if (!this.getAnnotationsAtPoint(position).length) {
+            //   this.setState({ selectedAnnotationIds: [] });
+            // }
           }}
-          onPointerUp={(position, isRight, x, y) => {
-            // console.log(position);
-            let selectedId = this.inClick(position);
+          onPointerUp={(position, isRight, isCtrl, isShift, x, y, event) => {
+            let selectId = this.getAnnotationToSelectId(position, isCtrl || isShift);
+
             if (this.state.mode === 'note') {
               position.rects[0][0] -= 10;
               position.rects[0][1] -= 10;
@@ -544,22 +627,28 @@ class Annotator extends React.Component {
                 color: this.state.color
               });
               this.setState({ recentlyCreatedAnnotationId: annotation.id });
-              this.setState({ activeAnnotationId: annotation.id });
+              this.setState({ selectedAnnotationIds: [annotation.id] });
               this.setState({ mode: null });
             }
             this.setState({ isLastClickRight: isRight });
-            if (selectedId && isRight) {
-              let selectedColor = this.state.annotations.find(x => x.id === selectedId).color;
-              this.props.onPopup('annotationPopup', {
-                x,
-                y,
-                annotationId: selectedId,
-                selectedColor
-              });
+            if (selectId) {
+              
+              this.selectAnnotation(selectId, isCtrl, isShift);
+            
+              if (isRight) {
+                let selectedColor = this.state.annotations.find(x => x.id === selectId).color;
+                this.props.onPopup('annotationPopup', {
+                  x,
+                  y,
+                  annotationId: selectId,
+                  selectedColor
+                });
+              }
+            } else {
+              this.setState({ selectedAnnotationIds: [] });
             }
           }}
           onMouseMove={(position) => {
-            // console.log('pp',position);
             if (this.isOver(position)) {
               document.getElementById('viewer').classList.add('force-annotation-pointer');
             }
@@ -569,13 +658,14 @@ class Annotator extends React.Component {
           }}
           onClickTags={onClickTags}
           onClickMarginNote={annotationId => {
-            this.setState({ activeAnnotationId: annotationId });
+            this.setState({ selectedAnnotationIds: [annotationId] });
           }}
-          popupAnnotation={ !this.state.isLastClickRight && !window.PDFViewerApplication.pdfSidebar.isOpen && this.state.activeAnnotationId ? this.state.annotations.find(x => x.id === this.state.activeAnnotationId) : null}
+          popupAnnotation={ this.state.selectedAnnotationIds.length < 2 && !this.state.isLastClickRight && !window.PDFViewerApplication.pdfSidebar.isOpen && this.state.selectedAnnotationIds.length ? this.state.annotations.find(x => this.state.selectedAnnotationIds.includes(x.id)) : null}
           popupSelection={this.state.selection ? { position: this.state.selection.position } : null}
-          activeAnnotationId={this.state.activeAnnotationId}
+          selectedAnnotationIds={this.state.selectedAnnotationIds}
           annotations={annotations}
           color={this.state.color}
+          onDragStart={this.handleDragStart}
         >
         </Layer>
       </div>

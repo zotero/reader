@@ -48,3 +48,19 @@
       display: inline-block;
     }
 }
+
+.draggable-box {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.disable-pointer-events * {
+  pointer-events: none;
+}
+
+
+
+
+
+

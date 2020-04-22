@@ -4,6 +4,7 @@
 
   .square {
     position: absolute;
+    pointer-events: none;
   }
 
   .rect {
@@ -11,11 +12,14 @@
     position: absolute;
     //opacity: 0.5;
     mix-blend-mode: multiply;
+    pointer-events: none;
   }
 
   &.active {
     .square {
       border: 2px dashed cornflowerblue;
+      pointer-events: auto;
+      z-index: 1;
     }
 
     .rect {

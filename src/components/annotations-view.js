@@ -32,8 +32,8 @@ class AnnotationsViewSearch extends React.Component {
 
 class Annotation extends React.Component {
   handleClickAnnotation = (event) => {
-    if (!this.props.isSelected) {
-      this.props.onSelect(this.props.annotation.id);
+    if (!this.props.isSelected && event.button === 0) {
+      this.props.onSelect(this.props.annotation.id, event.ctrlKey || event.metaKey, event.shiftKey);
     }
   }
 
@@ -44,6 +44,14 @@ class Annotation extends React.Component {
   handleEditPage = () => {
     this.props.onPageMenu(this.props.annotation.id);
   }
+  
+  handleDragStart = (event) => {
+    if (!this.props.isSelected) {
+      event.preventDefault();
+      return;
+    }
+    this.props.onDragStart(event);
+  }
 
   render() {
     let annotation = this.props.annotation;
@@ -53,6 +61,8 @@ class Annotation extends React.Component {
         className={cx('annotation', { selected: this.props.isSelected })}
         data-sidebar-id={this.props.annotation.id}
         onClick={this.handleClickAnnotation}
+        draggable={true}
+        onDragStart={this.handleDragStart}
       >
         <Preview
           annotation={this.props.annotation}
@@ -67,12 +77,6 @@ class Annotation extends React.Component {
           onMoreMenu={this.props.onMoreMenu}
           onChange={this.props.onChange}
           onResetPageLabels={this.props.onResetPageLabels}
-          onDragStart={(event) => {
-            let annotation = JSON.stringify(JSON.parse(this.props.annotation));
-            annotation.itemId = window.itemId;
-            event.dataTransfer.setData('zotero/annotation', JSON.stringify(this.props.annotation));
-            event.dataTransfer.setData('text/plain', JSON.stringify(this.props.annotation));
-          }}
         />
       </div>
     )
@@ -136,7 +140,7 @@ class AnnotationsView extends React.Component {
         {annotations.map((annotation) => (
           <Annotation
             key={annotation.id}
-            isSelected={annotation.id === this.props.activeAnnotationId}
+            isSelected={this.props.selectedAnnotationIds.includes(annotation.id)}
             annotation={annotation}
             onSelect={this.props.onSelectAnnotation}
             onChange={this.props.onChange}
@@ -145,6 +149,7 @@ class AnnotationsView extends React.Component {
             onClickTags={this.props.onClickTags}
             onPageMenu={this.props.onPageMenu}
             onMoreMenu={this.props.onMoreMenu}
+            onDragStart={this.props.onDragStart}
           />
         ))}
       </React.Fragment>,

@@ -1,9 +1,11 @@
 'use strict';
 
-import React from 'react';
-import { Rnd } from 'react-rnd';
+import React, { Fragment } from 'react';
 import cx from 'classnames'
 import { wx, hy } from '../lib/coordinates';
+import DraggableBox from './draggable-box';
+
+const PADDING = 5;
 
 class Note extends React.Component {
   state = {
@@ -32,38 +34,64 @@ class Note extends React.Component {
   handleDrag = () => {
     this.setState({ dragged: true });
   }
+  draggableRef = React.createRef();
   
   render() {
-    let {
-      annotation, active,
-      enableInactiveDragging, onChangePosition
-    } = this.props;
+    let { annotation, active } = this.props;
     
-    let bounds = `div[data-page-number="${(annotation.position.pageIndex + 1)}"] > .textLayer`;
+    let width = 20 * PDFViewerApplication.pdfViewer._currentScale;
+    let height = 20 * PDFViewerApplication.pdfViewer._currentScale;
     
-    let position = this.state.changed ? null : {
-      x: Math.round(annotation.position.rects[0][0]),
-      y: Math.round(annotation.position.rects[0][1])
-    }
-  
-    let size = {
-      width: 20 * PDFViewerApplication.pdfViewer._currentScale,
-      height: 20 * PDFViewerApplication.pdfViewer._currentScale
-    }
+    let rect = annotation.position.rects[0];
     
+    // disableDragging={!enableInactiveDragging && !active || annotation.readOnly}
     return (
-      <Rnd
-        className={cx('note-annotation', { active })}
-        style={{ backgroundColor: annotation.color }}
-        disableDragging={!enableInactiveDragging && !active || annotation.readOnly}
-        enableResizing={false}
-        onDragStart={this.handleDragStart}
-        onDragStop={this.handleDragStop}
-        onDrag={this.handleDrag}
-        bounds={bounds}
-        position={position}
-        size={size}
-      />
+      <Fragment>
+        <div
+          className={cx('note-annotation', { active })}
+          style={{
+            backgroundColor: annotation.color,
+            left: Math.round(annotation.position.rects[0][0]),
+            top: Math.round(annotation.position.rects[0][1]),
+            width: width,
+            height: height
+          }}
+        >
+          <div
+            ref={this.draggableRef}
+            className="square"
+            style={{
+              left: -PADDING,
+              top: -PADDING,
+              width: width + PADDING * 2,
+              height: height + PADDING * 2
+            }}
+            draggable={true}
+          />
+        
+        </div>
+        
+        <DraggableBox
+          draggableRef={this.draggableRef}
+          pageIndex={this.props.annotation.position.pageIndex}
+          onDragStart={this.props.onDragStart}
+          onDragEnd={this.props.onDragEnd}
+          onMove={(rect) => {
+            let left = rect[0] + PADDING;
+            let top = rect[1] + PADDING;
+            rect = [left, top, left + width, top + height];
+            this.props.onChangePosition({ ...annotation.position, rects: [rect] });
+          }}
+        >
+          {this.props.move && <div
+            style={{
+              border: '2px dashed gray',
+              width: width + PADDING * 2,
+              height: height + PADDING * 2
+            }}
+          />}
+        </DraggableBox>
+      </Fragment>
     );
   }
 }

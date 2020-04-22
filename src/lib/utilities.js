@@ -9,6 +9,11 @@ export function copyToClipboard(str) {
   document.body.removeChild(el);
 }
 
+export function deselect() {
+  let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
+  if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
+}
+
 export function getClientRects(range, containerEl) {
   let clientRects = Array.from(range.getClientRects());
   let offset = containerEl.getBoundingClientRect();

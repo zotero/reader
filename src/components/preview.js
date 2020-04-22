@@ -83,11 +83,7 @@ class Preview extends React.Component {
 
     return (
       <div className={cx('preview', { 'read-only': annotation.readOnly })}>
-        <header
-          title={'Modified on ' + annotation.dateModified.split('T')[0]}
-          draggable={true}
-          onDragStart={this.props.onDragStart}
-        >
+        <header title={'Modified on ' + annotation.dateModified.split('T')[0]}>
           <div className="left">
             <div className="color" style={{ backgroundColor: annotation.color }}/>
             <div className="page" onClick={this.handleClickPage}>Page {annotation.pageLabel}</div>
