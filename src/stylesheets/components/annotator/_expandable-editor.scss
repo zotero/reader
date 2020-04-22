@@ -7,9 +7,10 @@
   }
 
   .outer {
-    max-height: 3 * 16px + (7px - 3px) + 4px;
+    max-height: calc(
+      3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)}
+    );
     overflow-y: hidden;
-    clip-path: inset(0 0 4px 0);
 
     &.expanded {
       max-height: none;
@@ -21,8 +22,10 @@
         linear-gradient(to right, black 0%, black 67%, transparent 100%),
         linear-gradient(to bottom, black, black);
       mask-repeat: no-repeat;
-      mask-position: bottom left, left top;
-      mask-size: 100% calc(1rem + 4px), 100% calc(100% - 1rem - 4px);
+      mask-position: left top;
+      mask-size:
+        100% calc(100% - #{nem(4)}),
+        100% calc(2 * (#{$note-font-size} * #{$note-line-height}) + #{nem(4)};
     }
   }
 }
