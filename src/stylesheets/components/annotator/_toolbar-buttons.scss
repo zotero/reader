@@ -2,14 +2,20 @@
 // Toolbar buttons
 //
 
-.toolbarButton#globalColorButton {
-  &::before {
-    content: "";
-    display: block;
-    width: 12px;
-    height: 12px;
-    margin: 2px;
-    background-color: currentColor;
-    border: 1px solid #555;
+.toolbar {
+  .toolbarButton.active {
+    background: #707070;
+  }
+
+  .toolbarButton#globalColorButton {
+    &::before {
+      content: "";
+      display: block;
+      width: 12px;
+      height: 12px;
+      margin: 2px;
+      background-color: currentColor;
+      border: 1px solid #555;
+    }
   }
 }
