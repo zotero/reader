@@ -98,6 +98,13 @@
           right: 6px;
           bottom: -1px;
           border-bottom: 1px dashed #64738f;
+          mask: linear-gradient(
+            to right,
+            rgba(0, 0, 0, 0.4) 0%,
+            #64738f 6px,
+            #64738f calc(100% - 6px),
+            rgba(0, 0, 0, 0.4) 100%
+          );
         }
       }
     }
