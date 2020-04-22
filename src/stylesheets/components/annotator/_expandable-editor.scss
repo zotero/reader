@@ -15,24 +15,14 @@
       max-height: none;
       overflow-y: visible;
     }
-  }
 
-  &.overflowed {
-    position: relative;
-
-    .outer {
-      &:after {
-        content: '';
-        position: absolute;
-        right: 0;
-        bottom: 0;
-        height: 1rem;
-        width: 30%;
-        background: linear-gradient(to left, rgba(255, 255, 255, 1) 0%,
-          rgba(255, 255, 255, 0) 100%);
-        z-index: 1;
-        pointer-events: none;
-      }
+    @include state(".expandable-editor.overflowed") {
+      mask-image:
+        linear-gradient(to right, black 0%, black 67%, transparent 100%),
+        linear-gradient(to bottom, black, black);
+      mask-repeat: no-repeat;
+      mask-position: bottom left, left top;
+      mask-size: 100% calc(1rem + 4px), 100% calc(100% - 1rem - 4px);
     }
   }
 }
