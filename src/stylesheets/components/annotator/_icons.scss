@@ -44,6 +44,10 @@
 
     @include variant(".read-only .more") {
       @include icon("padlock", 12px);
+
+      @include state(".selected .read-only") {
+        @include icon("padlock-selected", 12px);
+      }
     }
   }
 }
