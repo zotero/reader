@@ -14,14 +14,11 @@
 
   .splitToolbarButton {
     display: flex;
-    justify-content: center;
     height: $split-toolbar-btn-height;
     margin: $split-toolbar-btn-margin;
 
     @if $toolbar-sidebar-gradient-btn {
-      @-moz-document url-prefix() {
-        flex: $split-toolbar-btn-flex; // Stretched buttons would be blurry in other browsers
-      }
+      flex: $split-toolbar-btn-flex;
 
       @include retina {
         height: $split-toolbar-btn-height-2x;
@@ -169,7 +166,7 @@
       }
     }
   }
-  
+
   #viewAttachments {
     display: none;
   }
