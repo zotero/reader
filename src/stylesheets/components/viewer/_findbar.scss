@@ -12,36 +12,16 @@
   background-color: $findbar-bg;
   border-radius: $findbar-border-radius;
   box-shadow: $findbar-box-shadow;
+  @include popover-pointer(
+    $width: 16px,
+    $height: 8px,
+    $offset: $findbar-pointer-offset-x,
+    $position: "bottom"
+  );
 
   &.wrapContainers {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  &::before {
-    content: "";
-    position: absolute;
-    left: $findbar-pointer-offset-x;
-    top: -9px;
-    border: solid transparent;
-    border-width: 0 8px 8px 8px;
-    border-bottom-color: rgba(0, 0, 0, 0.2);
-
-    @include retina {
-      border-bottom-color: rgba(0, 0, 0, 0.15);
-      filter: blur(0.5px);
-    }
-  }
-
-  &::after {
-    content: "";
-    position: absolute;
-    left: $findbar-pointer-offset-x;
-    top: -8px;
-    width: 16px;
-    border: solid transparent;
-    border-width: 0 8px 8px 8px;
-    border-bottom-color: #fff;
   }
 
   &,

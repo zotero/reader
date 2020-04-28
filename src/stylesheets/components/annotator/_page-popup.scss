@@ -9,6 +9,7 @@
   background-color: #fff;
   border-radius: $page-popup-border-radius;
   box-shadow: $page-popup-box-shadow;
+  @include popover-pointer($width: 16px, $height: 8px);
 
   &.selection-popup {
     padding: 4px;

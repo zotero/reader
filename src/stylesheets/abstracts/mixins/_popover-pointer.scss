@@ -1,0 +1,62 @@
+//
+// Popover pointer
+//
+
+@mixin popover-pointer($width, $height, $offset: 50%, $position: null) {
+  $border-x: $width / 2;
+  $border-y: $height;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    left: $offset;
+    border: solid transparent;
+    border-width: $border-y $border-x;
+    transform: translateX(-$border-x);
+  }
+
+  #{if($position == "bottom", "&", "&[class*='bottom']")} {
+    &::before,
+    &::after {
+      border-top-width: 0;
+    }
+
+    &::before {
+      top: (-$border-y - 1px);
+      border-bottom-color: rgba(0, 0, 0, 0.2);
+
+      @include retina {
+        border-bottom-color: rgba(0, 0, 0, 0.15);
+        filter: blur(0.5px);
+      }
+    }
+
+    &::after {
+      top: -$border-y;
+      border-bottom-color: #fff;
+    }
+  }
+
+  #{if($position == "top", "&", "&[class*='top']")} {
+    &::before,
+    &::after {
+      border-bottom-width: 0;
+    }
+
+    &::before {
+      bottom: (-$border-y - 1px);
+      border-top-color: rgba(0, 0, 0, 0.2);
+
+      @include retina {
+        border-top-color: rgba(0, 0, 0, 0.15);
+        filter: blur(0.5px);
+      }
+    }
+
+    &::after {
+      bottom: -$border-y;
+      border-top-color: #fff;
+    }
+  }
+}
