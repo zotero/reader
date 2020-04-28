@@ -65,17 +65,42 @@
     }
   }
 
+  .highlight {
+    border-bottom: $preview-border;
+
+    .selected & {
+      border-bottom: $preview-selected-border;
+    }
+
+    &:last-child {
+      border-bottom: 0;
+
+      .selected & {
+        border-bottom: 0;
+      }
+    }
+  }
+
   .comment {
+    border-bottom: $preview-border;
+
+    .selected & {
+      border-bottom: $preview-selected-border;
+    }
+
+    &:last-child {
+      border-bottom: 0;
+
+      .selected & {
+        border-bottom: 0;
+      }
+    }
+
     .expandable-editor {
       background-color: $comment-bg;
 
       .selected & {
         background-color: $comment-selected-bg;
-      }
-
-      @include variant(".comment:last-child") {
-        border-bottom-left-radius: $annotation-border-radius - 1px;
-        border-bottom-right-radius: $annotation-border-radius - 1px;
       }
     }
   }
@@ -87,7 +112,6 @@
   .tags {
     padding: rem(3) 8px rem(5);
     background-color: $tags-bg;
-    border-radius: 0 0 4px 4px;
 
     // Normalize line height across browsers at 11px font-size
     line-height: 1.37;

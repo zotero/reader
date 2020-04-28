@@ -6,6 +6,7 @@
   background-color: $annotation-bg;
   border: $annotation-border;
   border-radius: $annotation-border-radius;
+  overflow: hidden;
 
   &.selected {
     background-color: $annotation-selected-bg;

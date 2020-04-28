@@ -3,52 +3,10 @@
 //
 
 .expandable-editor {
-  border-bottom: $editor-border;
   pointer-events: none;
 
   .selected & {
-    border-bottom: $editor-selected-border;
     pointer-events: all;
-  }
-
-
-  &.overflowed {
-    border-bottom: $editor-overflow-border;
-
-    .selected & {
-      border-bottom: $editor-overflow-selected-border;
-    }
-
-    *:last-child > & {
-      border-bottom: 0;
-      position: relative;
-
-      &::before {
-        content: "";
-        position: absolute;
-        left: 4px;
-        right: 4px;
-        bottom: -1px;
-        height: 1px;
-        background-color: #fff;
-      }
-
-      &::after {
-        content: "";
-        position: absolute;
-        left: 6px;
-        right: 6px;
-        bottom: -1px;
-        border-bottom: 1px dashed #64738f;
-        mask: linear-gradient(
-          to right,
-          rgba(0, 0, 0, 0.4) 0%,
-          #64738f 6px,
-          #64738f calc(100% - 6px),
-          rgba(0, 0, 0, 0.4) 100%
-        );
-      }
-    }
   }
 
   .outer {
@@ -63,14 +21,7 @@
     }
 
     @include state(".expandable-editor.overflowed") {
-      mask-image:
-        linear-gradient(to right, black 0%, black 67%, transparent 100%),
-        linear-gradient(to bottom, black, black);
-      mask-repeat: no-repeat;
-      mask-position: left top;
-      mask-size:
-        100% calc(100% - #{nem(4)}),
-        100% calc(2 * (#{$note-font-size} * #{$note-line-height}) + #{nem(4)};
+      clip-path: inset(0 0 calc(#{nem(4)}) 0);
     }
   }
 }
