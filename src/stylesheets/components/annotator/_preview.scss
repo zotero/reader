@@ -85,16 +85,33 @@
   }
 
   .tags {
-    padding: 4px 8px 6px;
+    padding: rem(3) 8px rem(5);
     background-color: $tags-bg;
     border-radius: 0 0 4px 4px;
+
+    // Normalize line height across browsers at 11px font-size
+    line-height: 1.37;
+    word-break: break-word;
+
+    @-moz-document url-prefix() {
+      padding: rem(4) 8px rem(4);
+    }
 
     .selected & {
       background-color: $tags-selected-bg;
     }
 
     .tag {
-      padding-right: 5px;
+      &::after {
+        content: ", ";
+        color: $text-color;
+      }
+
+      &:last-child {
+        &::after {
+          content: none;
+        }
+      }
     }
 
     &:empty::before {

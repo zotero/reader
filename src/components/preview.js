@@ -46,7 +46,7 @@ class Preview extends React.Component {
           <ExpandableEditor
             id={annotation.id}
             text={annotation.text}
-            placeholder="Add extracted text.."
+            placeholder="Add extracted text…"
             isReadOnly={!!annotation.readOnly}
             onChange={this.handleTextChange}
           />
@@ -65,7 +65,7 @@ class Preview extends React.Component {
     if (this.props.isExpandable) {
       comment = this.props.enableComment && !(annotation.readOnly && !annotation.comment) &&
         <div className="comment"><ExpandableEditor
-          id={annotation.id} text={annotation.comment} placeholder="Add comment.."
+          id={annotation.id} text={annotation.comment} placeholder="Add comment…"
           isPlainText={false} onChange={this.handleCommentChange}
           isReadOnly={annotation.readOnly}
         /></div>;
@@ -74,7 +74,7 @@ class Preview extends React.Component {
       comment = !(annotation.readOnly && !annotation.comment) && <Editor
         id={annotation.id}
         text={annotation.comment}
-        placeholder="Add comment.."
+        placeholder="Add comment…"
         isPlainText={false}
         isReadOnly={annotation.readOnly}
         onChange={this.handleCommentChange}
@@ -101,7 +101,7 @@ class Preview extends React.Component {
         {text}
         {comment}
         {this.props.enableTags &&
-        <div className="tags" onClick={this.handleTagsClick} placeholder="Add tags..">{tags}</div>}
+        <div className="tags" onClick={this.handleTagsClick} placeholder="Add tags…">{tags}</div>}
 
       </div>
     );
