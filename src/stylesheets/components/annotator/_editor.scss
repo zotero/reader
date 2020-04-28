@@ -16,7 +16,11 @@
 
     &:empty::before {
       content: attr(placeholder);
-      color: $editor-placeholder-color;
+      color: $annotation-placeholder-color;
+
+      @include state(".content:focus", ".annotation-popup .editor") {
+        color: #707070;
+      }
     }
 
     .overflowed & {

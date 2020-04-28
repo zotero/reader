@@ -32,17 +32,17 @@
   }
 }
 
-// Annotations view
+// Preview
 
-#annotationsView {
+.preview {
   .more {
     @include icon("more", 12px);
 
-    @include state(".selected .more") {
+    @include state(".selected .preview") {
       @include icon("more-selected", 12px);
     }
 
-    @include variant(".read-only .more") {
+    @include variant(".preview.read-only") {
       @include icon("padlock", 12px);
 
       @include state(".selected .read-only") {

@@ -37,8 +37,9 @@ $selection-color: null;
 $selection-bg:    rgba($highlight-color, 0.99);
 
 // Z-index master list
-$z-index-findbar: 10000;
-$z-index-overlay: 40000;
+$z-index-page-popup: 10;
+$z-index-findbar:    10000;
+$z-index-overlay:    40000;
 
 // Visibility breakpoints
 $visibility-bp-lg: null;
@@ -351,6 +352,9 @@ $annotation-border:              1px solid #bcc4d2;
 $annotation-selected-border:     1px solid #6d95e0;
 $annotation-border-radius:       5px;
 $annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
+$annotation-placeholder-color:   #6d95e0;
+
+// Annotation popup
 
 // Preview
 $preview-header-height:            21px;
@@ -364,6 +368,9 @@ $tags-selected-bg:       #dde6f8; // 10% K
 $tags-placeholder-color: #6d95e0;
 
 // Editor
-$editor-border:                    $preview-border;
-$editor-selected-border:           $preview-selected-border;
-$editor-placeholder-color:         #6d95e0;
+$editor-border:          $preview-border;
+$editor-selected-border: $preview-selected-border;
+
+// Page popup
+$page-popup-border-radius:    4px;
+$page-popup-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);

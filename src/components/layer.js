@@ -34,24 +34,24 @@ class PageLayerHighlight extends React.Component {
       'layer-highlight'
     );
   }
-  
+
   render() {
     let { view, annotations, selectedAnnotationIds } = this.props;
-    
+
     let node = this.getContainerNode(view);
     if (!node) return null;
-    
+
     return ReactDOM.createPortal(
       <div className={cx({ 'selecting-annotation': !!selectedAnnotationIds.length })}>
         {annotations.map(
           (annotation, index) => {
             let { position, ...rest } = annotation;
-            
+
             let viewportAnnotation = {
               position: p2v(position, view.viewport),
               ...rest
             };
-            
+
             return (
               <div key={annotation.id}>
                 <Highlight
@@ -77,7 +77,7 @@ class PageLayerNote extends React.Component {
       'layer-note'
     );
   }
-  
+
   render() {
     let {
       view,
@@ -86,21 +86,21 @@ class PageLayerNote extends React.Component {
       enableInactiveDragging,
       onChangePosition
     } = this.props;
-    
+
     let node = this.getContainerNode(view);
     if (!node) return null;
-    
+
     return ReactDOM.createPortal(
       <div>
         {annotations.map(
           (annotation, index) => {
             let { position, ...rest } = annotation;
-            
+
             let viewportAnnotation = {
               position: p2v(position, view.viewport),
               ...rest
             };
-            
+
             return (
               <div key={annotation.id}>
                 <Note
@@ -131,7 +131,7 @@ class PageLayerArea extends React.Component {
       'layer-area'
     );
   }
-  
+
   render() {
     let {
       view,
@@ -139,21 +139,21 @@ class PageLayerArea extends React.Component {
       selectedAnnotationIds,
       onChangePosition
     } = this.props;
-    
+
     let node = this.getContainerNode(view);
     if (!node) return null;
-    
+
     return ReactDOM.createPortal(
       <div>
         {annotations.map(
           (annotation, index) => {
             let { position, ...rest } = annotation;
-            
+
             let viewportAnnotation = {
               position: p2v(position, view.viewport),
               ...rest
             };
-            
+
             return (
               <div key={annotation.id}>
                 <Area
@@ -205,20 +205,20 @@ class MarginNoteLayer extends React.Component {
       'layer-margin-note'
     );
   }
-  
+
   quickIntersectRect(r1, r2) {
     return !(r2[0] > r1[2] ||
       r2[2] < r1[0] ||
       r2[1] > r1[3] ||
       r2[3] < r1[1]);
   }
-  
+
   stackNotes(marginNotes) {
     marginNotes.sort((a, b) => a.rect[0] - b.rect[0]);
     for (let marginNote of marginNotes) {
       for (let marginNote2 of marginNotes) {
         if (marginNote2 === marginNote) break;
-        
+
         if (this.quickIntersectRect(marginNote.rect, marginNote2.rect)) {
           let shift = wx(marginNote2.rect) / 3 * 2;
           marginNote.rect[0] = marginNote2.rect[0] + shift;
@@ -227,14 +227,14 @@ class MarginNoteLayer extends React.Component {
       }
     }
   }
-  
+
   getMarginNotes(annotations, viewport) {
     let notes = [];
     let scale = PDFViewerApplication.pdfViewer._currentScale;
-    
+
     let width = 9.6 * scale;
     let height = 9.6 * scale;
-    
+
     for (let annotation of annotations) {
       let viewportPosition = p2v(annotation.position, viewport);
       let left = viewportPosition.rects[0][0] - width / 2;
@@ -248,11 +248,11 @@ class MarginNoteLayer extends React.Component {
         }
       );
     }
-    
+
     notes.reverse();
     return notes;
   }
-  
+
   render() {
     let {
       view,
@@ -260,14 +260,14 @@ class MarginNoteLayer extends React.Component {
       selectedAnnotationIds,
       onClick
     } = this.props;
-    
+
     let node = this.getContainerNode(view);
     if (!node) return null;
-    
+
     let commentedAnnotations = annotations.filter(x => x.comment)
     let marginNotes = this.getMarginNotes(commentedAnnotations, view.viewport);
     this.stackNotes(marginNotes);
-    
+
     return ReactDOM.createPortal(
       <div>
         {marginNotes.map(
@@ -311,22 +311,22 @@ class MarginNoteLayer extends React.Component {
 
 class BlinkLayer extends React.Component {
   interval = null;
-  
+
   componentDidUpdate(prevProps) {
     if (prevProps.id !== this.props.id) {
       this.fade(this.refs.blink);
     }
   }
-  
+
   componentDidMount() {
     this.fade(this.refs.blink);
   }
-  
+
   fade(element) {
     if (this.interval) clearInterval(this.interval);
     let op = 1;
     this.interval = setInterval(() => {
-      
+
       if (!element) return;
       if (op <= 0.05) {
         clearInterval(this.interval);
@@ -337,20 +337,20 @@ class BlinkLayer extends React.Component {
       op -= op * 0.1;
     }, 100);
   }
-  
+
   getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
       'layer-blink'
     );
   }
-  
+
   render() {
     let { view, position } = this.props;
-    
+
     let node = this.getContainerNode(view);
     if (!node) return null;
-    
+
     return ReactDOM.createPortal(
       <div ref="blink">
         {position.rects.map((rect, index) => (
@@ -378,104 +378,104 @@ class Layer extends React.Component {
     initialized: false,
     dragging: false
   };
-  
+
   viewer = null;
-  
+
   containerNode = null;
-  
+
   componentDidMount() {
     let { onMouseSelection, onPointerUp, onPointerDown, onMouseMove } = this.props;
     this.debouncedAfterSelection = this.afterSelection;
-    
+
     this.viewer = window.PDFViewerApplication.pdfViewer;
-    
+
     this.viewer.eventBus.on('pagesinit', this.onDocumentReady);
     this.viewer.eventBus.on('textlayerrendered', this.onTextLayerRendered);
-    
-    
+
+
     this.containerNode = document.getElementById('viewerContainer');
-    
+
     this.containerNode.addEventListener('click', e => {
       this.setState({ selectionFinished: !!this.state.range });
     });
-    
+
     this.containerNode.addEventListener('pointerup', async e => {
       let selection = await this.getSelection();
       if (!selection) return;
       selection.position = this.v2p(selection.position);
       onMouseSelection(selection);
     });
-    
+
     this.containerNode.addEventListener('pointerdown', e => {
       let page = getPageFromElement(e.target);
       if (!page) {
         return;
       }
-      
+
       let containerEl = page.node;
       let offset = containerEl.getBoundingClientRect();
-      
+
       let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
       let y = e.clientY + containerEl.scrollTop - offset.top - 10;
-      
+
       let position = {
         pageIndex: page.number - 1,
         rects: [[x, y, x, y]]
       };
-      
+
       onPointerDown(this.v2p(position));
     });
-    
+
     this.containerNode.addEventListener('pointerup', e => {
       let page = getPageFromElement(e.target);
       if (!page) {
         return;
       }
-      
+
       if (e.target.classList.contains('margin-note')) {
         return;
       }
-      
+
       let containerEl = page.node;
       let offset = containerEl.getBoundingClientRect();
-      
+
       let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
       let y = e.clientY + containerEl.scrollTop - offset.top - 10;
-      
+
       let position = {
         pageIndex: page.number - 1,
         rects: [[x, y, x, y]]
       };
-      
+
       // Shoot the event after all other events are emitted.
       // Otherwise the resize updating in the area annotation is emitted too late
       setTimeout(() => {
         onPointerUp(this.v2p(position), e.button === 2, e.ctrlKey || e.metaKey, e.shiftKey, e.screenX, e.screenY, e);
       }, 0);
     }, true);
-    
+
     this.containerNode.addEventListener('mousemove', throttle(e => {
       let page = getPageFromElement(e.target);
       if (!page) {
         return;
       }
-      
+
       let containerEl = page.node;
       let offset = containerEl.getBoundingClientRect();
-      
+
       let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
       let y = e.clientY + containerEl.scrollTop - offset.top - 10;
-      
+
       let position = {
         pageIndex: page.number - 1,
         rects: [[x, y, x, y]]
       };
-      
+
       onMouseMove(this.v2p(position));
     }, 50), true);
-    
+
     document.addEventListener('selectionchange', this.onSelectionChange);
-    
+
     let viewerNode = document.getElementById('viewer');
     viewerNode.addEventListener('dragstart', (e) => {
       return;
@@ -484,7 +484,7 @@ class Layer extends React.Component {
         text: this.state.selection.text,
         position: this.state.selection.position
       };
-      
+
       // Todo: Move this out from here
       let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
       if (pageLabels && pageLabels[annotation.position.pageIndex]) {
@@ -493,14 +493,14 @@ class Layer extends React.Component {
       else {
         annotation.pageLabel = annotation.position.pageIndex + 1;
       }
-      
+
       e.dataTransfer.setData('zotero/annotation', JSON.stringify({
         ...annotation,
         position: this.v2p(annotation.position)
       }));
       e.dataTransfer.setData('text/plain', JSON.stringify({ ...annotation, position: this.v2p(annotation.position) }));
     });
-    
+
     viewerNode.addEventListener('dragend', (e) => {
       if (window.getSelection().empty) {  // Chrome
         window.getSelection().empty();
@@ -510,10 +510,10 @@ class Layer extends React.Component {
       }
     });
   }
-  
+
   componentWillUnmount() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
-    
+
     if (this.containerNode) {
       this.containerNode.removeEventListener(
         'textlayerrendered',
@@ -521,28 +521,28 @@ class Layer extends React.Component {
       );
     }
   }
-  
+
   groupAnnotationsByPage(annotations) {
     return [...annotations]
       .filter(Boolean)
       .reduce((res, annotation) => {
         let { pageIndex } = annotation.position;
-        
+
         res[pageIndex] = res[pageIndex] || [];
         res[pageIndex].push(annotation);
-        
+
         return res;
       }, {});
   }
-  
+
   onTextLayerRendered = () => {
     this.setState({ initialized: true });
   };
-  
+
   scrollTo = (position) => {
     let x = position.rects[0][0];
     let y = position.rects[0][3] + 100;
-    
+
     this.viewer.scrollPageIntoView({
       pageNumber: position.pageIndex + 1,
       destArray: [
@@ -554,72 +554,72 @@ class Layer extends React.Component {
       ]
     });
   };
-  
+
   onDocumentReady = () => {
     let { scrollRef } = this.props;
     scrollRef(this.scrollTo);
   };
-  
+
   selectionChangeDebounce = debounce(async () => {
     this.setState({ selection: await this.getSelection() });
   }, 250);
-  
+
   onSelectionChange = () => {
     this.setState({ selection: null });
     this.selectionChangeDebounce();
   };
-  
+
   async getSelection() {
     let selection = window.getSelection();
-    
+
     if (selection.anchorNode && selection.focusNode) {
       let a = selection.anchorNode;
       if (a.nodeType === Node.TEXT_NODE) {
         a = a.parentElement;
       }
-      
+
       let b = selection.focusNode;
       if (b.nodeType === Node.TEXT_NODE) {
         b = b.parentElement;
       }
-      
+
       if (
         !a.parentNode.className.includes('textLayer') ||
         !b.parentNode.className.includes('textLayer')
       ) {
         return null;
       }
-      
+
       if (a.parentNode !== b.parentNode) {
         return null;
       }
     }
-    
+
     let range = null;
-    
+
     if (!selection.isCollapsed) {
       range = selection.getRangeAt(0);
     }
-    
+
     if (!range) return null;
-    
+
     let page = getPageFromRange(range);
     if (!page) {
       return null;
     }
     let rects = getClientRects(range, page.node);
-    
+
     if (rects.length === 0) {
       return null;
     }
-    
+
     let position = { rects, pageIndex: page.number - 1 };
-    
+
     let extractedRange = await extractRange(this.v2p(position));
     if (!extractedRange) return null;
-    
+
     extractedRange.position = this.p2v(extractedRange.position);
-    
+
     // TODO: Unify all annotations sort index calculation
     let offset = extractedRange.offset;
     extractedRange.sortIndex = [
@@ -627,22 +627,22 @@ class Layer extends React.Component {
       offset.toString().padStart(7, '0'),
       '0'.padStart(10, '0') // TODO: Fix missing dot
     ].join('|');
-    
+
     delete extractedRange.offset;
-    
+
     return extractedRange;
   }
-  
+
   v2p(position) {
     let viewport = this.viewer.getPageView(position.pageIndex).viewport;
     return v2p(position, viewport);
   }
-  
+
   p2v(position) {
     let viewport = this.viewer.getPageView(position.pageIndex).viewport;
     return p2v(position, viewport);
   }
-  
+
   render() {
     let {
       annotations,
@@ -659,20 +659,20 @@ class Layer extends React.Component {
       onClickTags,
       onClickMarginNote
     } = this.props;
-    
+
     if (!this.viewer || !this.viewer.pdfDocument || !this.state.initialized) return null;
-    
+
     let annotationsByPage = this.groupAnnotationsByPage(annotations);
     let annotationsByPagePrev = this.groupAnnotationsByPage(this.props.annotations);
-    
+
     let pageLayers = [];
     for (let pageIndex = 0; pageIndex < this.viewer.pdfDocument.numPages; pageIndex++) {
       if (!annotationsByPage[String(pageIndex)] && !annotationsByPagePrev[String(pageIndex)]) continue;
-      
+
       let view = this.viewer.getPageView(pageIndex);
-      
+
       let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex).width;
-      
+
       pageLayers.push(
         <PageLayerHighlight
           key={'h_' + pageIndex}
@@ -730,7 +730,7 @@ class Layer extends React.Component {
         />
       );
     }
-    
+
     if (popupAnnotation) {
       let { position, ...rest } = popupAnnotation;
       popupAnnotation = {
@@ -738,7 +738,7 @@ class Layer extends React.Component {
         ...rest
       };
     }
-    
+
     let blinkLayer = null;
     if (blink) {
       let view = this.viewer.getPageView(blink.position.pageIndex);
@@ -746,7 +746,7 @@ class Layer extends React.Component {
       let position = this.p2v(blink.position);
       blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
     }
-    
+
     return (
       <React.Fragment>
         {blinkLayer}
@@ -761,7 +761,7 @@ class Layer extends React.Component {
           popupAnnotation && !this.state.dragging && (
             <PagePopup
               id={popupAnnotation.id}
-              className="annotation-preview-popup"
+              className="annotation-popup"
               position={popupAnnotation.position}
             >
               <Preview
@@ -799,7 +799,11 @@ class Layer extends React.Component {
         }
         {
           this.state.selection && this.props.enableMouseSelection && (
-            <PagePopup id={1} position={this.state.selection.position}>
+            <PagePopup
+              id={1}
+              className="selection-popup"
+              position={this.state.selection.position}
+            >
               <SelectionMenu
                 onHighlight={() => {
                   let selection = this.state.selection;

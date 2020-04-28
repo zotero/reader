@@ -65,20 +65,23 @@ class Preview extends React.Component {
     if (this.props.isExpandable) {
       comment = this.props.enableComment && !(annotation.readOnly && !annotation.comment) &&
         <div className="comment"><ExpandableEditor
-          id={annotation.id} text={annotation.comment} placeholder="Add comment…"
+          id={annotation.id} text={annotation.comment} placeholder="Add comment"
           isPlainText={false} onChange={this.handleCommentChange}
           isReadOnly={annotation.readOnly}
         /></div>;
     }
     else {
-      comment = !(annotation.readOnly && !annotation.comment) && <Editor
-        id={annotation.id}
-        text={annotation.comment}
-        placeholder="Add comment…"
-        isPlainText={false}
-        isReadOnly={annotation.readOnly}
-        onChange={this.handleCommentChange}
-      />;
+      comment = !(annotation.readOnly && !annotation.comment) &&
+        <div className="comment">
+          <Editor
+            id={annotation.id}
+            text={annotation.comment}
+            placeholder="Add comment"
+            isPlainText={false}
+            isReadOnly={annotation.readOnly}
+            onChange={this.handleCommentChange}
+          />
+        </div>;
     }
 
     return (

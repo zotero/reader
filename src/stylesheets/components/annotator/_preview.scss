@@ -111,7 +111,6 @@
 
   .tags {
     padding: rem(3) 8px rem(5);
-    background-color: $tags-bg;
 
     // Normalize line height across browsers at 11px font-size
     line-height: 1.37;
@@ -121,8 +120,12 @@
       padding: rem(4) 8px rem(4);
     }
 
-    .selected & {
-      background-color: $tags-selected-bg;
+    .annotation & {
+      background-color: $tags-bg;
+
+      @include state(".annotation.selected") {
+        background-color: $tags-selected-bg;
+      }
     }
 
     .tag {
@@ -141,20 +144,11 @@
     &:empty::before {
       content: attr(placeholder);
       color: $tags-placeholder-color;
-    }
-  }
-}
 
-.page-popup {
-  .preview {
-    .editor {
-      border: 1px solid lightgray;
-      padding: 0;
-
-      .content {
-        max-height: 150px;
-        overflow-y: auto;
+      .annotation-popup & {
+        color: #707070;
       }
     }
   }
 }
+

@@ -1,12 +1,17 @@
 
 .page-popup-container {
-    position: absolute;
-    z-index: 10;
+  position: absolute;
+  z-index: $z-index-page-popup;
 }
 
 .page-popup {
-    position: absolute;
-    background-color: #ffffff;
-    border: 1px solid gray;
-    padding: 5px;
+  position: absolute;
+  background-color: #fff;
+  border-radius: $page-popup-border-radius;
+  box-shadow: $page-popup-box-shadow;
+
+  &.selection-popup {
+    padding: 4px;
+  }
 }
+
