@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
+import cx from 'classnames'
 
 class PagePopup extends React.Component {
   state = {
@@ -69,9 +70,12 @@ class PagePopup extends React.Component {
     let annotationCenterLeft = node.offsetLeft + 9 + rectMax[0] + ((rectMax[2] - rectMax[0])) / 2;
 
     left = annotationCenterLeft - dimensions.width / 2;
-
+    
+    let isTop = true;
+    
     if (node.offsetTop + 10 + rectMax[3] + 20 + dimensions.height <= visibleRect[3]) {
       top = node.offsetTop + 10 + rectMax[3] + 20;
+      isTop = false;
     }
     else if (node.offsetTop + 10 + rectMax[1] - visibleRect[1] > dimensions.height) {
       top = node.offsetTop + 10 + rectMax[1] - dimensions.height - 20;
@@ -79,15 +83,20 @@ class PagePopup extends React.Component {
     else {
       top = visibleRect[3] - dimensions.height;
     }
-
-    this.setState({ popupPosition: { top, left } });
+    
+    this.setState({ popupPosition: { top, left, isTop } });
   }
 
   render() {
+    let topBottom = {};
+    if (this.state.popupPosition) {
+      topBottom['page-popup-' + (this.state.popupPosition.isTop ? 'top' : 'bottom')] = true;
+    }
+    
     return ReactDOM.createPortal(
       <div
         ref="container"
-        className={'page-popup ' + this.props.className}
+        className={cx('page-popup', this.props.className, { ...topBottom })}
         style={this.state.popupPosition && { ...this.state.popupPosition }}
       >
         {this.props.children}
