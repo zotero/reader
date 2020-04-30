@@ -5,5 +5,5 @@
 // Example: calc(#{nem(4)})
 
 @function nem($length) {
-  @return $length / 12 * #{var(--note-font-size)};
+  @return calc(#{$length} / 12) * #{var(--note-font-size)};
 }
