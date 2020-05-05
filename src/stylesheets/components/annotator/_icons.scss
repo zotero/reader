@@ -7,14 +7,26 @@
 .toolbar {
   .highlight {
     @include icon("highlight");
+
+    &.active {
+      @include icon("highlight-white");
+    }
   }
 
   .note {
     @include icon("note");
+
+    &.active {
+      @include icon("note-white");
+    }
   }
 
   .area {
     @include icon("area");
+
+    &.active {
+      @include icon("area-white");
+    }
   }
 }
 

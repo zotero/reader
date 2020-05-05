@@ -77,7 +77,7 @@ $scale-select-container-bp: 750px;
 
 // Toolbar button
 $toolbar-btn-height:                22px;
-$toolbar-btn-padding:               3px 11px 3px 11px;
+$toolbar-btn-padding:               3px 11px;
 $toolbar-btn-margin-x:              4px;
 $toolbar-btn-bg:                    linear-gradient(to bottom, #fafafa, #f2f2f2);
 $toolbar-btn-border:                0;
@@ -94,7 +94,7 @@ $toolbar-btn-border-active-color:   $blue-btn;
 $toolbar-btn-icon-active-offset:    0;
 
 // Toolbar separators
-$toolbar-btn-separator-list:    ".toolbarButton#forward, .toolbarButton#sidebarToggle, .toolbarButton#download, .dropdownToolbarButton";
+$toolbar-btn-separator-list:    ".toolbarButton#forward, .toolbarButton#sidebarToggle, .toolbarButton#download, .zoomIn, .dropdownToolbarButton";
 $toolbar-btn-separator-spacing: 13px;
 $toolbar-btn-visual-separator:  false;
 $toolbar-btn-separator-width:   null;

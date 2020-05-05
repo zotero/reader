@@ -3,19 +3,216 @@
 //
 
 .toolbar {
-  .toolbarButton.active {
-    background: #707070;
+  .tool-group {
+    display: flex;
   }
 
-  .toolbarButton#globalColorButton {
-    &::before {
-      content: "";
-      display: block;
-      width: 12px;
-      height: 12px;
-      margin: 2px;
-      background-color: currentColor;
-      border: 1px solid #555;
+  .annotation-tools {
+    .toolbarButton {
+      height: 24px;
+      padding: 4px 11px;
+      background: none;
+      border-radius: 0;
+      box-shadow: none;
+      position: relative;
+
+      &:focus-visible {
+        z-index: 2; // Chrome
+
+        &::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          border-radius: 0;
+          box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+
+          @include retina {
+            box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 2.5px rgba($accent-color, 0.5);
+          }
+        }
+      }
+
+      &:-moz-focusring {
+        &::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          border-radius: 0;
+          box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+          z-index: 2; // Firefox
+
+          @include retina {
+            box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 2.5px rgba($accent-color, 0.5);
+          }
+        }
+      }
+
+      &:first-child {
+        margin-right: 0;
+        background: none;
+
+        &:focus-visible {
+          &::after {
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+          }
+        }
+
+        &:-moz-focusring {
+          &::after {
+            border-top-left-radius: 5px;
+            border-bottom-left-radius: 5px;
+          }
+        }
+      }
+
+      &:last-child {
+        margin-left: 0;
+        background: image-url("darwin/menubutton-end.png") no-repeat right top;
+
+        @include retina {
+          background: image-url("darwin/menubutton-end@2x.png") no-repeat right top / auto 24px;
+        }
+
+        &:active {
+          background: image-url("darwin/menubutton-end-pressed.png") no-repeat right top;
+
+          @include retina {
+            background: image-url("darwin/menubutton-end-pressed@2x.png") no-repeat right top / auto 24px;
+          }
+        }
+
+        &:focus-visible {
+          &::after {
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+          }
+        }
+
+        &:-moz-focusring {
+          &::after {
+            border-top-right-radius: 5px;
+            border-bottom-right-radius: 5px;
+          }
+        }
+      }
+
+      &:not(:first-child) {
+        margin-left: 0;
+      }
+
+      &:not(:last-child) {
+        margin-right: 0;
+      }
+
+      > span:first-child {
+        width: 100%;
+        background:
+          linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px 22px,
+          image-url("darwin/menubutton-start.png") no-repeat center top;
+
+        @include retina {
+          background:
+            linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px 22px,
+            image-url("darwin/menubutton-start@2x.png") no-repeat center top / auto 24px;
+        }
+
+        @include state(".toolbarButton:active") {
+          background: image-url("darwin/menubutton-start-pressed.png") no-repeat center top;
+
+          @include retina {
+            background: image-url("darwin/menubutton-start-pressed@2x.png") no-repeat center top / auto 24px;
+          }
+        }
+
+        @include state(".toolbarButton.active") {
+          background: image-url("darwin/menubutton-start-active.png") no-repeat center top;
+
+          @include retina {
+            background: image-url("darwin/menubutton-start-active@2x.png") no-repeat center top / auto 24px;
+          }
+
+          @include state(".toolbarButton:active") {
+            background: image-url("darwin/menubutton-start-active-pressed.png") no-repeat center top;
+          }
+        }
+
+        @include state(".toolbarButton.active + .toolbarButton:not(:active)") {
+          background: image-url("darwin/menubutton-start.png") no-repeat center top;
+
+          @include retina {
+            background: image-url("darwin/menubutton-start@2x.png") no-repeat center top / auto 24px;
+          }
+        }
+
+        @include variant(".toolbarButton:first-child") {
+          background: image-url("darwin/menubutton-start.png") no-repeat left top;
+
+          @include retina {
+            background: image-url("darwin/menubutton-start@2x.png") no-repeat left top / auto 24px;
+          }
+
+          @include state(".toolbarButton:active") {
+            background: image-url("darwin/menubutton-start-pressed.png") no-repeat left top;
+
+            @include retina {
+              background: image-url("darwin/menubutton-start-pressed@2x.png") no-repeat left top / auto 24px;
+            }
+          }
+
+          @include state(".toolbarButton.active") {
+            background: image-url("darwin/menubutton-start-active.png") no-repeat left top;
+
+            @include retina {
+              background: image-url("darwin/menubutton-start-active@2x.png") no-repeat left top / auto 24px;
+            }
+
+            @include state(".toolbarButton:active") {
+              background: image-url("darwin/menubutton-start-active-pressed.png") no-repeat left top;
+            }
+          }
+        }
+
+        @include variant(".toolbarButton:last-child") {
+          width: calc(100% - 17px);
+        }
+      }
+
+      &.global-color {
+        &::before {
+          content: "";
+          display: inline-block;
+          vertical-align: top;
+          width: 12px;
+          height: 12px;
+          margin: 2px;
+          background-color: currentColor;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 3px;
+        }
+
+        .dropmarker {
+          display: inline-block;
+          vertical-align: top;
+          width: 7px;
+          height: 4px;
+          margin: 6px -1px 0 2px;
+          background: image-url("searchbar-dropmarker.png") no-repeat left top;
+          position: relative;
+          z-index: 1;
+
+          @include retina {
+            background: image-url("searchbar-dropmarker@2x.png") no-repeat left top / 100%;
+          }
+        }
+      }
     }
   }
 }
+

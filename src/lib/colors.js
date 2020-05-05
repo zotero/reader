@@ -1,9 +1,9 @@
 'use strict';
 
 export let annotationColors = [
-  ['Yellow', '#f8c348'],
-  ['Green', '#6cc055'],
-  ['Blue', '#589fee'],
-  ['Pink', '#f64276'],
-  ['Purple', '#ba6cd1']
+  ['Red', '#ff6666'],
+  ['Orange', '#ff8c19'],
+  ['Green', '#5fb236'],
+  ['Blue', '#2ea8e5'],
+  ['Purple', '#a28ae5']
 ];

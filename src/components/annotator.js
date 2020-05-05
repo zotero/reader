@@ -125,7 +125,7 @@ class Annotator extends React.Component {
         // this.setState({ selectedAnnotationIds: [] });
       }
     });
-    
+
     document.getElementById('viewer').addEventListener('pointerup', (event) => {
           let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
           if (!!selection && selection.isCollapsed) selection.empty ? selection.empty() : selection.removeAllRanges();
@@ -268,10 +268,10 @@ class Annotator extends React.Component {
     }
 
     let selectedId = null;
-    
+
     if (!found.length) return;
-    
-    
+
+
     function getAnnotationAreaSize(annotation) {
       let areaSize = 0;
       for (let rect of annotation.position.rects) {
@@ -279,11 +279,11 @@ class Annotator extends React.Component {
       }
       return areaSize;
     }
-    
+
     found.sort((a, b) => {
       return getAnnotationAreaSize(a) - getAnnotationAreaSize(b);
     });
-    
+
     if (hasModifier) {
       return found[0].id;
     }
@@ -306,10 +306,10 @@ class Annotator extends React.Component {
         selectedId = found[0].id;
       }
     }
-    
+
     return selectedId;
   }
-  
+
   selectAnnotation(id, ctrl, shift) {
     let selectedIds = this.state.selectedAnnotationIds;
     if (shift && selectedIds.length) {
@@ -347,7 +347,7 @@ class Annotator extends React.Component {
     else {
       selectedIds = [id];
     }
-    
+
     this.setState({ selectedAnnotationIds: selectedIds });
   }
 
@@ -382,7 +382,7 @@ class Annotator extends React.Component {
 
     return false;
   }
-  
+
   handleDragStart = (event) => {
     // annotation.itemId = window.itemId;
     event.dataTransfer.setData('zotero/annotation', JSON.stringify(this.state.selectedAnnotationIds));
@@ -480,7 +480,7 @@ class Annotator extends React.Component {
             else {
               this.setState({ selectedAnnotationIds: [id] });
             }
-          
+
             this.scrollViewerTo(this.state.annotations.find(x => x.id === id).position);
           }}
           onChange={(annotation) => {
@@ -632,9 +632,9 @@ class Annotator extends React.Component {
             }
             this.setState({ isLastClickRight: isRight });
             if (selectId) {
-              
+
               this.selectAnnotation(selectId, isCtrl, isShift);
-            
+
               if (isRight) {
                 let selectedColor = this.state.annotations.find(x => x.id === selectId).color;
                 this.props.onPopup('annotationPopup', {
