@@ -6,26 +6,26 @@
 
 .toolbar {
   .highlight {
-    @include icon("highlight");
+    @include icon($highlight-icon);
 
     &.active {
-      @include icon("highlight-white");
+      @include icon($highlight-icon-active);
     }
   }
 
   .note {
-    @include icon("note");
+    @include icon($note-icon);
 
     &.active {
-      @include icon("note-white");
+      @include icon($note-icon-active);
     }
   }
 
   .area {
-    @include icon("area");
+    @include icon($area-icon);
 
     &.active {
-      @include icon("area-white");
+      @include icon($area-icon-active);
     }
   }
 }

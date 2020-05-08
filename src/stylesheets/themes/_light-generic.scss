@@ -316,3 +316,41 @@ $progress-bg:            #e6e6e6;
 $progress-border-radius: 2px;
 $progress-indicator-bg:  #06b025;
 $progress-label-width:   38px;
+
+// Annotation
+$annotation-bg:                  #fff;
+$annotation-selected-bg:         #e4ebf9; // 8% K
+$annotation-border:              1px solid #bcc4d2;
+$annotation-selected-border:     1px solid #6d95e0;
+$annotation-border-radius:       5px;
+$annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
+$annotation-placeholder-color:   #6d95e0;
+
+// Annotation tools
+$highlight-icon: "highlight";
+$highlight-icon-active: $highlight-icon;
+$note-icon: "note";
+$note-icon-active: $note-icon;
+$area-icon: "area";
+$area-icon-active: $area-icon;
+
+// Annotation popup
+
+// Preview
+$preview-header-height:            21px;
+$preview-border:                   1px solid #d7dad7;
+$preview-selected-border:          1px solid rgba(#6d95e0, 0.4);
+
+$comment-bg:             tint($sidebar-bg, 60%);
+$comment-selected-bg:    #dde6f8; // 10% K
+$tags-bg:                tint($sidebar-bg, 60%);
+$tags-selected-bg:       #dde6f8; // 10% K
+$tags-placeholder-color: #6d95e0;
+
+// Editor
+$editor-border:          $preview-border;
+$editor-selected-border: $preview-selected-border;
+
+// Page popup
+$page-popup-border-radius:    4px;
+$page-popup-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);

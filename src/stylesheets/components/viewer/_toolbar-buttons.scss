@@ -37,7 +37,7 @@
     }
 
     &:active,
-    &.toggled:not(#sidebarToggle) {
+    &.active {
       background: $toolbar-btn-active-bg;
       border-color: $toolbar-btn-border-active-color;
     }
@@ -54,7 +54,7 @@
       position: relative;
       z-index: 2;
 
-      @include state(".toolbarButton:active", ".toolbarButton.toggled:not(#sidebarToggle)") {
+      @include state(".toolbarButton:active", ".toolbarButton.active") {
         top: $toolbar-btn-icon-active-offset;
       }
     }

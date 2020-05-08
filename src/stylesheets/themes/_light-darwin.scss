@@ -345,6 +345,14 @@ $progress-border-radius: 3px;
 $progress-indicator-bg:  #1388ff; // Hard-coded like Zotero’s initial loading bar
 $progress-label-width:   38px;
 
+// Annotation tools
+$highlight-icon: "darwin/highlight";
+$highlight-icon-active: "darwin/highlight-white";
+$note-icon: "darwin/note";
+$note-icon-active: "darwin/note-white";
+$area-icon: "darwin/area";
+$area-icon-active: "darwin/area-white";
+
 // Annotation
 $annotation-bg:                  #fff;
 $annotation-selected-bg:         #e4ebf9; // 8% K
