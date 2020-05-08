@@ -19,8 +19,14 @@
     }
 
     .toolbarButton {
+      height: $selection-popup-btn-height;
       padding: $selection-popup-btn-padding;
+      background: $selection-popup-btn-bg;
       margin: $selection-popup-btn-margin;
+
+      &:active {
+        background: $selection-popup-btn-active-bg;
+      }
     }
   }
 }

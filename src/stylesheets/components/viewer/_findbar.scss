@@ -84,6 +84,16 @@
     }
   }
 
+  .toolbarButton {
+    height: $findbar-btn-height;
+    padding: $findbar-btn-padding;
+    background: $findbar-btn-bg;
+
+    &:active {
+      background: $findbar-btn-active-bg;
+    }
+  }
+
   @if $platform == "darwin" {
     #findPrevious {
       padding-left: 4px;

@@ -77,13 +77,15 @@ $scale-select-container-bp: 750px;
 
 // Toolbar button
 $toolbar-btn-height:                22px;
-$toolbar-btn-padding:               3px 11px;
-$toolbar-btn-margin-x:              4px;
 $toolbar-btn-bg:                    linear-gradient(to bottom, #fafafa, #f2f2f2);
+$toolbar-btn-padding:               3px 11px;
 $toolbar-btn-border:                0;
 $toolbar-btn-border-radius:         3.75px;
+$toolbar-btn-margin-x:              4px;
 $toolbar-btn-box-shadow:            inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
 $toolbar-btn-box-shadow-2x:         inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$toolbar-btn-focus-box-shadow:      0 0 0 4px rgba($accent-color, 0.5), $toolbar-btn-box-shadow;
+$toolbar-btn-focus-box-shadow-2x:   0 0 0 4px rgba($accent-color, 0.5), $toolbar-btn-box-shadow-2x;
 $toolbar-btn-hover-bg:              null;
 $toolbar-btn-border-hover-color:    null;
 $toolbar-btn-active-bg:             linear-gradient(to bottom, #e4e4e4, #ddd);
@@ -161,23 +163,12 @@ $findbar-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0
 $options-one-container-margin: -10px 0 0 0;
 $options-two-container-margin: -14px 0 -4px 0;
 
-$findbar-btn-height:              20px;
-$findbar-btn-padding:             2px 11px 2px 11px;
-$findbar-btn-margin-x:            4px;
-$findbar-btn-bg:                  linear-gradient(to bottom, #fefefe, #f7f7f7);
-$findbar-btn-border:              0;
-$findbar-btn-border-radius:       $toolbar-btn-border-radius;
-$findbar-btn-box-shadow:          $toolbar-btn-box-shadow;
-$findbar-btn-box-shadow-2x:       $toolbar-btn-box-shadow-2x;
-$findbar-btn-hover-bg:            null;
-$findbar-btn-border-hover-color:  null;
-$findbar-btn-focus-box-shadow:    0 0 0 4px rgba($accent-color, 0.5), $toolbar-btn-box-shadow;
-$findbar-btn-focus-box-shadow-2x: 0 0 0 4px rgba($accent-color, 0.5), $toolbar-btn-box-shadow-2x;
-$findbar-btn-active-bg:           linear-gradient(to bottom, #e7e7e7, #e1e1e1);
-$findbar-btn-border-active-color: null;
-$findbar-btn-icon-active-offset:  null;
-$findbar-btn-previous-icon:       "back";
-$findbar-btn-next-icon:           "forward";
+$findbar-btn-height:        20px;
+$findbar-btn-padding:       2px 11px 2px 11px;
+$findbar-btn-bg:            linear-gradient(to bottom, #fefefe, #f7f7f7);
+$findbar-btn-active-bg:     linear-gradient(to bottom, #e7e7e7, #e1e1e1);
+$findbar-btn-previous-icon: "back";
+$findbar-btn-next-icon:     "forward";
 
 $find-input-width:            200px;
 $find-input-loading-x:        4px;
@@ -242,6 +233,7 @@ $split-toolbar-btn-height:                         22px;
 $split-toolbar-btn-height-2x:                      21px;
 $split-toolbar-btn-margin:                         0 10px;
 $toolbar-sidebar-btn-padding:                      3px 11px 3px 12px;
+$toolbar-sidebar-btn-margin:                       0;
 $toolbar-sidebar-btn-padding-last:                 3px 12px;
 $toolbar-sidebar-btn-bg:                           linear-gradient(#d5d5d5, #acacac);
 $toolbar-sidebar-btn-bg-2x:                        linear-gradient(#d0d0d0, #9f9f9f);
@@ -251,7 +243,7 @@ $toolbar-sidebar-btn-toggled-bg:                   linear-gradient(#6e6e6e, #5a5
 $toolbar-sidebar-btn-toggled-active-bg:            linear-gradient(#585858, #474747);
 $toolbar-sidebar-btn-border-width:                 0;
 $toolbar-sidebar-btn-border-color:                 null;
-$toolbar-sidebar-btn-border-radius:                $toolbar-btn-border-radius;
+$toolbar-sidebar-btn-border-radius:                $toolbar-btn-border-radius + 1px;
 $toolbar-sidebar-btn-spacing:                      null;
 $toolbar-sidebar-gradient-btn:                     true;
 $toolbar-sidebar-label-bg:                         linear-gradient(rgba(0, 0, 0, 0.1)) no-repeat left center / 1px 20px,
@@ -264,7 +256,7 @@ $toolbar-sidebar-label-active-bg:                  linear-gradient(rgba(0, 0, 0,
 $toolbar-sidebar-label-active-bg-first:            $toolbar-btn-active-bg;
 $toolbar-sidebar-btn-toggled-next-label-bg:        linear-gradient(#fbfbfb, #f2f2f2);
 $toolbar-sidebar-btn-toggled-next-label-active-bg: $toolbar-btn-active-bg;
-$toolbar-sidebar-label-border-radius:              $toolbar-btn-border-radius - 1px;
+$toolbar-sidebar-label-border-radius:              $toolbar-btn-border-radius;
 
 $thumbnail-icon:         "darwin/view-thumbnail-linear";
 $thumbnail-icon-toggled: "darwin/view-thumbnail-linear-white";
@@ -346,12 +338,12 @@ $progress-indicator-bg:  #1388ff; // Hard-coded like Zotero’s initial loading 
 $progress-label-width:   38px;
 
 // Annotation tools
-$highlight-icon: "darwin/highlight";
-$highlight-icon-active: "darwin/highlight-white";
-$note-icon: "darwin/note";
-$note-icon-active: "darwin/note-white";
-$area-icon: "darwin/area";
-$area-icon-active: "darwin/area-white";
+$highlight-tool-icon:        "darwin/highlight";
+$highlight-tool-icon-active: "darwin/highlight-white";
+$note-tool-icon:             "darwin/note";
+$note-tool-icon-active:      "darwin/note-white";
+$area-tool-icon:             "darwin/area";
+$area-tool-icon-active:      "darwin/area-white";
 
 // Annotation
 $annotation-bg:                  #fff;
@@ -384,6 +376,9 @@ $page-popup-border-radius: 4px;
 $page-popup-box-shadow:    0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
 // Selection popup
-$selection-popup-padding:     2px;
-$selection-popup-btn-padding: 2px 5px;
-$selection-popup-btn-margin: 3px;
+$selection-popup-padding:           2px;
+$selection-popup-btn-height:        20px;
+$selection-popup-btn-padding:       2px 5px;
+$selection-popup-btn-bg:            linear-gradient(to bottom, #fefefe, #f7f7f7);
+$selection-popup-btn-active-bg:     linear-gradient(to bottom, #e7e7e7, #e1e1e1);
+$selection-popup-btn-margin:        3px;

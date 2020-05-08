@@ -6,26 +6,26 @@
 
 .toolbar {
   .highlight {
-    @include icon($highlight-icon);
+    @include icon($highlight-tool-icon);
 
     &.active {
-      @include icon($highlight-icon-active);
+      @include icon($highlight-tool-icon-active);
     }
   }
 
   .note {
-    @include icon($note-icon);
+    @include icon($note-tool-icon);
 
     &.active {
-      @include icon($note-icon-active);
+      @include icon($note-tool-icon-active);
     }
   }
 
   .area {
-    @include icon($area-icon);
+    @include icon($area-tool-icon);
 
     &.active {
-      @include icon($area-icon-active);
+      @include icon($area-tool-icon-active);
     }
   }
 }
@@ -71,6 +71,6 @@
   }
 
   .btn-highlight {
-    @include icon($highlight-icon);
+    @include icon($highlight-tool-icon);
   }
 }

@@ -50,6 +50,17 @@
     order: 2;
   }
 
+  .toolbarButton {
+    .is-blurred & {
+      background: $toolbar-btn-blurred-bg;
+      box-shadow: $toolbar-btn-blurred-box-shadow;
+
+      @include retina {
+        box-shadow: $toolbar-btn-blurred-box-shadow-2x;
+      }
+    }
+  }
+
   .splitToolbarButton {
     display: flex;
   }
@@ -88,6 +99,22 @@
       padding-right: 6px;
       margin-right: 1px;
       clip-path: inset(-1px 0 -1px -1px);
+
+      &:focus-visible {
+        clip-path: none;
+
+        & + #forward {
+          clip-path: inset(-1px -1px -1px 0);
+        }
+      }
+
+      &:-moz-focusring {
+        clip-path: none;
+
+        & + #forward {
+          clip-path: inset(-1px -1px -1px 0);
+        }
+      }
 
       @include retina {
         clip-path: none;

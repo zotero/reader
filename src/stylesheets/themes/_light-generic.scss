@@ -75,10 +75,14 @@ $scale-select-container-bp: 0;
 
 // Toolbar button
 $toolbar-btn-height:                21px;
-$toolbar-btn-padding:               2px 4px 1px 4px;
-$toolbar-btn-margin-x:              3px;
 $toolbar-btn-bg:                    transparent;
+$toolbar-btn-padding:               2px 4px 1px 4px;
 $toolbar-btn-border:                1px solid transparent;
+$toolbar-btn-margin-x:              3px;
+$toolbar-btn-box-shadow:            null;
+$toolbar-btn-box-shadow-2x:         null;
+$toolbar-btn-focus-box-shadow:      null;
+$toolbar-btn-focus-box-shadow-2x:   null;
 $toolbar-btn-border-radius:         0;
 $toolbar-btn-box-shadow:            none;
 $toolbar-btn-box-shadow-2x:         $toolbar-btn-box-shadow;
@@ -240,6 +244,7 @@ $split-toolbar-btn-height:               27px;
 $split-toolbar-btn-height-2x:            null;
 $split-toolbar-btn-margin:               null;
 $toolbar-sidebar-btn-padding:            5px 8px 5px 9px;
+$toolbar-sidebar-btn-margin:             0;
 $toolbar-sidebar-btn-padding-last:       5px 9px;
 $toolbar-sidebar-btn-bg:                 transparent;
 $toolbar-sidebar-btn-bg-2x:              null;
@@ -327,12 +332,12 @@ $annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
 $annotation-placeholder-color:   #6d95e0;
 
 // Annotation tools
-$highlight-icon: "highlight";
-$highlight-icon-active: $highlight-icon;
-$note-icon: "note";
-$note-icon-active: $note-icon;
-$area-icon: "area";
-$area-icon-active: $area-icon;
+$highlight-tool-icon:        "highlight";
+$highlight-tool-icon-active: $highlight-tool-icon;
+$note-tool-icon:             "note";
+$note-tool-icon-active:      $note-tool-icon;
+$area-tool-icon:             "area";
+$area-tool-icon-active:      $area-tool-icon;
 
 // Annotation popup
 
@@ -356,6 +361,9 @@ $page-popup-border-radius:    4px;
 $page-popup-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
 // Selection popup
-$selection-popup-padding:     2px;
-$selection-popup-btn-padding: null;
-$selection-popup-btn-margin:  2px;
+$selection-popup-padding:           2px;
+$selection-popup-btn-height:        20px;
+$selection-popup-btn-padding:       null;
+$selection-popup-btn-bg:            null;
+$selection-popup-btn-active-bg:     null;
+$selection-popup-btn-margin:        2px;

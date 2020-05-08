@@ -33,11 +33,14 @@
 
   .toolbarButton {
     flex: 1 0 auto;
+    height: auto;
     background: $toolbar-sidebar-btn-bg;
     border-color: $toolbar-sidebar-btn-border-color;
     border-width: $toolbar-sidebar-btn-border-width;
     border-style: solid;
     padding: $toolbar-sidebar-btn-padding;
+    margin: $toolbar-sidebar-btn-margin;
+    border-radius: 0;
     position: relative;
 
     @include retina {
