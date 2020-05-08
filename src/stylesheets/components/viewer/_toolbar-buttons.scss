@@ -130,3 +130,63 @@
   }
 }
 
+.findbar,
+.page-popup {
+  .toolbarButton {
+    height: $findbar-btn-height;
+    background: $findbar-btn-bg;
+    border: $findbar-btn-border;
+    border-radius: $findbar-btn-border-radius;
+    padding: $findbar-btn-padding;
+    margin: 0 $findbar-btn-margin-x;
+    box-shadow: $findbar-btn-box-shadow;
+
+    @include retina {
+      box-shadow: $findbar-btn-box-shadow-2x;
+    }
+
+    &:hover {
+      background: $findbar-btn-hover-bg;
+      border-color: $findbar-btn-border-hover-color;
+    }
+
+    &:focus-visible {
+      box-shadow: $findbar-btn-focus-box-shadow;
+      position: relative;
+      z-index: 1;
+
+      @include retina {
+        box-shadow: $findbar-btn-focus-box-shadow-2x;
+      }
+    }
+
+    &:-moz-focusring {
+      box-shadow: $findbar-btn-focus-box-shadow;
+      position: relative;
+      z-index: 1;
+
+      @include retina {
+        box-shadow: $findbar-btn-focus-box-shadow-2x;
+      }
+    }
+
+    &:active,
+    &.toggled {
+      background: $findbar-btn-active-bg;
+      border-color: $findbar-btn-border-active-color;
+
+      &::before {
+        position: relative;
+        top: $findbar-btn-icon-active-offset;
+      }
+    }
+
+    &[disabled] {
+      pointer-events: none;
+
+      &::before {
+        opacity: 0.5;
+      }
+    }
+  }
+}

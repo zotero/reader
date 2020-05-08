@@ -7,8 +7,12 @@ class SelectionMenu extends React.Component {
     let { onCopy, onHighlight } = this.props;
     return (
       <div className="selection-menu">
-        <button onClick={onCopy}>Copy</button>
-        <button onClick={onHighlight}>Highlight</button>
+        <button className="toolbarButton btn-copy" onClick={onCopy} data-l10n-id="copy">
+          <span data-l10n-id="copy_label">Copy</span>
+        </button>
+        <button className="toolbarButton btn-highlight" onClick={onHighlight} data-l10n-id="highlight">
+          <span data-l10n-id="highlight_label">Highlight</span>
+        </button>
       </div>
     );
   }
