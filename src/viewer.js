@@ -188,34 +188,13 @@ class Viewer {
       document.createElement('div')
     );
     
-    
-    let tvl = document.getElementById('toolbarViewerLeft');
-    let vf = document.getElementById('viewFind');
-    let st = document.getElementById('sidebarToggle');
-    
-    let labelArrowLeft = document.createElement('span');
-    let arrowLeft = document.createElement('button');
-    labelArrowLeft.setAttribute('data-l10n-id', 'back_label');
-    labelArrowLeft.appendChild(document.createTextNode('Back'));
-    arrowLeft.className = 'toolbarButton';
-    arrowLeft.id = 'back';
-    arrowLeft.appendChild(labelArrowLeft);
-    arrowLeft.addEventListener('click', () => {
+    document.getElementById('back').addEventListener('click', () => {
       window.history.back();
     });
-    tvl.insertBefore(arrowLeft, st);
     
-    let labelArrowRight = document.createElement('span');
-    let arrowRight = document.createElement('button');
-    labelArrowRight.setAttribute('data-l10n-id', 'forward_label');
-    labelArrowRight.appendChild(document.createTextNode('Forward'));
-    arrowRight.className = 'toolbarButton';
-    arrowRight.id = 'forward';
-    arrowRight.appendChild(labelArrowRight);
-    arrowRight.addEventListener('click', () => {
+    document.getElementById('forward').addEventListener('click', () => {
       window.history.forward();
     });
-    tvl.insertBefore(arrowRight, st);
     
     setTimeout(function () {
       window.PDFViewerApplication.open(options.url);
