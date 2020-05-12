@@ -151,9 +151,9 @@ $dropdown-toolbar-btn-focus-bg:           null;
 $dropdown-toolbar-btn-focus-border-color: null;
 
 // Findbar
-$findbar-offset-x:         130px;
+$findbar-offset-x:         8px;
 $findbar-offset-y:         49px;
-$findbar-pointer-offset-x: 16px + 8px;
+$findbar-pointer-offset-x: calc(100% - 11px - 8px);
 $findbar-height:           38px;
 $findbar-padding:          0 4px;
 $findbar-bg:               #fff;

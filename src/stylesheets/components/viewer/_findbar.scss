@@ -5,7 +5,7 @@
 .findbar {
   flex-wrap: wrap;
   position: absolute;
-  left: $findbar-offset-x;
+  right: $findbar-offset-x;
   top: $findbar-offset-y;
   z-index: $z-index-findbar;
   padding: $findbar-padding;
