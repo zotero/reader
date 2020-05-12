@@ -21,7 +21,7 @@ class Toolbar extends React.Component {
         <button
           data-l10n-id='highlight_tool'
           className={cx('toolbarButton highlight', {
-            active: active === 'highlight'
+            toggled: active === 'highlight'
           })}
           onClick={() => {
             onMode('highlight');
@@ -31,7 +31,7 @@ class Toolbar extends React.Component {
         <button
           data-l10n-id='note_tool'
           className={cx('toolbarButton note', {
-            active: active === 'note'
+            toggled: active === 'note'
           })}
           onClick={() => {
             onMode('note');
@@ -41,7 +41,7 @@ class Toolbar extends React.Component {
         <button
           data-l10n-id='area_tool'
           className={cx('toolbarButton area', {
-            active: active === 'area'
+            toggled: active === 'area'
           })}
           onClick={() => {
             onMode('area');

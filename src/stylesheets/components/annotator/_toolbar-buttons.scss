@@ -171,7 +171,7 @@
             }
           }
 
-          @include state(".toolbarButton.active") {
+          @include state(".toolbarButton.toggled") {
             background: image-url("darwin/menubutton-start-active.png") no-repeat center top;
 
             @include retina {
@@ -183,7 +183,7 @@
             }
           }
 
-          @include state(".toolbarButton.active + .toolbarButton:not(:active)") {
+          @include state(".toolbarButton.toggled + .toolbarButton:not(:active)") {
             background: image-url("darwin/menubutton-start.png") no-repeat center top;
 
             @include retina {
@@ -206,7 +206,7 @@
               }
             }
 
-            @include state(".toolbarButton.active") {
+            @include state(".toolbarButton.toggled") {
               background: image-url("darwin/menubutton-start-active.png") no-repeat left top;
 
               @include retina {

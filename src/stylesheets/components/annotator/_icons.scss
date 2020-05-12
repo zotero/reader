@@ -8,7 +8,7 @@
   .highlight {
     @include icon($highlight-tool-icon);
 
-    &.active {
+    &.toggled {
       @include icon($highlight-tool-icon-active);
     }
   }
@@ -16,7 +16,7 @@
   .note {
     @include icon($note-tool-icon);
 
-    &.active {
+    &.toggled {
       @include icon($note-tool-icon-active);
     }
   }
@@ -24,7 +24,7 @@
   .area {
     @include icon($area-tool-icon);
 
-    &.active {
+    &.toggled {
       @include icon($area-tool-icon-active);
     }
   }
