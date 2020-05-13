@@ -1,5 +1,5 @@
 //
-// Toolbar sidebar generic
+// Toolbar sidebar
 //
 
 #toolbarSidebar {
@@ -16,156 +16,46 @@
     display: flex;
     height: $split-toolbar-btn-height;
     margin: $split-toolbar-btn-margin;
-
-    @if $toolbar-sidebar-gradient-btn {
-      flex: $split-toolbar-btn-flex;
-
-      @include retina {
-        height: $split-toolbar-btn-height-2x;
-        transform: translateY(-0.5px);
-
-        @-moz-document url-prefix() {
-          transform: none;
-        }
-      }
-    }
+    flex: $split-toolbar-btn-flex;
   }
 
   .toolbarButton {
     flex: 1 0 auto;
-    height: auto;
-    background: $toolbar-sidebar-btn-bg;
-    border-color: $toolbar-sidebar-btn-border-color;
-    border-width: $toolbar-sidebar-btn-border-width;
-    border-style: solid;
-    padding: $toolbar-sidebar-btn-padding;
     margin: $toolbar-sidebar-btn-margin;
-    border-radius: 0;
-    position: relative;
 
-    @include retina {
-      background: $toolbar-sidebar-btn-bg-2x;
-    }
+    @if $platform == "darwin" {
+      @include split-button(
+        $height: $split-toolbar-btn-height,
+        $button: "sidebarbutton",
+        $padding-x: $toolbar-sidebar-btn-padding-x,
+        $padding-y: $toolbar-sidebar-btn-padding-y
+      );
+    } @else {
+      height: $split-toolbar-btn-height;
+      border-color: $toolbar-sidebar-btn-border-color;
+      border-width: $toolbar-sidebar-btn-border-width;
+      border-style: solid;
+      padding: $toolbar-sidebar-btn-padding-y $toolbar-sidebar-btn-padding-x;
 
-    &:first-child {
-      border-top-left-radius: $toolbar-sidebar-btn-border-radius;
-      border-bottom-left-radius: $toolbar-sidebar-btn-border-radius;
-    }
-
-    &:nth-last-child(2) {
-      border-top-right-radius: $toolbar-sidebar-btn-border-radius;
-      border-bottom-right-radius: $toolbar-sidebar-btn-border-radius;
-      padding: $toolbar-sidebar-btn-padding-last;
-    }
-
-    &:hover {
-      background: $toolbar-sidebar-btn-hover-bg;
-    }
-
-    &:active {
-      background: $toolbar-sidebar-btn-active-bg;
-    }
-
-    &.toggled {
-      background: $toolbar-sidebar-btn-toggled-bg;
-
-      &:active {
-        background: $toolbar-sidebar-btn-toggled-active-bg;
-      }
-    }
-
-    &[disabled] {
-      pointer-events: none;
-
-      &::before {
-        opacity: 0.5;
-      }
-    }
-
-    & + .toolbarButton {
-      margin-left: $toolbar-sidebar-btn-spacing;
-    }
-
-    @if $toolbar-sidebar-gradient-btn {
-      box-shadow: 0 0.5px rgba(0, 0, 0, 0.05);
-
-      // Icon
-      &::before {
-        position: relative;
-        z-index: 1;
+      &:hover {
+        background: $toolbar-sidebar-btn-hover-bg;
       }
 
-      // Label for screen readers
-      > span {
-        position: absolute;
-        width: auto;
-        height: auto;
-        margin: 0;
-        clip: auto;
-        text-indent: -99em;
-        left: 0;
-        top: 1px;
-        width: 100%;
-        height: calc(100% - 2px);
-        background: $toolbar-sidebar-label-bg;
+      &:active,
+      &.toggled {
+        background: $toolbar-sidebar-btn-active-bg;
+      }
 
-        @include retina {
-          height: calc(100% - 1px);
-          transform: translateY(-0.5px);
+      &[disabled] {
+        pointer-events: none;
+
+        &::before {
+          opacity: 0.5;
         }
+      }
 
-        @include variant(".toolbarButton:first-child") {
-          left: 1px;
-          width: calc(100% - 1px);
-          border-top-left-radius: $toolbar-sidebar-label-border-radius;
-          border-bottom-left-radius: $toolbar-sidebar-label-border-radius;
-          background: $toolbar-sidebar-label-bg-first;
-
-          @include retina {
-            transform: translate(-0.5px, -0.5px);
-            width: calc(100% - 0.5px);
-          }
-        }
-
-        @include variant(".toolbarButton:nth-last-child(2)") {
-          width: calc(100% - 1px);
-          border-top-right-radius: $toolbar-sidebar-label-border-radius;
-          border-bottom-right-radius: $toolbar-sidebar-label-border-radius;
-
-          @include retina {
-            transform: translateY(-0.5px) scaleX(1.01515);
-            transform-origin: left top;
-
-            @-moz-document url-prefix() {
-              transform: translateY(-0.5px);
-              width: calc(100% - 0.5px);
-            }
-          }
-        }
-
-        @include state(".toolbarButton:active") {
-          background: $toolbar-sidebar-label-active-bg;
-        }
-
-        @include state(".toolbarButton:first-child:active") {
-          background: $toolbar-sidebar-label-active-bg-first;
-        }
-
-        @include state(".toolbarButton.toggled") {
-          background: $toolbar-sidebar-label-toggled-bg;
-        }
-
-        @include state(".toolbarButton.toggled:active") {
-          background: $toolbar-sidebar-label-toggled-active-bg;
-        }
-
-        @include state(".toolbarButton.toggled + .toolbarButton") {
-          background: $toolbar-sidebar-btn-toggled-next-label-bg;
-        }
-
-        @include state(".toolbarButton.toggled + .toolbarButton:active") {
-          background: $toolbar-sidebar-btn-toggled-next-label-active-bg;
-        }
+      & + .toolbarButton {
+        margin-left: $toolbar-sidebar-btn-spacing;
       }
     }
   }
