@@ -1,7 +1,7 @@
 let annotations = [
   {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'sortIndex': '000000|0003202|0000000000',
     'position': { 'pageIndex': 0, 'rects': [[371.395, 266.635, 486.075, 274.651]] },
     'text': 'reconciles speed of compilation ',
@@ -13,7 +13,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#f64276',
+    'color': '#ff6666',
     'sortIndex': '000000|0003260|0000000000',
     'position': { 'pageIndex': 0, 'rects': [[374.964, 256.672, 460.898, 264.688]] },
     'text': 'generated machine code',
@@ -25,7 +25,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'sortIndex': '000000|0003305|0000000000',
     'position': { 'pageIndex': 0, 'rects': [[339.008, 246.709, 451.034, 254.725]] },
     'text': 'execution approach: the system ',
@@ -37,7 +37,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'sortIndex': '000000|0003358|0000000000',
     'position': { 'pageIndex': 0, 'rects': [[317.014, 236.747, 436.231, 244.763]] },
     'text': 'fast-starting bytecode interpreter. ',
@@ -49,7 +49,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': {
       'pageIndex': 0,
       'rects': [[231.284, 402.126, 293.107, 410.142], [54, 392.164, 293.107, 400.18], [54, 382.201, 293.107, 390.217], [54, 372.238, 293.107, 380.254], [54, 362.276, 273.955, 370.292]]
@@ -65,7 +65,7 @@ let annotations = [
     'sortIndex': '000000|0000779|000381.858'
   }, {
     'type': 'highlight',
-    'color': '#589fee',
+    'color': '#2ea8e5',
     'position': { 'pageIndex': 0, 'rects': [[54, 199.237, 293.1, 207.253], [54, 189.274, 67.943, 197.29]] },
     'text': 'Dynamic languages such as JavaScript, Python, and Ruby, are popular ',
     'comment': 'This demonstrates pdf-reader highlighted text and comments editing capabilities.\n\nNew lines are supported\nAs well as <b>rich-text</b>.\n\nTo format text select it and use the popped-up bubble toolbar',
@@ -83,7 +83,7 @@ let annotations = [
     'sortIndex': '000000|0001536|000584.747'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': {
       'pageIndex': 0,
       'rects': [[54, 199.237, 293.1, 207.253], [54, 189.274, 293.107, 197.29], [54, 179.311, 293.107, 187.327], [54, 169.349, 234.673, 177.365]]
@@ -98,7 +98,7 @@ let annotations = [
     'sortIndex': '000000|0001536|000584.747'
   }, {
     'type': 'highlight',
-    'color': '#589fee',
+    'color': '#2ea8e5',
     'position': {
       'pageIndex': 0,
       'rects': [[328.969, 196.896, 556.115, 204.912], [317.014, 186.933, 556.121, 194.949], [317.014, 176.971, 556.121, 184.987], [317.014, 167.008, 398.671, 175.024]]
@@ -113,7 +113,7 @@ let annotations = [
     'sortIndex': '000000|0003552|000587.088'
   }, {
     'type': 'highlight',
-    'color': '#6cc055',
+    'color': '#5fb236',
     'position': {
       'pageIndex': 1,
       'rects': [[65.955, 620.429, 293.101, 628.445], [54, 610.467, 293.106, 618.528], [54, 600.504, 177.745, 608.52]]
@@ -128,7 +128,7 @@ let annotations = [
     'sortIndex': '000001|0000459|000163.555'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'sortIndex': '000002|0000691|0000000000',
     'position': { 'pageIndex': 2, 'rects': [[255.358, 558.879, 493.3, 566.895]] },
     'text': 'The LIR also encodes all the stores that the interpreter would do ',
@@ -140,7 +140,7 @@ let annotations = [
     'pageLabel': '3'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': { 'pageIndex': 1, 'rects': [[54, 470.99, 293.107, 479.006], [54, 461.027, 268.978, 469.043]] },
     'text': 'The system stops extending the inner tree when it reaches an outer loop, but then it starts a new trace at the outer loop header.',
     'comment': '',
@@ -152,7 +152,7 @@ let annotations = [
     'sortIndex': '000001|0001247|000312.994'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': {
       'pageIndex': 1,
       'rects': [[65.955, 301.625, 293.101, 309.641], [54, 291.662, 293.104, 299.678], [54, 281.7, 293.107, 289.716], [54, 271.737, 263.85, 279.753]]
@@ -168,7 +168,7 @@ let annotations = [
   }, {
     'type': 'note',
     'position': { 'pageIndex': 1, 'rects': [[479.3, 698, 499.3, 718]] },
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'comment': 'Use this in my thesis',
     'tags': [],
     'id': 612943892296834,
@@ -179,7 +179,7 @@ let annotations = [
     'sortIndex': '000001|0003310|000074.000'
   }, {
     'type': 'area',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': { 'pageIndex': 1, 'rects': [[314.4, 412.8, 556.2, 609.6]] },
     'comment': 'Another read-only annotation',
     'tags': [],
@@ -192,7 +192,7 @@ let annotations = [
     'sortIndex': '000001|0003491|000182.400'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': {
       'pageIndex': 1,
       'rects': [[328.969, 176.096, 556.115, 184.112], [317.014, 166.133, 376.291, 174.149]]
@@ -207,7 +207,7 @@ let annotations = [
     'sortIndex': '000001|0004712|000607.888'
   }, {
     'type': 'highlight',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': {
       'pageIndex': 1,
       'rects': [[338.883, 136.245, 556.121, 144.261], [317.014, 126.282, 556.121, 134.298], [317.014, 116.32, 534.474, 124.336]]
@@ -223,7 +223,7 @@ let annotations = [
   },
   {
     'type': 'area',
-    'color': '#f8c348',
+    'color': '#ff8c19',
     'position': { 'pageIndex': 1, 'rects': [[309.6, 658.2, 517.2, 728.4]] },
     'text': '',
     'comment': 'A code snipped',
