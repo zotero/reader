@@ -58,11 +58,8 @@
   }
 
   .highlight {
-    border-bottom: $preview-border;
-
-    .selected & {
-      border-bottom: $preview-selected-border;
-    }
+    color: #555;
+    position: relative;
 
     &:last-child {
       border-bottom: 0;
@@ -70,6 +67,19 @@
       .selected & {
         border-bottom: 0;
       }
+    }
+
+    .blockquote-border {
+      position: absolute;
+      left: 8px;
+      top: nem(4);
+      bottom: nem(5);
+      width: 2px;
+      z-index: 999;
+    }
+
+    .content {
+      padding-left: 16px;
     }
   }
 
@@ -87,14 +97,6 @@
         border-bottom: 0;
       }
     }
-
-    .expandable-editor {
-      background-color: $comment-bg;
-
-      .selected & {
-        background-color: $comment-selected-bg;
-      }
-    }
   }
 
   .image {
@@ -110,14 +112,6 @@
 
     @-moz-document url-prefix() {
       padding: rem(4) 8px rem(4);
-    }
-
-    .annotation & {
-      background-color: $tags-bg;
-
-      @include state(".annotation.selected") {
-        background-color: $tags-selected-bg;
-      }
     }
 
     .tag {

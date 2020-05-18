@@ -6,10 +6,10 @@
 
   .content {
     word-wrap: break-word;
-    padding: calc(#{nem(4)}) 8px calc(#{nem(4)});
+    padding: nem(4) 8px nem(4);
 
     @-moz-document url-prefix() {
-      padding: calc(#{nem(3)}) 8px calc(#{nem(5)});
+      padding: nem(3) 8px nem(5);
     }
 
     &:focus {

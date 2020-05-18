@@ -21,7 +21,7 @@
     }
 
     @include state(".expandable-editor.overflowed") {
-      clip-path: inset(0 0 calc(#{nem(4)}) 0);
+      clip-path: inset(0 0 nem(4) 0);
     }
   }
 }

@@ -43,6 +43,7 @@ class Preview extends React.Component {
     if (annotation.type === 'highlight' && this.props.enableText) {
       text = (
         <div className="highlight">
+          <div className="blockquote-border" style={{ backgroundColor: annotation.color }} />
           <ExpandableEditor
             id={annotation.id}
             text={annotation.text}
