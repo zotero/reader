@@ -15,15 +15,11 @@
     pointer-events: none;
   }
 
-  &.active {
+  &.selected {
     .square {
       border: 2px dashed cornflowerblue;
       pointer-events: auto;
       z-index: 1;
-    }
-
-    .rect {
-      //opacity: 0.7;
     }
   }
 

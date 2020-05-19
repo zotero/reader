@@ -8,7 +8,7 @@ let chsCache = {};
 
 export async function getAnnotationsCount() {
   let count = 0;
-  
+
   for (let i = 1; i <= window.PDFViewerApplication.pdfDocument.numPages; i++) {
     let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(i);
     let annotations = await page.getAnnotations();
@@ -18,23 +18,23 @@ export async function getAnnotationsCount() {
       }
     }
   }
-  
+
   return count;
 }
 
-async function getPageChs(pageIndex) {
+export async function getPageChs(pageIndex) {
   if (chsCache[pageIndex]) return chsCache[pageIndex];
-  
+
   let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(pageIndex + 1);
   let textContent = await page.getTextContent();
-  
+
   let chs = [];
   for (let item of textContent.items) {
     for (let ch of item.chars) {
       chs.push(ch);
     }
   }
-  
+
   chsCache[pageIndex] = chs;
   return chs;
 }
@@ -88,7 +88,7 @@ export async function extractPageLabel(pageIndex, points) {
     chsPrev = await getPageChs(pageIndex - 1);
   }
   chsCur = await getPageChs(pageIndex);
-  
+
   if (pageIndex < PDFViewerApplication.pdfDocument.numPages - 1) {
     chsNext = await getPageChs(pageIndex + 1);
   }

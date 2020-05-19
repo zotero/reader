@@ -3,25 +3,60 @@
 //
 
 .expandable-editor {
-  pointer-events: none;
+  //pointer-events: none;
 
   .selected & {
     pointer-events: all;
   }
 
-  .outer {
     max-height: calc(
       3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)}
     );
     overflow-y: hidden;
-
-    &.expanded {
-      max-height: none;
-      overflow-y: visible;
-    }
-
-    @include state(".expandable-editor.overflowed") {
-      clip-path: inset(0 0 nem(4) 0);
+  
+  &.expanded {
+    overflow-y: visible;
+    max-height: none;
+  }
+  
+  &.editable {
+    .editor {
+      .content {
+        cursor: text;
+        background-color: #fff;
+      }
     }
   }
+
+  @include state(".expandable-editor.overflowed") {
+    clip-path: inset(0 0 calc(#{nem(4)}) 0);
+  }
+}
+
+#clamp1Container {
+  position: absolute;
+  left: -1000px;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+#clamp1 {
+  width: calc(var(--sidebar-width) - 3px);
+  overflow-y: scroll;
+  padding: 0 4px;
+  word-wrap: break-word;
+  font-size: var(--note-font-size);
+  line-height: 1.34;
+  height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
+  box-sizing: border-box;
+}
+
+#clamp1 .outer {
+  max-height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
+  overflow-y: hidden;
+}
+
+#clamp1 .inner {
+  padding: calc(0.33333 * var(--note-font-size)) 8px calc(0.33333 * var(--note-font-size));
 }

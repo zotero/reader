@@ -1,32 +1,31 @@
 'use strict';
 
-import React from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames'
 
-class PagePopup extends React.Component {
-  state = {
-    popupPosition: null
-  };
+function PagePopup({ id, position, updateOnPositionChange, className, children }) {
+  const [popupPosition, setPopupPosition] = useState(null);
+  const [update, setUpdate] = useState();
+  const containerRef = useRef();
 
-  componentDidMount() {
-    this.updatePopupPosition();
-  }
+  useEffect(() => {
+    setUpdate({});
+  }, [id]);
 
-  componentDidUpdate() {
-    if (!this.state.popupPosition) {
-      this.updatePopupPosition();
+  useEffect(() => {
+    if (updateOnPositionChange) {
+      setUpdate({});
     }
-  }
+  }, [position]);
 
-  static getDerivedStateFromProps(nextProps, prevState) {
-    if (nextProps.id !== prevState.id) {
-      return { id: nextProps.id, popupPosition: null };
+  useLayoutEffect(() => {
+    if (update) {
+      updatePopupPosition();
     }
-    else return null;
-  }
+  }, [update]);
 
-  getContainer() {
+  function getContainer() {
     let popupContainer = document.getElementById('pagePopupContainer');
     if (!popupContainer) {
       let viewerContainer = document.getElementById('viewerContainer');
@@ -40,13 +39,13 @@ class PagePopup extends React.Component {
     return popupContainer;
   }
 
-  updatePopupPosition() {
+  function updatePopupPosition() {
     let dimensions = {
-      width: this.refs.container.offsetWidth,
-      height: this.refs.container.offsetHeight
+      width: containerRef.current.offsetWidth,
+      height: containerRef.current.offsetHeight
     };
 
-    let annotationPosition = this.props.position;
+    let annotationPosition = position;
 
     let node = PDFViewerApplication.pdfViewer.getPageView(annotationPosition.pageIndex).div;
 
@@ -70,9 +69,9 @@ class PagePopup extends React.Component {
     let annotationCenterLeft = node.offsetLeft + 9 + rectMax[0] + ((rectMax[2] - rectMax[0])) / 2;
 
     left = annotationCenterLeft - dimensions.width / 2;
-    
+
     let isTop = true;
-    
+
     if (node.offsetTop + 10 + rectMax[3] + 20 + dimensions.height <= visibleRect[3]) {
       top = node.offsetTop + 10 + rectMax[3] + 20;
       isTop = false;
@@ -83,27 +82,25 @@ class PagePopup extends React.Component {
     else {
       top = visibleRect[3] - dimensions.height;
     }
-    
-    this.setState({ popupPosition: { top, left, isTop } });
+
+    setPopupPosition({ top, left, isTop });
   }
 
-  render() {
-    let topBottom = {};
-    if (this.state.popupPosition) {
-      topBottom['page-popup-' + (this.state.popupPosition.isTop ? 'top' : 'bottom')] = true;
-    }
-    
-    return ReactDOM.createPortal(
-      <div
-        ref="container"
-        className={cx('page-popup', this.props.className, { ...topBottom })}
-        style={this.state.popupPosition && { ...this.state.popupPosition }}
-      >
-        {this.props.children}
-      </div>,
-      this.getContainer()
-    );
+  let topBottom = {};
+  if (popupPosition) {
+    topBottom['page-popup-' + (popupPosition.isTop ? 'top' : 'bottom')] = true;
   }
+
+  return ReactDOM.createPortal(
+    <div
+      ref={containerRef}
+      className={cx('page-popup', className, { ...topBottom })}
+      style={popupPosition && { ...popupPosition }}
+    >
+      {children}
+    </div>,
+    getContainer()
+  );
 }
 
 export default PagePopup;

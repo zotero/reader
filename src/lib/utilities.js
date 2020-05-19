@@ -25,7 +25,7 @@ export function getClientRects(range, containerEl) {
       height: rect.height
     };
   });
-  
+
   rects = rects.map(rect => {
     return [
       rect.left,
@@ -34,7 +34,7 @@ export function getClientRects(range, containerEl) {
       rect.top + rect.height
     ];
   });
-  
+
   return rects;
 }
 
@@ -92,12 +92,28 @@ export function throttle(func, wait, options) {
   };
 }
 
+export function setCaretToEnd(target) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(target);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  target.focus();
+  range.detach();
+}
+
+export function clearSelection() {
+  let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
+  if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
+}
+
 export function getPageFromElement(target) {
   let node = target.closest('.page');
   if (!node) {
     return null;
   }
-  
+
   let number = parseInt(node.dataset.pageNumber);
   return { node, number };
 }
@@ -107,33 +123,50 @@ export function getPageFromRange(range) {
   if (!parentElement) {
     return;
   }
-  
+
   return getPageFromElement(parentElement);
 }
 
 export function findOrCreateContainerLayer(container, className) {
   let layer = container.querySelector('.' + className);
-  
+
   if (!layer) {
     layer = document.createElement('div');
     layer.className = className;
     container.appendChild(layer);
   }
-  
+
   return layer;
+}
+
+export function pointerEventToPosition(event) {
+  let page = getPageFromElement(event.target);
+  if (!page) {
+    return null;
+  }
+
+  let rect = page.node.getBoundingClientRect();
+
+  let x = event.clientX + page.node.scrollLeft - rect.left - 9;
+  let y = event.clientY + page.node.scrollTop - rect.top - 10;
+
+  return {
+    pageIndex: page.number - 1,
+    rects: [[x, y, x, y]]
+  };
 }
 
 export function formatAnnotationText(annotation) {
   let parts = [];
-  
+
   if (annotation.comment) {
     parts.push(annotation.comment + ':');
   }
-  
+
   if (annotation.text) {
     parts.push('"' + annotation.text + '"');
   }
-  
+
   return parts.join(' ');
 }
 
@@ -144,4 +177,63 @@ export function equalPositions(annotation1, annotation2) {
     p1.pageIndex === p2.pageIndex &&
     JSON.stringify(p1.rects) === JSON.stringify(p2.rects)
   );
+}
+
+
+export function intersectPositions(position1, position2) {
+  if (position1.pageIndex !== position2.pageIndex) {
+    return false;
+  }
+
+  for (let r1 of position1.rects) {
+    for (let r2 of position2.rects) {
+      if (!(r2[0] > r1[2] || r2[2] < r1[0] || r2[1] > r1[3] || r2[3] < r1[1])) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+
+export function intersectBoundingPositions(position1, position2) {
+  if (position1.pageIndex !== position2.pageIndex) {
+    return false;
+  }
+
+  let r1 = [
+    Math.min(...position1.rects.map(x => x[0])),
+    Math.min(...position1.rects.map(x => x[1])),
+    Math.max(...position1.rects.map(x => x[2])),
+    Math.max(...position1.rects.map(x => x[3]))
+  ];
+
+  let r2 = [
+    Math.min(...position2.rects.map(x => x[0])),
+    Math.min(...position2.rects.map(x => x[1])),
+    Math.max(...position2.rects.map(x => x[2])),
+    Math.max(...position2.rects.map(x => x[3]))
+  ];
+
+  return !(r2[0] > r1[2] || r2[2] < r1[0] || r2[1] > r1[3] || r2[3] < r1[1]);
+}
+
+import React, { useState, useEffect, useRef, useDebugValue } from 'react';
+
+/**
+ * Synchronously sets ref value and asynchronously sets state value
+ * @param initialValue
+ * @returns {[]}
+ */
+export function useRefState(initialValue) {
+  const [state, setState] = useState(initialValue)
+  const stateRef = useRef(state);
+
+  function _setState(value) {
+    stateRef.current = value;
+    setState(value);
+  }
+
+  return [state, stateRef, _setState]
 }

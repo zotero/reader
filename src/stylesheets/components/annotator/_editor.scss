@@ -4,6 +4,11 @@
   line-height: $note-line-height;
   position: relative;
 
+  //&:not(.read-only) {
+  //  cursor: text;
+  //  background-color: #fff;
+  //}
+  
   .content {
     word-wrap: break-word;
     padding: nem(4) 8px nem(4);
@@ -14,8 +19,6 @@
 
     &:focus {
       outline: 0;
-      cursor: text;
-      background-color: #fff;
     }
 
     &:empty::before {

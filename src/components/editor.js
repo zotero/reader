@@ -44,7 +44,7 @@ function walkFormat(parent) {
         nodes.push(document.createTextNode(formatter.parts[2]));
         child.replaceWith(...nodes);
         child = midNode;
-        
+
       }
     }
     walkFormat(child);
@@ -69,7 +69,7 @@ function walkUnformat(parent) {
         child = all[0];
       }
     }
-    
+
     walkUnformat(child);
     child = child.nextSibling;
   }
@@ -79,7 +79,7 @@ function clean(parent) {
   let map = {
     'strong': 'b'
   };
-  
+
   let child = parent.firstChild;
   while (child) {
     if (child.nodeType === 1) {
@@ -88,18 +88,18 @@ function clean(parent) {
           let children = child.childNodes;
           let aa = document.createElement(map[el]);
           aa.append(...children);
-          
+
           child.replaceWith(aa);
           child = aa;
           continue;
         }
       }
-      
+
       let multilineFormats = multiline ? ['br', 'div'] : [];
       if (!supportedFormats.concat(multilineFormats).includes(child.nodeName.toLowerCase())) {
         let first = child.firstChild;
         let next = child.nextSibling;
-        
+
         child.replaceWith(...child.childNodes);
         if (first) {
           child = first;
@@ -159,7 +159,7 @@ class BubbleButton extends React.Component {
     event.preventDefault();
     this.props.onCommand(this.props.action.command)
   }
-  
+
   render() {
     return (
       <button
@@ -194,22 +194,22 @@ class Bubble extends React.Component {
 
 class Content extends React.Component {
   currentText = null;
-  
+
   constructor(props) {
     super(props)
   }
-  
+
   componentDidMount() {
     document.addEventListener('selectionchange', this.onSelectionChange);
     this.props.innerRef.current.innerText = this.props.text;
     walkFormat(this.props.innerRef.current);
     this.currentText = this.props.text;
   }
-  
+
   componentWillUnmount() {
     document.removeEventListener('selectionchange', this.onSelectionChange);
   }
-  
+
   componentDidUpdate(prevProps) {
     if (
       this.props.id !== prevProps.id
@@ -220,20 +220,20 @@ class Content extends React.Component {
       this.currentText = this.props.text
     }
   }
-  
+
   onSelectionChange = (event) => {
     let { innerRef } = this.props;
     let selection = window.getSelection();
-    
+
     // let range = null;
-    
+
     // if (selection.isCollapsed) {
     // 	range = selection.getRangeAt(0);
     // }
-    
-    
+
+
     let node = selection.anchorNode;
-    
+
     let found = false;
     do {
       if (node === innerRef.current) {
@@ -242,26 +242,27 @@ class Content extends React.Component {
       }
     }
     while (node && (node = node.parentNode));
-    
+
     let isSelected = false;
-    
+
     if (!selection.isCollapsed && found) {
       isSelected = true;
     }
-    
+
     this.props.onSelectionChange(isSelected);
   }
-  
+
   shouldComponentUpdate(nextProps) {
     if (
       this.props.id !== nextProps.id
       || this.currentText !== nextProps.text
+      || this.props.isReadOnly !== nextProps.isReadOnly
     ) {
       return true;
     }
     return false;
   }
-  
+
   handleChange = (html) => {
     this.refs.renderer.innerHTML = html;
     walkUnformat(this.refs.renderer);
@@ -271,7 +272,12 @@ class Content extends React.Component {
     this.currentText = text;
     this.props.onChange(text);
   }
-  
+
+  clearSelection() {
+    let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
+    if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
+  }
+
   render() {
     let { plainTextOnly, text, placeholder, onChange, innerRef, onBlur } = this.props;
     return (
@@ -288,8 +294,12 @@ class Content extends React.Component {
           placeholder={placeholder}
           onKeyDown={(event) => {
             event.stopPropagation();
+            if (event.key === 'Escape') {
+              this.clearSelection();
+              innerRef.current.blur();
+              this.props.onBlur();
+            }
           }}
-          onBlur={onBlur}
           onScroll={this.props.onScroll}
         />
         <div className="renderer" ref="renderer"></div>
@@ -302,33 +312,33 @@ class Editor extends React.Component {
   constructor(props) {
     super(props)
   }
-  
+
   contentRef = React.createRef();
   state = {
     isSelected: false,
     bubbleTop: null
   }
-  
+
   componentDidMount() {
     this._isMounted = true;
   }
-  
+
   componentWillUnmount() {
     this._isMounted = false;
   }
-  
+
   getSelectionTop() {
     let selection = window.getSelection();
     if (!selection || selection.isCollapsed) return null;
     let range = selection.getRangeAt(0);
     let selectionRect = range.getBoundingClientRect();
-    
+
     let editorNode = range.startContainer.parentNode.closest('.editor');
     if (editorNode !== this.refs.editor) return null;
     let editorRect = editorNode.getBoundingClientRect();
     return selectionRect.y - editorRect.y;
   }
-  
+
   handleSelection = () => {
     if (!this._isMounted) return;
     let top = this.getSelectionTop();
@@ -336,16 +346,16 @@ class Editor extends React.Component {
       this.setState({ bubbleTop: top });
     }
   }
-  
+
   handleScroll = () => {
     this.setState({ bubbleTop: this.getSelectionTop() });
   }
-  
+
   handleBalloonCommand = (command) => {
     this.contentRef.current.focus();
     document.execCommand(command, false, null);
   }
-  
+
   render() {
     return (
       <div ref="editor" className={cx('editor', { 'read-only': this.props.isReadOnly })}>

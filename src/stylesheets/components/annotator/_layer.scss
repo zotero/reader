@@ -22,7 +22,7 @@
   z-index: 3;
 }
 
-.layer-margin-note {
+.layer-edge-note {
   position: absolute;
   z-index: 3;
   left: 0;
@@ -42,21 +42,8 @@
   }
 }
 
-.selecting-annotation {
-  .rect:not(.active) {
-    //opacity: 0.3;
-  }
-}
 
-.selecting-annotation {
-  .active {
-    .rect {
-      //opacity: 1;
-    }
-  }
-}
-
-.margin-note {
+.edge-note {
   position: absolute;
   cursor: pointer;
 

@@ -11,6 +11,7 @@ document.addEventListener('webviewerloaded', function () {
   window.PDFViewerApplicationOptions.set('cMapPacked', true);
   window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
   window.PDFViewerApplicationOptions.set('historyUpdateUrl', true);
+  window.PDFViewerApplicationOptions.set('textLayerMode', 0);
   
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {
@@ -36,13 +37,13 @@ document.addEventListener('webviewerloaded', function () {
       onSetAnnotation: function (annotation) {
         console.log('Set annotation', annotation);
       },
-      onDeleteAnnotation: function (annotationId) {
-        console.log('Delete annotation', annotationId);
+      onDeleteAnnotations: function (ids) {
+        console.log('Delete annotations', JSON.stringify(ids));
       },
       onSetState: function (state) {
         console.log('Set state', state);
       },
-      onClickTags(annotationId, screenX, screenY) {
+      onClickTags(annotationId, event) {
         alert('This will open Zotero tagbox popup');
       },
       onPopup(name, data) {

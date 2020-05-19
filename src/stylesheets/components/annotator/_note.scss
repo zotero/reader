@@ -31,11 +31,19 @@
   //  margin-top: -30%;
   //}
   
-  &.active {
+  &.selected {
     .square {
       border: 2px dashed cornflowerblue;
       pointer-events: auto;
       z-index: 1;
     }
   }
+}
+
+#draggableNoteBox {
+  border: 2px dashed lightgray;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
 }

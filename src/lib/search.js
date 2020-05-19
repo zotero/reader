@@ -38,18 +38,18 @@ function approximateMatch(text, pattern, maxErrors) {
    * [1] G. Myers, “A Fast Bit-Vector Algorithm for Approximate String Matching
    * Based on Dynamic Programming,” vol. 46, no. 3, pp. 395–415, 1999.
    */
-  
+
   function reverse(s) {
     return s.split('').reverse().join('');
   }
-  
+
   function fill(ary, x) {
     for (var i = 0; i < ary.length; i += 1) {
       ary[i] = x;
     }
     return ary;
   }
-  
+
   /**
    * Given the ends of approximate matches for `pattern` in `text`, find
    * the start of the matches.
@@ -63,32 +63,32 @@ function approximateMatch(text, pattern, maxErrors) {
       return m.errors;
     }));
     return matches
-      .filter(function (m) {
-        return m.errors === minCost;
-      })
-      .map(function (m) {
-        // Find start of each match by reversing the pattern and matching segment
-        // of text and searching for an approx match with the same number of
-        // errors.
-        var minStart = Math.max(0, m.end - pattern.length - m.errors);
-        var textRev = reverse(text.slice(minStart, m.end));
-        var patRev = reverse(pattern);
-        // If there are multiple possible start points, choose the one that
-        // maximizes the length of the match.
-        var start = findEndFn(textRev, patRev, m.errors).reduce(function (min, rm) {
-          if (m.end - rm.end < min) {
-            return m.end - rm.end;
-          }
-          return min;
-        }, m.end);
-        return {
-          start: start,
-          end: m.end,
-          errors: m.errors
-        };
-      });
+    .filter(function (m) {
+      return m.errors === minCost;
+    })
+    .map(function (m) {
+      // Find start of each match by reversing the pattern and matching segment
+      // of text and searching for an approx match with the same number of
+      // errors.
+      var minStart = Math.max(0, m.end - pattern.length - m.errors);
+      var textRev = reverse(text.slice(minStart, m.end));
+      var patRev = reverse(pattern);
+      // If there are multiple possible start points, choose the one that
+      // maximizes the length of the match.
+      var start = findEndFn(textRev, patRev, m.errors).reduce(function (min, rm) {
+        if (m.end - rm.end < min) {
+          return m.end - rm.end;
+        }
+        return min;
+      }, m.end);
+      return {
+        start: start,
+        end: m.end,
+        errors: m.errors
+      };
+    });
   }
-  
+
   /**
    * Block calculation step of the algorithm.
    *
@@ -135,7 +135,7 @@ function approximateMatch(text, pattern, maxErrors) {
     ctx.M[b] = mV;
     return hOut;
   }
-  
+
   /**
    * Find the ends and error counts for matches of `pattern` in `text`.
    *
@@ -245,7 +245,7 @@ function approximateMatch(text, pattern, maxErrors) {
     }
     return matches;
   }
-  
+
   var matches = findMatchEnds(text, pattern, maxErrors);
   return findMatchStarts(text, pattern, matches, findMatchEnds);
 }
@@ -254,17 +254,17 @@ export function searchAnnotations(annotations, query) {
   query = query.toLowerCase();
   let results = [];
   for (let annotation of annotations) {
-    
+
     let errors = null;
     let match = null;
-    
+
     if (annotation.text) {
       match = approximateMatch(annotation.text.toLowerCase(), query, Math.floor(query.length / 3));
       if (match.length) {
         errors = Math.min(...match.map(x => x.errors));
       }
     }
-    
+
     if (annotation.comment) {
       match = approximateMatch(annotation.comment.toLowerCase(), query, Math.floor(query.length / 3));
       if (match.length) {
@@ -277,7 +277,7 @@ export function searchAnnotations(annotations, query) {
         }
       }
     }
-    
+
     if (errors !== null) {
       results.push({
         errors,
@@ -285,8 +285,8 @@ export function searchAnnotations(annotations, query) {
       });
     }
   }
-  
+
   results.sort((a, b) => a.errors - b.errors);
-  
+
   return results.map(x => x.annotation);
 }

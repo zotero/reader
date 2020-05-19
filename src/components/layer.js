@@ -1,6 +1,6 @@
 'use strict';
 
-import React from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames'
 import Highlight from './highlight';
@@ -9,226 +9,198 @@ import Area from './area';
 import AreaSelector from './area-selector';
 import SelectionMenu from './selection-menu';
 import PagePopup from './page-popup';
-import Preview from './preview';
+import { PopupPreview } from './preview';
+
+import { p2v as p2vc, v2p as v2pc, wx, hy } from '../lib/coordinates';
 
 import {
-  getPageFromRange,
-  getPageFromElement,
-  findOrCreateContainerLayer
-} from '../lib/pdfjs-dom';
-
-import { p2v, v2p, wx, hy } from '../lib/coordinates';
-import { extractRange } from '../lib/extract';
-import {
-  copyToClipboard,
-  getClientRects,
-  debounce,
   formatAnnotationText,
-  throttle
+  throttle,
+  findOrCreateContainerLayer,
+  pointerEventToPosition
 } from '../lib/utilities';
 
-class PageLayerHighlight extends React.Component {
-  getContainerNode(viewport) {
+function PageLayerHighlight(props) {
+  function getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
       'layer-highlight'
     );
   }
 
-  render() {
-    let { view, annotations, selectedAnnotationIds } = this.props;
+  let node = getContainerNode(props.view);
+  if (!node) return null;
 
-    let node = this.getContainerNode(view);
-    if (!node) return null;
+  return ReactDOM.createPortal(
+    <div className={cx({ 'selecting-annotation': !!props.selectedAnnotationIds.length })}>
+      {props.annotations.map(
+        (annotation, index) => {
+          let { position, ...rest } = annotation;
 
-    return ReactDOM.createPortal(
-      <div className={cx({ 'selecting-annotation': !!selectedAnnotationIds.length })}>
-        {annotations.map(
-          (annotation, index) => {
-            let { position, ...rest } = annotation;
+          let viewportAnnotation = {
+            position: p2vc(position, props.view.viewport),
+            ...rest
+          };
 
-            let viewportAnnotation = {
-              position: p2v(position, view.viewport),
-              ...rest
-            };
-
-            return (
-              <div key={annotation.id}>
-                <Highlight
-                  annotation={viewportAnnotation}
-                  active={selectedAnnotationIds.includes(annotation.id)}
-                  onDragStart={this.props.onDragStart}
-                  onDragEnd={this.props.onDragEnd}
-                />
-              </div>
-            );
-          }
-        )}
-      </div>,
-      node
-    );
-  }
+          return (
+            <div key={annotation.id}>
+              <Highlight
+                annotation={viewportAnnotation}
+                isSelected={props.selectedAnnotationIds.includes(annotation.id)}
+                onDragStart={props.onDragStart}
+                onDragEnd={props.onDragEnd}
+              />
+            </div>
+          );
+        }
+      )}
+    </div>,
+    node
+  );
 }
 
-class PageLayerNote extends React.Component {
-  getContainerNode(viewport) {
+function PageLayerNote(props) {
+
+  function getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
       'layer-note'
     );
   }
 
-  render() {
-    let {
-      view,
-      annotations,
-      selectedAnnotationIds,
-      enableInactiveDragging,
-      onChangePosition
-    } = this.props;
+  let node = getContainerNode(props.view);
+  if (!node) return null;
 
-    let node = this.getContainerNode(view);
-    if (!node) return null;
+  return ReactDOM.createPortal(
+    <div>
+      {props.annotations.map(
+        (annotation, index) => {
+          let { position, ...rest } = annotation;
 
-    return ReactDOM.createPortal(
-      <div>
-        {annotations.map(
-          (annotation, index) => {
-            let { position, ...rest } = annotation;
+          let viewportAnnotation = {
+            position: p2vc(position, props.view.viewport),
+            ...rest
+          };
 
-            let viewportAnnotation = {
-              position: p2v(position, view.viewport),
-              ...rest
-            };
-
-            return (
-              <div key={annotation.id}>
-                <Note
-                  annotation={viewportAnnotation}
-                  active={selectedAnnotationIds.includes(annotation.id)}
-                  move={selectedAnnotationIds.length === 1}
-                  enableInactiveDragging={enableInactiveDragging}
-                  onDragStart={this.props.onDragStart}
-                  onDragEnd={this.props.onDragEnd}
-                  onChangePosition={(position) => {
-                    onChangePosition(annotation.id, position);
-                  }}
-                />
-              </div>
-            );
-          }
-        )}
-      </div>,
-      node
-    );
-  }
+          return (
+            <div key={annotation.id}>
+              <Note
+                annotation={viewportAnnotation}
+                isSelected={props.selectedAnnotationIds.includes(annotation.id)}
+                enableMoving={props.selectedAnnotationIds.length === 1}
+                onDragStart={props.onDragStart}
+                onDragEnd={props.onDragEnd}
+                onChangePosition={(position) => {
+                  props.onChangePosition(annotation.id, position);
+                }}
+              />
+            </div>
+          );
+        }
+      )}
+    </div>,
+    node
+  );
 }
 
-class PageLayerArea extends React.Component {
-  getContainerNode(viewport) {
+function PageLayerArea(props) {
+  function getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
       'layer-area'
     );
   }
 
-  render() {
-    let {
-      view,
-      annotations,
-      selectedAnnotationIds,
-      onChangePosition
-    } = this.props;
+  let node = getContainerNode(props.view);
+  if (!node) return null;
 
-    let node = this.getContainerNode(view);
-    if (!node) return null;
+  return ReactDOM.createPortal(
+    <div>
+      {props.annotations.map(
+        (annotation, index) => {
+          let { position, ...rest } = annotation;
 
-    return ReactDOM.createPortal(
-      <div>
-        {annotations.map(
-          (annotation, index) => {
-            let { position, ...rest } = annotation;
+          let viewportAnnotation = {
+            position: p2vc(position, props.view.viewport),
+            ...rest
+          };
 
-            let viewportAnnotation = {
-              position: p2v(position, view.viewport),
-              ...rest
-            };
-
-            return (
-              <div key={annotation.id}>
-                <Area
-                  annotation={viewportAnnotation}
-                  active={selectedAnnotationIds.includes(annotation.id)}
-                  move={selectedAnnotationIds.length === 1}
-                  onDragStart={this.props.onDragStart}
-                  onDragEnd={this.props.onDragEnd}
-                  onChangePosition={(position) => {
-                    onChangePosition(annotation.id, position);
-                  }}
-                />
-              </div>
-            );
-          }
-        )}
-      </div>,
-      node
-    );
-  }
+          return (
+            <div key={annotation.id}>
+              <Area
+                annotation={viewportAnnotation}
+                isSelected={props.selectedAnnotationIds.includes(annotation.id)}
+                move={props.selectedAnnotationIds.length === 1}
+                onResizeStart={props.onResizeStart}
+                onDragStart={props.onDragStart}
+                onDragEnd={props.onDragEnd}
+                onChangePosition={(position) => {
+                  props.onChangePosition(annotation.id, position);
+                }}
+              />
+            </div>
+          );
+        }
+      )}
+    </div>,
+    node
+  );
 }
 
-class AreaSelectorLayer extends React.Component {
-  render() {
-    let { color, enableAreaSelector, onSelection } = this.props;
-    let areaSelectorContainer = document.getElementById('areaSelectorContainer');
-    if (!areaSelectorContainer) {
+function AreaSelectorLayer(props) {
+  function getContainerNode() {
+    let container = document.getElementById('areaSelectorContainer');
+    if (!container) {
       let viewerContainer = document.getElementById('viewerContainer');
-      areaSelectorContainer = document.createElement('div');
-      areaSelectorContainer.id = 'areaSelectorContainer';
-      viewerContainer.appendChild(areaSelectorContainer);
+      container = document.createElement('div');
+      container.id = 'areaSelectorContainer';
+      viewerContainer.appendChild(container);
     }
-    return ReactDOM.createPortal(
-      <AreaSelector
-        color={color}
-        shouldStart={enableAreaSelector}
-        onSelection={onSelection}
-      />,
-      areaSelectorContainer
-    );
+    return container
   }
+
+  return ReactDOM.createPortal(
+    <AreaSelector
+      color={props.color}
+      shouldStart={props.enableAreaSelector}
+      onSelectionStart={props.onSelectionStart}
+      onSelection={props.onSelection}
+    />,
+    getContainerNode()
+  );
 }
 
-
-class MarginNoteLayer extends React.Component {
-  getContainerNode(viewport) {
+function EdgeNoteLayer(props) {
+  function getContainerNode(viewport) {
     return findOrCreateContainerLayer(
       viewport.div,
-      'layer-margin-note'
+      'layer-edge-note'
     );
   }
 
-  quickIntersectRect(r1, r2) {
+  function quickIntersectRect(r1, r2) {
     return !(r2[0] > r1[2] ||
       r2[2] < r1[0] ||
       r2[1] > r1[3] ||
       r2[3] < r1[1]);
   }
 
-  stackNotes(marginNotes) {
-    marginNotes.sort((a, b) => a.rect[0] - b.rect[0]);
-    for (let marginNote of marginNotes) {
-      for (let marginNote2 of marginNotes) {
-        if (marginNote2 === marginNote) break;
+  function stackNotes(notes) {
+    notes.sort((a, b) => a.rect[0] - b.rect[0]);
+    for (let note of notes) {
+      for (let note2 of notes) {
+        if (note2 === note) break;
 
-        if (this.quickIntersectRect(marginNote.rect, marginNote2.rect)) {
-          let shift = wx(marginNote2.rect) / 3 * 2;
-          marginNote.rect[0] = marginNote2.rect[0] + shift;
-          marginNote.rect[2] = marginNote2.rect[2] + shift;
+        if (quickIntersectRect(note.rect, note2.rect)) {
+          let shift = wx(note2.rect) / 3 * 2;
+          note.rect[0] = note2.rect[0] + shift;
+          note.rect[2] = note2.rect[2] + shift;
         }
       }
     }
   }
 
-  getMarginNotes(annotations, viewport) {
+  function getNotes(annotations, viewport) {
     let notes = [];
     let scale = PDFViewerApplication.pdfViewer._currentScale;
 
@@ -236,7 +208,7 @@ class MarginNoteLayer extends React.Component {
     let height = 9.6 * scale;
 
     for (let annotation of annotations) {
-      let viewportPosition = p2v(annotation.position, viewport);
+      let viewportPosition = p2vc(annotation.position, viewport);
       let left = viewportPosition.rects[0][0] - width / 2;
       let top = viewportPosition.rects[0][1] - height + height / 3;
       notes.push({
@@ -253,83 +225,68 @@ class MarginNoteLayer extends React.Component {
     return notes;
   }
 
-  render() {
-    let {
-      view,
-      annotations,
-      selectedAnnotationIds,
-      onClick
-    } = this.props;
 
-    let node = this.getContainerNode(view);
-    if (!node) return null;
+  let node = getContainerNode(props.view);
+  if (!node) return null;
 
-    let commentedAnnotations = annotations.filter(x => x.comment)
-    let marginNotes = this.getMarginNotes(commentedAnnotations, view.viewport);
-    this.stackNotes(marginNotes);
+  let commentedAnnotations = props.annotations.filter(x => x.comment)
+  let notes = getNotes(commentedAnnotations, props.view.viewport);
+  stackNotes(notes);
 
-    return ReactDOM.createPortal(
-      <div>
-        {marginNotes.map(
-          (marginNote) => {
-            let active = selectedAnnotationIds.includes(marginNote.annotation.id);
-            return (
-              <div
-                key={marginNote.annotation.id}
-                className={cx('margin-note', { active })}
-                style={{
-                  left: marginNote.rect[0],
-                  top: marginNote.rect[1],
-                  width: wx(marginNote.rect),
-                  height: hy(marginNote.rect),
-                  color: marginNote.annotation.color,
-                  zIndex: active ? 2 : 1
-                }}
-                onClick={e => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // Call after all other events
-                  setTimeout(() => {
-                    onClick(marginNote.annotation.id);
-                  }, 0);
-                }}
-              >
-                <svg width={wx(marginNote.rect)} height={hy(marginNote.rect)} viewBox="0 0 12 12">
-                  <path fill="currentColor" d="M0,0V6.707L5.293,12H12V0Z"/>
-                  <path d="M0,0V6.707L5.293,12H12V0ZM1.707,7H5v3.293ZM11,11H6V6H1V1H11Z" opacity="0.67"/>
-                  <polygon points="1.707 7 5 10.293 5 7 1.707 7" fill="#fff" opacity="0.4"/>
-                </svg>
-              </div>
-            );
-          }
-        )}
-      </div>,
-      node
-    );
-  }
+  return ReactDOM.createPortal(
+    <div>
+      {notes.map(
+        (note) => {
+          let isSelected = props.selectedAnnotationIds.includes(note.annotation.id);
+          return (
+            <div
+              key={note.annotation.id}
+              className={cx('edge-note', { selected: isSelected })}
+              style={{
+                left: note.rect[0],
+                top: note.rect[1],
+                width: wx(note.rect),
+                height: hy(note.rect),
+                color: note.annotation.color,
+                zIndex: isSelected ? 2 : 1
+              }}
+              onClick={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Call after all other events
+                setTimeout(() => {
+                  props.onClick(note.annotation.id);
+                }, 0);
+              }}
+            >
+              <svg width={wx(note.rect)} height={hy(note.rect)} viewBox="0 0 12 12">
+                <path fill="currentColor" d="M0,0V6.707L5.293,12H12V0Z"/>
+                <path d="M0,0V6.707L5.293,12H12V0ZM1.707,7H5v3.293ZM11,11H6V6H1V1H11Z" opacity="0.67"/>
+                <polygon points="1.707 7 5 10.293 5 7 1.707 7" fill="#fff" opacity="0.4"/>
+              </svg>
+            </div>
+          );
+        }
+      )}
+    </div>,
+    node
+  );
 }
 
-class BlinkLayer extends React.Component {
-  interval = null;
+function BlinkLayer(props) {
+  const intervalRef = useRef(null);
+  const innerRef = useRef(null);
 
-  componentDidUpdate(prevProps) {
-    if (prevProps.id !== this.props.id) {
-      this.fade(this.refs.blink);
-    }
-  }
+  useLayoutEffect(() => {
+    fade(innerRef.current);
+  }, [props.id])
 
-  componentDidMount() {
-    this.fade(this.refs.blink);
-  }
-
-  fade(element) {
-    if (this.interval) clearInterval(this.interval);
+  function fade(element) {
+    if (intervalRef.current) clearInterval(intervalRef.current);
     let op = 1;
-    this.interval = setInterval(() => {
-
-      if (!element) return;
+    intervalRef.current = setInterval(() => {
       if (op <= 0.05) {
-        clearInterval(this.interval);
+        clearInterval(intervalRef.current);
         element.style.opacity = 0;
         return;
       }
@@ -338,491 +295,336 @@ class BlinkLayer extends React.Component {
     }, 100);
   }
 
-  getContainerNode(viewport) {
-    return findOrCreateContainerLayer(
-      viewport.div,
-      'layer-blink'
-    );
+  function getContainerNode(viewport) {
+    return findOrCreateContainerLayer(viewport.div, 'layer-blink');
   }
 
-  render() {
-    let { view, position } = this.props;
+  let node = getContainerNode(props.view);
+  if (!node) return null;
 
-    let node = this.getContainerNode(view);
-    if (!node) return null;
-
-    return ReactDOM.createPortal(
-      <div ref="blink">
-        {position.rects.map((rect, index) => (
-          <div
-            key={index}
-            className="rect"
-            style={{
-              left: rect[0],
-              top: rect[1],
-              width: rect[2] - rect[0],
-              height: rect[3] - rect[1]
-            }}
-          />
-        ))}
-      </div>,
-      node
-    );
-  }
+  return ReactDOM.createPortal(
+    <div ref={innerRef}>
+      {props.position.rects.map((rect, index) => (
+        <div
+          key={index}
+          className="rect"
+          style={{
+            left: rect[0],
+            top: rect[1],
+            width: rect[2] - rect[0],
+            height: rect[3] - rect[1]
+          }}
+        />
+      ))}
+    </div>,
+    node
+  );
 }
 
-class Layer extends React.Component {
-  state = {
-    selection: null,
-    editing: false,
-    initialized: false,
-    dragging: false
-  };
+function SelectionLayer({ positions, color }) {
 
-  viewer = null;
+  useEffect(() => {
+    draw();
+    return () => {
+      erase();
+    };
+  }, [positions]);
 
-  containerNode = null;
+  function getCtx(pageIndex) {
+    let viewport = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex);
+    let canvas = viewport.div.querySelector('.canvasWrapper .selectionCanvas');
+    if (!canvas) {
+      let wrapper = viewport.div.querySelector('.canvasWrapper');
+      if (!wrapper) return null;
+      canvas = document.createElement('canvas');
+      canvas.className = 'selectionCanvas';
+      canvas.width = viewport.canvas.width;
+      canvas.height = viewport.canvas.height;
+      canvas.style = 'position: absolute; top: 0; left: 0;mix-blend-mode: multiply';
+      wrapper.appendChild(canvas);
+    }
 
-  componentDidMount() {
-    let { onMouseSelection, onPointerUp, onPointerDown, onMouseMove } = this.props;
-    this.debouncedAfterSelection = this.afterSelection;
+    let ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    this.viewer = window.PDFViewerApplication.pdfViewer;
+    return ctx;
+  }
 
-    this.viewer.eventBus.on('pagesinit', this.onDocumentReady);
-    this.viewer.eventBus.on('textlayerrendered', this.onTextLayerRendered);
-
-
-    this.containerNode = document.getElementById('viewerContainer');
-
-    this.containerNode.addEventListener('click', e => {
-      this.setState({ selectionFinished: !!this.state.range });
-    });
-
-    this.containerNode.addEventListener('pointerup', async e => {
-      let selection = await this.getSelection();
-      if (!selection) return;
-      selection.position = this.v2p(selection.position);
-      onMouseSelection(selection);
-    });
-
-    this.containerNode.addEventListener('pointerdown', e => {
-      let page = getPageFromElement(e.target);
-      if (!page) {
-        return;
+  function erase() {
+    for (let i = 0; i < window.PDFViewerApplication.pdfDocument.numPages; i++) {
+      let page = window.PDFViewerApplication.pdfViewer.getPageView(i);
+      let canvas = page.div.querySelector('.canvasWrapper .selectionCanvas');
+      if (canvas) {
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
       }
+    }
+  }
 
-      let containerEl = page.node;
-      let offset = containerEl.getBoundingClientRect();
+  function draw() {
+    for (let position of positions) {
+      let ctx = getCtx(position.pageIndex);
+      if (!ctx) return null;
 
-      let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
-      let y = e.clientY + containerEl.scrollTop - offset.top - 10;
-
-      let position = {
-        pageIndex: page.number - 1,
-        rects: [[x, y, x, y]]
-      };
-
-      onPointerDown(this.v2p(position));
-    });
-
-    this.containerNode.addEventListener('pointerup', e => {
-      let page = getPageFromElement(e.target);
-      if (!page) {
-        return;
+      ctx.fillStyle = color;
+      for (let rect of position.rects) {
+        ctx.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
       }
+    }
+  }
 
-      if (e.target.classList.contains('margin-note')) {
-        return;
-      }
+  return null;
+}
 
-      let containerEl = page.node;
-      let offset = containerEl.getBoundingClientRect();
+function Layer(props) {
+  const [initialized, setInitialized] = useState(false);
+  const [temporaryRerender, setTemporaryRerender] = useState({});
 
-      let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
-      let y = e.clientY + containerEl.scrollTop - offset.top - 10;
+  let viewer = window.PDFViewerApplication.pdfViewer;
+  let containerNode = document.getElementById('viewerContainer');
 
-      let position = {
-        pageIndex: page.number - 1,
-        rects: [[x, y, x, y]]
-      };
+  let selectionPositions = useMemo(() =>
+    props.selectionPositions.map(p => p2v(p)), [props.selectionPositions]);
 
-      // Shoot the event after all other events are emitted.
-      // Otherwise the resize updating in the area annotation is emitted too late
-      setTimeout(() => {
-        onPointerUp(this.v2p(position), e.button === 2, e.ctrlKey || e.metaKey, e.shiftKey, e.screenX, e.screenY, e);
-      }, 0);
-    }, true);
+  const handlePointerDownCallback = useCallback(handlePointerDown, []);
+  const handlePointerMoveCallback = useMemo(() => throttle(handlePointerMove, 50), []);
+  const handlePointerUpDownCallback = useCallback(handlePointerUp, []);
+  const handlePageRenderCallback = useCallback(handlePageRender, []);
 
-    this.containerNode.addEventListener('mousemove', throttle(e => {
-      let page = getPageFromElement(e.target);
-      if (!page) {
-        return;
-      }
+  useEffect(() => {
+    containerNode = document.getElementById('viewerContainer');
+    containerNode.addEventListener('pointerdown', handlePointerDownCallback);
+    containerNode.addEventListener('pointermove', handlePointerMoveCallback);
+    containerNode.addEventListener('pointerup', handlePointerUpDownCallback);
 
-      let containerEl = page.node;
-      let offset = containerEl.getBoundingClientRect();
+    viewer = window.PDFViewerApplication.pdfViewer;
+    viewer.eventBus.on('pagerendered', handlePageRenderCallback);
 
-      let x = e.clientX + containerEl.scrollLeft - offset.left - 9;
-      let y = e.clientY + containerEl.scrollTop - offset.top - 10;
+    return () => {
+      containerNode.removeEventListener('pointerdown', handlePointerDownCallback);
+      containerNode.removeEventListener('pointermove', handlePointerMoveCallback);
+      containerNode.removeEventListener('pointerup', handlePointerUpDownCallback);
+      viewer.eventBus.off('pagerendered', handlePageRenderCallback);
+    }
+  }, []);
 
-      let position = {
-        pageIndex: page.number - 1,
-        rects: [[x, y, x, y]]
-      };
-
-      onMouseMove(this.v2p(position));
-    }, 50), true);
-
-    document.addEventListener('selectionchange', this.onSelectionChange);
-
-    let viewerNode = document.getElementById('viewer');
-    viewerNode.addEventListener('dragstart', (e) => {
+  function handlePointerDown(event) {
+    let position = pointerEventToPosition(event);
+    if (!position) {
       return;
-      let annotation = {
-        itemId: window.itemId,
-        text: this.state.selection.text,
-        position: this.state.selection.position
-      };
-
-      // Todo: Move this out from here
-      let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-      if (pageLabels && pageLabels[annotation.position.pageIndex]) {
-        annotation.pageLabel = pageLabels[annotation.position.pageIndex];
-      }
-      else {
-        annotation.pageLabel = annotation.position.pageIndex + 1;
-      }
-
-      e.dataTransfer.setData('zotero/annotation', JSON.stringify({
-        ...annotation,
-        position: this.v2p(annotation.position)
-      }));
-      e.dataTransfer.setData('text/plain', JSON.stringify({ ...annotation, position: this.v2p(annotation.position) }));
-    });
-
-    viewerNode.addEventListener('dragend', (e) => {
-      if (window.getSelection().empty) {  // Chrome
-        window.getSelection().empty();
-      }
-      else if (window.getSelection().removeAllRanges) {  // Firefox
-        window.getSelection().removeAllRanges();
-      }
-    });
-  }
-
-  componentWillUnmount() {
-    document.removeEventListener('selectionchange', this.onSelectionChange);
-
-    if (this.containerNode) {
-      this.containerNode.removeEventListener(
-        'textlayerrendered',
-        this.onTextLayerRendered
-      );
     }
+    props.onPointerDown(v2p(position), event);
   }
 
-  groupAnnotationsByPage(annotations) {
+  function handlePointerMove(event) {
+    let position = pointerEventToPosition(event);
+    if (!position) {
+      return;
+    }
+    props.onPointerMove(v2p(position));
+  }
+
+  function handlePointerUp(event) {
+    if (event.target.classList.contains('edge-note')) {
+      return;
+    }
+
+    let position = pointerEventToPosition(event);
+    if (!position) {
+      return;
+    }
+    // Shoot the event after all other events are emitted.
+    // Otherwise the resize updating in the area annotation is emitted too late
+    // setTimeout(() => {
+      props.onPointerUp(v2p(position), event);
+    // }, 0);
+  }
+
+  function handlePageRender(event) {
+    // console.log(`pdf.js rendered pageIndex ${event.pageNumber - 1}`);
+    setTemporaryRerender({});
+    setInitialized(true);
+  }
+
+  function groupAnnotationsByPage(annotations) {
     return [...annotations]
-      .filter(Boolean)
-      .reduce((res, annotation) => {
-        let { pageIndex } = annotation.position;
-
-        res[pageIndex] = res[pageIndex] || [];
-        res[pageIndex].push(annotation);
-
-        return res;
-      }, {});
+    .reduce((res, annotation) => {
+      let { pageIndex } = annotation.position;
+      res[pageIndex] = res[pageIndex] || [];
+      res[pageIndex].push(annotation);
+      return res;
+    }, {});
   }
 
-  onTextLayerRendered = () => {
-    this.setState({ initialized: true });
-  };
-
-  scrollTo = (position) => {
-    let x = position.rects[0][0];
-    let y = position.rects[0][3] + 100;
-
-    this.viewer.scrollPageIntoView({
-      pageNumber: position.pageIndex + 1,
-      destArray: [
-        null,
-        { name: 'XYZ' },
-        x,
-        y,
-        null
-      ]
-    });
-  };
-
-  onDocumentReady = () => {
-    let { scrollRef } = this.props;
-    scrollRef(this.scrollTo);
-  };
-
-  selectionChangeDebounce = debounce(async () => {
-    this.setState({ selection: await this.getSelection() });
-  }, 250);
-
-  onSelectionChange = () => {
-    this.setState({ selection: null });
-    this.selectionChangeDebounce();
-  };
-
-  async getSelection() {
-    let selection = window.getSelection();
-
-    if (selection.anchorNode && selection.focusNode) {
-      let a = selection.anchorNode;
-      if (a.nodeType === Node.TEXT_NODE) {
-        a = a.parentElement;
-      }
-
-      let b = selection.focusNode;
-      if (b.nodeType === Node.TEXT_NODE) {
-        b = b.parentElement;
-      }
-
-      if (
-        !a.parentNode.className.includes('textLayer') ||
-        !b.parentNode.className.includes('textLayer')
-      ) {
-        return null;
-      }
-
-      if (a.parentNode !== b.parentNode) {
-        return null;
-      }
-    }
-
-    let range = null;
-
-    if (!selection.isCollapsed) {
-      range = selection.getRangeAt(0);
-    }
-
-    if (!range) return null;
-
-    let page = getPageFromRange(range);
-    if (!page) {
-      return null;
-    }
-    let rects = getClientRects(range, page.node);
-
-    if (rects.length === 0) {
-      return null;
-    }
-
-    let position = { rects, pageIndex: page.number - 1 };
-
-    let extractedRange = await extractRange(this.v2p(position));
-    if (!extractedRange) return null;
-
-    extractedRange.position = this.p2v(extractedRange.position);
-
-    // TODO: Unify all annotations sort index calculation
-    let offset = extractedRange.offset;
-    extractedRange.sortIndex = [
-      position.pageIndex.toString().padStart(6, '0'),
-      offset.toString().padStart(7, '0'),
-      '0'.padStart(10, '0') // TODO: Fix missing dot
-    ].join('|');
-
-    delete extractedRange.offset;
-
-    return extractedRange;
+  function v2p(position) {
+    let viewport = viewer.getPageView(position.pageIndex).viewport;
+    return v2pc(position, viewport);
   }
 
-  v2p(position) {
-    let viewport = this.viewer.getPageView(position.pageIndex).viewport;
-    return v2p(position, viewport);
+  function p2v(position) {
+    let viewport = viewer.getPageView(position.pageIndex).viewport;
+    return p2vc(position, viewport);
   }
 
-  p2v(position) {
-    let viewport = this.viewer.getPageView(position.pageIndex).viewport;
-    return p2v(position, viewport);
-  }
+  let {
+    annotations,
+    color,
+    selectedAnnotationIds,
+    popupAnnotation,
+    blink,
+    onChange,
+    onClickTags,
+    onClickEdgeNote
+  } = props;
 
-  render() {
-    let {
-      annotations,
-      color,
-      selectedAnnotationIds,
-      enableAreaSelector,
-      enableInactiveTextDragging,
-      popupAnnotation,
-      blink,
-      onSelection,
-      onChange,
-      onDelete,
-      onHighlight,
-      onClickTags,
-      onClickMarginNote
-    } = this.props;
+  let pageLayers = useMemo(() => {
 
-    if (!this.viewer || !this.viewer.pdfDocument || !this.state.initialized) return null;
-
-    let annotationsByPage = this.groupAnnotationsByPage(annotations);
-    let annotationsByPagePrev = this.groupAnnotationsByPage(this.props.annotations);
-
+    if (!initialized) return [];
+    let annotationsByPage = groupAnnotationsByPage(annotations);
     let pageLayers = [];
-    for (let pageIndex = 0; pageIndex < this.viewer.pdfDocument.numPages; pageIndex++) {
-      if (!annotationsByPage[String(pageIndex)] && !annotationsByPagePrev[String(pageIndex)]) continue;
-
-      let view = this.viewer.getPageView(pageIndex);
-
-      let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex).width;
+    for (let pageIndex = 0; pageIndex < viewer.pdfDocument.numPages; pageIndex++) {
+      if (!annotationsByPage[pageIndex]) {
+        continue;
+      }
+      let view = viewer.getPageView(pageIndex);
+      
 
       pageLayers.push(
         <PageLayerHighlight
           key={'h_' + pageIndex}
           view={view}
           selectedAnnotationIds={selectedAnnotationIds}
-          annotations={(annotationsByPage[String(pageIndex)].filter(x => x.type === 'highlight') || [])}
-          onDragStart={(event) => {
-            this.props.onDragStart(event);
-            this.setState({ dragging: true });
-          }}
-          onDragEnd={() => {
-            this.setState({ dragging: false });
-          }}
+          annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'highlight') || [])}
+          onDragStart={props.onDragStart}
+          onDragEnd={props.onDragEnd}
         />,
         <PageLayerNote
           key={'n_' + pageIndex}
           view={view}
           selectedAnnotationIds={selectedAnnotationIds}
-          enableInactiveDragging={enableInactiveTextDragging}
-          annotations={(annotationsByPage[String(pageIndex)].filter(x => x.type === 'note') || [])}
+          annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'note') || [])}
           onChangePosition={(id, position) => {
-            onChange({ id, position: this.v2p(position) });
+            onChange({ id, position: v2p(position) });
           }}
-          onDragStart={() => {
-            this.props.onDragStart(event);
-            this.setState({ dragging: true });
-          }}
-          onDragEnd={() => {
-            this.setState({ dragging: false });
-          }}
+          onDragStart={props.onDragStart}
+          onDragEnd={props.onDragEnd}
         />,
         <PageLayerArea
           key={'a_' + pageIndex}
           view={view}
           selectedAnnotationIds={selectedAnnotationIds}
-          annotations={(annotationsByPage[String(pageIndex)].filter(x => x.type === 'area') || [])}
+          annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'area') || [])}
+          onResizeStart={props.onAreaResizeStart}
           onChangePosition={(id, position) => {
-            onChange({ id, position: this.v2p(position) });
+            onChange({ id, position: v2p(position) });
           }}
-          onDragStart={(event) => {
-            this.props.onDragStart(event);
-            this.setState({ dragging: true });
-          }}
-          onDragEnd={() => {
-            this.setState({ dragging: false });
-          }}
-        />,
-        <MarginNoteLayer
+          onDragStart={props.onDragStart}
+          onDragEnd={props.onDragEnd}
+        />
+      );
+      
+      if (props.enableEdgeNotes) {
+        pageLayers.push(<EdgeNoteLayer
           key={'m_' + pageIndex}
           view={view}
           selectedAnnotationIds={selectedAnnotationIds}
-          annotations={(annotationsByPage[String(pageIndex)].filter(x => ['highlight', 'area'].includes(x.type)) || [])}
-          pageWidth={pageWidth}
-          onClick={onClickMarginNote}
-        />
-      );
+          annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'area'].includes(x.type)) || [])}
+          onClick={onClickEdgeNote}
+        />);
+      }
     }
+    return pageLayers;
+  }, [props.annotations, selectedAnnotationIds, initialized, temporaryRerender, props.enableEdgeNotes]);
 
-    if (popupAnnotation) {
-      let { position, ...rest } = popupAnnotation;
-      popupAnnotation = {
-        position: this.p2v(position),
-        ...rest
-      };
-    }
+  if (!initialized) return null;
 
-    let blinkLayer = null;
-    if (blink) {
-      let view = this.viewer.getPageView(blink.position.pageIndex);
-      let id = blink.id;
-      let position = this.p2v(blink.position);
-      blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
-    }
-
-    return (
-      <React.Fragment>
-        {blinkLayer}
-        <AreaSelectorLayer
-          color={color}
-          enableAreaSelector={enableAreaSelector}
-          onSelection={(position) => {
-            onSelection(this.v2p(position));
-          }}
-        />
-        {
-          popupAnnotation && !this.state.dragging && (
-            <PagePopup
-              id={popupAnnotation.id}
-              className="annotation-popup"
-              position={popupAnnotation.position}
-            >
-              <Preview
-                annotation={popupAnnotation}
-                isExpandable={false}
-                enableText={false}
-                enableImage={false}
-                enableComment={!popupAnnotation.readOnly || popupAnnotation.comment}
-                enableTags={!popupAnnotation.readOnly || popupAnnotation.tags.length > 0}
-                onUpdate={(comment) => {
-                  onChange({ id: popupAnnotation.id, comment });
-                }}
-                onColorChange={(color) => {
-                  onChange({ id: popupAnnotation.id, color });
-                }}
-                onDelete={() => {
-                  onDelete(popupAnnotation.id);
-                }}
-                onClickTags={onClickTags}
-                onChange={onChange}
-                onPageMenu={this.props.onPageMenu}
-                onMoreMenu={this.props.onMoreMenu}
-                onDragStart={(event) => {
-                  let annotation = popupAnnotation;
-                  annotation.itemId = window.itemId;
-                  event.dataTransfer.setData('zotero/annotation', JSON.stringify({
-                    ...annotation,
-                    position: this.v2p(annotation.position)
-                  }));
-                  event.dataTransfer.setData('text/plain', formatAnnotationText(annotation));
-                }}
-              />
-            </PagePopup>
-          )
-        }
-        {
-          this.state.selection && this.props.enableMouseSelection && (
-            <PagePopup
-              id={1}
-              className="selection-popup"
-              position={this.state.selection.position}
-            >
-              <SelectionMenu
-                onHighlight={() => {
-                  let selection = this.state.selection;
-                  selection.position = this.v2p(selection.position);
-                  onHighlight(selection);
-                }}
-                onCopy={() => {
-                  if (this.state.selection) {
-                    copyToClipboard(this.state.selection.text);
-                  }
-                }}
-              />
-            </PagePopup>
-          )
-        }
-        {pageLayers}
-      </React.Fragment>
-    );
+  if (popupAnnotation) {
+    let { position, ...rest } = popupAnnotation;
+    popupAnnotation = {
+      position: p2v(position),
+      ...rest
+    };
   }
+  
+
+  let blinkLayer = null;
+  if (blink) {
+    let view = viewer.getPageView(blink.position.pageIndex);
+    let id = blink.id;
+    let position = p2v(blink.position);
+    blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
+  }
+
+  return (
+    <React.Fragment>
+      {blinkLayer}
+      <SelectionLayer positions={selectionPositions} color={props.selectionColor}/>
+      <AreaSelectorLayer
+        color={color}
+        enableAreaSelector={props.enableAreaSelector}
+        onSelectionStart={props.onAreaSelectionStart}
+        onSelection={(position) => {
+          props.onAreaSelection(v2p(position));
+        }}
+      />
+      {
+        popupAnnotation && (
+          <PagePopup
+            id={popupAnnotation.id}
+            className="annotation-popup"
+            position={popupAnnotation.position}
+            // TODO: After area resize popup still needs to be repositioned
+            updateOnPositionChange={false}
+          >
+            <PopupPreview
+              annotation={popupAnnotation}
+              isExpandable={false}
+              enableText={false}
+              enableImage={false}
+              enableComment={!popupAnnotation.readOnly || popupAnnotation.comment}
+              enableTags={!popupAnnotation.readOnly || popupAnnotation.tags.length > 0}
+              onUpdate={(comment) => {
+                onChange({ id: popupAnnotation.id, comment });
+              }}
+              onColorChange={(color) => {
+                onChange({ id: popupAnnotation.id, color });
+              }}
+              onClickTags={onClickTags}
+              onChange={onChange}
+              onPageMenu={props.onPageMenu}
+              onMoreMenu={props.onMoreMenu}
+              onDragStart={(event) => {
+                let annotation = popupAnnotation;
+                annotation.itemId = window.itemId;
+                event.dataTransfer.setData('zotero/annotation', JSON.stringify({
+                  ...annotation,
+                  position: v2p(annotation.position)
+                }));
+                event.dataTransfer.setData('text/plain', formatAnnotationText(annotation));
+              }}
+            />
+          </PagePopup>
+        )
+      }
+      {
+        props.enableSelectionPopup && selectionPositions.length && (
+          <PagePopup
+            id={1}
+            className="selection-popup"
+            position={selectionPositions[0]}
+            updateOnPositionChange={true}
+          >
+            <SelectionMenu
+              onHighlight={props.onHighlightSelection}
+              onCopy={props.onCopySelection}
+            />
+          </PagePopup>
+        )
+      }
+      {pageLayers}
+    </React.Fragment>
+  );
+
 }
 
 export default Layer;

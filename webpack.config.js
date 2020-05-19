@@ -172,8 +172,7 @@ const configZotero = {
   externals: {
     'react': 'React',
     'react-dom': 'ReactDOM',
-    're-resizable': 're-resizable',
-    'react-draggable': 'ReactDraggable'
+    'prop-types': 'prop-types'
   }
 };
 

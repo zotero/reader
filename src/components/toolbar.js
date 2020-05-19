@@ -14,14 +14,14 @@ class Toolbar extends React.Component {
   }
 
   render() {
-    let { active, color, onColorClick, onMode } = this.props;
+    let { toggled, color, onColorClick, onMode } = this.props;
     let containerNode = this.getContainerNode();
     return ReactDOM.createPortal(
       <div className="tool-group annotation-tools">
         <button
           data-l10n-id='highlight_tool'
           className={cx('toolbarButton highlight', {
-            toggled: active === 'highlight'
+            toggled: toggled === 'highlight'
           })}
           onClick={() => {
             onMode('highlight');
@@ -31,7 +31,7 @@ class Toolbar extends React.Component {
         <button
           data-l10n-id='note_tool'
           className={cx('toolbarButton note', {
-            toggled: active === 'note'
+            toggled: toggled === 'note'
           })}
           onClick={() => {
             onMode('note');
@@ -41,7 +41,7 @@ class Toolbar extends React.Component {
         <button
           data-l10n-id='area_tool'
           className={cx('toolbarButton area', {
-            toggled: active === 'area'
+            toggled: toggled === 'area'
           })}
           onClick={() => {
             onMode('area');

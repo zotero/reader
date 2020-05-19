@@ -18,7 +18,10 @@ class Viewer {
     this._annotationsStore = new AnnotationsStore({
       annotations: options.annotations,
       onSetAnnotation: options.onSetAnnotation,
-      onDeleteAnnotation: options.onDeleteAnnotation
+      onDeleteAnnotations: options.onDeleteAnnotations,
+      onUpdateAnnotations: (annotations) => {
+        this.setAnnotations([...annotations]);
+      }
     });
     
     // Takeover the download button
@@ -27,43 +30,6 @@ class Viewer {
     let downloadButton = document.getElementById('download');
     downloadButton.addEventListener('click', (event) => {
       options.onDownload();
-    });
-    
-    
-    window.PDFViewerApplication.eventBus.on('textlayerrendered', e => {
-      return;
-      // let pageIndex = e.pageNumber;
-      // let pageView = window.PDFViewerApplication.pdfViewer.getPageView(e.pageNumber - 1);
-      // let data = pageView.textLayer.textDivs.map(x => parseFloat(x.style.left)).filter(x => x).sort((a, b) => a - b);
-      //
-      // let result = data.reduce(function (r, a, i, aa) {
-      //   if (a - aa[i - 1] < 5) {
-      //     if (!Array.isArray(r[r.length - 1])) {
-      //       r[r.length - 1] = [r[r.length - 1]];
-      //     }
-      //     r[r.length - 1].push(a);
-      //     return r;
-      //   }
-      //   r.push(a);
-      //   return r;
-      // }, []);
-      //
-      // let b = result.map(ar => {
-      //   if (!Array.isArray(ar)) ar = [ar];
-      //   let sum = ar.reduce((a, b) => a + b, 0);
-      //   let avg = sum / ar.length;
-      //   return [avg, ar.length];
-      // });
-      //
-      // b = b.filter(x => x[1] >= 10);
-      //
-      // let res = null;
-      // if (b.length) {
-      //   res = b[0][0];
-      // }
-      //
-      // let pageWidth = window.PDFViewerApplication.pdfViewer.getPageView(pageIndex).width;
-      // let margins = [res, pageWidth - res];
     });
     
     if (options.password) {
@@ -84,7 +50,6 @@ class Viewer {
     }
     
     window.PDFViewerApplication.eventBus.on('updateviewarea', (e) => {
-      // console.log(e);
       let state = {
         page: e.location.pageNumber,
         scale: e.location.scale,
@@ -133,7 +98,7 @@ class Viewer {
     
     // Prevent dragging for internal links
     window.addEventListener('dragstart', (event) => {
-      if (event.target.closest('.annotationLayer')) {
+      if (event.target.nodeType === Node.ELEMENT_NODE && event.target.closest('.annotationLayer')) {
         event.preventDefault();
       }
     });
@@ -160,16 +125,13 @@ class Viewer {
       <Annotator
         onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
         onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
-        onDeleteAnnotation={this._annotationsStore.deleteAnnotation.bind(this._annotationsStore)}
-        onResetPageLabels={this._annotationsStore.resetPageLabels.bind(this._annotationsStore)}
+        onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
         onClickTags={options.onClickTags}
         onPopup={options.onPopup}
         askImport={options.askImport}
         onImport={options.onImport}
         onDismissImport={options.onDismissImport}
         onInitialized={() => {
-          this._annotationsStore.onUpdateAnnotations = this.setAnnotations;
-          this._annotationsStore.onImportableAnnotationsNum = this.importableAnnotationsNum;
           this.setAnnotations(this._annotationsStore.getAnnotations());
         }}
         setAnnotationsRef={(ref) => {

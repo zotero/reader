@@ -2,7 +2,6 @@
 
 import React from 'react';
 import cx from 'classnames';
-import DraggableBox from './draggable-box';
 
 class Highlight extends React.Component {
 
@@ -15,8 +14,8 @@ class Highlight extends React.Component {
   draggableRef = React.createRef();
 
   render() {
-    let { annotation, active } = this.props;
-    
+    let { annotation, isSelected } = this.props;
+
     let rects = annotation.position.rects;
     let padding = 5;
     let squareRect = [
@@ -25,11 +24,11 @@ class Highlight extends React.Component {
       Math.max(...rects.map(x => x[2])) + padding,
       Math.max(...rects.map(x => x[3])) + padding
     ];
-    
+
     return (
       <div
         id={'annotation-' + annotation.id}
-        className={cx('highlight-annotation', { active })}
+        className={cx('highlight-annotation', { selected: isSelected })}
       >
         <div
           ref={this.draggableRef}
@@ -41,16 +40,9 @@ class Highlight extends React.Component {
             height: squareRect[3] - squareRect[1]
           }}
           draggable={true}
-        />
-        <DraggableBox
-          draggableRef={this.draggableRef}
-          pageIndex={this.props.annotation.position.pageIndex}
           onDragStart={this.props.onDragStart}
           onDragEnd={this.props.onDragEnd}
-          onMove={(rect)=> {
-          }}
-        >
-        </DraggableBox>
+        />
         {annotation.position.rects.map((rect, index) => (
           <div
             key={index}

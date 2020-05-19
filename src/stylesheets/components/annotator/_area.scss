@@ -5,7 +5,7 @@
   cursor: inherit !important;
   position: absolute;
 
-  &.active {
+  &.selected {
     border: 3px dashed cornflowerblue !important;
     pointer-events: all;
   }

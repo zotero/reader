@@ -3,8 +3,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames';
-import Preview from './preview';
+import { SidebarPreview } from './preview';
 import { searchAnnotations } from '../lib/search';
+import { formatAnnotationText } from '../lib/utilities';
 
 class AnnotationsViewSearch extends React.Component {
   handleInput = (event) => {
@@ -31,20 +32,29 @@ class AnnotationsViewSearch extends React.Component {
 }
 
 class Annotation extends React.Component {
-  handleClickAnnotation = (event) => {
-    if (!this.props.isSelected && event.button === 0) {
-      this.props.onSelect(this.props.annotation.id, event.ctrlKey || event.metaKey, event.shiftKey);
-    }
+
+  state = {
+    isDown: false
   }
 
-  handleDelete = () => {
-    this.props.onDelete(this.props.annotation.id);
+  componentDidMount() {
+    window.addEventListener('mouseup', this.handleMouseUp);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('mouseup', this.handleMouseUp);
+  }
+
+  handleClickAnnotation = (event) => {
+    if (event.button === 0) {
+      this.props.onSelect(this.props.annotation.id, event.ctrlKey || event.metaKey, event.shiftKey);
+    }
   }
 
   handleEditPage = () => {
     this.props.onPageMenu(this.props.annotation.id);
   }
-  
+
   handleDragStart = (event) => {
     if (!this.props.isSelected) {
       event.preventDefault();
@@ -53,30 +63,37 @@ class Annotation extends React.Component {
     this.props.onDragStart(event);
   }
 
+  handleMouseDown = () => {
+    this.setState({ isDown: true });
+  }
+
+  handleMouseUp = () => {
+    this.setState({ isDown: false });
+  }
+
   render() {
     let annotation = this.props.annotation;
     return (
       <div
         key={this.props.annotation.id}
-        className={cx('annotation', { selected: this.props.isSelected })}
+        className={cx('annotation', { selected: this.props.isSelected, down: this.state.isDown })}
         data-sidebar-id={this.props.annotation.id}
-        onClick={this.handleClickAnnotation}
-        draggable={true}
-        onDragStart={this.handleDragStart}
+        // draggable={true}
+        ref="asdf"
+        // onDragStart={(event) => {event.preventDefault();return;event.dataTransfer.setData('text/plain', 'dfd')}}
+        onMouseDown={this.handleMouseDown}
+        onDragEnd={this.handleMouseUp}
       >
-        <Preview
+        <SidebarPreview
+          state={this.props.expansionState}
           annotation={this.props.annotation}
-          isExpandable={true}
-          enableText={true}
-          enableImage={true}
-          enableComment={this.props.isSelected && !annotation.readOnly || annotation.comment}
-          enableTags={this.props.isSelected && !annotation.readOnly || annotation.tags.length > 0}
-          onDelete={this.handleDelete}
-          onClickTags={this.props.onClickTags}
+          selected={this.props.isSelected}
+          onClickSection={this.props.onClickAnnotationSection}
+          onDoubleClickHighlight={this.props.onDoubleClickHighlight}
           onPageMenu={this.props.onPageMenu}
           onMoreMenu={this.props.onMoreMenu}
           onChange={this.props.onChange}
-          onResetPageLabels={this.props.onResetPageLabels}
+          onEditorBlur={this.props.onAnnotationEditorBlur}
         />
       </div>
     )
@@ -142,14 +159,15 @@ class AnnotationsView extends React.Component {
             key={annotation.id}
             isSelected={this.props.selectedAnnotationIds.includes(annotation.id)}
             annotation={annotation}
+            expansionState={this.props.selectedAnnotationIds.includes(annotation.id) && this.props.expansionState}
             onSelect={this.props.onSelectAnnotation}
             onChange={this.props.onChange}
-            onResetPageLabels={this.props.onResetPageLabels}
-            onDelete={this.props.onDelete}
-            onClickTags={this.props.onClickTags}
+            onClickAnnotationSection={this.props.onClickAnnotationSection}
+            onDoubleClickHighlight={this.props.onDoubleClickHighlight}
             onPageMenu={this.props.onPageMenu}
             onMoreMenu={this.props.onMoreMenu}
             onDragStart={this.props.onDragStart}
+            onAnnotationEditorBlur={this.props.onAnnotationEditorBlur}
           />
         ))}
       </React.Fragment>,

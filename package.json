@@ -16,6 +16,7 @@
   ],
   "dependencies": {
     "classnames": "^2.2.6",
+    "prop-types": "^15.7.2",
     "queue": "^6.0.1",
     "react": "^16.5.2",
     "react-dom": "^16.5.2"

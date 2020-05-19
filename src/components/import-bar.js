@@ -7,17 +7,17 @@ class ImportBar extends React.Component {
   state = {
     hidden: false
   }
-  
+
   handleImport = () => {
     this.setState({ hidden: true });
     this.props.onImport();
   }
-  
+
   handleDismiss = () => {
     this.setState({ hidden: true });
     this.props.onDismiss();
   }
-  
+
   getContainerNode() {
     let container = document.getElementById('importBarContainer');
     if (!container) {
@@ -29,20 +29,20 @@ class ImportBar extends React.Component {
     }
     return container;
   }
-  
+
   removeContainerNode() {
     let container = document.getElementById('importBarContainer');
     if (container) {
       container.parentElement.removeChild(container);
     }
   }
-  
+
   render() {
     if (this.state.hidden) {
       this.removeContainerNode();
       return null;
     }
-    
+
     let containerNode = this.getContainerNode();
     return ReactDOM.createPortal(
       <React.Fragment>

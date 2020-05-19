@@ -11,6 +11,8 @@ document.addEventListener('webviewerloaded', (e) => {
   window.PDFViewerApplicationOptions.set('cMapPacked', true);
   window.PDFViewerApplicationOptions.set('workerSrc', 'pdf.worker.js');
   window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
+  window.PDFViewerApplicationOptions.set('textLayerMode', 0);
+  
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {
     return window.PDFViewerApplicationOptions;
@@ -54,16 +56,19 @@ window.addEventListener('message', function (message) {
         console.log('Set annotation', annotation);
         parent.postMessage({ op: 'setAnnotation', parent: true, annotation }, '*');
       },
-      onDeleteAnnotation: function (annotationId) {
-        console.log('Delete annotation', annotationId);
-        parent.postMessage({ op: 'deleteAnnotation', parent: true, annotationId }, '*');
+      onDeleteAnnotations: function (ids) {
+        console.log('Delete annotations', JSON.stringify(ids));
+        parent.postMessage({ op: 'deleteAnnotations', parent: true, ids }, '*');
       },
       onSetState: function (state) {
         console.log('Set state', state);
         parent.postMessage({ op: 'setState', parent: true, state }, '*');
       },
-      onClickTags(annotationId, screenX, screenY) {
-        parent.postMessage({ op: 'tagsPopup', x: screenX, y: screenY }, '*');
+      onClickTags(annotationId, event) {
+        let rect = event.currentTarget.getBoundingClientRect();
+        let x = event.clientX - rect.left;
+        let y = event.clientY - rect.top;
+        parent.postMessage({ op: 'tagsPopup', x: event.screenX - x, y: event.screenY - y }, '*');
       },
       onPopup(name, data) {
         parent.postMessage({ op: name, ...data }, '*');

@@ -3,6 +3,11 @@
 //
 
 .annotation {
+
+  &.down {
+    border-color: gray;
+  }
+
   background-color: $annotation-bg;
   border: $annotation-border;
   border-radius: $annotation-border-radius;
