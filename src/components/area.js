@@ -27,11 +27,11 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
   useEffect(() => {
     window.addEventListener('mousemove', handlePointerMoveCallback);
     window.addEventListener('mouseup', handlePointerUpCallback);
-    window.addEventListener('keydown', handleKeyDownCallback);
+    document.getElementById('viewerContainer').addEventListener('keydown', handleKeyDownCallback);
     return () => {
       window.removeEventListener('mousemove', handlePointerMoveCallback);
       window.removeEventListener('mouseup', handlePointerUpCallback);
-      window.removeEventListener('keydown', handleKeyDownCallback);
+      document.getElementById('viewerContainer').removeEventListener('keydown', handleKeyDownCallback);
     }
   }, [handlePointerMoveCallback, handlePointerUpCallback, handleKeyDownCallback]);
 
