@@ -7,7 +7,7 @@ import AnnotationsView from './annotations-view';
 import Toolbar from './toolbar';
 import Findbar from './findbar';
 import ImportBar from './import-bar';
-import { annotationColors } from '../lib/colors';
+import { annotationColors, selectionColor } from '../lib/colors';
 
 import {
   copyToClipboard,
@@ -23,9 +23,7 @@ import { extractRange } from '../lib/extract';
 // where the Y axis starts from the bottom:
 // [231.284, 402.126, 293.107, 410.142]
 
-const DEFAULT_SELECTION_COLOR = '#f0f0f0';
-
-async function getselectionRangesRef(positionFrom, positionTo) {
+async function getSelectionRangesRef(positionFrom, positionTo) {
 
   let getPageSelectionRange = async (pageIndex, startPoint, endPoint) => {
     let rect = (await PDFViewerApplication.pdfDocument.getPage(pageIndex + 1)).view.slice();
@@ -152,7 +150,7 @@ function Annotator(props) {
   const dragNoteRef = useRef();
   const selectionRangesRef = useRef([]);
 
-  function setselectionRangesRef(ranges) {
+  function setSelectionRangesRef(ranges) {
     setSelectionPositions(ranges.map(r => r.position));
     selectionRangesRef.current = ranges;
   }
@@ -307,7 +305,7 @@ function Annotator(props) {
         setMode(null);
       }
 
-      setselectionRangesRef([]);
+      setSelectionRangesRef([]);
       setEnableSelection(false);
     }
 
@@ -407,7 +405,7 @@ function Annotator(props) {
 
 
     let { width, height } = renderHighlight({
-      color: DEFAULT_SELECTION_COLOR,
+      color: selectionColor,
       position: selectionRange.position
     });
 
@@ -863,7 +861,7 @@ function Annotator(props) {
     }
 
     setEnableSelection(true);
-    setselectionRangesRef([]);
+    setSelectionRangesRef([]);
   }
 
   function handlePointerUp(event) {
@@ -877,13 +875,13 @@ function Annotator(props) {
           position: selectionRange.position,
           text: selectionRange.text
         });
-        setselectionRangesRef([]);
+        setSelectionRangesRef([]);
       }
     }
 
     if (event.target === document.getElementById('viewer')) {
       selectAnnotation(null);
-      setselectionRangesRef([]);
+      setSelectionRangesRef([]);
     }
 
     setIsSelectingText(false);
@@ -930,7 +928,7 @@ function Annotator(props) {
 
     let selectId = getAnnotationToSelectId(position, isCtrl || isShift);
     if (selectId) {
-      setselectionRangesRef([]);
+      setSelectionRangesRef([]);
       selectAnnotation(selectId, isCtrl, isShift, true, false);
 
       // TODO: Right click shouldn't switch to the next annotations
@@ -971,10 +969,10 @@ function Annotator(props) {
       }
 
       (async () => {
-        let selectionRangesRef = await getselectionRangesRef(pointerDownPositionRef.current, selectionEndPosition);
+        let selectionRangesRef = await getSelectionRangesRef(pointerDownPositionRef.current, selectionEndPosition);
         // Check enableSelectionRef.current again after await
         if (enableSelectionRef.current) {
-          setselectionRangesRef(selectionRangesRef);
+          setSelectionRangesRef(selectionRangesRef);
           if (selectionRangesRef.length && !isSelectingTextRef.current) {
             setIsSelectingText(true);
             selectAnnotation(null);
@@ -1000,7 +998,7 @@ function Annotator(props) {
         text: selectionRange.text
       });
 
-      setselectionRangesRef([]);
+      setSelectionRangesRef([]);
     }
   }
 
@@ -1034,7 +1032,7 @@ function Annotator(props) {
         onMenu={handleSidebarAnnotationMenuOpen}
       />
       <Layer
-        selectionColor={_mode === 'highlight' ? _color : DEFAULT_SELECTION_COLOR}
+        selectionColor={_mode === 'highlight' ? _color : selectionColor}
         selectionPositions={_selectionPositions}
         enableSelectionPopup={!_isSelectingText && !_mode}
         popupAnnotation={

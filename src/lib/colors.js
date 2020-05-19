@@ -7,3 +7,5 @@ export let annotationColors = [
   ['Blue', '#2ea8e5'],
   ['Purple', '#a28ae5']
 ];
+
+export let selectionColor = '#f0f0f0';
