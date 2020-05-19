@@ -810,7 +810,7 @@ function Annotator(props) {
   function handleLayerAreaCreation(position) {
     props.onAddAnnotation({
       type: 'area',
-      color: _color,
+      color: colorRef.current,
       position: position
     });
   }
