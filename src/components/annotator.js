@@ -1036,7 +1036,7 @@ function Annotator(props) {
       <Layer
         selectionColor={_mode === 'highlight' ? _color : DEFAULT_SELECTION_COLOR}
         selectionPositions={_selectionPositions}
-        enableSelectionPopup={!_mode}
+        enableSelectionPopup={!_isSelectingText && !_mode}
         popupAnnotation={
           !_isSelectingText &&
           !_isDraggingAnnotation &&
