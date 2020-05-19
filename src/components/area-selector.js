@@ -45,12 +45,12 @@ function AreaSelector(props) {
     container.current.addEventListener('mousedown', handlePointerDownCallback);
     window.addEventListener('mousemove', handlePointerMoveCallback);
     window.addEventListener('mouseup', handlePointerUpCallback);
-    window.addEventListener('keydown', handleKeyDownCallback);
+    document.getElementById('viewerContainer').addEventListener('keydown', handleKeyDownCallback);
     return () => {
       container.current.removeEventListener('mousedown', handlePointerDownCallback);
       window.removeEventListener('mousemove', handlePointerMoveCallback);
       window.removeEventListener('mouseup', handlePointerUpCallback);
-      window.removeEventListener('keydown', handleKeyDownCallback);
+      document.getElementById('viewerContainer').removeEventListener('keydown', handleKeyDownCallback);
     }
   }, [
     handlePointerDownCallback,
