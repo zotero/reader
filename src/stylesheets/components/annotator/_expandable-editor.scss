@@ -30,7 +30,7 @@
 #clamp1 {
   width: calc(var(--sidebar-width) - 3px);
   overflow-y: scroll;
-  padding: 0 4px 0 12px;
+  padding: 0 4px;
   word-wrap: break-word;
   font-size: var(--note-font-size);
   line-height: 1.34;
