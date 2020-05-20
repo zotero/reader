@@ -2,11 +2,44 @@
 // Toolbar buttons
 //
 
-.toolbar {
-  .tool-group {
-    display: flex;
-  }
+.tool-group {
+  display: flex;
+}
 
+.toolbarButton {
+  &.global-color {
+    white-space: nowrap;
+
+    &::before {
+      content: "";
+      display: inline-block;
+      vertical-align: top;
+      width: 12px;
+      height: 12px;
+      margin: 2px;
+      background-color: currentColor;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 3px;
+    }
+
+    .dropmarker {
+      display: inline-block;
+      vertical-align: top;
+      width: 7px;
+      height: 4px;
+      margin: 6px -1px 0 2px;
+      background: image-url("searchbar-dropmarker.png") no-repeat left top;
+      position: relative;
+      z-index: 1;
+
+      @include retina {
+        background: image-url("searchbar-dropmarker@2x.png") no-repeat left top / 100%;
+      }
+    }
+  }
+}
+
+.toolbar {
   .annotation-tools {
     .toolbarButton {
       @if $platform == "darwin" {
@@ -16,35 +49,6 @@
           $padding-x: 11px,
           $padding-y: 4px
         );
-      }
-
-      &.global-color {
-        &::before {
-          content: "";
-          display: inline-block;
-          vertical-align: top;
-          width: 12px;
-          height: 12px;
-          margin: 2px;
-          background-color: currentColor;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 3px;
-        }
-
-        .dropmarker {
-          display: inline-block;
-          vertical-align: top;
-          width: 7px;
-          height: 4px;
-          margin: 6px -1px 0 2px;
-          background: image-url("searchbar-dropmarker.png") no-repeat left top;
-          position: relative;
-          z-index: 1;
-
-          @include retina {
-            background: image-url("searchbar-dropmarker@2x.png") no-repeat left top / 100%;
-          }
-        }
       }
     }
   }

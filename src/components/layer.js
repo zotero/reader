@@ -487,7 +487,7 @@ function Layer(props) {
         continue;
       }
       let view = viewer.getPageView(pageIndex);
-      
+
 
       pageLayers.push(
         <PageLayerHighlight
@@ -522,7 +522,7 @@ function Layer(props) {
           onDragEnd={props.onDragEnd}
         />
       );
-      
+
       if (props.enableEdgeNotes) {
         pageLayers.push(<EdgeNoteLayer
           key={'m_' + pageIndex}
@@ -545,7 +545,7 @@ function Layer(props) {
       ...rest
     };
   }
-  
+
 
   let blinkLayer = null;
   if (blink) {
@@ -615,6 +615,7 @@ function Layer(props) {
             updateOnPositionChange={true}
           >
             <SelectionMenu
+              color={ color }
               onHighlight={props.onHighlightSelection}
               onCopy={props.onCopySelection}
             />

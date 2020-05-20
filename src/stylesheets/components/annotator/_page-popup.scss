@@ -16,6 +16,7 @@
 
     .selection-menu {
       display: flex;
+      align-items: center;
     }
 
     .toolbarButton {
@@ -26,6 +27,19 @@
 
       &:active {
         background: $selection-popup-btn-active-bg;
+      }
+    }
+
+    .selection-tools {
+      .toolbarButton {
+        @if $platform == "darwin" {
+          @include split-button(
+            $height: 22px,
+            $button: "popupbutton",
+            $padding-x: 11px,
+            $padding-y: 3px
+          );
+        }
       }
     }
   }
