@@ -3,33 +3,19 @@
 //
 
 .expandable-editor {
-  //pointer-events: none;
-
   .selected & {
     pointer-events: all;
   }
 
-    max-height: calc(
-      3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)}
-    );
+  .editor-view {
+    max-height: $collapsed-height;
     overflow-y: hidden;
-  
-  &.expanded {
-    overflow-y: visible;
-    max-height: none;
-  }
-  
-  &.editable {
-    .editor {
-      .content {
-        cursor: text;
-        background-color: #fff;
-      }
-    }
-  }
-
-  @include state(".expandable-editor.overflowed") {
     clip-path: inset(0 0 calc(#{nem(4)}) 0);
+
+    @include state(".expandable-editor.expanded") {
+      max-height: initial;
+      clip-path: initial;
+    }
   }
 }
 
@@ -44,16 +30,16 @@
 #clamp1 {
   width: calc(var(--sidebar-width) - 3px);
   overflow-y: scroll;
-  padding: 0 4px;
+  padding: 0 4px 0 12px;
   word-wrap: break-word;
   font-size: var(--note-font-size);
   line-height: 1.34;
-  height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
+  height: $collapsed-height;
   box-sizing: border-box;
 }
 
 #clamp1 .outer {
-  max-height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
+  max-height: $collapsed-height;
   overflow-y: hidden;
 }
 

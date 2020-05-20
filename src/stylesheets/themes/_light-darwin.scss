@@ -341,11 +341,14 @@ $annotation-placeholder-color:   #6d95e0;
 // Annotation popup
 
 // Preview
-$preview-header-height:            21px;
-$preview-border:                   1px solid #d7dad7;
-$preview-selected-border:          1px solid rgba(#6d95e0, 0.4);
+$preview-header-height:   21px;
+$preview-border:          1px solid #d7dad7;
+$preview-selected-border: 1px solid rgba(#6d95e0, 0.4);
 
 $tags-placeholder-color: #6d95e0;
+
+// Expandable editor
+$collapsed-height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
 
 // Editor
 $editor-border:          $preview-border;
