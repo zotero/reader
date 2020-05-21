@@ -125,20 +125,7 @@ export class SidebarPreview extends React.Component {
 
   handleDragStart = (event) => {
     if (!event.target.getAttribute('draggable')) return;
-
-    let target = event.target.closest('.preview');
-
-
-    let br = target.getBoundingClientRect();
-    let offsetX = event.clientX - br.left;
-    let offsetY = event.clientY - br.top;
-
-    let x = offsetX;
-    let y = offsetY;
-
-    event.dataTransfer.setData('text/plain', 'dfd');
-    event.dataTransfer.setDragImage(event.target.closest('.annotation'), x, y);
-
+    this.props.onDragStart(event, this.props.annotation.id);
   }
 
   handleEditorBlur = () => {
@@ -159,7 +146,7 @@ export class SidebarPreview extends React.Component {
            draggable={state !== 3 || annotation.readOnly}
            onDragStart={this.handleDragStart}
       >
-        <div className="blockquote-border" style={{ backgroundColor: annotation.color }} />
+        <div className="blockquote-border" style={{ backgroundColor: annotation.color }}/>
         <ExpandableEditor
           id={annotation.id}
           text={annotation.text}
@@ -174,8 +161,11 @@ export class SidebarPreview extends React.Component {
     )
 
     let comment = (state >= 1 || annotation.comment) && !(annotation.readOnly && !annotation.comment) &&
-      <div className="comment" onClick={(e) => this.handleSectionClick(e, 'comment')}
-           draggable={state === 0 || state === 3 || annotation.readOnly} onDragStart={this.handleDragStart}>
+      <div className="comment"
+           onClick={(e) => this.handleSectionClick(e, 'comment')}
+           draggable={state === 0 || state === 3 || annotation.readOnly}
+           onDragStart={this.handleDragStart}
+      >
         <ExpandableEditor
           id={annotation.id}
           text={annotation.comment}

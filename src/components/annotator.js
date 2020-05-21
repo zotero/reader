@@ -8,13 +8,21 @@ import Toolbar from './toolbar';
 import Findbar from './findbar';
 import ImportBar from './import-bar';
 import { annotationColors, selectionColor } from '../lib/colors';
+import {
+  setLayerSelectionDragPreview,
+  setLayerSingleDragPreview,
+  setSidebarSingleDragPreview,
+  setMultiDragPreview
+} from './drag-preview';
 
 import {
   copyToClipboard,
   intersectPositions,
   intersectBoundingPositions,
   setCaretToEnd,
-  useRefState
+  useRefState,
+  getAnnotationsFromSelectionRanges,
+  setDataTransferAnnotations
 } from '../lib/utilities';
 
 import { extractRange } from '../lib/extract';
@@ -145,9 +153,6 @@ function Annotator(props) {
 
   const lastSelectedAnnotationIdRef = useRef(null);
   const pointerDownPositionRef = useRef(null);
-  const dragCanvasRef = useRef();
-  const dragContextRef = useRef();
-  const dragNoteRef = useRef();
   const selectionRangesRef = useRef([]);
 
   function setSelectionRangesRef(ranges) {
@@ -215,28 +220,11 @@ function Annotator(props) {
     });
   }
 
-  function initCanvas() {
-    let canvas = document.createElement('canvas');
-    canvas.className = 'drag-canvas';
-    document.body.appendChild(canvas)
-    dragCanvasRef.current = canvas;
-    dragContextRef.current = canvas.getContext('2d');
-
-    let icon = document.createElement('div');
-    icon.className = 'drag-note';
-    document.body.appendChild(icon);
-    dragNoteRef.current = icon;
-  }
-
-  function deinitCanvas() {
-    dragCanvasRef.current.parentNode.removeChild(dragCanvasRef.current);
-    dragNoteRef.current.parentNode.removeChild(dragNoteRef.current);
-  }
-
   const handleKeyDownCallback = useCallback(handleKeyDown, []);
   const handlePointerUpCallback = useCallback(handlePointerUp, []);
   const handleDragEndCallback = useCallback(handleDragEnd, []);
   const handleDragStartCallback = useCallback(handleDragStart, []);
+  const handleCopyCallback = useCallback(handleCopy, []);
   const handleSidebarViewChangeCallback = useCallback(handleSidebarViewChange, []);
 
   useEffect(() => {
@@ -251,6 +239,7 @@ function Annotator(props) {
     window.addEventListener('pointerup', handlePointerUpCallback);
     window.addEventListener('dragend', handleDragEndCallback);
     window.addEventListener('dragstart', handleDragStartCallback);
+    window.addEventListener('copy', handleCopyCallback);
     window.PDFViewerApplication.eventBus.on('sidebarviewchanged', handleSidebarViewChangeCallback);
 
     return () => {
@@ -258,12 +247,12 @@ function Annotator(props) {
       window.removeEventListener('pointerup', handlePointerUpCallback);
       window.removeEventListener('dragend', handleDragEndCallback);
       window.removeEventListener('dragstart', handleDragStartCallback);
+      window.removeEventListener('copy', handleCopyCallback);
       window.PDFViewerApplication.eventBus.off('sidebarviewchanged', handleSidebarViewChangeCallback);
     }
   }, []);
 
   useEffect(() => {
-    initCanvas();
     props.onInitialized();
   }, [])
 
@@ -297,6 +286,7 @@ function Annotator(props) {
   }
 
   function handleKeyDown(e) {
+    if (e.key === 'c') return;
     if (e.key === 'Escape') {
       if (selectedIdsRef.current.length) {
         selectAnnotation(null);
@@ -351,6 +341,27 @@ function Annotator(props) {
     }
   }
 
+  function handleCopy(event) {
+    if (event.target === document.getElementById('viewerContainer')
+      || event.target === document.body) {
+
+      let annotations = [];
+
+      if (selectionRangesRef.current.length) {
+        annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
+      }
+      else if (selectedIdsRef.current.length) {
+        annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+      }
+
+      if (annotations.length) {
+        setDataTransferAnnotations(event.clipboardData, annotations);
+      }
+
+      event.preventDefault();
+    }
+  }
+
   function handleDragEnd(event) {
     setEnableSelection(false);
     setIsDraggingAnnotation(false);
@@ -371,7 +382,19 @@ function Annotator(props) {
 
   function handleDragStart(event) {
     if (event.target === document.getElementById('viewer')) {
-      if (enableSelectionRef.current || selectionRangesRef.current.length !== 1 || !intersectBoundingPositions(pointerDownPositionRef.current, selectionRangesRef.current[0].position)) {
+
+      let pointerInSelection = false;
+
+      for (let range of selectionRangesRef.current) {
+        if (intersectBoundingPositions(pointerDownPositionRef.current, range.position)) {
+          pointerInSelection = true;
+          break;
+        }
+      }
+
+      if (enableSelectionRef.current
+        || selectionRangesRef.current.length < 1
+        || !pointerInSelection) {
         event.preventDefault();
         return;
       }
@@ -380,60 +403,20 @@ function Annotator(props) {
       return;
     }
 
-    let range = JSON.parse(JSON.stringify(selectionRangesRef.current[0]));
-
-    handleSelectionDragStart(event, range, pointerDownPositionRef.current);
+    handleSelectionDragStart(event, pointerDownPositionRef.current);
   }
 
-  function handleSelectionDragStart(event, selectionRange, pointerPosition) {
-    let annotation = {
-      itemId: window.itemId,
-      text: selectionRange.text,
-      position: selectionRange.position
-    };
+  function handleSelectionDragStart(event, pointerPosition) {
+    let annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 
-    let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-    if (pageLabels && pageLabels[annotation.position.pageIndex]) {
-      annotation.pageLabel = pageLabels[annotation.position.pageIndex];
+    if (annotations.length > 1) {
+      setMultiDragPreview(event, annotations.length);
     }
     else {
-      annotation.pageLabel = annotation.position.pageIndex + 1;
+      setLayerSelectionDragPreview(event, annotations[0].position.rects, selectionColor, pointerPosition);
     }
 
-    event.dataTransfer.setData('zotero/annotation', JSON.stringify(annotation));
-    event.dataTransfer.setData('text/plain', JSON.stringify(annotation));
-
-
-    let { width, height } = renderHighlight({
-      color: selectionColor,
-      position: selectionRange.position
-    });
-
-    // let width = event.target.offsetWidth - 10;
-    // let height = event.target.offsetHeight - 10;
-    //
-    // let x = offsetX * this.dragCanvasRef.width / width;
-    // let y = offsetY * this.dragCanvasRef.height / height;
-    //
-    // if (event.target.closest('#annotationsView')) {
-    //   x = this.dragCanvasRef.width / 2;
-    //   y = this.dragCanvasRef.height / 2;
-    // }
-    //
-
-    let boundingRect = [
-      Math.min(...annotation.position.rects.map(x => x[0])),
-      Math.min(...annotation.position.rects.map(x => x[1])),
-      Math.max(...annotation.position.rects.map(x => x[2])),
-      Math.max(...annotation.position.rects.map(x => x[3]))
-    ];
-
-    let x = pointerPosition.rects[0][0] - boundingRect[0];
-    let y = pointerPosition.rects[0][1] - boundingRect[1];
-    x = x * dragCanvasRef.current.width / width;
-    y = y * dragCanvasRef.current.height / height;
-
-    event.dataTransfer.setDragImage(dragCanvasRef.current, x, y);
+    setDataTransferAnnotations(event.dataTransfer, annotations);
   }
 
   function toggleMode(m) {
@@ -617,122 +600,38 @@ function Annotator(props) {
     return selectedIds.length;
   }
 
-  function renderHighlight(annotation) {
-    let rects = annotation.position.rects.slice();
-    let imageRect = [
-      Math.min(...rects.map(x => x[0])),
-      Math.min(...rects.map(x => x[1])),
-      Math.max(...rects.map(x => x[2])),
-      Math.max(...rects.map(x => x[3]))
-    ];
-
-    rects = rects.map(rect => [
-      rect[0] - imageRect[0],
-      rect[1] - imageRect[1],
-      rect[2] - imageRect[0],
-      rect[3] - imageRect[1]
-    ]);
-
-    rects = rects.map(rect => [
-      rect[0],
-      (imageRect[3] - imageRect[1]) - rect[1],
-      rect[2],
-      (imageRect[3] - imageRect[1]) - rect[3]
-    ]);
-
-    let width = imageRect[2] - imageRect[0];
-    let height = imageRect[3] - imageRect[1];
-
-    dragCanvasRef.current.width = width;
-    dragCanvasRef.current.height = height;
-
-    dragContextRef.current.fillStyle = annotation.color;
-    for (let rect of rects) {
-      dragContextRef.current.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
-    }
-
-    // let width = 200;
-    // let height = 200 * img.height / img.width;
-    return { width, height };
-  }
-
-  let handleAnnotationDragStart = (event) => {
-
+  function handleLayerAnnotationDragStart(event) {
     setIsDraggingAnnotation(true);
-
     setEnableSelection(false);
 
-    let isSidebar = event.target.closest('#annotationsView');
-
-    // annotation.itemId = window.itemId;
-    event.dataTransfer.setData('zotero/annotation', JSON.stringify(selectedIdsRef.current));
-    event.dataTransfer.setData('text/plain', JSON.stringify(selectedIdsRef.current));
-
-    if (selectedIdsRef.current.length >= 2) {
-      event.dataTransfer.setDragImage(dragCanvasRef.current, 0, 0);
+    let annotations = [];
+    if (selectedIdsRef.current.length > 1) {
+      setMultiDragPreview(event, selectedIdsRef.current.length);
+      annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
     }
     else {
       let annotation = annotationsRef.current.find(x => x.id === selectedIdsRef.current[0]);
-      let br = event.target.getBoundingClientRect();
-      let offsetX = event.clientX - br.left;
-      let offsetY = event.clientY - br.top;
-
-      if (annotation.type === 'area') {
-        let x = 0;
-        let y = 0;
-        let img = document.querySelector('div[data-sidebar-id="' + selectedIdsRef.current[0] + '"] img');
-        if (img) {
-          let width = 200;
-          let height = 200 * img.height / img.width;
-          dragCanvasRef.current.width = width;
-          dragCanvasRef.current.height = height;
-          dragContextRef.current.drawImage(img, 0, 0, width, height);
-          let width1 = event.target.offsetWidth;
-          let height1 = event.target.offsetHeight;
-
-          x = offsetX * dragCanvasRef.current.width / width1;
-          y = offsetY * dragCanvasRef.current.height / height1;
-
-          if (isSidebar) {
-            x = dragCanvasRef.current.width / 2;
-            y = dragCanvasRef.current.height / 2;
-          }
-        }
-        else {
-          dragContextRef.current.clearRect(0, 0, dragCanvasRef.current.width, dragCanvasRef.current.height);
-        }
-        event.dataTransfer.setDragImage(dragCanvasRef.current, x, y);
-      }
-      else if (annotation.type === 'highlight') {
-        renderHighlight(annotation);
-        let width = event.target.offsetWidth - 10;
-        let height = event.target.offsetHeight - 10;
-
-        let x = offsetX * dragCanvasRef.current.width / width;
-        let y = offsetY * dragCanvasRef.current.height / height;
-
-        if (isSidebar) {
-          x = dragCanvasRef.current.width / 2;
-          y = dragCanvasRef.current.height / 2;
-        }
-
-        event.dataTransfer.setDragImage(dragCanvasRef.current, x, y);
-      }
-      else if (annotation.type === 'note') {
-
-        let width = event.target.offsetWidth - 10;
-        let height = event.target.offsetHeight - 10;
-
-        let x = offsetX * 20 / width;
-        let y = offsetY * 20 / height;
-
-        x = 20 / 2;
-        y = 20 / 2;
-
-        dragNoteRef.current.style.backgroundColor = annotation.color;
-        event.dataTransfer.setDragImage(dragNoteRef.current, x, y);
-      }
+      setLayerSingleDragPreview(event, annotation);
+      annotations = [annotation];
     }
+
+    setDataTransferAnnotations(event.dataTransfer, annotations);
+  }
+
+  function handleSidebarAnnotationDragStart(event, id) {
+    setIsDraggingAnnotation(true);
+
+    let annotations;
+    if (selectedIdsRef.current.includes(id) && selectedIdsRef.current.length > 1) {
+      setMultiDragPreview(event, selectedIdsRef.current.length);
+      annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+    }
+    else {
+      setSidebarSingleDragPreview(event);
+      annotations = [annotationsRef.current.find(x => x.id === id)];
+    }
+
+    setDataTransferAnnotations(event.dataTransfer, annotations);
   }
 
   function handleAnnotationDragEnd() {
@@ -850,8 +749,8 @@ function Annotator(props) {
       }
     }
 
-    if (selectionRangesRef.current.length === 1) {
-      if (intersectBoundingPositions(position, selectionRangesRef.current[0].position)) {
+    for (let range of selectionRangesRef.current) {
+      if (intersectBoundingPositions(pointerDownPositionRef.current, range.position)) {
         return;
       }
     }
@@ -1028,7 +927,7 @@ function Annotator(props) {
         onAnnotationEditorBlur={handleSidebarAnnotationEditorBlur}
         onDoubleClickHighlight={handleSidebarAnnotationDoubleClick}
         onChange={handleSidebarAnnotationChange}
-        onDragStart={handleAnnotationDragStart}
+        onDragStart={handleSidebarAnnotationDragStart}
         onMenu={handleSidebarAnnotationMenuOpen}
       />
       <Layer
@@ -1060,7 +959,7 @@ function Annotator(props) {
         onPointerMove={handleLayerPointerMove}
         onClickTags={props.onClickTags}
         onClickEdgeNote={handleLayerEdgeNoteClick}
-        onDragStart={handleAnnotationDragStart}
+        onDragStart={handleLayerAnnotationDragStart}
         onDragEnd={handleAnnotationDragEnd}
         onHighlightSelection={handleLayerSelectionPopupHighlight}
         onCopySelection={handleLayerSelectionPopupCopy}

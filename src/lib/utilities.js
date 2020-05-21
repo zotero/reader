@@ -237,3 +237,69 @@ export function useRefState(initialValue) {
 
   return [state, stateRef, _setState]
 }
+
+export function getAnnotationsFromSelectionRanges(selectionRanges) {
+  let annotations = [];
+  for (let selectionRange of selectionRanges) {
+    // TODO: Use the extracted page label
+    let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
+    let pageIndex = selectionRange.position.pageIndex;
+
+    annotations.push({
+      text: selectionRange.text,
+      position: selectionRange.position,
+      pageLabel: pageLabels && pageLabels[pageIndex] || (pageIndex + 1).toString()
+    });
+  }
+
+  return annotations;
+}
+
+export function getImageDataUrl(img) {
+  var canvas = document.createElement('canvas');
+  canvas.width = img.width;
+  canvas.height = img.height;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  return canvas.toDataURL('image/png');
+}
+
+export function setDataTransferAnnotations(dataTransfer, annotations) {
+  let text = annotations.reduce((text, annotation) => {
+    let parts = [];
+
+    if (annotation.comment) {
+      parts.push(annotation.comment + ':');
+    }
+
+    if (annotation.text) {
+      parts.push('"' + annotation.text + '"');
+    }
+
+    return text + '\n\n' + parts.join(' ');
+  }, '');
+
+  annotations = annotations.map(
+    ({ id, text, comment, image, position, pageLabel }) => {
+      if (image) {
+        let img = document.querySelector('div[data-sidebar-id="' + id + '"] img');
+        if (img) {
+          image = getImageDataUrl(img);
+        }
+      }
+      return {
+        attachmentItemKey: window.attachmentItemKey,
+        itemId: window.itemId,
+        id,
+        text,
+        comment,
+        image,
+        position,
+        pageLabel
+      }
+    });
+  
+  dataTransfer.setData('zotero/annotation', JSON.stringify(annotations));
+  dataTransfer.setData('text/plain', JSON.stringify(annotations));
+  // dataTransfer.setData('text/plain', text);
+}

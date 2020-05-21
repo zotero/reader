@@ -595,7 +595,7 @@ function Layer(props) {
               onMoreMenu={props.onMoreMenu}
               onDragStart={(event) => {
                 let annotation = popupAnnotation;
-                annotation.itemId = window.itemId;
+                annotation.itemKey = window.itemKey;
                 event.dataTransfer.setData('zotero/annotation', JSON.stringify({
                   ...annotation,
                   position: v2p(annotation.position)

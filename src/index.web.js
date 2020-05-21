@@ -26,6 +26,8 @@ document.addEventListener('webviewerloaded', function () {
       console.log('documentinit')
     });
     
+    window.attachmentItemKey = 'AAAABBBB';
+
     const viewer = new Viewer({
       askImport: true,
       onImport() {

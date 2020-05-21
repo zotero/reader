@@ -53,13 +53,13 @@
   pointer-events: none;
 }
 
-.drag-canvas {
+#drag-canvas {
   position: absolute;
   top: -1000px;
   left: -1000px;
 }
 
-.drag-note {
+#drag-note {
   position: absolute;
   top: -2000px;
   left: -1000px;
@@ -68,4 +68,16 @@
   background-repeat: no-repeat;
   width: 20px;
   height: 20px;
+}
+
+#drag-multi {
+  position: absolute;
+  top: -3000px;
+  left: -1000px;
+  //width: 20px;
+  //height: 20px;
+
+  &::before {
+    content: 'dragging multiple';
+  }
 }

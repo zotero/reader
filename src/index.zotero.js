@@ -42,6 +42,7 @@ window.addEventListener('message', function (message) {
   let data = message.data;
   
   if (data.op === 'open') {
+    window.attachmentItemKey = data.key;
     window.itemId = data.itemId;
     viewer = new Viewer({
       askImport: true,
