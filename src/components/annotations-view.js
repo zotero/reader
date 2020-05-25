@@ -55,14 +55,6 @@ class Annotation extends React.Component {
     this.props.onPageMenu(this.props.annotation.id);
   }
 
-  handleDragStart = (event) => {
-    if (!this.props.isSelected) {
-      event.preventDefault();
-      return;
-    }
-    this.props.onDragStart(event);
-  }
-
   handleMouseDown = () => {
     this.setState({ isDown: true });
   }
@@ -72,15 +64,11 @@ class Annotation extends React.Component {
   }
 
   render() {
-    let annotation = this.props.annotation;
     return (
       <div
         key={this.props.annotation.id}
         className={cx('annotation', { selected: this.props.isSelected, down: this.state.isDown })}
         data-sidebar-id={this.props.annotation.id}
-        // draggable={true}
-        ref="asdf"
-        // onDragStart={(event) => {event.preventDefault();return;event.dataTransfer.setData('text/plain', 'dfd')}}
         onMouseDown={this.handleMouseDown}
         onDragEnd={this.handleMouseUp}
       >
@@ -88,6 +76,7 @@ class Annotation extends React.Component {
           state={this.props.expansionState}
           annotation={this.props.annotation}
           selected={this.props.isSelected}
+          onDragStart={this.props.onDragStart}
           onClickSection={this.props.onClickAnnotationSection}
           onDoubleClickHighlight={this.props.onDoubleClickHighlight}
           onPageMenu={this.props.onPageMenu}
@@ -159,7 +148,7 @@ class AnnotationsView extends React.Component {
             key={annotation.id}
             isSelected={this.props.selectedAnnotationIds.includes(annotation.id)}
             annotation={annotation}
-            expansionState={this.props.selectedAnnotationIds.includes(annotation.id) && this.props.expansionState}
+            expansionState={this.props.selectedAnnotationIds.includes(annotation.id) ? this.props.expansionState : 0}
             onSelect={this.props.onSelectAnnotation}
             onChange={this.props.onChange}
             onClickAnnotationSection={this.props.onClickAnnotationSection}
@@ -173,8 +162,6 @@ class AnnotationsView extends React.Component {
       </React.Fragment>,
       containerNode
     );
-
-    return null;
   }
 }
 

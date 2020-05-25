@@ -342,8 +342,8 @@ function Annotator(props) {
   }
 
   function handleCopy(event) {
-    if (event.target === document.getElementById('viewerContainer')
-      || event.target === document.body) {
+    if (document.activeElement === document.getElementById('viewerContainer')
+      || document.activeElement === document.body) {
 
       let annotations = [];
 

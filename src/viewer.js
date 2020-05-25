@@ -83,26 +83,29 @@ class Viewer {
     //     this._onSetState(this._lastState);
     //   }
     // });
-    
-    
+
+
     window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-      window.isDocumentReady = true;
       this._setState(options.state);
     });
-    
+
     window.PDFViewerApplication.eventBus.on('pagesinit', (e) => {
       if (_password) {
         options.onEnterPassword(_password);
       }
     });
-    
+
+    window.PDFViewerApplication.eventBus.on('pagerendered', (e) => {
+      window.isDocumentReady = true;
+    });
+
     // Prevent dragging for internal links
     window.addEventListener('dragstart', (event) => {
       if (event.target.nodeType === Node.ELEMENT_NODE && event.target.closest('.annotationLayer')) {
         event.preventDefault();
       }
     });
-    
+
     // Takeover external link click handling
     window.addEventListener('click', (event) => {
       if (

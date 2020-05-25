@@ -257,10 +257,10 @@ export function getAnnotationsFromSelectionRanges(selectionRanges) {
 
 export function getImageDataUrl(img) {
   var canvas = document.createElement('canvas');
-  canvas.width = img.width;
-  canvas.height = img.height;
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
   var ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
+  ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight);
   return canvas.toDataURL('image/png');
 }
 
@@ -290,7 +290,6 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
       return {
         attachmentItemKey: window.attachmentItemKey,
         itemId: window.itemId,
-        id,
         text,
         comment,
         image,
