@@ -163,7 +163,7 @@ export class SidebarPreview extends React.Component {
     let comment = (state >= 1 || annotation.comment) && !(annotation.readOnly && !annotation.comment) &&
       <div className="comment"
            onClick={(e) => this.handleSectionClick(e, 'comment')}
-           draggable={state === 0 || state === 3 || annotation.readOnly}
+           draggable={state === 0 || annotation.readOnly}
            onDragStart={this.handleDragStart}
       >
         <ExpandableEditor
@@ -174,7 +174,7 @@ export class SidebarPreview extends React.Component {
           onChange={this.handleCommentChange}
           isReadOnly={annotation.readOnly}
           isExpanded={state >= 1}
-          isEditable={state === 1 || state === 2}
+          isEditable={state === 1 || state === 2 || state === 3}
           onBlur={this.handleEditorBlur}
         />
       </div>;

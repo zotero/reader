@@ -664,6 +664,11 @@ function Annotator(props) {
       }
     }
     else {
+    
+      if (section === 'comment' && expansionStateRef.current === 3) {
+        setExpansionState(2);
+      }
+
       let selected = selectAnnotation(id, ctrl, shift, true, true);
       if (selected === 1) {
         scrollTo(annotationsRef.current.find(x => x.id === id), true, true);
