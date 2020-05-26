@@ -25,7 +25,7 @@
   height: 0;
   overflow: hidden;
 
-  #highlight-clamp, #comment-clamp {
+  .clamp {
     width: calc(var(--sidebar-width) - 3px);
     overflow-y: scroll;
     padding: 0 4px;
@@ -38,14 +38,14 @@
     .outer {
       max-height: $collapsed-height;
       overflow-y: hidden;
+    }
 
-      .inner {
-        padding: calc(0.33333 * var(--note-font-size)) 8px calc(0.33333 * var(--note-font-size));
+    .inner {
+      padding: calc(0.33333 * var(--note-font-size)) 8px calc(0.33333 * var(--note-font-size));
+
+      @include variant(".clamp#highlight-clamp") {
+        padding-left: 16px;
       }
     }
-  }
-
-  #highlight-clamp {
-    padding-left: 12px;
   }
 }

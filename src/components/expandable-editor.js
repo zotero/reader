@@ -30,6 +30,7 @@ class ExpandableEditor extends React.Component {
     if (!container) {
       container = document.createElement('div');
       container.id = clampId;
+      container.className = 'clamp';
       let allClampsContainer = this.getAllClampsContainer();
       allClampsContainer.appendChild(container);
     }
