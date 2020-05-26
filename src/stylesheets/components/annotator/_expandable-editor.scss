@@ -9,7 +9,6 @@
 
   .editor-view {
     max-height: $collapsed-height;
-    overflow-y: hidden;
     clip-path: inset(0 0 calc(#{nem(4)}) 0);
 
     @include state(".expandable-editor.expanded") {
