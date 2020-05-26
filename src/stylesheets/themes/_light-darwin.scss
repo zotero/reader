@@ -355,13 +355,19 @@ $editor-border:          $preview-border;
 $editor-selected-border: $preview-selected-border;
 
 // Page popup
-$page-popup-border-radius: 4px;
+$page-popup-border-radius: 5px;
 $page-popup-box-shadow:    0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
 // Selection popup
-$selection-popup-padding:           2px;
-$selection-popup-btn-height:        20px;
-$selection-popup-btn-padding:       2px 5px;
-$selection-popup-btn-bg:            linear-gradient(to bottom, #fefefe, #f7f7f7);
-$selection-popup-btn-active-bg:     linear-gradient(to bottom, #e7e7e7, #e1e1e1);
-$selection-popup-btn-margin:        3px;
+$selection-popup-padding:              4px;
+$selection-popup-btn-height:           20px;
+$selection-popup-btn-padding:          2px;
+$selection-popup-btn-bg:               transparent;
+$selection-popup-btn-border-radius:    1.75px;
+$selection-popup-btn-box-shadow:       none;
+$selection-popup-btn-margin:           0;
+$selection-popup-btn-spacing:          1px;
+$selection-popup-btn-hover-bg:         rgba(0, 0, 0, 0.1);
+$selection-popup-btn-hover-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+$selection-popup-btn-focus-box-shadow: 0 0 0 3px rgba($accent-color, 0.5), $selection-popup-btn-hover-box-shadow;
+

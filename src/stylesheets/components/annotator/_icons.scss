@@ -71,13 +71,3 @@
   }
 }
 
-// Selection popup
-.selection-popup {
-  .btn-copy {
-    @include icon("page-copy");
-  }
-
-  .btn-highlight {
-    @include icon($highlight-tool-icon);
-  }
-}

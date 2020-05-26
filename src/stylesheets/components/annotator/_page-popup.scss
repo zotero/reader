@@ -24,25 +24,23 @@
 
     .toolbarButton {
       height: $selection-popup-btn-height;
-      padding: $selection-popup-btn-padding;
       background: $selection-popup-btn-bg;
+      padding: $selection-popup-btn-padding;
+      border-radius: $selection-popup-btn-border-radius;
+      box-shadow: $selection-popup-btn-box-shadow;
       margin: $selection-popup-btn-margin;
 
-      &:active {
-        background: $selection-popup-btn-active-bg;
+      &:not(:first-child) {
+        margin-left: $selection-popup-btn-spacing;
       }
-    }
 
-    .selection-tools {
-      .toolbarButton {
-        @if $platform == "darwin" {
-          @include split-button(
-            $height: 22px,
-            $button: "popupbutton",
-            $padding-x: 11px,
-            $padding-y: 3px
-          );
-        }
+      &:hover {
+        background: $selection-popup-btn-hover-bg;
+        box-shadow: $selection-popup-btn-hover-box-shadow;
+      }
+
+      &:focus-visible {
+        box-shadow: $selection-popup-btn-focus-box-shadow;
       }
     }
   }

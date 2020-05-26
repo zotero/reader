@@ -356,9 +356,15 @@ $page-popup-border-radius:    4px;
 $page-popup-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
 // Selection popup
-$selection-popup-padding:           2px;
-$selection-popup-btn-height:        20px;
-$selection-popup-btn-padding:       null;
-$selection-popup-btn-bg:            null;
-$selection-popup-btn-active-bg:     null;
-$selection-popup-btn-margin:        2px;
+$selection-popup-padding:              4px;
+$selection-popup-btn-height:           22px;
+$selection-popup-btn-padding:          2px;
+$selection-popup-btn-bg:               null;
+$selection-popup-btn-border-radius:    null;
+$selection-popup-btn-box-shadow:       none;
+$selection-popup-btn-margin:           0;
+$selection-popup-btn-spacing:          0;
+$selection-popup-btn-hover-bg:         null;
+$selection-popup-btn-hover-box-shadow: null;
+$selection-popup-btn-focus-box-shadow: null;
+
