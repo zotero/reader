@@ -149,6 +149,7 @@ export class SidebarPreview extends React.Component {
         <div className="blockquote-border" style={{ backgroundColor: annotation.color }}/>
         <ExpandableEditor
           id={annotation.id}
+          clampId="highlight-clamp"
           text={annotation.text}
           placeholder="Add extracted text…"
           isReadOnly={annotation.readOnly}
@@ -168,6 +169,7 @@ export class SidebarPreview extends React.Component {
       >
         <ExpandableEditor
           id={annotation.id}
+          clampId="comment-clamp"
           text={annotation.comment}
           placeholder="Add comment"
           isPlainText={false}

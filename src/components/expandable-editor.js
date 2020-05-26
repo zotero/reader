@@ -15,35 +15,28 @@ class ExpandableEditor extends React.Component {
 
   initialized = false;
 
-  getClampingContainer() {
-    let container = document.getElementById('clamp1');
+  getAllClampsContainer() {
+    let container = document.getElementById('clamps');
     if (!container) {
       container = document.createElement('div');
-      container.id = 'clamp1';
+      container.id = 'clamps';
+      document.body.appendChild(container);
+    }
+    return container;
+  }
 
-      let clampParent = document.createElement('div');
-      clampParent.id = 'clamp1Container'
-      clampParent.appendChild(container)
-      document.body.appendChild(clampParent);
+  getClampContainer(clampId) {
+    let container = document.getElementById(clampId);
+    if (!container) {
+      container = document.createElement('div');
+      container.id = clampId;
+      let allClampsContainer = this.getAllClampsContainer();
+      allClampsContainer.appendChild(container);
     }
     return container;
   }
 
   componentDidMount() {
-    // // this.observer = this.observeVisibility(document.getElementById('annotationsView'), () => {
-    // //   if (!this.refs.outer) return;
-    // //   let outerHeight = this.refs.outer.offsetHeight;
-    // //   let innerHeight = this.refs.inner.offsetHeight;
-    // //   let isOverflowed = !(outerHeight === innerHeight);
-    // //   if (isOverflowed !== this.state.isOverflowed) {
-    // //     this.setState({ isOverflowed });
-    // //   }
-    // })
-    //
-    // document
-    //   .getElementById('viewer')
-    //   .addEventListener('pointerdown', this.handleBlur);
-
     document.getElementById('sidebarResizer').addEventListener('mousedown', this.handleResizerDown)
     window.addEventListener('mouseup', this.handleResizerUp)
   }
@@ -92,7 +85,7 @@ class ExpandableEditor extends React.Component {
     let node = this.refs.editorView.querySelector('.content');
     if (!node) return;
     let renderedEditorHtml = node.innerHTML;
-    let clampedHtml = await lineClamp(renderedEditorHtml, this.getClampingContainer());
+    let clampedHtml = await lineClamp(renderedEditorHtml, this.getClampContainer(this.props.clampId));
     if (!this.unmounted) this.setState({ clampedHtml });
   }
 
@@ -109,13 +102,6 @@ class ExpandableEditor extends React.Component {
 
   handleBlur = () => {
     this.setState({ isExpanded: false });
-  }
-
-  handleDoubleClick = () => {
-    if (this.state.isOverflowed) {
-      let content = this.refs.inner.querySelector('.content');
-      this.setCaretToEnd(content);
-    }
   }
 
   handleChange = (text) => {
