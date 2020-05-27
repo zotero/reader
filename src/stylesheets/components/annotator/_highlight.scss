@@ -1,3 +1,6 @@
+//
+// Highlight
+//
 
 .highlight-annotation {
   position: absolute;
@@ -5,22 +8,19 @@
   .square {
     position: absolute;
     pointer-events: none;
-  }
 
-  .rect {
-    cursor: pointer;
-    position: absolute;
-    //opacity: 0.5;
-    mix-blend-mode: multiply;
-    pointer-events: none;
-  }
-
-  &.selected {
-    .square {
-      border: 2px dashed cornflowerblue;
+    @include state(".highlight-annotation.selected") {
+      border: 2px dashed $highlight-annotation-selected-border-color;
       pointer-events: auto;
       z-index: 1;
     }
   }
 
+  .rect {
+    cursor: pointer;
+    position: absolute;
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
 }

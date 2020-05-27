@@ -4,10 +4,14 @@
   pointer-events: none;
   cursor: inherit !important;
   position: absolute;
+  opacity: 0.75;
+  mix-blend-mode: multiply;
 
   &.selected {
-    border: 3px dashed cornflowerblue !important;
+    border: 3px dashed $highlight-area-selected-border-color !important;
     pointer-events: all;
+    opacity: 1;
+    mix-blend-mode: normal;
   }
 }
 
