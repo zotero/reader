@@ -2,6 +2,11 @@
 // Highlight
 //
 
+.selectionCanvas,
+.highlight-annotation .rect {
+  opacity: 0.5;
+}
+
 .highlight-annotation {
   position: absolute;
 
@@ -19,7 +24,6 @@
   .rect {
     cursor: pointer;
     position: absolute;
-    opacity: 0.5;
     mix-blend-mode: multiply;
     pointer-events: none;
   }
