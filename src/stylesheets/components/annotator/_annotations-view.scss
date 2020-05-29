@@ -1,29 +1,73 @@
+//
+// Annotations view
+//
 
 #annotationsView {
+  @extend %sidebar-view;
+
+  &:focus {
+    outline: none;
+  }
+
   .search {
-    padding: 5px 5px;
+    margin: $search-margin;
     display: flex;
+    position: relative;
 
-    .input-container {
+    .icon-search {
+      position: absolute;
+      left: $search-icon-offset-x;
+      top: $search-icon-offset-y;
+    }
+
+    .input-group {
       flex: 1;
+    }
 
-      input {
-        width: 100%;
+    input {
+      display: block;
+      width: 100%;
+      height: $search-height;
+      line-height: 2; // Center in Chrome
+      padding: $search-padding;
+      background: $search-bg;
+      border: $search-border;
+      border-radius: $search-border-radius;
+      box-shadow: $search-box-shadow;
+
+      @include retina {
+        box-shadow: $search-box-shadow-2x;
+      }
+
+      &::placeholder {
+        opacity: $search-placeholder-opacity;
+        color: #000;
+      }
+
+      &:hover {
+        border: $search-hover-border;
+      }
+
+      &:focus {
+        border: $search-focus-border;
+        box-shadow: $search-focus-box-shadow;
+
+        @include retina {
+          box-shadow: $search-focus-box-shadow-2x;
+        }
       }
     }
 
     .clear {
-      padding: 0 5px;
+      position: absolute;
+      right: $clear-icon-offset-x;
+      top: $clear-icon-offset-y;
+      width: 14px;
+      height: 14px;
+      background: transparent;
+      border: none;
     }
   }
-}
-
-#annotationsView {
-  @extend %sidebar-view;
-}
-
-#annotationsView:focus {
-  outline: none;
 }
 
 #measure {

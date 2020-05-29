@@ -6,7 +6,7 @@
 // Colors
 //
 
-$highlight-color: #0078d7;
+$accent-color: #0078d7;
 $blue-btn:        #90c8f6;
 
 $gray-lightest: #f0f0f0;
@@ -32,7 +32,7 @@ $note-font-size: var(--note-font-size);
 $note-line-height: 1.34;
 
 $selection-color: #fff;
-$selection-bg:    rgba($highlight-color, 0.99);
+$selection-bg:    rgba($accent-color, 0.99);
 
 // Z-index master list
 $z-index-page-popup: 10;
@@ -117,7 +117,7 @@ $toolbar-field-border-radius:       0;
 $toolbar-field-box-shadow:          null;
 $toolbar-field-box-shadow-2x:       null;
 $toolbar-field-hover-border-color:  #171717;
-$toolbar-field-focus-border-color:  $highlight-color;
+$toolbar-field-focus-border-color:  $accent-color;
 $toolbar-field-focus-box-shadow:    null;
 $toolbar-field-focus-box-shadow-2x: null;
 $toolbar-label-margin:              0 0 0 1px;
@@ -145,9 +145,9 @@ $dropdown-toolbar-btn-border:             1px solid #adadad;
 $dropdown-toolbar-btn-border-radius:      0;
 $dropdown-toolbar-btn-box-shadow:         null;
 $dropdown-toolbar-btn-box-shadow-2x:      null;
-$dropdown-toolbar-btn-hover-bg:           tint($highlight-color, 90%);
-$dropdown-toolbar-btn-hover-border-color: $highlight-color;
-$dropdown-toolbar-btn-focus-bg:           tint($highlight-color, 80%);
+$dropdown-toolbar-btn-hover-bg:           tint($accent-color, 90%);
+$dropdown-toolbar-btn-hover-border-color: $accent-color;
+$dropdown-toolbar-btn-focus-bg:           tint($accent-color, 80%);
 $dropdown-toolbar-btn-focus-border-color: #005499;
 
 // Findbar
@@ -298,12 +298,12 @@ $overlay-button-bg:            #e1e1e1;
 $overlay-btn-border:           1px solid #adadad;
 $overlay-btn-box-shadow:       null;
 $overlay-btn-box-shadow-2x:    null;
-$overlay-btn-focus-border:     2px solid $highlight-color;
+$overlay-btn-focus-border:     2px solid $accent-color;
 $overlay-btn-focus-box-shadow: null;
-$overlay-btn-hover-bg:         tint($highlight-color, 90%);
-$overlay-btn-hover-border:     1px solid $highlight-color;
-$overlay-btn-active-bg:        tint($highlight-color, 80%);
-$overlay-btn-active-border:    1px solid shade($highlight-color, 30%);
+$overlay-btn-hover-bg:         tint($accent-color, 90%);
+$overlay-btn-hover-border:     1px solid $accent-color;
+$overlay-btn-active-bg:        tint($accent-color, 80%);
+$overlay-btn-active-border:    1px solid shade($accent-color, 30%);
 $overlay-btn-border-radius:    0;
 
 $dialog-gradient-btn:       false;
@@ -318,6 +318,36 @@ $progress-border-radius: 2px;
 $progress-indicator-bg:  #06b025;
 $progress-label-width:   38px;
 
+// Annotation tools
+$highlight-tool-icon:        "highlight";
+$highlight-tool-icon-active: $highlight-tool-icon;
+$note-tool-icon:             "note";
+$note-tool-icon-active:      $note-tool-icon;
+$area-tool-icon:             "area";
+$area-tool-icon-active:      $area-tool-icon;
+
+// Search
+$search-margin:              0 0 4px 0;
+$search-height:              24px;
+$search-bg:                  #fff;
+$search-padding:             0 17px 0 19px;
+$search-border:              1px solid #7a7a7a;
+$search-hover-border:        1px solid #171717;
+$search-focus-border:        1px solid $accent-color;
+$search-border-radius:       null;
+$search-box-shadow:          null;
+$search-box-shadow-2x:       null;
+$search-focus-box-shadow:    null;
+$search-focus-box-shadow-2x: null;
+$search-placeholder-opacity: 0.54;
+$search-icon-offset-x:       2px;
+$search-icon-offset-y:       4px;
+$clear-icon-offset-x:        3px;
+$clear-icon-offset-y:        5px;
+$search-icon:                "win/search";
+$clear-icon:                 "win/clear";
+$clear-icon-hover:           "win/clear-hover";
+
 // Annotation
 $annotation-bg:                  #fff;
 $annotation-selected-bg:         #e4ebf9; // 8% K
@@ -326,14 +356,6 @@ $annotation-selected-border:     1px solid #6d95e0;
 $annotation-border-radius:       5px;
 $annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
 $annotation-placeholder-color:   #6d95e0;
-
-// Annotation tools
-$highlight-tool-icon:        "highlight";
-$highlight-tool-icon-active: $highlight-tool-icon;
-$note-tool-icon:             "note";
-$note-tool-icon-active:      $note-tool-icon;
-$area-tool-icon:             "area";
-$area-tool-icon-active:      $area-tool-icon;
 
 // Annotation popup
 

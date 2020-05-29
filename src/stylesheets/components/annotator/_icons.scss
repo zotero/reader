@@ -51,6 +51,21 @@
   }
 }
 
+// Search
+.search {
+  .icon-search {
+    @include icon($search-icon);
+  }
+
+  .clear {
+    @include icon($clear-icon, 14px);
+
+    &:hover {
+      @include icon($clear-icon-hover, 14px);
+    }
+  }
+}
+
 // Preview
 
 .preview {

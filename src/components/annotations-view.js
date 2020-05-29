@@ -19,13 +19,14 @@ class AnnotationsViewSearch extends React.Component {
   render() {
     return (
       <div className="search">
-        <div className="input-container">
+        <div className="icon icon-search" />
+        <div className="input-group">
           <input
-            type="text" placeholder="Search.."
+            type="text" placeholder="Search Annotations"
             value={this.props.query} onChange={this.handleInput}
           />
         </div>
-        <button className="clear" onClick={this.handleClear}>X</button>
+        { this.props.query.length !== 0 && <button className="clear" onClick={this.handleClear} /> }
       </div>
     );
   }

@@ -231,7 +231,7 @@ $toolbar-sidebar-border:          1px solid #bdbdbd;
 
 $split-toolbar-btn-flex:   1 0 auto;
 $split-toolbar-btn-height: 22px;
-$split-toolbar-btn-margin: 0 12px;
+$split-toolbar-btn-margin: 0 7px;
 
 $toolbar-sidebar-btn-padding-x:    11px;
 $toolbar-sidebar-btn-padding-y:    3px;
@@ -328,6 +328,28 @@ $note-tool-icon:             "darwin/note";
 $note-tool-icon-active:      "darwin/note-white";
 $area-tool-icon:             "darwin/area";
 $area-tool-icon-active:      "darwin/area-white";
+
+// Search
+$search-margin:              1px 9px 9px 9px;
+$search-height:              20px;
+$search-bg:                  #bcc4d2;
+$search-padding:             0 18px 0 23px;
+$search-border:              none;
+$search-hover-border:        null;
+$search-focus-border:        null;
+$search-border-radius:       3.75px;
+$search-box-shadow:          0 0 0 1px #a5afc1;
+$search-box-shadow-2x:       0 0 0 1px #a5afc1;
+$search-focus-box-shadow:    0 0 0 4px rgba($accent-color, 0.5), $search-box-shadow;
+$search-focus-box-shadow-2x: 0 0 0 4px rgba($accent-color, 0.5),$search-box-shadow-2x;
+$search-placeholder-opacity: 0.3;
+$search-icon-offset-x:       3px;
+$search-icon-offset-y:       2px;
+$clear-icon-offset-x:        3px;
+$clear-icon-offset-y:        3px;
+$search-icon:                "darwin/search";
+$clear-icon:                 "darwin/clear";
+$clear-icon-hover:           "darwin/clear";
 
 // Annotation
 $annotation-bg:                  #fff;
