@@ -46,9 +46,9 @@ class ImportBar extends React.Component {
     let containerNode = this.getContainerNode();
     return ReactDOM.createPortal(
       <React.Fragment>
-        <span className="message">Import annotations from the PDF file</span>
-        <button onClick={this.handleImport}>Import</button>
-        <button onClick={this.handleDismiss}>Dismiss</button>
+        <span className="message">Import annotations from the PDF file?</span>
+        <button className="btn-import" onClick={this.handleImport}>Import</button>
+        <button className="btn-dismiss"onClick={this.handleDismiss}></button>
       </React.Fragment>,
       containerNode
     );
