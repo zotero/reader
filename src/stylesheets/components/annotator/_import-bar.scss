@@ -25,12 +25,23 @@
     margin-right: 14px;
   }
 
-  button:focus-visible {
-    border-radius: $import-bar-btn-focus-border-radius;
-    box-shadow: $import-bar-btn-focus-box-shadow;
+  button {
+    &:focus-visible {
+      border-radius: $import-bar-btn-focus-border-radius;
+      box-shadow: $import-bar-btn-focus-box-shadow;
 
-    @include retina {
-      box-shadow: $import-bar-btn-focus-box-shadow-2x;
+      @include retina {
+        box-shadow: $import-bar-btn-focus-box-shadow-2x;
+      }
+    }
+
+    &:-moz-focusring {
+      border-radius: $import-bar-btn-focus-border-radius;
+      box-shadow: $import-bar-btn-focus-box-shadow;
+
+      @include retina {
+        box-shadow: $import-bar-btn-focus-box-shadow-2x;
+      }
     }
   }
 
