@@ -224,3 +224,10 @@
 .attachmentsItem > button {
   @include icon("page-white");
 }
+
+// Error message
+
+#errorClose {
+  @include icon("cross");
+}
+

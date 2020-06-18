@@ -1,48 +1,101 @@
-/* Copyright 2014 Mozilla Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+//
+// Error message
+//
 
 #errorWrapper {
-  background: none repeat scroll 0 0 rgba(255, 85, 85, 1);
-  color: rgba(255, 255, 255, 1);
-  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: $error-message-bg;
+  color: #fff;
+  left: var(--sidebar-width);
   position: absolute;
   right: 0;
-  z-index: 1000;
-  padding: 3px;
-  font-size: 0.8em;
-}
-.loadingInProgress #errorWrapper {
-  top: 37px;
+  z-index: $z-index-error-wrapper;
+  padding: rem(6) 40px rem(6) 12px;
+  font-size: rem(14);
+  line-height: calc(4 / 3);
+  min-height: $error-message-min-height;
+
+  .loadingInProgress & {
+    top: 37px;
+  }
+
+  button {
+    &:focus-visible {
+      border-radius: $error-message-btn-focus-border-radius;
+      box-shadow: $error-message-btn-focus-box-shadow;
+
+      @include retina {
+        box-shadow: $error-message-btn-focus-box-shadow-2x;
+      }
+    }
+
+    &:-moz-focusring {
+      border-radius: $error-message-btn-focus-border-radius;
+      box-shadow: $error-message-btn-focus-box-shadow;
+
+      @include retina {
+        box-shadow: $error-message-btn-focus-box-shadow-2x;
+      }
+    }
+  }
 }
 
-#errorMessageLeft {
-  float: left;
+#errorMessage {
+  margin-right: 14px;
+}
+
+#errorShowMore,
+#errorShowLess {
+  display: inline;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  text-decoration: underline;
+  padding: 0 2px;
+  cursor: pointer;
 }
 
 #errorMessageRight {
-  float: right;
+  position: absolute;
+  right: 8px;
+  top: $error-message-btn-dismiss-offset;
+}
+
+#errorClose {
+  width: 16px;
+  height: 16px;
+  border: none;
+  background: transparent;
+  overflow: hidden;
 }
 
 #errorMoreInfo {
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(0, 0, 0, 1);
-  padding: 3px;
-  margin: 3px;
-  width: 98%;
+  background-color: $error-more-info-bg;
+  color: #000;
+  padding: 8px;
+  border: none;
+  margin: 7px 0 0 0;
+  width: calc(100% + 28px);
+  font-family: monospace, monospace; // Fix font-size in Chrome
+  font-size: $font-size-base;
+  line-height: calc(4 / 3);
+  margin: rem(7) (-28px) rem(6) 0;
+  resize: vertical;
+
+  &:focus {
+    border-radius: $error-message-btn-focus-border-radius;
+    box-shadow: $error-message-btn-focus-box-shadow;
+
+    @include retina {
+      box-shadow: $error-message-btn-focus-box-shadow-2x;
+    }
+  }
 }
 
 .clearBoth {
-  clear: both;
+  display: none;
 }

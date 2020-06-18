@@ -7,7 +7,8 @@
 //
 
 $accent-color: #0078d7;
-$blue-btn:        #90c8f6;
+$blue-btn:     #90c8f6;
+$red:          #d93425;
 
 $gray-lightest: #f0f0f0;
 
@@ -35,10 +36,11 @@ $selection-color: #fff;
 $selection-bg:    rgba($accent-color, 0.99);
 
 // Z-index master list
-$z-index-page-popup: 10;
-$z-index-import-bar: 20;
-$z-index-findbar:    10000;
-$z-index-overlay:    40000;
+$z-index-page-popup:    10;
+$z-index-import-bar:    20;
+$z-index-error-wrapper: 1000;
+$z-index-findbar:       10000;
+$z-index-overlay:       40000;
 
 // Visibility breakpoints
 $visibility-bp-lg: null;
@@ -405,3 +407,12 @@ $highlight-annotation-selected-border-color: #6d95e0;
 
 // Highlight area
 $highlight-area-selected-border-color: #6d95e0;
+
+// Error message
+$error-message-min-height:              $import-bar-min-height;
+$error-message-bg:                      $red;
+$error-message-btn-focus-border-radius: null;
+$error-message-btn-focus-box-shadow:    null;
+$error-message-btn-focus-box-shadow-2x: null;
+$error-message-btn-dismiss-offset:      7px;
+$error-more-info-bg:                    #fbf0f0;
