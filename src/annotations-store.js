@@ -13,6 +13,8 @@ import { renderAreaImage } from './lib/render';
 import { annotationColors } from './lib/colors';
 import { equalPositions } from './lib/utilities';
 
+// TODO: Reorganize annotation set/unset/delete/update functions in index.*.js, viewer.js and annotations-store.js
+
 class AnnotationsStore {
   constructor(options) {
     this.annotations = options.annotations;
@@ -90,15 +92,12 @@ class AnnotationsStore {
     this.onUpdateAnnotations(this.annotations);
   };
 
-  syncDeleteAnnotation = (annotationId, dateDeleted) => {
-    let existingAnnotationIdx = this.annotations.findIndex(x => x.id === annotationId);
-    if (existingAnnotationIdx >= 0) {
-      let existingAnnotation = this.annotations[existingAnnotationIdx];
-      if (existingAnnotation.dateModified < dateDeleted) {
-        this.annotations.splice(existingAnnotationIdx, 1);
-        this.onUpdateAnnotations(this.annotations);
-      }
+  unsetAnnotation(id) {
+    let index = this.annotations.findIndex(x => x.id === id);
+    if (index >= 0) {
+      this.annotations.splice(index, 1);
     }
+    this.onUpdateAnnotations(this.annotations);
   };
 
   async addAnnotation(annotation) {
@@ -119,7 +118,7 @@ class AnnotationsStore {
     annotation.position.rects = annotation.position.rects.map(
       rect => rect.map(value => parseFloat(value.toFixed(3)))
     );
-    
+
     // Immediately render the annotation to prevent
     // delay from the further async calls
     this.annotations.push(annotation);
@@ -153,7 +152,7 @@ class AnnotationsStore {
     this.sortAnnotations(this.annotations);
     this.onSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
-    
+
     return annotation;
   }
 

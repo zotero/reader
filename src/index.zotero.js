@@ -29,7 +29,7 @@ document.addEventListener('webviewerloaded', (e) => {
     var url = new URL(window.location.href);
     var libraryID = url.searchParams.get('libraryID');
     var key = url.searchParams.get('key');
-    parent.postMessage({ op: 'load', libraryID, key }, '*');
+    parent.postMessage({ action: 'load', libraryID, key }, '*');
   });
 });
 
@@ -37,71 +37,70 @@ var viewer;
 
 window.addEventListener('message', function (message) {
   if (message.source === parent) return;
-  
+
   if (message.data.parent) return;
   let data = message.data;
-  
-  if (data.op === 'open') {
+
+  console.log('meeeeeeee', data)
+
+  if (data.action === 'open') {
     window.attachmentItemKey = data.key;
     window.itemId = data.itemId;
     viewer = new Viewer({
       askImport: true,
       onImport() {
-        parent.postMessage({ op: 'import' }, '*');
+        parent.postMessage({ action: 'import' }, '*');
       },
       onDismissImport() {
-        parent.postMessage({ op: 'dismissImport' }, '*');
+        parent.postMessage({ action: 'dismissImport' }, '*');
       },
       onSetAnnotation: function (annotation) {
         if (annotation.temp) return;
         console.log('Set annotation', annotation);
-        parent.postMessage({ op: 'setAnnotation', parent: true, annotation }, '*');
+        parent.postMessage({ action: 'setAnnotation', parent: true, annotation }, '*');
       },
       onDeleteAnnotations: function (ids) {
         console.log('Delete annotations', JSON.stringify(ids));
-        parent.postMessage({ op: 'deleteAnnotations', parent: true, ids }, '*');
+        parent.postMessage({ action: 'deleteAnnotations', parent: true, ids }, '*');
       },
       onSetState: function (state) {
         console.log('Set state', state);
-        parent.postMessage({ op: 'setState', parent: true, state }, '*');
+        parent.postMessage({ action: 'setState', parent: true, state }, '*');
       },
-      onClickTags(annotationId, event) {
+      onClickTags(id, event) {
         let rect = event.currentTarget.getBoundingClientRect();
-        let x = event.clientX - rect.left;
-        let y = event.clientY - rect.top;
-        parent.postMessage({ op: 'tagsPopup', x: event.screenX - x, y: event.screenY - y }, '*');
+        let x = event.screenX - (event.clientX - rect.left);
+        let y = event.screenY - (event.clientY - rect.top);
+        parent.postMessage({ action: 'openTagsPopup', x, y, id }, '*');
       },
       onPopup(name, data) {
-        parent.postMessage({ op: name, ...data }, '*');
+        parent.postMessage({ action: name, ...data }, '*');
       },
       onExternalLink(url) {
-        parent.postMessage({ op: 'externalLink', url }, '*');
-      }, 
-      onEnterPassword(password) {
-        parent.postMessage({ op: 'enterPassword', password }, '*');
+        parent.postMessage({ action: 'openURL', url }, '*');
       },
       onDownload() {
-        parent.postMessage({ op: 'save' }, '*');
+        parent.postMessage({ action: 'save' }, '*');
       },
       url: 'zotero://pdf.js/pdf/' + data.libraryID + '/' + data.key,
       annotations: data.annotations,
-      state: data.state,
-      password: data.password
+      state: data.state
     });
   }
-  else if (data.op === 'navigate') {
+  else if (data.action === 'navigate') {
     viewer.navigate(data.to);
   }
-  else if (data.op === 'setAnnotation') {
-    viewer.setAnnotation(data.annotation);
+  else if (data.action === 'setAnnotations') {
+    data.annotations.forEach(x => viewer.setAnnotation(x));
   }
-  else if (data.op === 'deleteAnnotation') {
-    viewer.deleteAnnotation(data.annotationId, data.dateDeleted);
+  else if (data.action === 'unsetAnnotations') {
+    // TODO: Handle conflicts when one user modifies and another deletes an annotation
+    viewer.unsetAnnotation(data.ids);
   }
-  else if (data.op === 'popupCmd') {
+  else if (data.action === 'popupCmd') {
     switch (data.cmd) {
       case 'deleteAnnotation':
-        viewer._annotationsStore.deleteAnnotation(data.id);
+        viewer._annotationsStore.deleteAnnotations([data.id]);
         break;
       case 'setAnnotationColor':
         viewer._annotationsStore.updateAnnotation({
@@ -114,10 +113,10 @@ window.addEventListener('message', function (message) {
         break;
     }
   }
-  else if (data.op === 'menuCmd') {
+  else if (data.action === 'menuCmd') {
     let cmd = data.cmd;
     let eb = window.PDFViewerApplication.eventBus;
-    
+
     switch (cmd) {
       case 'presentationmode':
         eb.dispatch('presentationmode');

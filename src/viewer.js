@@ -32,23 +32,6 @@ class Viewer {
       options.onDownload();
     });
     
-    if (options.password) {
-      window.PDFViewerApplication.passwordPrompt.open = function () {
-        this.updateCallback(options.password);
-      }
-    }
-    
-    let _password = null;
-    
-    window.PDFViewerApplication.passwordPrompt.verify = function () {
-      const password = this.input.value;
-      _password = password;
-      if (password && password.length > 0) {
-        this.close();
-        this.updateCallback(password);
-      }
-    }
-    
     window.PDFViewerApplication.eventBus.on('updateviewarea', (e) => {
       let state = {
         page: e.location.pageNumber,
@@ -90,9 +73,7 @@ class Viewer {
     });
 
     window.PDFViewerApplication.eventBus.on('pagesinit', (e) => {
-      if (_password) {
-        options.onEnterPassword(_password);
-      }
+
     });
 
     window.PDFViewerApplication.eventBus.on('pagerendered', (e) => {
@@ -175,24 +156,28 @@ class Viewer {
   };
   
   importableAnnotationsNum = (num) => {
-  
+
   };
-  
+
   navigate = (annotation) => {
-  
+
   };
-  
+
   setAnnotation(annotation) {
     this._annotationsStore.setAnnotation(annotation);
   }
-  
+
+  unsetAnnotation(annotation) {
+    this._annotationsStore.setAnnotation(annotation);
+  }
+
   _setState(options) {
     window.PDFViewerApplication.pdfSidebar.switchView(options.sidebarView, true);
     window.PDFViewerApplication.pdfSidebarResizer._updateWidth(options.sidebarWidth);
-    
+
     window.PDFViewerApplication.pdfViewer.scrollMode = options.scrollMode;
     window.PDFViewerApplication.pdfViewer.spreadMode = options.spreadMode;
-    
+
     window.PDFViewerApplication.pdfViewer.pagesRotation = options.rotation;
     
     let dest = [null, { name: 'XYZ' }, options.left,

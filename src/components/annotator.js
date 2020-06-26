@@ -88,7 +88,7 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
     selectionRange.sortIndex = [
       i.toString().padStart(6, '0'),
       offset.toString().padStart(7, '0'),
-      '0'.padStart(10, '0') // TODO: Fix missing dot
+      '000000.000'
     ].join('|');
 
     delete selectionRange.offset;
@@ -642,7 +642,7 @@ function Annotator(props) {
   }
 
   function handleToolbarColorClick(x, y) {
-    props.onPopup('colorPopup', {
+    props.onPopup('openColorPopup', {
       x,
       y,
       selectedColor: _color
@@ -696,15 +696,9 @@ function Annotator(props) {
     props.onUpdateAnnotation(annotation);
   }
 
-  function handleSidebarAnnotationMenuOpen(annotationId, x, y) {
+  function handleSidebarAnnotationMenuOpen(id, x, y) {
     let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-
-    props.onPopup('annotationPopup', {
-      x,
-      y,
-      annotationId: id,
-      selectedColor
-    });
+    props.onPopup('openAnnotationPopup', { x, y, id, selectedColor });
   }
 
   function handleLayerAreaSelectionStart() {
@@ -729,13 +723,7 @@ function Annotator(props) {
 
   function handleLayerAnnotationMoreMenu(id, x, y) {
     let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-
-    props.onPopup('annotationPopup', {
-      x,
-      y,
-      annotationId: id,
-      selectedColor
-    });
+    props.onPopup('openAnnotationPopup', { x, y, id, selectedColor });
   }
 
   function handleLayerPointerDown(position, event) {
@@ -835,13 +823,13 @@ function Annotator(props) {
       setSelectionRangesRef([]);
       selectAnnotation(selectId, isCtrl, isShift, true, false);
 
-      // TODO: Right click shouldn't switch to the next annotations
+      // TODO: Right click shouldn't switch to the next annotation
       if (isRight) {
         let selectedColor = annotationsRef.current.find(x => x.id === selectId).color;
-        props.onPopup('annotationPopup', {
+        props.onPopup('openAnnotationPopup', {
           x: event.screenX,
           y: event.screenY,
-          annotationId: selectId,
+          id: selectId,
           selectedColor
         });
       }
@@ -934,6 +922,7 @@ function Annotator(props) {
         onChange={handleSidebarAnnotationChange}
         onDragStart={handleSidebarAnnotationDragStart}
         onMenu={handleSidebarAnnotationMenuOpen}
+        onMoreMenu={handleSidebarAnnotationMenuOpen}
       />
       <Layer
         selectionColor={_mode === 'highlight' ? _color : selectionColor}

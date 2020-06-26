@@ -54,9 +54,6 @@ document.addEventListener('webviewerloaded', function () {
       },
       onExternalLink(url) {
         alert('This will navigate to the external link: ' + url);
-      },      
-      onEnterPassword(password) {
-        alert('Entered password: ' + password);
       },
       onDownload() {
         alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');
