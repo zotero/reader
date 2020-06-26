@@ -58,6 +58,9 @@ document.addEventListener('webviewerloaded', function () {
       onDownload() {
         alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');
       },
+      onToggleNoteSidebar(isToggled) {
+        alert(`This will ${isToggled ? 'show' : 'hide'} the note sidebar on the right`);
+      },
       url: 'compressed.tracemonkey-pldi-09.pdf',
       annotations,
       state: null

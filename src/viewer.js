@@ -23,7 +23,7 @@ class Viewer {
         this.setAnnotations([...annotations]);
       }
     });
-    
+
     // Takeover the download button
     PDFViewerApplication.download = function () {
     };
@@ -32,6 +32,20 @@ class Viewer {
       options.onDownload();
     });
     
+    let noteSidebarToggleButton = document.getElementById('noteSidebarToggle');
+    noteSidebarToggleButton.addEventListener('click', (event) => {
+      let isToggled;
+      if (noteSidebarToggleButton.classList.contains('toggled')) {
+        noteSidebarToggleButton.classList.remove('toggled');
+        isToggled = false;
+      }
+      else {
+        noteSidebarToggleButton.classList.add('toggled');
+        isToggled = true;
+      }
+      options.onToggleNoteSidebar(isToggled);
+    });
+
     window.PDFViewerApplication.eventBus.on('updateviewarea', (e) => {
       let state = {
         page: e.location.pageNumber,

@@ -82,6 +82,9 @@ window.addEventListener('message', function (message) {
       onDownload() {
         parent.postMessage({ action: 'save' }, '*');
       },
+      onToggleNoteSidebar(isToggled) {
+        parent.postMessage({ action: 'toggleNoteSidebar', isToggled }, '*');
+      },
       url: 'zotero://pdf.js/pdf/' + data.libraryID + '/' + data.key,
       annotations: data.annotations,
       state: data.state
