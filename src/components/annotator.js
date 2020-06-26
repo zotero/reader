@@ -878,13 +878,13 @@ function Annotator(props) {
     selectAnnotation(id, false, false, true, false);
   }
 
-  function handleLayerSelectionPopupHighlight() {
+  function handleLayerSelectionPopupHighlight(color) {
     if (selectionRangesRef.current.length === 1) {
 
       let selectionRange = selectionRangesRef.current[0];
       props.onAddAnnotation({
         type: 'highlight',
-        color: colorRef.current,
+        color,
         sortIndex: selectionRange.sortIndex,
         position: selectionRange.position,
         text: selectionRange.text

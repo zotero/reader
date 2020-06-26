@@ -1,41 +1,22 @@
 'use strict';
 
 import React from 'react';
+import { annotationColors } from '../lib/colors';
 
 class SelectionMenu extends React.Component {
-  handleColorPick = (event) => {
-    this.props.onColorPick(event.screenX, event.screenY)
+  handleColorPick = (color) => {
+    this.props.onHighlight(color)
   }
 
   render() {
-    let { color } = this.props;
     return (
       <div className="selection-menu">
-        <button
+        {annotationColors.map((color, index) => (<button
+          key={index}
           className="toolbarButton global-color"
-          style={{ color }}
-          onClick={this.handleColorPick}
-        />
-        <button
-          className="toolbarButton global-color"
-          style={{ color }}
-          onClick={this.handleColorPick}
-        />
-        <button
-          className="toolbarButton global-color"
-          style={{ color }}
-          onClick={this.handleColorPick}
-        />
-        <button
-          className="toolbarButton global-color"
-          style={{ color }}
-          onClick={this.handleColorPick}
-        />
-        <button
-          className="toolbarButton global-color"
-          style={{ color }}
-          onClick={this.handleColorPick}
-        />
+          style={{ color: color[1] }}
+          onClick={() => this.handleColorPick(color[1])}
+        />))}
       </div>
     );
   }
