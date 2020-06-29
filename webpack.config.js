@@ -3,6 +3,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const WriteFilePlugin = require('write-file-webpack-plugin');
 
 const configWeb = {
+  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   devtool: 'source-map',
   entry: [
     './src/index.web.js',
@@ -97,6 +98,7 @@ const configWeb = {
 };
 
 const configZotero = {
+  mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
   entry: [
     './src/index.zotero.js',
     './src/stylesheets/main.scss'
@@ -126,7 +128,6 @@ const configZotero = {
                   modules: false
                 }
               ]
-            
             ],
             'plugins': [
               '@babel/plugin-transform-runtime',

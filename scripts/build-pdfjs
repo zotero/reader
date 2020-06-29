@@ -1,9 +1,9 @@
 #!/bin/bash
-npm i
 cd pdf.js
-npm i
-# in production use the `generic` build 
+npm ci
+# TODO: Use `generic` build for the web version
 # npx gulp generic
+# Zotero with FF 60 ESR runs only the `es5` build
 npx gulp generic-es5
 cd ..
 
@@ -18,4 +18,4 @@ cp -r pdf.js/build/generic-es5/build/* build/zotero/
 cp -r pdf.js/build/generic-es5/LICENSE build/zotero/
 rm build/zotero/*.pdf
 
-node scripts/modify_viewer.js
+node ./scripts/tweak-viewer-html.js

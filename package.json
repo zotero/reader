@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "PDF.js based Zotero PDF reader and annotator",
   "scripts": {
-    "build": "./scripts/prepare && npm run build-reader",
-    "build-reader": "webpack --display-modules",
+    "build": "npm run build:pdf.js && npm run build:reader",
+    "build:pdf.js": "scripts/build-pdfjs",
+    "build:reader": "NODE_ENV=production webpack --display-modules",
     "start": "webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -38,9 +39,9 @@
     "postcss-loader": "^3.0.0",
     "postcss-rtl": "^1.5.0",
     "sass-loader": "^6.0.0",
-    "webpack": "^3.12.0",
-    "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^2.11.5",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12",
+    "webpack-dev-server": "^3.11.0",
     "write-file-webpack-plugin": "^4.5.1"
   }
 }
