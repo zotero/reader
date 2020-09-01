@@ -60,9 +60,9 @@ export async function getSortIndex(position) {
   let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1)).view[3];
   let top = pageHeight - position.rects[0][3];
   return [
-    page.toString().padStart(6, '0'),
-    offset.toString().padStart(7, '0'),
-    parseFloat(top).toFixed(3).padStart(10, '0')
+    page.toString().padStart(5, '0'),
+    offset.toString().padStart(6, '0'),
+    parseFloat(top).toFixed(3).padStart(9, '0')
   ].join('|');
 }
 

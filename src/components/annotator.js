@@ -86,9 +86,9 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
     // TODO: Unify all annotations sort index calculation
     let offset = selectionRange.offset;
     selectionRange.sortIndex = [
-      i.toString().padStart(6, '0'),
-      offset.toString().padStart(7, '0'),
-      '000000.000'
+      i.toString().padStart(5, '0'),
+      offset.toString().padStart(6, '0'),
+      '00000.000'
     ].join('|');
 
     delete selectionRange.offset;
