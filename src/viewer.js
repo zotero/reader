@@ -1,13 +1,14 @@
 'use strict';
 
 import React from 'react';
-import { render } from 'react-dom';
+import ReactDom from 'react-dom';
 import Annotator from './components/annotator';
 import AnnotationsStore from './annotations-store';
-import { debounce } from './lib/utilities';
+import { debounce } from './lib/debounce';
 
 class Viewer {
   constructor(options) {
+    this.options = options;
     this._loaded = false;
     this._onSetState = debounce(function (state) {
       options.onSetState(state);
@@ -15,6 +16,13 @@ class Viewer {
     this._userId = options.userId;
     this._label = options.label;
     this._lastState = null;
+    this._uninitialized = false;
+    this._annotatorPromise = new Promise((resolve) => {
+      this._annotatorPromiseResolve = resolve;
+    })
+    this._pdfjsPromise = new Promise((resolve) => {
+      this._pdfjsPromiseResolve = resolve;
+    })
     this._annotationsStore = new AnnotationsStore({
       annotations: options.annotations,
       onSetAnnotation: options.onSetAnnotation,
@@ -27,99 +35,33 @@ class Viewer {
     // Takeover the download button
     PDFViewerApplication.download = function () {
     };
-    let downloadButton = document.getElementById('download');
-    downloadButton.addEventListener('click', (event) => {
-      options.onDownload();
-    });
-    
-    let noteSidebarToggleButton = document.getElementById('noteSidebarToggle');
-    noteSidebarToggleButton.addEventListener('click', (event) => {
-      let isToggled;
-      if (noteSidebarToggleButton.classList.contains('toggled')) {
-        noteSidebarToggleButton.classList.remove('toggled');
-        isToggled = false;
-      }
-      else {
-        noteSidebarToggleButton.classList.add('toggled');
-        isToggled = true;
-      }
-      options.onToggleNoteSidebar(isToggled);
-    });
 
-    window.PDFViewerApplication.eventBus.on('updateviewarea', (e) => {
-      let state = {
-        page: e.location.pageNumber,
-        scale: e.location.scale,
-        rotation: e.location.rotation,
-        top: e.location.top,
-        left: e.location.left,
-        sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen ?
-          window.PDFViewerApplication.pdfSidebar.active : 0,
-        sidebarWidth: window.PDFViewerApplication.pdfSidebarResizer._width || 200,
-        scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
-        spreadMode: PDFViewerApplication.pdfViewer.spreadMode
-      };
-      this._lastState = state;
-      this._onSetState(state);
-    });
-    
-    window.PDFViewerApplication.eventBus.on('sidebarviewchanged', (e) => {
-      if (this._lastState) {
-        this._lastState.sidebarView = e.view;
-        this._onSetState(this._lastState);
-      }
-      setTimeout(() => {
-        PDFViewerApplication.eventBus.dispatch('resize');
-      }, 50);
-    });
-    
-    //
-    // window.PDFViewerApplication.eventBus.on("colorchange", (e) => {
-    //   if (this._lastState) {
-    //     this._lastState.sidebarView = e.view;
-    //     this._onSetState(this._lastState);
-    //   }
-    // });
+    document.getElementById('back').disabled = !options.enablePrev;
+    document.getElementById('forward').disabled = !options.enableNext;
 
-
-    window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-      this._setState(options.state);
-    });
-
-    window.PDFViewerApplication.eventBus.on('pagesinit', (e) => {
-
-    });
-
-    window.PDFViewerApplication.eventBus.on('pagerendered', (e) => {
-      window.isDocumentReady = true;
-    });
-
+    document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
+    document.getElementById('noteSidebarToggle').addEventListener('click', this.handleNoteSidebarToggleClick);
+    window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
+    window.PDFViewerApplication.eventBus.on('sidebarviewchanged', this.handleSidebarViewChange);
+    window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
+    document.getElementById('back').addEventListener('click', this.handleBackButtonClick);
+    document.getElementById('forward').addEventListener('click', this.handleForwardButtonClick);
+    // Override the external link click handling
+    window.addEventListener('click', this.handleClick, true);
     // Prevent dragging for internal links
-    window.addEventListener('dragstart', (event) => {
-      if (event.target.nodeType === Node.ELEMENT_NODE && event.target.closest('.annotationLayer')) {
-        event.preventDefault();
-      }
-    });
+    window.addEventListener('dragstart', this.handleDragStart);
 
-    // Takeover external link click handling
-    window.addEventListener('click', (event) => {
-      if (
-        event.button === 0 && event.target.closest('.annotationLayer') &&
-        !event.target.classList.contains('internalLink')
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!PDFViewerApplication.pdfViewer.isInPresentationMode) {
-          options.onExternalLink(event.target.href);
-        }
-      }
-    }, true);
-    
     // window.PDFViewerApplication.eventBus.on("pagesinit", () => {
     //   window.PDFViewerApplication.pdfDocument._transport.messageHandler.sendWithPromise("setIgnoredAnnotationIds", options.ignoredAnnotationIds);
     // });
-    
-    render(
+
+    window.PDFViewerApplication.eventBus.on('pagesinit', () => {
+      this._pdfjsPromiseResolve();
+    });
+
+    this.annotatorRef = React.createRef();
+    this.node = document.createElement('div');
+    ReactDom.render(
       <Annotator
         onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
         onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
@@ -129,79 +71,174 @@ class Viewer {
         askImport={options.askImport}
         onImport={options.onImport}
         onDismissImport={options.onDismissImport}
-        onInitialized={() => {
-          this.setAnnotations(this._annotationsStore.getAnnotations());
-        }}
-        setAnnotationsRef={(ref) => {
-          this.setAnnotations = ref;
-        }}
-        setColorRef={(ref) => {
-          this.setColor = ref;
-        }}
-        importableAnnotationsNumRef={(ref) => {
-          this.importableAnnotationsNum = ref;
-        }}
-        navigateRef={(ref) => {
-          this.navigate = ref;
-        }}
+        ref={this.annotatorRef}
       />,
-      document.createElement('div')
+      this.node,
+      () => {
+        this.setAnnotations(this._annotationsStore.getAnnotations());
+        this._annotatorPromiseResolve();
+      }
     );
-    
-    document.getElementById('back').addEventListener('click', () => {
-      window.history.back();
-    });
-    
-    document.getElementById('forward').addEventListener('click', () => {
-      window.history.forward();
-    });
-    
+
     setTimeout(function () {
-      window.PDFViewerApplication.open(options.url);
+      window.PDFViewerApplication.open(options.buf);
     }, 0);
   }
-  
+
+  uninit() {
+    window.PDFViewerApplication.pdfDocument.uninitialized = true;
+    ReactDom.unmountComponentAtNode(this.node);
+    document.getElementById('download').removeEventListener('click', this.handleDownloadButtonClick);
+    document.getElementById('noteSidebarToggle').removeEventListener('click', this.handleNoteSidebarToggleClick);
+    window.PDFViewerApplication.eventBus.off('updateviewarea', this.handleViewAreaUpdate);
+    window.PDFViewerApplication.eventBus.off('sidebarviewchanged', this.handleSidebarViewChange);
+    window.PDFViewerApplication.eventBus.off('documentinit', this.handleDocumentInit);
+    document.getElementById('back').removeEventListener('click', this.handleBackButtonClick);
+    document.getElementById('forward').removeEventListener('click', this.handleForwardButtonClick);
+    window.removeEventListener('click', this.handleClick);
+    window.removeEventListener('dragstart', this.handleDragStart);
+    window.PDFViewerApplication.close();
+    this._uninitialized = true;
+    window.chsCache = {};
+  }
+
+  handleDownloadButtonClick = () => {
+    this.options.onDownload();
+  }
+
+  handleNoteSidebarToggleClick = (event) => {
+    let isToggled;
+    if (event.target.classList.contains('toggled')) {
+      event.target.classList.remove('toggled');
+      isToggled = false;
+    }
+    else {
+      event.target.classList.add('toggled');
+      isToggled = true;
+    }
+    this.options.onToggleNoteSidebar(isToggled);
+  }
+
+  handleViewAreaUpdate = (e) => {
+    let state = {
+      page: e.location.pageNumber,
+      scale: e.location.scale,
+      rotation: e.location.rotation,
+      top: e.location.top,
+      left: e.location.left,
+      sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen ?
+        window.PDFViewerApplication.pdfSidebar.active : 0,
+      sidebarWidth: window.PDFViewerApplication.pdfSidebarResizer._width || 200,
+      scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
+      spreadMode: PDFViewerApplication.pdfViewer.spreadMode
+    };
+    this._lastState = state;
+    this._onSetState(state);
+  }
+
+  handleSidebarViewChange = (e) => {
+    if (this._lastState) {
+      this._lastState.sidebarView = e.view;
+      this._onSetState(this._lastState);
+    }
+    setTimeout(() => {
+      PDFViewerApplication.eventBus.dispatch('resize');
+    }, 50);
+  }
+
+  handleDocumentInit = async () => {
+    if (this.options.state) {
+      this._setState(this.options.state, !!this.options.location);
+    }
+
+    await this._annotatorPromise;
+    if (this._uninitialized) {
+      return;
+    }
+
+    if (this.options.location) {
+      this.annotatorRef.current.navigate(this.options.location);
+    }
+  }
+
+  handleBackButtonClick = () => {
+    this.options.onNavigatePrev();
+  }
+
+  handleForwardButtonClick = () => {
+    this.options.onNavigateNext();
+  }
+
+  handleClick = (event) => {
+    if (
+      event.button === 0
+      && event.target.closest('.annotationLayer')
+      && !event.target.classList.contains('internalLink')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!PDFViewerApplication.pdfViewer.isInPresentationMode) {
+        this.options.onExternalLink(event.target.href);
+      }
+    }
+  }
+
+  handleDragStart = (event) => {
+    if (event.target.nodeType === Node.ELEMENT_NODE
+      && event.target.closest('.annotationLayer')) {
+      event.preventDefault();
+    }
+  }
+
   setAnnotations = (annotations) => {
-  
+    this.annotatorRef.current.setAnnotations(annotations);
   };
-  
+
   setColor = (color) => {
-  
+    this.annotatorRef.current.setColor(color);
   };
-  
+
   importableAnnotationsNum = (num) => {
 
   };
 
-  navigate = (annotation) => {
-
+  navigate = async (location) => {
+    await this._annotatorPromise;
+    await this._pdfjsPromise;
+    if (this._uninitialized) {
+      return;
+    }
+    this.annotatorRef.current.navigate(location);
   };
 
   setAnnotation(annotation) {
     this._annotationsStore.setAnnotation(annotation);
   }
 
-  unsetAnnotation(annotation) {
-    this._annotationsStore.setAnnotation(annotation);
+  unsetAnnotations(ids) {
+    this._annotationsStore.unsetAnnotations(ids);
   }
 
-  _setState(options) {
-    window.PDFViewerApplication.pdfSidebar.switchView(options.sidebarView, true);
-    window.PDFViewerApplication.pdfSidebarResizer._updateWidth(options.sidebarWidth);
+  // TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation
+  _setState(state, skipScroll) {
+    window.PDFViewerApplication.pdfSidebar.switchView(state.sidebarView, true);
+    window.PDFViewerApplication.pdfSidebarResizer._updateWidth(state.sidebarWidth);
 
-    window.PDFViewerApplication.pdfViewer.scrollMode = options.scrollMode;
-    window.PDFViewerApplication.pdfViewer.spreadMode = options.spreadMode;
+    window.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
+    window.PDFViewerApplication.pdfViewer.spreadMode = state.spreadMode;
 
-    window.PDFViewerApplication.pdfViewer.pagesRotation = options.rotation;
-    
-    let dest = [null, { name: 'XYZ' }, options.left,
-      options.top, parseInt(options.scale) ? options.scale / 100 : options.scale];
-    
-    window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-      pageNumber: options.page,
-      destArray: dest,
-      allowNegativeOffset: true
-    });
+    window.PDFViewerApplication.pdfViewer.pagesRotation = state.rotation;
+
+    if (!skipScroll) {
+      let dest = [null, { name: 'XYZ' }, state.left,
+        state.top, parseInt(state.scale) ? state.scale / 100 : state.scale];
+
+      window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
+        pageNumber: state.page,
+        destArray: dest,
+        allowNegativeOffset: true
+      });
+    }
   }
 }
 

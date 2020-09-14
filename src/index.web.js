@@ -12,24 +12,70 @@ document.addEventListener('webviewerloaded', function () {
   window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
   window.PDFViewerApplicationOptions.set('historyUpdateUrl', true);
   window.PDFViewerApplicationOptions.set('textLayerMode', 0);
-  
+
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {
     return window.PDFViewerApplicationOptions;
   };
   window.PDFViewerApplication.isViewerEmbedded = true;
-  
-  PDFViewerApplication.initializedPromise.then(function () {
+
+  PDFViewerApplication.initializedPromise.then(async function () {
     if (!window.PDFViewerApplication.pdfViewer || loaded) return;
     loaded = true;
     window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
       console.log('documentinit')
     });
-    
+
+
+    test();
+
+
+    // setTimeout(() => {
+    //   viewer.navigate(annotations[0]);
+    // }, 3000);
+  });
+});
+
+async function test() {
+  let res = await fetch('compressed.tracemonkey-pldi-09.pdf');
+  let buf = await res.arrayBuffer();
+  let vi = new ViewerInstance({
+    buf,
+    annotations,
+    state: null,
+    location: {
+      'position': { 'pageIndex': 0, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
+    }
+  });
+
+  // vi._viewer.navigate({
+  //   'position': { 'pageIndex': 100, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
+  // })
+
+  setInterval(() => {
+    vi.uninit();
+    vi = new ViewerInstance({
+      buf,
+      annotations,
+      state: null
+    });
+
+  }, 30000000);
+
+}
+
+class ViewerInstance {
+  constructor(options) {
     window.attachmentItemKey = 'AAAABBBB';
 
-    const viewer = new Viewer({
+    this._viewer = new Viewer({
       askImport: true,
+      onNavigateBack: () => {
+        console.log('Navigate back');
+      },
+      onNavigateForward: () => {
+        console.log('Navigate forward');
+      },
       onImport() {
         alert('This will call pdf-worker to extract annotations')
       },
@@ -61,18 +107,19 @@ document.addEventListener('webviewerloaded', function () {
       onToggleNoteSidebar(isToggled) {
         alert(`This will ${isToggled ? 'show' : 'hide'} the note sidebar on the right`);
       },
-      url: 'compressed.tracemonkey-pldi-09.pdf',
-      annotations,
-      state: null
+      buf: options.buf,
+      annotations: options.annotations,
+      state: options.state,
+      location: options.location
       // password: 'test'
     });
-    
-    // setTimeout(() => {
-    //   viewer.navigate(annotations[0]);
-    // }, 3000);
-  });
-});
+  }
 
-setTimeout(function () {
-  PDFViewerApplication.pdfSidebar.switchView(9, true);
-}, 1000);
+  uninit() {
+    this._viewer.uninit();
+  }
+}
+
+// setTimeout(function () {
+//   PDFViewerApplication.pdfSidebar.switchView(9, true);
+// }, 1000);

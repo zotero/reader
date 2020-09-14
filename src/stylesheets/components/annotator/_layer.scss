@@ -35,6 +35,7 @@
   top: 0;
   left: 0;
   mix-blend-mode: multiply;
+  pointer-events: none;
 
   .rect {
     position: absolute;

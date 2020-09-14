@@ -1,6 +1,6 @@
 'use strict';
 
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useImperativeHandle } from 'react';
 import PropTypes from 'prop-types';
 import Layer from './layer';
 import AnnotationsView from './annotations-view';
@@ -88,7 +88,7 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
     selectionRange.sortIndex = [
       i.toString().padStart(5, '0'),
       offset.toString().padStart(6, '0'),
-      '00000.000'
+      '00000'
     ].join('|');
 
     delete selectionRange.offset;
@@ -130,7 +130,7 @@ function isOver(position, annotations) {
   return false;
 }
 
-function Annotator(props) {
+const Annotator = React.forwardRef((props, ref) => {
   // useRefState synchronously sets ref value and asynchronously sets state value.
   // Annotator component uses reference variables everywhere to immediately access
   // the latest value and eliminate the complexity of rebinding custom events.
@@ -155,13 +155,19 @@ function Annotator(props) {
   const pointerDownPositionRef = useRef(null);
   const selectionRangesRef = useRef([]);
 
+  useImperativeHandle(ref, () => ({
+    navigate,
+    setAnnotations,
+    setColor
+  }));
+
   function setSelectionRangesRef(ranges) {
     setSelectionPositions(ranges.map(r => r.position));
     selectionRangesRef.current = ranges;
   }
 
-  function scrollSidebarTo(annotation) {
-    let sidebarItem = document.querySelector(`div[data-sidebar-id="${annotation.id}"]`);
+  function scrollSidebarTo(id) {
+    let sidebarItem = document.querySelector(`div[data-sidebar-id="${id}"]`);
     let container = document.getElementById('annotationsView');
     if (sidebarItem && container) {
       if (
@@ -177,12 +183,12 @@ function Annotator(props) {
     }
   }
 
-  function scrollViewerTo(annotation) {
-    let x = annotation.position.rects[0][0];
-    let y = annotation.position.rects[0][3] + 100;
+  function scrollViewerTo(position) {
+    let x = position.rects[0][0];
+    let y = position.rects[0][3] + 100;
 
     window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-      pageNumber: annotation.position.pageIndex + 1,
+      pageNumber: position.pageIndex + 1,
       destArray: [
         null,
         { name: 'XYZ' },
@@ -193,24 +199,27 @@ function Annotator(props) {
     });
   }
 
-  function scrollTo(annotation, sidebar, viewer) {
-    if (sidebar) {
-      scrollSidebarTo(annotation);
+  function scrollTo(location, sidebar, viewer) {
+    if (sidebar && location.id) {
+      scrollSidebarTo(location.id);
     }
 
-    if (viewer) {
-      scrollViewerTo(annotation);
+    if (viewer && location.position) {
+      scrollViewerTo(location.position);
     }
   }
 
-  let navigate = (annotation) => {
-    let existingAnnotation = annotationsRef.current.find(x => x.id === annotation.id);
-    if (existingAnnotation) {
-      selectAnnotation(annotation.id, true, false, true, true);
+  let navigate = (location) => {
+    let annotation = location.id && annotationsRef.current.find(x => x.id === location.id);
+    if (annotation) {
+      selectAnnotation(location.id, true, false, true, true);
+      if (!location.position) {
+        location.position = annotation.position;
+      }
     }
 
-    makeBlink(annotation.position);
-    scrollTo(annotation, true, true);
+    makeBlink(location.position);
+    scrollTo(location, true, true);
   }
 
   function makeBlink(position) {
@@ -230,10 +239,6 @@ function Annotator(props) {
   useEffect(() => {
     document.getElementById('viewer').setAttribute('draggable', true);
 
-    props.navigateRef(navigate);
-    props.setAnnotationsRef(setAnnotations);
-    props.setColorRef(setColor);
-
     // viewer.eventBus.off('pagesinit', onDocumentReady);
     window.addEventListener('keydown', handleKeyDownCallback);
     window.addEventListener('pointerup', handlePointerUpCallback);
@@ -251,11 +256,6 @@ function Annotator(props) {
       window.PDFViewerApplication.eventBus.off('sidebarviewchanged', handleSidebarViewChangeCallback);
     }
   }, []);
-
-  useEffect(() => {
-    props.onInitialized();
-  }, [])
-
 
   let focusSidebarHighlight = (annotationId) => {
     setTimeout(function () {
@@ -645,6 +645,7 @@ function Annotator(props) {
     props.onPopup('openColorPopup', {
       x,
       y,
+      colors: annotationColors,
       selectedColor: _color
     });
   }
@@ -698,7 +699,7 @@ function Annotator(props) {
 
   function handleSidebarAnnotationMenuOpen(id, x, y) {
     let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-    props.onPopup('openAnnotationPopup', { x, y, id, selectedColor });
+    props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
   }
 
   function handleLayerAreaSelectionStart() {
@@ -707,7 +708,7 @@ function Annotator(props) {
 
   function handleLayerAreaCreation(position) {
     props.onAddAnnotation({
-      type: 'area',
+      type: 'image',
       color: colorRef.current,
       position: position
     });
@@ -723,7 +724,7 @@ function Annotator(props) {
 
   function handleLayerAnnotationMoreMenu(id, x, y) {
     let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-    props.onPopup('openAnnotationPopup', { x, y, id, selectedColor });
+    props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
   }
 
   function handleLayerPointerDown(position, event) {
@@ -748,7 +749,7 @@ function Annotator(props) {
       }
     }
 
-    if (['note', 'area'].includes(modeRef.current)) {
+    if (['note', 'image'].includes(modeRef.current)) {
       return;
     }
 
@@ -830,6 +831,7 @@ function Annotator(props) {
           x: event.screenX,
           y: event.screenY,
           id: selectId,
+          colors: annotationColors,
           selectedColor
         });
       }
@@ -942,7 +944,7 @@ function Annotator(props) {
         selectedAnnotationIds={_selectedIds}
         blink={_blink}
         enableEdgeNotes={!_isResizingArea} // TODO: disable only for the current note
-        enableAreaSelector={_mode === 'area' && !_selectedIds.length}
+        enableAreaSelector={_mode === 'image' && !_selectedIds.length}
         onAreaSelectionStart={handleLayerAreaSelectionStart}
         onAreaSelection={handleLayerAreaCreation}
         onAreaResizeStart={handleLayerAreaResizeStart}
@@ -961,17 +963,12 @@ function Annotator(props) {
       </Layer>
     </div>
   );
-
-}
+});
 
 Annotator.propTypes = {
-  navigateRef: PropTypes.func.isRequired,
-  setAnnotationsRef: PropTypes.func.isRequired,
-  setColorRef: PropTypes.func.isRequired,
   onAddAnnotation: PropTypes.func.isRequired,
   onUpdateAnnotation: PropTypes.func.isRequired,
   onDeleteAnnotations: PropTypes.func.isRequired,
-  onInitialized: PropTypes.func.isRequired,
   onPopup: PropTypes.func.isRequired,
   onClickTags: PropTypes.func.isRequired,
   askImport: PropTypes.bool.isRequired,

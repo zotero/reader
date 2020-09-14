@@ -12,8 +12,10 @@ import {
 import { renderAreaImage } from './lib/render';
 import { annotationColors } from './lib/colors';
 import { equalPositions } from './lib/utilities';
+import { debounce } from './lib/debounce';
 
 // TODO: Reorganize annotation set/unset/delete/update functions in index.*.js, viewer.js and annotations-store.js
+// TODO: Debounce image annotation resizing to reduce useless intermediate images
 
 class AnnotationsStore {
   constructor(options) {
@@ -29,12 +31,31 @@ class AnnotationsStore {
       autostart: true
     });
 
+    this.debounces = [];
+
     document.addEventListener('pagesinit', async (e) => {
       let count = await getAnnotationsCount();
       this.onImportableAnnotationsNum(count);
     });
 
     this.sortAnnotations(this.annotations);
+  }
+
+  triggerSetAnnotation(annotation) {
+    const DEBOUNCE_ANNOTATION = 1000;
+    const DEBOUNCE_ANNOTATION_MAX = 10000;
+    let fn = this.debounces[annotation.id];
+    if (fn) {
+      fn(annotation);
+    }
+    else {
+      fn = debounce((annotation) => {
+        delete this.debounces[annotation.id];
+        this.onSetAnnotation(annotation);
+      }, DEBOUNCE_ANNOTATION, { maxWait: DEBOUNCE_ANNOTATION_MAX });
+      fn(annotation);
+      this.debounces[annotation.id] = fn;
+    }
   }
 
   generateObjectKey() {
@@ -92,10 +113,12 @@ class AnnotationsStore {
     this.onUpdateAnnotations(this.annotations);
   };
 
-  unsetAnnotation(id) {
-    let index = this.annotations.findIndex(x => x.id === id);
-    if (index >= 0) {
-      this.annotations.splice(index, 1);
+  unsetAnnotations(ids) {
+    for (let id of ids) {
+      let index = this.annotations.findIndex(x => x.id === id);
+      if (index >= 0) {
+        this.annotations.splice(index, 1);
+      }
     }
     this.onUpdateAnnotations(this.annotations);
   };
@@ -141,16 +164,16 @@ class AnnotationsStore {
       }
     }
 
-    if (annotation.type === 'note' || annotation.type === 'area') {
+    if (annotation.type === 'note' || annotation.type === 'image') {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
 
-    if (annotation.type === 'area') {
+    if (annotation.type === 'image') {
       annotation.image = await this.getAnnotationImage(annotation.id);
     }
 
     this.sortAnnotations(this.annotations);
-    this.onSetAnnotation(annotation);
+    this.triggerSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
 
     return annotation;
@@ -166,11 +189,12 @@ class AnnotationsStore {
     this.sortAnnotations(this.annotations);
     this.onUpdateAnnotations(this.annotations);
 
-    if (annotation.type === 'area' && !annotation.image) {
-      annotation.image = await this.getAnnotationImage(annotation.id);
-      this.onSetAnnotation(annotation);
-      this.onUpdateAnnotations(this.annotations);
-    }
+    // TODO: Is image attachment synced before the annotation?
+    // if (annotation.type === 'image' && !annotation.image) {
+    //   annotation.image = await this.getAnnotationImage(annotation.id);
+    //   this.triggerSetAnnotation(annotation);
+    //   this.onUpdateAnnotations(this.annotations);
+    // }
   }
 
   async updateAnnotation(annotation) {
@@ -190,21 +214,21 @@ class AnnotationsStore {
     this.onUpdateAnnotations(this.annotations);
 
     if (
-      ['note', 'area'].includes(annotation.type) &&
+      ['note', 'image'].includes(annotation.type) &&
       !equalPositions(existingAnnotation, annotation)
     ) {
       annotation.sortIndex = await getSortIndex(annotation.position);
     }
 
     if (
-      annotation.type === 'area' &&
+      annotation.type === 'image' &&
       !equalPositions(existingAnnotation, annotation)
     ) {
       annotation.image = await this.getAnnotationImage(annotation.id);
     }
 
     this.sortAnnotations(this.annotations);
-    this.onSetAnnotation(annotation);
+    this.triggerSetAnnotation(annotation);
     this.onUpdateAnnotations(this.annotations);
   }
 
@@ -244,7 +268,7 @@ class AnnotationsStore {
     for (let annotation of this.annotations) {
       let pageNumber = startPageNumber + annotation.position.pageIndex;
       annotation.pageLabel = pageNumber.toString();
-      this.onSetAnnotation(annotation);
+      this.triggerSetAnnotation(annotation);
     }
 
     this.onUpdateAnnotations(this.annotations);

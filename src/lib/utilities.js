@@ -38,18 +38,6 @@ export function getClientRects(range, containerEl) {
   return rects;
 }
 
-export function debounce(fn, wait) {
-  let timeout;
-  return function () {
-    let context = this, args = arguments;
-    let later = function () {
-      timeout = null;
-      fn.apply(context, args);
-    };
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-  };
-}
 
 // https://github.com/jashkenas/underscore/blob/master/underscore.js
 // (c) 2009-2018 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors

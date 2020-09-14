@@ -4,7 +4,7 @@ import { extractRange as getRange } from './text/range';
 import { getClosestOffset } from './text/offset';
 import { getPageLabelPoints, getPageLabel } from './text/page';
 
-let chsCache = {};
+window.chsCache = {};
 
 export async function getAnnotationsCount() {
   let count = 0;
@@ -23,7 +23,7 @@ export async function getAnnotationsCount() {
 }
 
 export async function getPageChs(pageIndex) {
-  if (chsCache[pageIndex]) return chsCache[pageIndex];
+  if (window.chsCache[pageIndex]) return window.chsCache[pageIndex];
 
   let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(pageIndex + 1);
   let textContent = await page.getTextContent();
@@ -35,7 +35,7 @@ export async function getPageChs(pageIndex) {
     }
   }
 
-  chsCache[pageIndex] = chs;
+  window.chsCache[pageIndex] = chs;
   return chs;
 }
 
@@ -62,12 +62,12 @@ export async function getSortIndex(position) {
   return [
     page.toString().padStart(5, '0'),
     offset.toString().padStart(6, '0'),
-    parseFloat(top).toFixed(3).padStart(9, '0')
+    Math.round(parseFloat(top)).toString().padStart(5, '0')
   ].join('|');
 }
 
 export async function extractPageLabelPoints() {
-  chsCache = {}; // TODO: Remove for production
+  window.chsCache = {}; // TODO: Remove for production
   for (let i = 0; i < 5 && i + 3 < PDFViewerApplication.pdfDocument.numPages; i++) {
     let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(i + 1)).view[3];
     let chs1 = await getPageChs(i);

@@ -90,7 +90,7 @@ export function setLayerSingleDragPreview(event, annotation) {
   let offsetX = event.clientX - br.left;
   let offsetY = event.clientY - br.top;
 
-  if (annotation.type === 'area') {
+  if (annotation.type === 'image') {
     let { canvas, context } = getDragCanvas();
     let x = 0;
     let y = 0;

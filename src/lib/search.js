@@ -3,7 +3,7 @@
  *
  * @param {String} text A text to search for the pattern
  * @param {String} pattern An approximate string to search for
- * @param {Integer} maxErrors Maximum errors (Levenshtein distance)
+ * @param {Number} maxErrors Maximum errors (Levenshtein distance)
  * @return {Array} An array of matches containing 'start', 'end' and 'errors' parameters
  */
 function approximateMatch(text, pattern, maxErrors) {
@@ -259,14 +259,14 @@ export function searchAnnotations(annotations, query) {
     let match = null;
 
     if (annotation.text) {
-      match = approximateMatch(annotation.text.toLowerCase(), query, Math.floor(query.length / 3));
+      match = approximateMatch(annotation.text.toLowerCase(), query, Math.floor(query.length / 5));
       if (match.length) {
         errors = Math.min(...match.map(x => x.errors));
       }
     }
 
     if (annotation.comment) {
-      match = approximateMatch(annotation.comment.toLowerCase(), query, Math.floor(query.length / 3));
+      match = approximateMatch(annotation.comment.toLowerCase(), query, Math.floor(query.length / 5));
       if (match.length) {
         let er = Math.min(...match.map(x => x.errors));
         if (errors !== null) {

@@ -51,7 +51,7 @@ export class PopupPreview extends React.Component {
               {
                 annotation.type === 'highlight' && <IconHighlight/>
                 || annotation.type === 'note' && <IconNote/>
-                || annotation.type === 'area' && <IconArea/>
+                || annotation.type === 'image' && <IconArea/>
               }
             </div>
             <div className="page" onClick={this.handleClickPage}>Page {annotation.pageLabel}</div>
@@ -209,7 +209,7 @@ export class SidebarPreview extends React.Component {
               {
                 annotation.type === 'highlight' && <IconHighlight/>
                 || annotation.type === 'note' && <IconNote/>
-                || annotation.type === 'area' && <IconArea/>
+                || annotation.type === 'image' && <IconArea/>
               }
             </div>
             <div className="page" onClick={this.handleClickPage}>Page {annotation.pageLabel}</div>

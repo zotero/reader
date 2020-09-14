@@ -2,7 +2,7 @@ import React from 'react';
 import cx from 'classnames';
 import Editor from './editor';
 import { lineClamp } from '../lib/clamp';
-import { debounce } from '../lib/utilities';
+import { debounce } from '../lib/debounce';
 
 class ExpandableEditor extends React.Component {
 

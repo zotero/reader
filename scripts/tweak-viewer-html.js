@@ -31,7 +31,7 @@ function modifyZotero() {
     transition-property: none !important;
   }
 </style>
-<script>delete window.performance</script>
+<script>window.performance = {now: () => 0}</script>
 <script src="resource://zotero/react.js"></script>
 <script src="resource://zotero/react-dom.js"></script>
 <script src="resource://zotero/prop-types.js"></script>

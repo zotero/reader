@@ -398,6 +398,8 @@ function Layer(props) {
     containerNode.addEventListener('pointerup', handlePointerUpDownCallback);
 
     viewer = window.PDFViewerApplication.pdfViewer;
+    // TODO: Layer rendered should better take into account which exactly page
+    //  was rendered, instead of re-rendering all annotations in all pages
     viewer.eventBus.on('pagerendered', handlePageRenderCallback);
 
     return () => {
@@ -419,6 +421,9 @@ function Layer(props) {
   function handlePointerMove(event) {
     let position = pointerEventToPosition(event);
     if (!position) {
+      return;
+    }
+    if (viewer.pdfDocument.uninitialized) {
       return;
     }
     props.onPointerMove(v2p(position));
@@ -513,7 +518,7 @@ function Layer(props) {
           key={'a_' + pageIndex}
           view={view}
           selectedAnnotationIds={selectedAnnotationIds}
-          annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'area') || [])}
+          annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'image') || [])}
           onResizeStart={props.onAreaResizeStart}
           onChangePosition={(id, position) => {
             onChange({ id, position: v2p(position) });
@@ -528,7 +533,7 @@ function Layer(props) {
           key={'m_' + pageIndex}
           view={view}
           selectedAnnotationIds={selectedAnnotationIds}
-          annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'area'].includes(x.type)) || [])}
+          annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'image'].includes(x.type)) || [])}
           onClick={onClickEdgeNote}
         />);
       }
@@ -550,9 +555,11 @@ function Layer(props) {
   let blinkLayer = null;
   if (blink) {
     let view = viewer.getPageView(blink.position.pageIndex);
-    let id = blink.id;
-    let position = p2v(blink.position);
-    blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
+    if (view && view.renderingState !== 0) {
+      let id = blink.id;
+      let position = p2v(blink.position);
+      blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
+    }
   }
 
   return (

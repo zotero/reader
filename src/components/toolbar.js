@@ -41,10 +41,10 @@ class Toolbar extends React.Component {
         <button
           data-l10n-id='area_tool'
           className={cx('toolbarButton area', {
-            toggled: toggled === 'area'
+            toggled: toggled === 'image'
           })}
           onClick={() => {
-            onMode('area');
+            onMode('image');
           }}>
           <span data-l10n-id="area_tool_label">Area</span>
         </button>
