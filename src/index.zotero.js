@@ -39,7 +39,7 @@ class ViewerInstance {
     window.attachmentItemKey = options.key;
     window.itemId = options.itemId;
     this._viewer = new Viewer({
-      askImport: true,
+      promptImport: options.promptImport,
       enablePrev: options.enablePrev,
       enableNext: options.enableNext,
       onNavigatePrev: () => {
@@ -121,6 +121,11 @@ class ViewerInstance {
       case 'navigate': {
         let { location } = message;
         this._viewer.navigate(location);
+        return;
+      }
+      case 'toggleImportPrompt': {
+        let { enable } = message;
+        this._viewer.setPromptImport(enable);
         return;
       }
       case 'setAnnotations': {
@@ -224,12 +229,12 @@ window.addEventListener('message', function (event) {
   let message = event.data.message;
 
   if (message.action === 'open') {
-    let { buf, state, location, annotations, enablePrev, enableNext } = message;
+    let { buf, state, location, annotations, enablePrev, enableNext, promptImport } = message;
     if (currentViewerInstance) {
       currentViewerInstance.uninit();
     }
     currentViewerInstance = new ViewerInstance({
-      itemId, buf, state, location, annotations, enablePrev, enableNext
+      itemId, buf, state, location, annotations, enablePrev, enableNext, promptImport
     });
   }
 });

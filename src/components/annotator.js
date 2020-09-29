@@ -150,6 +150,7 @@ const Annotator = React.forwardRef((props, ref) => {
   const [_isSelectingArea, isSelectingAreaRef, setIsSelectingArea] = useRefState(false);
   const [_isResizingArea, isResizingAreaRef, setIsResizingArea] = useRefState(false);
   const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
+  const [_promptImport, promptImport, setPromptImport] = useRefState(props.promptImport);
 
   const lastSelectedAnnotationIdRef = useRef(null);
   const pointerDownPositionRef = useRef(null);
@@ -158,7 +159,8 @@ const Annotator = React.forwardRef((props, ref) => {
   useImperativeHandle(ref, () => ({
     navigate,
     setAnnotations,
-    setColor
+    setColor,
+    setPromptImport
   }));
 
   function setSelectionRangesRef(ranges) {
@@ -906,7 +908,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
   return (
     <div>
-      {props.askImport && <ImportBar onImport={props.onImport} onDismiss={props.onDismissImport}/>}
+      {_promptImport && <ImportBar onImport={props.onImport} onDismiss={props.onDismissImport}/>}
       <Toolbar
         toggled={_mode}
         onMode={handleToolbarModeChange}
@@ -971,7 +973,7 @@ Annotator.propTypes = {
   onDeleteAnnotations: PropTypes.func.isRequired,
   onPopup: PropTypes.func.isRequired,
   onClickTags: PropTypes.func.isRequired,
-  askImport: PropTypes.bool.isRequired,
+  promptImport: PropTypes.bool.isRequired,
   onImport: PropTypes.func.isRequired,
   onDismissImport: PropTypes.func.isRequired
 }

@@ -56,10 +56,10 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 
   function getDragContainer() {
     let page = document.querySelector('div.page[data-page-number="' + (annotation.position.pageIndex + 1) + '"]');
-    let container = page.querySelector('draggableNoteBox');
+    let container = page.querySelector('.draggableNoteBox');
     if (!container) {
       container = document.createElement('div');
-      container.id = 'draggableNoteBox';
+      container.className = 'draggableNoteBox';
       container.style.width = (width + PADDING * 2) + 'px';
       container.style.height = (height + PADDING * 2) + 'px';
       container.style.opacity = 0;

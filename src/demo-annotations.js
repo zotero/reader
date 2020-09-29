@@ -1,7 +1,7 @@
 let annotations = [
   {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'sortIndex': '00000|003202|00000',
     'position': { 'pageIndex': 0, 'rects': [[371.395, 266.635, 486.075, 274.651]] },
     'text': 'reconciles speed of compilation ',
@@ -25,7 +25,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'sortIndex': '00000|003305|00000',
     'position': { 'pageIndex': 0, 'rects': [[339.008, 246.709, 451.034, 254.725]] },
     'text': 'execution approach: the system ',
@@ -37,7 +37,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'sortIndex': '00000|003358|00000',
     'position': { 'pageIndex': 0, 'rects': [[317.014, 236.747, 436.231, 244.763]] },
     'text': 'fast-starting bytecode interpreter. ',
@@ -49,7 +49,7 @@ let annotations = [
     'pageLabel': '1'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': {
       'pageIndex': 0,
       'rects': [[231.284, 402.126, 293.107, 410.142], [54, 392.164, 293.107, 400.18], [54, 382.201, 293.107, 390.217], [54, 372.238, 293.107, 380.254], [54, 362.276, 273.955, 370.292]]
@@ -83,7 +83,7 @@ let annotations = [
     'sortIndex': '00000|001536|00584'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': {
       'pageIndex': 0,
       'rects': [[54, 199.237, 293.1, 207.253], [54, 189.274, 293.107, 197.29], [54, 179.311, 293.107, 187.327], [54, 169.349, 234.673, 177.365]]
@@ -128,7 +128,7 @@ let annotations = [
     'sortIndex': '00001|000459|00163'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'sortIndex': '00002|000691|00000',
     'position': { 'pageIndex': 2, 'rects': [[255.358, 558.879, 493.3, 566.895]] },
     'text': 'The LIR also encodes all the stores that the interpreter would do ',
@@ -140,7 +140,7 @@ let annotations = [
     'pageLabel': '3'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': { 'pageIndex': 1, 'rects': [[54, 470.99, 293.107, 479.006], [54, 461.027, 268.978, 469.043]] },
     'text': 'The system stops extending the inner tree when it reaches an outer loop, but then it starts a new trace at the outer loop header.',
     'comment': '',
@@ -152,7 +152,7 @@ let annotations = [
     'sortIndex': '00001|001247|00312'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': {
       'pageIndex': 1,
       'rects': [[65.955, 301.625, 293.101, 309.641], [54, 291.662, 293.104, 299.678], [54, 281.7, 293.107, 289.716], [54, 271.737, 263.85, 279.753]]
@@ -168,7 +168,7 @@ let annotations = [
   }, {
     'type': 'note',
     'position': { 'pageIndex': 1, 'rects': [[479.3, 698, 499.3, 718]] },
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'comment': 'Use this in my thesis',
     'tags': [],
     'id': 612943892296834,
@@ -179,7 +179,7 @@ let annotations = [
     'sortIndex': '00001|003310|00074'
   }, {
     'type': 'image',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': { 'pageIndex': 1, 'rects': [[314.4, 412.8, 556.2, 609.6]] },
     'comment': 'Another read-only annotation',
     'tags': [],
@@ -192,7 +192,7 @@ let annotations = [
     'sortIndex': '00001|003491|00182'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': {
       'pageIndex': 1,
       'rects': [[328.969, 176.096, 556.115, 184.112], [317.014, 166.133, 376.291, 174.149]]
@@ -207,7 +207,7 @@ let annotations = [
     'sortIndex': '00001|004712|00607'
   }, {
     'type': 'highlight',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': {
       'pageIndex': 1,
       'rects': [[338.883, 136.245, 556.121, 144.261], [317.014, 126.282, 556.121, 134.298], [317.014, 116.32, 534.474, 124.336]]
@@ -223,7 +223,7 @@ let annotations = [
   },
   {
     'type': 'image',
-    'color': '#ff8c19',
+    'color': '#ffd400',
     'position': { 'pageIndex': 1, 'rects': [[309.6, 658.2, 517.2, 728.4]] },
     'text': '',
     'comment': 'A code snipped',

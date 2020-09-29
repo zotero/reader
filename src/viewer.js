@@ -68,7 +68,7 @@ class Viewer {
         onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
         onClickTags={options.onClickTags}
         onPopup={options.onPopup}
-        askImport={options.askImport}
+        promptImport={options.promptImport}
         onImport={options.onImport}
         onDismissImport={options.onDismissImport}
         ref={this.annotatorRef}
@@ -121,7 +121,7 @@ class Viewer {
 
   handleViewAreaUpdate = (e) => {
     let state = {
-      page: e.location.pageNumber,
+      pageIndex: e.location.pageNumber - 1,
       scale: e.location.scale,
       rotation: e.location.rotation,
       top: e.location.top,
@@ -211,6 +211,15 @@ class Viewer {
     this.annotatorRef.current.navigate(location);
   };
 
+  setPromptImport = async (enable) => {
+    await this._annotatorPromise;
+    await this._pdfjsPromise;
+    if (this._uninitialized) {
+      return;
+    }
+    this.annotatorRef.current.setPromptImport(enable);
+  };
+
   setAnnotation(annotation) {
     this._annotationsStore.setAnnotation(annotation);
   }
@@ -234,7 +243,7 @@ class Viewer {
         state.top, parseInt(state.scale) ? state.scale / 100 : state.scale];
 
       window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-        pageNumber: state.page,
+        pageNumber: state.pageIndex + 1,
         destArray: dest,
         allowNegativeOffset: true
       });

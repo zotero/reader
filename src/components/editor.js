@@ -3,6 +3,9 @@
 import React from 'react';
 import cx from 'classnames';
 
+// TODO: Avoid resetting cursor and losing the recently typed text
+//  when a new annotation is synced
+
 const supportedFormats = ['i', 'b', 'sub', 'sup'];
 const multiline = true;
 
