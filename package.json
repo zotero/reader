@@ -9,11 +9,10 @@
     "start": "webpack-dev-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Martynas Bagdonas",
   "license": "AGPL-3.0",
   "browserslist": [
     "last 2 version",
-    "ff >= 60.8.0"
+    "ff >= 60.9.0"
   ],
   "dependencies": {
     "classnames": "^2.2.6",
