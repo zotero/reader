@@ -95,8 +95,12 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 
     cursorPoint.current = [clientRect.width / 2, clientRect.height / 2];
 
-
-    document.getElementById('viewer').classList.add('disable-pointer-events');
+    // There is a Chrome anomaly - even though the drag event is already shoot,
+    // disabling pointer events still cancels the drag event
+    // TODO: Move this into annotator.js
+    setTimeout(() => {
+      document.getElementById('viewer').classList.add('disable-pointer-events');
+    }, 0)
 
     updatePosition(event.clientX, event.clientY);
     dragging.current = true;

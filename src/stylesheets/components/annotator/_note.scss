@@ -6,7 +6,7 @@
   
   .square {
     position: absolute;
-    pointer-events: none;
+    //pointer-events: none;
   }
 
   &::before {
@@ -34,7 +34,7 @@
   &.selected {
     .square {
       border: 2px dashed cornflowerblue;
-      pointer-events: auto;
+      //pointer-events: auto;
       z-index: 1;
     }
   }
@@ -42,7 +42,7 @@
 
 .draggableNoteBox {
   border: 2px dashed lightgray;
-  pointer-events: none;
+  //pointer-events: none;
   position: absolute;
   top: 0;
   left: 0;

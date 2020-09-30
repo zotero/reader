@@ -39,9 +39,9 @@ class Highlight extends React.Component {
             width: squareRect[2] - squareRect[0],
             height: squareRect[3] - squareRect[1]
           }}
-          draggable={true}
-          onDragStart={this.props.onDragStart}
-          onDragEnd={this.props.onDragEnd}
+          // draggable={true}
+          // onDragStart={this.props.onDragStart}
+          // onDragEnd={this.props.onDragEnd}
         />
         {annotation.position.rects.map((rect, index) => (
           <div

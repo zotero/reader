@@ -150,6 +150,7 @@ const Annotator = React.forwardRef((props, ref) => {
   const [_isSelectingArea, isSelectingAreaRef, setIsSelectingArea] = useRefState(false);
   const [_isResizingArea, isResizingAreaRef, setIsResizingArea] = useRefState(false);
   const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
+  const [_isSelectedOnPointerDown, isSelectedOnPointerDownRef, setIsSelectedOnPointerDown] = useRefState(false);
   const [_promptImport, promptImport, setPromptImport] = useRefState(props.promptImport);
 
   const lastSelectedAnnotationIdRef = useRef(null);
@@ -383,6 +384,9 @@ const Annotator = React.forwardRef((props, ref) => {
   }
 
   function handleDragStart(event) {
+    let isShift = event.shiftKey;
+    setIsSelectedOnPointerDown(false);
+
     if (event.target === document.getElementById('viewer')) {
 
       let pointerInSelection = false;
@@ -391,6 +395,15 @@ const Annotator = React.forwardRef((props, ref) => {
         if (intersectBoundingPositions(pointerDownPositionRef.current, range.position)) {
           pointerInSelection = true;
           break;
+        }
+      }
+
+      let selectId = getAnnotationToSelectId(pointerDownPositionRef.current);
+      if (selectId && !isShift && !pointerInSelection) {
+        let selectAnnotation = annotationsRef.current.find(x => x.id === selectId);
+        if (selectAnnotation.type !== 'note' || !selectedIdsRef.current.includes(selectId)) {
+          handleLayerAnnotationDragStart(event);
+          return;
         }
       }
 
@@ -603,21 +616,19 @@ const Annotator = React.forwardRef((props, ref) => {
   }
 
   function handleLayerAnnotationDragStart(event) {
-    setIsDraggingAnnotation(true);
-    setEnableSelection(false);
-
-    let annotations = [];
-    if (selectedIdsRef.current.length > 1) {
+    let annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+    if (annotations.length > 1) {
       setMultiDragPreview(event, selectedIdsRef.current.length);
-      annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
     }
-    else {
-      let annotation = annotationsRef.current.find(x => x.id === selectedIdsRef.current[0]);
-      setLayerSingleDragPreview(event, annotation);
-      annotations = [annotation];
+    else if (annotations.length) {
+      setLayerSingleDragPreview(event, annotations[0]);
     }
 
-    setDataTransferAnnotations(event.dataTransfer, annotations);
+    if (annotations.length) {
+      setIsDraggingAnnotation(true);
+      setEnableSelection(false);
+      setDataTransferAnnotations(event.dataTransfer, annotations);
+    }
   }
 
   function handleSidebarAnnotationDragStart(event, id) {
@@ -730,19 +741,15 @@ const Annotator = React.forwardRef((props, ref) => {
   }
 
   function handleLayerPointerDown(position, event) {
+    let isLeft = event.button === 0;
+    let isCtrl = event.ctrlKey || event.metaKey;
+    let isShift = event.shiftKey;
     pointerDownPositionRef.current = position;
 
-    if (!event.target.closest('.canvasWrapper')) {
+    if (!event.target.closest('.canvasWrapper')
+      && !event.target.closest('.note-annotation')
+      && !event.target.closest('.selectionCanvas')) {
       return;
-    }
-
-    let intersectsWithSelected = false;
-    let selectedAnnotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
-
-    for (let annotation of selectedAnnotations) {
-      if (intersectPositions(position, annotation.position)) {
-        return;
-      }
     }
 
     for (let range of selectionRangesRef.current) {
@@ -750,6 +757,31 @@ const Annotator = React.forwardRef((props, ref) => {
         return;
       }
     }
+
+    let intersectsWithSelectedAnnotations = false;
+    let selectedAnnotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+    for (let annotation of selectedAnnotations) {
+      if (intersectBoundingPositions(position, annotation.position)) {
+        intersectsWithSelectedAnnotations = true;
+        break;
+      }
+    }
+
+    let selectId = getAnnotationToSelectId(position, isCtrl || isShift);
+    if (selectId && isLeft && !isShift && !intersectsWithSelectedAnnotations) {
+      setSelectionRangesRef([]);
+      selectAnnotation(selectId, isCtrl, isShift, true, false);
+      setIsSelectedOnPointerDown(true);
+      return;
+    }
+
+    // let intersectsWithSelected = false;
+    // let selectedAnnotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+    // for (let annotation of selectedAnnotations) {
+    //   if (intersectPositions(position, annotation.position)) {
+    //     return;
+    //   }
+    // }
 
     if (['note', 'image'].includes(modeRef.current)) {
       return;
@@ -783,6 +815,7 @@ const Annotator = React.forwardRef((props, ref) => {
     setIsResizingArea(false);
     setIsSelectingArea(false);
     setEnableSelection(false);
+    setIsSelectedOnPointerDown(false);
 
     pointerDownPositionRef.current = null;
   }
@@ -795,7 +828,8 @@ const Annotator = React.forwardRef((props, ref) => {
 
     if (isSelectingAreaRef.current
       || isResizingAreaRef.current
-      || isSelectingTextRef.current) {
+      || isSelectingTextRef.current
+      || isSelectedOnPointerDownRef.current) {
       return;
     }
 

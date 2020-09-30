@@ -99,7 +99,7 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
     <Fragment>
       <div
         ref={draggableRef}
-        draggable={true}
+        // draggable={true}
         className={cx('area-annotation', {
           selected: isSelected,
           comment: !!annotation.comment
@@ -111,8 +111,8 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
           width: wx(rect),
           height: hy(rect)
         }}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
+        // onDragStart={onDragStart}
+        // onDragEnd={onDragEnd}
       >
         <div className="resizer" onMouseDown={(event) => event.preventDefault()}>
           <div className="line top" onMouseDown={(event) => handleResizeStart(['top'])}/>
