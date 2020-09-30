@@ -188,6 +188,11 @@ class Viewer {
       && event.target.closest('.annotationLayer')) {
       event.preventDefault();
     }
+
+    if (!event.target.closest('#viewer')
+      && !event.target.closest('#annotationsView')) {
+      event.preventDefault();
+    }
   }
 
   setAnnotations = (annotations) => {
