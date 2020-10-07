@@ -23,6 +23,7 @@ class Toolbar extends React.Component {
           className={cx('toolbarButton highlight', {
             toggled: toggled === 'highlight'
           })}
+          title="Highlight Text"
           onClick={() => {
             onMode('highlight');
           }}>
@@ -33,6 +34,7 @@ class Toolbar extends React.Component {
           className={cx('toolbarButton note', {
             toggled: toggled === 'note'
           })}
+          title="Add Note"
           onClick={() => {
             onMode('note');
           }}>
@@ -43,6 +45,7 @@ class Toolbar extends React.Component {
           className={cx('toolbarButton area', {
             toggled: toggled === 'image'
           })}
+          title="Select Area"
           onClick={() => {
             onMode('image');
           }}>
@@ -52,6 +55,7 @@ class Toolbar extends React.Component {
           data-l10n-id='global_color'
           className="toolbarButton global-color"
           style={{ color }}
+          title="Pick a Color"
           onClick={this.handleColorPick}
         >
           <span data-l10n-id="global_color_label">Global Color</span>

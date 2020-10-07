@@ -12,6 +12,7 @@ document.addEventListener('webviewerloaded', (e) => {
   window.PDFViewerApplicationOptions.set('workerSrc', 'pdf.worker.js');
   window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
   window.PDFViewerApplicationOptions.set('textLayerMode', 0);
+  window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 9);
 
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {

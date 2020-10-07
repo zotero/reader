@@ -144,7 +144,7 @@ class AnnotationsView extends React.Component {
           onInput={this.handleSearchInput}
           onClear={this.handleSearchClear}
         />
-        {annotations.map((annotation) => (
+        {annotations.length ? annotations.map((annotation) => (
           <Annotation
             key={annotation.id}
             isSelected={this.props.selectedAnnotationIds.includes(annotation.id)}
@@ -159,7 +159,7 @@ class AnnotationsView extends React.Component {
             onDragStart={this.props.onDragStart}
             onAnnotationEditorBlur={this.props.onAnnotationEditorBlur}
           />
-        ))}
+        )) : <div>Create an annotation to see it in the sidebar</div>}
       </React.Fragment>,
       containerNode
     );
