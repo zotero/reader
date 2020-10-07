@@ -625,6 +625,7 @@ function Layer(props) {
               color={ color }
               onHighlight={props.onHighlightSelection}
               onCopy={props.onCopySelection}
+              onAddToNote={props.onAddToNoteSelection}
             />
           </PagePopup>
         )

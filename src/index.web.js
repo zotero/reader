@@ -82,6 +82,9 @@ class ViewerInstance {
       onDismissImport() {
         alert('You won\'t be asked to import annotations until new annotations will be detected in the PDF file');
       },
+      onAddToNote() {
+        alert('This will add annotations to the pinned note');
+      },
       onSetAnnotation: function (annotation) {
         console.log('Set annotation', annotation);
       },

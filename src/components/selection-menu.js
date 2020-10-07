@@ -8,15 +8,22 @@ class SelectionMenu extends React.Component {
     this.props.onHighlight(color)
   }
 
+  handleAddToNote = (event) => {
+
+  }
+
   render() {
     return (
       <div className="selection-menu">
-        {annotationColors.map((color, index) => (<button
-          key={index}
-          className="toolbarButton global-color"
-          style={{ color: color[1] }}
-          onClick={() => this.handleColorPick(color[1])}
-        />))}
+        <div className="colors">
+          {annotationColors.map((color, index) => (<button
+            key={index}
+            className="toolbarButton global-color"
+            style={{ color: color[1] }}
+            onClick={() => this.handleColorPick(color[1])}
+          />))}
+        </div>
+        <div className="wide-button" onClick={this.props.onAddToNote}>Add to Note</div>
       </div>
     );
   }

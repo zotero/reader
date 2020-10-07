@@ -17,7 +17,7 @@
   &.selection-popup {
     padding: $selection-popup-padding;
 
-    .selection-menu {
+    .selection-menu .colors {
       display: flex;
       align-items: center;
     }
@@ -41,6 +41,18 @@
 
       &:focus-visible {
         box-shadow: $selection-popup-btn-focus-box-shadow;
+      }
+    }
+
+    .wide-button {
+      text-align: center;
+      border: 1px solid gray;
+      border-radius: 5px;
+      padding: 3px;
+      cursor: default;
+
+      &:hover {
+        background: $selection-popup-btn-hover-bg;
       }
     }
   }

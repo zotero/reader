@@ -54,6 +54,9 @@ class ViewerInstance {
       onDismissImport: () => {
         this._postMessage({ action: 'dismissImport' });
       },
+      onAddToNote: (annotations) => {
+        this._postMessage({ action: 'addToNote', annotations });
+      },
       onSetAnnotation: (annotation) => {
         console.log('Set annotation', annotation);
         this._postMessage({ action: 'setAnnotation', annotation });
@@ -151,7 +154,19 @@ class ViewerInstance {
   }
 
   handlePopupAction(data) {
+    // TODO: Fix multiple
     switch (data.cmd) {
+      case 'addToNote': {
+        let annotation = this._viewer._annotationsStore.annotations.find(x => x.id === data.id);
+        if (annotation) {
+          annotation.itemId = window.itemId;
+          this._postMessage({
+            action: 'addToNote',
+            annotations: [annotation]
+          });
+        }
+        return;
+      }
       case 'deleteAnnotation': {
         this._viewer._annotationsStore.deleteAnnotations([data.id]);
         return;

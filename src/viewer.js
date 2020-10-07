@@ -70,6 +70,7 @@ class Viewer {
         onPopup={options.onPopup}
         promptImport={options.promptImport}
         onImport={options.onImport}
+        onAddToNote={options.onAddToNote}
         onDismissImport={options.onDismissImport}
         ref={this.annotatorRef}
       />,

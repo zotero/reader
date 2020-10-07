@@ -940,6 +940,19 @@ const Annotator = React.forwardRef((props, ref) => {
     copyToClipboard(text);
   }
 
+  function handleLayerSelectionPopupAddToNote() {
+    let partialAnnotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
+    let annotations = partialAnnotations.map(annotation => ({
+      ...annotation,
+      itemId: window.itemId,
+      type: 'highlight'
+    }))
+    if (annotations.length) {
+      props.onAddToNote(annotations);
+      setSelectionRangesRef([]);
+    }
+  }
+
   return (
     <div>
       {_promptImport && <ImportBar onImport={props.onImport} onDismiss={props.onDismissImport}/>}
@@ -995,6 +1008,7 @@ const Annotator = React.forwardRef((props, ref) => {
         onDragEnd={handleAnnotationDragEnd}
         onHighlightSelection={handleLayerSelectionPopupHighlight}
         onCopySelection={handleLayerSelectionPopupCopy}
+        onAddToNoteSelection={handleLayerSelectionPopupAddToNote}
       >
       </Layer>
     </div>
