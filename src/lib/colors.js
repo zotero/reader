@@ -1,8 +1,8 @@
 'use strict';
 
 export let annotationColors = [
-  ['Red', '#ff6666'],
   ['Yellow', '#ffd400'],
+  ['Red', '#ff6666'],
   ['Green', '#5fb236'],
   ['Blue', '#2ea8e5'],
   ['Purple', '#a28ae5']
