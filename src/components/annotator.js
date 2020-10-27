@@ -122,7 +122,7 @@ const Annotator = React.forwardRef((props, ref) => {
   const [_selectedIds, selectedIdsRef, setSelectedIds] = useRefState([]);
   const [_expansionState, expansionStateRef, setExpansionState] = useRefState(0);
   const [_mode, modeRef, setMode] = useRefState(null);
-  const [_color, colorRef, setColor] = useRefState(annotationColors[1][1]);
+  const [_color, colorRef, setColor] = useRefState(annotationColors[0][1]);
   const [_selectionPositions, selectionPositionsRef, setSelectionPositions] = useRefState([]);
   const [_enableSelection, enableSelectionRef, setEnableSelection] = useRefState(false);
   const [_blink, blinkRef, setBlink] = useRefState(null);
