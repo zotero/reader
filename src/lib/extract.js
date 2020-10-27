@@ -41,7 +41,7 @@ export async function getPageChs(pageIndex) {
 
 export async function extractRange(position) {
   let chs = await getPageChs(position.pageIndex);
-  let range = getRange(chs, position.rects);
+  let range = getRange(chs, position.rects, true);
   if (!range) return;
   return {
     position: {
