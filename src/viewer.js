@@ -36,16 +36,16 @@ class Viewer {
     PDFViewerApplication.download = function () {
     };
 
-    document.getElementById('back').disabled = !options.enablePrev;
-    document.getElementById('forward').disabled = !options.enableNext;
+    // document.getElementById('back').disabled = !options.enablePrev;
+    // document.getElementById('forward').disabled = !options.enableNext;
 
     document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
     document.getElementById('noteSidebarToggle').addEventListener('click', this.handleNoteSidebarToggleClick);
     window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
     window.PDFViewerApplication.eventBus.on('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
-    document.getElementById('back').addEventListener('click', this.handleBackButtonClick);
-    document.getElementById('forward').addEventListener('click', this.handleForwardButtonClick);
+    // document.getElementById('back').addEventListener('click', this.handleBackButtonClick);
+    // document.getElementById('forward').addEventListener('click', this.handleForwardButtonClick);
     // Override the external link click handling
     window.addEventListener('click', this.handleClick, true);
     // Prevent dragging for internal links
@@ -94,8 +94,8 @@ class Viewer {
     window.PDFViewerApplication.eventBus.off('updateviewarea', this.handleViewAreaUpdate);
     window.PDFViewerApplication.eventBus.off('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.off('documentinit', this.handleDocumentInit);
-    document.getElementById('back').removeEventListener('click', this.handleBackButtonClick);
-    document.getElementById('forward').removeEventListener('click', this.handleForwardButtonClick);
+    // document.getElementById('back').removeEventListener('click', this.handleBackButtonClick);
+    // document.getElementById('forward').removeEventListener('click', this.handleForwardButtonClick);
     window.removeEventListener('click', this.handleClick);
     window.removeEventListener('dragstart', this.handleDragStart);
     window.PDFViewerApplication.close();
