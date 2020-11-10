@@ -622,7 +622,8 @@ function Layer(props) {
             updateOnPositionChange={true}
           >
             <SelectionMenu
-              color={ color }
+              color={color}
+              enableAddToNote={props.enableAddToNote}
               onHighlight={props.onHighlightSelection}
               onCopy={props.onCopySelection}
               onAddToNote={props.onAddToNoteSelection}

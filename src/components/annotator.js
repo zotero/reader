@@ -134,6 +134,7 @@ const Annotator = React.forwardRef((props, ref) => {
   const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
   const [_isSelectedOnPointerDown, isSelectedOnPointerDownRef, setIsSelectedOnPointerDown] = useRefState(false);
   const [_promptImport, promptImport, setPromptImport] = useRefState(props.promptImport);
+  const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
 
   const lastSelectedAnnotationIdRef = useRef(null);
   const pointerDownPositionRef = useRef(null);
@@ -143,7 +144,8 @@ const Annotator = React.forwardRef((props, ref) => {
     navigate,
     setAnnotations,
     setColor,
-    setPromptImport
+    setPromptImport,
+    setEnableAddToNote
   }));
 
   function setSelectionRangesRef(ranges) {
@@ -961,6 +963,7 @@ const Annotator = React.forwardRef((props, ref) => {
         selectionColor={_mode === 'highlight' ? _color : selectionColor}
         selectionPositions={_selectionPositions}
         enableSelectionPopup={!_isSelectingText && !_mode}
+        enableAddToNote={_enableAddToNote}
         popupAnnotation={
           !_isSelectingText &&
           !_isDraggingAnnotation &&

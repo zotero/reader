@@ -36,9 +36,6 @@ class Viewer {
     PDFViewerApplication.download = function () {
     };
 
-    // document.getElementById('back').disabled = !options.enablePrev;
-    // document.getElementById('forward').disabled = !options.enableNext;
-
     document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
     document.getElementById('noteSidebarToggle').addEventListener('click', this.handleNoteSidebarToggleClick);
     window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
@@ -162,14 +159,6 @@ class Viewer {
     }
   }
 
-  handleBackButtonClick = () => {
-    this.options.onNavigatePrev();
-  }
-
-  handleForwardButtonClick = () => {
-    this.options.onNavigateNext();
-  }
-
   handleClick = (event) => {
     if (
       event.button === 0
@@ -224,6 +213,15 @@ class Viewer {
       return;
     }
     this.annotatorRef.current.setPromptImport(enable);
+  };
+
+  setEnableAddToNote = async (enable) => {
+    await this._annotatorPromise;
+    await this._pdfjsPromise;
+    if (this._uninitialized) {
+      return;
+    }
+    this.annotatorRef.current.setEnableAddToNote(enable);
   };
 
   setAnnotation(annotation) {

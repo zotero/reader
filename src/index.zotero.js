@@ -36,19 +36,15 @@ class ViewerInstance {
     this._itemId = options.itemId;
     this._viewer = null;
 
+    if (!options.showItemPaneToggle) {
+      document.getElementById('noteSidebarToggle').style.display = 'none';
+    }
+
     window.addEventListener('message', this.handleMessage);
     window.attachmentItemKey = options.key;
     window.itemId = options.itemId;
     this._viewer = new Viewer({
       promptImport: options.promptImport,
-      enablePrev: options.enablePrev,
-      enableNext: options.enableNext,
-      onNavigatePrev: () => {
-        this._postMessage({ action: 'navigatePrev' });
-      },
-      onNavigateNext: () => {
-        this._postMessage({ action: 'navigateNext' });
-      },
       onImport: () => {
         this._postMessage({ action: 'import' });
       },
@@ -130,6 +126,11 @@ class ViewerInstance {
       case 'toggleImportPrompt': {
         let { enable } = message;
         this._viewer.setPromptImport(enable);
+        return;
+      }
+      case 'enableAddToNote': {
+        let { enable } = message;
+        this._viewer.setEnableAddToNote(enable);
         return;
       }
       case 'setAnnotations': {
@@ -245,12 +246,12 @@ window.addEventListener('message', function (event) {
   let message = event.data.message;
 
   if (message.action === 'open') {
-    let { buf, state, location, annotations, enablePrev, enableNext, promptImport } = message;
+    let { buf, state, location, annotations, promptImport, showItemPaneToggle } = message;
     if (currentViewerInstance) {
       currentViewerInstance.uninit();
     }
     currentViewerInstance = new ViewerInstance({
-      itemId, buf, state, location, annotations, enablePrev, enableNext, promptImport
+      itemId, buf, state, location, annotations, promptImport, showItemPaneToggle
     });
   }
 });
