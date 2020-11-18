@@ -17,6 +17,8 @@ class Viewer {
     this._label = options.label;
     this._lastState = null;
     this._uninitialized = false;
+    // TODO: Find a better way to determine the event origin
+    this._enableSidebarOpenEvent = true;
     this._annotatorPromise = new Promise((resolve) => {
       this._annotatorPromiseResolve = resolve;
     })
@@ -37,10 +39,10 @@ class Viewer {
     };
 
     document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
-    document.getElementById('noteSidebarToggle').addEventListener('click', this.handleNoteSidebarToggleClick);
     window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
     window.PDFViewerApplication.eventBus.on('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
+    window.onChangeSidebarWidth = this.handleChangeSidebarWidth;
     // document.getElementById('back').addEventListener('click', this.handleBackButtonClick);
     // document.getElementById('forward').addEventListener('click', this.handleForwardButtonClick);
     // Override the external link click handling
@@ -87,7 +89,6 @@ class Viewer {
     window.PDFViewerApplication.pdfDocument.uninitialized = true;
     ReactDom.unmountComponentAtNode(this.node);
     document.getElementById('download').removeEventListener('click', this.handleDownloadButtonClick);
-    document.getElementById('noteSidebarToggle').removeEventListener('click', this.handleNoteSidebarToggleClick);
     window.PDFViewerApplication.eventBus.off('updateviewarea', this.handleViewAreaUpdate);
     window.PDFViewerApplication.eventBus.off('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.off('documentinit', this.handleDocumentInit);
@@ -102,19 +103,6 @@ class Viewer {
 
   handleDownloadButtonClick = () => {
     this.options.onDownload();
-  }
-
-  handleNoteSidebarToggleClick = (event) => {
-    let isToggled;
-    if (event.target.classList.contains('toggled')) {
-      event.target.classList.remove('toggled');
-      isToggled = false;
-    }
-    else {
-      event.target.classList.add('toggled');
-      isToggled = true;
-    }
-    this.options.onToggleNoteSidebar(isToggled);
   }
 
   handleViewAreaUpdate = (e) => {
@@ -142,12 +130,19 @@ class Viewer {
     setTimeout(() => {
       PDFViewerApplication.eventBus.dispatch('resize');
     }, 50);
+    if (this._enableSidebarOpenEvent) {
+      this.options.onChangeSidebarOpen(!!e.view);
+    }
   }
 
   handleDocumentInit = async () => {
     if (this.options.state) {
       this._setState(this.options.state, !!this.options.location);
     }
+
+    this.setSidebarWidth(this.options.sidebarWidth);
+    this.setBottomPlaceholderHeight(this.options.bottomPlaceholderHeight);
+    this.setSidebarOpen(this.options.sidebarOpen);
 
     await this._annotatorPromise;
     if (this._uninitialized) {
@@ -157,6 +152,10 @@ class Viewer {
     if (this.options.location) {
       this.annotatorRef.current.navigate(this.options.location);
     }
+  }
+
+  handleChangeSidebarWidth = (width) => {
+    this.options.onChangeSidebarWidth(width);
   }
 
   handleClick = (event) => {
@@ -232,10 +231,33 @@ class Viewer {
     this._annotationsStore.unsetAnnotations(ids);
   }
 
+  setSidebarWidth(width) {
+    window.PDFViewerApplication.pdfSidebarResizer._updateWidth(width);
+  }
+
+  setSidebarOpen(open) {
+    this._enableSidebarOpenEvent = false;
+    if (open) {
+      window.PDFViewerApplication.pdfSidebar.open();
+    }
+    else {
+      window.PDFViewerApplication.pdfSidebar.close();
+    }
+    this._enableSidebarOpenEvent = true;
+  }
+
+  setBottomPlaceholderHeight(height) {
+    document.getElementById('mainContainer').style.bottom = height + 'px';
+  }
+
+  setToolbarPlaceholderWidth(width) {
+    document.getElementById('toolbarContainer').style.paddingRight = width + 'px';
+  }
+
   // TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation
   _setState(state, skipScroll) {
-    window.PDFViewerApplication.pdfSidebar.switchView(state.sidebarView, true);
-    window.PDFViewerApplication.pdfSidebarResizer._updateWidth(state.sidebarWidth);
+    // window.PDFViewerApplication.pdfSidebar.switchView(state.sidebarView, true);
+    // window.PDFViewerApplication.pdfSidebarResizer._updateWidth(state.sidebarWidth);
 
     window.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
     window.PDFViewerApplication.pdfViewer.spreadMode = state.spreadMode;

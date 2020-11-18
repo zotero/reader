@@ -12,7 +12,7 @@ document.addEventListener('webviewerloaded', function () {
   window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
   window.PDFViewerApplicationOptions.set('historyUpdateUrl', true);
   window.PDFViewerApplicationOptions.set('textLayerMode', 0);
-  window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 9);
+  window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {
@@ -110,13 +110,19 @@ class ViewerInstance {
       onDownload() {
         alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');
       },
-      onToggleNoteSidebar(isToggled) {
-        alert(`This will ${isToggled ? 'show' : 'hide'} the note sidebar on the right`);
+      onChangeSidebarWidth(width) {
+        console.log('Changed sidebar width ' + width);
+      },
+      onChangeSidebarOpen: (open) => {
+        console.log('changeSidebarOpen', open)
       },
       buf: options.buf,
       annotations: options.annotations,
       state: options.state,
-      location: options.location
+      location: options.location,
+      sidebarWidth: 200,
+      sidebarOpen: true,
+      bottomPlaceholderHeight: 0
       // password: 'test'
     });
   }

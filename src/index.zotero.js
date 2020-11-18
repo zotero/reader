@@ -36,10 +36,6 @@ class ViewerInstance {
     this._itemId = options.itemId;
     this._viewer = null;
 
-    if (!options.showItemPaneToggle) {
-      document.getElementById('noteSidebarToggle').style.display = 'none';
-    }
-
     window.addEventListener('message', this.handleMessage);
     window.attachmentItemKey = options.key;
     window.itemId = options.itemId;
@@ -81,13 +77,19 @@ class ViewerInstance {
       onDownload: () => {
         this._postMessage({ action: 'save' });
       },
-      onToggleNoteSidebar: (isToggled) => {
-        this._postMessage({ action: 'toggleNoteSidebar', isToggled });
+      onChangeSidebarWidth: (width) => {
+        this._postMessage({ action: 'changeSidebarWidth', width });
+      },
+      onChangeSidebarOpen: (open) => {
+        this._postMessage({ action: 'changeSidebarOpen', open });
       },
       buf: options.buf,
       annotations: options.annotations,
       state: options.state,
-      location: options.location
+      location: options.location,
+      sidebarWidth: options.sidebarWidth,
+      sidebarOpen: options.sidebarOpen,
+      bottomPlaceholderHeight: options.bottomPlaceholderHeight
     });
   }
 
@@ -151,6 +153,27 @@ class ViewerInstance {
       case 'menuCmd': {
         let { cmd } = message;
         this.handleMenuAction(cmd);
+        return;
+      }
+      case 'setSidebarWidth': {
+        let { width } = message;
+        this._viewer.setSidebarWidth(width);
+        return;
+      }
+      case 'setSidebarOpen': {
+        let { open } = message;
+        this._viewer.setSidebarOpen(open);
+        return;
+      }
+      case 'setBottomPlaceholderHeight': {
+        let { height } = message;
+        this._viewer.setBottomPlaceholderHeight(height);
+        return;
+      }
+      case 'setToolbarPlaceholderWidth': {
+        let { width } = message;
+        this._viewer.setToolbarPlaceholderWidth(width);
+        return;
       }
     }
   }
@@ -246,12 +269,12 @@ window.addEventListener('message', function (event) {
   let message = event.data.message;
 
   if (message.action === 'open') {
-    let { buf, state, location, annotations, promptImport, showItemPaneToggle } = message;
+    let { buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight } = message;
     if (currentViewerInstance) {
       currentViewerInstance.uninit();
     }
     currentViewerInstance = new ViewerInstance({
-      itemId, buf, state, location, annotations, promptImport, showItemPaneToggle
+      itemId, buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight
     });
   }
 });
