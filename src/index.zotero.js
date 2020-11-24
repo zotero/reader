@@ -47,8 +47,8 @@ class ViewerInstance {
       onDismissImport: () => {
         this._postMessage({ action: 'dismissImport' });
       },
-      onAddToNote: (annotations) => {
-        this._postMessage({ action: 'addToNote', annotations });
+      onAddToNote: (annotations, editorIndex) => {
+        this._postMessage({ action: 'addToNote', annotations, editorIndex });
       },
       onSetAnnotation: (annotation) => {
         console.log('Set annotation', annotation);
@@ -131,8 +131,8 @@ class ViewerInstance {
         return;
       }
       case 'enableAddToNote': {
-        let { enable } = message;
-        this._viewer.setEnableAddToNote(enable);
+        let { activeEditors } = message;
+        this._viewer.setEnableAddToNote(activeEditors);
         return;
       }
       case 'setAnnotations': {

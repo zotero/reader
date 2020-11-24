@@ -214,13 +214,13 @@ class Viewer {
     this.annotatorRef.current.setPromptImport(enable);
   };
 
-  setEnableAddToNote = async (enable) => {
+  setEnableAddToNote = async (editors) => {
     await this._annotatorPromise;
     await this._pdfjsPromise;
     if (this._uninitialized) {
       return;
     }
-    this.annotatorRef.current.setEnableAddToNote(enable);
+    this.annotatorRef.current.setEnableAddToNote(editors);
   };
 
   setAnnotation(annotation) {
