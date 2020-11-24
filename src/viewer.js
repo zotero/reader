@@ -39,6 +39,7 @@ class Viewer {
     };
 
     document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
+    document.getElementById('zoomAuto').addEventListener('click', this.handleZoomAutoButtonClick);
     window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
     window.PDFViewerApplication.eventBus.on('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
@@ -89,6 +90,7 @@ class Viewer {
     window.PDFViewerApplication.pdfDocument.uninitialized = true;
     ReactDom.unmountComponentAtNode(this.node);
     document.getElementById('download').removeEventListener('click', this.handleDownloadButtonClick);
+    document.getElementById('zoomAuto').removeEventListener('click', this.handleZoomAutoButtonClick);
     window.PDFViewerApplication.eventBus.off('updateviewarea', this.handleViewAreaUpdate);
     window.PDFViewerApplication.eventBus.off('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.off('documentinit', this.handleDocumentInit);
@@ -103,6 +105,10 @@ class Viewer {
 
   handleDownloadButtonClick = () => {
     this.options.onDownload();
+  }
+
+  handleZoomAutoButtonClick = () => {
+    PDFViewerApplication.zoomReset();
   }
 
   handleViewAreaUpdate = (e) => {
