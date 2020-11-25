@@ -38,10 +38,19 @@ class Viewer {
     PDFViewerApplication.download = function () {
     };
 
+    // Sidebar configuration must be finished before loading the PDF
+    // to avoid the immediate resize and re-render of PDF pages
+    if (this.options.sidebarOpen) {
+      PDFViewerApplication.pdfSidebar.setInitialView(9);
+    }
+    else {
+      PDFViewerApplication.pdfSidebar.switchView(9);
+    }
+    window.PDFViewerApplication.pdfSidebarResizer._updateWidth(this.options.sidebarWidth);
+
     document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
     document.getElementById('zoomAuto').addEventListener('click', this.handleZoomAutoButtonClick);
     window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
-    window.PDFViewerApplication.eventBus.on('sidebarviewchanged', this.handleSidebarViewChange);
     window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
     window.onChangeSidebarWidth = this.handleChangeSidebarWidth;
     // document.getElementById('back').addEventListener('click', this.handleBackButtonClick);
@@ -129,6 +138,7 @@ class Viewer {
   }
 
   handleSidebarViewChange = (e) => {
+    console.log('view change', e)
     if (this._lastState) {
       this._lastState.sidebarView = e.view;
       this._onSetState(this._lastState);
@@ -142,13 +152,14 @@ class Viewer {
   }
 
   handleDocumentInit = async () => {
+    // PDFViewerApplication.pdfSidebar.switchView(9);
+
+
     if (this.options.state) {
       this._setState(this.options.state, !!this.options.location);
     }
 
-    this.setSidebarWidth(this.options.sidebarWidth);
     this.setBottomPlaceholderHeight(this.options.bottomPlaceholderHeight);
-    this.setSidebarOpen(this.options.sidebarOpen);
 
     await this._annotatorPromise;
     if (this._uninitialized) {
@@ -158,6 +169,10 @@ class Viewer {
     if (this.options.location) {
       this.annotatorRef.current.navigate(this.options.location);
     }
+
+    // Can't be in the constructor because gets triggered by the initial
+    // sidebar configuration
+    window.PDFViewerApplication.eventBus.on('sidebarviewchanged', this.handleSidebarViewChange);
   }
 
   handleChangeSidebarWidth = (width) => {

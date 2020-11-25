@@ -12,7 +12,8 @@ document.addEventListener('webviewerloaded', (e) => {
   window.PDFViewerApplicationOptions.set('workerSrc', 'pdf.worker.js');
   window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
   window.PDFViewerApplicationOptions.set('textLayerMode', 0);
-  window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 9);
+  // Without this PDF.js forces opening outline view when it exists
+  window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 
   window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
   window.PDFViewerApplication.externalServices.createPreferences = function () {

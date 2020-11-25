@@ -121,7 +121,7 @@ class ViewerInstance {
       state: options.state,
       location: options.location,
       sidebarWidth: 200,
-      sidebarOpen: true,
+      sidebarOpen: false,
       bottomPlaceholderHeight: 0
       // password: 'test'
     });
