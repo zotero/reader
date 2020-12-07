@@ -23,21 +23,7 @@ class SelectionMenu extends React.Component {
             onClick={() => this.handleColorPick(color[1])}
           />))}
         </div>
-        {this.props.enableAddToNote[0] && !this.props.enableAddToNote[1] &&
-        <div className="wide-button" onClick={() => {
-          this.props.onAddToNote(0)
-        }}>Add to Note</div>
-        || !this.props.enableAddToNote[0] && this.props.enableAddToNote[1] &&
-        <div className="wide-button" onClick={() => {
-          this.props.onAddToNote(1)
-        }}>Add to Note</div>
-        || this.props.enableAddToNote[0] && [<div key="1" className="wide-button" onClick={() => {
-          this.props.onAddToNote(0)
-        }}>Add to Top Note</div>,
-          <div key="2" className="wide-button" onClick={() => {
-            this.props.onAddToNote(1)
-          }}>Add to Bottom Note</div>]
-        }
+        {this.props.enableAddToNote && <div className="wide-button" onClick={this.props.onAddToNote}>Add to Note</div>}
       </div>
     );
   }

@@ -134,7 +134,7 @@ const Annotator = React.forwardRef((props, ref) => {
   const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
   const [_isSelectedOnPointerDown, isSelectedOnPointerDownRef, setIsSelectedOnPointerDown] = useRefState(false);
   const [_promptImport, promptImport, setPromptImport] = useRefState(props.promptImport);
-  const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState([false, false]);
+  const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
 
   const lastSelectedAnnotationIdRef = useRef(null);
   const pointerDownPositionRef = useRef(null);
@@ -924,7 +924,7 @@ const Annotator = React.forwardRef((props, ref) => {
     copyToClipboard(text);
   }
 
-  function handleLayerSelectionPopupAddToNote(editorIndex) {
+  function handleLayerSelectionPopupAddToNote() {
     let partialAnnotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
     let annotations = partialAnnotations.map(annotation => ({
       ...annotation,
@@ -932,7 +932,7 @@ const Annotator = React.forwardRef((props, ref) => {
       type: 'highlight'
     }))
     if (annotations.length) {
-      props.onAddToNote(annotations, editorIndex);
+      props.onAddToNote(annotations);
       setSelectionRangesRef([]);
     }
   }

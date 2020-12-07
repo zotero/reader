@@ -49,7 +49,7 @@ async function test() {
     }
   });
 
-  vi._viewer.setEnableAddToNote([true, true]);
+  vi._viewer.setEnableAddToNote(false);
 
   // vi._viewer.navigate({
   //   'position': { 'pageIndex': 100, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
@@ -85,8 +85,8 @@ class ViewerInstance {
       onDismissImport() {
         alert('You won\'t be asked to import annotations until new annotations will be detected in the PDF file');
       },
-      onAddToNote(annotations, editorIndex) {
-        alert('This will add annotations to the pinned note ' + annotations.length + ' ' + editorIndex);
+      onAddToNote() {
+        alert('This will add annotations to the pinned note');
       },
       onSetAnnotation: function (annotation) {
         console.log('Set annotation', annotation);
