@@ -26,6 +26,7 @@
   bottom: 0;
   left: 0;
   min-width: 320px;
+  bottom: var(--bottomPlaceholderHeight);
 }
 
 #viewerContainer {

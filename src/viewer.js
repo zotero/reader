@@ -19,6 +19,7 @@ class Viewer {
     this._uninitialized = false;
     // TODO: Find a better way to determine the event origin
     this._enableSidebarOpenEvent = true;
+    this.setBottomPlaceholderHeight(this.options.bottomPlaceholderHeight);
     this._annotatorPromise = new Promise((resolve) => {
       this._annotatorPromiseResolve = resolve;
     })
@@ -159,8 +160,6 @@ class Viewer {
       this._setState(this.options.state, !!this.options.location);
     }
 
-    this.setBottomPlaceholderHeight(this.options.bottomPlaceholderHeight);
-
     await this._annotatorPromise;
     if (this._uninitialized) {
       return;
@@ -267,8 +266,9 @@ class Viewer {
     this._enableSidebarOpenEvent = true;
   }
 
-  setBottomPlaceholderHeight(height) {
-    document.getElementById('mainContainer').style.bottom = height + 'px';
+  async setBottomPlaceholderHeight(height) {
+    let root = document.documentElement;
+    root.style.setProperty('--bottomPlaceholderHeight', height + 'px');
   }
 
   setToolbarPlaceholderWidth(width) {
