@@ -270,6 +270,7 @@ window.addEventListener('message', function (event) {
   let message = event.data.message;
 
   if (message.action === 'open') {
+    // TODO: Improve error handling here
     let { buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight } = message;
     if (currentViewerInstance) {
       currentViewerInstance.uninit();
@@ -277,5 +278,6 @@ window.addEventListener('message', function (event) {
     currentViewerInstance = new ViewerInstance({
       itemId, buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight
     });
+    parent.postMessage({ itemId, message: { action: 'initialized' } }, parent.origin);
   }
 });
