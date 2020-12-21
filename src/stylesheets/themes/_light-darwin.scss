@@ -56,8 +56,8 @@ $visibility-bp-sm: 840px;
 // Toolbar
 $toolbar-height:        32px;
 $toolbar-padding:       0 4px;
-$toolbar-bg:            linear-gradient(to top, #aeaeae 0, #aeaeae 1px, #d3d3d3 1px, #e3e3e3 100%);
-$toolbar-bg-2x:         linear-gradient(to top, #aeaeae 0, #aeaeae 0.5px, #c4c4c4 0.5px, #c4c4c4 1px, #d3d3d3 1px, #e3e3e3 100%);
+$toolbar-bg:            linear-gradient(to top, #a9a9a9 0, #a9a9a9 1px, #f6f6f6 1px, #f6f6f6 100%);
+$toolbar-bg-2x:         linear-gradient(to top, #a9a9a9 0, #a9a9a9 0.5px, #f6f6f6 0.5px, #f6f6f6 100%);
 $toolbar-blurred-bg:    linear-gradient(to top, #d1d1d1 0, #d1d1d1 1px, #f6f6f6 1px);
 $toolbar-blurred-bg-2x: linear-gradient(to top, #cecece 0, #cecece 0.5px, #e7e7e7 0.5px, #e7e7e7 1px, #f6f6f6 1px);
 $toolbar-border:        0;
@@ -229,8 +229,8 @@ $sidebar-resizer-cursor: col-resize;
 $toolbar-sidebar-height:          31px;
 $toolbar-sidebar-justify-content: center;
 $toolbar-sidebar-align-items:     center;
-$toolbar-sidebar-bg:              linear-gradient(to bottom, #ececec, #ccc);
-$toolbar-sidebar-border:          1px solid #bdbdbd;
+$toolbar-sidebar-bg:              #f6f6f6;
+$toolbar-sidebar-border:          1px solid #a9a9a9;
 
 $split-toolbar-btn-flex:   1 0 auto;
 $split-toolbar-btn-height: 22px;
