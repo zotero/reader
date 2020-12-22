@@ -35,6 +35,10 @@
       @include retina {
         background: image-url("searchbar-dropmarker@2x.png") no-repeat left top / 100%;
       }
+
+      .is-blurred & {
+        opacity: 0.5;
+      }
     }
   }
 }

@@ -58,8 +58,8 @@ $toolbar-height:        32px;
 $toolbar-padding:       0 4px;
 $toolbar-bg:            linear-gradient(to top, #a9a9a9 0, #a9a9a9 1px, #f6f6f6 1px, #f6f6f6 100%);
 $toolbar-bg-2x:         linear-gradient(to top, #a9a9a9 0, #a9a9a9 0.5px, #f6f6f6 0.5px, #f6f6f6 100%);
-$toolbar-blurred-bg:    linear-gradient(to top, #d1d1d1 0, #d1d1d1 1px, #f6f6f6 1px);
-$toolbar-blurred-bg-2x: linear-gradient(to top, #cecece 0, #cecece 0.5px, #e7e7e7 0.5px, #e7e7e7 1px, #f6f6f6 1px);
+$toolbar-blurred-bg:    null;
+$toolbar-blurred-bg-2x: null;
 $toolbar-border:        0;
 
 $page-number-width:               calc(#{rem(28)} + 24px);

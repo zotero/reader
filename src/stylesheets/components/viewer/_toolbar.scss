@@ -58,6 +58,10 @@
       @include retina {
         box-shadow: $toolbar-btn-blurred-box-shadow-2x;
       }
+
+      &::before {
+        opacity: 0.5;
+      }
     }
   }
 
@@ -158,12 +162,26 @@
         background-image: icon-url("spinner-14px@2x.png"), $page-number-bg;
       }
     }
+
+    .is-blurred & {
+      background: $toolbar-btn-blurred-bg;
+      box-shadow: $toolbar-btn-blurred-box-shadow;
+      color: rgba($text-color, 0.5);
+
+      @include retina {
+        box-shadow: $toolbar-btn-blurred-box-shadow-2x;
+      }
+    }
   }
 
   #numPages {
     min-width: $num-pages-min-width;
     color: $num-pages-color;
     margin-left: 0;
+
+    .is-blurred & {
+      color: rgba($num-pages-color, 0.5);
+    }
   }
 
   #scaleSelectContainer {

@@ -96,6 +96,17 @@
         border-bottom-right-radius: 5px;
       }
     }
+
+    @if $button == "menubutton" {
+      .is-blurred & {
+        background: image-url("darwin/#{$button}-end-inactive-window.png") no-repeat right top;
+        opacity: 0.5;
+
+        @include retina {
+          background: image-url("darwin/#{$button}-end-inactive-window@2x.png") no-repeat right top / auto $height;
+        }
+      }
+    }
   }
 
   &:not(:first-child) {
@@ -104,6 +115,22 @@
 
   &:not(:last-child) {
     margin-right: 0;
+  }
+
+  @if $button == "menubutton" {
+    .is-blurred & {
+      &:not(:last-child) {
+        &::before {
+          opacity: 0.5;
+        }
+      }
+
+      &.toggled {
+        &::before {
+          opacity: 1;
+        }
+      }
+    }
   }
 
   > span:first-child {
@@ -124,6 +151,8 @@
         image-url("darwin/#{$button}-start@2x.png") no-repeat center top / auto $height;
     }
 
+    // Active
+
     @include state(".toolbarButton:active") {
       background: image-url("darwin/#{$button}-start-pressed.png") no-repeat center top;
 
@@ -131,6 +160,8 @@
         background: image-url("darwin/#{$button}-start-pressed@2x.png") no-repeat center top / auto $height;
       }
     }
+
+    // Toggled
 
     @include state(".toolbarButton.toggled") {
       background: image-url("darwin/#{$button}-start-active.png") no-repeat center top;
@@ -148,6 +179,8 @@
       }
     }
 
+    // Default after toggled
+
     @include state(".toolbarButton.toggled + .toolbarButton:not(:active)") {
       background: image-url("darwin/#{$button}-start.png") no-repeat center top;
 
@@ -155,6 +188,30 @@
         background: image-url("darwin/#{$button}-start@2x.png") no-repeat center top / auto $height;
       }
     }
+
+    // Blurred
+
+    @if $button == "menubutton" {
+      .is-blurred & {
+        @include state(".toolbarButton:not(.toggled)") {
+          background:
+            linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
+            image-url("darwin/#{$button}-start-inactive-window.png") no-repeat center top;
+
+          @include retina {
+            background:
+              linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
+              image-url("darwin/#{$button}-start-inactive-window@2x.png") no-repeat center top / auto $height;
+          }
+        }
+
+        @include state(".toolbarButton:not(:last-child)") {
+          opacity: 0.5;
+        }
+      }
+    }
+
+    // First button
 
     @include variant(".toolbarButton:first-child") {
       background: image-url("darwin/#{$button}-start.png") no-repeat left top;
@@ -186,7 +243,21 @@
           }
         }
       }
+
+      @if $button == "menubutton" {
+        .is-blurred & {
+          @include state(".toolbarButton:not(.toggled)") {
+            background: image-url("darwin/#{$button}-start-inactive-window.png") no-repeat left top;
+
+            @include retina {
+              background: image-url("darwin/#{$button}-start-inactive-window@2x.png") no-repeat left top / auto $height;
+            }
+          }
+        }
+      }
     }
+
+    // Last button
 
     @include variant(".toolbarButton:last-child") {
       width: calc(100% - 17px);
