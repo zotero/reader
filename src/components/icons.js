@@ -21,7 +21,7 @@ export function IconNote() {
 export function IconArea() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12">
-      <path fill="currentColor" d="M2,8V2H8V8Zm8,1V7H9V9H7v1H9v2h1V10h2V9ZM1,1H9V6h1V0H0V10H6V9H1Z"/>
+      <path fill="currentColor" d="M2,7V2H7V7Zm8,2V7H9V9H7v1H9v2h1V10h2V9ZM1,1H9V6h1V0H0V10H6V9H1Z"/>
     </svg>
   )
 }
