@@ -41,8 +41,13 @@ export async function getPageChs(pageIndex) {
 
 export async function extractRange(position) {
   let chs = await getPageChs(position.pageIndex);
+  if (!chs.length) {
+    return;
+  }
   let range = getRange(chs, position.rects, true);
-  if (!range) return;
+  if (!range) {
+    return;
+  }
   return {
     position: {
       pageIndex: position.pageIndex,
@@ -56,7 +61,7 @@ export async function extractRange(position) {
 export async function getSortIndex(position) {
   let chs = await getPageChs(position.pageIndex);
   let page = position.pageIndex;
-  let offset = getClosestOffset(chs, position.rects[0]);
+  let offset = chs.length && getClosestOffset(chs, position.rects[0]) || 0;
   let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1)).view[3];
   let top = pageHeight - position.rects[0][3];
   return [
