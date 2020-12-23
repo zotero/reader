@@ -98,16 +98,14 @@
   }
 
   @if $platform == "darwin" {
-    #back {
-      padding-left: 5px;
-      padding-right: 6px;
+    #zoomOut {
       margin-right: 1px;
       clip-path: inset(-1px 0 -1px -1px);
 
       &:focus-visible {
         clip-path: none;
 
-        & + #forward {
+        & + #zoomIn {
           clip-path: inset(-1px -1px -1px 0);
         }
       }
@@ -115,7 +113,7 @@
       &:-moz-focusring {
         clip-path: none;
 
-        & + #forward {
+        & + #zoomIn {
           clip-path: inset(-1px -1px -1px 0);
         }
       }
@@ -125,9 +123,7 @@
       }
     }
 
-    #forward {
-      padding-left: 6px;
-      padding-right: 5px;
+    #zoomIn {
       margin-left: 0;
     }
   }
