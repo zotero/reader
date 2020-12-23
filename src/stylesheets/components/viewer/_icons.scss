@@ -82,15 +82,8 @@
     @include icon("zoom-out");
   }
 
-  .zoomAuto::before {
-    content: "⬚";
-    font-weight: bold;
-    display: inline-block;
-    //vertical-align: top;
-    width: 16px;
-    height: 16px;
-    //background-image: url(icons/zoom-out.png);
-    background-size: 100%;
+  .zoomAuto {
+    @include icon("zoom-auto");
   }
 
   .presentationMode {
