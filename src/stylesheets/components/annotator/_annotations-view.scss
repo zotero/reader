@@ -35,10 +35,6 @@
       border-radius: $search-border-radius;
       box-shadow: $search-box-shadow;
 
-      @include retina {
-        box-shadow: $search-box-shadow-2x;
-      }
-
       &::placeholder {
         opacity: $search-placeholder-opacity;
         color: #000;
@@ -51,10 +47,11 @@
       &:focus {
         border: $search-focus-border;
         box-shadow: $search-focus-box-shadow;
+      }
 
-        @include retina {
-          box-shadow: $search-focus-box-shadow-2x;
-        }
+      .is-blurred & {
+        background: $search-blurred-bg;
+        box-shadow: $search-blurred-box-shadow;
       }
     }
 

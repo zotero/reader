@@ -222,6 +222,7 @@ $horizontal-toolbar-separator-margin: 2px 0 2px 28px;
 
 // Sidebar
 $sidebar-bg:             #d2d8e2;
+$sidebar-blurred-bg:     #e8e8e8;
 $sidebar-border-color:   #bdbdbd;
 $sidebar-resizer-cursor: col-resize;
 
@@ -336,15 +337,15 @@ $area-tool-icon-active:      "darwin/area-white";
 $search-margin:              1px 9px 9px 9px;
 $search-height:              20px;
 $search-bg:                  #bcc4d2;
+$search-blurred-bg:          #dbdbdb;
 $search-padding:             0 18px 0 23px;
 $search-border:              none;
 $search-hover-border:        null;
 $search-focus-border:        null;
 $search-border-radius:       3.75px;
 $search-box-shadow:          0 0 0 1px #a5afc1;
-$search-box-shadow-2x:       0 0 0 1px #a5afc1;
+$search-blurred-box-shadow: 0 0 0 1px #cdcdcd;
 $search-focus-box-shadow:    0 0 0 4px rgba($accent-color, 0.5), $search-box-shadow;
-$search-focus-box-shadow-2x: 0 0 0 4px rgba($accent-color, 0.5),$search-box-shadow-2x;
 $search-placeholder-opacity: 0.3;
 $search-icon-offset-x:       3px;
 $search-icon-offset-y:       2px;

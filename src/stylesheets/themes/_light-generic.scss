@@ -233,6 +233,7 @@ $horizontal-toolbar-separator-margin: 2px 0 2px 28px;
 
 // Sidebar
 $sidebar-bg:             #fff;
+$sidebar-blurred-bg:     null;
 $sidebar-border-color:   #cecece;
 $sidebar-resizer-cursor: ew-resize;
 
@@ -333,15 +334,15 @@ $area-tool-icon-active:      $area-tool-icon;
 $search-margin:              0 0 4px 0;
 $search-height:              24px;
 $search-bg:                  #fff;
+$search-blurred-bg:          null;
 $search-padding:             0 17px 0 19px;
 $search-border:              1px solid #7a7a7a;
 $search-hover-border:        1px solid #171717;
 $search-focus-border:        1px solid $accent-color;
 $search-border-radius:       null;
 $search-box-shadow:          null;
-$search-box-shadow-2x:       null;
+$search-blurred-box-shadow:  null;
 $search-focus-box-shadow:    null;
-$search-focus-box-shadow-2x: null;
 $search-placeholder-opacity: 0.54;
 $search-icon-offset-x:       2px;
 $search-icon-offset-y:       4px;

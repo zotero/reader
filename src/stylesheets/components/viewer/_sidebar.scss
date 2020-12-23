@@ -54,6 +54,10 @@
   overflow: auto;
   -webkit-overflow-scrolling: touch;
   background-color: $sidebar-bg;
+
+  .is-blurred & {
+    background-color: $sidebar-blurred-bg;
+  }
 }
 
 #sidebarResizer {
