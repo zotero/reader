@@ -96,6 +96,9 @@ export class PopupPreview extends React.Component {
 }
 
 export class SidebarPreview extends React.Component {
+  state = {
+    editingPageLabel: false
+  };
 
   handleSectionClick = (event, section) => {
     this.props.onClickSection(this.props.annotation.id, section, event);
@@ -109,11 +112,18 @@ export class SidebarPreview extends React.Component {
     this.props.onChange({ id: this.props.annotation.id, comment: text });
   }
 
-  handleClickPage = (event) => {
+  handleDoubleClickPage = (event) => {
     if (!this.props.annotation.readOnly) {
-      event.stopPropagation();
-      this.props.onPageMenu(this.props.annotation.id, event.screenX, event.screenY);
+      this.setState({ editingPageLabel: true });
     }
+  }
+
+  handlePageLabelChange = (event) => {
+    this.props.onChange({ id: this.props.annotation.id, pageLabel: event.target.value });
+  }
+
+  handlePageLabelInputBlur = (event) => {
+    this.setState({ editingPageLabel: false });
   }
 
   handleClickMore = (event) => {
@@ -212,7 +222,15 @@ export class SidebarPreview extends React.Component {
                 || annotation.type === 'image' && <IconArea/>
               }
             </div>
-            <div className="page" onClick={this.handleClickPage}>Page {annotation.pageLabel}</div>
+            <div className="page" onDoubleClick={this.handleDoubleClickPage}>Page {
+              this.state.editingPageLabel
+                ? <input value={annotation.pageLabel}
+                         onChange={this.handlePageLabelChange}
+                         onBlur={this.handlePageLabelInputBlur}
+                         style={{ maxWidth: '50px' }}
+                />
+                : annotation.pageLabel
+            }</div>
           </div>
           {annotation.authorName && (
             <div className="center">
