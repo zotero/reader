@@ -66,6 +66,7 @@ $mode:     "production" !default;
 @import "components/annotator/editor";
 @import "components/annotator/highlight";
 @import "components/annotator/layer";
+@import "components/annotator/editable";
 @import "components/annotator/preview";
 @import "components/annotator/page-popup";
 @import "components/annotator/annotation-popup";

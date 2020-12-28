@@ -1,0 +1,25 @@
+//
+// Editable
+//
+
+.editable-control {
+  flex: 1 1 auto;
+  width: 100%;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-align: inherit;
+  line-height: normal;
+  color: #000;
+  background-color: #fff;
+  background-clip: padding-box;
+  padding: $editable-padding;
+  border: $editable-border;
+  border-radius: $editable-border-radius;
+  margin: $editable-margin;
+  box-shadow: $editable-box-shadow;
+
+  @include retina {
+    box-shadow: $editable-box-shadow-2x;
+  }
+}

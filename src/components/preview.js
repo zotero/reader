@@ -222,15 +222,17 @@ export class SidebarPreview extends React.Component {
                 || annotation.type === 'image' && <IconArea/>
               }
             </div>
-            <div className="page" onDoubleClick={this.handleDoubleClickPage}>Page {
-              this.state.editingPageLabel
-                ? <input value={annotation.pageLabel}
-                         onChange={this.handlePageLabelChange}
-                         onBlur={this.handlePageLabelInputBlur}
-                         style={{ maxWidth: '50px' }}
-                />
-                : annotation.pageLabel
-            }</div>
+            <div className="page" onDoubleClick={this.handleDoubleClickPage}>
+              <div>Page</div>
+              {
+                this.state.editingPageLabel
+                  ? <input value={annotation.pageLabel}
+                           onChange={this.handlePageLabelChange}
+                           onBlur={this.handlePageLabelInputBlur}
+                           className="editable-control"
+                  />
+                  : <div>{ annotation.pageLabel }</div>
+              }</div>
           </div>
           {annotation.authorName && (
             <div className="center">

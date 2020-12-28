@@ -371,6 +371,9 @@ $preview-header-height:   21px;
 $preview-border:          1px solid #d7dad7;
 $preview-selected-border: 1px solid rgba(#6d95e0, 0.4);
 
+$page-label-editable-padding: 0;
+$page-label-editable-margin:  0;
+
 $tags-placeholder-color: #6d95e0;
 
 // Expandable editor
@@ -420,3 +423,11 @@ $error-message-btn-focus-box-shadow:    0 0 0 4px rgba(#fff, 0.5);
 $error-message-btn-focus-box-shadow-2x: 0 0 0 3.5px rgba(#fff, 0.5);
 $error-message-btn-dismiss-offset:      7px;
 $error-more-info-bg:                    #fbf0f0;
+
+// Editable
+$editable-padding:       2px;
+$editable-border:        none;
+$editable-border-radius: 0.5px;
+$editable-box-shadow:    0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px #ccc;
+$editable-box-shadow-2x: 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 0.5px #ccc;
+$editable-margin:        -$editable-padding;

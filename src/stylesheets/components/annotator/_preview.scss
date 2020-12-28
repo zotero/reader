@@ -46,9 +46,21 @@
     }
 
     .page {
-      display: inline-block;
+      display: flex;
+      align-items: center;
       font-weight: bold;
       padding-right: 8px;
+
+      > div:first-child {
+        margin-right: (4em / 11);
+      }
+
+      .editable-control {
+        width: 50px;
+        line-height: rem(12);
+        padding: $page-label-editable-padding;
+        margin: $page-label-editable-margin;
+      }
     }
 
     .author {
