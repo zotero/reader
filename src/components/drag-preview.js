@@ -14,7 +14,14 @@ function getDragNoteIcon() {
   let node = document.getElementById('drag-note');
   if (!node) {
     node = document.createElement('div');
+    let icon = `
+      <svg width="24" height="24" viewBox="0 0 24 24">
+        <polygon fill="currentColor" points="0.5 0.5 23.5 0.5 23.5 23.5 11.5 23.5 0.5 12.5 0.5 0.5"/>
+        <polygon points="0.5 12.5 11.5 12.5 11.5 23.5 0.5 12.5" fill="#fff" opacity="0.4"/>
+        <path d="M0,0V12.707L11.293,24H24V0ZM11,22.293,1.707,13H11ZM23,23H12V12H1V1H23Z"/>
+      </svg>`;
     node.id = 'drag-note';
+    node.innerHTML = icon;
     document.body.appendChild(node);
   }
   return node;
@@ -125,16 +132,16 @@ export function setLayerSingleDragPreview(event, annotation) {
   }
   else if (annotation.type === 'note') {
     let icon = getDragNoteIcon();
-    let width = event.target.offsetWidth - 10;
-    let height = event.target.offsetHeight - 10;
+    let width = event.target.offsetWidth - 12;
+    let height = event.target.offsetHeight - 12;
 
-    let x = offsetX * 20 / width;
-    let y = offsetY * 20 / height;
+    let x = offsetX * 24 / width;
+    let y = offsetY * 24 / height;
 
-    x = 20 / 2;
-    y = 20 / 2;
+    x = 24 / 2;
+    y = 24 / 2;
 
-    icon.style.backgroundColor = annotation.color;
+    icon.style.color = annotation.color;
     event.dataTransfer.setDragImage(icon, x, y);
   }
 }

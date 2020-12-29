@@ -8,6 +8,7 @@ import React, {
 
 import cx from 'classnames'
 import { wx, hy } from '../lib/coordinates';
+import { IconNoteLarge } from './icons';
 
 const PADDING = 5;
 
@@ -17,8 +18,8 @@ const PADDING_TOP = 9;
 function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, onChangePosition }) {
   const draggableRef = useRef(null);
 
-  let width = 20 * PDFViewerApplication.pdfViewer._currentScale;
-  let height = 20 * PDFViewerApplication.pdfViewer._currentScale;
+  let width = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
+  let height = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
 
   const container = useRef();
   const viewerContainer = useRef(document.getElementById('viewerContainer'));
@@ -108,10 +109,10 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 
   function handleDragEnd(event) {
     onDragEnd();
-    
+
     // This seems to only have an effect in Firefox
     let isCancelled = event.dataTransfer.dropEffect === 'none';
-    
+
     if (!enableMoving) {
       return;
     }
@@ -168,13 +169,14 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
     <div
       className={cx('note-annotation', { selected: isSelected })}
       style={{
-        backgroundColor: annotation.color,
+        color: annotation.color,
         left: Math.round(annotation.position.rects[0][0]),
         top: Math.round(annotation.position.rects[0][1]),
         width: width,
         height: height
       }}
     >
+      <IconNoteLarge />
       <div
         ref={draggableRef}
         className="square"

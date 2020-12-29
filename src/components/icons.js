@@ -25,3 +25,13 @@ export function IconArea() {
     </svg>
   )
 }
+
+export function IconNoteLarge() {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24">
+      <polygon fill="currentColor" points="0.5 0.5 23.5 0.5 23.5 23.5 11.5 23.5 0.5 12.5 0.5 0.5"/>
+      <polygon points="0.5 12.5 11.5 12.5 11.5 23.5 0.5 12.5" fill="#fff" opacity="0.4"/>
+      <path d="M0,0V12.707L11.293,24H24V0ZM11,22.293,1.707,13H11ZM23,23H12V12H1V1H23Z"/>
+    </svg>
+  )
+}
