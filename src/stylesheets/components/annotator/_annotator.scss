@@ -65,6 +65,12 @@
   left: -1000px;
   width: 24px;
   height: 24px;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 #drag-multi {
