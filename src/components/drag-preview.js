@@ -24,6 +24,10 @@ function getDragNoteIcon() {
     node.innerHTML = icon;
     document.body.appendChild(node);
   }
+  let width = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
+  let height = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
+  node.style.width = width + 'px';
+  node.style.height = height + 'px';
   return node;
 }
 
@@ -132,15 +136,11 @@ export function setLayerSingleDragPreview(event, annotation) {
   }
   else if (annotation.type === 'note') {
     let icon = getDragNoteIcon();
-    let width = event.target.offsetWidth - 12;
-    let height = event.target.offsetHeight - 12;
-
-    let x = offsetX * 24 / width;
-    let y = offsetY * 24 / height;
-
-    x = 24 / 2;
-    y = 24 / 2;
-
+    let dashedBorderPadding = 10;
+    let width = event.target.offsetWidth - dashedBorderPadding;
+    let height = event.target.offsetHeight - dashedBorderPadding;
+    let x = width / 2;
+    let y = height / 2;
     icon.style.color = annotation.color;
     event.dataTransfer.setDragImage(icon, x, y);
   }
