@@ -266,7 +266,7 @@ class Viewer {
     this._enableSidebarOpenEvent = true;
   }
 
-  async setBottomPlaceholderHeight(height) {
+  setBottomPlaceholderHeight(height) {
     let root = document.documentElement;
     root.style.setProperty('--bottomPlaceholderHeight', height + 'px');
   }

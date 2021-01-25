@@ -83,7 +83,7 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
   function handleDragStart(event) {
     onDragStart(event);
 
-    if (!enableMoving) {
+    if (!enableMoving || annotation.readOnly) {
       return;
     }
 

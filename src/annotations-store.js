@@ -23,8 +23,6 @@ class AnnotationsStore {
     this.onSetAnnotation = options.onSetAnnotation;
     this.onDeleteAnnotations = options.onDeleteAnnotations;
     this.onUpdateAnnotations = options.onUpdateAnnotations;
-    this.onImportableAnnotationsNum = () => {
-    };
 
     this.renderQueue = queue({
       concurrency: 1,
@@ -34,11 +32,26 @@ class AnnotationsStore {
     this.debounces = [];
 
     document.addEventListener('pagesinit', async (e) => {
-      let count = await getAnnotationsCount();
-      this.onImportableAnnotationsNum(count);
+
+    });
+
+    window.PDFViewerApplication.eventBus.on('pagerendered', (e) => {
+      setTimeout(() => {
+        this.renderMissingImages();
+      }, 2000);
     });
 
     this.sortAnnotations(this.annotations);
+  }
+
+  async renderMissingImages() {
+    for (let annotation of this.annotations) {
+      if (annotation.type === 'image' && !annotation.image) {
+        annotation.image = await this.getAnnotationImage(annotation.id);
+        this.triggerSetAnnotation(annotation);
+        this.onUpdateAnnotations(this.annotations);
+      }
+    }
   }
 
   triggerSetAnnotation(annotation) {
@@ -91,27 +104,6 @@ class AnnotationsStore {
       (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex)
     );
   }
-
-  syncSetAnnotation = (annotation) => {
-    let annotations = this.annotations;
-    let existingAnnotationIdx = annotations.findIndex(x => x.id === annotation.id);
-    if (existingAnnotationIdx >= 0) {
-      let existingAnnotation = annotations[existingAnnotationIdx];
-      if (existingAnnotation.dateModified < annotation.dateModified) {
-        annotations.splice(existingAnnotationIdx, 1, annotation);
-      }
-    }
-    else {
-      annotations.push(annotation);
-    }
-
-    if (!annotation.image) {
-      this.updateAnnotationImage(annotation.id);
-    }
-
-    this.sortAnnotations(annotations);
-    this.onUpdateAnnotations(this.annotations);
-  };
 
   unsetAnnotations(ids) {
     for (let id of ids) {
@@ -189,12 +181,11 @@ class AnnotationsStore {
     this.sortAnnotations(this.annotations);
     this.onUpdateAnnotations(this.annotations);
 
-    // TODO: Is image attachment synced before the annotation?
-    // if (annotation.type === 'image' && !annotation.image) {
-    //   annotation.image = await this.getAnnotationImage(annotation.id);
-    //   this.triggerSetAnnotation(annotation);
-    //   this.onUpdateAnnotations(this.annotations);
-    // }
+    if (annotation.type === 'image' && !annotation.image) {
+      annotation.image = await this.getAnnotationImage(annotation.id);
+      this.triggerSetAnnotation(annotation);
+      this.onUpdateAnnotations(this.annotations);
+    }
   }
 
   async updateAnnotation(annotation) {

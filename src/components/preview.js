@@ -70,26 +70,28 @@ export class PopupPreview extends React.Component {
           <Editor
             id={annotation.id}
             text={annotation.comment}
-            placeholder="Add comment"
+            placeholder={annotation.isExternal ? 'Read-only' : 'Add comment'}
             isPlainText={false}
             isReadOnly={annotation.readOnly}
             onChange={this.handleCommentChange}
           />
         </div>
 
-        <div
-          className="tags"
-          onClick={this.handleTagsClick}
-          placeholder="Add tags…"
-          draggable={true}
-          onDragStart={this.handleDragStart}
-        >{annotation.tags.map((tag, index) => (
-          <span
-            className="tag" key={index}
-            style={{ color: tag.color }}
-          >{tag.name}</span>
-        ))}</div>
-
+        {(!annotation.isExternal || !!annotation.tags.length) && (
+          <div
+            className="tags"
+            onClick={this.handleTagsClick}
+            placeholder="Add tags…"
+            draggable={true}
+            onDragStart={this.handleDragStart}
+          >{annotation.tags.map((tag, index) => (
+            <span
+              className="tag" key={index}
+              style={{ color: tag.color }}
+            >{tag.name}</span>
+          ))}</div>
+        )}
+        
       </div>
     );
   }
@@ -248,7 +250,7 @@ export class SidebarPreview extends React.Component {
                draggable={true} onDragStart={this.handleDragStart}/>)}
         {text}
         {comment}
-        {(state >= 1 || annotation.tags.length > 0) && !(annotation.readOnly && !annotation.comment) &&
+        {(state >= 1 || annotation.tags.length > 0) && !annotation.isExternal &&
         (
           <div
             className="tags"

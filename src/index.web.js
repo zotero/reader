@@ -73,7 +73,7 @@ class ViewerInstance {
     window.attachmentItemKey = 'AAAABBBB';
 
     this._viewer = new Viewer({
-      promptImport: true,
+      promptImport: false,
       onNavigateBack: () => {
         console.log('Navigate back');
       },

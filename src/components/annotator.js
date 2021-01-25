@@ -844,9 +844,10 @@ const Annotator = React.forwardRef((props, ref) => {
       setSelectionRangesRef([]);
       selectAnnotation(selectId, isCtrl, isShift, true, false);
 
+      let annotation = annotationsRef.current.find(x => x.id === selectId);
       // TODO: Right click shouldn't switch to the next annotation
-      if (isRight) {
-        let selectedColor = annotationsRef.current.find(x => x.id === selectId).color;
+      if (isRight && !annotation.isExternal) {
+        let selectedColor = annotation.color;
         props.onPopup('openAnnotationPopup', {
           x: event.screenX,
           y: event.screenY,
