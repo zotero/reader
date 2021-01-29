@@ -1,5 +1,7 @@
 'use strict';
 
+import { hy, p2v, wx } from '../lib/coordinates';
+
 function getDragCanvas() {
   let node = document.getElementById('drag-canvas');
   if (!node) {
@@ -10,7 +12,7 @@ function getDragCanvas() {
   return { canvas: node, context: node.getContext('2d') }
 }
 
-function getDragNoteIcon() {
+function getDragNoteIcon(rect) {
   let node = document.getElementById('drag-note');
   if (!node) {
     node = document.createElement('div');
@@ -24,8 +26,8 @@ function getDragNoteIcon() {
     node.innerHTML = icon;
     document.body.appendChild(node);
   }
-  let width = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
-  let height = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
+  let width = wx(rect);
+  let height = hy(rect);
   node.style.width = width + 'px';
   node.style.height = height + 'px';
   return node;
@@ -135,10 +137,12 @@ export function setLayerSingleDragPreview(event, annotation) {
     event.dataTransfer.setDragImage(canvas, x, y);
   }
   else if (annotation.type === 'note') {
-    let icon = getDragNoteIcon();
-    let dashedBorderPadding = 10;
-    let width = event.target.offsetWidth - dashedBorderPadding;
-    let height = event.target.offsetHeight - dashedBorderPadding;
+    let viewport = window.PDFViewerApplication.pdfViewer.getPageView(annotation.position.pageIndex).viewport;
+    let position = p2v(annotation.position, viewport)
+    let icon = getDragNoteIcon(position.rects[0]);
+    let dashedBorderPadding = 5;
+    let width = event.target.offsetWidth - dashedBorderPadding * 2;
+    let height = event.target.offsetHeight - dashedBorderPadding * 2;
     let x = width / 2;
     let y = height / 2;
     icon.style.color = annotation.color;

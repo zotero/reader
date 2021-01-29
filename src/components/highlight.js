@@ -5,12 +5,12 @@ import cx from 'classnames';
 
 class Highlight extends React.Component {
 
-  handleDragStart = (event) => {
-    event.dataTransfer.setData('zotero/annotation', 'ddf');
-    var img = document.createElement('img')
-    img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
-    event.dataTransfer.setDragImage(img, 0, 0)
-  }
+  // handleDragStart = (event) => {
+  //   event.dataTransfer.setData('zotero/annotation', 'ddf');
+  //   var img = document.createElement('img')
+  //   img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+  //   event.dataTransfer.setDragImage(img, 0, 0)
+  // }
   draggableRef = React.createRef();
 
   render() {

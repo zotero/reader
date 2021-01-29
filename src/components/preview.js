@@ -39,7 +39,7 @@ export class PopupPreview extends React.Component {
     return (
       <div className={cx('preview', { 'read-only': annotation.readOnly })}>
         <header
-          title={'Modified on ' + annotation.dateModified.split('T')[0]}
+          title={annotation.dateModified.split('T')[0]}
           draggable={true}
           onDragStart={this.handleDragStart}
         >
@@ -208,7 +208,7 @@ export class SidebarPreview extends React.Component {
         'read-only': annotation.readOnly, ...expandedState
       })}>
         <header
-          title={'Modified on ' + annotation.dateModified.split('T')[0]}
+          title={annotation.dateModified.split('T')[0]}
           onClick={(e) => this.handleSectionClick(e, 'header')}
           draggable={true}
           onDragStart={this.handleDragStart}

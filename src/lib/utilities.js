@@ -285,8 +285,8 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
         pageLabel
       }
     });
-  
+
   dataTransfer.setData('zotero/annotation', JSON.stringify(annotations));
-  dataTransfer.setData('text/plain', JSON.stringify(annotations));
-  // dataTransfer.setData('text/plain', text);
+  // dataTransfer.setData('text/plain', JSON.stringify(annotations));
+  dataTransfer.setData('text/plain', text);
 }

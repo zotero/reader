@@ -12,14 +12,14 @@ import { IconNoteLarge } from './icons';
 
 const PADDING = 5;
 
-const PADDING_LEFT = 9;
-const PADDING_TOP = 9;
+const PADDING_LEFT = PADDING * 2 - 1;
+const PADDING_TOP = PADDING * 2 - 1;
 
 function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, onChangePosition }) {
   const draggableRef = useRef(null);
 
-  let width = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
-  let height = 19.2 * PDFViewerApplication.pdfViewer._currentScale;
+  let width = wx(annotation.position.rects[0]);
+  let height = hy(annotation.position.rects[0]);
 
   const container = useRef();
   const viewerContainer = useRef(document.getElementById('viewerContainer'));
@@ -153,8 +153,12 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
     if (x < 0) x = 0;
     if (y < 0) y = 0;
 
-    if (x + wx(boxRect.current) > wx(pageRect.current) - PADDING_LEFT * 2) x = wx(pageRect.current) - wx(boxRect.current) - PADDING_LEFT * 2;
-    if (y + hy(boxRect.current) > hy(pageRect.current) - PADDING_TOP * 2) y = hy(pageRect.current) - hy(boxRect.current) - PADDING_TOP * 2;
+    if (x + wx(boxRect.current) > wx(pageRect.current) - PADDING_LEFT * 2) {
+      x = wx(pageRect.current) - wx(boxRect.current) - PADDING_LEFT * 2;
+    }
+    if (y + hy(boxRect.current) > hy(pageRect.current) - PADDING_TOP * 2) {
+      y = hy(pageRect.current) - hy(boxRect.current) - PADDING_TOP * 2;
+    }
 
     boxRect.current = [x, y, x + wx(boxRect.current), y + hy(boxRect.current)];
 

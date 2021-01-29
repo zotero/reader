@@ -114,7 +114,7 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
         // onDragStart={onDragStart}
         // onDragEnd={onDragEnd}
       >
-        <div className="resizer" onMouseDown={(event) => event.preventDefault()}>
+        {!annotation.readOnly && <div className="resizer" onMouseDown={(event) => event.preventDefault()}>
           <div className="line top" onMouseDown={(event) => handleResizeStart(['top'])}/>
           <div className="line right" onMouseDown={(event) => handleResizeStart(['right'])}/>
           <div className="line bottom" onMouseDown={(event) => handleResizeStart(['bottom'])}/>
@@ -123,7 +123,7 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
           <div className="edge bottom-right" onMouseDown={(event) => handleResizeStart(['bottom', 'right'])}/>
           <div className="edge bottom-left" onMouseDown={(event) => handleResizeStart(['bottom', 'left'])}/>
           <div className="edge top-left" onMouseDown={(event) => handleResizeStart(['top', 'left'])}/>
-        </div>
+        </div>}
       </div>
     </Fragment>
   );

@@ -111,6 +111,9 @@ const configZotero = {
     publicPath: '/',
     umdNamedDefine: true
   },
+  optimization: {
+    minimize: false
+  },
   module: {
     rules: [
       {

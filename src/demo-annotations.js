@@ -167,7 +167,7 @@ let annotations = [
     'sortIndex': '00001|002143|00482'
   }, {
     'type': 'note',
-    'position': { 'pageIndex': 1, 'rects': [[479.3, 698, 499.3, 718]] },
+    'position': { 'pageIndex': 1, 'rects': [[480, 700, 504, 724]] },
     'color': '#ffd400',
     'comment': 'Use this in my thesis',
     'tags': [],

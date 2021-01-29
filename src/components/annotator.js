@@ -31,11 +31,13 @@ import { extractRange } from '../lib/extract';
 // where the Y axis starts from the bottom:
 // [231.284, 402.126, 293.107, 410.142]
 
+const NOTE_DIMENSIONS = 24;
+
 async function getSelectionRangesRef(positionFrom, positionTo) {
 
   let getPageSelectionRange = async (pageIndex, startPoint, endPoint) => {
     let rect = (await PDFViewerApplication.pdfDocument.getPage(pageIndex + 1)).view.slice();
-    
+
     rect[0] = startPoint[0];
     rect[1] = startPoint[1];
     rect[2] = endPoint[0];
@@ -305,7 +307,11 @@ const Annotator = React.forwardRef((props, ref) => {
         }
       }
       else if (e.key === 'Delete' || e.key === 'Backspace') {
-        props.onDeleteAnnotations(selectedIdsRef.current);
+        // TODO: Auto-select the next annotation after deletion in sidebar
+        let hasReadOnly = annotationsRef.current.find(x => selectedIdsRef.current.includes(x.id) && x.readOnly);
+        if (!hasReadOnly) {
+          props.onDeleteAnnotations(selectedIdsRef.current);
+        }
       }
       else if (e.key === 'ArrowUp') {
         if (selectedIdsRef.current.length) {
@@ -819,11 +825,10 @@ const Annotator = React.forwardRef((props, ref) => {
 
     if (modeRef.current === 'note') {
       (async () => {
-        // TODO: No need to hardcode note dimensions, set central point only
-        position.rects[0][0] -= 10;
-        position.rects[0][1] -= 10;
-        position.rects[0][2] += 10;
-        position.rects[0][3] += 10;
+        position.rects[0][0] -= NOTE_DIMENSIONS / 2;
+        position.rects[0][1] -= NOTE_DIMENSIONS / 2;
+        position.rects[0][2] += NOTE_DIMENSIONS / 2;
+        position.rects[0][3] += NOTE_DIMENSIONS / 2;
 
         let annotation = await props.onAddAnnotation({
           type: 'note',
