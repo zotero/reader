@@ -38,7 +38,6 @@ class ViewerInstance {
     this._viewer = null;
 
     window.addEventListener('message', this.handleMessage);
-    window.attachmentItemKey = options.key;
     window.itemId = options.itemId;
     this._viewer = new Viewer({
       promptImport: options.promptImport,
@@ -185,7 +184,7 @@ class ViewerInstance {
       case 'addToNote': {
         let annotation = this._viewer._annotationsStore.annotations.find(x => x.id === data.id);
         if (annotation) {
-          annotation.itemId = window.itemId;
+          annotation.attachmentItemId = window.itemId;
           this._postMessage({
             action: 'addToNote',
             annotations: [annotation]

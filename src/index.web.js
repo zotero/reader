@@ -70,8 +70,6 @@ async function test() {
 
 class ViewerInstance {
   constructor(options) {
-    window.attachmentItemKey = 'AAAABBBB';
-
     this._viewer = new Viewer({
       promptImport: false,
       onNavigateBack: () => {

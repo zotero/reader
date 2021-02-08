@@ -269,18 +269,22 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 
   annotations = annotations.map(
     ({ id, text, comment, image, position, pageLabel }) => {
+      let imageNaturalWidth, imageNaturalHeight;
       if (image) {
         let img = document.querySelector('div[data-sidebar-id="' + id + '"] img');
         if (img) {
           image = getImageDataUrl(img);
+          imageNaturalWidth = img.naturalWidth;
+          imageNaturalHeight = img.naturalHeight;
         }
       }
       return {
-        attachmentItemKey: window.attachmentItemKey,
-        itemId: window.itemId,
+        attachmentItemId: window.itemId,
         text,
         comment,
         image,
+        imageNaturalWidth,
+        imageNaturalHeight,
         position,
         pageLabel
       }

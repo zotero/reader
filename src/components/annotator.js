@@ -67,12 +67,15 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
     let selectionRange = await getPageSelectionRange(i, startPoint, endPoint);
     if (!selectionRange) continue;
 
+    let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(selectionRange.position.pageIndex + 1)).view[3];
+    let top = pageHeight - selectionRange.position.rects[0][3];
+
     // TODO: Unify all annotations sort index calculation
     let offset = selectionRange.offset;
     selectionRange.sortIndex = [
-      i.toString().padStart(5, '0'),
-      offset.toString().padStart(6, '0'),
-      '00000'
+      i.toString().slice(0, 5).padStart(5, '0'),
+      offset.toString().slice(0, 6).padStart(6, '0'),
+      Math.round(top).toString().slice(0, 5).padStart(5, '0')
     ].join('|');
 
     delete selectionRange.offset;
@@ -376,6 +379,10 @@ const Annotator = React.forwardRef((props, ref) => {
   function handleDragStart(event) {
     let isShift = event.shiftKey;
     setIsSelectedOnPointerDown(false);
+
+    if (!pointerDownPositionRef.current) {
+      return;
+    }
 
     if (event.target === document.getElementById('viewer')) {
 
@@ -765,6 +772,11 @@ const Annotator = React.forwardRef((props, ref) => {
       return;
     }
 
+    if (intersectsWithSelectedAnnotations
+      && selectedAnnotations.find(x => x.type === 'note')) {
+      return;
+    }
+
     // let intersectsWithSelected = false;
     // let selectedAnnotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
     // for (let annotation of selectedAnnotations) {
@@ -934,7 +946,7 @@ const Annotator = React.forwardRef((props, ref) => {
     let partialAnnotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
     let annotations = partialAnnotations.map(annotation => ({
       ...annotation,
-      itemId: window.itemId,
+      attachmentItemId: window.itemId,
       type: 'highlight'
     }))
     if (annotations.length) {
