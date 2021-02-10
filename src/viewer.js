@@ -118,7 +118,7 @@ class Viewer {
   }
 
   handleZoomAutoButtonClick = () => {
-    PDFViewerApplication.zoomReset();
+    PDFViewerApplication.pdfViewer._setScale('page-width');
   }
 
   handleViewAreaUpdate = (e) => {
@@ -158,6 +158,10 @@ class Viewer {
 
     if (this.options.state) {
       this._setState(this.options.state, !!this.options.location);
+    }
+    // Default state
+    else {
+      PDFViewerApplication.pdfViewer._setScale('page-width');
     }
 
     await this._annotatorPromise;
