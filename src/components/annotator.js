@@ -202,6 +202,13 @@ const Annotator = React.forwardRef((props, ref) => {
   }
 
   let navigate = (location) => {
+    if (Number.isInteger(location.pageIndex)) {
+      window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
+        pageNumber: location.pageIndex + 1
+      });
+      return;
+    }
+
     let annotation = location.id && annotationsRef.current.find(x => x.id === location.id);
     if (annotation) {
       selectAnnotation(location.id, true, false, true, true);
