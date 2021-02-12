@@ -1,0 +1,10 @@
+#!/bin/bash
+S3_URI=s3://zotero-download/ci/client-pdf-reader/
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd $SCRIPT_DIR/../build/zotero
+HASH=$(git rev-parse HEAD)
+FILENAME=$HASH.zip
+zip -r ../$FILENAME .
+cd ..
+aws s3 cp $FILENAME $S3_URI$FILENAME
+rm $FILENAME
