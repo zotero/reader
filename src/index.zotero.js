@@ -51,15 +51,12 @@ class ViewerInstance {
         this._postMessage({ action: 'addToNote', annotations });
       },
       onSetAnnotation: (annotation) => {
-        console.log('Set annotation', annotation);
         this._postMessage({ action: 'setAnnotation', annotation });
       },
       onDeleteAnnotations: (ids) => {
-        console.log('Delete annotations', JSON.stringify(ids));
         this._postMessage({ action: 'deleteAnnotations', ids });
       },
       onSetState: (state) => {
-        console.log('Set state', state);
         this._postMessage({ action: 'setState', state });
       },
       onClickTags: (id, event) => {
@@ -94,6 +91,7 @@ class ViewerInstance {
   }
 
   _postMessage(message) {
+    // console.log(message);
     parent.postMessage({ itemId: this._itemId, message }, parent.origin);
   }
 

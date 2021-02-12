@@ -139,7 +139,6 @@ class Viewer {
   }
 
   handleSidebarViewChange = (e) => {
-    console.log('view change', e)
     if (this._lastState) {
       this._lastState.sidebarView = e.view;
       this._onSetState(this._lastState);
