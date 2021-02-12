@@ -31,7 +31,7 @@ import { extractRange } from '../lib/extract';
 // where the Y axis starts from the bottom:
 // [231.284, 402.126, 293.107, 410.142]
 
-const NOTE_DIMENSIONS = 24;
+const NOTE_DIMENSIONS = 22;
 
 async function getSelectionRangesRef(positionFrom, positionTo) {
 
