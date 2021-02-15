@@ -3,14 +3,14 @@
 //
 
 %sidebar-view {
-  width: 100%;
-  height: 100%;
-  padding: 4px 4px 0; // Firefox does not render padding-bottom
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  user-select: none;
+	width: 100%;
+	height: 100%;
+	padding: 4px 4px 0; // Firefox does not render padding-bottom
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	user-select: none;
 
-  > *:last-child {
-    margin-bottom: 4px;
-  }
+	> *:last-child {
+		margin-bottom: 4px;
+	}
 }

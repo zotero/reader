@@ -16,7 +16,7 @@
 .visibleLargeView,
 .visibleMediumView,
 .visibleSmallView {
-  display: none;
+	display: none;
 }
 
 //@media all and (max-width: 840px) {
@@ -31,29 +31,29 @@
 //}
 
 @media all and (max-width: 770px) {
-  #outerContainer .hiddenLargeView {
-    display: none;
-  }
-  #outerContainer .visibleLargeView {
-    display: inherit;
-  }
+	#outerContainer .hiddenLargeView {
+		display: none;
+	}
+	#outerContainer .visibleLargeView {
+		display: inherit;
+	}
 }
 
 @media all and (max-width: 700px) {
-  #outerContainer .hiddenMediumView {
-    display: none;
-  }
-  #outerContainer .visibleMediumView {
-    display: inherit;
-  }
+	#outerContainer .hiddenMediumView {
+		display: none;
+	}
+	#outerContainer .visibleMediumView {
+		display: inherit;
+	}
 }
 
 @media all and (max-width: $visibility-bp-sm) {
-  .hiddenSmallView, .hiddenSmallView * {
-    display: none;
-  }
-  .visibleSmallView {
-    display: inherit;
-  }
+	.hiddenSmallView, .hiddenSmallView * {
+		display: none;
+	}
+	.visibleSmallView {
+		display: inherit;
+	}
 }
 

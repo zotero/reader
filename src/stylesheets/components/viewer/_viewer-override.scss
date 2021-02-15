@@ -1,21 +1,20 @@
 
-
 .textLayer ::selection {
-  color: transparent;
-  background: rgb(252, 232, 151);
+	color: transparent;
+	background: rgb(252, 232, 151);
 }
 
 .textLayer {
-  opacity: 1;
-  mix-blend-mode: multiply;
+	opacity: 1;
+	mix-blend-mode: multiply;
 }
 
 .force-annotation-pointer {
-  .page {
-    cursor: pointer;
-  }
+	.page {
+		cursor: pointer;
+	}
 
-  .textLayer > span {
-    cursor: pointer;
-  }
+	.textLayer > span {
+		cursor: pointer;
+	}
 }

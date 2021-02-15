@@ -3,230 +3,230 @@
 //
 
 #overlayContainer {
-  display: flex;
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-color: $overlay-container-bg;
-  z-index: $z-index-overlay;
+	display: flex;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	background-color: $overlay-container-bg;
+	z-index: $z-index-overlay;
 
-  .container {
-    flex: 1 1 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-  }
+	.container {
+		flex: 1 1 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: auto;
+		-webkit-overflow-scrolling: touch;
+	}
 }
 
 .dialog {
-  width: $dialog-width;
-  color: $dialog-color;
-  font-size: $dialog-font-size;
-  line-height: $dialog-line-height;
-  background-color: $dialog-bg;
-  border-radius: $dialog-border-radius;
-  box-shadow: $dialog-shadow;
+	width: $dialog-width;
+	color: $dialog-color;
+	font-size: $dialog-font-size;
+	line-height: $dialog-line-height;
+	background-color: $dialog-bg;
+	border-radius: $dialog-border-radius;
+	box-shadow: $dialog-shadow;
 
-  .toolbarField {
-    margin: 0;
-  }
+	.toolbarField {
+		margin: 0;
+	}
 
-  .row,
-  .buttonRow {
-    padding: $dialog-padding;
+	.row,
+	.buttonRow {
+		padding: $dialog-padding;
 
-    &:not(:first-child) {
-      padding-top: $dialog-padding / 2;
-    }
+		&:not(:first-child) {
+			padding-top: $dialog-padding / 2;
+		}
 
-    &:not(:last-child) {
-      padding-bottom: $dialog-padding / 2;
-    }
-  }
+		&:not(:last-child) {
+			padding-bottom: $dialog-padding / 2;
+		}
+	}
 
-  .buttonRow {
-    display: flex;
-    justify-content: $btn-row-justify-content;
-    align-items: center;
-  }
+	.buttonRow {
+		display: flex;
+		justify-content: $btn-row-justify-content;
+		align-items: center;
+	}
 
-  .overlayButton {
-    width: auto;
-    min-width: $overlay-btn-min-width;
-    height: $overlay-btn-height;
-    background-color: $overlay-button-bg;
-    border: $overlay-btn-border;
-    border-radius: $overlay-btn-border-radius;
-    box-shadow: $overlay-btn-box-shadow;
+	.overlayButton {
+		width: auto;
+		min-width: $overlay-btn-min-width;
+		height: $overlay-btn-height;
+		background-color: $overlay-button-bg;
+		border: $overlay-btn-border;
+		border-radius: $overlay-btn-border-radius;
+		box-shadow: $overlay-btn-box-shadow;
 
-    @include retina {
-      box-shadow: $overlay-btn-box-shadow-2x;
-    }
+		@include retina {
+			box-shadow: $overlay-btn-box-shadow-2x;
+		}
 
-    &:not(:first-child) {
-      margin-left: $overlay-btn-margin-x;
-    }
+		&:not(:first-child) {
+			margin-left: $overlay-btn-margin-x;
+		}
 
-    &:not(:last-child) {
-      margin-right: $overlay-btn-margin-x;
-    }
+		&:not(:last-child) {
+			margin-right: $overlay-btn-margin-x;
+		}
 
-    &:-moz-focusring {
-      border: $overlay-btn-focus-border;
-      box-shadow: $overlay-btn-focus-box-shadow;
-    }
+		&:-moz-focusring {
+			border: $overlay-btn-focus-border;
+			box-shadow: $overlay-btn-focus-box-shadow;
+		}
 
-    &:focus-visible {
-      border: $overlay-btn-focus-border;
-      box-shadow: $overlay-btn-focus-box-shadow;
-    }
+		&:focus-visible {
+			border: $overlay-btn-focus-border;
+			box-shadow: $overlay-btn-focus-box-shadow;
+		}
 
-    &:hover {
-      background: $overlay-btn-hover-bg;
-      border: $overlay-btn-hover-border;
-    }
+		&:hover {
+			background: $overlay-btn-hover-bg;
+			border: $overlay-btn-hover-border;
+		}
 
-    &:active {
-      background: $overlay-btn-active-bg;
-      border: $overlay-btn-active-border;
-    }
-  }
+		&:active {
+			background: $overlay-btn-active-bg;
+			border: $overlay-btn-active-border;
+		}
+	}
 
-  @if $dialog-gradient-btn {
-    #passwordSubmit,
-    .overlayButton:active {
-      height: $gradient-btn-height;
-      min-width: $gradient-btn-min-width;
-      color: $gradient-btn-color;
-      background: $gradient-btn-active-bg;
-      box-shadow: $gradient-btn-box-shadow;
-      border-radius: $gradient-btn-border-radius;
-      margin-top: -1px;
-      margin-bottom: -1px;
-      position: relative;
+	@if $dialog-gradient-btn {
+		#passwordSubmit,
+		.overlayButton:active {
+			height: $gradient-btn-height;
+			min-width: $gradient-btn-min-width;
+			color: $gradient-btn-color;
+			background: $gradient-btn-active-bg;
+			box-shadow: $gradient-btn-box-shadow;
+			border-radius: $gradient-btn-border-radius;
+			margin-top: -1px;
+			margin-bottom: -1px;
+			position: relative;
 
-      @include retina {
-        height: $gradient-btn-height-2x;
-        min-width: $gradient-btn-min-width-2x;
-        box-shadow: $gradient-btn-box-shadow-2x;
-        margin-top: 0;
-        transform: translateY(-0.5px);
+			@include retina {
+				height: $gradient-btn-height-2x;
+				min-width: $gradient-btn-min-width-2x;
+				box-shadow: $gradient-btn-box-shadow-2x;
+				margin-top: 0;
+				transform: translateY(-0.5px);
 
-        @-moz-document url-prefix() {
-          transform: none;
-        }
-      }
+				@-moz-document url-prefix() {
+					transform: none;
+				}
+			}
 
-      &:-moz-focusring {
-        box-shadow: $gradient-btn-focus-box-shadow;
+			&:-moz-focusring {
+				box-shadow: $gradient-btn-focus-box-shadow;
 
-        @include retina {
-          box-shadow: $gradient-btn-focus-box-shadow-2x;
-        }
-      }
+				@include retina {
+					box-shadow: $gradient-btn-focus-box-shadow-2x;
+				}
+			}
 
-      &:focus-visible {
-        box-shadow: $gradient-btn-focus-box-shadow;
+			&:focus-visible {
+				box-shadow: $gradient-btn-focus-box-shadow;
 
-        @include retina {
-          box-shadow: $gradient-btn-focus-box-shadow-2x;
-        }
-      }
+				@include retina {
+					box-shadow: $gradient-btn-focus-box-shadow-2x;
+				}
+			}
 
-      span {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        top: 1px;
-        left: 1px;
-        width: calc(100% - 2px);
-        height: calc(100% - 2px);
-        background: $gradient-label-active-bg;
-        opacity: 0.9;
-        border-radius: $gradient-label-border-radius;
+			span {
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				position: absolute;
+				top: 1px;
+				left: 1px;
+				width: calc(100% - 2px);
+				height: calc(100% - 2px);
+				background: $gradient-label-active-bg;
+				opacity: 0.9;
+				border-radius: $gradient-label-border-radius;
 
-        @include retina {
-          width: calc(100% - 1px);
-          height: calc(100% - 1px);
-          transform: translate(-0.5px, -0.5px);
-        }
-      }
-    }
+				@include retina {
+					width: calc(100% - 1px);
+					height: calc(100% - 1px);
+					transform: translate(-0.5px, -0.5px);
+				}
+			}
+		}
 
-    #passwordSubmit:not(:active) {
-      background: $submit-btn-bg;
+		#passwordSubmit:not(:active) {
+			background: $submit-btn-bg;
 
-      span {
-        background: $submit-btn-label-bg;
-        opacity: 1;
-      }
-    }
-  }
+			span {
+				background: $submit-btn-label-bg;
+				opacity: 1;
+			}
+		}
+	}
 
-  // Password dialog
-  #passwordOverlay & {
-    .toolbarField {
-      width: 100%;
-    }
-  }
+	// Password dialog
+	#passwordOverlay & {
+		.toolbarField {
+			width: 100%;
+		}
+	}
 
-  // Print dialog
-  #printServiceOverlay & {
-    .row:nth-child(2) {
-      display: flex;
-      align-items: center;
-    }
-  }
+	// Print dialog
+	#printServiceOverlay & {
+		.row:nth-child(2) {
+			display: flex;
+			align-items: center;
+		}
+	}
 
-  progress[value] {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    flex: 1 1 0;
-    height: $progress-height;
-    border: $progress-border;
-    background-color: $progress-bg;
-    border-radius: $progress-border-radius;
-    overflow: hidden;
-    padding: $progress-padding;
-    position: relative;
-  }
+	progress[value] {
+		-webkit-appearance: none;
+		-moz-appearance: none;
+		flex: 1 1 0;
+		height: $progress-height;
+		border: $progress-border;
+		background-color: $progress-bg;
+		border-radius: $progress-border-radius;
+		overflow: hidden;
+		padding: $progress-padding;
+		position: relative;
+	}
 
-  progress[value] {
-    &::-webkit-progress-bar {
-      background-color: $progress-bg;
-    }
+	progress[value] {
+		&::-webkit-progress-bar {
+			background-color: $progress-bg;
+		}
 
-    &::-webkit-progress-value {
-      background-color: $progress-indicator-bg;
-    }
+		&::-webkit-progress-value {
+			background-color: $progress-indicator-bg;
+		}
 
-    &::-moz-progress-bar {
-      background-color: $progress-indicator-bg;
-    }
+		&::-moz-progress-bar {
+			background-color: $progress-indicator-bg;
+		}
 
-    &::after {
-      content: if($progress-box-shadow, "", none);
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      box-shadow: $progress-box-shadow;
-      border-radius: $progress-border-radius;
+		&::after {
+			content: if($progress-box-shadow, "", none);
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			box-shadow: $progress-box-shadow;
+			border-radius: $progress-border-radius;
 
-      @include retina {
-        box-shadow: $progress-box-shadow-2x;
-      }
-    }
-  }
+			@include retina {
+				box-shadow: $progress-box-shadow-2x;
+			}
+		}
+	}
 
-  .relative-progress {
-    flex: 0 0 $progress-label-width;
-    text-align: right;
-  }
+	.relative-progress {
+		flex: 0 0 $progress-label-width;
+		text-align: right;
+	}
 }
 
 //.dialog .separator {

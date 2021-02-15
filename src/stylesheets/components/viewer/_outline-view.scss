@@ -3,48 +3,48 @@
 //
 
 #outlineView {
-  @extend %sidebar-view;
+	@extend %sidebar-view;
 }
 
 .outlineItem {
-  display: flex;
-  flex-wrap: wrap;
-  position: relative;
+	display: flex;
+	flex-wrap: wrap;
+	position: relative;
 
-  .outlineWithDeepNesting > & {
-    margin-left: 22px; // 12px left margin for outline item toggler
-  }
+	.outlineWithDeepNesting > & {
+		margin-left: 22px; // 12px left margin for outline item toggler
+	}
 }
 
 .outlineItems {
-  flex: 1 1 100%;
+	flex: 1 1 100%;
 
-  .outlineItem > & {
-    margin-left: 12px;
-  }
+	.outlineItem > & {
+		margin-left: 12px;
+	}
 }
 
 .outlineItem > a {
-  @extend %sidebar-item-link-btn;
-  flex: 1 1 100%;
-  padding: rem(3.5) 0;
-  position: relative;
+	@extend %sidebar-item-link-btn;
+	flex: 1 1 100%;
+	padding: rem(3.5) 0;
+	position: relative;
 }
 
 .outlineItemToggler {
-  position: absolute;
-  height: $outline-item-height;
-  width: 9px;
-  color: rgba(255, 255, 255, 0.5);
-  left: -15px; // 6px right margin
+	position: absolute;
+	height: $outline-item-height;
+	width: 9px;
+	color: rgba(255, 255, 255, 0.5);
+	left: -15px; // 6px right margin
 
-  &::before {
-    position: absolute;
-    top: 50%;
-    margin-top: -4.5px;
-  }
+	&::before {
+		position: absolute;
+		top: 50%;
+		margin-top: -4.5px;
+	}
 
-  &.outlineItemsHidden ~ .outlineItems {
-    display: none;
-  }
+	&.outlineItemsHidden ~ .outlineItems {
+		display: none;
+	}
 }

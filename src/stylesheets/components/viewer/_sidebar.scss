@@ -14,58 +14,58 @@
  */
 
 #sidebarContainer {
-  display: flex;
-  flex-direction: column;
-  position: absolute;
-  top: $toolbar-height;
-  bottom: 0;
-  width: var(--sidebar-width);
-  visibility: hidden;
-  z-index: 100;
-  transition-duration: 200ms;
-  transition-timing-function: ease;
-  transition-property: left;
-  left: calc(-1 * var(--sidebar-width));
-  border-right: 1px solid $sidebar-border-color;
+	display: flex;
+	flex-direction: column;
+	position: absolute;
+	top: $toolbar-height;
+	bottom: 0;
+	width: var(--sidebar-width);
+	visibility: hidden;
+	z-index: 100;
+	transition-duration: 200ms;
+	transition-timing-function: ease;
+	transition-property: left;
+	left: calc(-1 * var(--sidebar-width));
+	border-right: 1px solid $sidebar-border-color;
 
-  .loadingInProgress & {
-    top: 36px;
-  }
+	.loadingInProgress & {
+		top: 36px;
+	}
 
-  #outerContainer.sidebarResizing & {
-    /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
-    transition-duration: 0s;
-    /* Prevent e.g. the thumbnails being selected when the sidebar is resized. */
-    user-select: none;
-  }
+	#outerContainer.sidebarResizing & {
+		/* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
+		transition-duration: 0s;
+		/* Prevent e.g. the thumbnails being selected when the sidebar is resized. */
+		user-select: none;
+	}
 
-  #outerContainer.sidebarMoving &,
-  #outerContainer.sidebarOpen & {
-    visibility: visible;
-  }
+	#outerContainer.sidebarMoving &,
+	#outerContainer.sidebarOpen & {
+		visibility: visible;
+	}
 
-  #outerContainer.sidebarOpen & {
-    left: 0;
-  }
+	#outerContainer.sidebarOpen & {
+		left: 0;
+	}
 }
 
 #sidebarContent {
-  flex: 1 1 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  background-color: $sidebar-bg;
+	flex: 1 1 0;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	background-color: $sidebar-bg;
 
-  .is-blurred & {
-    background-color: $sidebar-blurred-bg;
-  }
+	.is-blurred & {
+		background-color: $sidebar-blurred-bg;
+	}
 }
 
 #sidebarResizer {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 6px;
-  z-index: 200;
-  cursor: $sidebar-resizer-cursor;
-  right: -4px;
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 6px;
+	z-index: 200;
+	cursor: $sidebar-resizer-cursor;
+	right: -4px;
 }

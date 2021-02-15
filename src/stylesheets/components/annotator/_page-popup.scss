@@ -3,57 +3,57 @@
 //
 
 .page-popup-container {
-  position: absolute;
-  z-index: $z-index-page-popup;
+	position: absolute;
+	z-index: $z-index-page-popup;
 }
 
 .page-popup {
-  position: absolute;
-  background-color: #fff;
-  border-radius: $page-popup-border-radius;
-  box-shadow: $page-popup-box-shadow;
-  @include popover-pointer($width: 16px, $height: 8px);
+	position: absolute;
+	background-color: #fff;
+	border-radius: $page-popup-border-radius;
+	box-shadow: $page-popup-box-shadow;
+	@include popover-pointer($width: 16px, $height: 8px);
 
-  &.selection-popup {
-    padding: $selection-popup-padding;
+	&.selection-popup {
+		padding: $selection-popup-padding;
 
-    .selection-menu .colors {
-      display: flex;
-      align-items: center;
-    }
+		.selection-menu .colors {
+			display: flex;
+			align-items: center;
+		}
 
-    .toolbarButton {
-      height: $selection-popup-btn-height;
-      background: $selection-popup-btn-bg;
-      padding: $selection-popup-btn-padding;
-      border-radius: $selection-popup-btn-border-radius;
-      box-shadow: $selection-popup-btn-box-shadow;
-      margin: $selection-popup-btn-margin;
+		.toolbarButton {
+			height: $selection-popup-btn-height;
+			background: $selection-popup-btn-bg;
+			padding: $selection-popup-btn-padding;
+			border-radius: $selection-popup-btn-border-radius;
+			box-shadow: $selection-popup-btn-box-shadow;
+			margin: $selection-popup-btn-margin;
 
-      &:not(:first-child) {
-        margin-left: $selection-popup-btn-spacing;
-      }
+			&:not(:first-child) {
+				margin-left: $selection-popup-btn-spacing;
+			}
 
-      &:hover {
-        background: $selection-popup-btn-hover-bg;
-        box-shadow: $selection-popup-btn-hover-box-shadow;
-      }
+			&:hover {
+				background: $selection-popup-btn-hover-bg;
+				box-shadow: $selection-popup-btn-hover-box-shadow;
+			}
 
-      &:focus-visible {
-        box-shadow: $selection-popup-btn-focus-box-shadow;
-      }
-    }
+			&:focus-visible {
+				box-shadow: $selection-popup-btn-focus-box-shadow;
+			}
+		}
 
-    .wide-button {
-      text-align: center;
-      border: 1px solid gray;
-      border-radius: 5px;
-      padding: 3px;
-      cursor: default;
+		.wide-button {
+			text-align: center;
+			border: 1px solid gray;
+			border-radius: 5px;
+			padding: 3px;
+			cursor: default;
 
-      &:hover {
-        background: $selection-popup-btn-hover-bg;
-      }
-    }
-  }
+			&:hover {
+				background: $selection-popup-btn-hover-bg;
+			}
+		}
+	}
 }

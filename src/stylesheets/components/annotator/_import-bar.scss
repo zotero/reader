@@ -3,68 +3,68 @@
 //
 
 .import-bar {
-  position: sticky;
-  width: 100%;
-  top: 0;
-  left: 0;
-  z-index: $z-index-import-bar;
-  background-color: $import-bar-bg;
-  color: $import-bar-color;
-  text-align: center;
-  min-height: $import-bar-min-height;
-  font-size: rem(14);
-  line-height: calc(4 / 3);
-  padding: rem(6) 40px rem(6) 16px;
-  cursor: default;
+	position: sticky;
+	width: 100%;
+	top: 0;
+	left: 0;
+	z-index: $z-index-import-bar;
+	background-color: $import-bar-bg;
+	color: $import-bar-color;
+	text-align: center;
+	min-height: $import-bar-min-height;
+	font-size: rem(14);
+	line-height: calc(4 / 3);
+	padding: rem(6) 40px rem(6) 16px;
+	cursor: default;
 
-  .pdfPresentationMode & {
-    display: none;
-  }
+	.pdfPresentationMode & {
+		display: none;
+	}
 
-  .message {
-    margin-right: 14px;
-  }
+	.message {
+		margin-right: 14px;
+	}
 
-  button {
-    &:focus-visible {
-      border-radius: $import-bar-btn-focus-border-radius;
-      box-shadow: $import-bar-btn-focus-box-shadow;
+	button {
+		&:focus-visible {
+			border-radius: $import-bar-btn-focus-border-radius;
+			box-shadow: $import-bar-btn-focus-box-shadow;
 
-      @include retina {
-        box-shadow: $import-bar-btn-focus-box-shadow-2x;
-      }
-    }
+			@include retina {
+				box-shadow: $import-bar-btn-focus-box-shadow-2x;
+			}
+		}
 
-    &:-moz-focusring {
-      border-radius: $import-bar-btn-focus-border-radius;
-      box-shadow: $import-bar-btn-focus-box-shadow;
+		&:-moz-focusring {
+			border-radius: $import-bar-btn-focus-border-radius;
+			box-shadow: $import-bar-btn-focus-box-shadow;
 
-      @include retina {
-        box-shadow: $import-bar-btn-focus-box-shadow-2x;
-      }
-    }
-  }
+			@include retina {
+				box-shadow: $import-bar-btn-focus-box-shadow-2x;
+			}
+		}
+	}
 
-  .btn-import {
-    display: inline;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font-weight: inherit;
-    line-height: inherit;
-    text-decoration: underline;
-    padding: 0 2px;
-    cursor: pointer;
-  }
+	.btn-import {
+		display: inline;
+		border: none;
+		background: transparent;
+		color: inherit;
+		font-weight: inherit;
+		line-height: inherit;
+		text-decoration: underline;
+		padding: 0 2px;
+		cursor: pointer;
+	}
 
-  .btn-dismiss {
-    position: absolute;
-    right: 8px;
-    top: calc(50% - #{$import-bar-btn-dismiss-offset});
-    transform: translateY(-50%);
-    width: 16px;
-    height: 16px;
-    border: none;
-    background: transparent;
-  }
+	.btn-dismiss {
+		position: absolute;
+		right: 8px;
+		top: calc(50% - #{$import-bar-btn-dismiss-offset});
+		transform: translateY(-50%);
+		width: 16px;
+		height: 16px;
+		border: none;
+		background: transparent;
+	}
 }

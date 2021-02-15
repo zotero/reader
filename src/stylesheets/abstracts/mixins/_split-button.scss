@@ -3,286 +3,282 @@
 //
 
 @mixin split-button($height, $button, $padding-x, $padding-y) {
-  height: $height;
-  padding: $padding-y $padding-x $padding-y ($padding-x + 1px);
-  background: none;
-  border-radius: 0;
-  box-shadow: none;
-  position: relative;
+	height: $height;
+	padding: $padding-y $padding-x $padding-y ($padding-x + 1px);
+	background: none;
+	border-radius: 0;
+	box-shadow: none;
+	position: relative;
 
-  &:focus-visible {
-    z-index: 2; // Chrome
+	&:focus-visible {
+		z-index: 2; // Chrome
 
-    &::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      border-radius: 0;
-      box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+		&::after {
+			content: "";
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			border-radius: 0;
+			box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
 
-      @include retina {
-        box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 2.5px rgba($accent-color, 0.5);
-      }
-    }
-  }
+			@include retina {
+				box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 2.5px rgba($accent-color, 0.5);
+			}
+		}
+	}
 
-  &:-moz-focusring {
-    &::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      left: 0;
-      border-radius: 0;
-      box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
-      z-index: 2; // Firefox
+	&:-moz-focusring {
+		&::after {
+			content: "";
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			left: 0;
+			border-radius: 0;
+			box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+			z-index: 2; // Firefox
 
-      @include retina {
-        box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 2.5px rgba($accent-color, 0.5);
-      }
-    }
-  }
+			@include retina {
+				box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 2.5px rgba($accent-color, 0.5);
+			}
+		}
+	}
 
-  &:first-child {
-    margin-right: 0;
-    background: none;
+	&:first-child {
+		margin-right: 0;
+		background: none;
 
-    &:focus-visible {
-      &::after {
-        border-top-left-radius: 5px;
-        border-bottom-left-radius: 5px;
-      }
-    }
+		&:focus-visible {
+			&::after {
+				border-top-left-radius: 5px;
+				border-bottom-left-radius: 5px;
+			}
+		}
 
-    &:-moz-focusring {
-      &::after {
-        border-top-left-radius: 5px;
-        border-bottom-left-radius: 5px;
-      }
-    }
-  }
+		&:-moz-focusring {
+			&::after {
+				border-top-left-radius: 5px;
+				border-bottom-left-radius: 5px;
+			}
+		}
+	}
 
-  &:last-child {
-    padding: $padding-y ($padding-x + 1px);
-    margin-left: 0;
-    background: image-url("darwin/#{$button}-end.png") no-repeat right top;
+	&:last-child {
+		padding: $padding-y ($padding-x + 1px);
+		margin-left: 0;
+		background: image-url("darwin/#{$button}-end.png") no-repeat right top;
 
-    @include retina {
-      background: image-url("darwin/#{$button}-end@2x.png") no-repeat right top / auto $height;
-    }
+		@include retina {
+			background: image-url("darwin/#{$button}-end@2x.png") no-repeat right top / auto $height;
+		}
 
-    &:active {
-      background: image-url("darwin/#{$button}-end-pressed.png") no-repeat right top;
+		&:active {
+			background: image-url("darwin/#{$button}-end-pressed.png") no-repeat right top;
 
-      @include retina {
-        background: image-url("darwin/#{$button}-end-pressed@2x.png") no-repeat right top / auto $height;
-      }
-    }
+			@include retina {
+				background: image-url("darwin/#{$button}-end-pressed@2x.png") no-repeat right top / auto $height;
+			}
+		}
 
-    &:focus-visible {
-      &::after {
-        border-top-right-radius: 5px;
-        border-bottom-right-radius: 5px;
-      }
-    }
+		&:focus-visible {
+			&::after {
+				border-top-right-radius: 5px;
+				border-bottom-right-radius: 5px;
+			}
+		}
 
-    &:-moz-focusring {
-      &::after {
-        border-top-right-radius: 5px;
-        border-bottom-right-radius: 5px;
-      }
-    }
+		&:-moz-focusring {
+			&::after {
+				border-top-right-radius: 5px;
+				border-bottom-right-radius: 5px;
+			}
+		}
 
-    &.toggled {
-      @include state(".toolbarButton.toggled") {
-        background: image-url("darwin/#{$button}-end-active.png") no-repeat right top;
+		&.toggled {
+			@include state(".toolbarButton.toggled") {
+				background: image-url("darwin/#{$button}-end-active.png") no-repeat right top;
 
-        @include retina {
-          background: image-url("darwin/#{$button}-end-active@2x.png") no-repeat right top / auto $height;
-        }
+				@include retina {
+					background: image-url("darwin/#{$button}-end-active@2x.png") no-repeat right top / auto $height;
+				}
 
-        @include state(".toolbarButton:active") {
-          background: image-url("darwin/#{$button}-end-active-pressed.png") no-repeat right top;
+				@include state(".toolbarButton:active") {
+					background: image-url("darwin/#{$button}-end-active-pressed.png") no-repeat right top;
 
-          @include retina {
-            background: image-url("darwin/#{$button}-end-active-pressed@2x.png") no-repeat right top / auto $height;
-          }
-        }
-      }
-    }
+					@include retina {
+						background: image-url("darwin/#{$button}-end-active-pressed@2x.png") no-repeat right top / auto $height;
+					}
+				}
+			}
+		}
 
-    @if $button == "menubutton" {
-      .is-blurred & {
-        opacity: 0.5;
+		@if $button == "menubutton" {
+			.is-blurred & {
+				opacity: 0.5;
 
-        @include state(".toolbarButton:not(.toggled)") {
-          background: image-url("darwin/#{$button}-end-inactive-window.png") no-repeat right top;
-        }
+				@include state(".toolbarButton:not(.toggled)") {
+					background: image-url("darwin/#{$button}-end-inactive-window.png") no-repeat right top;
+				}
 
-        @include retina {
-          background: image-url("darwin/#{$button}-end-inactive-window@2x.png") no-repeat right top / auto $height;
-        }
-      }
-    }
-  }
+				@include retina {
+					background: image-url("darwin/#{$button}-end-inactive-window@2x.png") no-repeat right top / auto $height;
+				}
+			}
+		}
+	}
 
-  &:not(:first-child) {
-    margin-left: 0;
-  }
+	&:not(:first-child) {
+		margin-left: 0;
+	}
 
-  &:not(:last-child) {
-    margin-right: 0;
-  }
+	&:not(:last-child) {
+		margin-right: 0;
+	}
 
-  @if $button == "menubutton" {
-    .is-blurred & {
-      &:not(:last-child) {
-        &::before {
-          opacity: 0.5;
-        }
-      }
+	@if $button == "menubutton" {
+		.is-blurred & {
+			&:not(:last-child) {
+				&::before {
+					opacity: 0.5;
+				}
+			}
 
-      &.toggled {
-        &::before {
-          opacity: 1;
-        }
-      }
-    }
-  }
+			&.toggled {
+				&::before {
+					opacity: 1;
+				}
+			}
+		}
+	}
 
-  > span:first-child {
-    clip: initial;
-    margin: initial;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    text-indent: -99em;
-    background:
-      linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
-      image-url("darwin/#{$button}-start.png") no-repeat center top;
+	> span:first-child {
+		clip: initial;
+		margin: initial;
+		left: 0;
+		top: 0;
+		width: 100%;
+		height: 100%;
+		text-indent: -99em;
+		background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
+		image-url("darwin/#{$button}-start.png") no-repeat center top;
 
-    @include retina {
-      background:
-        linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
-        image-url("darwin/#{$button}-start@2x.png") no-repeat center top / auto $height;
-    }
+		@include retina {
+			background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
+			image-url("darwin/#{$button}-start@2x.png") no-repeat center top / auto $height;
+		}
 
-    // Active
+		// Active
 
-    @include state(".toolbarButton:active") {
-      background: image-url("darwin/#{$button}-start-pressed.png") no-repeat center top;
+		@include state(".toolbarButton:active") {
+			background: image-url("darwin/#{$button}-start-pressed.png") no-repeat center top;
 
-      @include retina {
-        background: image-url("darwin/#{$button}-start-pressed@2x.png") no-repeat center top / auto $height;
-      }
-    }
+			@include retina {
+				background: image-url("darwin/#{$button}-start-pressed@2x.png") no-repeat center top / auto $height;
+			}
+		}
 
-    // Toggled
+		// Toggled
 
-    @include state(".toolbarButton.toggled") {
-      background: image-url("darwin/#{$button}-start-active.png") no-repeat center top;
+		@include state(".toolbarButton.toggled") {
+			background: image-url("darwin/#{$button}-start-active.png") no-repeat center top;
 
-      @include retina {
-        background: image-url("darwin/#{$button}-start-active@2x.png") no-repeat center top / auto $height;
-      }
+			@include retina {
+				background: image-url("darwin/#{$button}-start-active@2x.png") no-repeat center top / auto $height;
+			}
 
-      @include state(".toolbarButton:active") {
-        background: image-url("darwin/#{$button}-start-active-pressed.png") no-repeat center top;
+			@include state(".toolbarButton:active") {
+				background: image-url("darwin/#{$button}-start-active-pressed.png") no-repeat center top;
 
-        @include retina {
-          background: image-url("darwin/#{$button}-start-active-pressed@2x.png") no-repeat center top / auto $height;
-        }
-      }
-    }
+				@include retina {
+					background: image-url("darwin/#{$button}-start-active-pressed@2x.png") no-repeat center top / auto $height;
+				}
+			}
+		}
 
-    // Default after toggled
+		// Default after toggled
 
-    @include state(".toolbarButton.toggled + .toolbarButton:not(:active)") {
-      background: image-url("darwin/#{$button}-start.png") no-repeat center top;
+		@include state(".toolbarButton.toggled + .toolbarButton:not(:active)") {
+			background: image-url("darwin/#{$button}-start.png") no-repeat center top;
 
-      @include retina {
-        background: image-url("darwin/#{$button}-start@2x.png") no-repeat center top / auto $height;
-      }
-    }
+			@include retina {
+				background: image-url("darwin/#{$button}-start@2x.png") no-repeat center top / auto $height;
+			}
+		}
 
-    // Blurred
+		// Blurred
 
-    @if $button == "menubutton" {
-      .is-blurred & {
-        @include state(".toolbarButton:not(.toggled)") {
-          background:
-            linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
-            image-url("darwin/#{$button}-start-inactive-window.png") no-repeat center top;
+		@if $button == "menubutton" {
+			.is-blurred & {
+				@include state(".toolbarButton:not(.toggled)") {
+					background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
+					image-url("darwin/#{$button}-start-inactive-window.png") no-repeat center top;
 
-          @include retina {
-            background:
-              linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
-              image-url("darwin/#{$button}-start-inactive-window@2x.png") no-repeat center top / auto $height;
-          }
-        }
+					@include retina {
+						background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)) no-repeat left center / 1px ($height - 2px),
+						image-url("darwin/#{$button}-start-inactive-window@2x.png") no-repeat center top / auto $height;
+					}
+				}
 
-        @include state(".toolbarButton:not(:last-child)") {
-          opacity: 0.5;
-        }
-      }
-    }
+				@include state(".toolbarButton:not(:last-child)") {
+					opacity: 0.5;
+				}
+			}
+		}
 
-    // First button
+		// First button
 
-    @include variant(".toolbarButton:first-child") {
-      background: image-url("darwin/#{$button}-start.png") no-repeat left top;
+		@include variant(".toolbarButton:first-child") {
+			background: image-url("darwin/#{$button}-start.png") no-repeat left top;
 
-      @include retina {
-        background: image-url("darwin/#{$button}-start@2x.png") no-repeat left top / auto $height;
-      }
+			@include retina {
+				background: image-url("darwin/#{$button}-start@2x.png") no-repeat left top / auto $height;
+			}
 
-      @include state(".toolbarButton:active") {
-        background: image-url("darwin/#{$button}-start-pressed.png") no-repeat left top;
+			@include state(".toolbarButton:active") {
+				background: image-url("darwin/#{$button}-start-pressed.png") no-repeat left top;
 
-        @include retina {
-          background: image-url("darwin/#{$button}-start-pressed@2x.png") no-repeat left top / auto $height;
-        }
-      }
+				@include retina {
+					background: image-url("darwin/#{$button}-start-pressed@2x.png") no-repeat left top / auto $height;
+				}
+			}
 
-      @include state(".toolbarButton.toggled") {
-        background: image-url("darwin/#{$button}-start-active.png") no-repeat left top;
+			@include state(".toolbarButton.toggled") {
+				background: image-url("darwin/#{$button}-start-active.png") no-repeat left top;
 
-        @include retina {
-          background: image-url("darwin/#{$button}-start-active@2x.png") no-repeat left top / auto $height;
-        }
+				@include retina {
+					background: image-url("darwin/#{$button}-start-active@2x.png") no-repeat left top / auto $height;
+				}
 
-        @include state(".toolbarButton:active") {
-          background: image-url("darwin/#{$button}-start-active-pressed.png") no-repeat left top;
+				@include state(".toolbarButton:active") {
+					background: image-url("darwin/#{$button}-start-active-pressed.png") no-repeat left top;
 
-          @include retina {
-            background: image-url("darwin/#{$button}-start-active-pressed@2x.png") no-repeat left top / auto $height;
-          }
-        }
-      }
+					@include retina {
+						background: image-url("darwin/#{$button}-start-active-pressed@2x.png") no-repeat left top / auto $height;
+					}
+				}
+			}
 
-      @if $button == "menubutton" {
-        .is-blurred & {
-          @include state(".toolbarButton:not(.toggled)") {
-            background: image-url("darwin/#{$button}-start-inactive-window.png") no-repeat left top;
+			@if $button == "menubutton" {
+				.is-blurred & {
+					@include state(".toolbarButton:not(.toggled)") {
+						background: image-url("darwin/#{$button}-start-inactive-window.png") no-repeat left top;
 
-            @include retina {
-              background: image-url("darwin/#{$button}-start-inactive-window@2x.png") no-repeat left top / auto $height;
-            }
-          }
-        }
-      }
-    }
+						@include retina {
+							background: image-url("darwin/#{$button}-start-inactive-window@2x.png") no-repeat left top / auto $height;
+						}
+					}
+				}
+			}
+		}
 
-    // Last button
+		// Last button
 
-    @include variant(".toolbarButton:last-child") {
-      width: calc(100% - 17px);
-    }
-  }
+		@include variant(".toolbarButton:last-child") {
+			width: calc(100% - 17px);
+		}
+	}
 }
 

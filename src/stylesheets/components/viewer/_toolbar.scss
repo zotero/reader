@@ -3,203 +3,203 @@
 //
 
 .toolbar {
-  height: $toolbar-height;
-  left: 0;
-  right: 0;
-  z-index: 9999;
-  cursor: default;
-  background: $toolbar-bg;
-  border-bottom: $toolbar-border;
-  padding: $toolbar-padding;
-  position: relative;
+	height: $toolbar-height;
+	left: 0;
+	right: 0;
+	z-index: 9999;
+	cursor: default;
+	background: $toolbar-bg;
+	border-bottom: $toolbar-border;
+	padding: $toolbar-padding;
+	position: relative;
 
-  @include retina {
-    background: $toolbar-bg-2x;
-  }
+	@include retina {
+		background: $toolbar-bg-2x;
+	}
 
-  .is-blurred & {
-    background: $toolbar-blurred-bg;
+	.is-blurred & {
+		background: $toolbar-blurred-bg;
 
-    @include retina {
-      background: $toolbar-blurred-bg-2x;
-    }
-  }
+		@include retina {
+			background: $toolbar-blurred-bg-2x;
+		}
+	}
 
-  #toolbarViewer {
-    display: flex;
-    justify-content: space-between;
-    height: $toolbar-height;
-  }
+	#toolbarViewer {
+		display: flex;
+		justify-content: space-between;
+		height: $toolbar-height;
+	}
 
-  #toolbarViewerLeft,
-  #toolbarViewerMiddle,
-  #toolbarViewerRight {
-    display: flex;
-    align-items: center;
-  }
+	#toolbarViewerLeft,
+	#toolbarViewerMiddle,
+	#toolbarViewerRight {
+		display: flex;
+		align-items: center;
+	}
 
-  #toolbarViewerLeft,
-  #toolbarViewerRight {
-    @media all and (min-width: $toolbar-middle-viewer-bp) {
-      flex: 1 1 0; // Center middle viewer on large screens
-    }
-  }
+	#toolbarViewerLeft,
+	#toolbarViewerRight {
+		@media all and (min-width: $toolbar-middle-viewer-bp) {
+			flex: 1 1 0; // Center middle viewer on large screens
+		}
+	}
 
-  #toolbarViewerRight {
-    justify-content: flex-end;
-    order: 2;
-  }
+	#toolbarViewerRight {
+		justify-content: flex-end;
+		order: 2;
+	}
 
-  .toolbarButton {
-    .is-blurred & {
-      background: $toolbar-btn-blurred-bg;
-      box-shadow: $toolbar-btn-blurred-box-shadow;
+	.toolbarButton {
+		.is-blurred & {
+			background: $toolbar-btn-blurred-bg;
+			box-shadow: $toolbar-btn-blurred-box-shadow;
 
-      @include retina {
-        box-shadow: $toolbar-btn-blurred-box-shadow-2x;
-      }
+			@include retina {
+				box-shadow: $toolbar-btn-blurred-box-shadow-2x;
+			}
 
-      &::before {
-        opacity: 0.5;
-      }
-    }
-  }
+			&::before {
+				opacity: 0.5;
+			}
+		}
+	}
 
-  .splitToolbarButton {
-    display: flex;
-  }
+	.splitToolbarButton {
+		display: flex;
+	}
 
-  @if $toolbar-btn-separator-list {
-    #{$toolbar-btn-separator-list} {
-      margin-right: $toolbar-btn-separator-spacing;
-      position: relative;
+	@if $toolbar-btn-separator-list {
+		#{$toolbar-btn-separator-list} {
+			margin-right: $toolbar-btn-separator-spacing;
+			position: relative;
 
-      @if $toolbar-btn-visual-separator {
-        &::after {
-          content: if($toolbar-btn-visual-separator, "", none);
-          position: absolute;
-          top: $toolbar-btn-separator-top;
-          right: $toolbar-btn-separator-right;
-          width: $toolbar-btn-separator-width;
-          background-color: $toolbar-btn-separator-bg;
-          height: $toolbar-btn-separator-height;
-        }
-      }
-    }
-  }
+			@if $toolbar-btn-visual-separator {
+				&::after {
+					content: if($toolbar-btn-visual-separator, "", none);
+					position: absolute;
+					top: $toolbar-btn-separator-top;
+					right: $toolbar-btn-separator-right;
+					width: $toolbar-btn-separator-width;
+					background-color: $toolbar-btn-separator-bg;
+					height: $toolbar-btn-separator-height;
+				}
+			}
+		}
+	}
 
-  @if $toolbar-btn-visual-separator {
-    .dropdownToolbarButton {
-      &::after {
-        top: $toolbar-btn-separator-top + $toolbar-field-height - $toolbar-btn-separator-height;
-        right: $toolbar-btn-separator-right + 1px;
-      }
-    }
-  }
+	@if $toolbar-btn-visual-separator {
+		.dropdownToolbarButton {
+			&::after {
+				top: $toolbar-btn-separator-top + $toolbar-field-height - $toolbar-btn-separator-height;
+				right: $toolbar-btn-separator-right + 1px;
+			}
+		}
+	}
 
-  @if $platform == "darwin" {
-    #zoomOut,
-    #previous {
-      margin-right: 1px;
-      clip-path: inset(-1px 0 -1px -1px);
+	@if $platform == "darwin" {
+		#zoomOut,
+		#previous {
+			margin-right: 1px;
+			clip-path: inset(-1px 0 -1px -1px);
 
-      &:focus-visible {
-        clip-path: none;
+			&:focus-visible {
+				clip-path: none;
 
-        & + * {
-          clip-path: inset(-1px -1px -1px 0);
-        }
-      }
+				& + * {
+					clip-path: inset(-1px -1px -1px 0);
+				}
+			}
 
-      &:-moz-focusring {
-        clip-path: none;
+			&:-moz-focusring {
+				clip-path: none;
 
-        & + * {
-          clip-path: inset(-1px -1px -1px 0);
-        }
-      }
+				& + * {
+					clip-path: inset(-1px -1px -1px 0);
+				}
+			}
 
-      @include retina {
-        clip-path: none;
-      }
-    }
+			@include retina {
+				clip-path: none;
+			}
+		}
 
-    #zoomIn,
-    #next {
-      margin-left: 0;
-    }
-  }
+		#zoomIn,
+		#next {
+			margin-left: 0;
+		}
+	}
 
-  #pageNumber {
-    width: $page-number-width;
-    padding: $page-number-padding;
-    background: $page-number-bg;
-    text-align: right;
-    border-radius: $page-number-border-radius;
-    box-shadow: $page-number-box-shadow;
+	#pageNumber {
+		width: $page-number-width;
+		padding: $page-number-padding;
+		background: $page-number-bg;
+		text-align: right;
+		border-radius: $page-number-border-radius;
+		box-shadow: $page-number-box-shadow;
 
-    @include retina {
-      box-shadow: $page-number-box-shadow-2x;
-    }
+		@include retina {
+			box-shadow: $page-number-box-shadow-2x;
+		}
 
-    &:focus {
-      box-shadow: $page-number-focus-box-shadow;
+		&:focus {
+			box-shadow: $page-number-focus-box-shadow;
 
-      @include retina {
-        box-shadow: $page-number-focus-box-shadow-2x;
-      }
-    }
+			@include retina {
+				box-shadow: $page-number-focus-box-shadow-2x;
+			}
+		}
 
-    &.visiblePageIsLoading {
-      background: icon-url("spinner-14px.png"), $page-number-bg;
-      background-repeat: no-repeat;
-      background-position: $page-number-loading-x center, left top;
-      background-size: 14px 14px, auto;
+		&.visiblePageIsLoading {
+			background: icon-url("spinner-14px.png"), $page-number-bg;
+			background-repeat: no-repeat;
+			background-position: $page-number-loading-x center, left top;
+			background-size: 14px 14px, auto;
 
-      @include retina {
-        background-image: icon-url("spinner-14px@2x.png"), $page-number-bg;
-      }
-    }
+			@include retina {
+				background-image: icon-url("spinner-14px@2x.png"), $page-number-bg;
+			}
+		}
 
-    .is-blurred & {
-      background: $toolbar-btn-blurred-bg;
-      box-shadow: $toolbar-btn-blurred-box-shadow;
-      color: rgba($text-color, 0.5);
+		.is-blurred & {
+			background: $toolbar-btn-blurred-bg;
+			box-shadow: $toolbar-btn-blurred-box-shadow;
+			color: rgba($text-color, 0.5);
 
-      @include retina {
-        box-shadow: $toolbar-btn-blurred-box-shadow-2x;
-      }
-    }
-  }
+			@include retina {
+				box-shadow: $toolbar-btn-blurred-box-shadow-2x;
+			}
+		}
+	}
 
-  #numPages {
-    min-width: $num-pages-min-width;
-    color: $num-pages-color;
-    margin-left: 0;
+	#numPages {
+		min-width: $num-pages-min-width;
+		color: $num-pages-color;
+		margin-left: 0;
 
-    .is-blurred & {
-      color: rgba($num-pages-color, 0.5);
-    }
-  }
+		.is-blurred & {
+			color: rgba($num-pages-color, 0.5);
+		}
+	}
 
-  #scaleSelectContainer {
-    @media all and (max-width: $scale-select-container-bp) {
-      display: none;
-    }
-  }
+	#scaleSelectContainer {
+		@media all and (max-width: $scale-select-container-bp) {
+			display: none;
+		}
+	}
 
-  #openFile,
-  #viewBookmark {
-    display: none !important;
-  }
+	#openFile,
+	#viewBookmark {
+		display: none !important;
+	}
 
-  @if $mode == "production" {
-    #scaleSelectContainer,
-    #presentationMode,
-    #print,
-    #download,
-    #secondaryToolbarToggle {
-      display: none !important;
-    }
-  }
+	@if $mode == "production" {
+		#scaleSelectContainer,
+		#presentationMode,
+		#print,
+		#download,
+		#secondaryToolbarToggle {
+			display: none !important;
+		}
+	}
 }

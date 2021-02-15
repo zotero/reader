@@ -14,34 +14,34 @@
  */
 
 #viewerContainer.pdfPresentationMode:-ms-fullscreen {
-  top: 0px !important;
-  overflow: hidden !important;
+	top: 0px !important;
+	overflow: hidden !important;
 }
 
 #viewerContainer.pdfPresentationMode:-ms-fullscreen::-ms-backdrop {
-  background-color: rgba(0, 0, 0, 1);
+	background-color: rgba(0, 0, 0, 1);
 }
 
 #viewerContainer.pdfPresentationMode:fullscreen {
-  top: 0px;
-  border-top: 2px solid rgba(0, 0, 0, 0);
-  background-color: rgba(0, 0, 0, 1);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  cursor: none;
-  user-select: none;
+	top: 0px;
+	border-top: 2px solid rgba(0, 0, 0, 0);
+	background-color: rgba(0, 0, 0, 1);
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+	cursor: none;
+	user-select: none;
 }
 
 .pdfPresentationMode:fullscreen a:not(.internalLink) {
-  display: none;
+	display: none;
 }
 
 .pdfPresentationMode:fullscreen .textLayer > span {
-  cursor: none;
+	cursor: none;
 }
 
 .pdfPresentationMode.pdfPresentationModeControls > *,
 .pdfPresentationMode.pdfPresentationModeControls .textLayer > span {
-  cursor: default;
+	cursor: default;
 }

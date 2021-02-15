@@ -1,29 +1,29 @@
 
 .note-annotation {
-  cursor: inherit !important;
-  position: absolute;
+	cursor: inherit !important;
+	position: absolute;
 
-  svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
+	svg {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
 
-  .square {
-    position: absolute;
-  }
+	.square {
+		position: absolute;
+	}
 
-  &.selected {
-    .square {
-      border: 2px dashed cornflowerblue;
-      z-index: 1;
-    }
-  }
+	&.selected {
+		.square {
+			border: 2px dashed cornflowerblue;
+			z-index: 1;
+		}
+	}
 }
 
 .draggableNoteBox {
-  border: 2px dashed lightgray;
-  position: absolute;
-  top: 0;
-  left: 0;
+	border: 2px dashed lightgray;
+	position: absolute;
+	top: 0;
+	left: 0;
 }

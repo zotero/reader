@@ -7,8 +7,8 @@
 //
 
 $accent-color: #0078d7;
-$blue-btn:     #90c8f6;
-$red:          #d93425;
+$blue-btn: #90c8f6;
+$red: #d93425;
 
 $gray-lightest: #f6f6f6;
 
@@ -17,30 +17,30 @@ $gray-lightest: #f6f6f6;
 //
 
 :root {
-  --sidebar-width: 240px;
-  --note-font-size: 12px;
+	--sidebar-width: 240px;
+	--note-font-size: 12px;
 }
 
-$body-bg:    #fff;
+$body-bg: #fff;
 $text-color: #000;
 
-$font-family-sans-serif:  "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
+$font-family-sans-serif: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
 //$font-family-monospace: TBD
-$font-family-base:        $font-family-sans-serif;
+$font-family-base: $font-family-sans-serif;
 
 $font-size-base: rem(11);
 $note-font-size: var(--note-font-size);
 $note-line-height: 1.34;
 
 $selection-color: #fff;
-$selection-bg:    rgba($accent-color, 0.99);
+$selection-bg: rgba($accent-color, 0.99);
 
 // Z-index master list
-$z-index-page-popup:    10;
-$z-index-import-bar:    20;
+$z-index-page-popup: 10;
+$z-index-import-bar: 20;
 $z-index-error-wrapper: 1000;
-$z-index-findbar:       10000;
-$z-index-overlay:       40000;
+$z-index-findbar: 10000;
+$z-index-overlay: 40000;
 
 // Visibility breakpoints
 $visibility-bp-lg: null;
@@ -52,225 +52,225 @@ $visibility-bp-sm: 700px;
 //
 
 // Toolbar
-$toolbar-height:        30px;
-$toolbar-padding:       0;
-$toolbar-bg:            $gray-lightest;
-$toolbar-bg-2x:         $toolbar-bg;
-$toolbar-blurred-bg:    null;
+$toolbar-height: 30px;
+$toolbar-padding: 0;
+$toolbar-bg: $gray-lightest;
+$toolbar-bg-2x: $toolbar-bg;
+$toolbar-blurred-bg: null;
 $toolbar-blurred-bg-2x: null;
-$toolbar-border:        1px solid #cecece;
+$toolbar-border: 1px solid #cecece;
 
-$page-number-width:               calc(#{rem(28)} + 26px);
-$page-number-padding:             0 5px;
-$page-number-bg:                  #fff;
-$page-number-border-radius:       0;
-$page-number-box-shadow:          null;
-$page-number-box-shadow-2x:       null;
-$page-number-focus-box-shadow:    null;
+$page-number-width: calc(#{rem(28)} + 26px);
+$page-number-padding: 0 5px;
+$page-number-bg: #fff;
+$page-number-border-radius: 0;
+$page-number-box-shadow: null;
+$page-number-box-shadow-2x: null;
+$page-number-focus-box-shadow: null;
 $page-number-focus-box-shadow-2x: null;
-$page-number-loading-x:           4px;
+$page-number-loading-x: 4px;
 
 $num-pages-min-width: 76px;
-$num-pages-color:     #777;
+$num-pages-color: #777;
 
-$toolbar-middle-viewer-bp:  1050px;
+$toolbar-middle-viewer-bp: 1050px;
 $scale-select-container-bp: 0;
 
 // Toolbar button
-$toolbar-btn-height:                21px;
-$toolbar-btn-bg:                    transparent;
-$toolbar-btn-padding:               2px 4px 1px 4px;
-$toolbar-btn-border:                1px solid transparent;
-$toolbar-btn-margin-x:              3px;
-$toolbar-btn-box-shadow:            null;
-$toolbar-btn-box-shadow-2x:         null;
-$toolbar-btn-focus-box-shadow:      null;
-$toolbar-btn-focus-box-shadow-2x:   null;
-$toolbar-btn-border-radius:         0;
-$toolbar-btn-box-shadow:            none;
-$toolbar-btn-box-shadow-2x:         $toolbar-btn-box-shadow;
-$toolbar-btn-hover-bg:              rgba($blue-btn, 0.25);
-$toolbar-btn-border-hover-color:    rgba($blue-btn, 0.5);
-$toolbar-btn-active-bg:             rgba($blue-btn, 0.5);
-$toolbar-btn-blurred-bg:            null;
-$toolbar-btn-blurred-box-shadow:    null;
+$toolbar-btn-height: 21px;
+$toolbar-btn-bg: transparent;
+$toolbar-btn-padding: 2px 4px 1px 4px;
+$toolbar-btn-border: 1px solid transparent;
+$toolbar-btn-margin-x: 3px;
+$toolbar-btn-box-shadow: null;
+$toolbar-btn-box-shadow-2x: null;
+$toolbar-btn-focus-box-shadow: null;
+$toolbar-btn-focus-box-shadow-2x: null;
+$toolbar-btn-border-radius: 0;
+$toolbar-btn-box-shadow: none;
+$toolbar-btn-box-shadow-2x: $toolbar-btn-box-shadow;
+$toolbar-btn-hover-bg: rgba($blue-btn, 0.25);
+$toolbar-btn-border-hover-color: rgba($blue-btn, 0.5);
+$toolbar-btn-active-bg: rgba($blue-btn, 0.5);
+$toolbar-btn-blurred-bg: null;
+$toolbar-btn-blurred-box-shadow: null;
 $toolbar-btn-blurred-box-shadow-2x: null;
-$toolbar-btn-border-active-color:   $blue-btn;
-$toolbar-btn-icon-active-offset:    1px;
+$toolbar-btn-border-active-color: $blue-btn;
+$toolbar-btn-icon-active-offset: 1px;
 
 // Toolbar separators
-$toolbar-btn-separator-list:    ".toolbarButton#sidebarToggle, .zoomAuto";
+$toolbar-btn-separator-list: ".toolbarButton#sidebarToggle, .zoomAuto";
 $toolbar-btn-separator-spacing: 10px;
-$toolbar-btn-visual-separator:  true;
-$toolbar-btn-separator-width:   1px;
-$toolbar-btn-separator-height:  21px;
-$toolbar-btn-separator-top:     -1px;
-$toolbar-btn-separator-right:   -8px;
-$toolbar-btn-separator-bg:      #848484;
+$toolbar-btn-visual-separator: true;
+$toolbar-btn-separator-width: 1px;
+$toolbar-btn-separator-height: 21px;
+$toolbar-btn-separator-top: -1px;
+$toolbar-btn-separator-right: -8px;
+$toolbar-btn-separator-bg: #848484;
 
 // Toolbar field
-$toolbar-field-height:              24px;
-$toolbar-field-padding:             0 5px;
-$toolbar-field-margin:              0 3px;
-$toolbar-field-border:              1px solid #7a7a7a;
-$toolbar-field-color:               #000;
-$toolbar-field-bg:                  #fff;
-$toolbar-field-font-size:           $font-size-base;
-$toolbar-field-border-radius:       0;
-$toolbar-field-box-shadow:          null;
-$toolbar-field-box-shadow-2x:       null;
-$toolbar-field-hover-border-color:  #171717;
-$toolbar-field-focus-border-color:  $accent-color;
-$toolbar-field-focus-box-shadow:    null;
+$toolbar-field-height: 24px;
+$toolbar-field-padding: 0 5px;
+$toolbar-field-margin: 0 3px;
+$toolbar-field-border: 1px solid #7a7a7a;
+$toolbar-field-color: #000;
+$toolbar-field-bg: #fff;
+$toolbar-field-font-size: $font-size-base;
+$toolbar-field-border-radius: 0;
+$toolbar-field-box-shadow: null;
+$toolbar-field-box-shadow-2x: null;
+$toolbar-field-hover-border-color: #171717;
+$toolbar-field-focus-border-color: $accent-color;
+$toolbar-field-focus-box-shadow: null;
 $toolbar-field-focus-box-shadow-2x: null;
-$toolbar-label-margin:              0 0 0 1px;
-$toolbar-label-line-height:         1.273;
-$toolbar-label-color:               #000;
-$toolbar-field-placeholder-color:   #777;
-$checkbox-size:                     null;
-$-moz-checkbox-size:                null;
-$-moz-checkbox-margin:              null;
-$checkbox-box-shadow:               null;
+$toolbar-label-margin: 0 0 0 1px;
+$toolbar-label-line-height: 1.273;
+$toolbar-label-color: #000;
+$toolbar-field-placeholder-color: #777;
+$checkbox-size: null;
+$-moz-checkbox-size: null;
+$-moz-checkbox-margin: null;
+$checkbox-box-shadow: null;
 
 // Dropdown toolbar button
-$dropdown-toolbar-btn-margin-x:           3px;
-$dropdown-toolbar-btn-height:             24px;
-$dropdown-toolbar-btn-font-size:          $font-size-base;
-$dropdown-toolbar-btn-padding:            0 20px 0 5px;
-$-moz-dropdown-toolbar-btn-padding:       0 17px 0 1px;
-$dropdown-toolbar-btn-color:              $text-color;
-$dropdown-toolbar-btn-bg:                 icon-url("win/chevron-8.png") no-repeat right 4px center #e1e1e1;
-$dropdown-toolbar-btn-bg-2x:              icon-url("win/chevron-8@2x.png");
-$dropdown-toolbar-btn-bg-size:            10px 6px;
-$dropdown-toolbar-btn-bg-size-2x:         null;
-$dropdown-toolbar-btn-bg-blend-mode:      multiply;
-$dropdown-toolbar-btn-border:             1px solid #adadad;
-$dropdown-toolbar-btn-border-radius:      0;
-$dropdown-toolbar-btn-box-shadow:         null;
-$dropdown-toolbar-btn-box-shadow-2x:      null;
-$dropdown-toolbar-btn-hover-bg:           tint($accent-color, 90%);
+$dropdown-toolbar-btn-margin-x: 3px;
+$dropdown-toolbar-btn-height: 24px;
+$dropdown-toolbar-btn-font-size: $font-size-base;
+$dropdown-toolbar-btn-padding: 0 20px 0 5px;
+$-moz-dropdown-toolbar-btn-padding: 0 17px 0 1px;
+$dropdown-toolbar-btn-color: $text-color;
+$dropdown-toolbar-btn-bg: icon-url("win/chevron-8.png") no-repeat right 4px center #e1e1e1;
+$dropdown-toolbar-btn-bg-2x: icon-url("win/chevron-8@2x.png");
+$dropdown-toolbar-btn-bg-size: 10px 6px;
+$dropdown-toolbar-btn-bg-size-2x: null;
+$dropdown-toolbar-btn-bg-blend-mode: multiply;
+$dropdown-toolbar-btn-border: 1px solid #adadad;
+$dropdown-toolbar-btn-border-radius: 0;
+$dropdown-toolbar-btn-box-shadow: null;
+$dropdown-toolbar-btn-box-shadow-2x: null;
+$dropdown-toolbar-btn-hover-bg: tint($accent-color, 90%);
 $dropdown-toolbar-btn-hover-border-color: $accent-color;
-$dropdown-toolbar-btn-focus-bg:           tint($accent-color, 80%);
+$dropdown-toolbar-btn-focus-bg: tint($accent-color, 80%);
 $dropdown-toolbar-btn-focus-border-color: #005499;
 
 // Findbar
-$findbar-offset-x:         4px;
-$findbar-offset-y:         45px;
+$findbar-offset-x: 4px;
+$findbar-offset-y: 45px;
 $findbar-pointer-offset-x: calc(100% - 4px - 8px);
-$findbar-height:           30px;
-$findbar-padding:          0 3px 0 0;
-$findbar-bg:               #fff;
-$findbar-border-radius:    null;
-$findbar-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
+$findbar-height: 30px;
+$findbar-padding: 0 3px 0 0;
+$findbar-bg: #fff;
+$findbar-border-radius: null;
+$findbar-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06), 0 0 5px rgba(0, 0, 0, 0.3);
 
 $options-one-container-margin: 0;
 $options-two-container-margin: 0;
 
-$findbar-btn-height:              21px;
-$findbar-btn-padding:             2px 4px 1px 4px;
-$findbar-btn-margin-x:            3px;
-$findbar-btn-bg:                  transparent;
-$findbar-btn-border:              1px solid transparent;
-$findbar-btn-border-radius:       null;
-$findbar-btn-box-shadow:          null;
-$findbar-btn-box-shadow-2x:       null;
-$findbar-btn-hover-bg:            rgba($blue-btn, 0.25);
-$findbar-btn-border-hover-color:  rgba($blue-btn, 0.5);
-$findbar-btn-focus-box-shadow:    null;
+$findbar-btn-height: 21px;
+$findbar-btn-padding: 2px 4px 1px 4px;
+$findbar-btn-margin-x: 3px;
+$findbar-btn-bg: transparent;
+$findbar-btn-border: 1px solid transparent;
+$findbar-btn-border-radius: null;
+$findbar-btn-box-shadow: null;
+$findbar-btn-box-shadow-2x: null;
+$findbar-btn-hover-bg: rgba($blue-btn, 0.25);
+$findbar-btn-border-hover-color: rgba($blue-btn, 0.5);
+$findbar-btn-focus-box-shadow: null;
 $findbar-btn-focus-box-shadow-2x: null;
-$findbar-btn-active-bg:           rgba($blue-btn, 0.5);
+$findbar-btn-active-bg: rgba($blue-btn, 0.5);
 $findbar-btn-border-active-color: $blue-btn;
-$findbar-btn-icon-active-offset:  1px;
-$findbar-btn-previous-icon:       "previous";
-$findbar-btn-next-icon:           "next";
+$findbar-btn-icon-active-offset: 1px;
+$findbar-btn-previous-icon: "previous";
+$findbar-btn-next-icon: "next";
 
-$find-input-width:            200px;
-$find-input-loading-x:        3px;
-$find-input-not-found-color:  $text-color;
-$find-input-not-found-bg:     tint(#f66, 75%);
+$find-input-width: 200px;
+$find-input-loading-x: 3px;
+$find-input-not-found-color: $text-color;
+$find-input-not-found-bg: tint(#f66, 75%);
 
-$findbar-split-toolbar-btn-margin:                 null;
+$findbar-split-toolbar-btn-margin: null;
 $findbar-split-toolbar-btn-wrap-containers-margin: 0 31px 0 8px;
 
 $findbar-toolbar-label-margin: 0 13px 0 0;
 
 $find-results-count-margin: 0 10px 0 3px;
-$find-results-count-color:  #777;
+$find-results-count-color: #777;
 
-$find-message-margin:                 0 10px 0 3px;
+$find-message-margin: 0 10px 0 3px;
 $find-message-wrap-containers-margin: 0 10px 0 3px;
-$find-message-color:                  rgba(#777, 0.5);
+$find-message-color: rgba(#777, 0.5);
 
 $findbar-close-container-offset-x: 3px;
 
-$findbar-close-btn-size:          16px;
-$findbar-close-btn-padding:       4px;
-$findbar-close-btn-border:        0;
+$findbar-close-btn-size: 16px;
+$findbar-close-btn-padding: 4px;
+$findbar-close-btn-border: 0;
 $findbar-close-btn-border-radius: 2px;
-$findbar-close-btn-margin:        0 4px 0 3px;
-$findbar-close-btn-bg:            transparent;
-$findbar-close-btn-hover-bg:      rgba(0, 0, 0, 0.1);
-$findbar-close-btn-active-bg:     rgba(0, 0, 0, 0.2);
-$findbar-close-btn-icon:          "win/x";
-$findbar-close-btn-icon-size:     8px;
+$findbar-close-btn-margin: 0 4px 0 3px;
+$findbar-close-btn-bg: transparent;
+$findbar-close-btn-hover-bg: rgba(0, 0, 0, 0.1);
+$findbar-close-btn-active-bg: rgba(0, 0, 0, 0.2);
+$findbar-close-btn-icon: "win/x";
+$findbar-close-btn-icon-size: 8px;
 
 // Secondary toolbar
-$secondary-toolbar-offset-x:          3px;
-$secondary-toolbar-offset-y:          $toolbar-height - 3px;
-$secondary-toolbar-padding:           2px;
-$secondary-toolbar-bg:                $gray-lightest;
-$secondary-toolbar-border:            1px solid #ccc;
-$secondary-toolbar-border-radius:     0;
-$secondary-toolbar-btn-line-height:   1.2;
-$secondary-toolbar-btn-padding:       rem(4.5) 5px rem(4.5) 32px;
-$secondary-toolbar-btn-bg:            transparent;
-$secondary-toolbar-btn-hover-bg:      $blue-btn;
+$secondary-toolbar-offset-x: 3px;
+$secondary-toolbar-offset-y: $toolbar-height - 3px;
+$secondary-toolbar-padding: 2px;
+$secondary-toolbar-bg: $gray-lightest;
+$secondary-toolbar-border: 1px solid #ccc;
+$secondary-toolbar-border-radius: 0;
+$secondary-toolbar-btn-line-height: 1.2;
+$secondary-toolbar-btn-padding: rem(4.5) 5px rem(4.5) 32px;
+$secondary-toolbar-btn-bg: transparent;
+$secondary-toolbar-btn-hover-bg: $blue-btn;
 $secondary-toolbar-btn-icon-offset-x: 5px;
-$horizontal-toolbar-separator:        true;
+$horizontal-toolbar-separator: true;
 $horizontal-toolbar-separator-height: 1px;
-$horizontal-toolbar-separator-bg:     #d7d7d7;
+$horizontal-toolbar-separator-bg: #d7d7d7;
 $horizontal-toolbar-separator-margin: 2px 0 2px 28px;
 
 // Sidebar
-$sidebar-bg:             #fff;
-$sidebar-blurred-bg:     null;
-$sidebar-border-color:   #cecece;
+$sidebar-bg: #fff;
+$sidebar-blurred-bg: null;
+$sidebar-border-color: #cecece;
 $sidebar-resizer-cursor: ew-resize;
 
 // Toolbar sidebar
-$toolbar-sidebar-height:          30px;
+$toolbar-sidebar-height: 30px;
 $toolbar-sidebar-justify-content: null;
-$toolbar-sidebar-align-items:     flex-end;
-$toolbar-sidebar-bg:              #f0f0f0;
-$toolbar-sidebar-border-color:    #cecece;
-$toolbar-sidebar-border:          1px solid #cecece;
+$toolbar-sidebar-align-items: flex-end;
+$toolbar-sidebar-bg: #f0f0f0;
+$toolbar-sidebar-border-color: #cecece;
+$toolbar-sidebar-border: 1px solid #cecece;
 
-$split-toolbar-btn-flex:   null;
+$split-toolbar-btn-flex: null;
 $split-toolbar-btn-height: 27px;
 $split-toolbar-btn-margin: null;
 
-$toolbar-sidebar-btn-padding-x:    8px;
-$toolbar-sidebar-btn-padding-y:    5px;
-$toolbar-sidebar-btn-margin:       0;
-$toolbar-sidebar-btn-hover-bg:     #d8eaf9;
-$toolbar-sidebar-btn-active-bg:    #fff;
+$toolbar-sidebar-btn-padding-x: 8px;
+$toolbar-sidebar-btn-padding-y: 5px;
+$toolbar-sidebar-btn-margin: 0;
+$toolbar-sidebar-btn-hover-bg: #d8eaf9;
+$toolbar-sidebar-btn-active-bg: #fff;
 $toolbar-sidebar-btn-border-width: 1px 1px 0 1px;
 $toolbar-sidebar-btn-border-color: #d9d9d9;
-$toolbar-sidebar-btn-spacing:      -1px;
+$toolbar-sidebar-btn-spacing: -1px;
 
-$thumbnail-icon:         "view-thumbnail";
+$thumbnail-icon: "view-thumbnail";
 $thumbnail-icon-toggled: null;
-$note-icon:              "note";
-$note-icon-toggled:      null;
-$outline-icon:           "win/view-outline";
-$outline-icon-toggled:   null;
-$attach-icon:            "attach";
-$attach-icon-toggled:    null;
+$note-icon: "note";
+$note-icon-toggled: null;
+$outline-icon: "win/view-outline";
+$outline-icon-toggled: null;
+$attach-icon: "attach";
+$attach-icon-toggled: null;
 
 // Thumbnail view
-$thumbnail-selection-ring-focus-bg:    rgba(0, 0, 0, 0.2);
+$thumbnail-selection-ring-focus-bg: rgba(0, 0, 0, 0.2);
 $thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
-$thumbnail-image-border-color:         #e5e5e5;
+$thumbnail-image-border-color: #e5e5e5;
 
 // Outline & attachment view
 $sidebar-item-link-btn-color: $text-color;
@@ -279,97 +279,97 @@ $sidebar-item-link-btn-color: $text-color;
 $outline-item-height: rem(20);
 
 // PDF viewer
-$page-bg:             #fff;
-$page-outline:        1px solid #e5e5e5;
+$page-bg: #fff;
+$page-outline: 1px solid #e5e5e5;
 $page-outline-offset: -9px;
 
 // Dialogs
-$overlay-container-bg:    rgba(0, 0, 0, 0.3);
-$dialog-width:            300px;
-$dialog-padding:          16px;
-$dialog-font-size:        $font-size-base;
-$dialog-line-height:      1.2;
-$dialog-bg:               #fff;
-$dialog-color:            $text-color;
-$dialog-border-radius:    1px;
-$dialog-shadow:           4px 6px 4px gray;
+$overlay-container-bg: rgba(0, 0, 0, 0.3);
+$dialog-width: 300px;
+$dialog-padding: 16px;
+$dialog-font-size: $font-size-base;
+$dialog-line-height: 1.2;
+$dialog-bg: #fff;
+$dialog-color: $text-color;
+$dialog-border-radius: 1px;
+$dialog-shadow: 4px 6px 4px gray;
 $btn-row-justify-content: flex-end;
 
-$overlay-btn-height:           24px;
-$overlay-btn-min-width:        74px;
-$overlay-btn-margin-x:         6px;
-$overlay-button-bg:            #e1e1e1;
-$overlay-btn-border:           1px solid #adadad;
-$overlay-btn-box-shadow:       null;
-$overlay-btn-box-shadow-2x:    null;
-$overlay-btn-focus-border:     2px solid $accent-color;
+$overlay-btn-height: 24px;
+$overlay-btn-min-width: 74px;
+$overlay-btn-margin-x: 6px;
+$overlay-button-bg: #e1e1e1;
+$overlay-btn-border: 1px solid #adadad;
+$overlay-btn-box-shadow: null;
+$overlay-btn-box-shadow-2x: null;
+$overlay-btn-focus-border: 2px solid $accent-color;
 $overlay-btn-focus-box-shadow: null;
-$overlay-btn-hover-bg:         tint($accent-color, 90%);
-$overlay-btn-hover-border:     1px solid $accent-color;
-$overlay-btn-active-bg:        tint($accent-color, 80%);
-$overlay-btn-active-border:    1px solid shade($accent-color, 30%);
-$overlay-btn-border-radius:    0;
+$overlay-btn-hover-bg: tint($accent-color, 90%);
+$overlay-btn-hover-border: 1px solid $accent-color;
+$overlay-btn-active-bg: tint($accent-color, 80%);
+$overlay-btn-active-border: 1px solid shade($accent-color, 30%);
+$overlay-btn-border-radius: 0;
 
-$dialog-gradient-btn:       false;
+$dialog-gradient-btn: false;
 
-$progress-height:        15px;
-$progress-padding:       1px;
-$progress-border:        1px solid #bcbcbc;
-$progress-box-shadow:    null;
+$progress-height: 15px;
+$progress-padding: 1px;
+$progress-border: 1px solid #bcbcbc;
+$progress-box-shadow: null;
 $progress-box-shadow-2x: null;
-$progress-bg:            #e6e6e6;
+$progress-bg: #e6e6e6;
 $progress-border-radius: 2px;
-$progress-indicator-bg:  #06b025;
-$progress-label-width:   38px;
+$progress-indicator-bg: #06b025;
+$progress-label-width: 38px;
 
 // Annotation tools
-$highlight-tool-icon:        "highlight";
+$highlight-tool-icon: "highlight";
 $highlight-tool-icon-active: $highlight-tool-icon;
-$note-tool-icon:             "note";
-$note-tool-icon-active:      $note-tool-icon;
-$area-tool-icon:             "area";
-$area-tool-icon-active:      $area-tool-icon;
+$note-tool-icon: "note";
+$note-tool-icon-active: $note-tool-icon;
+$area-tool-icon: "area";
+$area-tool-icon-active: $area-tool-icon;
 
 // Search
-$search-margin:              0 0 4px 0;
-$search-height:              24px;
-$search-bg:                  #fff;
-$search-blurred-bg:          null;
-$search-padding:             0 17px 0 19px;
-$search-border:              1px solid #7a7a7a;
-$search-hover-border:        1px solid #171717;
-$search-focus-border:        1px solid $accent-color;
-$search-border-radius:       null;
-$search-box-shadow:          null;
-$search-blurred-box-shadow:  null;
-$search-focus-box-shadow:    null;
+$search-margin: 0 0 4px 0;
+$search-height: 24px;
+$search-bg: #fff;
+$search-blurred-bg: null;
+$search-padding: 0 17px 0 19px;
+$search-border: 1px solid #7a7a7a;
+$search-hover-border: 1px solid #171717;
+$search-focus-border: 1px solid $accent-color;
+$search-border-radius: null;
+$search-box-shadow: null;
+$search-blurred-box-shadow: null;
+$search-focus-box-shadow: null;
 $search-placeholder-opacity: 0.54;
-$search-icon-offset-x:       2px;
-$search-icon-offset-y:       4px;
-$clear-icon-offset-x:        3px;
-$clear-icon-offset-y:        5px;
-$search-icon:                "win/search";
-$clear-icon:                 "win/clear";
-$clear-icon-hover:           "win/clear-hover";
+$search-icon-offset-x: 2px;
+$search-icon-offset-y: 4px;
+$clear-icon-offset-x: 3px;
+$clear-icon-offset-y: 5px;
+$search-icon: "win/search";
+$clear-icon: "win/clear";
+$clear-icon-hover: "win/clear-hover";
 
 // Annotation
-$annotation-bg:                  #fff;
-$annotation-selected-bg:         #e4ebf9; // 8% K
-$annotation-border:              1px solid #bcc4d2;
-$annotation-selected-border:     1px solid #6d95e0;
-$annotation-border-radius:       5px;
+$annotation-bg: #fff;
+$annotation-selected-bg: #e4ebf9; // 8% K
+$annotation-border: 1px solid #bcc4d2;
+$annotation-selected-border: 1px solid #6d95e0;
+$annotation-border-radius: 5px;
 $annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
-$annotation-placeholder-color:   #6d95e0;
+$annotation-placeholder-color: #6d95e0;
 
 // Annotation popup
 
 // Preview
-$preview-header-height:   21px;
-$preview-border:          1px solid #d7dad7;
+$preview-header-height: 21px;
+$preview-border: 1px solid #d7dad7;
 $preview-selected-border: 1px solid rgba(#6d95e0, 0.4);
 
 $page-label-editable-padding: 0;
-$page-label-editable-margin:  -1px;
+$page-label-editable-margin: -1px;
 
 $tags-placeholder-color: #6d95e0;
 
@@ -377,32 +377,32 @@ $tags-placeholder-color: #6d95e0;
 $collapsed-height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
 
 // Editor
-$editor-border:          $preview-border;
+$editor-border: $preview-border;
 $editor-selected-border: $preview-selected-border;
 
 // Import bar
-$import-bar-min-height:              30px;
-$import-bar-bg:                      $accent-color;
-$import-bar-color:                   #fff;
+$import-bar-min-height: 30px;
+$import-bar-bg: $accent-color;
+$import-bar-color: #fff;
 $import-bar-btn-focus-border-radius: null;
-$import-bar-btn-focus-box-shadow:    null;
+$import-bar-btn-focus-box-shadow: null;
 $import-bar-btn-focus-box-shadow-2x: null;
-$import-bar-btn-dismiss-offset:      0px;
+$import-bar-btn-dismiss-offset: 0px;
 
 // Page popup
-$page-popup-border-radius:    4px;
-$page-popup-box-shadow:       0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
+$page-popup-border-radius: 4px;
+$page-popup-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
 // Selection popup
-$selection-popup-padding:              4px;
-$selection-popup-btn-height:           22px;
-$selection-popup-btn-padding:          2px;
-$selection-popup-btn-bg:               null;
-$selection-popup-btn-border-radius:    null;
-$selection-popup-btn-box-shadow:       none;
-$selection-popup-btn-margin:           0;
-$selection-popup-btn-spacing:          0;
-$selection-popup-btn-hover-bg:         null;
+$selection-popup-padding: 4px;
+$selection-popup-btn-height: 22px;
+$selection-popup-btn-padding: 2px;
+$selection-popup-btn-bg: null;
+$selection-popup-btn-border-radius: null;
+$selection-popup-btn-box-shadow: none;
+$selection-popup-btn-margin: 0;
+$selection-popup-btn-spacing: 0;
+$selection-popup-btn-hover-bg: null;
 $selection-popup-btn-hover-box-shadow: null;
 $selection-popup-btn-focus-box-shadow: null;
 
@@ -413,18 +413,18 @@ $highlight-annotation-selected-border-color: #6d95e0;
 $highlight-area-selected-border-color: #6d95e0;
 
 // Error message
-$error-message-min-height:              $import-bar-min-height;
-$error-message-bg:                      $red;
+$error-message-min-height: $import-bar-min-height;
+$error-message-bg: $red;
 $error-message-btn-focus-border-radius: null;
-$error-message-btn-focus-box-shadow:    null;
+$error-message-btn-focus-box-shadow: null;
 $error-message-btn-focus-box-shadow-2x: null;
-$error-message-btn-dismiss-offset:      7px;
-$error-more-info-bg:                    #fbf0f0;
+$error-message-btn-dismiss-offset: 7px;
+$error-more-info-bg: #fbf0f0;
 
 // Editable
-$editable-padding:       2px;
-$editable-border:        1px solid #000;
+$editable-padding: 2px;
+$editable-border: 1px solid #000;
 $editable-border-radius: null;
-$editable-box-shadow:    null;
+$editable-box-shadow: null;
 $editable-box-shadow-2x: null;
-$editable-margin:        -3px;
+$editable-margin: -3px;

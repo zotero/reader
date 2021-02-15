@@ -4,91 +4,91 @@
 
 .area-selector,
 .area-annotation {
-  opacity: 0.75;
+	opacity: 0.75;
 }
 
 .area-annotation {
-  border: 3px solid;
-  pointer-events: none;
-  cursor: inherit !important;
-  position: absolute;
+	border: 3px solid;
+	pointer-events: none;
+	cursor: inherit !important;
+	position: absolute;
 
-  &.selected {
-    border: 3px dashed $highlight-area-selected-border-color !important;
-    pointer-events: all;
-    opacity: 1;
-  }
+	&.selected {
+		border: 3px dashed $highlight-area-selected-border-color !important;
+		pointer-events: all;
+		opacity: 1;
+	}
 }
 
 .resizer {
-  .line, .edge {
-    position: absolute;
-    user-select: none;
-  }
+	.line, .edge {
+		position: absolute;
+		user-select: none;
+	}
 
-  .top {
-    width: 100%;
-    height: 10px;
-    top: -5px;
-    left: 0;
-    cursor: row-resize;
-  }
+	.top {
+		width: 100%;
+		height: 10px;
+		top: -5px;
+		left: 0;
+		cursor: row-resize;
+	}
 
-  .right {
-    width: 10px;
-    height: 100%;
-    top: 0;
-    right: -5px;
-    cursor: col-resize;
-  }
+	.right {
+		width: 10px;
+		height: 100%;
+		top: 0;
+		right: -5px;
+		cursor: col-resize;
+	}
 
-  .bottom {
-    width: 100%;
-    height: 10px;
-    bottom: -5px;
-    left: 0;
-    cursor: row-resize;
-  }
+	.bottom {
+		width: 100%;
+		height: 10px;
+		bottom: -5px;
+		left: 0;
+		cursor: row-resize;
+	}
 
-  .left {
-    width: 10px;
-    height: 100%;
-    top: 0;
-    left: -5px;
-    cursor: col-resize;
-  }
+	.left {
+		width: 10px;
+		height: 100%;
+		top: 0;
+		left: -5px;
+		cursor: col-resize;
+	}
 
-  .top-right {
-    width: 20px;
-    height: 20px;
-    right: -10px;
-    top: -10px;
-    cursor: ne-resize;
-  }
+	.top-right {
+		width: 20px;
+		height: 20px;
+		right: -10px;
+		top: -10px;
+		cursor: ne-resize;
+	}
 
-  .bottom-right {
-    width: 20px;
-    height: 20px;
-    right: -10px;
-    bottom: -10px;
-    cursor: se-resize;
-  }
+	.bottom-right {
+		width: 20px;
+		height: 20px;
+		right: -10px;
+		bottom: -10px;
+		cursor: se-resize;
+	}
 
-  .bottom-left {
-    width: 20px;
-    height: 20px;
-    left: -10px;
-    bottom: -10px;
-    cursor: sw-resize;
-  }
+	.bottom-left {
+		width: 20px;
+		height: 20px;
+		left: -10px;
+		bottom: -10px;
+		cursor: sw-resize;
+	}
 
-  .top-left {
-    width: 20px;
-    height: 20px;
-    left: -10px;
-    top: -10px;
-    cursor: nw-resize;
-  }
+	.top-left {
+		width: 20px;
+		height: 20px;
+		left: -10px;
+		top: -10px;
+		cursor: nw-resize;
+	}
 
 }
 

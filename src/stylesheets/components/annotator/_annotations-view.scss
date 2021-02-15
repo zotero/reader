@@ -3,70 +3,70 @@
 //
 
 #annotationsView {
-  @extend %sidebar-view;
+	@extend %sidebar-view;
 
-  &:focus {
-    outline: none;
-  }
+	&:focus {
+		outline: none;
+	}
 
-  .search {
-    margin: $search-margin;
-    display: flex;
-    position: relative;
+	.search {
+		margin: $search-margin;
+		display: flex;
+		position: relative;
 
-    .icon-search {
-      position: absolute;
-      left: $search-icon-offset-x;
-      top: $search-icon-offset-y;
-    }
+		.icon-search {
+			position: absolute;
+			left: $search-icon-offset-x;
+			top: $search-icon-offset-y;
+		}
 
-    .input-group {
-      flex: 1;
-    }
+		.input-group {
+			flex: 1;
+		}
 
-    input {
-      display: block;
-      width: 100%;
-      height: $search-height;
-      line-height: 2; // Center in Chrome
-      padding: $search-padding;
-      background: $search-bg;
-      border: $search-border;
-      border-radius: $search-border-radius;
-      box-shadow: $search-box-shadow;
+		input {
+			display: block;
+			width: 100%;
+			height: $search-height;
+			line-height: 2; // Center in Chrome
+			padding: $search-padding;
+			background: $search-bg;
+			border: $search-border;
+			border-radius: $search-border-radius;
+			box-shadow: $search-box-shadow;
 
-      &::placeholder {
-        opacity: $search-placeholder-opacity;
-        color: #000;
-      }
+			&::placeholder {
+				opacity: $search-placeholder-opacity;
+				color: #000;
+			}
 
-      &:hover {
-        border: $search-hover-border;
-      }
+			&:hover {
+				border: $search-hover-border;
+			}
 
-      &:focus {
-        border: $search-focus-border;
-        box-shadow: $search-focus-box-shadow;
-      }
+			&:focus {
+				border: $search-focus-border;
+				box-shadow: $search-focus-box-shadow;
+			}
 
-      .is-blurred & {
-        background: $search-blurred-bg;
-        box-shadow: $search-blurred-box-shadow;
-      }
-    }
+			.is-blurred & {
+				background: $search-blurred-bg;
+				box-shadow: $search-blurred-box-shadow;
+			}
+		}
 
-    .clear {
-      position: absolute;
-      right: $clear-icon-offset-x;
-      top: $clear-icon-offset-y;
-      width: 14px;
-      height: 14px;
-      background: transparent;
-      border: none;
-    }
-  }
+		.clear {
+			position: absolute;
+			right: $clear-icon-offset-x;
+			top: $clear-icon-offset-y;
+			width: 14px;
+			height: 14px;
+			background: transparent;
+			border: none;
+		}
+	}
 }
 
 #measure {
-  width: var(--sidebar-width);
+	width: var(--sidebar-width);
 }

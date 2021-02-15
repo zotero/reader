@@ -3,9 +3,9 @@
 // --------------------------------------------------
 
 @function tint($color, $percentage, $tint: #fff) {
-  @return mix($tint, $color, $percentage);
+	@return mix($tint, $color, $percentage);
 }
 
 @function shade($color, $percentage, $shade: #000) {
-  @return mix($shade, $color, $percentage);
+	@return mix($shade, $color, $percentage);
 }

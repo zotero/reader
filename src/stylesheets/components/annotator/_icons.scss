@@ -3,94 +3,94 @@
 //
 
 .icon {
-  svg {
-    display: block;
-    color: currentColor;
-  }
+	svg {
+		display: block;
+		color: currentColor;
+	}
 }
 
 // Toolbar
 
 .toolbar {
-  .highlight {
-    @include icon($highlight-tool-icon);
+	.highlight {
+		@include icon($highlight-tool-icon);
 
-    &.toggled {
-      @include icon($highlight-tool-icon-active);
-    }
-  }
+		&.toggled {
+			@include icon($highlight-tool-icon-active);
+		}
+	}
 
-  .note {
-    @include icon($note-tool-icon);
+	.note {
+		@include icon($note-tool-icon);
 
-    &.toggled {
-      @include icon($note-tool-icon-active);
-    }
-  }
+		&.toggled {
+			@include icon($note-tool-icon-active);
+		}
+	}
 
-  .area {
-    @include icon($area-tool-icon);
+	.area {
+		@include icon($area-tool-icon);
 
-    &.toggled {
-      @include icon($area-tool-icon-active);
-    }
-  }
+		&.toggled {
+			@include icon($area-tool-icon-active);
+		}
+	}
 }
 
 // Toolbar sidebar
 
 #toolbarSidebar {
-  #viewAnnotations {
-    @include icon($note-icon);
+	#viewAnnotations {
+		@include icon($note-icon);
 
-    @if $note-icon-toggled {
-      &.toggled {
-        @include icon($note-icon-toggled);
-      }
-    }
-  }
+		@if $note-icon-toggled {
+			&.toggled {
+				@include icon($note-icon-toggled);
+			}
+		}
+	}
 }
 
 // Search
 .search {
-  .icon-search {
-    @include icon($search-icon);
-  }
+	.icon-search {
+		@include icon($search-icon);
+	}
 
-  .clear {
-    @include icon($clear-icon, 14px);
+	.clear {
+		@include icon($clear-icon, 14px);
 
-    &:hover {
-      @include icon($clear-icon-hover, 14px);
-    }
-  }
+		&:hover {
+			@include icon($clear-icon-hover, 14px);
+		}
+	}
 }
 
 // Preview
 
 .preview {
-  .more {
-    @include icon("more", 12px);
+	.more {
+		@include icon("more", 12px);
 
-    @include state(".selected .preview") {
-      @include icon("more-selected", 12px);
-    }
+		@include state(".selected .preview") {
+			@include icon("more-selected", 12px);
+		}
 
-    @include variant(".preview.read-only") {
-      @include icon("padlock", 12px);
+		@include variant(".preview.read-only") {
+			@include icon("padlock", 12px);
 
-      @include state(".selected .read-only") {
-        @include icon("padlock-selected", 12px);
-      }
-    }
-  }
+			@include state(".selected .read-only") {
+				@include icon("padlock-selected", 12px);
+			}
+		}
+	}
 }
 
 // Import bar
 
 .import-bar {
-  .btn-dismiss {
-    @include icon("cross");
-  }
+	.btn-dismiss {
+		@include icon("cross");
+	}
 }
 

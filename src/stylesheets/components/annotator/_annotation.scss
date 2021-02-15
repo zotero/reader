@@ -4,22 +4,22 @@
 
 .annotation {
 
-  &.down {
-    border-color: gray;
-  }
+	&.down {
+		border-color: gray;
+	}
 
-  background-color: $annotation-bg;
-  border: $annotation-border;
-  border-radius: $annotation-border-radius;
-  overflow: hidden;
+	background-color: $annotation-bg;
+	border: $annotation-border;
+	border-radius: $annotation-border-radius;
+	overflow: hidden;
 
-  &.selected {
-    background-color: $annotation-selected-bg;
-    border: $annotation-selected-border;
-    box-shadow: $annotation-selected-box-shadow;
-  }
+	&.selected {
+		background-color: $annotation-selected-bg;
+		border: $annotation-selected-border;
+		box-shadow: $annotation-selected-box-shadow;
+	}
 
-  & + .annotation {
-    margin-top: 4px;
-  }
+	& + .annotation {
+		margin-top: 4px;
+	}
 }

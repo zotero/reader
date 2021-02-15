@@ -4,27 +4,27 @@
 
 .selectionCanvas,
 .highlight-annotation .rect {
-  opacity: 0.5;
+	opacity: 0.5;
 }
 
 .highlight-annotation {
-  position: absolute;
+	position: absolute;
 
-  .square {
-    position: absolute;
-    pointer-events: none;
+	.square {
+		position: absolute;
+		pointer-events: none;
 
-    @include state(".highlight-annotation.selected") {
-      border: 2px dashed $highlight-annotation-selected-border-color;
-      pointer-events: auto;
-      z-index: 1;
-    }
-  }
+		@include state(".highlight-annotation.selected") {
+			border: 2px dashed $highlight-annotation-selected-border-color;
+			pointer-events: auto;
+			z-index: 1;
+		}
+	}
 
-  .rect {
-    cursor: pointer;
-    position: absolute;
-    mix-blend-mode: multiply;
-    pointer-events: none;
-  }
+	.rect {
+		cursor: pointer;
+		position: absolute;
+		mix-blend-mode: multiply;
+		pointer-events: none;
+	}
 }

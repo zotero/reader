@@ -3,17 +3,17 @@
 //
 
 @mixin icon($file-name, $size: 16px) {
-  &::before {
-    content: "";
-    display: inline-block;
-    vertical-align: top;
-    width: $size;
-    height: $size;
-    background-image: icon-url("#{$file-name}.png");
-    background-size: 100%;
+	&::before {
+		content: "";
+		display: inline-block;
+		vertical-align: top;
+		width: $size;
+		height: $size;
+		background-image: icon-url("#{$file-name}.png");
+		background-size: 100%;
 
-    @include retina {
-      background-image: icon-url("#{$file-name}@2x.png");
-    }
-  }
+		@include retina {
+			background-image: icon-url("#{$file-name}@2x.png");
+		}
+	}
 }

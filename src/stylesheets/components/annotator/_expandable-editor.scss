@@ -3,49 +3,49 @@
 //
 
 .expandable-editor {
-  .selected & {
-    pointer-events: all;
-  }
+	.selected & {
+		pointer-events: all;
+	}
 
-  .editor-view {
-    max-height: $collapsed-height;
-    clip-path: inset(0 0 calc(#{nem(4)}) 0);
+	.editor-view {
+		max-height: $collapsed-height;
+		clip-path: inset(0 0 calc(#{nem(4)}) 0);
 
-    @include state(".expandable-editor.expanded") {
-      max-height: initial;
-      clip-path: initial;
-    }
-  }
+		@include state(".expandable-editor.expanded") {
+			max-height: initial;
+			clip-path: initial;
+		}
+	}
 }
 
 #clamps {
-  position: absolute;
-  left: -1000px;
-  width: 0;
-  height: 0;
-  overflow: hidden;
+	position: absolute;
+	left: -1000px;
+	width: 0;
+	height: 0;
+	overflow: hidden;
 
-  .clamp {
-    width: calc(var(--sidebar-width) - 3px);
-    overflow-y: scroll;
-    padding: 0 4px;
-    word-wrap: break-word;
-    font-size: var(--note-font-size);
-    line-height: 1.34;
-    height: $collapsed-height;
-    box-sizing: border-box;
+	.clamp {
+		width: calc(var(--sidebar-width) - 3px);
+		overflow-y: scroll;
+		padding: 0 4px;
+		word-wrap: break-word;
+		font-size: var(--note-font-size);
+		line-height: 1.34;
+		height: $collapsed-height;
+		box-sizing: border-box;
 
-    .outer {
-      max-height: $collapsed-height;
-      overflow-y: hidden;
-    }
+		.outer {
+			max-height: $collapsed-height;
+			overflow-y: hidden;
+		}
 
-    .inner {
-      padding: calc(0.33333 * var(--note-font-size)) 8px calc(0.33333 * var(--note-font-size));
+		.inner {
+			padding: calc(0.33333 * var(--note-font-size)) 8px calc(0.33333 * var(--note-font-size));
 
-      @include variant(".clamp#highlight-clamp") {
-        padding-left: 16px;
-      }
-    }
-  }
+			@include variant(".clamp#highlight-clamp") {
+				padding-left: 16px;
+			}
+		}
+	}
 }

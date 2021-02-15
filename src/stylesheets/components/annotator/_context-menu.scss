@@ -1,21 +1,21 @@
 
 .context-menu-container {
-  position: absolute;
-  z-index: 10000;
+	position: absolute;
+	z-index: 10000;
 }
 
 .context-menu {
-  position: absolute;
-  background-color: #ffffff;
-  border: 1px solid gray;
+	position: absolute;
+	background-color: #ffffff;
+	border: 1px solid gray;
 
-  .item {
-    white-space: nowrap;
-    padding: 5px;
+	.item {
+		white-space: nowrap;
+		padding: 5px;
 
-    &:hover {
-      cursor: pointer;
-      background-color: lightgrey;
-    }
-  }
+		&:hover {
+			cursor: pointer;
+			background-color: lightgrey;
+		}
+	}
 }

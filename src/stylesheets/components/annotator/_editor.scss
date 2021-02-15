@@ -3,67 +3,67 @@
 //
 
 .editor {
-  font-size: $note-font-size;
-  line-height: $note-line-height;
-  position: relative;
+	font-size: $note-font-size;
+	line-height: $note-line-height;
+	position: relative;
 
-  .content {
-    word-wrap: break-word;
-    padding: nem(4) 8px nem(4);
+	.content {
+		word-wrap: break-word;
+		padding: nem(4) 8px nem(4);
 
-    @-moz-document url-prefix() {
-      padding: nem(3) 8px nem(5);
-    }
+		@-moz-document url-prefix() {
+			padding: nem(3) 8px nem(5);
+		}
 
-    &:focus {
-      outline: 0;
-      cursor: text;
-      background: #fff;
-    }
+		&:focus {
+			outline: 0;
+			cursor: text;
+			background: #fff;
+		}
 
-    &:empty::before {
-      content: attr(placeholder);
-      color: $annotation-placeholder-color;
+		&:empty::before {
+			content: attr(placeholder);
+			color: $annotation-placeholder-color;
 
-      @include state(".content:focus", ".annotation-popup .editor") {
-        color: #707070;
-      }
-    }
+			@include state(".content:focus", ".annotation-popup .editor") {
+				color: #707070;
+			}
+		}
 
-    .overflowed & {
-      pointer-events: none;
-    }
-  }
+		.overflowed & {
+			pointer-events: none;
+		}
+	}
 
-  .renderer {
-    width: 0;
-    height: 0;
-    overflow: hidden;
-  }
+	.renderer {
+		width: 0;
+		height: 0;
+		overflow: hidden;
+	}
 
-  .bubble {
-    font-size: 12px;
-    position: absolute;
-    background-color: #FFF;
-    border: 1px solid lightgrey;
+	.bubble {
+		font-size: 12px;
+		position: absolute;
+		background-color: #FFF;
+		border: 1px solid lightgrey;
 
-    // 5 (buttons) x 20px / 2 = 50px
-    left: calc(50% - 50px);
+		// 5 (buttons) x 20px / 2 = 50px
+		left: calc(50% - 50px);
 
-    margin-top: -15px;
+		margin-top: -15px;
 
-    .button {
-      width: 20px;
-      height: 15px;
-      background-color: transparent;
-      border: none;
-      cursor: pointer;
-      outline: 0;
-      vertical-align: bottom;
+		.button {
+			width: 20px;
+			height: 15px;
+			background-color: transparent;
+			border: none;
+			cursor: pointer;
+			outline: 0;
+			vertical-align: bottom;
 
-      &:hover {
-        background-color: lightgrey;
-      }
-    }
-  }
+			&:hover {
+				background-color: lightgrey;
+			}
+		}
+	}
 }

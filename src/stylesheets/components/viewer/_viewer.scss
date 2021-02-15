@@ -14,113 +14,113 @@
  */
 
 #outerContainer {
-  width: 100%;
-  height: 100%;
-  position: relative;
+	width: 100%;
+	height: 100%;
+	position: relative;
 }
 
 #mainContainer {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  min-width: 320px;
-  bottom: var(--bottomPlaceholderHeight);
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	min-width: 320px;
+	bottom: var(--bottomPlaceholderHeight);
 }
 
 #viewerContainer {
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  position: absolute;
-  top: $toolbar-height;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  outline: none;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	position: absolute;
+	top: $toolbar-height;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	outline: none;
 }
 
 #viewerContainer:not(.pdfPresentationMode) {
-  transition-duration: 200ms;
-  transition-timing-function: ease;
-  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
+	transition-duration: 200ms;
+	transition-timing-function: ease;
+	box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
 #outerContainer.sidebarResizing #viewerContainer {
-  /* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
-  transition-duration: 0s;
+	/* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
+	transition-duration: 0s;
 }
 
 #outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentationMode) {
-  transition-property: left;
-  left: var(--sidebar-width);
+	transition-property: left;
+	left: var(--sidebar-width);
 }
 
 .noResults {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
-  font-style: italic;
-  cursor: default;
+	font-size: 12px;
+	color: rgba(255, 255, 255, 0.8);
+	font-style: italic;
+	cursor: default;
 }
 
 .fileInput {
-  background: rgba(255, 255, 255, 1);
-  color: rgba(0, 0, 0, 1);
-  margin-top: 5px;
-  visibility: hidden;
-  position: fixed;
-  right: 0;
-  top: 0;
+	background: rgba(255, 255, 255, 1);
+	color: rgba(0, 0, 0, 1);
+	margin-top: 5px;
+	visibility: hidden;
+	position: fixed;
+	right: 0;
+	top: 0;
 }
 
 #viewer.textLayer-visible .textLayer {
-  opacity: 1.0;
+	opacity: 1.0;
 }
 
 #viewer.textLayer-visible .canvasWrapper {
-  background-color: rgba(128, 255, 128, 1);
+	background-color: rgba(128, 255, 128, 1);
 }
 
 #viewer.textLayer-visible .canvasWrapper canvas {
-  mix-blend-mode: screen;
+	mix-blend-mode: screen;
 }
 
 #viewer.textLayer-visible .textLayer > span {
-  background-color: rgba(255, 255, 0, 0.1);
-  color: rgba(0, 0, 0, 1);
-  border: solid 1px rgba(255, 0, 0, 0.5);
+	background-color: rgba(255, 255, 0, 0.1);
+	color: rgba(0, 0, 0, 1);
+	border: solid 1px rgba(255, 0, 0, 0.5);
 }
 
 #viewer.textLayer-hover .textLayer > span:hover {
-  background-color: rgba(255, 255, 255, 1);
-  color: rgba(0, 0, 0, 1);
+	background-color: rgba(255, 255, 255, 1);
+	color: rgba(0, 0, 0, 1);
 }
 
 #viewer.textLayer-shadow .textLayer > span {
-  background-color: rgba(255, 255, 255, 0.6);
-  color: rgba(0, 0, 0, 1);
+	background-color: rgba(255, 255, 255, 0.6);
+	color: rgba(0, 0, 0, 1);
 }
 
 .grab-to-pan-grab {
-  cursor: url("images/grab.cur"), move !important;
-  cursor: grab !important;
+	cursor: url("images/grab.cur"), move !important;
+	cursor: grab !important;
 }
 
 .grab-to-pan-grab *:not(input):not(textarea):not(button):not(select):not(:link) {
-  cursor: inherit !important;
+	cursor: inherit !important;
 }
 
 .grab-to-pan-grab:active,
 .grab-to-pan-grabbing {
-  cursor: url("images/grabbing.cur"), move !important;
-  cursor: grabbing !important;
-  position: fixed;
-  background: rgba(0, 0, 0, 0);
-  display: block;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  overflow: hidden;
-  z-index: 50000; /* should be higher than anything else in PDF.js! */
+	cursor: url("images/grabbing.cur"), move !important;
+	cursor: grabbing !important;
+	position: fixed;
+	background: rgba(0, 0, 0, 0);
+	display: block;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	overflow: hidden;
+	z-index: 50000; /* should be higher than anything else in PDF.js! */
 }

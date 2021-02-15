@@ -3,48 +3,56 @@
 //
 
 #PDFBug {
-  background: none repeat scroll 0 0 rgba(255, 255, 255, 1);
-  border: 1px solid rgba(102, 102, 102, 1);
-  position: fixed;
-  top: 32px;
-  right: 0;
-  bottom: 0;
-  font-size: 10px;
-  padding: 0;
-  width: 300px;
+	background: none repeat scroll 0 0 rgba(255, 255, 255, 1);
+	border: 1px solid rgba(102, 102, 102, 1);
+	position: fixed;
+	top: 32px;
+	right: 0;
+	bottom: 0;
+	font-size: 10px;
+	padding: 0;
+	width: 300px;
 }
+
 #PDFBug .controls {
-  background: rgba(238, 238, 238, 1);
-  border-bottom: 1px solid rgba(102, 102, 102, 1);
-  padding: 3px;
+	background: rgba(238, 238, 238, 1);
+	border-bottom: 1px solid rgba(102, 102, 102, 1);
+	padding: 3px;
 }
+
 #PDFBug .panels {
-  bottom: 0;
-  left: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  position: absolute;
-  right: 0;
-  top: 27px;
+	bottom: 0;
+	left: 0;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	position: absolute;
+	right: 0;
+	top: 27px;
 }
+
 #PDFBug button.active {
-  font-weight: bold;
+	font-weight: bold;
 }
+
 .debuggerShowText {
-  background: none repeat scroll 0 0 rgba(255, 255, 0, 1);
-  color: rgba(0, 0, 255, 1);
+	background: none repeat scroll 0 0 rgba(255, 255, 0, 1);
+	color: rgba(0, 0, 255, 1);
 }
+
 .debuggerHideText:hover {
-  background: none repeat scroll 0 0 rgba(255, 255, 0, 1);
+	background: none repeat scroll 0 0 rgba(255, 255, 0, 1);
 }
+
 #PDFBug .stats {
-  font-family: courier;
-  font-size: 10px;
-  white-space: pre;
+	font-family: courier;
+	font-size: 10px;
+	white-space: pre;
 }
+
 #PDFBug .stats .title {
-    font-weight: bold;
+	font-weight: bold;
 }
+
 #PDFBug table {
-  font-size: 10px;
+	font-size: 10px;
 }

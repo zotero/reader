@@ -14,62 +14,62 @@
  */
 
 #thumbnailView {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  width: 100%;
-  height: 100%;
-  padding: 10px 30px 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  user-select: none;
+	display: flex;
+	justify-content: center;
+	flex-wrap: wrap;
+	width: 100%;
+	height: 100%;
+	padding: 10px 30px 0;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	user-select: none;
 }
 
 #thumbnailView > a:active,
 #thumbnailView > a:focus {
-  outline: 0;
+	outline: 0;
 }
 
 .thumbnail {
-  margin: 0 10px 5px 10px;
+	margin: 0 10px 5px 10px;
 }
 
 #thumbnailView > a:last-of-type > .thumbnail {
-  margin-bottom: 10px;
+	margin-bottom: 10px;
 }
 
 #thumbnailView > a:last-of-type > .thumbnail:not([data-loaded]) {
-  margin-bottom: 9px;
+	margin-bottom: 9px;
 }
 
 .thumbnail:not([data-loaded]) {
-  border: 1px dashed rgba(255, 255, 255, 0.5);
-  margin: -1px 9px 4px 9px;
+	border: 1px dashed rgba(255, 255, 255, 0.5);
+	margin: -1px 9px 4px 9px;
 }
 
 .thumbnailSelectionRing {
-  box-sizing: content-box;
-  border-radius: 3px;
-  padding: 5px;
+	box-sizing: content-box;
+	border-radius: 3px;
+	padding: 5px;
 
-  .thumbnail.selected & {
-    background-color: $thumbnail-selection-ring-selected-bg;
-  }
+	.thumbnail.selected & {
+		background-color: $thumbnail-selection-ring-selected-bg;
+	}
 
-  a:focus > .thumbnail & {
-    background-color: $thumbnail-selection-ring-focus-bg;
-  }
+	a:focus > .thumbnail & {
+		background-color: $thumbnail-selection-ring-focus-bg;
+	}
 }
 
 .thumbnailImage {
-  box-sizing: content-box;
-  border: 1px solid $thumbnail-image-border-color;
-  z-index: 99;
-  background-color: $page-bg;
-  background-clip: content-box;
+	box-sizing: content-box;
+	border: 1px solid $thumbnail-image-border-color;
+	z-index: 99;
+	background-color: $page-bg;
+	background-clip: content-box;
 
-  .thumbnail.selected &,
-  a:focus > .thumbnail & {
-    border-color: transparent;
-  }
+	.thumbnail.selected &,
+	a:focus > .thumbnail & {
+		border-color: transparent;
+	}
 }

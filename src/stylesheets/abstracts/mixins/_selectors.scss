@@ -4,30 +4,30 @@
 
 // State mixin
 @mixin state($states...) {
-  @each $state in $states {
-    $string: $state;
+	@each $state in $states {
+		$string: $state;
 
-    @each $token in ">", "+", "~" {
-      $string: str-replace($string, $token, " ");
-    }
+		@each $token in ">", "+", "~" {
+			$string: str-replace($string, $token, " ");
+		}
 
-    $string: str-replace($string, "  ", " ");
+		$string: str-replace($string, "  ", " ");
 
-    $selectors: str-parse($string, " ");
+		$selectors: str-parse($string, " ");
 
-    @each $sel in $selectors {
-      @if str-index(#{&}, $sel) != null {
-        @at-root #{selector-replace(&, $sel, $state)} {
-          @content;
-        }
-      }
-    }
-  }
+		@each $sel in $selectors {
+			@if str-index(#{&}, $sel) != null {
+				@at-root #{selector-replace(&, $sel, $state)} {
+					@content;
+				}
+			}
+		}
+	}
 }
 
 // Variant mixin (alias)
 @mixin variant($args...) {
-  @include state($args...) {
-    @content;
-  }
+	@include state($args...) {
+		@content;
+	}
 }

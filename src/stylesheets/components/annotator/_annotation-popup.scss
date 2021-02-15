@@ -3,14 +3,14 @@
 //
 
 .annotation-popup {
-  width: 240px;
+	width: 240px;
 
-  .content {
-    min-height: calc(
-      2 * #{nem(4)}
-      + 3 * var(--note-font-size) * #{$note-line-height}
-    );
-    max-height: 10 * 16px + 8px;
-    overflow-y: auto;
-  }
+	.content {
+		min-height: calc(
+				2 * #{nem(4)}
+				+ 3 * var(--note-font-size) * #{$note-line-height}
+		);
+		max-height: 10 * 16px + 8px;
+		overflow-y: auto;
+	}
 }

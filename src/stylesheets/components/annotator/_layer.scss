@@ -1,54 +1,54 @@
 
 .layer-highlight {
-  position: absolute;
-  left: 0;
-  top: 0;
-  //pointer-events: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	//pointer-events: none;
 }
 
 .layer-note {
-  position: absolute;
-  z-index: 3;
-  left: 0;
-  top: 0;
-  right: 0;
+	position: absolute;
+	z-index: 3;
+	left: 0;
+	top: 0;
+	right: 0;
 }
 
 .layer-area {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  z-index: 3;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	z-index: 3;
 }
 
 .layer-edge-note {
-  position: absolute;
-  z-index: 3;
-  left: 0;
-  top: 0;
-  right: 0;
+	position: absolute;
+	z-index: 3;
+	left: 0;
+	top: 0;
+	right: 0;
 }
 
 .layer-blink {
-  position: absolute;
-  top: 0;
-  left: 0;
-  mix-blend-mode: multiply;
-  pointer-events: none;
+	position: absolute;
+	top: 0;
+	left: 0;
+	mix-blend-mode: multiply;
+	pointer-events: none;
 
-  .rect {
-    position: absolute;
-    background-color: #e0e0e0;
-  }
+	.rect {
+		position: absolute;
+		background-color: #e0e0e0;
+	}
 }
 
 
 .edge-note {
-  position: absolute;
-  cursor: pointer;
+	position: absolute;
+	cursor: pointer;
 
-  &:hover {
-    z-index: 3 !important;
-  }
+	&:hover {
+		z-index: 3 !important;
+	}
 }
