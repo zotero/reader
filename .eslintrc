@@ -1,0 +1,33 @@
+{
+	"env": {
+		"browser": true,
+		"es6": true,
+		"node": true
+	},
+	"globals": {
+	},
+	"extends": [
+		"@zotero",
+		"plugin:react/recommended"
+	],
+	"parser": "@babel/eslint-parser",
+	"parserOptions": {
+		"ecmaVersion": 2018,
+		"ecmaFeatures": {
+			"jsx": true
+		},
+		"sourceType": "module",
+		"babelOptions": {
+			"configFile": "./.babelrc-es"
+		}
+	},
+	"plugins": [
+		"react"
+	],
+	"settings": {
+		"react": {
+			"version": "16.8"
+		}
+	},
+	"rules": {}
+}
