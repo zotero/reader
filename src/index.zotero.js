@@ -34,11 +34,11 @@ document.addEventListener('webviewerloaded', (e) => {
 
 class ViewerInstance {
 	constructor(options) {
-		this._itemId = options.itemId;
+		this._itemID = options.itemID;
 		this._viewer = null;
 
 		window.addEventListener('message', this.handleMessage);
-		window.itemId = options.itemId;
+		window.itemID = options.itemID;
 		this._viewer = new Viewer({
 			promptImport: options.promptImport,
 			onImport: () => {
@@ -69,7 +69,7 @@ class ViewerInstance {
 				this._postMessage({ action: name, ...data });
 			},
 			onExternalLink: (url) => {
-				this._postMessage({ action: 'openUrl', url });
+				this._postMessage({ action: 'openURL', url });
 			},
 			onDownload: () => {
 				this._postMessage({ action: 'save' });
@@ -92,7 +92,7 @@ class ViewerInstance {
 
 	_postMessage(message) {
 		// console.log(message);
-		parent.postMessage({ itemId: this._itemId, message }, parent.origin);
+		parent.postMessage({ itemID: this._itemID, message }, parent.origin);
 	}
 
 	uninit() {
@@ -107,7 +107,7 @@ class ViewerInstance {
 
 		let data = event.data;
 
-		if (event.data.itemId !== this._itemId) {
+		if (event.data.itemID !== this._itemID) {
 			return;
 		}
 
@@ -182,7 +182,7 @@ class ViewerInstance {
 			case 'addToNote': {
 				let annotation = this._viewer._annotationsStore.annotations.find(x => x.id === data.id);
 				if (annotation) {
-					annotation.attachmentItemId = window.itemId;
+					annotation.attachmentItemID = window.itemID;
 					this._postMessage({
 						action: 'addToNote',
 						annotations: [annotation]
@@ -263,7 +263,7 @@ class ViewerInstance {
 let currentViewerInstance = null;
 
 window.addEventListener('message', function (event) {
-	let itemId = event.data.itemId;
+	let itemID = event.data.itemID;
 	let message = event.data.message;
 
 	if (message.action === 'open') {
@@ -282,8 +282,8 @@ window.addEventListener('message', function (event) {
 			currentViewerInstance.uninit();
 		}
 		currentViewerInstance = new ViewerInstance({
-			itemId, buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight
+			itemID, buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight
 		});
-		parent.postMessage({ itemId, message: { action: 'initialized' } }, parent.origin);
+		parent.postMessage({ itemID, message: { action: 'initialized' } }, parent.origin);
 	}
 });

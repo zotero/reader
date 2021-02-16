@@ -96,7 +96,7 @@ class ViewerInstance {
 			onSetState: function (state) {
 				console.log('Set state', state);
 			},
-			onClickTags(annotationId, event) {
+			onClickTags(annotationID, event) {
 				alert('This will open Zotero tagbox popup');
 			},
 			onPopup(name, data) {

@@ -13,7 +13,7 @@ class Viewer {
 		this._onSetState = debounce(function (state) {
 			options.onSetState(state);
 		}, 100);
-		this._userId = options.userId;
+		this._userID = options.userID;
 		this._label = options.label;
 		this._lastState = null;
 		this._uninitialized = false;
@@ -62,7 +62,7 @@ class Viewer {
 		window.addEventListener('dragstart', this.handleDragStart);
 
 		// window.PDFViewerApplication.eventBus.on("pagesinit", () => {
-		//   window.PDFViewerApplication.pdfDocument._transport.messageHandler.sendWithPromise("setIgnoredAnnotationIds", options.ignoredAnnotationIds);
+		//   window.PDFViewerApplication.pdfDocument._transport.messageHandler.sendWithPromise("setIgnoredAnnotationIDs", options.ignoredAnnotationIDs);
 		// });
 
 		window.PDFViewerApplication.eventBus.on('pagesinit', () => {

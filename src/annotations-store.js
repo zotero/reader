@@ -95,7 +95,7 @@ class AnnotationsStore {
 		return this.annotations;
 	}
 
-	getAnnotationById(id) {
+	getAnnotationByID(id) {
 		return this.annotations.find(annotation => annotation.id === id);
 	}
 
@@ -172,9 +172,9 @@ class AnnotationsStore {
 	}
 
 	async setAnnotation(annotation) {
-		let existingAnnotationIdx = this.annotations.findIndex(x => x.id === annotation.id);
-		if (existingAnnotationIdx >= 0) {
-			this.annotations.splice(existingAnnotationIdx, 1);
+		let existingAnnotationIDx = this.annotations.findIndex(x => x.id === annotation.id);
+		if (existingAnnotationIDx >= 0) {
+			this.annotations.splice(existingAnnotationIDx, 1);
 		}
 
 		this.annotations.push(annotation);
@@ -189,10 +189,10 @@ class AnnotationsStore {
 	}
 
 	async updateAnnotation(annotation) {
-		let existingAnnotationIdx = this.annotations.findIndex(
+		let existingAnnotationIDx = this.annotations.findIndex(
 			x => x.id === annotation.id
 		);
-		let existingAnnotation = this.getAnnotationById(annotation.id)
+		let existingAnnotation = this.getAnnotationByID(annotation.id)
 		annotation = { ...existingAnnotation, ...annotation };
 		annotation.dateModified = (new Date()).toISOString();
 		annotation.position.rects = annotation.position.rects.map(
@@ -201,7 +201,7 @@ class AnnotationsStore {
 
 		// Immediately render the annotation to prevent
 		// delay from the further async calls
-		this.annotations.splice(existingAnnotationIdx, 1, annotation);
+		this.annotations.splice(existingAnnotationIDx, 1, annotation);
 		this.onUpdateAnnotations(this.annotations);
 
 		if (
@@ -232,12 +232,12 @@ class AnnotationsStore {
 		this.onUpdateAnnotations(this.annotations);
 	}
 
-	async getAnnotationImage(annotationId) {
+	async getAnnotationImage(annotationID) {
 		return new Promise((resolve) => {
 			this.renderQueue.push(async () => {
 				let image = '';
 				try {
-					let annotation = this.getAnnotationById(annotationId);
+					let annotation = this.getAnnotationByID(annotationID);
 					if (annotation) {
 						image = await renderAreaImage(annotation.position);
 					}

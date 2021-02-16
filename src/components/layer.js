@@ -32,7 +32,7 @@ function PageLayerHighlight(props) {
 	if (!node) return null;
 
 	return ReactDOM.createPortal(
-		<div className={cx({ 'selecting-annotation': !!props.selectedAnnotationIds.length })}>
+		<div className={cx({ 'selecting-annotation': !!props.selectedAnnotationIDs.length })}>
 			{props.annotations.map(
 				(annotation, index) => {
 					let { position, ...rest } = annotation;
@@ -46,7 +46,7 @@ function PageLayerHighlight(props) {
 						<div key={annotation.id}>
 							<Highlight
 								annotation={viewportAnnotation}
-								isSelected={props.selectedAnnotationIds.includes(annotation.id)}
+								isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
 								onDragStart={props.onDragStart}
 								onDragEnd={props.onDragEnd}
 							/>
@@ -86,8 +86,8 @@ function PageLayerNote(props) {
 						<div key={annotation.id}>
 							<Note
 								annotation={viewportAnnotation}
-								isSelected={props.selectedAnnotationIds.includes(annotation.id)}
-								enableMoving={props.selectedAnnotationIds.length === 1}
+								isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+								enableMoving={props.selectedAnnotationIDs.length === 1}
 								onDragStart={props.onDragStart}
 								onDragEnd={props.onDragEnd}
 								onChangePosition={(position) => {
@@ -129,8 +129,8 @@ function PageLayerArea(props) {
 						<div key={annotation.id}>
 							<Area
 								annotation={viewportAnnotation}
-								isSelected={props.selectedAnnotationIds.includes(annotation.id)}
-								move={props.selectedAnnotationIds.length === 1}
+								isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+								move={props.selectedAnnotationIDs.length === 1}
 								onResizeStart={props.onResizeStart}
 								onDragStart={props.onDragStart}
 								onDragEnd={props.onDragEnd}
@@ -237,7 +237,7 @@ function EdgeNoteLayer(props) {
 		<div>
 			{notes.map(
 				(note) => {
-					let isSelected = props.selectedAnnotationIds.includes(note.annotation.id);
+					let isSelected = props.selectedAnnotationIDs.includes(note.annotation.id);
 					return (
 						<div
 							key={note.annotation.id}
@@ -474,7 +474,7 @@ function Layer(props) {
 	let {
 		annotations,
 		color,
-		selectedAnnotationIds,
+		selectedAnnotationIDs,
 		popupAnnotation,
 		blink,
 		onChange,
@@ -498,7 +498,7 @@ function Layer(props) {
 				<PageLayerHighlight
 					key={'h_' + pageIndex}
 					view={view}
-					selectedAnnotationIds={selectedAnnotationIds}
+					selectedAnnotationIDs={selectedAnnotationIDs}
 					annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'highlight') || [])}
 					onDragStart={props.onDragStart}
 					onDragEnd={props.onDragEnd}
@@ -506,7 +506,7 @@ function Layer(props) {
 				<PageLayerNote
 					key={'n_' + pageIndex}
 					view={view}
-					selectedAnnotationIds={selectedAnnotationIds}
+					selectedAnnotationIDs={selectedAnnotationIDs}
 					annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'note') || [])}
 					onChangePosition={(id, position) => {
 						onChange({ id, position: v2p(position) });
@@ -517,7 +517,7 @@ function Layer(props) {
 				<PageLayerArea
 					key={'a_' + pageIndex}
 					view={view}
-					selectedAnnotationIds={selectedAnnotationIds}
+					selectedAnnotationIDs={selectedAnnotationIDs}
 					annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'image') || [])}
 					onResizeStart={props.onAreaResizeStart}
 					onChangePosition={(id, position) => {
@@ -532,14 +532,14 @@ function Layer(props) {
 				pageLayers.push(<EdgeNoteLayer
 					key={'m_' + pageIndex}
 					view={view}
-					selectedAnnotationIds={selectedAnnotationIds}
+					selectedAnnotationIDs={selectedAnnotationIDs}
 					annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'image'].includes(x.type)) || [])}
 					onClick={onClickEdgeNote}
 				/>);
 			}
 		}
 		return pageLayers;
-	}, [props.annotations, selectedAnnotationIds, initialized, temporaryRerender, props.enableEdgeNotes]);
+	}, [props.annotations, selectedAnnotationIDs, initialized, temporaryRerender, props.enableEdgeNotes]);
 
 	if (!initialized) return null;
 

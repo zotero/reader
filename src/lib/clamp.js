@@ -58,20 +58,20 @@ export async function lineClamp(html, container) {
 
 					let data = { length: 0, maxLength: Math.floor(width / 2 * linesNum) };
 					htmlSlice(rootElement, data);
-					let originalHtml = rootElement.innerHTML;
+					let originalHTML = rootElement.innerHTML;
 
 					let start = 1;
 					let end = data.length;
 					let mid = null;
 					let longestLength = 0;
-					let longestHtml = null;
+					let longestHTML = null;
 
 					function read() {
 						if (mid) {
 							if (Math.abs(rootElement.offsetHeight - outer.offsetHeight) <= 1) {
 								if (mid > longestLength) {
 									longestLength = mid;
-									longestHtml = rootElement.innerHTML;
+									longestHTML = rootElement.innerHTML;
 								}
 								start = mid + 1;
 							}
@@ -81,8 +81,8 @@ export async function lineClamp(html, container) {
 						}
 						else {
 							if (Math.abs(rootElement.offsetHeight - outer.offsetHeight) <= 1) {
-								let clampedHtml = rootElement.innerHTML;
-								cache[(width + html)] = clampedHtml;
+								let clampedHTML = rootElement.innerHTML;
+								cache[(width + html)] = clampedHTML;
 								container.removeChild(outer);
 								return resolve(html);
 							}
@@ -90,28 +90,28 @@ export async function lineClamp(html, container) {
 
 						if (start > end) {
 							return requestAnimationFrame(function write() {
-								rootElement.innerHTML = longestHtml;
+								rootElement.innerHTML = longestHTML;
 								let text = rootElement.textContent;
 								let truncatedText = text.replace(/[ .,;!?'‘’“”\-–—\u2026]+$/, '');
 								let diff = text.length - truncatedText.length - 1;
 								if (diff) {
-									rootElement.innerHTML = originalHtml;
+									rootElement.innerHTML = originalHTML;
 									htmlSlice(rootElement, { length: 0, maxLength: longestLength - diff })
 									rootElement.appendChild(document.createTextNode('\u2026'));
 								}
 
-								let clampedHtml = rootElement.innerHTML;
+								let clampedHTML = rootElement.innerHTML;
 
-								cache[(width + html)] = clampedHtml;
+								cache[(width + html)] = clampedHTML;
 								container.removeChild(outer);
-								resolve(clampedHtml);
+								resolve(clampedHTML);
 							});
 						}
 
 						mid = parseInt((start + end) / 2);
 
 						window.requestAnimationFrame(function write() {
-							rootElement.innerHTML = originalHtml;
+							rootElement.innerHTML = originalHTML;
 							htmlSlice(rootElement, { length: 0, maxLength: mid })
 							rootElement.appendChild(document.createTextNode('\u2026'));
 							setTimeout(read, 0)

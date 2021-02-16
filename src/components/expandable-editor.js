@@ -8,7 +8,7 @@ class ExpandableEditor extends React.Component {
 
 	state = {
 		isResizing: false,
-		clampedHtml: null
+		clampedHTML: null
 	}
 
 	debounceUpdate = debounce(this.update, 1000);
@@ -25,11 +25,11 @@ class ExpandableEditor extends React.Component {
 		return container;
 	}
 
-	getClampContainer(clampId) {
-		let container = document.getElementById(clampId);
+	getClampContainer(clampID) {
+		let container = document.getElementById(clampID);
 		if (!container) {
 			container = document.createElement('div');
-			container.id = clampId;
+			container.id = clampID;
 			container.className = 'clamp';
 			let allClampsContainer = this.getAllClampsContainer();
 			allClampsContainer.appendChild(container);
@@ -63,7 +63,7 @@ class ExpandableEditor extends React.Component {
 		}
 		else {
 			if (prevProps.text !== this.props.text) {
-				this.setState({ clampedHtml: null });
+				this.setState({ clampedHTML: null });
 				this.debounceUpdate();
 			}
 		}
@@ -82,12 +82,12 @@ class ExpandableEditor extends React.Component {
 
 	async update() {
 		if (this.unmounted) return;
-		this.setState({ clampedHtml: null });
+		this.setState({ clampedHTML: null });
 		let node = this.refs.editorView.querySelector('.content');
 		if (!node) return;
-		let renderedEditorHtml = node.innerHTML;
-		let clampedHtml = await lineClamp(renderedEditorHtml, this.getClampContainer(this.props.clampId));
-		if (!this.unmounted) this.setState({ clampedHtml });
+		let renderedEditorHTML = node.innerHTML;
+		let clampedHTML = await lineClamp(renderedEditorHTML, this.getClampContainer(this.props.clampID));
+		if (!this.unmounted) this.setState({ clampedHTML });
 	}
 
 	setCaretToEnd(target) {
@@ -110,7 +110,7 @@ class ExpandableEditor extends React.Component {
 	}
 
 	render() {
-		let showClampedEditor = !this.props.isExpanded && !this.state.isResizing && this.state.clampedHtml;
+		let showClampedEditor = !this.props.isExpanded && !this.state.isResizing && this.state.clampedHTML;
 
 		return (
 			<div
@@ -127,7 +127,7 @@ class ExpandableEditor extends React.Component {
 				</div>
 				{showClampedEditor && <div className="clamped-view">
 					<div className={cx('editor', { 'read-only': this.props.isReadOnly || !this.props.isEditable })}>
-						<div className="content" dangerouslySetInnerHTML={{ __html: this.state.clampedHtml }}/>
+						<div className="content" dangerouslySetInnerHTML={{ __html: this.state.clampedHTML }}/>
 					</div>
 				</div>
 				}

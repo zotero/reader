@@ -66,7 +66,7 @@ export function debounce(func, wait, options) {
 		lastThis,
 		maxWait,
 		result,
-		timerId,
+		timerID,
 		lastCallTime
 
 	let lastInvokeTime = 0
@@ -105,7 +105,7 @@ export function debounce(func, wait, options) {
 
 	function startTimer(pendingFunc, wait) {
 		if (useRAF) {
-			root.cancelAnimationFrame(timerId)
+			root.cancelAnimationFrame(timerID)
 			return root.requestAnimationFrame(pendingFunc)
 		}
 		return setTimeout(pendingFunc, wait)
@@ -122,7 +122,7 @@ export function debounce(func, wait, options) {
 		// Reset any `maxWait` timer.
 		lastInvokeTime = time
 		// Start the timer for the trailing edge.
-		timerId = startTimer(timerExpired, wait)
+		timerID = startTimer(timerExpired, wait)
 		// Invoke the leading edge.
 		return leading ? invokeFunc(time) : result
 	}
@@ -154,11 +154,11 @@ export function debounce(func, wait, options) {
 			return trailingEdge(time)
 		}
 		// Restart the timer.
-		timerId = startTimer(timerExpired, remainingWait(time))
+		timerID = startTimer(timerExpired, remainingWait(time))
 	}
 
 	function trailingEdge(time) {
-		timerId = undefined
+		timerID = undefined
 
 		// Only invoke if we have `lastArgs` which means `func` has been
 		// debounced at least once.
@@ -170,19 +170,19 @@ export function debounce(func, wait, options) {
 	}
 
 	function cancel() {
-		if (timerId !== undefined) {
-			cancelTimer(timerId)
+		if (timerID !== undefined) {
+			cancelTimer(timerID)
 		}
 		lastInvokeTime = 0
-		lastArgs = lastCallTime = lastThis = timerId = undefined
+		lastArgs = lastCallTime = lastThis = timerID = undefined
 	}
 
 	function flush() {
-		return timerId === undefined ? result : trailingEdge(Date.now())
+		return timerID === undefined ? result : trailingEdge(Date.now())
 	}
 
 	function pending() {
-		return timerId !== undefined
+		return timerID !== undefined
 	}
 
 	function debounced(...args) {
@@ -194,17 +194,17 @@ export function debounce(func, wait, options) {
 		lastCallTime = time
 
 		if (isInvoking) {
-			if (timerId === undefined) {
+			if (timerID === undefined) {
 				return leadingEdge(lastCallTime)
 			}
 			if (maxing) {
 				// Handle invocations in a tight loop.
-				timerId = startTimer(timerExpired, wait)
+				timerID = startTimer(timerExpired, wait)
 				return invokeFunc(lastCallTime)
 			}
 		}
-		if (timerId === undefined) {
-			timerId = startTimer(timerExpired, wait)
+		if (timerID === undefined) {
+			timerID = startTimer(timerExpired, wait)
 		}
 		return result
 	}

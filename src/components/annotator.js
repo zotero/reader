@@ -124,7 +124,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	// useRefState state variables are used only for rendering
 
 	const [_annotations, annotationsRef, setAnnotations] = useRefState([]);
-	const [_selectedIds, selectedIdsRef, setSelectedIds] = useRefState([]);
+	const [_selectedIDs, selectedIDsRef, setSelectedIDs] = useRefState([]);
 	const [_expansionState, expansionStateRef, setExpansionState] = useRefState(0);
 	const [_mode, modeRef, setMode] = useRefState(null);
 	const [_color, colorRef, setColor] = useRefState(annotationColors[0][1]);
@@ -141,7 +141,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_promptImport, promptImport, setPromptImport] = useRefState(props.promptImport);
 	const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
 
-	const lastSelectedAnnotationIdRef = useRef(null);
+	const lastSelectedAnnotationIDRef = useRef(null);
 	const pointerDownPositionRef = useRef(null);
 	const selectionRangesRef = useRef([]);
 
@@ -256,10 +256,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 	}, []);
 
-	let focusSidebarHighlight = (annotationId) => {
+	let focusSidebarHighlight = (annotationID) => {
 		setTimeout(function () {
 			let content = document.querySelector(
-				`#annotationsView .annotation[data-sidebar-id='${annotationId}'] .highlight .content`
+				`#annotationsView .annotation[data-sidebar-id='${annotationID}'] .highlight .content`
 			);
 			if (content) {
 				setCaretToEnd(content);
@@ -267,12 +267,12 @@ const Annotator = React.forwardRef((props, ref) => {
 		}, 100);
 	}
 
-	let focusComment = (annotationId) => {
+	let focusComment = (annotationID) => {
 		setTimeout(function () {
 			let content;
 			if (PDFViewerApplication.pdfSidebar.isOpen) {
 				content = document.querySelector(
-					`#annotationsView .annotation[data-sidebar-id='${annotationId}'] .comment .content`
+					`#annotationsView .annotation[data-sidebar-id='${annotationID}'] .comment .content`
 				);
 			}
 			else {
@@ -287,7 +287,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	function handleKeyDown(e) {
 		if (e.key === 'c') return;
 		if (e.key === 'Escape') {
-			if (selectedIdsRef.current.length) {
+			if (selectedIDsRef.current.length) {
 				selectAnnotation(null);
 			}
 			else if (modeRef.current) {
@@ -303,13 +303,13 @@ const Annotator = React.forwardRef((props, ref) => {
 
 			if (e.key === 'Enter') {
 				// this.setState({expansionState: 1});
-				let id = selectedIdsRef.current[0];
+				let id = selectedIDsRef.current[0];
 				if (id) {
 					focusComment(id)
 				}
 				else {
-					if (lastSelectedAnnotationIdRef.current) {
-						selectAnnotation(lastSelectedAnnotationIdRef.current, false, false, true, true);
+					if (lastSelectedAnnotationIDRef.current) {
+						selectAnnotation(lastSelectedAnnotationIDRef.current, false, false, true, true);
 					}
 					else if (annotationsRef.current.length) {
 						selectAnnotation(annotationsRef.current[0].id, false, false, true, true);
@@ -318,13 +318,13 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 			else if (e.key === 'Delete' || e.key === 'Backspace') {
 				// TODO: Auto-select the next annotation after deletion in sidebar
-				let hasReadOnly = annotationsRef.current.find(x => selectedIdsRef.current.includes(x.id) && x.readOnly);
+				let hasReadOnly = annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 				if (!hasReadOnly) {
-					props.onDeleteAnnotations(selectedIdsRef.current);
+					props.onDeleteAnnotations(selectedIDsRef.current);
 				}
 			}
 			else if (e.key === 'ArrowUp') {
-				if (selectedIdsRef.current.length) {
+				if (selectedIDsRef.current.length) {
 					let annotation = selectPrevAnnotation(false, e.shiftKey);
 					if (annotation) {
 						scrollTo(annotation, true, true);
@@ -333,7 +333,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				}
 			}
 			else if (e.key === 'ArrowDown') {
-				if (selectedIdsRef.current.length) {
+				if (selectedIDsRef.current.length) {
 					let annotation = selectNextAnnotation(false, e.shiftKey);
 					if (annotation) {
 						scrollTo(annotation, true, true);
@@ -353,8 +353,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			if (selectionRangesRef.current.length) {
 				annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 			}
-			else if (selectedIdsRef.current.length) {
-				annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+			else if (selectedIDsRef.current.length) {
+				annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 			}
 
 			if (annotations.length) {
@@ -402,10 +402,10 @@ const Annotator = React.forwardRef((props, ref) => {
 				}
 			}
 
-			let selectId = getAnnotationToSelectId(pointerDownPositionRef.current);
-			if (selectId && !isShift && !pointerInSelection) {
-				let selectAnnotation = annotationsRef.current.find(x => x.id === selectId);
-				if (selectAnnotation.type !== 'note' || !selectedIdsRef.current.includes(selectId)) {
+			let selectID = getAnnotationToSelectID(pointerDownPositionRef.current);
+			if (selectID && !isShift && !pointerInSelection) {
+				let selectAnnotation = annotationsRef.current.find(x => x.id === selectID);
+				if (selectAnnotation.type !== 'note' || !selectedIDsRef.current.includes(selectID)) {
 					handleLayerAnnotationDragStart(event);
 					return;
 				}
@@ -449,7 +449,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		selectAnnotation(null);
 	}
 
-	function getAnnotationToSelectId(position, hasModifier) {
+	function getAnnotationToSelectID(position, hasModifier) {
 		let found = [];
 		let x = position.rects[0][0];
 		let y = position.rects[0][1];
@@ -484,7 +484,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 		}
 
-		let selectedId = null;
+		let selectedID = null;
 		if (!found.length) return;
 
 		function getAnnotationAreaSize(annotation) {
@@ -503,126 +503,126 @@ const Annotator = React.forwardRef((props, ref) => {
 			return found[0].id;
 		}
 
-		let indexOfCurrentId = found.indexOf(found.find(annotation => selectedIdsRef.current.slice(-1)[0] === annotation.id));
+		let indexOfCurrentID = found.indexOf(found.find(annotation => selectedIDsRef.current.slice(-1)[0] === annotation.id));
 
-		if (indexOfCurrentId >= 0) {
-			if (indexOfCurrentId < found.length - 1) {
-				selectedId = found[indexOfCurrentId + 1].id;
+		if (indexOfCurrentID >= 0) {
+			if (indexOfCurrentID < found.length - 1) {
+				selectedID = found[indexOfCurrentID + 1].id;
 			}
 			else {
 				if (found.length) {
-					selectedId = found[0].id;
+					selectedID = found[0].id;
 				}
-				// selectedId = null;
+				// selectedID = null;
 			}
 		}
 		else {
 			if (found.length) {
-				selectedId = found[0].id;
+				selectedID = found[0].id;
 			}
 		}
 
-		return selectedId;
+		return selectedID;
 	}
 
 	function selectPrevAnnotation(ctrl, shift) {
-		let lastId = selectedIdsRef.current.slice(-1)[0];
-		if (lastId) {
-			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastId);
+		let lastID = selectedIDsRef.current.slice(-1)[0];
+		if (lastID) {
+			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
 			if (annotationIndex - 1 >= 0) {
 				let nextAnnotation = annotationsRef.current[annotationIndex - 1]
-				let prevId = nextAnnotation.id;
-				selectAnnotation(prevId, ctrl, shift, true, true);
+				let prevID = nextAnnotation.id;
+				selectAnnotation(prevID, ctrl, shift, true, true);
 				return nextAnnotation;
 			}
 			else {
-				scrollTo(annotationsRef.current.find(x => x.id === lastId), true, true);
+				scrollTo(annotationsRef.current.find(x => x.id === lastID), true, true);
 			}
 		}
 	}
 
 	function selectNextAnnotation(ctrl, shift) {
-		let lastId = selectedIdsRef.current.slice(-1)[0];
-		if (lastId) {
-			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastId);
+		let lastID = selectedIDsRef.current.slice(-1)[0];
+		if (lastID) {
+			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
 			if (annotationsRef.current.length > annotationIndex + 1) {
 				let nextAnnotation = annotationsRef.current[annotationIndex + 1]
-				let nextId = nextAnnotation.id;
-				selectAnnotation(nextId, ctrl, shift, true, true);
+				let nextID = nextAnnotation.id;
+				selectAnnotation(nextID, ctrl, shift, true, true);
 				return nextAnnotation;
 			}
 			else {
-				scrollTo(annotationsRef.current.find(x => x.id === lastId), true, true);
+				scrollTo(annotationsRef.current.find(x => x.id === lastID), true, true);
 			}
 		}
 	}
 
 	function selectAnnotation(id, ctrl, shift, focusSidebar, focusViewer) {
 		if (!id) {
-			setSelectedIds([]);
+			setSelectedIDs([]);
 			return 0;
 		}
-		let selectedIds = selectedIdsRef.current.slice();
-		if (shift && selectedIds.length) {
+		let selectedIDs = selectedIDsRef.current.slice();
+		if (shift && selectedIDs.length) {
 			let annotationIndex = annotationsRef.current.findIndex(x => x.id === id);
-			let lastSelectedIndex = annotationsRef.current.findIndex(x => x.id === selectedIds.slice(-1)[0]);
-			let selectedIndices = selectedIds.map(id => annotationsRef.current.findIndex(annotation => annotation.id === id));
+			let lastSelectedIndex = annotationsRef.current.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
+			let selectedIndices = selectedIDs.map(id => annotationsRef.current.findIndex(annotation => annotation.id === id));
 			let minSelectedIndex = Math.min(...selectedIndices);
 			let maxSelectedIndex = Math.max(...selectedIndices);
 			if (annotationIndex < minSelectedIndex) {
 				for (let i = annotationIndex; i < minSelectedIndex; i++) {
-					selectedIds.push(annotationsRef.current[i].id);
+					selectedIDs.push(annotationsRef.current[i].id);
 				}
 			}
 			else if (annotationIndex > maxSelectedIndex) {
 				for (let i = maxSelectedIndex; i <= annotationIndex; i++) {
-					selectedIds.push(annotationsRef.current[i].id);
+					selectedIDs.push(annotationsRef.current[i].id);
 				}
 			}
 			else {
 				for (let i = Math.min(annotationIndex, lastSelectedIndex); i <= Math.max(annotationIndex, lastSelectedIndex); i++) {
 					if (i === lastSelectedIndex) continue;
-					selectedIds.push(annotationsRef.current[i].id);
+					selectedIDs.push(annotationsRef.current[i].id);
 				}
 			}
 		}
-		else if (ctrl && selectedIds.length) {
-			let existingIndex = selectedIds.indexOf(id)
+		else if (ctrl && selectedIDs.length) {
+			let existingIndex = selectedIDs.indexOf(id)
 			if (existingIndex >= 0) {
-				selectedIds.splice(existingIndex, 1);
+				selectedIDs.splice(existingIndex, 1);
 			}
 			else {
-				selectedIds.push(id);
+				selectedIDs.push(id);
 			}
 		}
 		else {
-			selectedIds = [id];
+			selectedIDs = [id];
 		}
 
-		if (JSON.stringify(selectedIdsRef.current) === JSON.stringify(selectedIds)) return 0;
+		if (JSON.stringify(selectedIDsRef.current) === JSON.stringify(selectedIDs)) return 0;
 
-		setSelectedIds(selectedIds);
-		if (selectedIds.length >= 2) {
+		setSelectedIDs(selectedIDs);
+		if (selectedIDs.length >= 2) {
 			setExpansionState(0);
 		}
 		else {
 			setExpansionState(1);
 		}
 
-		lastSelectedAnnotationIdRef.current = selectedIds.slice(-1)[0];
+		lastSelectedAnnotationIDRef.current = selectedIDs.slice(-1)[0];
 
 		if (focusSidebar || focusViewer) {
-			let annotation = annotationsRef.current.find(x => x.id === selectedIds.slice(-1)[0]);
+			let annotation = annotationsRef.current.find(x => x.id === selectedIDs.slice(-1)[0]);
 			scrollTo(annotation, focusSidebar, focusViewer);
 		}
 
-		return selectedIds.length;
+		return selectedIDs.length;
 	}
 
 	function handleLayerAnnotationDragStart(event) {
-		let annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		if (annotations.length > 1) {
-			setMultiDragPreview(event, selectedIdsRef.current.length);
+			setMultiDragPreview(event, selectedIDsRef.current.length);
 		}
 		else if (annotations.length) {
 			setLayerSingleDragPreview(event, annotations[0]);
@@ -639,9 +639,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		setIsDraggingAnnotation(true);
 
 		let annotations;
-		if (selectedIdsRef.current.includes(id) && selectedIdsRef.current.length > 1) {
-			setMultiDragPreview(event, selectedIdsRef.current.length);
-			annotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+		if (selectedIDsRef.current.includes(id) && selectedIDsRef.current.length > 1) {
+			setMultiDragPreview(event, selectedIDsRef.current.length);
+			annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		}
 		else {
 			setSidebarSingleDragPreview(event);
@@ -675,8 +675,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			return props.onClickTags(id, event);
 		}
 
-		if (section === 'highlight' && selectedIdsRef.current.length === 1 &&
-			selectedIdsRef.current[0] === id) {
+		if (section === 'highlight' && selectedIDsRef.current.length === 1 &&
+			selectedIDsRef.current[0] === id) {
 			if (expansionStateRef.current >= 1 && expansionStateRef.current <= 2) {
 				setExpansionState(2);
 			}
@@ -701,8 +701,8 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function handleSidebarAnnotationDoubleClick(id) {
-		if (selectedIdsRef.current.length === 1 &&
-			selectedIdsRef.current[0] === id) {
+		if (selectedIDsRef.current.length === 1 &&
+			selectedIDsRef.current[0] === id) {
 			if (expansionStateRef.current >= 1 && expansionStateRef.current <= 2) {
 				setExpansionState(3);
 				focusSidebarHighlight(id);
@@ -763,7 +763,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		let intersectsWithSelectedAnnotations = false;
-		let selectedAnnotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+		let selectedAnnotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		for (let annotation of selectedAnnotations) {
 			if (intersectBoundingPositions(position, annotation.position)) {
 				intersectsWithSelectedAnnotations = true;
@@ -771,10 +771,10 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 		}
 
-		let selectId = getAnnotationToSelectId(position, isCtrl || isShift);
-		if (selectId && isLeft && !isShift && !intersectsWithSelectedAnnotations) {
+		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
+		if (selectID && isLeft && !isShift && !intersectsWithSelectedAnnotations) {
 			setSelectionRangesRef([]);
-			selectAnnotation(selectId, isCtrl, isShift, true, false);
+			selectAnnotation(selectID, isCtrl, isShift, true, false);
 			setIsSelectedOnPointerDown(true);
 			return;
 		}
@@ -785,7 +785,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		// let intersectsWithSelected = false;
-		// let selectedAnnotations = annotationsRef.current.filter(x => selectedIdsRef.current.includes(x.id));
+		// let selectedAnnotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		// for (let annotation of selectedAnnotations) {
 		//   if (intersectPositions(position, annotation.position)) {
 		//     return;
@@ -863,19 +863,19 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		setIsLastClickRight(isRight);
 
-		let selectId = getAnnotationToSelectId(position, isCtrl || isShift);
-		if (selectId) {
+		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
+		if (selectID) {
 			setSelectionRangesRef([]);
-			selectAnnotation(selectId, isCtrl, isShift, true, false);
+			selectAnnotation(selectID, isCtrl, isShift, true, false);
 
-			let annotation = annotationsRef.current.find(x => x.id === selectId);
+			let annotation = annotationsRef.current.find(x => x.id === selectID);
 			// TODO: Right click shouldn't switch to the next annotation
 			if (isRight && !annotation.isExternal) {
 				let selectedColor = annotation.color;
 				props.onPopup('openAnnotationPopup', {
 					x: event.screenX,
 					y: event.screenY,
-					id: selectId,
+					id: selectID,
 					colors: annotationColors,
 					selectedColor
 				});
@@ -890,7 +890,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		// TODO: Fix selection
 		if (isOver(position, annotationsRef.current)) {
 			document.getElementById('viewer').classList.add('force-annotation-pointer');
-			let id = getAnnotationToSelectId(position, 0);
+			let id = getAnnotationToSelectID(position, 0);
 		}
 		else {
 			document.getElementById('viewer').classList.remove('force-annotation-pointer');
@@ -953,7 +953,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let partialAnnotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 		let annotations = partialAnnotations.map(annotation => ({
 			...annotation,
-			attachmentItemId: window.itemId,
+			attachmentItemID: window.itemID,
 			type: 'highlight'
 		}))
 		if (annotations.length) {
@@ -974,7 +974,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			<Findbar/>
 			<AnnotationsView
 				annotations={_annotations}
-				selectedAnnotationIds={_selectedIds}
+				selectedAnnotationIDs={_selectedIDs}
 				expansionState={_expansionState}
 				onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 				onAnnotationEditorBlur={handleSidebarAnnotationEditorBlur}
@@ -996,14 +996,14 @@ const Annotator = React.forwardRef((props, ref) => {
 					!_isResizingArea &&
 					!_isLastClickRight &&
 					!_isSidebarOpen &&
-					_selectedIds.length < 2 &&
-					_selectedIds.length && _annotations.find(x => _selectedIds.includes(x.id))}
+					_selectedIDs.length < 2 &&
+					_selectedIDs.length && _annotations.find(x => _selectedIDs.includes(x.id))}
 				annotations={_annotations}
 				color={_color}
-				selectedAnnotationIds={_selectedIds}
+				selectedAnnotationIDs={_selectedIDs}
 				blink={_blink}
 				enableEdgeNotes={!_isResizingArea} // TODO: disable only for the current note
-				enableAreaSelector={_mode === 'image' && !_selectedIds.length}
+				enableAreaSelector={_mode === 'image' && !_selectedIDs.length}
 				onAreaSelectionStart={handleLayerAreaSelectionStart}
 				onAreaSelection={handleLayerAreaCreation}
 				onAreaResizeStart={handleLayerAreaResizeStart}

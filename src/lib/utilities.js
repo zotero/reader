@@ -243,7 +243,7 @@ export function getAnnotationsFromSelectionRanges(selectionRanges) {
 	return annotations;
 }
 
-export function getImageDataUrl(img) {
+export function getImageDataURL(img) {
 	var canvas = document.createElement('canvas');
 	canvas.width = img.naturalWidth;
 	canvas.height = img.naturalHeight;
@@ -273,13 +273,13 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 			if (image) {
 				let img = document.querySelector('div[data-sidebar-id="' + id + '"] img');
 				if (img) {
-					image = getImageDataUrl(img);
+					image = getImageDataURL(img);
 					imageNaturalWidth = img.naturalWidth;
 					imageNaturalHeight = img.naturalHeight;
 				}
 			}
 			return {
-				attachmentItemId: window.itemId,
+				attachmentItemID: window.itemID,
 				text,
 				comment,
 				image,

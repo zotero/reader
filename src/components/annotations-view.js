@@ -147,9 +147,9 @@ class AnnotationsView extends React.Component {
 				{annotations.length ? annotations.map((annotation) => (
 					<Annotation
 						key={annotation.id}
-						isSelected={this.props.selectedAnnotationIds.includes(annotation.id)}
+						isSelected={this.props.selectedAnnotationIDs.includes(annotation.id)}
 						annotation={annotation}
-						expansionState={this.props.selectedAnnotationIds.includes(annotation.id) ? this.props.expansionState : 0}
+						expansionState={this.props.selectedAnnotationIDs.includes(annotation.id) ? this.props.expansionState : 0}
 						onSelect={this.props.onSelectAnnotation}
 						onChange={this.props.onChange}
 						onClickAnnotationSection={this.props.onClickAnnotationSection}
