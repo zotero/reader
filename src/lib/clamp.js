@@ -4,7 +4,6 @@ function htmlSlice(node, data) {
 	for (let i = 0; i < node.childNodes.length; i++) {
 		let childNode = node.childNodes[i];
 		if (childNode.nodeType === Node.ELEMENT_NODE) {
-
 			if (childNode.nodeName === 'BR') {
 				data.length += 1;
 				if (data.length >= data.maxLength) {
@@ -14,7 +13,7 @@ function htmlSlice(node, data) {
 				continue;
 			}
 
-			htmlSlice(childNode, data)
+			htmlSlice(childNode, data);
 		}
 		else if (childNode.nodeType === Node.TEXT_NODE) {
 			if (data.maxLength && data.length >= data.maxLength) {
@@ -53,7 +52,7 @@ export async function lineClamp(html, container) {
 					let rootElement = document.createElement('div');
 					rootElement.className = 'inner';
 					rootElement.innerHTML = html;
-					outer.appendChild(rootElement)
+					outer.appendChild(rootElement);
 					container.appendChild(outer);
 
 					let data = { length: 0, maxLength: Math.floor(width / 2 * linesNum) };
@@ -79,13 +78,11 @@ export async function lineClamp(html, container) {
 								end = mid - 1;
 							}
 						}
-						else {
-							if (Math.abs(rootElement.offsetHeight - outer.offsetHeight) <= 1) {
-								let clampedHTML = rootElement.innerHTML;
-								cache[(width + html)] = clampedHTML;
-								container.removeChild(outer);
-								return resolve(html);
-							}
+						else if (Math.abs(rootElement.offsetHeight - outer.offsetHeight) <= 1) {
+							let clampedHTML = rootElement.innerHTML;
+							cache[(width + html)] = clampedHTML;
+							container.removeChild(outer);
+							return resolve(html);
 						}
 
 						if (start > end) {
@@ -96,7 +93,7 @@ export async function lineClamp(html, container) {
 								let diff = text.length - truncatedText.length - 1;
 								if (diff) {
 									rootElement.innerHTML = originalHTML;
-									htmlSlice(rootElement, { length: 0, maxLength: longestLength - diff })
+									htmlSlice(rootElement, { length: 0, maxLength: longestLength - diff });
 									rootElement.appendChild(document.createTextNode('\u2026'));
 								}
 
@@ -112,15 +109,15 @@ export async function lineClamp(html, container) {
 
 						window.requestAnimationFrame(function write() {
 							rootElement.innerHTML = originalHTML;
-							htmlSlice(rootElement, { length: 0, maxLength: mid })
+							htmlSlice(rootElement, { length: 0, maxLength: mid });
 							rootElement.appendChild(document.createTextNode('\u2026'));
-							setTimeout(read, 0)
+							setTimeout(read, 0);
 						});
 					}
 
 					setTimeout(read, 0);
 				});
-			}, 0)
+			}, 0);
 		});
 	});
 }

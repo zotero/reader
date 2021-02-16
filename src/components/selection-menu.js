@@ -5,7 +5,7 @@ import { annotationColors } from '../lib/colors';
 
 class SelectionMenu extends React.Component {
 	handleColorPick = (color) => {
-		this.props.onHighlight(color)
+		this.props.onHighlight(color);
 	}
 
 	handleAddToNote = (event) => {

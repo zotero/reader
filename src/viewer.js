@@ -22,10 +22,10 @@ class Viewer {
 		this.setBottomPlaceholderHeight(this.options.bottomPlaceholderHeight);
 		this._annotatorPromise = new Promise((resolve) => {
 			this._annotatorPromiseResolve = resolve;
-		})
+		});
 		this._pdfjsPromise = new Promise((resolve) => {
 			this._pdfjsPromiseResolve = resolve;
-		})
+		});
 		this._annotationsStore = new AnnotationsStore({
 			annotations: options.annotations,
 			onSetAnnotation: options.onSetAnnotation,
@@ -128,8 +128,9 @@ class Viewer {
 			rotation: e.location.rotation,
 			top: e.location.top,
 			left: e.location.left,
-			sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen ?
-				window.PDFViewerApplication.pdfSidebar.active : 0,
+			sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen
+				? window.PDFViewerApplication.pdfSidebar.active
+				: 0,
 			sidebarWidth: window.PDFViewerApplication.pdfSidebarResizer._width || 200,
 			scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
 			spreadMode: PDFViewerApplication.pdfViewer.spreadMode
@@ -289,8 +290,11 @@ class Viewer {
 		window.PDFViewerApplication.pdfViewer.pagesRotation = state.rotation;
 
 		if (!skipScroll) {
-			let dest = [null, { name: 'XYZ' }, state.left,
-				state.top, parseInt(state.scale) ? state.scale / 100 : state.scale];
+			let dest = [null,
+				{ name: 'XYZ' },
+				state.left,
+				state.top,
+				parseInt(state.scale) ? state.scale / 100 : state.scale];
 
 			window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
 				pageNumber: state.pageIndex + 1,

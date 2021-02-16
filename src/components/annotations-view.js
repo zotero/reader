@@ -33,7 +33,6 @@ class AnnotationsViewSearch extends React.Component {
 }
 
 class Annotation extends React.Component {
-
 	state = {
 		isDown: false
 	}
@@ -86,7 +85,7 @@ class Annotation extends React.Component {
 					onEditorBlur={this.props.onAnnotationEditorBlur}
 				/>
 			</div>
-		)
+		);
 	}
 }
 
@@ -144,22 +143,24 @@ class AnnotationsView extends React.Component {
 					onInput={this.handleSearchInput}
 					onClear={this.handleSearchClear}
 				/>
-				{annotations.length ? annotations.map((annotation) => (
-					<Annotation
-						key={annotation.id}
-						isSelected={this.props.selectedAnnotationIDs.includes(annotation.id)}
-						annotation={annotation}
-						expansionState={this.props.selectedAnnotationIDs.includes(annotation.id) ? this.props.expansionState : 0}
-						onSelect={this.props.onSelectAnnotation}
-						onChange={this.props.onChange}
-						onClickAnnotationSection={this.props.onClickAnnotationSection}
-						onDoubleClickHighlight={this.props.onDoubleClickHighlight}
-						onPageMenu={this.props.onPageMenu}
-						onMoreMenu={this.props.onMoreMenu}
-						onDragStart={this.props.onDragStart}
-						onAnnotationEditorBlur={this.props.onAnnotationEditorBlur}
-					/>
-				)) : <div>Create an annotation to see it in the sidebar</div>}
+				{annotations.length
+					? annotations.map(annotation => (
+						<Annotation
+							key={annotation.id}
+							isSelected={this.props.selectedAnnotationIDs.includes(annotation.id)}
+							annotation={annotation}
+							expansionState={this.props.selectedAnnotationIDs.includes(annotation.id) ? this.props.expansionState : 0}
+							onSelect={this.props.onSelectAnnotation}
+							onChange={this.props.onChange}
+							onClickAnnotationSection={this.props.onClickAnnotationSection}
+							onDoubleClickHighlight={this.props.onDoubleClickHighlight}
+							onPageMenu={this.props.onPageMenu}
+							onMoreMenu={this.props.onMoreMenu}
+							onDragStart={this.props.onDragStart}
+							onAnnotationEditorBlur={this.props.onAnnotationEditorBlur}
+						/>
+					))
+					: <div>Create an annotation to see it in the sidebar</div>}
 			</React.Fragment>,
 			containerNode
 		);

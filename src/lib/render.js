@@ -13,8 +13,8 @@ export async function renderAreaImage(position) {
 
 	let canvas = document.createElement('canvas');
 
-	if (typeof PDFJSDev === 'undefined' ||
-		PDFJSDev.test('MOZCENTRAL || FIREFOX || GENERIC')) {
+	if (typeof PDFJSDev === 'undefined'
+		|| PDFJSDev.test('MOZCENTRAL || FIREFOX || GENERIC')) {
 		canvas.mozOpaque = true;
 	}
 	let ctx = canvas.getContext('2d', { alpha: false });

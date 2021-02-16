@@ -2,7 +2,7 @@
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import cx from 'classnames'
+import cx from 'classnames';
 
 class Toolbar extends React.Component {
 	getContainerNode() {
@@ -10,7 +10,7 @@ class Toolbar extends React.Component {
 	}
 
 	handleColorPick = (event) => {
-		this.props.onColorPick(event.screenX, event.screenY)
+		this.props.onColorPick(event.screenX, event.screenY);
 	}
 
 	render() {
@@ -19,7 +19,7 @@ class Toolbar extends React.Component {
 		return ReactDOM.createPortal(
 			<div className="tool-group annotation-tools">
 				<button
-					data-l10n-id='highlight_tool'
+					data-l10n-id="highlight_tool"
 					className={cx('toolbarButton highlight', {
 						toggled: toggled === 'highlight'
 					})}
@@ -30,7 +30,7 @@ class Toolbar extends React.Component {
 					<span data-l10n-id="highlight_tool_label">Highlight</span>
 				</button>
 				<button
-					data-l10n-id='note_tool'
+					data-l10n-id="note_tool"
 					className={cx('toolbarButton note', {
 						toggled: toggled === 'note'
 					})}
@@ -41,7 +41,7 @@ class Toolbar extends React.Component {
 					<span data-l10n-id="note_tool_label">Note</span>
 				</button>
 				<button
-					data-l10n-id='area_tool'
+					data-l10n-id="area_tool"
 					className={cx('toolbarButton area', {
 						toggled: toggled === 'image'
 					})}
@@ -52,7 +52,7 @@ class Toolbar extends React.Component {
 					<span data-l10n-id="area_tool_label">Area</span>
 				</button>
 				<button
-					data-l10n-id='global_color'
+					data-l10n-id="global_color"
 					className="toolbarButton global-color"
 					style={{ color }}
 					title="Pick a Color"

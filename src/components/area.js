@@ -32,7 +32,7 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
 			window.removeEventListener('mousemove', handlePointerMoveCallback);
 			window.removeEventListener('mouseup', handlePointerUpCallback);
 			document.getElementById('viewerContainer').removeEventListener('keydown', handleKeyDownCallback);
-		}
+		};
 	}, [handlePointerMoveCallback, handlePointerUpCallback, handleKeyDownCallback]);
 
 	function getResizedRect(rect, clientX, clientY) {
@@ -70,7 +70,7 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
 
 	function handlePointerMove(event) {
 		if (!resizingDirections.current) return;
-		let rect = getResizedRect(annotation.position.rects[0], event.clientX, event.clientY)
+		let rect = getResizedRect(annotation.position.rects[0], event.clientX, event.clientY);
 		setResizingRect(rect);
 	}
 
@@ -114,20 +114,19 @@ function Area({ annotation, move, isSelected, onResizeStart, onDragStart, onDrag
 				// onDragStart={onDragStart}
 				// onDragEnd={onDragEnd}
 			>
-				{!annotation.readOnly && <div className="resizer" onMouseDown={(event) => event.preventDefault()}>
-					<div className="line top" onMouseDown={(event) => handleResizeStart(['top'])}/>
-					<div className="line right" onMouseDown={(event) => handleResizeStart(['right'])}/>
-					<div className="line bottom" onMouseDown={(event) => handleResizeStart(['bottom'])}/>
-					<div className="line left" onMouseDown={(event) => handleResizeStart(['left'])}/>
-					<div className="edge top-right" onMouseDown={(event) => handleResizeStart(['top', 'right'])}/>
-					<div className="edge bottom-right" onMouseDown={(event) => handleResizeStart(['bottom', 'right'])}/>
-					<div className="edge bottom-left" onMouseDown={(event) => handleResizeStart(['bottom', 'left'])}/>
-					<div className="edge top-left" onMouseDown={(event) => handleResizeStart(['top', 'left'])}/>
+				{!annotation.readOnly && <div className="resizer" onMouseDown={event => event.preventDefault()}>
+					<div className="line top" onMouseDown={event => handleResizeStart(['top'])}/>
+					<div className="line right" onMouseDown={event => handleResizeStart(['right'])}/>
+					<div className="line bottom" onMouseDown={event => handleResizeStart(['bottom'])}/>
+					<div className="line left" onMouseDown={event => handleResizeStart(['left'])}/>
+					<div className="edge top-right" onMouseDown={event => handleResizeStart(['top', 'right'])}/>
+					<div className="edge bottom-right" onMouseDown={event => handleResizeStart(['bottom', 'right'])}/>
+					<div className="edge bottom-left" onMouseDown={event => handleResizeStart(['bottom', 'left'])}/>
+					<div className="edge top-left" onMouseDown={event => handleResizeStart(['top', 'left'])}/>
 				</div>}
 			</div>
 		</Fragment>
 	);
-
 }
 
 export default Area;

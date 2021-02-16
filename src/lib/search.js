@@ -215,10 +215,10 @@ function approximateMatch(text, pattern, maxErrors) {
 			}
 			// Check if we also need to compute an additional block, or if we can reduce
 			// the number of blocks processed for the next column.
-			if ((score[y] - carry) <= maxErrors &&
-				(y < ctx.bMax) &&
-				((ctx.peq[ch][y + 1] & 1) ||
-					(carry < 0))) {
+			if ((score[y] - carry) <= maxErrors
+				&& (y < ctx.bMax)
+				&& ((ctx.peq[ch][y + 1] & 1)
+					|| (carry < 0))) {
 				// Error count for bottom block is under threshold, increase the number of
 				// blocks processed for this column & next by 1.
 				y += 1;
@@ -254,7 +254,6 @@ export function searchAnnotations(annotations, query) {
 	query = query.toLowerCase();
 	let results = [];
 	for (let annotation of annotations) {
-
 		let errors = null;
 		let match = null;
 

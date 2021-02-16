@@ -5,7 +5,6 @@ import { lineClamp } from '../lib/clamp';
 import { debounce } from '../lib/debounce';
 
 class ExpandableEditor extends React.Component {
-
 	state = {
 		isResizing: false,
 		clampedHTML: null
@@ -38,8 +37,8 @@ class ExpandableEditor extends React.Component {
 	}
 
 	componentDidMount() {
-		document.getElementById('sidebarResizer').addEventListener('mousedown', this.handleResizerDown)
-		window.addEventListener('mouseup', this.handleResizerUp)
+		document.getElementById('sidebarResizer').addEventListener('mousedown', this.handleResizerDown);
+		window.addEventListener('mouseup', this.handleResizerUp);
 	}
 
 	componentWillUnmount() {
@@ -48,7 +47,7 @@ class ExpandableEditor extends React.Component {
 		//   .getElementById('viewer')
 		//   .removeEventListener('pointerdown', this.handleBlur);
 
-		document.getElementById('sidebarResizer').removeEventListener('mousedown', this.handleResizerDown)
+		document.getElementById('sidebarResizer').removeEventListener('mousedown', this.handleResizerDown);
 		window.removeEventListener('mouseup', this.handleResizerUp);
 		this.unmounted = true;
 	}
@@ -58,14 +57,11 @@ class ExpandableEditor extends React.Component {
 			this.initialized = true;
 			setTimeout(() => {
 				this.update();
-			}, 100)
-
+			}, 100);
 		}
-		else {
-			if (prevProps.text !== this.props.text) {
-				this.setState({ clampedHTML: null });
-				this.debounceUpdate();
-			}
+		else if (prevProps.text !== this.props.text) {
+			this.setState({ clampedHTML: null });
+			this.debounceUpdate();
 		}
 	}
 
@@ -106,7 +102,7 @@ class ExpandableEditor extends React.Component {
 	}
 
 	handleChange = (text) => {
-		this.props.onChange(text)
+		this.props.onChange(text);
 	}
 
 	render() {
@@ -133,7 +129,7 @@ class ExpandableEditor extends React.Component {
 				}
 			</div>
 
-		)
+		);
 	}
 }
 

@@ -11,13 +11,13 @@ export function copyToClipboard(str) {
 
 export function deselect() {
 	let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
-	if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
+	if (selection) selection.empty ? selection.empty() : selection.removeAllRanges();
 }
 
 export function getClientRects(range, containerEl) {
 	let clientRects = Array.from(range.getClientRects());
 	let offset = containerEl.getBoundingClientRect();
-	let rects = clientRects.map(rect => {
+	let rects = clientRects.map((rect) => {
 		return {
 			top: rect.top + containerEl.scrollTop - offset.top - 10,
 			left: rect.left + containerEl.scrollLeft - offset.left - 9,
@@ -26,7 +26,7 @@ export function getClientRects(range, containerEl) {
 		};
 	});
 
-	rects = rects.map(rect => {
+	rects = rects.map((rect) => {
 		return [
 			rect.left,
 			rect.top,
@@ -93,7 +93,7 @@ export function setCaretToEnd(target) {
 
 export function clearSelection() {
 	let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
-	if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
+	if (selection) selection.empty ? selection.empty() : selection.removeAllRanges();
 }
 
 export function getPageFromElement(target) {
@@ -162,8 +162,8 @@ export function equalPositions(annotation1, annotation2) {
 	let p1 = annotation1.position;
 	let p2 = annotation2.position;
 	return (
-		p1.pageIndex === p2.pageIndex &&
-		JSON.stringify(p1.rects) === JSON.stringify(p2.rects)
+		p1.pageIndex === p2.pageIndex
+		&& JSON.stringify(p1.rects) === JSON.stringify(p2.rects)
 	);
 }
 
@@ -215,7 +215,7 @@ import React, { useState, useEffect, useRef, useDebugValue } from 'react';
  * @returns {[]}
  */
 export function useRefState(initialValue) {
-	const [state, setState] = useState(initialValue)
+	const [state, setState] = useState(initialValue);
 	const stateRef = useRef(state);
 
 	function _setState(value) {
@@ -223,7 +223,7 @@ export function useRefState(initialValue) {
 		setState(value);
 	}
 
-	return [state, stateRef, _setState]
+	return [state, stateRef, _setState];
 }
 
 export function getAnnotationsFromSelectionRanges(selectionRanges) {
@@ -287,7 +287,7 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 				imageNaturalHeight,
 				position,
 				pageLabel
-			}
+			};
 		});
 
 	dataTransfer.setData('zotero/annotation', JSON.stringify(annotations));

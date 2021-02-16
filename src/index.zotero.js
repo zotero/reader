@@ -1,4 +1,4 @@
-import Viewer from './viewer.js'
+import Viewer from './viewer.js';
 
 let loaded = false;
 

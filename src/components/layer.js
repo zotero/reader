@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
-import cx from 'classnames'
+import cx from 'classnames';
 import Highlight from './highlight';
 import Note from './note';
 import Area from './area';
@@ -60,7 +60,6 @@ function PageLayerHighlight(props) {
 }
 
 function PageLayerNote(props) {
-
 	function getContainerNode(viewport) {
 		return findOrCreateContainerLayer(
 			viewport.div,
@@ -156,7 +155,7 @@ function AreaSelectorLayer(props) {
 			container.id = 'areaSelectorContainer';
 			viewerContainer.appendChild(container);
 		}
-		return container
+		return container;
 	}
 
 	return ReactDOM.createPortal(
@@ -179,10 +178,10 @@ function EdgeNoteLayer(props) {
 	}
 
 	function quickIntersectRect(r1, r2) {
-		return !(r2[0] > r1[2] ||
-			r2[2] < r1[0] ||
-			r2[1] > r1[3] ||
-			r2[3] < r1[1]);
+		return !(r2[0] > r1[2]
+			|| r2[2] < r1[0]
+			|| r2[1] > r1[3]
+			|| r2[3] < r1[1]);
 	}
 
 	function stackNotes(notes) {
@@ -214,8 +213,10 @@ function EdgeNoteLayer(props) {
 			notes.push({
 					annotation,
 					rect: [
-						left, top,
-						left + width, top + height
+						left,
+						top,
+						left + width,
+						top + height
 					]
 				}
 			);
@@ -229,7 +230,7 @@ function EdgeNoteLayer(props) {
 	let node = getContainerNode(props.view);
 	if (!node) return null;
 
-	let commentedAnnotations = props.annotations.filter(x => x.comment)
+	let commentedAnnotations = props.annotations.filter(x => x.comment);
 	let notes = getNotes(commentedAnnotations, props.view.viewport);
 	stackNotes(notes);
 
@@ -250,7 +251,7 @@ function EdgeNoteLayer(props) {
 								color: note.annotation.color,
 								zIndex: isSelected ? 2 : 1
 							}}
-							onClick={e => {
+							onClick={(e) => {
 								e.preventDefault();
 								e.stopPropagation();
 								// Call after all other events
@@ -279,7 +280,7 @@ function BlinkLayer(props) {
 
 	useLayoutEffect(() => {
 		fade(innerRef.current);
-	}, [props.id])
+	}, [props.id]);
 
 	function fade(element) {
 		if (intervalRef.current) clearInterval(intervalRef.current);
@@ -322,7 +323,6 @@ function BlinkLayer(props) {
 }
 
 function SelectionLayer({ positions, color }) {
-
 	useEffect(() => {
 		draw();
 		return () => {
@@ -383,8 +383,7 @@ function Layer(props) {
 	let viewer = window.PDFViewerApplication.pdfViewer;
 	let containerNode = document.getElementById('viewerContainer');
 
-	let selectionPositions = useMemo(() =>
-		props.selectionPositions.map(p => p2v(p)), [props.selectionPositions]);
+	let selectionPositions = useMemo(() => props.selectionPositions.map(p => p2v(p)), [props.selectionPositions]);
 
 	const handlePointerDownCallback = useCallback(handlePointerDown, []);
 	const handlePointerMoveCallback = useMemo(() => throttle(handlePointerMove, 50), []);
@@ -407,7 +406,7 @@ function Layer(props) {
 			containerNode.removeEventListener('pointermove', handlePointerMoveCallback);
 			containerNode.removeEventListener('pointerup', handlePointerUpDownCallback);
 			viewer.eventBus.off('pagerendered', handlePageRenderCallback);
-		}
+		};
 	}, []);
 
 	function handlePointerDown(event) {
@@ -483,7 +482,6 @@ function Layer(props) {
 	} = props;
 
 	let pageLayers = useMemo(() => {
-
 		if (!initialized) return [];
 		let annotationsByPage = groupAnnotationsByPage(annotations);
 		let pageLayers = [];
@@ -558,7 +556,7 @@ function Layer(props) {
 		if (view && view.renderingState !== 0) {
 			let id = blink.id;
 			let position = p2v(blink.position);
-			blinkLayer = <BlinkLayer view={view} id={id} position={position}/>
+			blinkLayer = <BlinkLayer view={view} id={id} position={position}/>;
 		}
 	}
 
@@ -634,7 +632,6 @@ function Layer(props) {
 			{pageLayers}
 		</React.Fragment>
 	);
-
 }
 
 export default Layer;

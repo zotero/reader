@@ -21,14 +21,14 @@ function getPageRestrictedPoint(point, pageRect) {
 	return [
 		point[0] < pageRect[0] && pageRect[0] || point[0] > pageRect[2] && pageRect[2] || point[0],
 		point[1] < pageRect[1] && pageRect[1] || point[1] > pageRect[3] && pageRect[3] || point[1]
-	]
+	];
 }
 
 //{ color, shouldStart, onSelection }
 function AreaSelector(props) {
 	const [areaStyle, setAreaStyle] = useState(null);
 
-	const container = useRef(document.getElementById('viewerContainer'))
+	const container = useRef(document.getElementById('viewerContainer'));
 	const startPoint = useRef(null);
 	const endPoint = useRef(null);
 	const pageRect = useRef(null);
@@ -51,7 +51,7 @@ function AreaSelector(props) {
 			window.removeEventListener('mousemove', handlePointerMoveCallback);
 			window.removeEventListener('mouseup', handlePointerUpCallback);
 			document.getElementById('viewerContainer').removeEventListener('keydown', handleKeyDownCallback);
-		}
+		};
 	}, [
 		handlePointerDownCallback,
 		handlePointerMoveCallback,

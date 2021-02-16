@@ -100,8 +100,7 @@ class AnnotationsStore {
 	}
 
 	sortAnnotations(annotations) {
-		annotations.sort((a, b) =>
-			(a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex)
+		annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex)
 		);
 	}
 
@@ -113,7 +112,7 @@ class AnnotationsStore {
 			}
 		}
 		this.onUpdateAnnotations(this.annotations);
-	};
+	}
 
 	async addAnnotation(annotation) {
 		// Those properties can be set on creation
@@ -192,7 +191,7 @@ class AnnotationsStore {
 		let existingAnnotationIDx = this.annotations.findIndex(
 			x => x.id === annotation.id
 		);
-		let existingAnnotation = this.getAnnotationByID(annotation.id)
+		let existingAnnotation = this.getAnnotationByID(annotation.id);
 		annotation = { ...existingAnnotation, ...annotation };
 		annotation.dateModified = (new Date()).toISOString();
 		annotation.position.rects = annotation.position.rects.map(
@@ -205,15 +204,15 @@ class AnnotationsStore {
 		this.onUpdateAnnotations(this.annotations);
 
 		if (
-			['note', 'image'].includes(annotation.type) &&
-			!equalPositions(existingAnnotation, annotation)
+			['note', 'image'].includes(annotation.type)
+			&& !equalPositions(existingAnnotation, annotation)
 		) {
 			annotation.sortIndex = await getSortIndex(annotation.position);
 		}
 
 		if (
-			annotation.type === 'image' &&
-			!equalPositions(existingAnnotation, annotation)
+			annotation.type === 'image'
+			&& !equalPositions(existingAnnotation, annotation)
 		) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
 		}

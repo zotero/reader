@@ -1,5 +1,5 @@
-import { getLines } from './structure'
-import { getClosestOffset } from './offset'
+import { getLines } from './structure';
+import { getClosestOffset } from './offset';
 
 function isDash(c) {
 	let re = /[\x2D\u058A\u05BE\u1400\u1806\u2010-\u2015\u2E17\u2E1A\u2E3A\u2E3B\u301C\u3030\u30A0\uFE31\uFE32\uFE58\uFE63\uFF0D]/;
@@ -7,10 +7,10 @@ function isDash(c) {
 }
 
 function quickIntersectRect(r1, r2) {
-	return !(r2[0] > r1[2] ||
-		r2[2] < r1[0] ||
-		r2[1] > r1[3] ||
-		r2[3] < r1[1]);
+	return !(r2[0] > r1[2]
+		|| r2[2] < r1[0]
+		|| r2[1] > r1[3]
+		|| r2[3] < r1[1]);
 }
 
 // Using non-normalized rect containing selection start and end points
@@ -52,7 +52,7 @@ function getRangeByHighlightRects(chs, rects) {
 	}
 
 	if (startIndex < endIndex) {
-		return { chStart: chs[startIndex], chEnd: chs[endIndex] }
+		return { chStart: chs[startIndex], chEnd: chs[endIndex] };
 	}
 	else {
 		return null;
@@ -60,12 +60,12 @@ function getRangeByHighlightRects(chs, rects) {
 }
 
 function filter(chs) {
-	return chs.filter(ch => {
-		ch.rotation = ch.rotation / 90;
+	return chs.filter((ch) => {
+		ch.rotation /= 90;
 		if (ch.rotation && ch.rotation % 1 !== 0) return false;
 		if (ch.c === ' ') return false;
 		return true;
-	})
+	});
 }
 
 export function extractRange(chs, rects, selection) {

@@ -1,5 +1,5 @@
-import Viewer from './viewer.js'
-import annotations from './demo-annotations'
+import Viewer from './viewer.js';
+import annotations from './demo-annotations';
 
 let loaded = false;
 
@@ -24,7 +24,7 @@ document.addEventListener('webviewerloaded', function () {
 		if (!window.PDFViewerApplication.pdfViewer || loaded) return;
 		loaded = true;
 		window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-			console.log('documentinit')
+			console.log('documentinit');
 		});
 
 
@@ -45,7 +45,7 @@ async function test() {
 		annotations,
 		state: null,
 		location: {
-			'position': { 'pageIndex': 0, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
+			position: { pageIndex: 0, rects: [[371.395, 266.635, 486.075, 274.651]] }
 		}
 	});
 
@@ -63,9 +63,7 @@ async function test() {
 			annotations,
 			state: null
 		});
-
 	}, 30000000);
-
 }
 
 class ViewerInstance {
@@ -79,7 +77,7 @@ class ViewerInstance {
 				console.log('Navigate forward');
 			},
 			onImport() {
-				alert('This will call pdf-worker to extract annotations')
+				alert('This will call pdf-worker to extract annotations');
 			},
 			onDismissImport() {
 				alert('You won\'t be asked to import annotations until new annotations will be detected in the PDF file');
@@ -113,7 +111,7 @@ class ViewerInstance {
 				console.log('Changed sidebar width ' + width);
 			},
 			onChangeSidebarOpen: (open) => {
-				console.log('changeSidebarOpen', open)
+				console.log('changeSidebarOpen', open);
 			},
 			buf: options.buf,
 			annotations: options.annotations,

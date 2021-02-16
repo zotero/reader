@@ -153,7 +153,7 @@ export class SidebarPreview extends React.Component {
 
 		let text = annotation.type === 'highlight' && (
 			<div className="highlight"
-			     onClick={(e) => this.handleSectionClick(e, 'highlight')}
+			     onClick={e => this.handleSectionClick(e, 'highlight')}
 			     onDoubleClick={this.handleHighlightDoubleClick}
 			     draggable={state !== 3 || annotation.readOnly}
 			     onDragStart={this.handleDragStart}
@@ -171,13 +171,13 @@ export class SidebarPreview extends React.Component {
 					onBlur={this.handleEditorBlur}
 				/>
 			</div>
-		)
+		);
 
-		let comment = (state >= 1 || annotation.comment) && !(annotation.readOnly && !annotation.comment) &&
-			<div className="comment"
-			     onClick={(e) => this.handleSectionClick(e, 'comment')}
-			     draggable={state === 0 || annotation.readOnly}
-			     onDragStart={this.handleDragStart}
+		let comment = (state >= 1 || annotation.comment) && !(annotation.readOnly && !annotation.comment)
+			&& <div className="comment"
+			        onClick={e => this.handleSectionClick(e, 'comment')}
+			        draggable={state === 0 || annotation.readOnly}
+			        onDragStart={this.handleDragStart}
 			>
 				<ExpandableEditor
 					id={annotation.id}
@@ -209,7 +209,7 @@ export class SidebarPreview extends React.Component {
 			})}>
 				<header
 					title={annotation.dateModified.split('T')[0]}
-					onClick={(e) => this.handleSectionClick(e, 'header')}
+					onClick={e => this.handleSectionClick(e, 'header')}
 					draggable={true}
 					onDragStart={this.handleDragStart}
 				>
@@ -246,15 +246,15 @@ export class SidebarPreview extends React.Component {
 					</div>
 				</header>
 				{annotation.image && (
-					<img className="image" onClick={(e) => this.handleSectionClick(e, 'image')} src={annotation.image}
+					<img className="image" onClick={e => this.handleSectionClick(e, 'image')} src={annotation.image}
 					     draggable={true} onDragStart={this.handleDragStart}/>)}
 				{text}
 				{comment}
-				{(state >= 1 || annotation.tags.length > 0) && !annotation.isExternal &&
-				(
+				{(state >= 1 || annotation.tags.length > 0) && !annotation.isExternal
+				&& (
 					<div
 						className="tags"
-						onClick={(e) => this.handleSectionClick(e, 'tags')}
+						onClick={e => this.handleSectionClick(e, 'tags')}
 						placeholder="Add tags…"
 						draggable={true}
 						onDragStart={this.handleDragStart}

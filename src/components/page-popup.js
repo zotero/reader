@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import ReactDOM from 'react-dom';
-import cx from 'classnames'
+import cx from 'classnames';
 
 function PagePopup({ id, position, updateOnPositionChange, className, children }) {
 	const [popupPosition, setPopupPosition] = useState(null);

@@ -1,12 +1,12 @@
-let isNum = (c) => c >= '0' && c <= '9';
+let isNum = c => c >= '0' && c <= '9';
 
 function getSurroundedNumber(chs, ch) {
 	let idx = chs.indexOf(ch);
 
 	while (
-		idx > 0 && isNum(chs[idx - 1].c) &&
-		Math.abs(chs[idx].rect[0] - chs[idx - 1].rect[2]) < chs[idx].rect[2] - chs[idx].rect[0] &&
-		Math.abs(chs[idx - 1].rect[1] - chs[idx].rect[1]) < 2
+		idx > 0 && isNum(chs[idx - 1].c)
+		&& Math.abs(chs[idx].rect[0] - chs[idx - 1].rect[2]) < chs[idx].rect[2] - chs[idx].rect[0]
+		&& Math.abs(chs[idx - 1].rect[1] - chs[idx].rect[1]) < 2
 		) {
 		idx--;
 	}
@@ -14,9 +14,9 @@ function getSurroundedNumber(chs, ch) {
 	let str = chs[idx].c;
 
 	while (
-		idx < chs.length - 1 && isNum(chs[idx + 1].c) &&
-		Math.abs(chs[idx + 1].rect[0] - chs[idx].rect[2]) < chs[idx + 1].rect[2] - chs[idx + 1].rect[0] &&
-		Math.abs(chs[idx].rect[1] - chs[idx + 1].rect[1]) < 2
+		idx < chs.length - 1 && isNum(chs[idx + 1].c)
+		&& Math.abs(chs[idx + 1].rect[0] - chs[idx].rect[2]) < chs[idx + 1].rect[2] - chs[idx + 1].rect[0]
+		&& Math.abs(chs[idx].rect[1] - chs[idx + 1].rect[1]) < 2
 		) {
 		idx++;
 		str += chs[idx].c;
@@ -39,7 +39,7 @@ function getRectCenter(rect) {
 	return {
 		x: rect[0] + (rect[2] - rect[0]) / 2,
 		y: rect[1] + (rect[3] - rect[1]) / 2
-	}
+	};
 }
 
 function filterNums(chs, pageHeight) {
@@ -81,8 +81,6 @@ export async function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, page
 							}
 						}
 					}
-
-
 				}
 			}
 		}
@@ -94,9 +92,8 @@ export async function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, page
 export async function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) {
 	let numPrev, numCur, numNext;
 
-	let getNum = (chsNext, points) =>
-		points.length > 0 && getSurroundedNumberAtPos(chsNext, points[0].x, points[0].y) ||
-		points.length > 1 && getSurroundedNumberAtPos(chsNext, points[1].x, points[1].y);
+	let getNum = (chsNext, points) => points.length > 0 && getSurroundedNumberAtPos(chsNext, points[0].x, points[0].y)
+		|| points.length > 1 && getSurroundedNumberAtPos(chsNext, points[1].x, points[1].y);
 
 	if (chsPrev) {
 		numPrev = getNum(chsPrev, points);

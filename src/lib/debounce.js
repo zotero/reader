@@ -67,150 +67,150 @@ export function debounce(func, wait, options) {
 		maxWait,
 		result,
 		timerID,
-		lastCallTime
+		lastCallTime;
 
-	let lastInvokeTime = 0
-	let leading = false
-	let maxing = false
-	let trailing = true
+	let lastInvokeTime = 0;
+	let leading = false;
+	let maxing = false;
+	let trailing = true;
 
 	// Bypass `requestAnimationFrame` by explicitly setting `wait=0`.
-	const useRAF = (!wait && wait !== 0 && typeof root.requestAnimationFrame === 'function')
+	const useRAF = (!wait && wait !== 0 && typeof root.requestAnimationFrame === 'function');
 
 	if (typeof func !== 'function') {
-		throw new TypeError('Expected a function')
+		throw new TypeError('Expected a function');
 	}
-	wait = +wait || 0
+	wait = +wait || 0;
 	if (isObject(options)) {
-		leading = !!options.leading
-		maxing = 'maxWait' in options
-		maxWait = maxing ? Math.max(+options.maxWait || 0, wait) : maxWait
-		trailing = 'trailing' in options ? !!options.trailing : trailing
+		leading = !!options.leading;
+		maxing = 'maxWait' in options;
+		maxWait = maxing ? Math.max(+options.maxWait || 0, wait) : maxWait;
+		trailing = 'trailing' in options ? !!options.trailing : trailing;
 	}
 
 	function isObject(value) {
-		const type = typeof value
-		return value != null && (type === 'object' || type === 'function')
+		const type = typeof value;
+		return value != null && (type === 'object' || type === 'function');
 	}
 
 	function invokeFunc(time) {
-		const args = lastArgs
-		const thisArg = lastThis
+		const args = lastArgs;
+		const thisArg = lastThis;
 
-		lastArgs = lastThis = undefined
-		lastInvokeTime = time
-		result = func.apply(thisArg, args)
-		return result
+		lastArgs = lastThis = undefined;
+		lastInvokeTime = time;
+		result = func.apply(thisArg, args);
+		return result;
 	}
 
 	function startTimer(pendingFunc, wait) {
 		if (useRAF) {
-			root.cancelAnimationFrame(timerID)
-			return root.requestAnimationFrame(pendingFunc)
+			root.cancelAnimationFrame(timerID);
+			return root.requestAnimationFrame(pendingFunc);
 		}
-		return setTimeout(pendingFunc, wait)
+		return setTimeout(pendingFunc, wait);
 	}
 
 	function cancelTimer(id) {
 		if (useRAF) {
-			return root.cancelAnimationFrame(id)
+			return root.cancelAnimationFrame(id);
 		}
-		clearTimeout(id)
+		clearTimeout(id);
 	}
 
 	function leadingEdge(time) {
 		// Reset any `maxWait` timer.
-		lastInvokeTime = time
+		lastInvokeTime = time;
 		// Start the timer for the trailing edge.
-		timerID = startTimer(timerExpired, wait)
+		timerID = startTimer(timerExpired, wait);
 		// Invoke the leading edge.
-		return leading ? invokeFunc(time) : result
+		return leading ? invokeFunc(time) : result;
 	}
 
 	function remainingWait(time) {
-		const timeSinceLastCall = time - lastCallTime
-		const timeSinceLastInvoke = time - lastInvokeTime
-		const timeWaiting = wait - timeSinceLastCall
+		const timeSinceLastCall = time - lastCallTime;
+		const timeSinceLastInvoke = time - lastInvokeTime;
+		const timeWaiting = wait - timeSinceLastCall;
 
 		return maxing
 			? Math.min(timeWaiting, maxWait - timeSinceLastInvoke)
-			: timeWaiting
+			: timeWaiting;
 	}
 
 	function shouldInvoke(time) {
-		const timeSinceLastCall = time - lastCallTime
-		const timeSinceLastInvoke = time - lastInvokeTime
+		const timeSinceLastCall = time - lastCallTime;
+		const timeSinceLastInvoke = time - lastInvokeTime;
 
 		// Either this is the first call, activity has stopped and we're at the
 		// trailing edge, the system time has gone backwards and we're treating
 		// it as the trailing edge, or we've hit the `maxWait` limit.
-		return (lastCallTime === undefined || (timeSinceLastCall >= wait) ||
-			(timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait))
+		return (lastCallTime === undefined || (timeSinceLastCall >= wait)
+			|| (timeSinceLastCall < 0) || (maxing && timeSinceLastInvoke >= maxWait));
 	}
 
 	function timerExpired() {
-		const time = Date.now()
+		const time = Date.now();
 		if (shouldInvoke(time)) {
-			return trailingEdge(time)
+			return trailingEdge(time);
 		}
 		// Restart the timer.
-		timerID = startTimer(timerExpired, remainingWait(time))
+		timerID = startTimer(timerExpired, remainingWait(time));
 	}
 
 	function trailingEdge(time) {
-		timerID = undefined
+		timerID = undefined;
 
 		// Only invoke if we have `lastArgs` which means `func` has been
 		// debounced at least once.
 		if (trailing && lastArgs) {
-			return invokeFunc(time)
+			return invokeFunc(time);
 		}
-		lastArgs = lastThis = undefined
-		return result
+		lastArgs = lastThis = undefined;
+		return result;
 	}
 
 	function cancel() {
 		if (timerID !== undefined) {
-			cancelTimer(timerID)
+			cancelTimer(timerID);
 		}
-		lastInvokeTime = 0
-		lastArgs = lastCallTime = lastThis = timerID = undefined
+		lastInvokeTime = 0;
+		lastArgs = lastCallTime = lastThis = timerID = undefined;
 	}
 
 	function flush() {
-		return timerID === undefined ? result : trailingEdge(Date.now())
+		return timerID === undefined ? result : trailingEdge(Date.now());
 	}
 
 	function pending() {
-		return timerID !== undefined
+		return timerID !== undefined;
 	}
 
 	function debounced(...args) {
-		const time = Date.now()
-		const isInvoking = shouldInvoke(time)
+		const time = Date.now();
+		const isInvoking = shouldInvoke(time);
 
-		lastArgs = args
-		lastThis = this
-		lastCallTime = time
+		lastArgs = args;
+		lastThis = this;
+		lastCallTime = time;
 
 		if (isInvoking) {
 			if (timerID === undefined) {
-				return leadingEdge(lastCallTime)
+				return leadingEdge(lastCallTime);
 			}
 			if (maxing) {
 				// Handle invocations in a tight loop.
-				timerID = startTimer(timerExpired, wait)
-				return invokeFunc(lastCallTime)
+				timerID = startTimer(timerExpired, wait);
+				return invokeFunc(lastCallTime);
 			}
 		}
 		if (timerID === undefined) {
-			timerID = startTimer(timerExpired, wait)
+			timerID = startTimer(timerExpired, wait);
 		}
-		return result
+		return result;
 	}
 
-	debounced.cancel = cancel
-	debounced.flush = flush
-	debounced.pending = pending
-	return debounced
+	debounced.cancel = cancel;
+	debounced.flush = flush;
+	debounced.pending = pending;
+	return debounced;
 }

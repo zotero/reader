@@ -26,7 +26,7 @@ function getFormatter(str) {
 			return {
 				format,
 				parts
-			}
+			};
 		}
 	}
 	return null;
@@ -47,7 +47,6 @@ function walkFormat(parent) {
 				nodes.push(document.createTextNode(formatter.parts[2]));
 				child.replaceWith(...nodes);
 				child = midNode;
-
 			}
 		}
 		walkFormat(child);
@@ -80,7 +79,7 @@ function walkUnformat(parent) {
 
 function clean(parent) {
 	let map = {
-		'strong': 'b'
+		strong: 'b'
 	};
 
 	let child = parent.firstChild;
@@ -160,7 +159,7 @@ var actions = [
 class BubbleButton extends React.Component {
 	handleClick = (event) => {
 		event.preventDefault();
-		this.props.onCommand(this.props.action.command)
+		this.props.onCommand(this.props.action.command);
 	}
 
 	render() {
@@ -191,7 +190,7 @@ class Bubble extends React.Component {
 					))
 				}
 			</div>
-		)
+		);
 	}
 }
 
@@ -199,7 +198,7 @@ class Content extends React.Component {
 	currentText = null;
 
 	constructor(props) {
-		super(props)
+		super(props);
 	}
 
 	componentDidMount() {
@@ -220,7 +219,7 @@ class Content extends React.Component {
 		) {
 			this.props.innerRef.current.innerText = this.props.text;
 			walkFormat(this.props.innerRef.current);
-			this.currentText = this.props.text
+			this.currentText = this.props.text;
 		}
 	}
 
@@ -278,7 +277,7 @@ class Content extends React.Component {
 
 	clearSelection() {
 		let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
-		if (!!selection) selection.empty ? selection.empty() : selection.removeAllRanges();
+		if (selection) selection.empty ? selection.empty() : selection.removeAllRanges();
 	}
 
 	render() {
@@ -313,10 +312,11 @@ class Content extends React.Component {
 
 class Editor extends React.Component {
 	constructor(props) {
-		super(props)
+		super(props);
 	}
 
 	contentRef = React.createRef();
+
 	state = {
 		isSelected: false,
 		bubbleTop: null
@@ -363,10 +363,10 @@ class Editor extends React.Component {
 		return (
 			<div ref="editor" className={cx('editor', { 'read-only': this.props.isReadOnly })}>
 				{
-					!this.props.isPlainText &&
-					!this.props.isReadOnly &&
-					this.state.bubbleTop !== null &&
-					<Bubble
+					!this.props.isPlainText
+					&& !this.props.isReadOnly
+					&& this.state.bubbleTop !== null
+					&& <Bubble
 						top={this.state.bubbleTop}
 						onCommand={this.handleBalloonCommand}
 					/>

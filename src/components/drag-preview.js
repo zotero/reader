@@ -7,9 +7,9 @@ function getDragCanvas() {
 	if (!node) {
 		node = document.createElement('canvas');
 		node.id = 'drag-canvas';
-		document.body.appendChild(node)
+		document.body.appendChild(node);
 	}
-	return { canvas: node, context: node.getContext('2d') }
+	return { canvas: node, context: node.getContext('2d') };
 }
 
 function getDragNoteIcon(rect) {
@@ -138,7 +138,7 @@ export function setLayerSingleDragPreview(event, annotation) {
 	}
 	else if (annotation.type === 'note') {
 		let viewport = window.PDFViewerApplication.pdfViewer.getPageView(annotation.position.pageIndex).viewport;
-		let position = p2v(annotation.position, viewport)
+		let position = p2v(annotation.position, viewport);
 		let icon = getDragNoteIcon(position.rects[0]);
 		let dashedBorderPadding = 5;
 		let width = event.target.offsetWidth - dashedBorderPadding * 2;

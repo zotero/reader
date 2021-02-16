@@ -39,16 +39,14 @@ export function computeWordSpacingThreshold(chs, rot) {
 					maxSpGap = gap;
 				}
 			}
-			else {
-				if (minAdjGap > maxAdjGap) {
-					minAdjGap = maxAdjGap = gap;
-				}
-				else if (gap < minAdjGap) {
-					minAdjGap = gap;
-				}
-				else if (gap > maxAdjGap) {
-					maxAdjGap = gap;
-				}
+			else if (minAdjGap > maxAdjGap) {
+				minAdjGap = maxAdjGap = gap;
+			}
+			else if (gap < minAdjGap) {
+				minAdjGap = gap;
+			}
+			else if (gap > maxAdjGap) {
+				maxAdjGap = gap;
 			}
 			if (i == 0 || gap < minGap) {
 				minGap = gap;
@@ -68,9 +66,9 @@ export function computeWordSpacingThreshold(chs, rot) {
 	// word (technically it could be either "ABC" or "A B C", but it's
 	// essentially impossible to tell)
 	if (maxGap - minGap < uniformSpacing * avgFontSize) {
-		if (minAdjGap <= maxAdjGap &&
-			minSpGap <= maxSpGap &&
-			minSpGap - maxAdjGap > 0.01) {
+		if (minAdjGap <= maxAdjGap
+			&& minSpGap <= maxSpGap
+			&& minSpGap - maxAdjGap > 0.01) {
 			return 0.5 * (maxAdjGap + minSpGap);
 		}
 		else {
@@ -89,17 +87,15 @@ export function computeWordSpacingThreshold(chs, rot) {
 		// 0.5*(minGap+maxGap) here because there can be outliers at the
 		// high end)
 	}
+	else if (minAdjGap <= maxAdjGap
+		&& minSpGap <= maxSpGap
+		&& minSpGap - maxAdjGap > uniformSpacing * avgFontSize) {
+		gap = wordSpacing * avgFontSize;
+		gap2 = 0.5 * (minSpGap - minGap);
+		return minGap + (gap < gap2 ? gap : gap2);
+	}
 	else {
-		if (minAdjGap <= maxAdjGap &&
-			minSpGap <= maxSpGap &&
-			minSpGap - maxAdjGap > uniformSpacing * avgFontSize) {
-			gap = wordSpacing * avgFontSize;
-			gap2 = 0.5 * (minSpGap - minGap);
-			return minGap + (gap < gap2 ? gap : gap2);
-		}
-		else {
-			return minGap + wordSpacing * avgFontSize;
-		}
+		return minGap + wordSpacing * avgFontSize;
 	}
 }
 

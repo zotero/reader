@@ -6,7 +6,7 @@ import React, {
 	useCallback
 } from 'react';
 
-import cx from 'classnames'
+import cx from 'classnames';
 import { wx, hy } from '../lib/coordinates';
 import { IconNoteLarge } from './icons';
 
@@ -47,7 +47,7 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 			viewerContainer.current.removeEventListener('scroll', handleScrollCallback);
 			dragging.current = false;
 			container.current.style.opacity = 0;
-		}
+		};
 	}, [
 		handleDragLeaveCallback,
 		handleDragOverCallback,
@@ -101,7 +101,7 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 		// TODO: Move this into annotator.js
 		setTimeout(() => {
 			document.getElementById('viewer').classList.add('disable-pointer-events');
-		}, 0)
+		}, 0);
 
 		updatePosition(event.clientX, event.clientY);
 		dragging.current = true;
@@ -138,7 +138,7 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 			if (!dragging.current) return;
 			visible.current = false;
 			container.current.style.opacity = 0;
-		}, 0)
+		}, 0);
 	}
 
 	function handleDragOver(event) {

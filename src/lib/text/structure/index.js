@@ -1,21 +1,19 @@
-import { computeWordSpacingThreshold } from './xpdf'
+import { computeWordSpacingThreshold } from './xpdf';
 
 function overlaps(ch1, ch2, rotation) {
 	if (rotation === 0) {
 		if (
-			ch1.rect[1] <= ch2.rect[1] && ch2.rect[1] <= ch1.rect[3] ||
-			ch2.rect[1] <= ch1.rect[1] && ch1.rect[1] <= ch2.rect[3]
+			ch1.rect[1] <= ch2.rect[1] && ch2.rect[1] <= ch1.rect[3]
+			|| ch2.rect[1] <= ch1.rect[1] && ch1.rect[1] <= ch2.rect[3]
 		) {
 			return true;
 		}
 	}
-	else {
-		if (
-			ch1.rect[0] <= ch2.rect[0] && ch2.rect[0] <= ch1.rect[2] ||
-			ch2.rect[0] <= ch1.rect[0] && ch1.rect[0] <= ch2.rect[2]
-		) {
-			return true;
-		}
+	else if (
+		ch1.rect[0] <= ch2.rect[0] && ch2.rect[0] <= ch1.rect[2]
+		|| ch2.rect[0] <= ch1.rect[0] && ch1.rect[0] <= ch2.rect[2]
+	) {
+		return true;
 	}
 	return false;
 }
@@ -32,14 +30,13 @@ export function getLines(chs) {
 			if (line.length) {
 				line[line.length - 1].spaceAfter = true;
 			}
-			continue
+			continue;
 		}
 
 		if (!line.chs.length) {
 			line.chs.push(ch);
 		}
 		else {
-
 			let newLine = false;
 
 			if (!ch.rotation) {
@@ -64,9 +61,9 @@ export function getLines(chs) {
 			}
 
 			if (
-				newLine ||
-				prevCh.rotation !== ch.rotation ||
-				!overlaps(prevCh, ch, ch.rotation)
+				newLine
+				|| prevCh.rotation !== ch.rotation
+				|| !overlaps(prevCh, ch, ch.rotation)
 			) {
 				lines.push(line);
 				line = { chs: [ch] };

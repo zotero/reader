@@ -4,7 +4,6 @@ import React from 'react';
 import cx from 'classnames';
 
 class Highlight extends React.Component {
-
 	// handleDragStart = (event) => {
 	//   event.dataTransfer.setData('zotero/annotation', 'ddf');
 	//   var img = document.createElement('img')
