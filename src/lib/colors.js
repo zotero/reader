@@ -8,4 +8,4 @@ export let annotationColors = [
 	['Purple', '#a28ae5']
 ];
 
-export let selectionColor = '#c2c2c2';
+export let selectionColor = 'Highlight';
