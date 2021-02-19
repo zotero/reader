@@ -118,7 +118,7 @@ class Viewer {
 	}
 
 	handleZoomAutoButtonClick = () => {
-		PDFViewerApplication.pdfViewer._setScale('page-width');
+		PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
 	}
 
 	handleViewAreaUpdate = (e) => {
@@ -161,7 +161,7 @@ class Viewer {
 		}
 		// Default state
 		else {
-			PDFViewerApplication.pdfViewer._setScale('page-width');
+			PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
 		}
 
 		await this._annotatorPromise;
@@ -284,20 +284,28 @@ class Viewer {
 		// window.PDFViewerApplication.pdfSidebar.switchView(state.sidebarView, true);
 		// window.PDFViewerApplication.pdfSidebarResizer._updateWidth(state.sidebarWidth);
 
-		window.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
-		window.PDFViewerApplication.pdfViewer.spreadMode = state.spreadMode;
+		if (Number.isInteger(state.scrollMode)) {
+			window.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
+		}
 
-		window.PDFViewerApplication.pdfViewer.pagesRotation = state.rotation;
+		if (Number.isInteger(state.spreadMode)) {
+			window.PDFViewerApplication.pdfViewer.spreadMode = state.spreadMode;
+		}
+
+		if (Number.isInteger(state.rotation)) {
+			window.PDFViewerApplication.pdfViewer.pagesRotation = state.rotation;
+		}
 
 		if (!skipScroll) {
 			let dest = [null,
 				{ name: 'XYZ' },
-				state.left,
-				state.top,
+				// top/left must be null to be ignored
+				state.left || null,
+				state.top === undefined ? null : state.top,
 				parseInt(state.scale) ? state.scale / 100 : state.scale];
 
 			window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-				pageNumber: state.pageIndex + 1,
+				pageNumber: (state.pageIndex || 0) + 1,
 				destArray: dest,
 				allowNegativeOffset: true
 			});
