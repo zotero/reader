@@ -8,4 +8,4 @@ export let annotationColors = [
 	['Purple', '#a28ae5']
 ];
 
-export let selectionColor = 'Highlight';
+export let selectionColor = navigator.platform.includes('Mac') ? '#71ADFD' : 'Highlight';
