@@ -21,5 +21,6 @@ cp -r "$PDFJS_DIR"/build/generic-legacy/web/* build/zotero/
 cp -r "$PDFJS_DIR"/build/generic-legacy/build/* build/zotero/
 cp -r "$PDFJS_DIR"/build/generic-legacy/LICENSE build/zotero/
 rm build/zotero/*.pdf
+rm build/zotero/*.map
 
 node ./scripts/tweak-viewer-html.js
