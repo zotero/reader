@@ -234,6 +234,7 @@ export function getAnnotationsFromSelectionRanges(selectionRanges) {
 		let pageIndex = selectionRange.position.pageIndex;
 
 		annotations.push({
+			fromText: true,
 			text: selectionRange.text,
 			position: selectionRange.position,
 			pageLabel: pageLabels && pageLabels[pageIndex] || (pageIndex + 1).toString()
@@ -253,19 +254,26 @@ export function getImageDataURL(img) {
 }
 
 export function setDataTransferAnnotations(dataTransfer, annotations) {
-	let text = annotations.reduce((text, annotation) => {
-		let parts = [];
-
+	let text = annotations.map((annotation) => {
+		let formatted = '';
 		if (annotation.comment) {
-			parts.push(annotation.comment + ':');
+			formatted = annotation.comment.trim();
 		}
 
 		if (annotation.text) {
-			parts.push('"' + annotation.text + '"');
-		}
+			if (formatted) {
+				formatted += formatted.includes('\n') ? '\n' : ': ';
+			}
 
-		return text + '\n\n' + parts.join(' ');
-	}, '');
+			if (annotation.fromText) {
+				formatted += annotation.text;
+			}
+			else {
+				formatted += '“' + annotation.text + '”';
+			}
+		}
+		return formatted;
+	}).filter(x => x).join('\n\n');
 
 	annotations = annotations.map(
 		({ id, text, comment, image, position, pageLabel }) => {
