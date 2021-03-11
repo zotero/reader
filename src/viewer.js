@@ -51,6 +51,7 @@ class Viewer {
 
 		document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
 		document.getElementById('zoomAuto').addEventListener('click', this.handleZoomAutoButtonClick);
+		window.PDFViewerApplication.eventBus.on('pagerendered', this.handlePageRender);
 		window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
 		window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
 		window.onChangeSidebarWidth = this.handleChangeSidebarWidth;
@@ -101,6 +102,7 @@ class Viewer {
 		ReactDom.unmountComponentAtNode(this.node);
 		document.getElementById('download').removeEventListener('click', this.handleDownloadButtonClick);
 		document.getElementById('zoomAuto').removeEventListener('click', this.handleZoomAutoButtonClick);
+		window.PDFViewerApplication.eventBus.off('pagerendered', this.handlePageRender);
 		window.PDFViewerApplication.eventBus.off('updateviewarea', this.handleViewAreaUpdate);
 		window.PDFViewerApplication.eventBus.off('sidebarviewchanged', this.handleSidebarViewChange);
 		window.PDFViewerApplication.eventBus.off('documentinit', this.handleDocumentInit);
@@ -119,6 +121,20 @@ class Viewer {
 
 	handleZoomAutoButtonClick = () => {
 		PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
+	}
+
+	handlePageRender = async (e) => {
+		let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(e.pageNumber);
+		let textContent = await page.getTextContent();
+
+		let chs = [];
+		for (let item of textContent.items) {
+			for (let ch of item.chars) {
+				chs.push(ch);
+			}
+		}
+
+		window.chsCache[e.pageNumber - 1] = chs;
 	}
 
 	handleViewAreaUpdate = (e) => {
