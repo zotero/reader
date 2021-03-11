@@ -7,7 +7,7 @@
 		"build:pdf.js": "scripts/build-pdfjs",
 		"build:reader": "NODE_ENV=production webpack --display-modules",
 		"start": "webpack-dev-server",
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"No tests yet\""
 	},
 	"license": "AGPL-3.0",
 	"browserslist": [

@@ -1,0 +1,49 @@
+name: CI
+on: [ push, pull_request ]
+jobs:
+  build:
+    name: Build, Upload, Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 14
+
+      - name: Cache Node modules
+        id: node-cache
+        uses: actions/cache@v2
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Node modules
+        if: steps.node-cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Build pdf-reader
+        run: npm run build
+
+      - name: Upload pre-build ZIP
+        if: |
+          env.ACT != 'true'
+          && github.repository == 'zotero/pdf-reader'
+          && github.event_name == 'push'
+          && (github.ref == 'refs/heads/master' || endsWith(github.ref, '-hotfix') || github.ref == 'refs/heads/gh-actions-ci-test')
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          mkdir build/build-zip
+          cd build/zotero
+          zip -r ../build-zip/$GITHUB_SHA.zip *
+          cd ..
+          sudo gem install --no-document dpl dpl-s3
+          dpl --provider=s3 --bucket=zotero-download --local-dir=build-zip --upload-dir=ci/client-pdf-reader --acl=public-read --skip_cleanup=true
+
+      - name: Run tests
+        run: npm run test
