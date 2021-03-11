@@ -623,6 +623,13 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function handleLayerAnnotationDragStart(event) {
+		let isCtrl = event.ctrlKey || event.metaKey;
+
+		if (isCtrl) {
+			event.preventDefault();
+			return;
+		}
+
 		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		if (annotations.length > 1) {
 			setMultiDragPreview(event, selectedIDsRef.current.length);
@@ -746,59 +753,114 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
 	}
 
+	function openPagePopup(hasSelection, event) {
+		props.onPopup('openPagePopup', {
+			x: event.screenX,
+			y: event.screenY,
+			text: hasSelection && selectionRangesRef.current.map(range => range.text).join('\n'),
+			isZoomAuto: PDFViewerApplication.pdfViewer.currentScaleValue === 'auto',
+			isZoomPageWidth: PDFViewerApplication.pdfViewer.currentScaleValue === 'page-width',
+			enablePrevPage: PDFViewerApplication.pdfViewer.currentPageNumber > 1,
+			enableNextPage: PDFViewerApplication.pdfViewer.currentPageNumber < PDFViewerApplication.pdfViewer.pagesCount
+		});
+	}
+
+	function intersectsWithSelectedAnnotations(position) {
+		let selectedAnnotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
+		for (let annotation of selectedAnnotations) {
+			if (intersectBoundingPositions(position, annotation.position)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	function intersectsWithSelectedText(position) {
+		for (let range of selectionRangesRef.current) {
+			if (intersectBoundingPositions(position, range.position)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	function handleLayerPointerDown(position, event) {
+		let isRight = event.button === 2;
 		let isLeft = event.button === 0;
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
 		pointerDownPositionRef.current = position;
-
-		if (!event.target.closest('.canvasWrapper')
-			&& !event.target.closest('.note-annotation')
-			&& !event.target.closest('.selectionCanvas')) {
+		if (!event.target.closest('.page')
+			&& !event.target.closest('.note-annotation')) {
 			return;
 		}
 
-		for (let range of selectionRangesRef.current) {
-			if (intersectBoundingPositions(pointerDownPositionRef.current, range.position)) {
-				return;
-			}
+		setIsLastClickRight(isRight);
+
+		if (isLeft && modeRef.current === 'note') {
+			(async () => {
+				position.rects[0][0] -= NOTE_DIMENSIONS / 2;
+				position.rects[0][1] -= NOTE_DIMENSIONS / 2;
+				position.rects[0][2] += NOTE_DIMENSIONS / 2;
+				position.rects[0][3] += NOTE_DIMENSIONS / 2;
+
+				let annotation = await props.onAddAnnotation({
+					type: 'note',
+					position: position,
+					color: colorRef.current
+				});
+				// TODO: Fix delay between annotation creation and comment focus
+				selectAnnotation(annotation.id, false, false, true, false);
+				focusComment(annotation.id);
+			})();
+			setMode(null);
 		}
 
-		let intersectsWithSelectedAnnotations = false;
-		let selectedAnnotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
-		for (let annotation of selectedAnnotations) {
-			if (intersectBoundingPositions(position, annotation.position)) {
-				intersectsWithSelectedAnnotations = true;
-				break;
+		if (intersectsWithSelectedText(position)) {
+			if (isRight) {
+				openPagePopup(true, event);
 			}
+			return;
 		}
 
 		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
-		if (selectID && isLeft && !isShift && !intersectsWithSelectedAnnotations) {
-			setSelectionRangesRef([]);
+		if ((isLeft || isRight)
+			&& selectID
+			&& (!isShift || selectedIDsRef.current.length)
+			&& (isCtrl || !intersectsWithSelectedAnnotations(position))) {
 			selectAnnotation(selectID, isCtrl, isShift, true, false);
 			setIsSelectedOnPointerDown(true);
-			return;
 		}
 
-		if (intersectsWithSelectedAnnotations
-			&& selectedAnnotations.find(x => x.type === 'note')) {
-			return;
+		if (!isCtrl && !selectID) {
+			selectAnnotation(null);
 		}
 
-		// let intersectsWithSelected = false;
-		// let selectedAnnotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
-		// for (let annotation of selectedAnnotations) {
-		//   if (intersectPositions(position, annotation.position)) {
-		//     return;
-		//   }
-		// }
-
-		if (['note', 'image'].includes(modeRef.current)) {
-			return;
+		if (isRight && selectID) {
+			let annotation = annotationsRef.current.find(x => x.id === selectID);
+			if (!annotation.isExternal) {
+				let selectedColor = annotation.color;
+				props.onPopup('openAnnotationPopup', {
+					x: event.screenX,
+					y: event.screenY,
+					id: selectID,
+					colors: annotationColors,
+					selectedColor
+				});
+			}
 		}
 
-		setEnableSelection(true);
+		if (isRight && !selectedIDsRef.current.length) {
+			openPagePopup(false, event);
+		}
+
+		if (isLeft
+			&& !isCtrl
+			&& !['note', 'image'].includes(modeRef.current)
+			&& (!selectedIDsRef.current.length || isShift)) {
+			setEnableSelection(true);
+		}
+
 		setSelectionRangesRef([]);
 	}
 
@@ -833,6 +895,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	// Layer PointerUp is called before Window PointerUp
 	function handleLayerPointerUp(position, event) {
+		let isLeft = event.button === 0;
 		let isRight = event.button === 2;
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
@@ -844,47 +907,13 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
-		if (modeRef.current === 'note') {
-			(async () => {
-				position.rects[0][0] -= NOTE_DIMENSIONS / 2;
-				position.rects[0][1] -= NOTE_DIMENSIONS / 2;
-				position.rects[0][2] += NOTE_DIMENSIONS / 2;
-				position.rects[0][3] += NOTE_DIMENSIONS / 2;
-
-				let annotation = await props.onAddAnnotation({
-					type: 'note',
-					position: position,
-					color: colorRef.current
-				});
-				// TODO: Fix delay between annotation creation and comment focus
-				selectAnnotation(annotation.id, false, false, true, false);
-				focusComment(annotation.id);
-			})();
-			setMode(null);
-		}
-
-		setIsLastClickRight(isRight);
-
+		// This does annotation selection (or switches to the next overlapped annotation)
+		// when it can be done on pointer down because we don't know yet whether
+		// the current annotation or text selection will be dragged or just clicked
 		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
-		if (selectID) {
+		if (isLeft && selectID) {
 			setSelectionRangesRef([]);
 			selectAnnotation(selectID, isCtrl, isShift, true, false);
-
-			let annotation = annotationsRef.current.find(x => x.id === selectID);
-			// TODO: Right click shouldn't switch to the next annotation
-			if (isRight && !annotation.isExternal) {
-				let selectedColor = annotation.color;
-				props.onPopup('openAnnotationPopup', {
-					x: event.screenX,
-					y: event.screenY,
-					id: selectID,
-					colors: annotationColors,
-					selectedColor
-				});
-			}
-		}
-		else {
-			selectAnnotation(null);
 		}
 	}
 
@@ -988,7 +1017,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}
 				selectionPositions={_selectionPositions}
-				enableSelectionPopup={!_isSelectingText && !_mode}
+				enableSelectionPopup={!_isSelectingText && !_mode && !_isLastClickRight}
 				enableAddToNote={_enableAddToNote}
 				popupAnnotation={
 					!_isSelectingText

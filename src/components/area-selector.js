@@ -25,6 +25,7 @@ function getPageRestrictedPoint(point, pageRect) {
 }
 
 //{ color, shouldStart, onSelection }
+// TODO: Consider to move area selection logic into annotator.js and just use react for rendering
 function AreaSelector(props) {
 	const [areaStyle, setAreaStyle] = useState(null);
 
@@ -145,7 +146,8 @@ function AreaSelector(props) {
 	}
 
 	function handlePointerDown(event) {
-		if (!props.shouldStart) {
+		let isLeft = event.button === 0;
+		if (!isLeft || !props.shouldStart) {
 			return;
 		}
 

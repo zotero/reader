@@ -205,6 +205,34 @@ class ViewerInstance {
 				this._viewer.setColor(data.color);
 				return;
 			}
+			case 'copy': {
+				this._viewer.setColor(data.color);
+				return;
+			}
+			case 'zoomIn': {
+				PDFViewerApplication.zoomIn();
+				return;
+			}
+			case 'zoomOut': {
+				PDFViewerApplication.zoomOut();
+				return;
+			}
+			case 'zoomAuto': {
+				PDFViewerApplication.pdfViewer.currentScaleValue = 'auto';
+				return;
+			}
+			case 'zoomPageWidth': {
+				PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
+				return;
+			}
+			case 'prevPage': {
+				PDFViewerApplication.pdfViewer.previousPage();
+				return;
+			}
+			case 'nextPage': {
+				PDFViewerApplication.pdfViewer.nextPage();
+				return;
+			}
 		}
 	}
 
