@@ -6,32 +6,32 @@
 	@extend %sidebar-view;
 }
 
-.outlineItem {
+.treeItem {
 	display: flex;
 	flex-wrap: wrap;
 	position: relative;
 
-	.outlineWithDeepNesting > & {
+	.treeWithDeepNesting > & {
 		margin-left: 22px; // 12px left margin for outline item toggler
 	}
 }
 
-.outlineItems {
+.treeItems {
 	flex: 1 1 100%;
 
-	.outlineItem > & {
+	.treeItem > & {
 		margin-left: 12px;
 	}
 }
 
-.outlineItem > a {
+.treeItem > a {
 	@extend %sidebar-item-link-btn;
 	flex: 1 1 100%;
 	padding: rem(3.5) 0;
 	position: relative;
 }
 
-.outlineItemToggler {
+.treeItemToggler {
 	position: absolute;
 	height: $outline-item-height;
 	width: 9px;
@@ -44,7 +44,7 @@
 		margin-top: -4.5px;
 	}
 
-	&.outlineItemsHidden ~ .outlineItems {
+	&.treeItemsHidden ~ .treeItems {
 		display: none;
 	}
 }

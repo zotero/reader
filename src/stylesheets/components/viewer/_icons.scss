@@ -211,10 +211,10 @@
 
 // Sidebar
 
-.outlineItemToggler {
+.treeItemToggler {
 	@include icon("treeitem-expanded", 9px);
 
-	&.outlineItemsHidden {
+	&.treeItemsHidden {
 		html[dir='ltr'] & {
 			@include icon("treeitem-collapsed", 9px);
 		}
