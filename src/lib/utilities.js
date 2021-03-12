@@ -97,7 +97,7 @@ export function clearSelection() {
 }
 
 export function getPageFromElement(target) {
-	let node = target.closest('.page');
+	let node = target.closest('#viewer > .page');
 	if (!node) {
 		return null;
 	}
