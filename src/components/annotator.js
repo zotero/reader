@@ -296,6 +296,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	};
 
 	function handleKeyDown(e) {
+		let isCtrl = e.ctrlKey || e.metaKey;
 		if (e.key === 'c') return;
 		if (e.key === 'Escape') {
 			if (selectedIDsRef.current.length) {
@@ -310,7 +311,11 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (e.target === document.getElementById('viewerContainer') || e.target === document.body) {
-			if (e.key === 'Enter') {
+			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
+			if (isCtrl && e.key === 'a') {
+				e.preventDefault();
+			}
+			else if (e.key === 'Enter') {
 				// this.setState({expansionState: 1});
 				let id = selectedIDsRef.current[0];
 				if (id) {
@@ -394,6 +399,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		setIsSelectedOnPointerDown(false);
 
 		if (!pointerDownPositionRef.current) {
+			// Prevent dragging the gray area of #viewer
+			if (event.target === document.getElementById('viewer')) {
+				event.preventDefault();
+			}
 			return;
 		}
 
