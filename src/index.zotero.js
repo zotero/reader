@@ -11,7 +11,7 @@ document.addEventListener('webviewerloaded', (e) => {
 	window.PDFViewerApplicationOptions.set('cMapPacked', true);
 	window.PDFViewerApplicationOptions.set('workerSrc', 'pdf.worker.js');
 	window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
-	window.PDFViewerApplicationOptions.set('textLayerMode', 0);
+	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
 	// Without this PDF.js forces opening outline view when it exists
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 

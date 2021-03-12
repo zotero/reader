@@ -11,7 +11,7 @@ document.addEventListener('webviewerloaded', function () {
 	window.PDFViewerApplicationOptions.set('cMapPacked', true);
 	window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
 	window.PDFViewerApplicationOptions.set('historyUpdateUrl', true);
-	window.PDFViewerApplicationOptions.set('textLayerMode', 0);
+	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
