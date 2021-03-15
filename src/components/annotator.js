@@ -255,7 +255,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		document.getElementById('viewer').setAttribute('draggable', true);
 
 		// viewer.eventBus.off('pagesinit', onDocumentReady);
-		window.addEventListener('keydown', handleKeyDownCallback);
+		window.addEventListener('keydown', handleKeyDownCallback, true);
 		window.addEventListener('pointerup', handlePointerUpCallback);
 		window.addEventListener('dragend', handleDragEndCallback);
 		window.addEventListener('dragstart', handleDragStartCallback);
@@ -302,7 +302,19 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	function handleKeyDown(e) {
 		let isCtrl = e.ctrlKey || e.metaKey;
+		let isAlt = e.altKey;
 		if (e.key === 'c') return;
+
+		// Prevent PDF.js keyboard shortcuts for unsupported operations
+		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
+		if (isCtrl && ['o', 's'].includes(e.key)) {
+			e.stopPropagation();
+			e.preventDefault();
+		}
+
+		if (isCtrl && isAlt && e.key === 'p') {
+			e.stopPropagation();
+		}
 
 		if (e.key === 'Tab' && e.target === document.getElementById('viewerContainer')) {
 			document.body.focus();
