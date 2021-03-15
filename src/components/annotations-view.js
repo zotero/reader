@@ -160,7 +160,7 @@ class AnnotationsView extends React.Component {
 							onAnnotationEditorBlur={this.props.onAnnotationEditorBlur}
 						/>
 					))
-					: <div>Create an annotation to see it in the sidebar</div>}
+					: !this.state.query.length && <div>Create an annotation to see it in the sidebar</div>}
 			</React.Fragment>,
 			containerNode
 		);
