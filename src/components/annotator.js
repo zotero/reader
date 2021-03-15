@@ -682,10 +682,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		toggleMode(mode);
 	}
 
-	function handleToolbarColorClick(x, y) {
+	function handleToolbarColorClick(elementID) {
 		props.onPopup('openColorPopup', {
-			x,
-			y,
+			elementID,
 			colors: annotationColors,
 			selectedColor: _color
 		});

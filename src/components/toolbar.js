@@ -10,7 +10,7 @@ class Toolbar extends React.Component {
 	}
 
 	handleColorPick = (event) => {
-		this.props.onColorPick(event.screenX, event.screenY);
+		this.props.onColorPick(event.currentTarget.id);
 	}
 
 	render() {
@@ -52,6 +52,7 @@ class Toolbar extends React.Component {
 					<span data-l10n-id="area_tool_label">Area</span>
 				</button>
 				<button
+					id="reader-toolbar-button-color-picker"
 					data-l10n-id="global_color"
 					className="toolbarButton global-color"
 					style={{ color }}
