@@ -243,7 +243,7 @@ class Content extends React.Component {
 				break;
 			}
 		}
-		while (node && (node = node.parentNode));
+		while (node && (node = node.parentElement));
 
 		let isSelected = false;
 
