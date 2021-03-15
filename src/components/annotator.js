@@ -37,10 +37,15 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 	let getPageSelectionRange = async (pageIndex, startPoint, endPoint) => {
 		let rect = (await PDFViewerApplication.pdfDocument.getPage(pageIndex + 1)).view.slice();
 
-		rect[0] = startPoint[0];
-		rect[1] = startPoint[1];
-		rect[2] = endPoint[0];
-		rect[3] = endPoint[1];
+		if (startPoint) {
+			rect[0] = startPoint[0];
+			rect[1] = startPoint[1];
+		}
+
+		if (endPoint) {
+			rect[2] = endPoint[0];
+			rect[3] = endPoint[1];
+		}
 
 		let position = {
 			pageIndex,
@@ -60,8 +65,8 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 		let first = i === positionFrom.pageIndex;
 		let last = i === positionTo.pageIndex;
 
-		let startPoint = first && [positionFrom.rects[0][0], positionFrom.rects[0][1]];
-		let endPoint = last && [positionTo.rects[0][0], positionTo.rects[0][1]];
+		let startPoint = first ? [positionFrom.rects[0][0], positionFrom.rects[0][1]] : null;
+		let endPoint = last ? [positionTo.rects[0][0], positionTo.rects[0][1]] : null;
 		let selectionRange = await getPageSelectionRange(i, startPoint, endPoint);
 		if (!selectionRange) continue;
 
