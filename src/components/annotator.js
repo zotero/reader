@@ -303,6 +303,12 @@ const Annotator = React.forwardRef((props, ref) => {
 	function handleKeyDown(e) {
 		let isCtrl = e.ctrlKey || e.metaKey;
 		if (e.key === 'c') return;
+
+		if (e.key === 'Tab' && e.target === document.getElementById('viewerContainer')) {
+			document.body.focus();
+			e.preventDefault();
+		}
+
 		if (e.key === 'Escape') {
 			if (selectedIDsRef.current.length) {
 				selectAnnotation(null);

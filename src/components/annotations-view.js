@@ -22,6 +22,7 @@ class AnnotationsViewSearch extends React.Component {
 				<div className="icon icon-search"/>
 				<div className="input-group">
 					<input
+						tabIndex={5}
 						type="text" placeholder="Search Annotations"
 						value={this.props.query} onChange={this.handleInput}
 					/>

@@ -14,11 +14,12 @@ class Toolbar extends React.Component {
 	}
 
 	render() {
-		let { toggled, color, onColorClick, onMode } = this.props;
+		let { toggled, color, onMode } = this.props;
 		let containerNode = this.getContainerNode();
 		return ReactDOM.createPortal(
 			<div className="tool-group annotation-tools">
 				<button
+					tabIndex={18}
 					data-l10n-id="highlight_tool"
 					className={cx('toolbarButton highlight', {
 						toggled: toggled === 'highlight'
@@ -30,6 +31,7 @@ class Toolbar extends React.Component {
 					<span data-l10n-id="highlight_tool_label">Highlight</span>
 				</button>
 				<button
+					tabIndex={19}
 					data-l10n-id="note_tool"
 					className={cx('toolbarButton note', {
 						toggled: toggled === 'note'
@@ -41,6 +43,7 @@ class Toolbar extends React.Component {
 					<span data-l10n-id="note_tool_label">Note</span>
 				</button>
 				<button
+					tabIndex={20}
 					data-l10n-id="area_tool"
 					className={cx('toolbarButton area', {
 						toggled: toggled === 'image'
@@ -53,6 +56,7 @@ class Toolbar extends React.Component {
 				</button>
 				<button
 					id="reader-toolbar-button-color-picker"
+					tabIndex={21}
 					data-l10n-id="global_color"
 					className="toolbarButton global-color"
 					style={{ color }}
