@@ -11,12 +11,10 @@
 	user-select: none;
 }
 
-.force-annotation-pointer {
-	.page {
-		cursor: pointer;
-	}
+.cursor-pointer .page {
+	cursor: pointer;
+}
 
-	.textLayer > span {
-		cursor: pointer;
-	}
+.cursor-text .page {
+	cursor: text;
 }

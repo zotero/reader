@@ -22,7 +22,8 @@ import {
 	setCaretToEnd,
 	useRefState,
 	getAnnotationsFromSelectionRanges,
-	setDataTransferAnnotations
+	setDataTransferAnnotations,
+	intersectPointInSelectionPosition
 } from '../lib/utilities';
 
 import { extractRange } from '../lib/extract';
@@ -88,37 +89,6 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 	}
 
 	return selectionRangesRef;
-}
-
-function isOver(position, annotations) {
-	let x = position.rects[0][0];
-	let y = position.rects[0][1];
-
-	for (let annotation of annotations) {
-		for (let rect of annotation.position.rects) {
-			if (annotation.position.pageIndex === position.pageIndex && rect[0] <= x && x <= rect[2]
-				&& rect[1] <= y && y <= rect[3]) {
-				return true;
-			}
-		}
-
-		for (let i = 0; i < annotation.position.rects.length - 1; i++) {
-			let rect = annotation.position.rects[i];
-			let rectNext = annotation.position.rects[i + 1];
-
-			if (annotation.position.pageIndex === position.pageIndex) {
-				if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2])
-					&& rectNext[1] <= y && y <= rect[3]
-					&& rect[3] - rect[1] >= rect[1] - rectNext[3]
-					&& rectNext[3] - rectNext[1] >= rect[1] - rectNext[3]
-				) {
-					return true;
-				}
-			}
-		}
-	}
-
-	return false;
 }
 
 const Annotator = React.forwardRef((props, ref) => {
@@ -433,7 +403,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			let pointerInSelection = false;
 
 			for (let range of selectionRangesRef.current) {
-				if (intersectBoundingPositions(pointerDownPositionRef.current, range.position)) {
+				if (intersectPointInSelectionPosition(pointerDownPositionRef.current, range.position)) {
 					pointerInSelection = true;
 					break;
 				}
@@ -808,7 +778,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	function intersectsWithSelectedText(position) {
 		for (let range of selectionRangesRef.current) {
-			if (intersectBoundingPositions(position, range.position)) {
+			if (intersectPointInSelectionPosition(position, range.position)) {
 				return true;
 			}
 		}
@@ -948,14 +918,34 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 	}
 
-	function handleLayerPointerMove(position) {
-		// TODO: Fix selection
-		if (isOver(position, annotationsRef.current)) {
-			document.getElementById('viewer').classList.add('force-annotation-pointer');
-			let id = getAnnotationToSelectID(position, 0);
+	function handleLayerPointerMove(position, event) {
+		let isShift = event.shiftKey;
+
+		let overAnnotation = (
+			(!isShift || selectedIDsRef.current.length)
+			&& annotationsRef.current.find(x => intersectPointInSelectionPosition(position, x.position))
+		);
+
+		let textPosition = window.pageTextPositions[position.pageIndex];
+		let overText = (
+			!['note', 'image'].includes(modeRef.current)
+			&& !intersectsWithSelectedText(position)
+			&& (textPosition && intersectPointInSelectionPosition(position, textPosition))
+			|| isSelectingTextRef.current
+		);
+
+		let viewer = document.getElementById('viewer');
+		if (overAnnotation) {
+			viewer.classList.add('cursor-pointer');
+			viewer.classList.remove('cursor-text');
+		}
+		else if (overText) {
+			viewer.classList.add('cursor-text');
+			viewer.classList.remove('cursor-pointer');
 		}
 		else {
-			document.getElementById('viewer').classList.remove('force-annotation-pointer');
+			viewer.classList.remove('cursor-pointer');
+			viewer.classList.remove('cursor-text');
 		}
 
 		if (pointerDownPositionRef.current && enableSelectionRef.current) {

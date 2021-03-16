@@ -5,6 +5,7 @@ import ReactDom from 'react-dom';
 import Annotator from './components/annotator';
 import AnnotationsStore from './annotations-store';
 import { debounce } from './lib/debounce';
+import { extractRange as getRange } from './lib/text/range';
 
 class Viewer {
 	constructor(options) {
@@ -34,6 +35,8 @@ class Viewer {
 				this.setAnnotations([...annotations]);
 			}
 		});
+
+		window.pageTextPositions = {};
 
 		// Takeover the download button
 		PDFViewerApplication.download = function () {
@@ -134,7 +137,17 @@ class Viewer {
 			}
 		}
 
-		window.chsCache[e.pageNumber - 1] = chs;
+		let pageIndex = e.pageNumber - 1;
+		window.chsCache[pageIndex] = chs;
+
+		let range = getRange(chs, [0, 9999, 0, 9999], false);
+
+		let position = {
+			pageIndex,
+			rects: range.rects
+		};
+
+		window.pageTextPositions[pageIndex] = position;
 	}
 
 	handleViewAreaUpdate = (e) => {

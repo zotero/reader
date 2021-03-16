@@ -425,7 +425,7 @@ function Layer(props) {
 		if (viewer.pdfDocument.uninitialized) {
 			return;
 		}
-		props.onPointerMove(v2p(position));
+		props.onPointerMove(v2p(position), event);
 	}
 
 	function handlePointerUp(event) {

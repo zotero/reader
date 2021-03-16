@@ -167,7 +167,6 @@ export function equalPositions(annotation1, annotation2) {
 	);
 }
 
-
 export function intersectPositions(position1, position2) {
 	if (position1.pageIndex !== position2.pageIndex) {
 		return false;
@@ -184,6 +183,36 @@ export function intersectPositions(position1, position2) {
 	return false;
 }
 
+// TODO: Consider to use this for annotation selection on pointer down as well
+export function intersectPointInSelectionPosition(pointPosition, selectionPosition) {
+	if (selectionPosition.pageIndex !== pointPosition.pageIndex) {
+		return false;
+	}
+
+	let [x, y] = pointPosition.rects[0];
+
+	for (let i = 0; i < selectionPosition.rects.length; i++) {
+		let [r1, r2] = selectionPosition.rects.slice(i, i + 2);
+		if (!(x > r1[2]
+			|| x < r1[0]
+			|| y > r1[3]
+			|| y < r1[1])) {
+			return true;
+		}
+
+		if (!r2) {
+			continue;
+		}
+
+		if (x > r1[0] && x > r2[0]
+			&& x < r1[2] && x < r2[2]
+			&& y < r1[3] && y > r2[1]
+			&& r1[1] - r2[3] < Math.min(r1[3] - r1[1], r2[3] - r2[1])) {
+			return true;
+		}
+	}
+	return false;
+}
 
 export function intersectBoundingPositions(position1, position2) {
 	if (position1.pageIndex !== position2.pageIndex) {
