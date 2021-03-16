@@ -16,6 +16,12 @@ class AnnotationsViewSearch extends React.Component {
 		this.props.onClear();
 	}
 
+	handleKeyDown = (event) => {
+		if (event.key === 'Escape') {
+			this.handleClear();
+		}
+	}
+
 	render() {
 		return (
 			<div className="search">
@@ -24,7 +30,9 @@ class AnnotationsViewSearch extends React.Component {
 					<input
 						tabIndex={5}
 						type="text" placeholder="Search Annotations"
-						value={this.props.query} onChange={this.handleInput}
+						value={this.props.query}
+						onChange={this.handleInput}
+						onKeyDown={this.handleKeyDown}
 					/>
 				</div>
 				{this.props.query.length !== 0 && <button className="clear" onClick={this.handleClear}/>}
