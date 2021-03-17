@@ -115,7 +115,7 @@ class ViewerInstance {
 
 		switch (message.action) {
 			case 'error': {
-				window.PDFViewerApplication.error(message.message, message.moreInfo);
+				window.PDFViewerApplication._otherError(message.message, message.moreInfo);
 				return;
 			}
 			case 'navigate': {
@@ -293,6 +293,14 @@ let currentViewerInstance = null;
 window.addEventListener('message', function (event) {
 	let itemID = event.data.itemID;
 	let message = event.data.message;
+
+	if (message.action === 'crash') {
+		document.body.style.pointerEvents = 'none';
+		let popover = document.createElement('div');
+		popover.id = 'crash-popover';
+		popover.append(message.message);
+		document.body.append(popover);
+	}
 
 	if (message.action === 'open') {
 		// TODO: Improve error handling here
