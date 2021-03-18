@@ -3,7 +3,6 @@ import Viewer from './viewer.js';
 let loaded = false;
 
 document.addEventListener('webviewerloaded', (e) => {
-	window.PDFViewerApplicationOptions.set('disableHistory', true);
 	window.PDFViewerApplicationOptions.set('eventBusDispatchToDOM', true);
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
 	window.PDFViewerApplicationOptions.set('defaultUrl', '');
@@ -19,7 +18,6 @@ document.addEventListener('webviewerloaded', (e) => {
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
 		return window.PDFViewerApplicationOptions;
 	};
-	window.PDFViewerApplication.isViewerEmbedded = true;
 
 	PDFViewerApplication.initializedPromise.then(function () {
 		window.isReady = true;

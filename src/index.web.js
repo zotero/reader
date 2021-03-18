@@ -4,13 +4,12 @@ import annotations from './demo-annotations';
 let loaded = false;
 
 document.addEventListener('webviewerloaded', function () {
-	window.PDFViewerApplicationOptions.set('disableHistory', false);
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
 	window.PDFViewerApplicationOptions.set('defaultUrl', '');
 	window.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
 	window.PDFViewerApplicationOptions.set('cMapPacked', true);
 	window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
-	window.PDFViewerApplicationOptions.set('historyUpdateUrl', true);
+	window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
 	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 
@@ -18,7 +17,6 @@ document.addEventListener('webviewerloaded', function () {
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
 		return window.PDFViewerApplicationOptions;
 	};
-	window.PDFViewerApplication.isViewerEmbedded = true;
 
 	PDFViewerApplication.initializedPromise.then(async function () {
 		if (!window.PDFViewerApplication.pdfViewer || loaded) return;

@@ -170,6 +170,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			],
 			ignoreDestinationZoom: true
 		});
+
+		window.PDFViewerApplication.pdfHistory.pushCurrentPosition();
 	}
 
 	function scrollTo(location, sidebar, viewer) {
@@ -281,6 +283,14 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = e.ctrlKey || e.metaKey;
 		let isAlt = e.altKey;
 		if (e.key === 'c') return;
+
+		if (isCtrl && e.key === '[') {
+			window.history.back();
+		}
+
+		if (isCtrl && e.key === ']') {
+			window.history.forward();
+		}
 
 		// Prevent PDF.js keyboard shortcuts for unsupported operations
 		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
