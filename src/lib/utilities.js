@@ -158,6 +158,15 @@ export function formatAnnotationText(annotation) {
 	return parts.join(' ');
 }
 
+export function getBoundingRect(rects) {
+	return [
+		Math.min(...rects.map(x => x[0])),
+		Math.min(...rects.map(x => x[1])),
+		Math.max(...rects.map(x => x[2])),
+		Math.max(...rects.map(x => x[3]))
+	];
+}
+
 export function equalPositions(annotation1, annotation2) {
 	let p1 = annotation1.position;
 	let p2 = annotation2.position;

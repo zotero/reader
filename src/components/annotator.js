@@ -23,7 +23,8 @@ import {
 	useRefState,
 	getAnnotationsFromSelectionRanges,
 	setDataTransferAnnotations,
-	intersectPointInSelectionPosition
+	intersectPointInSelectionPosition,
+	getBoundingRect
 } from '../lib/utilities';
 
 import { extractRange } from '../lib/extract';
@@ -150,18 +151,24 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function scrollViewerTo(position) {
-		let x = position.rects[0][0];
-		let y = position.rects[0][3] + 100;
+		let rect = getBoundingRect(position.rects);
+		let spacing = 30;
+		rect = [
+			rect[0] - spacing,
+			rect[1] - spacing,
+			rect[2] + spacing,
+			rect[3] + spacing
+		];
 
+		// TODO: Do not position if the rect is already mostly visible
 		window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
 			pageNumber: position.pageIndex + 1,
 			destArray: [
 				null,
-				{ name: 'XYZ' },
-				x,
-				y,
-				null
-			]
+				{ name: 'FitR' },
+				...rect
+			],
+			ignoreDestinationZoom: true
 		});
 	}
 
