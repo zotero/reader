@@ -11,7 +11,6 @@
 	},
 	"license": "AGPL-3.0",
 	"browserslist": [
-		"last 2 version",
 		"ff >= 60.9.0"
 	],
 	"dependencies": {
@@ -30,7 +29,7 @@
 		"@babel/preset-react": "^7.8.3",
 		"@babel/runtime": "^7.8.4",
 		"@zotero/eslint-config": "^1.0.6",
-		"autoprefixer": "^9.7.4",
+		"autoprefixer": "^9.8.6",
 		"babel-loader": "^8.0.0",
 		"babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
 		"copy-webpack-plugin": "^4.6.0",
