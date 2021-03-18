@@ -57,3 +57,13 @@ textarea {
 [hidden] {
 	display: none !important;
 }
+
+#sidebarContainer {
+	transition: none !important;
+}
+
+// #viewerContainer need to transition because PDF.js pages view
+// resizing logic is triggered only on `transitionend` event
+#viewerContainer {
+	transition-duration: 1ms !important;
+}

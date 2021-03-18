@@ -169,15 +169,11 @@ class Viewer {
 	}
 
 	handleSidebarViewChange = (e) => {
-		// Hide sidebar, because `transitionend` is never trigger in pdf.js (in Zotero)
-		// preventing the sidebar to be hidden and messing up with tab indices
-		if (e.view === 0) {
-			PDFViewerApplication.pdfSidebar.outerContainer.classList.remove('sidebarMoving');
-		}
 		if (this._lastState) {
 			this._lastState.sidebarView = e.view;
 			this._onSetState(this._lastState);
 		}
+		// Without this context pane in stacked mode is hidden on first tab open
 		setTimeout(() => {
 			PDFViewerApplication.eventBus.dispatch('resize');
 		}, 50);
