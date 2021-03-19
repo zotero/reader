@@ -806,6 +806,11 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
+		if (event.target.classList.contains('internalLink')) {
+			setIsSelectedOnPointerDown(true);
+			return;
+		}
+
 		setIsLastClickRight(isRight);
 
 		if (isLeft && modeRef.current === 'note') {
