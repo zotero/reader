@@ -1,5 +1,17 @@
 'use strict';
 
+export function isMac() {
+	return !!navigator && /Mac/.test(navigator.platform);
+}
+
+export function isLinux() {
+	return !!navigator && /Linux/.test(navigator.platform);
+}
+
+export function isWin() {
+	return !!navigator && /Win/.test(navigator.platform);
+}
+
 export function copyToClipboard(str) {
 	let el = document.createElement('textarea');
 	el.value = str;

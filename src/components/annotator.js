@@ -24,7 +24,9 @@ import {
 	getAnnotationsFromSelectionRanges,
 	setDataTransferAnnotations,
 	intersectPointInSelectionPosition,
-	getBoundingRect
+	getBoundingRect,
+	isMac,
+	isLinux
 } from '../lib/utilities';
 
 import { extractRange } from '../lib/extract';
@@ -273,26 +275,31 @@ const Annotator = React.forwardRef((props, ref) => {
 	};
 
 	function handleKeyDown(e) {
-		let isCtrl = e.ctrlKey || e.metaKey;
+		let isMod = e.ctrlKey || e.metaKey;
+		let isCtrl = e.ctrlKey;
+		let isCmd = e.metaKey && isMac();
 		let isAlt = e.altKey;
-		if (e.key === 'c') return;
 
-		if (isCtrl && e.key === '[') {
+		if (isMod && e.key === 'c') return;
+
+		if ((isCmd || isCtrl && isLinux()) && e.key === '['
+			|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowLeft') {
 			window.history.back();
 		}
 
-		if (isCtrl && e.key === ']') {
+		if ((isCmd || isCtrl && isLinux()) && e.key === ']'
+			|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowRight') {
 			window.history.forward();
 		}
 
 		// Prevent PDF.js keyboard shortcuts for unsupported operations
 		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
-		if (isCtrl && ['o', 's'].includes(e.key)) {
+		if (isMod && ['o', 's'].includes(e.key)) {
 			e.stopPropagation();
 			e.preventDefault();
 		}
 
-		if (isCtrl && isAlt && e.key === 'p') {
+		if (isMod && isAlt && e.key === 'p') {
 			e.stopPropagation();
 		}
 
@@ -315,7 +322,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (e.target === document.getElementById('viewerContainer') || e.target === document.body) {
 			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
-			if (isCtrl && e.key === 'a') {
+			if (isMod && e.key === 'a') {
 				e.preventDefault();
 			}
 			else if (e.key === 'Enter') {
