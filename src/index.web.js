@@ -12,6 +12,7 @@ document.addEventListener('webviewerloaded', function () {
 	window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
 	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
+	window.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
 
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
 	window.PDFViewerApplication.externalServices.createPreferences = function () {

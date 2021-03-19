@@ -13,6 +13,7 @@ document.addEventListener('webviewerloaded', (e) => {
 	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
 	// Without this PDF.js forces opening outline view when it exists
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
+	window.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
 
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
 	window.PDFViewerApplication.externalServices.createPreferences = function () {

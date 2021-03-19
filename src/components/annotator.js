@@ -160,18 +160,11 @@ const Annotator = React.forwardRef((props, ref) => {
 			rect[3] + spacing
 		];
 
-		// TODO: Do not position if the rect is already mostly visible
-		window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-			pageNumber: position.pageIndex + 1,
-			destArray: [
-				null,
-				{ name: 'FitR' },
-				...rect
-			],
-			ignoreDestinationZoom: true
-		});
-
-		window.PDFViewerApplication.pdfHistory.pushCurrentPosition();
+		window.PDFViewerApplication.pdfLinkService.goToDestination([
+			position.pageIndex,
+			{ name: 'FitR' },
+			...rect
+		]);
 	}
 
 	function scrollTo(location, sidebar, viewer) {
