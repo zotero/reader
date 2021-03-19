@@ -215,6 +215,8 @@ class Viewer {
 	handleClick = (event) => {
 		if (
 			event.button === 0
+			// On FF target is document node when mouseup is outside of pdf-reader
+			&& event.target.nodeType === Node.ELEMENT_NODE
 			&& event.target.closest('.annotationLayer')
 			&& !event.target.classList.contains('internalLink')
 		) {
