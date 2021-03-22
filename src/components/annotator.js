@@ -971,6 +971,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (pointerDownPositionRef.current && enableSelectionRef.current) {
+			setIsSelectingText(true);
+
 			let selectionEndPosition = position;
 			// restrictTextSelectionToPage
 			if (modeRef.current === 'highlight' && selectionEndPosition.pageIndex !== pointerDownPositionRef.current.pageIndex) {
@@ -986,10 +988,6 @@ const Annotator = React.forwardRef((props, ref) => {
 				// Check enableSelectionRef.current again after await
 				if (enableSelectionRef.current) {
 					setSelectionRangesRef(selectionRangesRef);
-					if (selectionRangesRef.length && !isSelectingTextRef.current) {
-						setIsSelectingText(true);
-						selectAnnotation(null);
-					}
 				}
 			})();
 		}
