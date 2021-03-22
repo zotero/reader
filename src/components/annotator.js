@@ -943,6 +943,26 @@ const Annotator = React.forwardRef((props, ref) => {
 	function handleLayerPointerMove(position, event) {
 		let isShift = event.shiftKey;
 
+		// A temporary and ugly work-around to fire `mouseup` event which
+		// was never trigger because another iframe (note-editor) was hovered
+		// and captured it leaving us in a bad state.
+		// In some circumstances when `mousedown` was on input or there was a selection
+		// it's possible receive the `mouseup` event, but this seems very chaotic
+		if (pointerDownPositionRef.current && !(event.buttons & 1)) {
+			var evt = new CustomEvent('mouseup', { bubbles: true, cancelable: false });
+			evt.clientX = event.clientX;
+			evt.clientY = event.clientY;
+			window.dispatchEvent(evt);
+
+			evt = new CustomEvent('pointerup', { bubbles: true, cancelable: false });
+			evt.clientX = event.clientX;
+			evt.clientY = event.clientY;
+			window.dispatchEvent(evt);
+
+			pointerDownPositionRef.current = null;
+			return;
+		}
+
 		let overAnnotation = (
 			(!isShift || selectedIDsRef.current.length)
 			&& annotationsRef.current.find(x => intersectPointInSelectionPosition(position, x.position))
