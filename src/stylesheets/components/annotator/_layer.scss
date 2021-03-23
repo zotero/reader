@@ -52,3 +52,10 @@
 		z-index: 3 !important;
 	}
 }
+
+.selectionCanvas {
+	position: absolute;
+	top: 0;
+	left: 0;
+	mix-blend-mode: multiply
+}

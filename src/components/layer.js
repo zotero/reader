@@ -340,7 +340,8 @@ function SelectionLayer({ positions, color }) {
 			canvas.className = 'selectionCanvas';
 			canvas.width = viewport.canvas.width;
 			canvas.height = viewport.canvas.height;
-			canvas.style = 'position: absolute; top: 0; left: 0;mix-blend-mode: multiply';
+			canvas.style.width = viewport.div.style.width;
+			canvas.style.height = viewport.div.style.height;
 			wrapper.appendChild(canvas);
 		}
 
@@ -365,10 +366,11 @@ function SelectionLayer({ positions, color }) {
 		for (let position of positions) {
 			let ctx = getCtx(position.pageIndex);
 			if (!ctx) return null;
-
+			let viewport = window.PDFViewerApplication.pdfViewer.getPageView(position.pageIndex);
 			ctx.fillStyle = color;
 			for (let rect of position.rects) {
-				ctx.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				let { sx, sy } = viewport.outputScale;
+				ctx.fillRect(rect[0] * sx, rect[1] * sy, (rect[2] - rect[0]) * sx, (rect[3] - rect[1]) * sy);
 			}
 		}
 	}
