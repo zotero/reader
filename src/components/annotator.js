@@ -224,6 +224,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const handleDragStartCallback = useCallback(handleDragStart, []);
 	const handleCopyCallback = useCallback(handleCopy, []);
 	const handleSidebarViewChangeCallback = useCallback(handleSidebarViewChange, []);
+	const handlePageRenderedCallback = useCallback(handlePageRendered, []);
 
 	useEffect(() => {
 		document.getElementById('viewer').setAttribute('draggable', true);
@@ -235,6 +236,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		window.addEventListener('dragstart', handleDragStartCallback);
 		window.addEventListener('copy', handleCopyCallback);
 		window.PDFViewerApplication.eventBus.on('sidebarviewchanged', handleSidebarViewChangeCallback);
+		window.PDFViewerApplication.eventBus.on('pagerendered', handlePageRenderedCallback);
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDownCallback);
@@ -243,6 +245,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			window.removeEventListener('dragstart', handleDragStartCallback);
 			window.removeEventListener('copy', handleCopyCallback);
 			window.PDFViewerApplication.eventBus.off('sidebarviewchanged', handleSidebarViewChangeCallback);
+			window.PDFViewerApplication.eventBus.off('pagerendered', handlePageRenderedCallback);
 		};
 	}, []);
 
@@ -401,6 +404,18 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 		else {
 			setIsSidebarOpen(window.PDFViewerApplication.pdfSidebar.isOpen);
+		}
+	}
+
+	function handlePageRendered(event) {
+		// For now just deselect text when page is re-rendered
+		// TODO: Re-render selection layer after page zoom change or resize,
+		//  figure out what to do when multiple pages are selected
+		//  and some of them are unloaded
+		for (let selectionRange of selectionRangesRef.current) {
+			if (selectionRange.position.pageIndex === event.pageNumber - 1) {
+				setSelectionRangesRef([]);
+			}
 		}
 	}
 
