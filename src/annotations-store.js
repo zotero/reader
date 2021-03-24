@@ -150,9 +150,10 @@ class AnnotationsStore {
 			if (pageLabels && pageLabels[annotation.position.pageIndex]) {
 				annotation.pageLabel = pageLabels[annotation.position.pageIndex];
 			}
-			else {
-				annotation.pageLabel = (annotation.position.pageIndex + 1).toString();
-			}
+		}
+
+		if (annotation.pageLabel === '-') {
+			annotation.pageLabel = (annotation.position.pageIndex + 1).toString();
 		}
 
 		if (annotation.type === 'note' || annotation.type === 'image') {

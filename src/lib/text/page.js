@@ -92,6 +92,10 @@ export async function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, page
 export async function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) {
 	let numPrev, numCur, numNext;
 
+	// TODO: Instead of trying to extract from two positions, try to
+	//  guess the right position by determining whether the page is even or odd
+
+	// TODO: Take into account font parameters when comparing extracted numbers
 	let getNum = (chsNext, points) => points.length > 0 && getSurroundedNumberAtPos(chsNext, points[0].x, points[0].y)
 		|| points.length > 1 && getSurroundedNumberAtPos(chsNext, points[1].x, points[1].y);
 
