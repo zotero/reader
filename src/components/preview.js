@@ -148,6 +148,15 @@ export class SidebarPreview extends React.Component {
 		this.props.onDoubleClickHighlight(this.props.annotation.id);
 	}
 
+	handlePointerDown = (event) => {
+		if (!this.props.annotation.readOnly
+			&& event.button === 2
+			&& !event.target.closest('div[contenteditable="true"]')) {
+			event.stopPropagation();
+			this.props.onMoreMenu(this.props.annotation.id, event.screenX, event.screenY);
+		}
+	}
+
 	render() {
 		let { annotation, state } = this.props;
 
@@ -204,7 +213,7 @@ export class SidebarPreview extends React.Component {
 		expandedState['expanded' + this.props.state] = true;
 
 		return (
-			<div className={cx('preview', {
+			<div onPointerDown={this.handlePointerDown} className={cx('preview', {
 				'read-only': annotation.readOnly, ...expandedState
 			})}>
 				<header
