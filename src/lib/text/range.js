@@ -98,7 +98,7 @@ export function extractRange(chs, rects, selection) {
 				if (!extracting) continue;
 
 				if (j === line.words.length - 1 && i === word.chs.length - 1) {
-					if (isDash(ch.c)) {
+					if (isDash(ch.c) && ch !== chEnd) {
 						continue;
 					}
 				}
