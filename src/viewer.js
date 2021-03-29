@@ -222,7 +222,8 @@ class Viewer {
 		) {
 			event.preventDefault();
 			event.stopPropagation();
-			if (!PDFViewerApplication.pdfViewer.isInPresentationMode) {
+			if (!PDFViewerApplication.pdfViewer.isInPresentationMode
+				&& event.target.href) {
 				this.options.onExternalLink(event.target.href);
 			}
 		}
