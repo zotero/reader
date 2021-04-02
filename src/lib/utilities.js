@@ -326,7 +326,7 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 	}).filter(x => x).join('\n\n');
 
 	annotations = annotations.map(
-		({ id, text, comment, image, position, pageLabel }) => {
+		({ id, text, color, comment, image, position, pageLabel }) => {
 			if (image) {
 				let img = document.querySelector('div[data-sidebar-id="' + id + '"] img');
 				if (img) {
@@ -336,6 +336,7 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 			return {
 				attachmentItemID: window.itemID,
 				text,
+				color,
 				comment,
 				image,
 				position,
