@@ -380,7 +380,7 @@ function SelectionLayer({ positions, color }) {
 
 function Layer(props) {
 	const [initialized, setInitialized] = useState(false);
-	const [temporaryRerender, setTemporaryRerender] = useState({});
+	const [render, setRender] = useState({});
 
 	let viewer = window.PDFViewerApplication.pdfViewer;
 	let containerNode = document.getElementById('viewerContainer');
@@ -399,8 +399,6 @@ function Layer(props) {
 		containerNode.addEventListener('pointerup', handlePointerUpDownCallback);
 
 		viewer = window.PDFViewerApplication.pdfViewer;
-		// TODO: Layer rendered should better take into account which exactly page
-		//  was rendered, instead of re-rendering all annotations in all pages
 		viewer.eventBus.on('pagerendered', handlePageRenderCallback);
 
 		return () => {
@@ -448,7 +446,7 @@ function Layer(props) {
 
 	function handlePageRender(event) {
 		// console.log(`pdf.js rendered pageIndex ${event.pageNumber - 1}`);
-		setTemporaryRerender({});
+		setRender({});
 		setInitialized(true);
 	}
 
@@ -483,65 +481,60 @@ function Layer(props) {
 		onClickEdgeNote
 	} = props;
 
-	let pageLayers = useMemo(() => {
-		if (!initialized) return [];
-		let annotationsByPage = groupAnnotationsByPage(annotations);
-		let pageLayers = [];
-		for (let pageIndex = 0; pageIndex < viewer.pdfDocument.numPages; pageIndex++) {
-			if (!annotationsByPage[pageIndex]) {
-				continue;
-			}
-			let view = viewer.getPageView(pageIndex);
-
-
-			pageLayers.push(
-				<PageLayerHighlight
-					key={'h_' + pageIndex}
-					view={view}
-					selectedAnnotationIDs={selectedAnnotationIDs}
-					annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'highlight') || [])}
-					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}
-				/>,
-				<PageLayerNote
-					key={'n_' + pageIndex}
-					view={view}
-					selectedAnnotationIDs={selectedAnnotationIDs}
-					annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'note') || [])}
-					onChangePosition={(id, position) => {
-						onChange({ id, position: v2p(position) });
-					}}
-					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}
-				/>,
-				<PageLayerArea
-					key={'a_' + pageIndex}
-					view={view}
-					selectedAnnotationIDs={selectedAnnotationIDs}
-					annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'image') || [])}
-					onResizeStart={props.onAreaResizeStart}
-					onChangePosition={(id, position) => {
-						onChange({ id, position: v2p(position) });
-					}}
-					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}
-				/>
-			);
-
-			if (props.enableEdgeNotes) {
-				pageLayers.push(<EdgeNoteLayer
-					key={'m_' + pageIndex}
-					view={view}
-					selectedAnnotationIDs={selectedAnnotationIDs}
-					annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'image'].includes(x.type)) || [])}
-					onClick={onClickEdgeNote}
-				/>);
-			}
-		}
-		return pageLayers;
-	}, [props.annotations, selectedAnnotationIDs, initialized, temporaryRerender, props.enableEdgeNotes]);
-
 	if (!initialized) return null;
+
+	let pageLayers = [];
+	let annotationsByPage = groupAnnotationsByPage(annotations);
+	for (let pageIndex = 0; pageIndex < viewer.pdfDocument.numPages; pageIndex++) {
+		if (!annotationsByPage[pageIndex] || viewer._pages[pageIndex].renderingState === 0) {
+			continue;
+		}
+		let view = viewer.getPageView(pageIndex);
+
+		pageLayers.push(
+			<PageLayerHighlight
+				key={'h_' + pageIndex}
+				view={view}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'highlight') || [])}
+				onDragStart={props.onDragStart}
+				onDragEnd={props.onDragEnd}
+			/>,
+			<PageLayerNote
+				key={'n_' + pageIndex}
+				view={view}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'note') || [])}
+				onChangePosition={(id, position) => {
+					onChange({ id, position: v2p(position) });
+				}}
+				onDragStart={props.onDragStart}
+				onDragEnd={props.onDragEnd}
+			/>,
+			<PageLayerArea
+				key={'a_' + pageIndex}
+				view={view}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'image') || [])}
+				onResizeStart={props.onAreaResizeStart}
+				onChangePosition={(id, position) => {
+					onChange({ id, position: v2p(position) });
+				}}
+				onDragStart={props.onDragStart}
+				onDragEnd={props.onDragEnd}
+			/>
+		);
+
+		if (props.enableEdgeNotes) {
+			pageLayers.push(<EdgeNoteLayer
+				key={'m_' + pageIndex}
+				view={view}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'image'].includes(x.type)) || [])}
+				onClick={onClickEdgeNote}
+			/>);
+		}
+	}
 
 	if (popupAnnotation) {
 		let { position, ...rest } = popupAnnotation;

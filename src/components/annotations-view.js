@@ -1,179 +1,150 @@
 'use strict';
 
-import React from 'react';
+import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames';
 import { SidebarPreview } from './preview';
 import { searchAnnotations } from '../lib/search';
-import { formatAnnotationText } from '../lib/utilities';
+import { basicDeepEqual } from '../lib/utilities';
 
-class AnnotationsViewSearch extends React.Component {
-	handleInput = (event) => {
-		this.props.onInput(event.target.value);
+function AnnotationsViewSearch({ query, onInput, onClear }) {
+	function handleInput(event) {
+		onInput(event.target.value);
 	}
 
-	handleClear = () => {
-		this.props.onClear();
+	function handleClear() {
+		onClear();
 	}
 
-	handleKeyDown = (event) => {
+	function handleKeyDown(event) {
 		if (event.key === 'Escape') {
-			this.handleClear();
+			handleClear();
 		}
 	}
 
-	render() {
-		return (
-			<div className="search">
-				<div className="icon icon-search"/>
-				<div className="input-group">
-					<input
-						tabIndex={5}
-						type="text" placeholder="Search Annotations"
-						value={this.props.query}
-						onChange={this.handleInput}
-						onKeyDown={this.handleKeyDown}
-					/>
-				</div>
-				{this.props.query.length !== 0 && <button className="clear" onClick={this.handleClear}/>}
-			</div>
-		);
-	}
-}
-
-class Annotation extends React.Component {
-	state = {
-		isDown: false
-	}
-
-	componentDidMount() {
-		window.addEventListener('mouseup', this.handleMouseUp);
-	}
-
-	componentWillUnmount() {
-		window.removeEventListener('mouseup', this.handleMouseUp);
-	}
-
-	handleClickAnnotation = (event) => {
-		if (event.button === 0) {
-			this.props.onSelect(this.props.annotation.id, event.ctrlKey || event.metaKey, event.shiftKey);
-		}
-	}
-
-	handleEditPage = () => {
-		this.props.onPageMenu(this.props.annotation.id);
-	}
-
-	handleMouseDown = () => {
-		this.setState({ isDown: true });
-	}
-
-	handleMouseUp = () => {
-		this.setState({ isDown: false });
-	}
-
-	render() {
-		return (
-			<div
-				key={this.props.annotation.id}
-				className={cx('annotation', { selected: this.props.isSelected, down: this.state.isDown })}
-				data-sidebar-id={this.props.annotation.id}
-				onMouseDown={this.handleMouseDown}
-				onDragEnd={this.handleMouseUp}
-			>
-				<SidebarPreview
-					state={this.props.expansionState}
-					annotation={this.props.annotation}
-					selected={this.props.isSelected}
-					onDragStart={this.props.onDragStart}
-					onClickSection={this.props.onClickAnnotationSection}
-					onDoubleClickHighlight={this.props.onDoubleClickHighlight}
-					onPageMenu={this.props.onPageMenu}
-					onMoreMenu={this.props.onMoreMenu}
-					onChange={this.props.onChange}
-					onEditorBlur={this.props.onAnnotationEditorBlur}
+	return (
+		<div className="search">
+			<div className="icon icon-search"/>
+			<div className="input-group">
+				<input
+					tabIndex={5}
+					type="text" placeholder="Search Annotations"
+					value={query}
+					onChange={handleInput}
+					onKeyDown={handleKeyDown}
 				/>
 			</div>
-		);
-	}
+			{query.length !== 0 && <button className="clear" onClick={handleClear}/>}
+		</div>
+	);
 }
 
-class AnnotationsView extends React.Component {
-	state = {
-		filteredAnnotations: null,
-		query: ''
-	};
+const Annotation = React.memo((props) => {
+	return (
+		<div
+			className={cx('annotation', { selected: props.isSelected })}
+			data-sidebar-id={props.annotation.id}
+		>
+			<SidebarPreview
+				state={props.expansionState}
+				annotation={props.annotation}
+				selected={props.isSelected}
+				onDragStart={props.onDragStart}
+				onClickSection={props.onClickAnnotationSection}
+				onDoubleClickHighlight={props.onDoubleClickHighlight}
+				onPageMenu={props.onPageMenu}
+				onMoreMenu={props.onMoreMenu}
+				onChange={props.onChange}
+				onEditorBlur={props.onAnnotationEditorBlur}
+			/>
+		</div>
+	);
+}, (prevProps, nextProps) => {
+	for (var key in prevProps) {
+		if (key === 'annotations') {
+			if (!basicDeepEqual(prevProps, nextProps)) {
+				return false;
+			}
+		}
+		else if (prevProps[key] !== nextProps[key]) {
+			return false;
+		}
+	}
+	return true;
+});
 
-	getContainerNode() {
+const AnnotationsView = React.memo(function (props) {
+	const [filteredAnnotations, setFilteredAnnotations] = useState(null);
+	const [query, setQuery] = useState('');
+
+	function getContainerNode() {
 		return document.getElementById('annotationsView');
 	}
 
-	search(query) {
-		let { annotations } = this.props;
+	function search(query) {
+		let { annotations } = props;
 		if (query) {
-			let filteredAnnotations = searchAnnotations(annotations, query);
-			this.setState({ filteredAnnotations });
+			setFilteredAnnotations(searchAnnotations(annotations, query));
 		}
 		else {
-			this.setState({ filteredAnnotations: null });
+			setFilteredAnnotations(null);
 		}
 	}
 
-	handleSearchInput = (query) => {
-		this.setState({ query });
-		this.search(query);
+	function handleSearchInput(query) {
+		setQuery(query);
+		search(query);
 	}
 
-	handleSearchClear = () => {
-		this.setState({ query: '' });
-		this.search();
+	function handleSearchClear() {
+		setQuery('');
+		search();
 	}
 
-	render() {
-		let containerNode = this.getContainerNode();
-		if (!containerNode) return null;
 
-		let { annotations } = this.props;
-		if (this.state.filteredAnnotations) {
-			let newFilteredAnnotations = [];
-			for (let filteredAnnotation of this.state.filteredAnnotations) {
-				let annotation = annotations.find(x => x.id === filteredAnnotation.id);
-				if (annotation) {
-					newFilteredAnnotations.push(annotation);
-				}
+	let containerNode = getContainerNode();
+	if (!containerNode) return null;
+
+	let { annotations } = props;
+	if (filteredAnnotations) {
+		let newFilteredAnnotations = [];
+		for (let filteredAnnotation of filteredAnnotations) {
+			let annotation = annotations.find(x => x.id === filteredAnnotation.id);
+			if (annotation) {
+				newFilteredAnnotations.push(annotation);
 			}
-			annotations = newFilteredAnnotations;
 		}
-
-		return ReactDOM.createPortal(
-			<React.Fragment>
-				<AnnotationsViewSearch
-					query={this.state.query}
-					onInput={this.handleSearchInput}
-					onClear={this.handleSearchClear}
-				/>
-				{annotations.length
-					? annotations.map(annotation => (
-						<Annotation
-							key={annotation.id}
-							isSelected={this.props.selectedAnnotationIDs.includes(annotation.id)}
-							annotation={annotation}
-							expansionState={this.props.selectedAnnotationIDs.includes(annotation.id) ? this.props.expansionState : 0}
-							onSelect={this.props.onSelectAnnotation}
-							onChange={this.props.onChange}
-							onClickAnnotationSection={this.props.onClickAnnotationSection}
-							onDoubleClickHighlight={this.props.onDoubleClickHighlight}
-							onPageMenu={this.props.onPageMenu}
-							onMoreMenu={this.props.onMoreMenu}
-							onDragStart={this.props.onDragStart}
-							onAnnotationEditorBlur={this.props.onAnnotationEditorBlur}
-						/>
-					))
-					: !this.state.query.length && <div>Create an annotation to see it in the sidebar</div>}
-			</React.Fragment>,
-			containerNode
-		);
+		annotations = newFilteredAnnotations;
 	}
-}
+
+	return ReactDOM.createPortal(
+		<React.Fragment>
+			<AnnotationsViewSearch
+				query={query}
+				onInput={handleSearchInput}
+				onClear={handleSearchClear}
+			/>
+			{annotations.length
+				? annotations.map(annotation => (
+					<Annotation
+						key={annotation.id}
+						isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+						annotation={annotation}
+						expansionState={props.selectedAnnotationIDs.includes(annotation.id) ? props.expansionState : 0}
+						onSelect={props.onSelectAnnotation}
+						onChange={props.onChange}
+						onClickAnnotationSection={props.onClickAnnotationSection}
+						onDoubleClickHighlight={props.onDoubleClickHighlight}
+						onPageMenu={props.onPageMenu}
+						onMoreMenu={props.onMoreMenu}
+						onDragStart={props.onDragStart}
+						onAnnotationEditorBlur={props.onAnnotationEditorBlur}
+					/>
+				))
+				: !query.length && <div>Create an annotation to see it in the sidebar</div>}
+		</React.Fragment>,
+		containerNode
+	);
+});
 
 export default AnnotationsView;

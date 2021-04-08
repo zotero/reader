@@ -218,34 +218,26 @@ const Annotator = React.forwardRef((props, ref) => {
 		});
 	}
 
-	const handleKeyDownCallback = useCallback(handleKeyDown, []);
-	const handlePointerUpCallback = useCallback(handlePointerUp, []);
-	const handleDragEndCallback = useCallback(handleDragEnd, []);
-	const handleDragStartCallback = useCallback(handleDragStart, []);
-	const handleCopyCallback = useCallback(handleCopy, []);
-	const handleSidebarViewChangeCallback = useCallback(handleSidebarViewChange, []);
-	const handlePageRenderedCallback = useCallback(handlePageRendered, []);
-
 	useEffect(() => {
 		document.getElementById('viewer').setAttribute('draggable', true);
 
 		// viewer.eventBus.off('pagesinit', onDocumentReady);
-		window.addEventListener('keydown', handleKeyDownCallback, true);
-		window.addEventListener('pointerup', handlePointerUpCallback);
-		window.addEventListener('dragend', handleDragEndCallback);
-		window.addEventListener('dragstart', handleDragStartCallback);
-		window.addEventListener('copy', handleCopyCallback);
-		window.PDFViewerApplication.eventBus.on('sidebarviewchanged', handleSidebarViewChangeCallback);
-		window.PDFViewerApplication.eventBus.on('pagerendered', handlePageRenderedCallback);
+		window.addEventListener('keydown', handleKeyDown, true);
+		window.addEventListener('pointerup', handlePointerUp);
+		window.addEventListener('dragend', handleDragEnd);
+		window.addEventListener('dragstart', handleDragStart);
+		window.addEventListener('copy', handleCopy);
+		window.PDFViewerApplication.eventBus.on('sidebarviewchanged', handleSidebarViewChange);
+		window.PDFViewerApplication.eventBus.on('pagerendered', handlePageRendered);
 
 		return () => {
-			window.removeEventListener('keydown', handleKeyDownCallback);
-			window.removeEventListener('pointerup', handlePointerUpCallback);
-			window.removeEventListener('dragend', handleDragEndCallback);
-			window.removeEventListener('dragstart', handleDragStartCallback);
-			window.removeEventListener('copy', handleCopyCallback);
-			window.PDFViewerApplication.eventBus.off('sidebarviewchanged', handleSidebarViewChangeCallback);
-			window.PDFViewerApplication.eventBus.off('pagerendered', handlePageRenderedCallback);
+			window.removeEventListener('keydown', handleKeyDown);
+			window.removeEventListener('pointerup', handlePointerUp);
+			window.removeEventListener('dragend', handleDragEnd);
+			window.removeEventListener('dragstart', handleDragStart);
+			window.removeEventListener('copy', handleCopy);
+			window.PDFViewerApplication.eventBus.off('sidebarviewchanged', handleSidebarViewChange);
+			window.PDFViewerApplication.eventBus.off('pagerendered', handlePageRendered);
 		};
 	}, []);
 
@@ -277,7 +269,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}, 100);
 	};
 
-	function handleKeyDown(e) {
+	const handleKeyDown = useCallback((e) => {
 		let isMod = e.ctrlKey || e.metaKey;
 		let isCtrl = e.ctrlKey;
 		let isCmd = e.metaKey && isMac();
@@ -367,9 +359,9 @@ const Annotator = React.forwardRef((props, ref) => {
 				}
 			}
 		}
-	}
+	}, []);
 
-	function handleCopy(event) {
+	const handleCopy = useCallback((event) => {
 		if (document.activeElement === document.getElementById('viewerContainer')
 			|| document.activeElement === document.body) {
 			let annotations = [];
@@ -387,14 +379,14 @@ const Annotator = React.forwardRef((props, ref) => {
 
 			event.preventDefault();
 		}
-	}
+	}, []);
 
-	function handleDragEnd(event) {
+	const handleDragEnd = useCallback((event) => {
 		setEnableSelection(false);
 		setIsDraggingAnnotation(false);
-	}
+	}, []);
 
-	function handleSidebarViewChange(event) {
+	const handleSidebarViewChange = useCallback((event) => {
 		// Delay until sidebar finishes transitioning
 		// and allows us to properly position page popup
 		if (event.view === 0) {
@@ -405,9 +397,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		else {
 			setIsSidebarOpen(window.PDFViewerApplication.pdfSidebar.isOpen);
 		}
-	}
+	}, []);
 
-	function handlePageRendered(event) {
+	const handlePageRendered = useCallback((event) => {
 		// For now just deselect text when page is re-rendered
 		// TODO: Re-render selection layer after page zoom change or resize,
 		//  figure out what to do when multiple pages are selected
@@ -417,9 +409,9 @@ const Annotator = React.forwardRef((props, ref) => {
 				setSelectionRangesRef([]);
 			}
 		}
-	}
+	}, []);
 
-	function handleDragStart(event) {
+	const handleDragStart = useCallback((event) => {
 		let isShift = event.shiftKey;
 		setIsSelectedOnPointerDown(false);
 
@@ -462,9 +454,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		handleSelectionDragStart(event, pointerDownPositionRef.current);
-	}
+	}, []);
 
-	function handleSelectionDragStart(event, pointerPosition) {
+	const handleSelectionDragStart = useCallback((event, pointerPosition) => {
 		let annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 
 		if (annotations.length > 1) {
@@ -475,7 +467,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		setDataTransferAnnotations(event.dataTransfer, annotations);
-	}
+	}, []);
 
 	function toggleMode(m) {
 		if (modeRef.current === m) {
@@ -656,7 +648,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		return selectedIDs.length;
 	}
 
-	function handleLayerAnnotationDragStart(event) {
+	const handleLayerAnnotationDragStart = useCallback((event) => {
 		let isCtrl = event.ctrlKey || event.metaKey;
 
 		if (isCtrl) {
@@ -677,9 +669,9 @@ const Annotator = React.forwardRef((props, ref) => {
 			setEnableSelection(false);
 			setDataTransferAnnotations(event.dataTransfer, annotations);
 		}
-	}
+	}, []);
 
-	function handleSidebarAnnotationDragStart(event, id) {
+	const handleSidebarAnnotationDragStart = useCallback((event, id) => {
 		setIsDraggingAnnotation(true);
 
 		let annotations;
@@ -693,24 +685,24 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		setDataTransferAnnotations(event.dataTransfer, annotations);
-	}
+	}, []);
 
-	function handleAnnotationDragEnd() {
-	}
+	const handleAnnotationDragEnd = useCallback(() => {
+	}, []);
 
-	function handleToolbarModeChange(mode) {
+	const handleToolbarModeChange = useCallback((mode) => {
 		toggleMode(mode);
-	}
+	}, []);
 
-	function handleToolbarColorClick(elementID) {
+	const handleToolbarColorClick = useCallback((elementID) => {
 		props.onPopup('openColorPopup', {
 			elementID,
 			colors: annotationColors,
 			selectedColor: _color
 		});
-	}
+	}, []);
 
-	function handleSidebarAnnotationSectionClick(id, section, event) {
+	const handleSidebarAnnotationSectionClick = useCallback((id, section, event) => {
 		let ctrl = event.ctrlKey || event.metaKey;
 		let shift = event.shiftKey;
 
@@ -735,14 +727,14 @@ const Annotator = React.forwardRef((props, ref) => {
 				// if (section !== 'header') this.focusSidebarComment(id);
 			}
 		}
-	}
+	}, []);
 
-	function handleSidebarAnnotationEditorBlur() {
+	const handleSidebarAnnotationEditorBlur = useCallback(() => {
 		setExpansionState(1);
 		document.getElementById('annotationsView').focus();
-	}
+	}, []);
 
-	function handleSidebarAnnotationDoubleClick(id) {
+	const handleSidebarAnnotationDoubleClick = useCallback((id) => {
 		if (selectedIDsRef.current.length === 1
 			&& selectedIDsRef.current[0] === id) {
 			if (expansionStateRef.current >= 1 && expansionStateRef.current <= 2) {
@@ -750,41 +742,41 @@ const Annotator = React.forwardRef((props, ref) => {
 				focusSidebarHighlight(id);
 			}
 		}
-	}
+	}, []);
 
-	function handleSidebarAnnotationChange(annotation) {
+	const handleSidebarAnnotationChange = useCallback((annotation) => {
 		props.onUpdateAnnotation(annotation);
-	}
+	}, []);
 
-	function handleSidebarAnnotationMenuOpen(id, x, y) {
+	const handleSidebarAnnotationMenuOpen = useCallback((id, x, y) => {
 		let selectedColor = annotationsRef.current.find(x => x.id === id).color;
 		props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
-	}
+	}, []);
 
-	function handleLayerAreaSelectionStart() {
+	const handleLayerAreaSelectionStart = useCallback(() => {
 		setIsSelectingArea(true);
-	}
+	}, []);
 
-	function handleLayerAreaCreation(position) {
+	const handleLayerAreaCreation = useCallback((position) => {
 		props.onAddAnnotation({
 			type: 'image',
 			color: colorRef.current,
 			position: position
 		});
-	}
+	}, []);
 
-	function handleLayerAreaResizeStart() {
+	const handleLayerAreaResizeStart = useCallback(() => {
 		setIsResizingArea(true);
-	}
+	}, []);
 
-	function handleLayerAnnotationChange(annotation) {
+	const handleLayerAnnotationChange = useCallback((annotation) => {
 		props.onUpdateAnnotation(annotation);
-	}
+	}, []);
 
-	function handleLayerAnnotationMoreMenu(id, x, y) {
+	const handleLayerAnnotationMoreMenu = useCallback((id, x, y) => {
 		let selectedColor = annotationsRef.current.find(x => x.id === id).color;
 		props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
-	}
+	}, []);
 
 	function openPagePopup(hasSelection, event) {
 		props.onPopup('openPagePopup', {
@@ -817,7 +809,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		return false;
 	}
 
-	function handleLayerPointerDown(position, event) {
+	const handleLayerPointerDown = useCallback((position, event) => {
 		let isRight = event.button === 2;
 		let isLeft = event.button === 0;
 		let isCtrl = event.ctrlKey || event.metaKey;
@@ -900,9 +892,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		setSelectionRangesRef([]);
-	}
+	}, []);
 
-	function handlePointerUp(event) {
+	const handlePointerUp = useCallback((event) => {
 		if (selectionRangesRef.current.length === 1) {
 			if (modeRef.current === 'highlight') {
 				let selectionRange = selectionRangesRef.current[0];
@@ -929,10 +921,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		setIsSelectedOnPointerDown(false);
 
 		pointerDownPositionRef.current = null;
-	}
+	}, []);
 
 	// Layer PointerUp is called before Window PointerUp
-	function handleLayerPointerUp(position, event) {
+	const handleLayerPointerUp = useCallback((position, event) => {
 		let isLeft = event.button === 0;
 		let isRight = event.button === 2;
 		let isCtrl = event.ctrlKey || event.metaKey;
@@ -953,9 +945,9 @@ const Annotator = React.forwardRef((props, ref) => {
 			setSelectionRangesRef([]);
 			selectAnnotation(selectID, isCtrl, isShift, true, false);
 		}
-	}
+	}, []);
 
-	function handleLayerPointerMove(position, event) {
+	const handleLayerPointerMove = useCallback((position, event) => {
 		let isShift = event.shiftKey;
 
 		// A temporary and ugly work-around to fire `mouseup` event which
@@ -1026,13 +1018,13 @@ const Annotator = React.forwardRef((props, ref) => {
 				}
 			})();
 		}
-	}
+	}, []);
 
-	function handleLayerEdgeNoteClick(id) {
+	const handleLayerEdgeNoteClick = useCallback((id) => {
 		selectAnnotation(id, false, false, true, false);
-	}
+	}, []);
 
-	function handleLayerSelectionPopupHighlight(color) {
+	const handleLayerSelectionPopupHighlight = useCallback((color) => {
 		if (selectionRangesRef.current.length === 1) {
 			let selectionRange = selectionRangesRef.current[0];
 			props.onAddAnnotation({
@@ -1045,17 +1037,17 @@ const Annotator = React.forwardRef((props, ref) => {
 
 			setSelectionRangesRef([]);
 		}
-	}
+	}, []);
 
-	function handleLayerSelectionPopupCopy() {
+	const handleLayerSelectionPopupCopy = useCallback(() => {
 		let text = '';
 		for (let selectionRange of selectionRangesRef.current) {
 			text += selectionRange.text + '\n';
 		}
 		copyToClipboard(text);
-	}
+	}, []);
 
-	function handleLayerSelectionPopupAddToNote() {
+	const handleLayerSelectionPopupAddToNote = useCallback(() => {
 		let partialAnnotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 		let annotations = partialAnnotations.map(annotation => ({
 			...annotation,
@@ -1066,7 +1058,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			props.onAddToNote(annotations);
 			setSelectionRangesRef([]);
 		}
-	}
+	}, []);
 
 	return (
 		<div>
