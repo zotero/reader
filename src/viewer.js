@@ -144,7 +144,7 @@ class Viewer {
 
 		let position = {
 			pageIndex,
-			rects: range.rects
+			rects: range ? range.rects : []
 		};
 
 		window.pageTextPositions[pageIndex] = position;
