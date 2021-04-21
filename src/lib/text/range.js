@@ -172,6 +172,8 @@ export function extractRange(chs, rects, selection) {
 		rect => rect.map(value => parseFloat(value.toFixed(3)))
 	);
 
+	text = text.trim();
+
 	return {
 		offset: chs.indexOf(chStart),
 		rects: allRects,

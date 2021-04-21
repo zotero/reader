@@ -304,6 +304,7 @@ export function getImageDataURL(img) {
 }
 
 export function setDataTransferAnnotations(dataTransfer, annotations) {
+	// Note: trim() is necessary for already existing annotations containing spaces
 	let text = annotations.map((annotation) => {
 		let formatted = '';
 		if (annotation.comment) {
@@ -316,10 +317,10 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 			}
 
 			if (annotation.fromText) {
-				formatted += annotation.text;
+				formatted += annotation.text.trim();
 			}
 			else {
-				formatted += '“' + annotation.text + '”';
+				formatted += '“' + annotation.text.trim() + '”';
 			}
 		}
 		return formatted;
@@ -335,9 +336,9 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 			}
 			return {
 				attachmentItemID: window.itemID,
-				text,
+				text: text.trim(),
 				color,
-				comment,
+				comment: comment.trim(),
 				image,
 				position,
 				pageLabel
