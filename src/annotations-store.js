@@ -48,13 +48,13 @@ class AnnotationsStore {
 		for (let annotation of this.annotations) {
 			if (annotation.type === 'image' && !annotation.image) {
 				annotation.image = await this.getAnnotationImage(annotation.id);
-				this.triggerSetAnnotation(annotation);
-				this.onUpdateAnnotations(this.annotations);
+				this.set(annotation);
+				this.save(annotation);
 			}
 		}
 	}
 
-	triggerSetAnnotation(annotation) {
+	save(annotation) {
 		const DEBOUNCE_ANNOTATION = 1000;
 		const DEBOUNCE_ANNOTATION_MAX = 10000;
 		let fn = this.debounces[annotation.id];
@@ -81,6 +81,19 @@ class AnnotationsStore {
 			randomstring += allowedKeyChars.substring(rnum, rnum + 1);
 		}
 		return randomstring;
+	}
+
+	set(annotation) {
+		let oldIndex = this.annotations.findIndex(x => x.id === annotation.id);
+		if (oldIndex >= 0) {
+			annotation = { ...annotation };
+			this.annotations.splice(oldIndex, 1, annotation);
+		}
+		else {
+			this.annotations.push(annotation);
+		}
+		this.sortAnnotations(this.annotations);
+		this.onUpdateAnnotations(this.annotations);
 	}
 
 	async getPageLabelPoints() {
@@ -135,8 +148,7 @@ class AnnotationsStore {
 
 		// Immediately render the annotation to prevent
 		// delay from the further async calls
-		this.annotations.push(annotation);
-		this.onUpdateAnnotations(this.annotations);
+		this.set(annotation);
 
 		let points = await this.getPageLabelPoints();
 		if (points) {
@@ -164,34 +176,22 @@ class AnnotationsStore {
 			annotation.image = await this.getAnnotationImage(annotation.id);
 		}
 
-		this.sortAnnotations(this.annotations);
-		this.triggerSetAnnotation(annotation);
-		this.onUpdateAnnotations(this.annotations);
+		this.set(annotation);
+		this.save(annotation);
 
 		return annotation;
 	}
 
 	async setAnnotation(annotation) {
-		let existingAnnotationIDx = this.annotations.findIndex(x => x.id === annotation.id);
-		if (existingAnnotationIDx >= 0) {
-			this.annotations.splice(existingAnnotationIDx, 1);
-		}
-
-		this.annotations.push(annotation);
-		this.sortAnnotations(this.annotations);
-		this.onUpdateAnnotations(this.annotations);
-
+		this.set(annotation);
 		if (annotation.type === 'image' && !annotation.image) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
-			this.triggerSetAnnotation(annotation);
-			this.onUpdateAnnotations(this.annotations);
+			this.set(annotation);
+			this.save(annotation);
 		}
 	}
 
 	async updateAnnotation(annotation) {
-		let existingAnnotationIDx = this.annotations.findIndex(
-			x => x.id === annotation.id
-		);
 		let existingAnnotation = this.getAnnotationByID(annotation.id);
 		annotation = { ...existingAnnotation, ...annotation };
 		annotation.dateModified = (new Date()).toISOString();
@@ -201,8 +201,7 @@ class AnnotationsStore {
 
 		// Immediately render the annotation to prevent
 		// delay from the further async calls
-		this.annotations.splice(existingAnnotationIDx, 1, annotation);
-		this.onUpdateAnnotations(this.annotations);
+		this.set(annotation);
 
 		if (
 			['note', 'image'].includes(annotation.type)
@@ -218,9 +217,8 @@ class AnnotationsStore {
 			annotation.image = await this.getAnnotationImage(annotation.id);
 		}
 
-		this.sortAnnotations(this.annotations);
-		this.triggerSetAnnotation(annotation);
-		this.onUpdateAnnotations(this.annotations);
+		this.set(annotation);
+		this.save(annotation);
 	}
 
 	deleteAnnotations(ids) {
@@ -259,10 +257,9 @@ class AnnotationsStore {
 		for (let annotation of this.annotations) {
 			let pageNumber = startPageNumber + annotation.position.pageIndex;
 			annotation.pageLabel = pageNumber.toString();
-			this.triggerSetAnnotation(annotation);
+			this.set(annotation);
+			this.save(annotation);
 		}
-
-		this.onUpdateAnnotations(this.annotations);
 	}
 }
 

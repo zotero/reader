@@ -5,7 +5,6 @@ import ReactDOM from 'react-dom';
 import cx from 'classnames';
 import { SidebarPreview } from './preview';
 import { searchAnnotations } from '../lib/search';
-import { basicDeepEqual } from '../lib/utilities';
 
 function AnnotationsViewSearch({ query, onInput, onClear }) {
 	function handleInput(event) {
@@ -39,6 +38,8 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 	);
 }
 
+// We get significant performance boost here because `props.annotation`
+// reference is updated only when annotation data is updated
 const Annotation = React.memo((props) => {
 	return (
 		<div
@@ -59,18 +60,6 @@ const Annotation = React.memo((props) => {
 			/>
 		</div>
 	);
-}, (prevProps, nextProps) => {
-	for (var key in prevProps) {
-		if (key === 'annotations') {
-			if (!basicDeepEqual(prevProps, nextProps)) {
-				return false;
-			}
-		}
-		else if (prevProps[key] !== nextProps[key]) {
-			return false;
-		}
-	}
-	return true;
 });
 
 const AnnotationsView = React.memo(function (props) {
