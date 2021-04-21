@@ -336,9 +336,9 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 			}
 			return {
 				attachmentItemID: window.itemID,
-				text: text.trim(),
+				text: text ? text.trim() : text,
 				color,
-				comment: comment.trim(),
+				comment: comment ? comment.trim() : comment,
 				image,
 				position,
 				pageLabel
