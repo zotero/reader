@@ -157,7 +157,8 @@ class AnnotationsStore {
 				annotation.pageLabel = pageLabel;
 			}
 		}
-		else {
+
+		if (annotation.pageLabel === '-') {
 			let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
 			if (pageLabels && pageLabels[annotation.position.pageIndex]) {
 				annotation.pageLabel = pageLabels[annotation.position.pageIndex];
