@@ -179,25 +179,29 @@ class ViewerInstance {
 		// TODO: Fix multiple
 		switch (data.cmd) {
 			case 'addToNote': {
-				let annotation = this._viewer._annotationsStore.annotations.find(x => x.id === data.id);
-				if (annotation) {
-					annotation.attachmentItemID = window.itemID;
+				let annotations = this._viewer._annotationsStore.annotations
+				.filter(x => data.ids.includes(x.id))
+				.map(x => ({ ...x, attachmentItemID: window.itemID }));
+
+				if (annotations.length) {
 					this._postMessage({
 						action: 'addToNote',
-						annotations: [annotation]
+						annotations
 					});
 				}
 				return;
 			}
 			case 'deleteAnnotation': {
-				this._viewer._annotationsStore.deleteAnnotations([data.id]);
+				this._viewer._annotationsStore.deleteAnnotations(data.ids);
 				return;
 			}
 			case 'setAnnotationColor': {
-				this._viewer._annotationsStore.updateAnnotation({
-					id: data.id,
-					color: data.color
-				});
+				for (let id of data.ids) {
+					this._viewer._annotationsStore.updateAnnotation({
+						id,
+						color: data.color
+					});
+				}
 				return;
 			}
 			case 'setColor': {
@@ -205,7 +209,6 @@ class ViewerInstance {
 				return;
 			}
 			case 'copy': {
-				this._viewer.setColor(data.color);
 				return;
 			}
 			case 'zoomIn': {

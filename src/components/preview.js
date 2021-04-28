@@ -131,7 +131,7 @@ export class SidebarPreview extends React.Component {
 	handleClickMore = (event) => {
 		if (!this.props.annotation.readOnly) {
 			event.stopPropagation();
-			this.props.onMoreMenu(this.props.annotation.id, event.screenX, event.screenY);
+			this.props.onMenu(this.props.annotation.id, event.screenX, event.screenY, true);
 		}
 	}
 
@@ -149,11 +149,10 @@ export class SidebarPreview extends React.Component {
 	}
 
 	handlePointerDown = (event) => {
-		if (!this.props.annotation.readOnly
-			&& event.button === 2
+		if (event.button === 2
 			&& !event.target.closest('div[contenteditable="true"]')) {
 			event.stopPropagation();
-			this.props.onMoreMenu(this.props.annotation.id, event.screenX, event.screenY);
+			this.props.onMenu(this.props.annotation.id, event.screenX, event.screenY);
 		}
 	}
 

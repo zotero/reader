@@ -335,7 +335,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 			else if (e.key === 'Delete' || e.key === 'Backspace') {
 				// TODO: Auto-select the next annotation after deletion in sidebar
-				let hasReadOnly = annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
+				let hasReadOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 				if (!hasReadOnly) {
 					props.onDeleteAnnotations(selectedIDsRef.current);
 				}
@@ -604,14 +604,17 @@ const Annotator = React.forwardRef((props, ref) => {
 				}
 			}
 			else if (annotationIndex > maxSelectedIndex) {
-				for (let i = maxSelectedIndex; i <= annotationIndex; i++) {
+				for (let i = maxSelectedIndex + 1; i <= annotationIndex; i++) {
 					selectedIDs.push(annotationsRef.current[i].id);
 				}
 			}
 			else {
 				for (let i = Math.min(annotationIndex, lastSelectedIndex); i <= Math.max(annotationIndex, lastSelectedIndex); i++) {
 					if (i === lastSelectedIndex) continue;
-					selectedIDs.push(annotationsRef.current[i].id);
+					let id = annotationsRef.current[i].id;
+					if (!selectedIDs.includes(id)) {
+						selectedIDs.push(id);
+					}
 				}
 			}
 		}
@@ -748,9 +751,21 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onUpdateAnnotation(annotation);
 	}, []);
 
-	const handleSidebarAnnotationMenuOpen = useCallback((id, x, y) => {
-		let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-		props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
+	const handleSidebarAnnotationMenuOpen = useCallback((id, x, y, moreButton) => {
+		let selectedColor;
+		let ids = [id];
+
+		if (moreButton || selectedIDsRef.current.length === 1) {
+			selectedColor = annotationsRef.current.find(x => x.id === id).color;
+		}
+
+		if (!moreButton && selectedIDsRef.current.includes(id)) {
+			ids = selectedIDsRef.current;
+		}
+
+		let readOnly = !!annotationsRef.current.find(x => ids.includes(x.id) && x.readOnly);
+
+		props.onPopup('openAnnotationPopup', { x, y, ids, colors: annotationColors, selectedColor, readOnly });
 	}, []);
 
 	const handleLayerAreaSelectionStart = useCallback(() => {
@@ -775,7 +790,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	const handleLayerAnnotationMoreMenu = useCallback((id, x, y) => {
 		let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-		props.onPopup('openAnnotationPopup', { x, y, id, colors: annotationColors, selectedColor });
+		props.onPopup('openAnnotationPopup', { x, y, ids: [id], colors: annotationColors, selectedColor });
 	}, []);
 
 	function openPagePopup(hasSelection, event) {
@@ -867,17 +882,19 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (isRight && selectID) {
-			let annotation = annotationsRef.current.find(x => x.id === selectID);
-			if (!annotation.isExternal) {
-				let selectedColor = annotation.color;
-				props.onPopup('openAnnotationPopup', {
-					x: event.screenX,
-					y: event.screenY,
-					id: selectID,
-					colors: annotationColors,
-					selectedColor
-				});
+			let readOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
+			let selectedColor;
+			if (annotationsRef.current.length === 1) {
+				selectedColor = annotationsRef.current[0].color;
 			}
+			props.onPopup('openAnnotationPopup', {
+				x: event.screenX,
+				y: event.screenY,
+				ids: selectedIDsRef.current,
+				readOnly,
+				colors: annotationColors,
+				selectedColor
+			});
 		}
 
 		if (isRight && !selectedIDsRef.current.length) {
@@ -1080,7 +1097,6 @@ const Annotator = React.forwardRef((props, ref) => {
 				onChange={handleSidebarAnnotationChange}
 				onDragStart={handleSidebarAnnotationDragStart}
 				onMenu={handleSidebarAnnotationMenuOpen}
-				onMoreMenu={handleSidebarAnnotationMenuOpen}
 			/>
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}

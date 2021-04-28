@@ -53,7 +53,7 @@ const Annotation = React.memo((props) => {
 				onDragStart={props.onDragStart}
 				onClickSection={props.onClickAnnotationSection}
 				onDoubleClickHighlight={props.onDoubleClickHighlight}
-				onPageMenu={props.onPageMenu}
+				onMenu={props.onMenu}
 				onMoreMenu={props.onMoreMenu}
 				onChange={props.onChange}
 				onEditorBlur={props.onAnnotationEditorBlur}
@@ -124,8 +124,7 @@ const AnnotationsView = React.memo(function (props) {
 						onChange={props.onChange}
 						onClickAnnotationSection={props.onClickAnnotationSection}
 						onDoubleClickHighlight={props.onDoubleClickHighlight}
-						onPageMenu={props.onPageMenu}
-						onMoreMenu={props.onMoreMenu}
+						onMenu={props.onMenu}
 						onDragStart={props.onDragStart}
 						onAnnotationEditorBlur={props.onAnnotationEditorBlur}
 					/>
