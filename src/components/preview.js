@@ -69,7 +69,8 @@ export function PopupPreview(props) {
 				<Editor
 					id={annotation.id}
 					text={annotation.comment}
-					placeholder={annotation.isExternal ? '' : intl.formatMessage({ id: 'pdfReader.addComment' })}
+					placeholder={annotation.isExternal ? intl.formatMessage({ id: 'pdfReader.readOnly' })
+						: intl.formatMessage({ id: 'pdfReader.addComment' })}
 					isPlainText={false}
 					isReadOnly={annotation.readOnly}
 					onChange={handleCommentChange}
@@ -230,7 +231,7 @@ export function SidebarPreview(props) {
 						}
 					</div>
 					<div className="page" onDoubleClick={handleDoubleClickPage}>
-						<div>Page</div>
+						<div><FormattedMessage id="pdfReader.page"/></div>
 						{
 							editingPageLabel
 								? <input
