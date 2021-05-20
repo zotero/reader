@@ -109,7 +109,7 @@ export function clearSelection() {
 }
 
 export function getPageFromElement(target) {
-	let node = target.closest('#viewer > .page');
+	let node = target.closest('#viewer > .page') || target.closest('#viewer > .spread > .page');
 	if (!node) {
 		return null;
 	}
