@@ -2,6 +2,7 @@
 
 import React from 'react';
 import ReactDom from 'react-dom';
+import { IntlProvider } from 'react-intl';
 import Annotator from './components/annotator';
 import AnnotationsStore from './annotations-store';
 import { debounce } from './lib/debounce';
@@ -37,6 +38,8 @@ class Viewer {
 		});
 
 		window.pageTextPositions = {};
+
+		this._applyExtraLocalizations();
 
 		// Takeover the download button
 		PDFViewerApplication.download = function () {
@@ -76,18 +79,23 @@ class Viewer {
 		this.annotatorRef = React.createRef();
 		this.node = document.createElement('div');
 		ReactDom.render(
-			<Annotator
-				onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
-				onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
-				onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
-				onClickTags={options.onClickTags}
-				onPopup={options.onPopup}
-				promptImport={options.promptImport}
-				onImport={options.onImport}
-				onAddToNote={options.onAddToNote}
-				onDismissImport={options.onDismissImport}
-				ref={this.annotatorRef}
-			/>,
+			<IntlProvider
+				locale={window.navigator.language}
+				messages={this.options.localizedStrings}
+			>
+				<Annotator
+					onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
+					onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
+					onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
+					onClickTags={options.onClickTags}
+					onPopup={options.onPopup}
+					promptImport={options.promptImport}
+					onImport={options.onImport}
+					onAddToNote={options.onAddToNote}
+					onDismissImport={options.onDismissImport}
+					ref={this.annotatorRef}
+				/>
+			</IntlProvider>,
 			this.node,
 			() => {
 				this.setAnnotations(this._annotationsStore.getAnnotations());
@@ -116,6 +124,16 @@ class Viewer {
 		window.PDFViewerApplication.close();
 		this._uninitialized = true;
 		window.chsCache = {};
+	}
+
+	_getLocalizedString(key) {
+		let string = this.options.localizedStrings[key];
+		return string || key;
+	}
+
+	_applyExtraLocalizations() {
+		document.getElementById('zoomAuto').setAttribute('title', this._getLocalizedString('pdfReader.zoomPageWidth'));
+		document.getElementById('viewAnnotations').setAttribute('title', this._getLocalizedString('pdfReader.showAnnotations'));
 	}
 
 	handleDownloadButtonClick = () => {

@@ -85,7 +85,8 @@ class ViewerInstance {
 			location: options.location,
 			sidebarWidth: options.sidebarWidth,
 			sidebarOpen: options.sidebarOpen,
-			bottomPlaceholderHeight: options.bottomPlaceholderHeight
+			bottomPlaceholderHeight: options.bottomPlaceholderHeight,
+			localizedStrings: options.localizedStrings
 		});
 	}
 
@@ -306,21 +307,11 @@ window.addEventListener('message', function (event) {
 
 	if (message.action === 'open') {
 		// TODO: Improve error handling here
-		let {
-			buf,
-			state,
-			location,
-			annotations,
-			promptImport,
-			sidebarWidth,
-			sidebarOpen,
-			bottomPlaceholderHeight
-		} = message;
 		if (currentViewerInstance) {
 			currentViewerInstance.uninit();
 		}
 		currentViewerInstance = new ViewerInstance({
-			itemID, buf, state, location, annotations, promptImport, sidebarWidth, sidebarOpen, bottomPlaceholderHeight
+			itemID, ...message
 		});
 		parent.postMessage({ itemID, message: { action: 'initialized' } }, parent.origin);
 	}

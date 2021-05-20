@@ -27,6 +27,7 @@ function modifyZotero() {
 
 <script src="resource://zotero/react.js"></script>
 <script src="resource://zotero/react-dom.js"></script>
+<script src="resource://zotero/react-intl.js"></script>
 <script src="resource://zotero/prop-types.js"></script>
 <script src="annotator.js"></script>
 `;

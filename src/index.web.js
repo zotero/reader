@@ -118,7 +118,8 @@ class ViewerInstance {
 			location: options.location,
 			sidebarWidth: 200,
 			sidebarOpen: false,
-			bottomPlaceholderHeight: 0
+			bottomPlaceholderHeight: 0,
+			localizedStrings: {}
 			// password: 'test'
 		});
 	}

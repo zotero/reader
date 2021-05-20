@@ -1,6 +1,7 @@
 'use strict';
 
 import React from 'react';
+import { FormattedMessage } from 'react-intl';
 import { annotationColors } from '../lib/colors';
 
 class SelectionMenu extends React.Component {
@@ -23,7 +24,10 @@ class SelectionMenu extends React.Component {
 						onClick={() => this.handleColorPick(color[1])}
 					/>))}
 				</div>
-				{this.props.enableAddToNote && <div className="wide-button" onClick={this.props.onAddToNote}>Add to Note</div>}
+				{this.props.enableAddToNote &&
+				<div className="wide-button" onClick={this.props.onAddToNote}>
+					<FormattedMessage id="pdfReader.addToNote"/>
+				</div>}
 			</div>
 		);
 	}

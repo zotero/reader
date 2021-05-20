@@ -2,11 +2,14 @@
 
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
+import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import { SidebarPreview } from './preview';
 import { searchAnnotations } from '../lib/search';
 
 function AnnotationsViewSearch({ query, onInput, onClear }) {
+	const intl = useIntl();
+
 	function handleInput(event) {
 		onInput(event.target.value);
 	}
@@ -27,7 +30,8 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 			<div className="input-group">
 				<input
 					tabIndex={5}
-					type="text" placeholder="Search Annotations"
+					type="text"
+					placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
 					value={query}
 					onChange={handleInput}
 					onKeyDown={handleKeyDown}
@@ -129,7 +133,7 @@ const AnnotationsView = React.memo(function (props) {
 						onAnnotationEditorBlur={props.onAnnotationEditorBlur}
 					/>
 				))
-				: !query.length && <div>Create an annotation to see it in the sidebar</div>}
+				: !query.length && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
 		</React.Fragment>,
 		containerNode
 	);
