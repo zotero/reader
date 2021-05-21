@@ -288,6 +288,12 @@ class ViewerInstance {
 			case 'switchspreadmode_even':
 				eb.dispatch('switchspreadmode', { mode: 2 });
 				break;
+			case 'back':
+				window.history.back();
+				break;
+			case 'forward':
+				window.history.forward();
+				break;
 		}
 	}
 }
