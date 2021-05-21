@@ -40,7 +40,8 @@ export function PopupPreview(props) {
 	return (
 		<div className={cx('preview', { 'read-only': annotation.readOnly })}>
 			<header
-				title={annotation.dateModified.split('T')[0]}
+				title={intl.formatDate(new Date(annotation.dateModified))
+				+ ' ' + intl.formatTime(new Date(annotation.dateModified))}
 			>
 				<div className="left">
 					<div
@@ -215,7 +216,8 @@ export function SidebarPreview(props) {
 			'read-only': annotation.readOnly, ...expandedState
 		})}>
 			<header
-				title={intl.formatDate(new Date(annotation.dateModified))}
+				title={intl.formatDate(new Date(annotation.dateModified))
+				+ ' ' + intl.formatTime(new Date(annotation.dateModified))}
 				onClick={e => handleSectionClick(e, 'header')}
 				draggable={true}
 				onDragStart={handleDragStart}
