@@ -53,7 +53,8 @@ export function PopupPreview(props) {
 							|| annotation.type === 'image' && <IconArea/>
 						}
 					</div>
-					<div className="page" onClick={handleClickPage}>Page {annotation.pageLabel}</div>
+					<div className="page" onClick={handleClickPage}><FormattedMessage id="pdfReader.page"/> {annotation.pageLabel}
+					</div>
 				</div>
 				{annotation.authorName && (
 					<div className="center">
