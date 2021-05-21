@@ -704,7 +704,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onPopup('openColorPopup', {
 			elementID,
 			colors: annotationColors,
-			selectedColor: _color
+			selectedColor: colorRef.current
 		});
 	}, []);
 
