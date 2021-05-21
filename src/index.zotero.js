@@ -263,11 +263,12 @@ class ViewerInstance {
 			case 'rotateccw':
 				eb.dispatch('rotateccw');
 				break;
-			case 'switchcursortool_select':
-				eb.dispatch('switchcursortool', { tool: 0 });
-				break;
+			// case 'switchcursortool_select':
+			// 	eb.dispatch('switchcursortool', { tool: 0 });
+			// 	break;
 			case 'switchcursortool_hand':
-				eb.dispatch('switchcursortool', { tool: 1 });
+				// eb.dispatch('switchcursortool', { tool: 1 });
+				PDFViewerApplication.pdfCursorTools.handTool.toggle();
 				break;
 			case 'switchscrollmode_vertical':
 				eb.dispatch('switchscrollmode', { mode: 0 });

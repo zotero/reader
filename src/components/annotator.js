@@ -304,6 +304,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (e.key === 'Escape') {
+			PDFViewerApplication.pdfCursorTools.handTool.deactivate();
+
 			if (selectedIDsRef.current.length) {
 				selectAnnotation(null);
 			}
@@ -694,6 +696,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleToolbarModeChange = useCallback((mode) => {
+		PDFViewerApplication.pdfCursorTools.handTool.deactivate();
 		toggleMode(mode);
 	}, []);
 
@@ -830,6 +833,11 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
 		pointerDownPositionRef.current = position;
+
+		if (PDFViewerApplication.pdfCursorTools.handTool.active) {
+			return true;
+		}
+
 		if (!event.target.closest('.page')
 			&& !event.target.closest('.note-annotation')) {
 			return;
