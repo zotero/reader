@@ -194,7 +194,12 @@ class AnnotationsStore {
 
 	async updateAnnotation(annotation) {
 		let existingAnnotation = this.getAnnotationByID(annotation.id);
-		annotation = { ...existingAnnotation, ...annotation };
+
+		annotation = {
+			...existingAnnotation,
+			...annotation,
+			position: { ...existingAnnotation.position, ...annotation.position }
+		};
 		annotation.dateModified = (new Date()).toISOString();
 		annotation.position.rects = annotation.position.rects.map(
 			rect => rect.map(value => parseFloat(value.toFixed(3)))
