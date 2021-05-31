@@ -101,13 +101,14 @@
 		#zoomOut,
 		#previous {
 			margin-right: 1px;
-			clip-path: inset(-1px 0 -1px -1px);
+			// Commented out because clips incorrectly in RTL mode
+			//clip-path: inset(-1px 0 -1px -1px);
 
 			&:focus-visible {
 				clip-path: none;
 
 				& + * {
-					clip-path: inset(-1px -1px -1px 0);
+					//clip-path: inset(-1px -1px -1px 0);
 				}
 			}
 
@@ -115,7 +116,7 @@
 				clip-path: none;
 
 				& + * {
-					clip-path: inset(-1px -1px -1px 0);
+					//clip-path: inset(-1px -1px -1px 0);
 				}
 			}
 

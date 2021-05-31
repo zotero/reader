@@ -62,8 +62,10 @@ function AreaSelector(props) {
 
 	const clientToContainerPoint = (clientX, clientY) => {
 		let containerBoundingRect = container.current.getBoundingClientRect();
+		// Scrollbar width in RTL mode
+		let viewerLeft = document.getElementById('viewer').offsetLeft;
 		return [
-			clientX - containerBoundingRect.left + container.current.scrollLeft,
+			clientX - containerBoundingRect.left + container.current.scrollLeft - viewerLeft,
 			clientY - containerBoundingRect.top + container.current.scrollTop
 		];
 	};
@@ -158,10 +160,13 @@ function AreaSelector(props) {
 
 		let { node, number } = page;
 
+		// Sidebar width in RTL mode
+		let viewerLeft = document.getElementById('viewer').offsetLeft;
+
 		pageRect.current = [
-			node.offsetLeft + PADDING_LEFT,
+			node.offsetLeft + PADDING_LEFT - viewerLeft,
 			node.offsetTop + PADDING_TOP,
-			node.offsetLeft + node.offsetWidth - PADDING_LEFT,
+			node.offsetLeft + node.offsetWidth - PADDING_LEFT - viewerLeft,
 			node.offsetTop + node.offsetHeight - PADDING_TOP
 		];
 

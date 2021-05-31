@@ -32,6 +32,7 @@ function PagePopup({ id, position, updateOnPositionChange, className, children }
 			if (!viewerContainer) return;
 			popupContainer = document.createElement('div');
 			popupContainer.className = 'page-popup-container';
+			popupContainer.dir = document.documentElement.dir;
 			popupContainer.id = 'pagePopupContainer';
 			viewerContainer.insertBefore(popupContainer, viewerContainer.firstChild);
 		}
@@ -66,7 +67,10 @@ function PagePopup({ id, position, updateOnPositionChange, className, children }
 
 		let visibleRect = [viewerScrollLeft, viewerScrollTop, viewerScrollLeft + viewerWidth, viewerScrollTop + viewerHeight];
 
-		let annotationCenterLeft = node.offsetLeft + 9 + rectMax[0] + ((rectMax[2] - rectMax[0])) / 2;
+		// Sidebar width in RTL mode
+		let viewerLeft = document.getElementById('viewer').offsetLeft;
+
+		let annotationCenterLeft = node.offsetLeft + 9 - viewerLeft + rectMax[0] + ((rectMax[2] - rectMax[0])) / 2;
 
 		left = annotationCenterLeft - dimensions.width / 2;
 

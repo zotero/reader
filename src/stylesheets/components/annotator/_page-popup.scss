@@ -2,10 +2,15 @@
 // Page popup
 //
 
+/*! rtl:begin:ignore */
 .page-popup-container {
 	position: absolute;
 	z-index: $z-index-page-popup;
+	left: 0;
 }
+
+/*! rtl:end:ignore */
+
 
 .page-popup {
 	position: absolute;

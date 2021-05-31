@@ -2,6 +2,8 @@
 // Highlight
 //
 
+/*! rtl:begin:ignore */
+
 .selectionCanvas,
 .highlight-annotation .rect {
 	opacity: 0.5;
@@ -28,3 +30,5 @@
 		pointer-events: none;
 	}
 }
+
+/*! rtl:end:ignore */
