@@ -2,7 +2,9 @@
 // Toolbar sidebar
 //
 
+/*! rtl:begin:ignore */
 #toolbarSidebar {
+	direction: ltr;
 	flex: 0 0 auto;
 	display: flex;
 	justify-content: $toolbar-sidebar-justify-content;
@@ -64,3 +66,5 @@
 		display: none;
 	}
 }
+
+/*! rtl:end:ignore */

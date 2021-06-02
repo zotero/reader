@@ -17,6 +17,7 @@
 	overflow: hidden;
 }
 
+/*! rtl:begin:ignore */
 .pdfViewer .page {
 	box-sizing: content-box;
 	direction: ltr;
@@ -139,3 +140,5 @@
 	margin-bottom: 100%;
 	border: 0;
 }
+
+/*! rtl:end:ignore */

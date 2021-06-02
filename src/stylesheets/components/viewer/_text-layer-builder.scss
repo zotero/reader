@@ -13,6 +13,7 @@
  * limitations under the License.
  */
 
+/*! rtl:begin:ignore */
 .textLayer {
 	position: absolute;
 	left: 0;
@@ -74,3 +75,5 @@
 .textLayer .endOfContent.active {
 	top: 0px;
 }
+
+/*! rtl:end:ignore */

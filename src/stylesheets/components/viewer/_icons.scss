@@ -102,7 +102,7 @@
 		@include icon($findbar-btn-previous-icon);
 
 		html[dir="rtl"] & {
-			@include icon("#{$findbar-btn-previous-icon}-rtl");
+			@include icon("#{$findbar-btn-next-icon}");
 		}
 	}
 
@@ -110,7 +110,7 @@
 		@include icon($findbar-btn-next-icon);
 
 		html[dir="rtl"] & {
-			@include icon("#{$findbar-btn-previous-icon}-rtl");
+			@include icon("#{$findbar-btn-previous-icon}");
 		}
 	}
 
