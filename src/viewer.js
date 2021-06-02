@@ -327,7 +327,8 @@ class Viewer {
 	}
 
 	setToolbarPlaceholderWidth(width) {
-		document.getElementById('toolbarContainer').style.paddingRight = width + 'px';
+		let root = document.documentElement;
+		root.style.setProperty('--toolbarPlaceholderWidth', width + 'px');
 	}
 
 	// TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation

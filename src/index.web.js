@@ -48,8 +48,12 @@ async function test() {
 		}
 	});
 
+	vi._viewer.setBottomPlaceholderHeight(0);
+	vi._viewer.setToolbarPlaceholderWidth(0);
+
 	vi._viewer.setEnableAddToNote(false);
 	// vi._viewer.setBottomPlaceholderHeight(400);
+	// vi._viewer.setToolbarPlaceholderWidth(50);
 
 	// vi._viewer.navigate({
 	//   'position': { 'pageIndex': 100, 'rects': [[371.395, 266.635, 486.075, 274.651]] }

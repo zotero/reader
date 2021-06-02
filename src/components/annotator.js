@@ -5,7 +5,6 @@ import PropTypes from 'prop-types';
 import Layer from './layer';
 import AnnotationsView from './annotations-view';
 import Toolbar from './toolbar';
-import Findbar from './findbar';
 import ImportBar from './import-bar';
 import { annotationColors, selectionColor } from '../lib/colors';
 import {
@@ -1094,7 +1093,6 @@ const Annotator = React.forwardRef((props, ref) => {
 				color={_color}
 				onColorPick={handleToolbarColorClick}
 			/>
-			<Findbar/>
 			<AnnotationsView
 				annotations={_annotations}
 				selectedAnnotationIDs={_selectedIDs}

@@ -88,6 +88,9 @@ class ViewerInstance {
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight,
 			localizedStrings: options.localizedStrings
 		});
+
+		this._viewer.setBottomPlaceholderHeight(0);
+		this._viewer.setToolbarPlaceholderWidth(0);
 	}
 
 	_postMessage(message) {

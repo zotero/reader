@@ -5,7 +5,7 @@
 .findbar {
 	flex-wrap: wrap;
 	position: absolute;
-	right: $findbar-offset-x;
+	right: calc(8px + var(--toolbarPlaceholderWidth));
 	top: $findbar-offset-y;
 	z-index: $z-index-findbar;
 	padding: $findbar-padding;
@@ -24,7 +24,6 @@
 		align-items: flex-start;
 	}
 
-	&,
 	> *,
 	.splitToolbarButton {
 		display: flex;
@@ -115,45 +114,41 @@
 
 	#findResultsCount {
 		color: $find-results-count-color;
-		margin: $find-results-count-margin;
+		margin: $find-message-margin;
 	}
 
 	#findMsg {
 		color: $find-message-color;
 		margin: $find-message-margin;
 
-		@include state(".findbar.wrapContainers") {
-			margin: $find-message-wrap-containers-margin;
-		}
-
 		&:empty {
 			display: none;
 		}
 	}
 
-	.close-container {
+	#findbarCloseContainer {
 		@include state(".findbar.wrapContainers") {
 			position: absolute;
 			top: 0;
 			right: $findbar-close-container-offset-x;
 		}
-	}
 
-	.close {
-		width: $findbar-close-btn-size;
-		height: $findbar-close-btn-size;
-		background-color: $findbar-close-btn-bg;
-		padding: $findbar-close-btn-padding;
-		border: $findbar-close-btn-border;
-		border-radius: $findbar-close-btn-border-radius;
-		margin: $findbar-close-btn-margin;
+		.findClose {
+			width: $findbar-close-btn-size;
+			height: $findbar-close-btn-size;
+			background-color: $findbar-close-btn-bg;
+			padding: $findbar-close-btn-padding;
+			border: $findbar-close-btn-border;
+			border-radius: $findbar-close-btn-border-radius;
+			margin: $findbar-close-btn-margin;
 
-		&:hover {
-			background-color: $findbar-close-btn-hover-bg;
-		}
+			&:hover {
+				background-color: $findbar-close-btn-hover-bg;
+			}
 
-		&:active {
-			background-color: $findbar-close-btn-active-bg;
+			&:active {
+				background-color: $findbar-close-btn-active-bg;
+			}
 		}
 	}
 }

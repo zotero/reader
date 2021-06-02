@@ -29,6 +29,7 @@
 		display: flex;
 		justify-content: space-between;
 		height: $toolbar-height;
+		padding-inline-end: var(--toolbarPlaceholderWidth);
 	}
 
 	#toolbarViewerLeft,

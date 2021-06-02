@@ -54,7 +54,7 @@ function Toolbar(props) {
 					onMode('image');
 				}}
 			>
-				<span data-l10n-id="area_tool_label">Area</span>
+				<span className="button-background"/>
 			</button>
 			<button
 				id="reader-toolbar-button-color-picker"
