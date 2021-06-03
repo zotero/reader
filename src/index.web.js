@@ -1,6 +1,8 @@
 import Viewer from './viewer.js';
 import annotations from './demo-annotations';
 
+window.development = true;
+
 let loaded = false;
 
 document.addEventListener('webviewerloaded', function () {

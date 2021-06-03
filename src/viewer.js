@@ -82,6 +82,8 @@ class Viewer {
 			<IntlProvider
 				locale={window.navigator.language}
 				messages={this.options.localizedStrings}
+				onError={window.development && (() => {
+				})}
 			>
 				<Annotator
 					onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
