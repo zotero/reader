@@ -39,6 +39,7 @@ class Viewer {
 
 		window.pageTextPositions = {};
 
+		this._initSelectionBox();
 		this._applyExtraLocalizations();
 
 		// Takeover the download button
@@ -126,6 +127,13 @@ class Viewer {
 		window.PDFViewerApplication.close();
 		this._uninitialized = true;
 		window.chsCache = {};
+	}
+
+	_initSelectionBox() {
+		let box = document.createElement('textarea');
+		box.style = 'position: absolute;top: 0;left: 0;width: 0;height: 0;z-index: -1;pointer-events: none;';
+		document.body.append(box);
+		window.selectionBox = box;
 	}
 
 	_getLocalizedString(key) {

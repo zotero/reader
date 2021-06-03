@@ -954,6 +954,14 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
 
+		// Make selected text available for screen readers
+		let text = '';
+		for (let selectionRange of selectionRangesRef.current) {
+			text += selectionRange.text + '\n';
+		}
+		window.selectionBox.value = text;
+		window.selectionBox.select();
+
 		if (isSelectingAreaRef.current
 			|| isResizingAreaRef.current
 			|| isSelectingTextRef.current
