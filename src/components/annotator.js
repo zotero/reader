@@ -275,6 +275,15 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = e.ctrlKey;
 		let isCmd = e.metaKey && isMac();
 		let isAlt = e.altKey;
+		let isShift = e.shiftKey;
+
+		// This is not ideal, but the goal is to keep focus on `selectionBox`
+		// when a speak out keyboard shortcut is pressed, and focus to
+		// `viewerContainer` when other keys are pressed
+		if (document.activeElement === window.selectionBox
+			&& !isMod && !isAlt && !isShift) {
+			document.getElementById('viewerContainer').focus();
+		}
 
 		if (isMod && e.key === 'c') return;
 
@@ -962,7 +971,9 @@ const Annotator = React.forwardRef((props, ref) => {
 			text += selectionRange.text + '\n';
 		}
 		window.selectionBox.value = text;
-		window.selectionBox.select();
+		if (text) {
+			window.selectionBox.select();
+		}
 
 		if (isSelectingAreaRef.current
 			|| isResizingAreaRef.current
