@@ -11,6 +11,9 @@ export function PopupPreview(props) {
 	const intl = useIntl();
 
 	function handleTagsClick(event) {
+		if (props.readOnly) {
+			return;
+		}
 		props.onClickTags(props.annotation.id, event);
 	}
 
@@ -71,7 +74,7 @@ export function PopupPreview(props) {
 				<Editor
 					id={annotation.id}
 					text={annotation.comment}
-					placeholder={annotation.isExternal ? intl.formatMessage({ id: 'pdfReader.readOnly' })
+					placeholder={annotation.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
 						: intl.formatMessage({ id: 'pdfReader.addComment' })}
 					isPlainText={false}
 					isReadOnly={annotation.readOnly}
@@ -79,7 +82,7 @@ export function PopupPreview(props) {
 				/>
 			</div>
 
-			{(!annotation.isExternal || !!annotation.tags.length) && (
+			{(!annotation.readOnly || !!annotation.tags.length) && (
 				<div
 					className="tags"
 					onClick={handleTagsClick}
@@ -266,7 +269,7 @@ export function SidebarPreview(props) {
 			)}
 			{text}
 			{comment}
-			{(state >= 1 || annotation.tags.length > 0) && !annotation.isExternal
+			{(state >= 1 || annotation.tags.length > 0) && !annotation.readOnly
 			&& (
 				<div
 					className="tags"
