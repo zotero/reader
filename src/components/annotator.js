@@ -75,14 +75,16 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 
 		let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(selectionRange.position.pageIndex + 1)).view[3];
 		let top = pageHeight - selectionRange.position.rects[0][3];
+		if (top < 0) {
+			top = 0;
+		}
 
 		// TODO: Unify all annotations sort index calculation
 		let offset = selectionRange.offset;
 		selectionRange.sortIndex = [
 			i.toString().slice(0, 5).padStart(5, '0'),
 			offset.toString().slice(0, 6).padStart(6, '0'),
-			Math.round(top).toString().slice(0, 5)
-			.padStart(5, '0')
+			Math.floor(top).toString().slice(0, 5).padStart(5, '0')
 		].join('|');
 
 		delete selectionRange.offset;

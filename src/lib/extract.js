@@ -64,10 +64,14 @@ export async function getSortIndex(position) {
 	let offset = chs.length && getClosestOffset(chs, position.rects[0]) || 0;
 	let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1)).view[3];
 	let top = pageHeight - position.rects[0][3];
+	if (top < 0) {
+		top = 0;
+	}
+
 	return [
 		page.toString().slice(0, 5).padStart(5, '0'),
 		offset.toString().slice(0, 6).padStart(6, '0'),
-		Math.round(top).toString().slice(0, 5).padStart(5, '0')
+		Math.floor(top).toString().slice(0, 5).padStart(5, '0')
 	].join('|');
 }
 
