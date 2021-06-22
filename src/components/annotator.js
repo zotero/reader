@@ -40,6 +40,12 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 	let getPageSelectionRange = async (pageIndex, startPoint, endPoint) => {
 		let rect = (await PDFViewerApplication.pdfDocument.getPage(pageIndex + 1)).view.slice();
 
+		// extractRange needs rect in PDF coordinates, and v2p
+		// is not available in this function
+		let tmp = rect[1];
+		rect[1] = rect[3];
+		rect[3] = tmp;
+
 		if (startPoint) {
 			rect[0] = startPoint[0];
 			rect[1] = startPoint[1];
