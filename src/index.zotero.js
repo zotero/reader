@@ -36,6 +36,11 @@ class ViewerInstance {
 		this._itemID = options.itemID;
 		this._viewer = null;
 
+		let annotations = options.annotations;
+		if (options.readOnly) {
+			annotations.forEach(x => x.readOnly = true);
+		}
+
 		window.addEventListener('message', this.handleMessage);
 		window.itemID = options.itemID;
 		this._viewer = new Viewer({
@@ -80,13 +85,14 @@ class ViewerInstance {
 				this._postMessage({ action: 'changeSidebarOpen', open });
 			},
 			buf: options.buf,
-			annotations: options.annotations,
+			annotations,
 			state: options.state,
 			location: options.location,
 			sidebarWidth: options.sidebarWidth,
 			sidebarOpen: options.sidebarOpen,
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight,
-			localizedStrings: options.localizedStrings
+			localizedStrings: options.localizedStrings,
+			readOnly: options.readOnly
 		});
 
 		this._viewer.setBottomPlaceholderHeight(0);

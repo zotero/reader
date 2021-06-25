@@ -29,6 +29,7 @@ class Viewer {
 			this._pdfjsPromiseResolve = resolve;
 		});
 		this._annotationsStore = new AnnotationsStore({
+			readOnly: options.readOnly,
 			annotations: options.annotations,
 			onSetAnnotation: options.onSetAnnotation,
 			onDeleteAnnotations: options.onDeleteAnnotations,
@@ -87,6 +88,7 @@ class Viewer {
 				})}
 			>
 				<Annotator
+					readOnly={options.readOnly}
 					onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
 					onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
 					onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}

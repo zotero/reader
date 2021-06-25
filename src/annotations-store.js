@@ -19,6 +19,7 @@ import { debounce } from './lib/debounce';
 
 class AnnotationsStore {
 	constructor(options) {
+		this.readOnly = options.readOnly;
 		this.annotations = options.annotations;
 		this.onSetAnnotation = options.onSetAnnotation;
 		this.onDeleteAnnotations = options.onDeleteAnnotations;
@@ -117,6 +118,7 @@ class AnnotationsStore {
 		);
 	}
 
+	// Called when changes come from the client side
 	unsetAnnotations(ids) {
 		for (let id of ids) {
 			let index = this.annotations.findIndex(x => x.id === id);
@@ -128,6 +130,10 @@ class AnnotationsStore {
 	}
 
 	async addAnnotation(annotation) {
+		if (this.readOnly) {
+			return;
+		}
+
 		// Those properties can be set on creation
 		annotation.color = annotation.color || annotationColors[0];
 		annotation.text = annotation.text || '';
@@ -183,6 +189,7 @@ class AnnotationsStore {
 		return annotation;
 	}
 
+	// Called when changes come from the client side
 	async setAnnotation(annotation) {
 		this.set(annotation);
 		if (annotation.type === 'image' && !annotation.image) {
@@ -193,6 +200,10 @@ class AnnotationsStore {
 	}
 
 	async updateAnnotation(annotation) {
+		if (this.readOnly) {
+			return;
+		}
+
 		let existingAnnotation = this.getAnnotationByID(annotation.id);
 
 		annotation = {
@@ -228,6 +239,10 @@ class AnnotationsStore {
 	}
 
 	deleteAnnotations(ids) {
+		if (this.readOnly) {
+			return;
+		}
+
 		this.annotations = this.annotations.filter(
 			annotation => !ids.includes(annotation.id)
 		);

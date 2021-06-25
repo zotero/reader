@@ -42,6 +42,7 @@ async function test() {
 	let res = await fetch('compressed.tracemonkey-pldi-09.pdf');
 	let buf = await res.arrayBuffer();
 	let vi = new ViewerInstance({
+		readOnly: false,
 		buf,
 		annotations,
 		state: null,
@@ -73,6 +74,12 @@ async function test() {
 
 class ViewerInstance {
 	constructor(options) {
+
+		let annotations = options.annotations;
+		if (options.readOnly) {
+			annotations.forEach(x => x.readOnly = true);
+		}
+
 		this._viewer = new Viewer({
 			promptImport: false,
 			onNavigateBack: () => {
@@ -119,13 +126,14 @@ class ViewerInstance {
 				console.log('changeSidebarOpen', open);
 			},
 			buf: options.buf,
-			annotations: options.annotations,
+			annotations,
 			state: options.state,
 			location: options.location,
 			sidebarWidth: 200,
 			sidebarOpen: false,
 			bottomPlaceholderHeight: 0,
-			localizedStrings: {}
+			localizedStrings: {},
+			readOnly: options.readOnly
 			// password: 'test'
 		});
 	}
