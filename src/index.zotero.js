@@ -14,6 +14,10 @@ document.addEventListener('webviewerloaded', (e) => {
 	// Without this PDF.js forces opening outline view when it exists
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 	window.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
+	// Disable interactive forms because our PDF saving mechanism can't
+	// save then. In addition, we don't have styling for those forms,
+	// and they sometimes show popup preventing to leave tab
+	window.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
 
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
