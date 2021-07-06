@@ -130,7 +130,7 @@ class ViewerInstance {
 			annotations,
 			state: options.state,
 			location: options.location,
-			sidebarWidth: 200,
+			sidebarWidth: 240,
 			sidebarOpen: false,
 			bottomPlaceholderHeight: 0,
 			localizedStrings: {},
