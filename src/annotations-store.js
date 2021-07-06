@@ -191,7 +191,7 @@ class AnnotationsStore {
 
 	// Called when changes come from the client side
 	async setAnnotation(annotation) {
-		annotation.readOnly = this.readOnly;
+		annotation.readOnly = annotation.readOnly || this.readOnly;
 		this.set(annotation);
 		if (annotation.type === 'image' && !annotation.image) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
@@ -201,7 +201,7 @@ class AnnotationsStore {
 	}
 
 	async updateAnnotation(annotation) {
-		if (this.readOnly) {
+		if (annotation.readOnly || this.readOnly) {
 			return;
 		}
 
@@ -245,7 +245,7 @@ class AnnotationsStore {
 		}
 
 		this.annotations = this.annotations.filter(
-			annotation => !ids.includes(annotation.id)
+			annotation => !ids.includes(annotation.id) || annotation.readOnly
 		);
 
 		this.onDeleteAnnotations(ids);
