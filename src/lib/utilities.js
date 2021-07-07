@@ -156,20 +156,6 @@ export function pointerEventToPosition(event) {
 	};
 }
 
-export function formatAnnotationText(annotation) {
-	let parts = [];
-
-	if (annotation.comment) {
-		parts.push(annotation.comment + ':');
-	}
-
-	if (annotation.text) {
-		parts.push('"' + annotation.text + '"');
-	}
-
-	return parts.join(' ');
-}
-
 export function getBoundingRect(rects) {
 	return [
 		Math.min(...rects.map(x => x[0])),
@@ -304,25 +290,27 @@ export function getImageDataURL(img) {
 }
 
 export function setDataTransferAnnotations(dataTransfer, annotations) {
-	// Note: trim() is necessary for already existing annotations containing spaces
 	let text = annotations.map((annotation) => {
 		let formatted = '';
-		if (annotation.comment) {
-			formatted = annotation.comment.trim();
-		}
 
 		if (annotation.text) {
-			if (formatted) {
-				formatted += formatted.includes('\n') ? '\n' : ': ';
-			}
-
+			let text = annotation.text.trim();
 			if (annotation.fromText) {
-				formatted += annotation.text.trim();
+				formatted = text;
 			}
 			else {
-				formatted += '“' + annotation.text.trim() + '”';
+				formatted = '“' + text + '”';
 			}
 		}
+
+		let comment = annotation.comment && annotation.comment.trim();
+		if (comment) {
+			if (formatted) {
+				formatted += comment.includes('\n') ? '\n' : ' ';
+			}
+			formatted += comment;
+		}
+
 		return formatted;
 	}).filter(x => x).join('\n\n');
 
@@ -343,9 +331,15 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 				position,
 				pageLabel
 			};
-		});
+		}
+	);
 
+	// Clear image data set on some untested type (when drag is initiated on img),
+	// which also prevents word processors from using `text/plain`, and
+	// results to dumped base64 content (LibreOffice) or image (Google Docs)
+	dataTransfer.clearData();
 	dataTransfer.setData('zotero/annotation', JSON.stringify(annotations));
-	// dataTransfer.setData('text/plain', JSON.stringify(annotations));
+	// TODO: Implement `text/html`, to support rich text and images
+	// It basically needs the same HTML generating code as in Zotero client `editorInstance.js`
 	dataTransfer.setData('text/plain', text);
 }

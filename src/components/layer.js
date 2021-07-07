@@ -14,10 +14,10 @@ import { PopupPreview } from './preview';
 import { p2v as p2vc, v2p as v2pc, wx, hy } from '../lib/coordinates';
 
 import {
-	formatAnnotationText,
 	throttle,
 	findOrCreateContainerLayer,
-	pointerEventToPosition
+	pointerEventToPosition,
+	setDataTransferAnnotations
 } from '../lib/utilities';
 
 function PageLayerHighlight(props) {
@@ -594,13 +594,7 @@ function Layer(props) {
 							onPageMenu={props.onPageMenu}
 							onMoreMenu={props.onMoreMenu}
 							onDragStart={(event) => {
-								let annotation = popupAnnotation;
-								annotation.itemKey = window.itemKey;
-								event.dataTransfer.setData('zotero/annotation', JSON.stringify({
-									...annotation,
-									position: v2p(annotation.position)
-								}));
-								event.dataTransfer.setData('text/plain', formatAnnotationText(annotation));
+								setDataTransferAnnotations(event.dataTransfer, [popupAnnotation]);
 							}}
 						/>
 					</PagePopup>
