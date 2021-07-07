@@ -883,6 +883,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				focusComment(annotation.id);
 			})();
 			setMode(null);
+			return;
 		}
 
 		if (intersectsWithSelectedText(position)) {
@@ -897,7 +898,10 @@ const Annotator = React.forwardRef((props, ref) => {
 			&& selectID
 			&& (!isShift || selectedIDsRef.current.length)
 			&& (isCtrl || !intersectsWithSelectedAnnotations(position))) {
-			selectAnnotation(selectID, isCtrl, isShift, true, false);
+			let selected = selectAnnotation(selectID, isCtrl, isShift, true, false);
+			if (selected === 1) {
+				focusComment(selectedIDsRef.current[0]);
+			}
 			setIsSelectedOnPointerDown(true);
 		}
 
