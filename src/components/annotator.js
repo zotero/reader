@@ -119,6 +119,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_isSidebarOpen, isSidebarOpenRef, setIsSidebarOpen] = useRefState(window.PDFViewerApplication.pdfSidebar.isOpen);
 	const [_isSelectingText, isSelectingTextRef, setIsSelectingText] = useRefState(false);
 	const [_isDraggingAnnotation, isDraggingAnnotationRef, setIsDraggingAnnotation] = useRefState(false);
+	const [_isPopupDisabled, isPopupDisabledRef, setIsPopupDisabled] = useRefState(false);
 	const [_isSelectingArea, isSelectingAreaRef, setIsSelectingArea] = useRefState(false);
 	const [_isResizingArea, isResizingAreaRef, setIsResizingArea] = useRefState(false);
 	const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
@@ -688,6 +689,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (annotations.length) {
 			setIsDraggingAnnotation(true);
+			setIsPopupDisabled(true);
 			setEnableSelection(false);
 			setDataTransferAnnotations(event.dataTransfer, annotations);
 		}
@@ -850,6 +852,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
 		pointerDownPositionRef.current = position;
+
+		setIsPopupDisabled(false);
 
 		if (PDFViewerApplication.pdfCursorTools.handTool.active) {
 			return true;
@@ -1146,7 +1150,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				enableSelectionPopup={!_isSelectingText && !_mode && !_isLastClickRight}
 				enableAddToNote={_enableAddToNote}
 				popupAnnotation={
-					!_isSelectingText
+					!_isPopupDisabled
+					&& !_isSelectingText
 					&& !_isDraggingAnnotation
 					&& !_isSelectingArea
 					&& !_isResizingArea
