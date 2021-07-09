@@ -35,7 +35,6 @@ import { extractRange } from '../lib/extract';
 // [231.284, 402.126, 293.107, 410.142]
 
 const NOTE_DIMENSIONS = 22;
-const COMMENT_FOCUS_TIMEOUT = 15 * 1000;
 
 async function getSelectionRangesRef(positionFrom, positionTo) {
 	let getPageSelectionRange = async (pageIndex, startPoint, endPoint) => {
@@ -906,8 +905,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			let selected = selectAnnotation(selectID, isCtrl, isShift, true, false);
 			if (selected === 1) {
 				let annotation = annotationsRef.current.find(x => x.id === selectedIDsRef.current[0]);
-				// Focus comment if the annotation isn't older than COMMENT_FOCUS_TIMEOUT
-				if (!annotation.comment && new Date().getTime() - new Date(annotation.dateCreated).getTime() < COMMENT_FOCUS_TIMEOUT) {
+				if (!annotation.comment) {
 					focusComment(annotation.id);
 				}
 			}
