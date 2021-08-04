@@ -7,8 +7,9 @@
 .textLayer {
 	opacity: 1;
 	mix-blend-mode: multiply;
-	pointer-events: none;
+	//pointer-events: none;
 	user-select: none;
+	z-index: 1;
 }
 
 .cursor-pointer .page {
