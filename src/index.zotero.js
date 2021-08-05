@@ -255,58 +255,91 @@ class ViewerInstance {
 	handleMenuAction(cmd) {
 		let eb = window.PDFViewerApplication.eventBus;
 		switch (cmd) {
-			case 'presentationmode':
+			case 'presentationmode': {
 				eb.dispatch('presentationmode');
-				break;
-			case 'print':
+				return;
+			}
+			case 'print': {
 				eb.dispatch('print');
-				break;
-			case 'download':
+				return;
+			}
+			case 'download': {
 				eb.dispatch('download');
-				break;
-			case 'firstpage':
+				return;
+			}
+			case 'firstpage': {
 				eb.dispatch('firstpage');
-				break;
-			case 'lastpage':
+				return;
+			}
+			case 'lastpage': {
 				eb.dispatch('lastpage');
-				break;
-			case 'rotatecw':
+				return;
+			}
+			case 'rotatecw': {
 				eb.dispatch('rotatecw');
-				break;
-			case 'rotateccw':
+				return;
+			}
+			case 'rotateccw': {
 				eb.dispatch('rotateccw');
-				break;
-			// case 'switchcursortool_select':
+				return;
+			}
+			// case 'switchcursortool_select': {
 			// 	eb.dispatch('switchcursortool', { tool: 0 });
-			// 	break;
-			case 'switchcursortool_hand':
+			// 	return;
+			// }
+			case 'switchcursortool_hand': {
 				// eb.dispatch('switchcursortool', { tool: 1 });
 				PDFViewerApplication.pdfCursorTools.handTool.toggle();
-				break;
-			case 'switchscrollmode_vertical':
+				return;
+			}
+			case 'switchscrollmode_vertical': {
 				eb.dispatch('switchscrollmode', { mode: 0 });
-				break;
-			case 'switchscrollmode_horizontal':
+				return;
+			}
+			case 'switchscrollmode_horizontal': {
 				eb.dispatch('switchscrollmode', { mode: 1 });
-				break;
-			case 'switchscrollmode_wrapped':
+				return;
+			}
+			case 'switchscrollmode_wrapped': {
 				eb.dispatch('switchscrollmode', { mode: 2 });
-				break;
-			case 'switchspreadmode_none':
+				return;
+			}
+			case 'switchspreadmode_none': {
 				eb.dispatch('switchspreadmode', { mode: 0 });
-				break;
-			case 'switchspreadmode_odd':
+				return;
+			}
+			case 'switchspreadmode_odd': {
 				eb.dispatch('switchspreadmode', { mode: 1 });
-				break;
-			case 'switchspreadmode_even':
+				return;
+			}
+			case 'switchspreadmode_even': {
 				eb.dispatch('switchspreadmode', { mode: 2 });
-				break;
-			case 'back':
+				return;
+			}
+			case 'back': {
 				window.history.back();
-				break;
-			case 'forward':
+				return;
+			}
+			case 'forward': {
 				window.history.forward();
-				break;
+				return;
+			}
+			case 'zoomIn': {
+				PDFViewerApplication.zoomIn();
+				return;
+			}
+			case 'zoomOut': {
+				PDFViewerApplication.zoomOut();
+				return;
+			}
+			case 'zoomAuto': {
+				PDFViewerApplication.pdfViewer.currentScaleValue = 'auto';
+				return;
+			}
+			case 'zoomPageWidth': {
+				PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
+				return;
+			}
 		}
 	}
 }
