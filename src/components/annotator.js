@@ -188,6 +188,16 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	let navigate = (location) => {
+
+		let id = location.id || location.annotationKey;
+		let annotation = id && annotationsRef.current.find(x => x.id === id);
+		if (annotation) {
+			// selectAnnotation(id, true, false, true, true);
+			makeBlink(annotation.position);
+			scrollTo({ id, position: annotation.position }, true, true);
+			return;
+		}
+
 		if (Number.isInteger(location.pageIndex)) {
 			window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
 				pageNumber: location.pageIndex + 1
@@ -205,14 +215,6 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 			// TODO: Try to utilize page label extraction here as well
 			return;
-		}
-
-		let annotation = location.id && annotationsRef.current.find(x => x.id === location.id);
-		if (annotation) {
-			selectAnnotation(location.id, true, false, true, true);
-			if (!location.position) {
-				location.position = annotation.position;
-			}
 		}
 
 		makeBlink(location.position);
