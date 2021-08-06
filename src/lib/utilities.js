@@ -323,6 +323,7 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 				}
 			}
 			return {
+				id,
 				attachmentItemID: window.itemID,
 				text: text ? text.trim() : text,
 				color,
