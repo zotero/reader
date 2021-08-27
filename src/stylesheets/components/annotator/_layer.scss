@@ -1,5 +1,12 @@
 /*! rtl:begin:ignore */
 
+.layer-ink {
+	position: absolute;
+	left: 0;
+	top: 0;
+	pointer-events: none;
+}
+
 .layer-highlight {
 	position: absolute;
 	left: 0;

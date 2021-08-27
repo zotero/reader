@@ -19,6 +19,44 @@ import {
 	pointerEventToPosition,
 	setDataTransferAnnotations
 } from '../lib/utilities';
+import Ink from './ink';
+
+function PageLayerInk(props) {
+	function getContainerNode(viewport) {
+		return findOrCreateContainerLayer(
+			viewport.div,
+			'layer-ink'
+		);
+	}
+
+	let node = getContainerNode(props.view);
+	if (!node) return null;
+
+	return ReactDOM.createPortal(
+		<div className={cx({ 'selecting-annotation': !!props.selectedAnnotationIDs.length })}>
+			{props.annotations.map(
+				(annotation, index) => {
+					let { position, ...rest } = annotation;
+
+					let viewportAnnotation = {
+						position: p2vc(position, props.view.viewport),
+						...rest
+					};
+
+					return (
+						<div key={annotation.id}>
+							<Ink
+								annotation={viewportAnnotation}
+								isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+							/>
+						</div>
+					);
+				}
+			)}
+		</div>,
+		node
+	);
+}
 
 function PageLayerHighlight(props) {
 	function getContainerNode(viewport) {
@@ -492,6 +530,12 @@ function Layer(props) {
 		let view = viewer.getPageView(pageIndex);
 
 		pageLayers.push(
+			<PageLayerInk
+				key={'i_' + pageIndex}
+				view={view}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'ink') || [])}
+			/>,
 			<PageLayerHighlight
 				key={'h_' + pageIndex}
 				view={view}

@@ -507,6 +507,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		let y = position.rects[0][1];
 
 		for (let annotation of annotationsRef.current) {
+			if (annotation.type === 'ink') {
+				continue;
+			}
 			let isFound = false;
 			for (let rect of annotation.position.rects) {
 				if (annotation.position.pageIndex === position.pageIndex && rect[0] <= x && x <= rect[2]
@@ -579,8 +582,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		let lastID = selectedIDsRef.current.slice(-1)[0];
 		if (lastID) {
 			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
-			if (annotationIndex - 1 >= 0) {
-				let nextAnnotation = annotationsRef.current[annotationIndex - 1];
+			let prevIndex = annotationsRef.current.map((x, i) => i < annotationIndex && x.type !== 'ink').lastIndexOf(true);
+			if (prevIndex !== -1) {
+				let nextAnnotation = annotationsRef.current[prevIndex];
 				let prevID = nextAnnotation.id;
 				selectAnnotation(prevID, ctrl, shift, true, true);
 				return nextAnnotation;
@@ -595,8 +599,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		let lastID = selectedIDsRef.current.slice(-1)[0];
 		if (lastID) {
 			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
-			if (annotationsRef.current.length > annotationIndex + 1) {
-				let nextAnnotation = annotationsRef.current[annotationIndex + 1];
+			let nextIndex = annotationsRef.current.findIndex((x, i) => i > annotationIndex && x.type !== 'ink');
+			if (nextIndex !== -1) {
+				let nextAnnotation = annotationsRef.current[nextIndex];
 				let nextID = nextAnnotation.id;
 				selectAnnotation(nextID, ctrl, shift, true, true);
 				return nextAnnotation;
@@ -651,6 +656,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		else {
 			selectedIDs = [id];
 		}
+
+		selectedIDs = selectedIDs.filter(id => annotationsRef.current.find(x => x.id === id).type !== 'ink');
 
 		if (JSON.stringify(selectedIDsRef.current) === JSON.stringify(selectedIDs)) return 0;
 
@@ -1036,7 +1043,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let overAnnotation = (
 			(!isShift || selectedIDsRef.current.length)
-			&& annotationsRef.current.find(x => intersectPointInSelectionPosition(position, x.position))
+			&& annotationsRef.current.find(x => x.type !== 'ink' && intersectPointInSelectionPosition(position, x.position))
 		);
 
 		let textPosition = window.pageTextPositions[position.pageIndex];
