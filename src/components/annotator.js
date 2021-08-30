@@ -336,6 +336,16 @@ const Annotator = React.forwardRef((props, ref) => {
 			setEnableSelection(false);
 		}
 
+		if ((e.key === 'Delete' || e.key === 'Backspace')
+			&& !e.repeat
+			&& e.target.closest('.comment')) {
+			let id = selectedIDsRef.current[0];
+			let annotation = annotationsRef.current.find(x => x.id === id);
+			if (annotation && !annotation.comment) {
+				props.onDeleteAnnotations([id]);
+			}
+		}
+
 		if (e.target === document.getElementById('viewerContainer') || e.target === document.body) {
 			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
 			if (isMod && e.key === 'a') {
@@ -354,7 +364,7 @@ const Annotator = React.forwardRef((props, ref) => {
 					selectAnnotation(annotationsRef.current[0].id, false, false, true, true);
 				}
 			}
-			else if (e.key === 'Delete' || e.key === 'Backspace') {
+			else if ((e.key === 'Delete' || e.key === 'Backspace') && !e.repeat) {
 				// TODO: Auto-select the next annotation after deletion in sidebar
 				let hasReadOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 				if (!hasReadOnly) {
