@@ -749,7 +749,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		let ctrl = event.ctrlKey || event.metaKey;
 		let shift = event.shiftKey;
 
-		if (section === 'tags' && !ctrl && !shift) {
+		let annotation = annotationsRef.current.find(x => x.id === id);
+		if (section === 'tags' && !ctrl && !shift && !annotation.readOnly) {
 			return props.onClickTags(id, event);
 		}
 

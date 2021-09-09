@@ -14,7 +14,7 @@ export function PopupPreview(props) {
 	const pageInputRef = useRef();
 
 	function handleTagsClick(event) {
-		if (props.readOnly) {
+		if (props.annotation.readOnly) {
 			return;
 		}
 		props.onClickTags(props.annotation.id, event);
@@ -309,7 +309,7 @@ export function SidebarPreview(props) {
 			)}
 			{text}
 			{comment}
-			{(state >= 1 || annotation.tags.length > 0) && !annotation.readOnly
+			{(state >= 1 && !annotation.readOnly || annotation.tags.length > 0)
 			&& (
 				<div
 					className="tags"
