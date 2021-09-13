@@ -148,7 +148,7 @@ class ViewerInstance {
 			}
 			case 'setAnnotations': {
 				let { annotations } = message;
-				annotations.forEach(x => this._viewer.setAnnotation(x));
+				this._viewer.setAnnotations(annotations);
 				return;
 			}
 			case 'unsetAnnotations': {

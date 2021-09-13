@@ -34,7 +34,7 @@ class Viewer {
 			onSetAnnotation: options.onSetAnnotation,
 			onDeleteAnnotations: options.onDeleteAnnotations,
 			onUpdateAnnotations: (annotations) => {
-				this.setAnnotations([...annotations]);
+				this._setAnnotations([...annotations]);
 			}
 		});
 
@@ -103,7 +103,7 @@ class Viewer {
 			</IntlProvider>,
 			this.node,
 			() => {
-				this.setAnnotations(this._annotationsStore.getAnnotations());
+				this._setAnnotations(this._annotationsStore.getAnnotations());
 				this._annotatorPromiseResolve();
 			}
 		);
@@ -271,7 +271,7 @@ class Viewer {
 		}
 	}
 
-	setAnnotations = (annotations) => {
+	_setAnnotations = (annotations) => {
 		this.annotatorRef.current.setAnnotations(annotations);
 	};
 
@@ -310,8 +310,8 @@ class Viewer {
 		this.annotatorRef.current.setEnableAddToNote(enable);
 	};
 
-	setAnnotation(annotation) {
-		this._annotationsStore.setAnnotation(annotation);
+	setAnnotations(annotation) {
+		this._annotationsStore.setAnnotations(annotation);
 	}
 
 	unsetAnnotations(ids) {

@@ -190,13 +190,28 @@ class AnnotationsStore {
 	}
 
 	// Called when changes come from the client side
-	async setAnnotation(annotation) {
-		annotation.readOnly = annotation.readOnly || this.readOnly;
-		this.set(annotation);
-		if (annotation.type === 'image' && !annotation.image) {
-			annotation.image = await this.getAnnotationImage(annotation.id);
-			this.set(annotation);
-			this.save(annotation);
+	async setAnnotations(annotations) {
+		for (let annotation of annotations) {
+			let oldIndex = this.annotations.findIndex(x => x.id === annotation.id);
+			if (oldIndex !== -1) {
+				annotation = { ...annotation };
+				annotation.readOnly = annotation.readOnly || this.readOnly;
+				this.annotations.splice(oldIndex, 1, annotation);
+			}
+			else {
+				this.annotations.push(annotation);
+			}
+		}
+
+		this.sortAnnotations(this.annotations);
+		this.onUpdateAnnotations(this.annotations);
+
+		for (let annotation of annotations) {
+			if (annotation.type === 'image' && !annotation.image) {
+				annotation.image = await this.getAnnotationImage(annotation.id);
+				this.set(annotation);
+				this.save(annotation);
+			}
 		}
 	}
 
