@@ -137,19 +137,19 @@ export function extractRange(chs, rects, selection) {
 
 				if (extracting) {
 					lineChEnd = ch;
-				}
 
-				if (ch === chEnd) {
-					extracting = false;
-					let rect;
-					if (line.vertical) {
-						rect = [line.rect[0], Math.min(lineChStart.rect[1], lineChEnd.rect[1]), line.rect[2], Math.max(lineChStart.rect[3], lineChEnd.rect[3])];
-					}
-					else {
-						rect = [Math.min(lineChStart.rect[0], lineChEnd.rect[0]), line.rect[1], Math.max(lineChStart.rect[2], lineChEnd.rect[2]), line.rect[3]];
-					}
+					if (ch === chEnd) {
+						extracting = false;
+						let rect;
+						if (line.vertical) {
+							rect = [line.rect[0], Math.min(lineChStart.rect[1], lineChEnd.rect[1]), line.rect[2], Math.max(lineChStart.rect[3], lineChEnd.rect[3])];
+						}
+						else {
+							rect = [Math.min(lineChStart.rect[0], lineChEnd.rect[0]), line.rect[1], Math.max(lineChStart.rect[2], lineChEnd.rect[2]), line.rect[3]];
+						}
 
-					allRects.push(rect);
+						allRects.push(rect);
+					}
 				}
 			}
 		}
