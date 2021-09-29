@@ -204,14 +204,14 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (location.pageLabel) {
-			let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-			let pageIndex = pageLabels && pageLabels.indexOf(location.pageLabel.trim()) || parseInt(location.pageLabel) - 1;
-			if (Number.isInteger(pageIndex)) {
-				window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-					pageNumber: pageIndex + 1
-				});
-			}
-			// TODO: Try to utilize page label extraction here as well
+			(async function () {
+				let pageIndex = await window.extractor.getPageIndexByLabel(location.pageLabel);
+				if (pageIndex !== null) {
+					window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
+						pageNumber: pageIndex + 1
+					});
+				}
+			})();
 			return;
 		}
 

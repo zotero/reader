@@ -144,4 +144,30 @@ export class Extractor {
 		}
 		return null;
 	}
+
+	async getPageIndexByLabel(pageLabel) {
+		let numericPageLabel = parseInt(pageLabel);
+		let points = await this.extractPageLabelPoints();
+		if (points && numericPageLabel == pageLabel) {
+			let targetPageIndex = points[0].idx + (numericPageLabel - points[0].num);
+			let targetPageLabel = await this.extractPageLabel(targetPageIndex);
+			if (targetPageLabel == pageLabel) {
+				return targetPageIndex;
+			}
+		}
+
+		let pageLabels = this.pdfViewer._pageLabels;
+		if (pageLabels) {
+			let targetPageIndex = pageLabels.indexOf(pageLabel);
+			if (targetPageIndex !== -1) {
+				return targetPageIndex;
+			}
+		}
+
+		if (numericPageLabel == pageLabel && numericPageLabel > 0) {
+			return (numericPageLabel - 1).toString();
+		}
+
+		return null;
+	}
 }
