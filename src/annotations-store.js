@@ -2,13 +2,6 @@
 
 import queue from 'queue';
 
-import {
-	getAnnotationsCount,
-	getSortIndex,
-	extractPageLabelPoints,
-	extractPageLabel
-} from './lib/extract';
-
 import { renderAreaImage } from './lib/render';
 import { annotationColors } from './lib/colors';
 import { equalPositions } from './lib/utilities';
@@ -97,14 +90,6 @@ class AnnotationsStore {
 		this.onUpdateAnnotations(this.annotations);
 	}
 
-	async getPageLabelPoints() {
-		if (!this.pageLabelPoints) {
-			this.pageLabelPoints = await extractPageLabelPoints();
-		}
-
-		return this.pageLabelPoints;
-	}
-
 	getAnnotations() {
 		return this.annotations;
 	}
@@ -156,27 +141,10 @@ class AnnotationsStore {
 		// delay from the further async calls
 		this.set(annotation);
 
-		let points = await this.getPageLabelPoints();
-		if (points) {
-			let pageLabel = await extractPageLabel(annotation.position.pageIndex, points);
-			if (pageLabel) {
-				annotation.pageLabel = pageLabel;
-			}
-		}
-
-		if (annotation.pageLabel === '-') {
-			let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
-			if (pageLabels && pageLabels[annotation.position.pageIndex]) {
-				annotation.pageLabel = pageLabels[annotation.position.pageIndex];
-			}
-		}
-
-		if (annotation.pageLabel === '-') {
-			annotation.pageLabel = (annotation.position.pageIndex + 1).toString();
-		}
+		annotation.pageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex);
 
 		if (annotation.type === 'note' || annotation.type === 'image') {
-			annotation.sortIndex = await getSortIndex(annotation.position);
+			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
 		}
 
 		if (annotation.type === 'image') {
@@ -240,7 +208,7 @@ class AnnotationsStore {
 			['note', 'image'].includes(annotation.type)
 			&& !equalPositions(existingAnnotation, annotation)
 		) {
-			annotation.sortIndex = await getSortIndex(annotation.position);
+			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
 		}
 
 		if (

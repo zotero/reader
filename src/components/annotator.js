@@ -28,8 +28,6 @@ import {
 	isLinux
 } from '../lib/utilities';
 
-import { extractRange } from '../lib/extract';
-
 // All rects in annotator.js are stored in [left, top, right, bottom] order
 // where the Y axis starts from the bottom:
 // [231.284, 402.126, 293.107, 410.142]
@@ -61,7 +59,7 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 			rects: [rect]
 		};
 
-		let extractedRange = await extractRange(position);
+		let extractedRange = await window.extractor.extractRange(position);
 		if (extractedRange) {
 			return extractedRange;
 		}
@@ -1011,6 +1009,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (text) {
 			window.selectionBox.select();
 		}
+
+		// Trigger async page label extraction to already have the label in case
+		// dragging would be initiated
+		window.extractor.getPageLabel(position.pageIndex);
 
 		if (isSelectingAreaRef.current
 			|| isResizingAreaRef.current

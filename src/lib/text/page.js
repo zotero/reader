@@ -45,21 +45,21 @@ function filterNums(chs, pageHeight) {
 	return chs.filter(x => x.c >= '0' && x.c <= '9' && (x.rect[3] < pageHeight * 1 / 5 || x.rect[1] > pageHeight * 3 / 5));
 }
 
-export async function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, pageHeight) {
+export function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, pageHeight) {
 	let chsNum1 = filterNums(chs1, pageHeight);
 	let chsNum2 = filterNums(chs2, pageHeight);
 	let chsNum3 = filterNums(chs3, pageHeight);
 	let chsNum4 = filterNums(chs4, pageHeight);
 
-	for (let c1 = 0; c1 < chsNum1; c1++) {
+	for (let c1 = 0; c1 < chsNum1.length; c1++) {
 		let ch1 = chsNum1[c1];
-		for (let c3 = 0; c3 < chsNum3; c3++) {
+		for (let c3 = 0; c3 < chsNum3.length; c3++) {
 			let ch3 = chsNum3[c3];
 			let { x: x1, y: y1 } = getRectCenter(ch1.rect);
 			let { x: x2, y: y2 } = getRectCenter(ch3.rect);
 			if (Math.abs(x1 - x2) < 10 && Math.abs(y1 - y2) < 5) {
-				let num1 = getSurroundedNumber(chs1, c1);
-				let num3 = getSurroundedNumber(chs3, c3);
+				let num1 = getSurroundedNumber(chsNum1, c1);
+				let num3 = getSurroundedNumber(chsNum3, c3);
 				if (num1 && num1 + 2 === num3) {
 					let pos1 = { x: x1, y: y1, num: num1, idx: pageIndex };
 
@@ -68,15 +68,15 @@ export async function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, page
 						return [pos1];
 					}
 
-					for (let c2 = 0; c2 < chsNum2; c2++) {
+					for (let c2 = 0; c2 < chsNum2.length; c2++) {
 						let ch2 = chsNum2[c2];
-						for (let c4 = 0; c4 < chsNum4; c4++) {
-							let ch4 = chsNum2[c4];
+						for (let c4 = 0; c4 < chsNum4.length; c4++) {
+							let ch4 = chsNum4[c4];
 							let { x: x1, y: y1 } = getRectCenter(ch2.rect);
 							let { x: x2, y: y2 } = getRectCenter(ch4.rect);
 							if (Math.abs(x1 - x2) < 10 && Math.abs(y1 - y2) < 5) {
-								let num2 = getSurroundedNumber(chs2, c2);
-								let num4 = getSurroundedNumber(chs4, c4);
+								let num2 = getSurroundedNumber(chsNum2, c2);
+								let num4 = getSurroundedNumber(chsNum4, c4);
 								if (num1 + 1 === num2 && num2 + 2 === num4) {
 									let pos2 = { x: x1, y: y1, num: num2, idx: pageIndex + 2 };
 									return [pos1, pos2];
@@ -92,7 +92,7 @@ export async function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, page
 	return null;
 }
 
-export async function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) {
+export function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) {
 	let numPrev, numCur, numNext;
 
 	// TODO: Instead of trying to extract from two positions, try to
@@ -119,4 +119,6 @@ export async function getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points) 
 	if (pageIndex < points[0].idx) {
 		return (points[0].num - (points[0].idx - pageIndex)).toString();
 	}
+
+	return null;
 }

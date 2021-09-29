@@ -265,18 +265,14 @@ export function useRefState(initialValue) {
 export function getAnnotationsFromSelectionRanges(selectionRanges) {
 	let annotations = [];
 	for (let selectionRange of selectionRanges) {
-		// TODO: Use the extracted page label
-		let pageLabels = window.PDFViewerApplication.pdfViewer._pageLabels;
 		let pageIndex = selectionRange.position.pageIndex;
-
 		annotations.push({
 			fromText: true,
 			text: selectionRange.text,
 			position: selectionRange.position,
-			pageLabel: pageLabels && pageLabels[pageIndex] || (pageIndex + 1).toString()
+			pageLabel: window.extractor.getCachedPageLabel(pageIndex) || '-'
 		});
 	}
-
 	return annotations;
 }
 

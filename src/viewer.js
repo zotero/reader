@@ -7,6 +7,7 @@ import Annotator from './components/annotator';
 import AnnotationsStore from './annotations-store';
 import { debounce } from './lib/debounce';
 import { extractRange as getRange } from './lib/text/range';
+import { Extractor } from './lib/extract';
 
 class Viewer {
 	constructor(options) {
@@ -76,7 +77,12 @@ class Viewer {
 
 		window.PDFViewerApplication.eventBus.on('pagesinit', () => {
 			this._pdfjsPromiseResolve();
+
+			// For development purposes only, when dropping various test files to the same window
+			window.extractor = new Extractor(window.PDFViewerApplication.pdfViewer);
 		});
+
+		window.extractor = new Extractor(window.PDFViewerApplication.pdfViewer);
 
 		this.annotatorRef = React.createRef();
 		this.node = document.createElement('div');
@@ -128,7 +134,7 @@ class Viewer {
 		window.removeEventListener('dragstart', this.handleDragStart);
 		window.PDFViewerApplication.close();
 		this._uninitialized = true;
-		window.chsCache = {};
+		window.extractor.chsCache = {};
 	}
 
 	_initSelectionBox() {
@@ -157,18 +163,9 @@ class Viewer {
 	}
 
 	handlePageRender = async (e) => {
-		let page = await window.PDFViewerApplication.pdfViewer.pdfDocument.getPage(e.pageNumber);
-		let textContent = await page.getTextContent();
-
-		let chs = [];
-		for (let item of textContent.items) {
-			for (let ch of item.chars) {
-				chs.push(ch);
-			}
-		}
-
 		let pageIndex = e.pageNumber - 1;
-		window.chsCache[pageIndex] = chs;
+
+		let chs = await window.extractor.getPageChs(pageIndex);
 
 		let range = getRange(chs, [0, 9999, 0, 9999], false);
 
