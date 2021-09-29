@@ -51,6 +51,11 @@ export function getPageLabelPoints(pageIndex, chs1, chs2, chs3, chs4, pageHeight
 	let chsNum3 = filterNums(chs3, pageHeight);
 	let chsNum4 = filterNums(chs4, pageHeight);
 
+	// Cut off the logic if one of the pages has too many digits
+	if ([chsNum1, chsNum2, chsNum3, chsNum4].find(x => x.length > 100)) {
+		return null;
+	}
+
 	for (let c1 = 0; c1 < chsNum1.length; c1++) {
 		let ch1 = chsNum1[c1];
 		for (let c3 = 0; c3 < chsNum3.length; c3++) {
