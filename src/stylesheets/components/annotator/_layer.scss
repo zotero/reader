@@ -5,6 +5,10 @@
 	left: 0;
 	top: 0;
 	pointer-events: none;
+
+	& > div > div {
+		position: absolute;
+	}
 }
 
 .layer-highlight {
