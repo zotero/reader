@@ -118,13 +118,13 @@ export function getPageFromElement(target) {
 	return { node, number };
 }
 
-export function getPageFromRange(range) {
-	let parentElement = range.startContainer.parentElement;
-	if (!parentElement) {
-		return;
-	}
-
-	return getPageFromElement(parentElement);
+export function fitRectIntoRect(rect, containingRect) {
+	return [
+		Math.max(rect[0], containingRect[0]),
+		Math.max(rect[1], containingRect[1]),
+		Math.min(rect[2], containingRect[2]),
+		Math.min(rect[3], containingRect[3])
+	];
 }
 
 export function findOrCreateContainerLayer(container, className) {
@@ -156,91 +156,95 @@ export function pointerEventToPosition(event) {
 	};
 }
 
-export function getBoundingRect(rects) {
-	return [
-		Math.min(...rects.map(x => x[0])),
-		Math.min(...rects.map(x => x[1])),
-		Math.max(...rects.map(x => x[2])),
-		Math.max(...rects.map(x => x[3]))
-	];
+export function getPositionBoundingRect(position) {
+	if (position.rects) {
+		return [
+			Math.min(...position.rects.map(x => x[0])),
+			Math.min(...position.rects.map(x => x[1])),
+			Math.max(...position.rects.map(x => x[2])),
+			Math.max(...position.rects.map(x => x[3]))
+		];
+	}
+	else if (position.paths) {
+		let x = position.paths[0][0];
+		let y = position.paths[0][1];
+		let rect = [x, y, x, y];
+		for (let path of position.paths) {
+			for (let i = 0; i < path.length - 1; i += 2) {
+				let x = path[i];
+				let y = path[i + 1];
+				rect[0] = Math.min(rect[0], x);
+				rect[1] = Math.min(rect[1], y);
+				rect[2] = Math.max(rect[2], x);
+				rect[3] = Math.max(rect[3], y);
+			}
+		}
+		return rect;
+	}
 }
 
-export function equalPositions(annotation1, annotation2) {
-	let p1 = annotation1.position;
-	let p2 = annotation2.position;
-	return (
-		p1.pageIndex === p2.pageIndex
-		&& JSON.stringify(p1.rects) === JSON.stringify(p2.rects)
-	);
-}
-
-export function intersectPositions(position1, position2) {
-	if (position1.pageIndex !== position2.pageIndex) {
+export function positionsEqual(p1, p2) {
+	if (Array.isArray(p1.rects) !== Array.isArray(p2.rects)
+		|| Array.isArray(p1.paths) !== Array.isArray(p2.paths)) {
 		return false;
 	}
 
-	for (let r1 of position1.rects) {
-		for (let r2 of position2.rects) {
-			if (!(r2[0] > r1[2] || r2[2] < r1[0] || r2[1] > r1[3] || r2[3] < r1[1])) {
-				return true;
-			}
-		}
+	if (p1.pageIndex !== p2.pageIndex) {
+		return false;
+	}
+
+	if (p1.rects) {
+		return JSON.stringify(p1.rects) === JSON.stringify(p2.rects);
+	}
+	else if (p1.paths) {
+		return JSON.stringify(p1.paths) === JSON.stringify(p2.paths);
 	}
 
 	return false;
 }
 
-// TODO: Consider to use this for annotation selection on pointer down as well
-export function intersectPointInSelectionPosition(pointPosition, selectionPosition) {
+export function intersectAnnotationWithPoint(selectionPosition, pointPosition) {
 	if (selectionPosition.pageIndex !== pointPosition.pageIndex) {
 		return false;
 	}
 
 	let [x, y] = pointPosition.rects[0];
 
-	for (let i = 0; i < selectionPosition.rects.length; i++) {
-		let [r1, r2] = selectionPosition.rects.slice(i, i + 2);
-		if (!(x > r1[2]
-			|| x < r1[0]
-			|| y > r1[3]
-			|| y < r1[1])) {
-			return true;
-		}
+	if (selectionPosition.rects) {
+		for (let i = 0; i < selectionPosition.rects.length; i++) {
+			let [r1, r2] = selectionPosition.rects.slice(i, i + 2);
+			if (!(x > r1[2]
+				|| x < r1[0]
+				|| y > r1[3]
+				|| y < r1[1])) {
+				return true;
+			}
 
-		if (!r2) {
-			continue;
-		}
+			if (!r2) {
+				continue;
+			}
 
-		if (x > r1[0] && x > r2[0]
-			&& x < r1[2] && x < r2[2]
-			&& y < r1[3] && y > r2[1]
-			&& r1[1] - r2[3] < Math.min(r1[3] - r1[1], r2[3] - r2[1])) {
-			return true;
+			if (x > r1[0] && x > r2[0]
+				&& x < r1[2] && x < r2[2]
+				&& y < r1[3] && y > r2[1]
+				&& r1[1] - r2[3] < Math.min(r1[3] - r1[1], r2[3] - r2[1])) {
+				return true;
+			}
+		}
+	}
+	else if (selectionPosition.paths) {
+		let maxDistance = Math.max(7, selectionPosition.width);
+		for (let path of selectionPosition.paths) {
+			for (let i = 0; i < path.length - 1; i += 2) {
+				let ax = path[i];
+				let ay = path[i + 1];
+				if (Math.hypot(ax - x, ay - y) < maxDistance) {
+					return true;
+				}
+			}
 		}
 	}
 	return false;
-}
-
-export function intersectBoundingPositions(position1, position2) {
-	if (position1.pageIndex !== position2.pageIndex) {
-		return false;
-	}
-
-	let r1 = [
-		Math.min(...position1.rects.map(x => x[0])),
-		Math.min(...position1.rects.map(x => x[1])),
-		Math.max(...position1.rects.map(x => x[2])),
-		Math.max(...position1.rects.map(x => x[3]))
-	];
-
-	let r2 = [
-		Math.min(...position2.rects.map(x => x[0])),
-		Math.min(...position2.rects.map(x => x[1])),
-		Math.max(...position2.rects.map(x => x[2])),
-		Math.max(...position2.rects.map(x => x[3]))
-	];
-
-	return !(r2[0] > r1[2] || r2[2] < r1[0] || r2[1] > r1[3] || r2[3] < r1[1]);
 }
 
 import React, { useState, useEffect, useRef, useDebugValue } from 'react';

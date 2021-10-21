@@ -99,9 +99,6 @@ const AnnotationsView = React.memo(function (props) {
 	if (!containerNode) return null;
 
 	let { annotations } = props;
-
-	annotations = annotations.filter(x => x.type !== 'ink');
-
 	if (filteredAnnotations) {
 		let newFilteredAnnotations = [];
 		for (let filteredAnnotation of filteredAnnotations) {

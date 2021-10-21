@@ -26,6 +26,22 @@ export function IconArea() {
 	);
 }
 
+export function IconInk() {
+	return (
+		<svg width="12" height="12" viewBox="0 0 12 12">
+			<path
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				strokeMiterlimit="4"
+				stroke="currentColor"
+				fill="none"
+				d="M 11.075423,10.940982 C 2.1007834,10.74643 3.2046232,-0.13478446 9,1.2287624 11.152259,2.2537259 10.06085,4.0872195 9,4.5910025 6.1497195,6 2.0752684,4.9659656 0.95896126,1.3633774"
+			/>
+		</svg>
+	);
+}
+
 export function IconNoteLarge() {
 	return (
 		<svg width="24" height="24" viewBox="0 0 24 24">

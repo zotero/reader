@@ -5,7 +5,20 @@
 /*! rtl:begin:ignore */
 
 .ink-annotation {
-	overflow: visible;
+	svg {
+		overflow: visible;
+	}
+
+	.square {
+		position: absolute;
+		pointer-events: none;
+
+		@include state(".ink-annotation.selected") {
+			border: 2px dashed $highlight-annotation-selected-border-color;
+			pointer-events: auto;
+			z-index: 1;
+		}
+	}
 }
 
 /*! rtl:end:ignore */

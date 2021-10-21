@@ -16,14 +16,12 @@ import {
 
 import {
 	copyToClipboard,
-	intersectPositions,
-	intersectBoundingPositions,
 	setCaretToEnd,
 	useRefState,
 	getAnnotationsFromSelectionRanges,
 	setDataTransferAnnotations,
-	intersectPointInSelectionPosition,
-	getBoundingRect,
+	intersectAnnotationWithPoint,
+	getPositionBoundingRect,
 	isMac,
 	isLinux
 } from '../lib/utilities';
@@ -159,7 +157,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function scrollViewerTo(position) {
-		let rect = getBoundingRect(position.rects);
+		let rect = getPositionBoundingRect(position);
 		let spacing = 30;
 		rect = [
 			rect[0] - spacing,
@@ -456,7 +454,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			let pointerInSelection = false;
 
 			for (let range of selectionRangesRef.current) {
-				if (intersectPointInSelectionPosition(pointerDownPositionRef.current, range.position)) {
+				if (intersectAnnotationWithPoint(range.position, pointerDownPositionRef.current)) {
 					pointerInSelection = true;
 					break;
 				}
@@ -510,45 +508,12 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function getAnnotationToSelectID(position, hasModifier) {
-		let found = [];
-		let x = position.rects[0][0];
-		let y = position.rects[0][1];
-
-		for (let annotation of annotationsRef.current) {
-			if (annotation.type === 'ink') {
-				continue;
-			}
-			let isFound = false;
-			for (let rect of annotation.position.rects) {
-				if (annotation.position.pageIndex === position.pageIndex && rect[0] <= x && x <= rect[2]
-					&& rect[1] <= y && y <= rect[3]) {
-					found.push(annotation);
-					isFound = true;
-					break;
-				}
-			}
-
-			if (isFound) continue;
-
-			for (let i = 0; i < annotation.position.rects.length - 1; i++) {
-				let rect = annotation.position.rects[i];
-				let rectNext = annotation.position.rects[i + 1];
-
-				if (annotation.position.pageIndex === position.pageIndex) {
-					if (Math.max(rect[0], rectNext[0]) <= x && x <= Math.min(rect[2], rectNext[2])
-						&& rectNext[1] <= y && y <= rect[3]
-						&& rect[3] - rect[1] >= rect[1] - rectNext[3]
-						&& rectNext[3] - rectNext[1] >= rect[1] - rectNext[3]
-					) {
-						found.push(annotation);
-						break;
-					}
-				}
-			}
+		let found = annotationsRef.current.filter(x => intersectAnnotationWithPoint(x.position, position));
+		if (!found.length) {
+			return;
 		}
 
 		let selectedID = null;
-		if (!found.length) return;
 
 		function getAnnotationAreaSize(annotation) {
 			let areaSize = 0;
@@ -559,7 +524,23 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		found.sort((a, b) => {
-			return getAnnotationAreaSize(a) - getAnnotationAreaSize(b);
+			let aSize, bSize;
+
+			if (a.position.rects) {
+				aSize = getAnnotationAreaSize(a);
+			}
+			else if (a.position.paths) {
+				aSize = 0;
+			}
+
+			if (b.position.rects) {
+				bSize = getAnnotationAreaSize(b);
+			}
+			else if (b.position.paths) {
+				bSize = 0;
+			}
+
+			return aSize - bSize;
 		});
 
 		if (hasModifier) {
@@ -590,9 +571,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		let lastID = selectedIDsRef.current.slice(-1)[0];
 		if (lastID) {
 			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
-			let prevIndex = annotationsRef.current.map((x, i) => i < annotationIndex && x.type !== 'ink').lastIndexOf(true);
-			if (prevIndex !== -1) {
-				let nextAnnotation = annotationsRef.current[prevIndex];
+			if (annotationIndex - 1 >= 0) {
+				let nextAnnotation = annotationsRef.current[annotationIndex - 1];
 				let prevID = nextAnnotation.id;
 				selectAnnotation(prevID, ctrl, shift, true, true);
 				return nextAnnotation;
@@ -607,9 +587,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		let lastID = selectedIDsRef.current.slice(-1)[0];
 		if (lastID) {
 			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
-			let nextIndex = annotationsRef.current.findIndex((x, i) => i > annotationIndex && x.type !== 'ink');
-			if (nextIndex !== -1) {
-				let nextAnnotation = annotationsRef.current[nextIndex];
+			if (annotationsRef.current.length > annotationIndex + 1) {
+				let nextAnnotation = annotationsRef.current[annotationIndex + 1];
 				let nextID = nextAnnotation.id;
 				selectAnnotation(nextID, ctrl, shift, true, true);
 				return nextAnnotation;
@@ -665,8 +644,6 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectedIDs = [id];
 		}
 
-		selectedIDs = selectedIDs.filter(id => annotationsRef.current.find(x => x.id === id).type !== 'ink');
-
 		if (JSON.stringify(selectedIDsRef.current) === JSON.stringify(selectedIDs)) return 0;
 
 		setSelectedIDs(selectedIDs);
@@ -696,7 +673,21 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
-		if (annotations.length > 1) {
+		// If some annotations are ink and some not, filter only ink annotations
+		// and allow to drag, otherwise cancel
+		let forceMulti = false;
+		if (annotations.some(x => x.type === 'ink')) {
+			if (annotations.some(x => x.type !== 'ink')) {
+				annotations = annotations.filter(x => x.type !== 'ink');
+				forceMulti = true;
+			}
+			else {
+				event.preventDefault();
+				return;
+			}
+		}
+
+		if (annotations.length > 1 || forceMulti) {
 			setMultiDragPreview(event, selectedIDsRef.current.length);
 		}
 		else if (annotations.length) {
@@ -716,12 +707,31 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let annotations;
 		if (selectedIDsRef.current.includes(id) && selectedIDsRef.current.length > 1) {
-			setMultiDragPreview(event, selectedIDsRef.current.length);
 			annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		}
 		else {
-			setSidebarSingleDragPreview(event);
 			annotations = [annotationsRef.current.find(x => x.id === id)];
+		}
+
+		// If some annotations are ink and some not, filter only ink annotations
+		// and allow to drag, otherwise cancel
+		let forceMulti = false;
+		if (annotations.some(x => x.type === 'ink')) {
+			if (annotations.some(x => x.type !== 'ink')) {
+				annotations = annotations.filter(x => x.type !== 'ink');
+				forceMulti = true;
+			}
+			else {
+				event.preventDefault();
+				return;
+			}
+		}
+
+		if (annotations.length > 1 || forceMulti) {
+			setMultiDragPreview(event, annotations.length);
+		}
+		else {
+			setSidebarSingleDragPreview(event);
 		}
 
 		setDataTransferAnnotations(event.dataTransfer, annotations);
@@ -802,9 +812,18 @@ const Annotator = React.forwardRef((props, ref) => {
 			ids = selectedIDsRef.current;
 		}
 
-		let readOnly = !!annotationsRef.current.find(x => ids.includes(x.id) && x.readOnly);
+		let readOnly = annotationsRef.current.some(x => ids.includes(x.id) && x.readOnly);
+		let enableAddToNote = !annotationsRef.current.some(x => ids.includes(x.id) && x.type === 'ink');
 
-		props.onPopup('openAnnotationPopup', { x, y, ids, colors: annotationColors, selectedColor, readOnly });
+		props.onPopup('openAnnotationPopup', {
+			x,
+			y,
+			ids,
+			colors: annotationColors,
+			selectedColor,
+			readOnly,
+			enableAddToNote
+		});
 	}, []);
 
 	const handleLayerAreaSelectionStart = useCallback(() => {
@@ -828,8 +847,10 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleLayerAnnotationMoreMenu = useCallback((id, x, y) => {
-		let selectedColor = annotationsRef.current.find(x => x.id === id).color;
-		props.onPopup('openAnnotationPopup', { x, y, ids: [id], colors: annotationColors, selectedColor });
+		let annotation = annotationsRef.current.find(x => x.id === id);
+		let selectedColor = annotation.color;
+		let enableAddToNote = annotation.type !== 'ink';
+		props.onPopup('openAnnotationPopup', { x, y, ids: [id], colors: annotationColors, selectedColor, enableAddToNote });
 	}, []);
 
 	function openPagePopup(hasSelection, event) {
@@ -845,18 +866,14 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function intersectsWithSelectedAnnotations(position) {
-		let selectedAnnotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
-		for (let annotation of selectedAnnotations) {
-			if (intersectBoundingPositions(position, annotation.position)) {
-				return true;
-			}
-		}
-		return false;
+		return !!annotationsRef.current
+		.filter(x => selectedIDsRef.current.includes(x.id))
+		.find(x => intersectAnnotationWithPoint(x.position, position));
 	}
 
 	function intersectsWithSelectedText(position) {
 		for (let range of selectionRangesRef.current) {
-			if (intersectPointInSelectionPosition(position, range.position)) {
+			if (intersectAnnotationWithPoint(range.position, position)) {
 				return true;
 			}
 		}
@@ -936,6 +953,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (isRight && selectID) {
 			let readOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
+			let enableAddToNote = !annotationsRef.current.some(x => selectedIDsRef.current.includes(x.id) && x.type === 'ink');
 			let selectedColor;
 			if (annotationsRef.current.length === 1) {
 				selectedColor = annotationsRef.current[0].color;
@@ -946,7 +964,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				ids: selectedIDsRef.current,
 				readOnly,
 				colors: annotationColors,
-				selectedColor
+				selectedColor,
+				enableAddToNote
 			});
 		}
 
@@ -1056,14 +1075,14 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let overAnnotation = (
 			(!isShift || selectedIDsRef.current.length)
-			&& annotationsRef.current.find(x => x.type !== 'ink' && intersectPointInSelectionPosition(position, x.position))
+			&& annotationsRef.current.find(x => intersectAnnotationWithPoint(x.position, position))
 		);
 
 		let textPosition = window.pageTextPositions[position.pageIndex];
 		let overText = (
 			!['note', 'image'].includes(modeRef.current)
 			&& !intersectsWithSelectedText(position)
-			&& (textPosition && intersectPointInSelectionPosition(position, textPosition))
+			&& (textPosition && intersectAnnotationWithPoint(textPosition, position))
 			|| isSelectingTextRef.current
 		);
 

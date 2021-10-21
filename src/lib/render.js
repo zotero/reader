@@ -1,8 +1,10 @@
 'use strict';
 
 import { p2v, v2p, wx, hy } from './coordinates';
+import { fitRectIntoRect, getPositionBoundingRect } from './utilities';
 
-export async function renderAreaImage(position) {
+export async function renderAreaImage(annotation) {
+	let { position, color } = annotation;
 	let page = await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
 	let viewport = page.getViewport({ scale: 4 });
 
@@ -31,7 +33,44 @@ export async function renderAreaImage(position) {
 
 	await page.render(renderContext).promise;
 
-	let rect = position.rects[0];
+	let rect;
+
+	if (position.rects) {
+		rect = position.rects[0];
+	}
+	else if (position.paths) {
+		rect = getPositionBoundingRect(position);
+
+		let padding = 40;
+		rect = [
+			rect[0] - padding,
+			rect[1] - padding,
+			rect[2] + padding,
+			rect[3] + padding
+		];
+
+		rect = fitRectIntoRect(rect, [0, 0, viewport.width, viewport.height]);
+
+		ctx.lineWidth = position.width;
+
+		ctx.beginPath();
+		ctx.strokeStyle = color;
+
+		for (let path of position.paths) {
+			for (let i = 0; i < path.length - 1; i += 2) {
+				let x = path[i];
+				let y = path[i + 1];
+
+				if (i === 0) {
+					ctx.moveTo(x, y);
+					continue;
+				}
+				ctx.lineTo(x, y);
+			}
+		}
+
+		ctx.stroke();
+	}
 
 	let left = rect[0];
 	let top = rect[1];

@@ -4,7 +4,7 @@ import queue from 'queue';
 
 import { renderAreaImage } from './lib/render';
 import { annotationColors } from './lib/colors';
-import { equalPositions } from './lib/utilities';
+import { positionsEqual } from './lib/utilities';
 import { debounce } from './lib/debounce';
 
 // TODO: Reorganize annotation set/unset/delete/update functions in index.*.js, viewer.js and annotations-store.js
@@ -40,7 +40,7 @@ class AnnotationsStore {
 
 	async renderMissingImages() {
 		for (let annotation of this.annotations) {
-			if (annotation.type === 'image' && !annotation.image) {
+			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
 				annotation.image = await this.getAnnotationImage(annotation.id);
 				this.set(annotation);
 				this.save(annotation);
@@ -133,9 +133,11 @@ class AnnotationsStore {
 		annotation.authorName = '';
 		annotation.pageLabel = '-';
 
-		annotation.position.rects = annotation.position.rects.map(
-			rect => rect.map(value => parseFloat(value.toFixed(3)))
-		);
+		if (annotation.position.rects) {
+			annotation.position.rects = annotation.position.rects.map(
+				rect => rect.map(value => parseFloat(value.toFixed(3)))
+			);
+		}
 
 		// Immediately render the annotation to prevent
 		// delay from the further async calls
@@ -147,7 +149,7 @@ class AnnotationsStore {
 			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
 		}
 
-		if (annotation.type === 'image') {
+		if (['image', 'ink'].includes(annotation.type)) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
 		}
 
@@ -175,7 +177,7 @@ class AnnotationsStore {
 		this.onUpdateAnnotations(this.annotations);
 
 		for (let annotation of annotations) {
-			if (annotation.type === 'image' && !annotation.image) {
+			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
 				annotation.image = await this.getAnnotationImage(annotation.id);
 				this.set(annotation);
 				this.save(annotation);
@@ -196,9 +198,12 @@ class AnnotationsStore {
 			position: { ...existingAnnotation.position, ...annotation.position }
 		};
 		annotation.dateModified = (new Date()).toISOString();
-		annotation.position.rects = annotation.position.rects.map(
-			rect => rect.map(value => parseFloat(value.toFixed(3)))
-		);
+
+		if (annotation.rects) {
+			annotation.position.rects = annotation.position.rects.map(
+				rect => rect.map(value => parseFloat(value.toFixed(3)))
+			);
+		}
 
 		// Immediately render the annotation to prevent
 		// delay from the further async calls
@@ -206,14 +211,16 @@ class AnnotationsStore {
 
 		if (
 			['note', 'image'].includes(annotation.type)
-			&& !equalPositions(existingAnnotation, annotation)
+			&& !positionsEqual(existingAnnotation.position, annotation.position)
 		) {
 			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
 		}
 
 		if (
-			annotation.type === 'image'
-			&& !equalPositions(existingAnnotation, annotation)
+			['image', 'ink'].includes(annotation.type)
+			&& !positionsEqual(existingAnnotation.position, annotation.position)
+			|| annotation.type === 'ink'
+			&& existingAnnotation.color.toLowerCase() !== annotation.color.toLowerCase()
 		) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
 		}
@@ -242,7 +249,7 @@ class AnnotationsStore {
 				try {
 					let annotation = this.getAnnotationByID(annotationID);
 					if (annotation) {
-						image = await renderAreaImage(annotation.position);
+						image = await renderAreaImage(annotation);
 					}
 				}
 				catch (e) {

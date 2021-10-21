@@ -5,7 +5,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
-import { IconHighlight, IconNote, IconArea } from './icons';
+import { IconHighlight, IconNote, IconArea, IconInk } from './icons';
 
 // TODO: Don't allow to select UI text in popup header and footer
 export function PopupPreview(props) {
@@ -70,6 +70,7 @@ export function PopupPreview(props) {
 							annotation.type === 'highlight' && <IconHighlight/>
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
+							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
 					<div className="page" onDoubleClick={handleDoubleClickPage}>
@@ -98,17 +99,19 @@ export function PopupPreview(props) {
 				</div>
 			</header>
 
-			<div className="comment">
-				<Editor
-					id={annotation.id}
-					text={annotation.comment}
-					placeholder={annotation.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
-						: intl.formatMessage({ id: 'pdfReader.addComment' })}
-					isPlainText={false}
-					isReadOnly={annotation.readOnly}
-					onChange={handleCommentChange}
-				/>
-			</div>
+			{annotation.type !== 'ink' && (
+				<div className="comment">
+					<Editor
+						id={annotation.id}
+						text={annotation.comment}
+						placeholder={annotation.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
+							: intl.formatMessage({ id: 'pdfReader.addComment' })}
+						isPlainText={false}
+						isReadOnly={annotation.readOnly}
+						onChange={handleCommentChange}
+					/>
+				</div>
+			)}
 
 			{(!annotation.readOnly || !!annotation.tags.length) && (
 				<div
@@ -220,7 +223,9 @@ export function SidebarPreview(props) {
 		</div>
 	);
 
-	let comment = (state >= 1 || annotation.comment) && !(annotation.readOnly && !annotation.comment)
+	let comment = (state >= 1 || annotation.comment)
+		&& annotation.type !== 'ink'
+		&& !(annotation.readOnly && !annotation.comment)
 		&& <div
 			className="comment"
 			onClick={e => handleSectionClick(e, 'comment')}
@@ -271,6 +276,7 @@ export function SidebarPreview(props) {
 							annotation.type === 'highlight' && <IconHighlight/>
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
+							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
 					<div className="page" onDoubleClick={handleDoubleClickPage}>

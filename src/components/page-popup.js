@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import cx from 'classnames';
+import { getPositionBoundingRect } from '../lib/utilities';
 
 function PagePopup({ id, position, updateOnPositionChange, className, children }) {
 	const [popupPosition, setPopupPosition] = useState(null);
@@ -52,13 +53,7 @@ function PagePopup({ id, position, updateOnPositionChange, className, children }
 
 		let left;
 		let top;
-		let rectMax = [];
-		for (let rect of annotationPosition.rects) {
-			rectMax[0] = rectMax[0] ? Math.min(rectMax[0], rect[0]) : rect[0];
-			rectMax[1] = rectMax[1] ? Math.min(rectMax[1], rect[1]) : rect[1];
-			rectMax[2] = rectMax[2] ? Math.max(rectMax[2], rect[2]) : rect[2];
-			rectMax[3] = rectMax[3] ? Math.max(rectMax[3], rect[3]) : rect[3];
-		}
+		let rectMax = getPositionBoundingRect(annotationPosition);
 
 		let viewerScrollLeft = PDFViewerApplication.pdfViewer.container.scrollLeft;
 		let viewerScrollTop = PDFViewerApplication.pdfViewer.container.scrollTop;
