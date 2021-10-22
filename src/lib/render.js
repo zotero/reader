@@ -1,17 +1,52 @@
 'use strict';
 
-import { p2v, v2p, wx, hy } from './coordinates';
+import { p2v } from './coordinates';
 import { fitRectIntoRect, getPositionBoundingRect } from './utilities';
+
+const SCALE = 4;
+const PATH_BOX_PADDING = 10; // pt
 
 export async function renderAreaImage(annotation) {
 	let { position, color } = annotation;
-	let page = await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
-	let viewport = page.getViewport({ scale: 4 });
 
+	let page = await PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
+
+	// Create a new position that just contains single rect that is a bounding
+	// box of image or ink annotations
+	let expandedPosition = { pageIndex: position.pageIndex };
+	if (position.rects) {
+		// Image annotations have only one rect
+		expandedPosition.rects = position.rects;
+	}
+	// paths
+	else {
+		let rect = getPositionBoundingRect(position);
+		// Add padding
+		expandedPosition.rects = [fitRectIntoRect([
+			rect[0] - PATH_BOX_PADDING,
+			rect[1] - PATH_BOX_PADDING,
+			rect[2] + PATH_BOX_PADDING,
+			rect[3] + PATH_BOX_PADDING
+		], page.view)];
+	}
+
+	let rect = expandedPosition.rects[0];
+	let maxScale = Math.sqrt(
+		PDFViewerApplication.pdfViewer.maxCanvasPixels
+		/ ((rect[2] - rect[0]) * (rect[3] - rect[1]))
+	);
+	let scale = Math.min(SCALE, maxScale);
+
+	expandedPosition = p2v(expandedPosition, page.getViewport({ scale }));
+	rect = expandedPosition.rects[0];
+
+	let viewport = page.getViewport({ scale, offsetX: -rect[0], offsetY: -rect[1] });
 	position = p2v(position, viewport);
 
-	let canvasWidth = viewport.width;
-	let canvasHeight = viewport.height;
+	let canvasWidth = (rect[2] - rect[0]);
+	let canvasHeight = (rect[3] - rect[1]);
+
+	let cropScale = viewport.width / canvasWidth;
 
 	let canvas = document.createElement('canvas');
 
@@ -21,8 +56,12 @@ export async function renderAreaImage(annotation) {
 	}
 	let ctx = canvas.getContext('2d', { alpha: false });
 
-	canvas.width = (canvasWidth * 1) | 0;
-	canvas.height = (canvasHeight * 1) | 0;
+	if (!canvasWidth || !canvasHeight) {
+		return '';
+	}
+
+	canvas.width = canvasWidth;
+	canvas.height = canvasHeight;
 	canvas.style.width = canvasWidth + 'px';
 	canvas.style.height = canvasHeight + 'px';
 
@@ -33,29 +72,10 @@ export async function renderAreaImage(annotation) {
 
 	await page.render(renderContext).promise;
 
-	let rect;
-
-	if (position.rects) {
-		rect = position.rects[0];
-	}
-	else if (position.paths) {
-		rect = getPositionBoundingRect(position);
-
-		let padding = 40;
-		rect = [
-			rect[0] - padding,
-			rect[1] - padding,
-			rect[2] + padding,
-			rect[3] + padding
-		];
-
-		rect = fitRectIntoRect(rect, [0, 0, viewport.width, viewport.height]);
-
-		ctx.lineWidth = position.width;
-
+	if (position.paths) {
+		ctx.lineWidth = position.width * cropScale;
 		ctx.beginPath();
 		ctx.strokeStyle = color;
-
 		for (let path of position.paths) {
 			for (let i = 0; i < path.length - 1; i += 2) {
 				let x = path[i];
@@ -68,37 +88,8 @@ export async function renderAreaImage(annotation) {
 				ctx.lineTo(x, y);
 			}
 		}
-
 		ctx.stroke();
 	}
 
-	let left = rect[0];
-	let top = rect[1];
-	let width = wx(rect);
-	let height = hy(rect);
-
-	let newCanvas = document.createElement('canvas');
-
-	newCanvas.width = width;
-	newCanvas.height = height;
-
-	let newCanvasContext = newCanvas.getContext('2d');
-
-	if (!newCanvasContext || !canvas) {
-		return '';
-	}
-
-	newCanvasContext.drawImage(
-		canvas,
-		left,
-		top,
-		width,
-		height,
-		0,
-		0,
-		width,
-		height
-	);
-
-	return newCanvas.toDataURL('image/png', 1);
+	return canvas.toDataURL('image/png', 1);
 }

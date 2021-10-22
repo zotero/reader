@@ -19,7 +19,7 @@ export function p2v(position, viewport) {
 	else if (position.paths) {
 		return {
 			pageIndex: position.pageIndex,
-			width: viewport.convertToViewportPoint(position.width, 0)[0],
+			width: position.width * viewport.scale,
 			paths: position.paths.map((path) => {
 				let vpath = [];
 				for (let i = 0; i < path.length - 1; i += 2) {
