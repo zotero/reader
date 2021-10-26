@@ -3,6 +3,18 @@ let annotations = [
 		type: 'ink',
 		color: '#ffd400',
 		sortIndex: '00000|003202|00000',
+		position: { 'paths': [[517.759, 760.229]], 'pageIndex': 0, 'width': 2 },
+		comment: 'asdf',
+		tags: [],
+		id: 44444343434,
+		authorName: '',
+		dateModified: '2020-02-19T12:52:52.190Z',
+		pageLabel: '1'
+	},
+	{
+		type: 'ink',
+		color: '#ffd400',
+		sortIndex: '00000|003202|00000',
 		position: {
 			pageIndex: 0,
 			width: 2.4774284,

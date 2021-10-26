@@ -30,7 +30,7 @@ function Ink({ annotation, isSelected }) {
 			/>
 			<svg xmlns="http://www.w3.org/2000/svg">
 				{annotation.position.paths.map((path, index) => {
-					let svgPath = `M ${path.slice(0, 2).join(',')} L ${path.slice(2).join(',')}`;
+					let svgPath = `M ${path.slice(0, 2).join(',')} L ${path.join(',')}`;
 					return <path
 						key={index}
 						fill="none"
