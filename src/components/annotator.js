@@ -344,7 +344,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (e.target === document.getElementById('viewerContainer') || e.target === document.body) {
 			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
-			if (isMod && e.key === 'a') {
+			if (isMod && !isShift && e.key === 'a') {
 				e.preventDefault();
 			}
 			else if (e.key === 'Enter') {
