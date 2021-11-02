@@ -1,48 +1,51 @@
 'use strict';
 
-import { extractRange } from './text/range';
-import { getClosestOffset } from './text/offset';
-import { getPageLabelPoints, getPageLabel } from './text/page';
+import {
+	extractRange,
+	getClosestOffset,
+	getPageLabelPoints,
+	getPageLabel
+} from './text';
 
 export class Extractor {
 	constructor(pdfViewer) {
 		this.pdfViewer = pdfViewer;
-		this.chsCache = {};
+		this.charsCache = {};
 		this.pageLabelsCache = {};
 		this.pageLabelPointsCache = undefined;
 	}
 
-	async getPageChs(pageIndex) {
-		if (this.chsCache[pageIndex]) {
-			return this.chsCache[pageIndex];
+	async getPageChars(pageIndex) {
+		if (this.charsCache[pageIndex]) {
+			return this.charsCache[pageIndex];
 		}
 
 		let page = await this.pdfViewer.pdfDocument.getPage(pageIndex + 1);
 		let textContent = await page.getTextContent();
 
-		let chs = [];
+		let chars = [];
 		for (let item of textContent.items) {
-			for (let ch of item.chars) {
-				chs.push(ch);
+			for (let char of item.chars) {
+				chars.push(char);
 			}
 		}
 
-		this.chsCache[pageIndex] = chs;
-		return chs;
+		this.charsCache[pageIndex] = chars;
+		return chars;
 	}
 
-	async extractRange(position) {
-		let chs = await this.getPageChs(position.pageIndex);
-		if (!chs.length) {
+	async extractRange({ pageIndex, startPoint, endPoint }) {
+		let chars = await this.getPageChars(pageIndex);
+		if (!chars.length) {
 			return;
 		}
-		let range = extractRange(chs, position.rects, true);
+		let range = extractRange({ chars, startPoint, endPoint });
 		if (!range) {
 			return;
 		}
 		return {
 			position: {
-				pageIndex: position.pageIndex,
+				pageIndex,
 				rects: range.rects
 			},
 			text: range.text,
@@ -51,9 +54,9 @@ export class Extractor {
 	}
 
 	async getSortIndex(position) {
-		let chs = await this.getPageChs(position.pageIndex);
+		let chars = await this.getPageChars(position.pageIndex);
 		let page = position.pageIndex;
-		let offset = chs.length && getClosestOffset(chs, position.rects[0]) || 0;
+		let offset = chars.length && getClosestOffset(chars, position.rects[0]) || 0;
 		let pageHeight = (await this.pdfViewer.pdfDocument.getPage(position.pageIndex + 1)).view[3];
 		let top = pageHeight - position.rects[0][3];
 		if (top < 0) {
@@ -73,11 +76,11 @@ export class Extractor {
 		}
 		for (let i = 0; i < 5 && i + 3 < this.pdfViewer.pdfDocument.numPages; i++) {
 			let pageHeight = (await this.pdfViewer.pdfDocument.getPage(i + 1)).view[3];
-			let chs1 = await this.getPageChs(i);
-			let chs2 = await this.getPageChs(i + 1);
-			let chs3 = await this.getPageChs(i + 2);
-			let chs4 = await this.getPageChs(i + 3);
-			let res = getPageLabelPoints(i, chs1, chs2, chs3, chs4, pageHeight);
+			let chars1 = await this.getPageChars(i);
+			let chars2 = await this.getPageChars(i + 1);
+			let chars3 = await this.getPageChars(i + 2);
+			let chars4 = await this.getPageChars(i + 3);
+			let res = getPageLabelPoints(i, chars1, chars2, chars3, chars4, pageHeight);
 			if (res) {
 				this.pageLabelPointsCache = res;
 				return res;
@@ -94,23 +97,17 @@ export class Extractor {
 			return null;
 		}
 
-		let chsPrev, chsCur, chsNext;
+		let charsPrev, charsCur, charsNext;
 		if (pageIndex > 0) {
-			chsPrev = await this.getPageChs(pageIndex - 1);
+			charsPrev = await this.getPageChars(pageIndex - 1);
 		}
-		chsCur = await this.getPageChs(pageIndex);
+		charsCur = await this.getPageChars(pageIndex);
 
 		if (pageIndex < this.pdfViewer.pdfDocument.numPages - 1) {
-			chsNext = await this.getPageChs(pageIndex + 1);
+			charsNext = await this.getPageChars(pageIndex + 1);
 		}
 
-		let pageLabel = getPageLabel(pageIndex, chsPrev, chsCur, chsNext, points);
-
-		if (pageLabel) {
-			return pageLabel;
-		}
-
-		return null;
+		return getPageLabel(pageIndex, charsPrev, charsCur, charsNext, points);
 	}
 
 	async getPageLabel(pageIndex) {

@@ -6,7 +6,6 @@ import { IntlProvider } from 'react-intl';
 import Annotator from './components/annotator';
 import AnnotationsStore from './annotations-store';
 import { debounce } from './lib/debounce';
-import { extractRange as getRange } from './lib/text/range';
 import { Extractor } from './lib/extract';
 
 class Viewer {
@@ -134,7 +133,7 @@ class Viewer {
 		window.removeEventListener('dragstart', this.handleDragStart);
 		window.PDFViewerApplication.close();
 		this._uninitialized = true;
-		window.extractor.chsCache = {};
+		window.extractor.charsCache = {};
 	}
 
 	_initSelectionBox() {
@@ -162,18 +161,14 @@ class Viewer {
 		PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
 	}
 
-	handlePageRender = async (e) => {
-		let pageIndex = e.pageNumber - 1;
-
-		let chs = await window.extractor.getPageChs(pageIndex);
-
-		let range = getRange(chs, [0, 9999, 0, 9999], false);
-
-		let position = {
-			pageIndex,
-			rects: range ? range.rects : []
-		};
-
+	handlePageRender = async (event) => {
+		// Extract all text rects that will be used for showing text cursor
+		let pageIndex = event.pageNumber - 1;
+		let position = { pageIndex, rects: [] };
+		let selectionRange = await window.extractor.extractRange({ pageIndex });
+		if (selectionRange) {
+			position = selectionRange.position;
+		}
 		window.pageTextPositions[pageIndex] = position;
 	}
 

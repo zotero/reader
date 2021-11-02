@@ -32,39 +32,14 @@ import {
 
 const NOTE_DIMENSIONS = 22;
 
-async function getSelectionRangesRef(positionFrom, positionTo) {
-	let getPageSelectionRange = async (pageIndex, startPoint, endPoint) => {
-		let rect = (await PDFViewerApplication.pdfDocument.getPage(pageIndex + 1)).view.slice();
+async function getSelectionRanges(positionFrom, positionTo) {
+	let selectionRanges = [];
 
-		// extractRange needs rect in PDF coordinates, and v2p
-		// is not available in this function
-		let tmp = rect[1];
-		rect[1] = rect[3];
-		rect[3] = tmp;
-
-		if (startPoint) {
-			rect[0] = startPoint[0];
-			rect[1] = startPoint[1];
-		}
-
-		if (endPoint) {
-			rect[2] = endPoint[0];
-			rect[3] = endPoint[1];
-		}
-
-		let position = {
-			pageIndex,
-			rects: [rect]
-		};
-
-		let extractedRange = await window.extractor.extractRange(position);
-		if (extractedRange) {
-			return extractedRange;
-		}
-		return null;
-	};
-
-	let selectionRangesRef = [];
+	if (positionFrom.pageIndex > positionTo.pageIndex) {
+		let tmp = positionFrom;
+		positionFrom = positionTo;
+		positionTo = tmp;
+	}
 
 	for (let i = positionFrom.pageIndex; i <= positionTo.pageIndex; i++) {
 		let first = i === positionFrom.pageIndex;
@@ -72,8 +47,14 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 
 		let startPoint = first ? [positionFrom.rects[0][0], positionFrom.rects[0][1]] : null;
 		let endPoint = last ? [positionTo.rects[0][0], positionTo.rects[0][1]] : null;
-		let selectionRange = await getPageSelectionRange(i, startPoint, endPoint);
-		if (!selectionRange) continue;
+		let selectionRange = await window.extractor.extractRange({
+			pageIndex: i,
+			startPoint,
+			endPoint
+		});
+		if (!selectionRange) {
+			continue;
+		}
 
 		let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(selectionRange.position.pageIndex + 1)).view[3];
 		let top = pageHeight - selectionRange.position.rects[0][3];
@@ -91,10 +72,10 @@ async function getSelectionRangesRef(positionFrom, positionTo) {
 
 		delete selectionRange.offset;
 
-		selectionRangesRef.push(selectionRange);
+		selectionRanges.push(selectionRange);
 	}
 
-	return selectionRangesRef;
+	return selectionRanges;
 }
 
 const Annotator = React.forwardRef((props, ref) => {
@@ -1083,21 +1064,21 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (pointerDownPositionRef.current && enableSelectionRef.current) {
 			setIsSelectingText(true);
 
-			let selectionEndPosition = position;
-			// restrictTextSelectionToPage
-			if (modeRef.current === 'highlight' && selectionEndPosition.pageIndex !== pointerDownPositionRef.current.pageIndex) {
-				let p = pointerDownPositionRef.current;
-				selectionEndPosition = {
-					pageIndex: p.pageIndex,
-					rects: [[9999, 0, 9999, 0]]
-				};
-			}
+			// let selectionEndPosition = position;
+			// // restrictTextSelectionToPage
+			// if (modeRef.current === 'highlight' && selectionEndPosition.pageIndex !== pointerDownPositionRef.current.pageIndex) {
+			// 	let p = pointerDownPositionRef.current;
+			// 	selectionEndPosition = {
+			// 		pageIndex: p.pageIndex,
+			// 		rects: [[9999, 0, 9999, 0]]
+			// 	};
+			// }
 
 			(async () => {
-				let selectionRangesRef = await getSelectionRangesRef(pointerDownPositionRef.current, selectionEndPosition);
-				// Check enableSelectionRef.current again after await
+				let selectionRanges = await getSelectionRanges(pointerDownPositionRef.current, position);
+				// Checks enableSelectionRef.current again after await
 				if (enableSelectionRef.current) {
-					setSelectionRangesRef(selectionRangesRef);
+					setSelectionRangesRef(selectionRanges);
 				}
 			})();
 		}
