@@ -253,12 +253,10 @@ class Viewer {
 
 	handleDragStart = (event) => {
 		if (event.target.nodeType === Node.ELEMENT_NODE
-			&& event.target.closest('.annotationLayer')) {
-			event.preventDefault();
-		}
-
-		if (!event.target.closest('#viewer')
-			&& !event.target.closest('#annotationsView')) {
+			&& (event.target.closest('.annotationLayer')
+				|| !event.target.closest('#viewer')
+				&& !event.target.closest('#annotationsView')
+			)) {
 			event.preventDefault();
 		}
 	}
