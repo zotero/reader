@@ -591,7 +591,7 @@ function _getClosestWord(chars, rect) {
 	let char = chars[offset];
 	let line = lines.find(line => line.chars.includes(char));
 	let word = line.words.find(word => word.chars.includes(char));
-	return { anchorOffset: word.offset, headOffset: word.offset + word.chars.length - 1 };
+	return { anchorOffset: word.offset, headOffset: word.offset + word.chars.length };
 }
 
 function _getClosestLine(chars, rect) {
@@ -602,7 +602,7 @@ function _getClosestLine(chars, rect) {
 	let offset = _getClosestOffset(chars, rect);
 	let char = chars[offset];
 	let line = lines.find(line => line.chars.includes(char));
-	return { anchorOffset: line.offset, headOffset: line.offset + line.chars.length - 1 };
+	return { anchorOffset: line.offset, headOffset: line.offset + line.chars.length };
 }
 
 export let getClosestOffset = _getClosestOffset;
