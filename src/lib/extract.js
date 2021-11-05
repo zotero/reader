@@ -1,10 +1,14 @@
 'use strict';
 
 import {
-	extractRange,
 	getClosestOffset,
 	getPageLabelPoints,
-	getPageLabel
+	getPageLabel,
+	getRangeBySelection,
+	getNextLineClosestOffset,
+	getPrevLineClosestOffset,
+	getClosestWord,
+	getClosestLine
 } from './text';
 
 export class Extractor {
@@ -26,7 +30,10 @@ export class Extractor {
 		let chars = [];
 		for (let item of textContent.items) {
 			for (let char of item.chars) {
-				chars.push(char);
+				// Note: Rotation is rounded in PDF.js
+				if (char.rotation % 90 === 0 && char.c !== ' ') {
+					chars.push(char);
+				}
 			}
 		}
 
@@ -34,23 +41,47 @@ export class Extractor {
 		return chars;
 	}
 
-	async extractRange({ pageIndex, startPoint, endPoint }) {
-		let chars = await this.getPageChars(pageIndex);
-		if (!chars.length) {
-			return;
+	getPageCharsSync(pageIndex) {
+		let chars = this.charsCache[pageIndex];
+		return chars && chars.length ? chars : null;
+	}
+
+	getNextLineClosestOffset(pageIndex, offset) {
+		let chars = this.getPageCharsSync(pageIndex);
+		return chars && getNextLineClosestOffset(chars, offset);
+	}
+
+	getPrevLineClosestOffset(pageIndex, offset) {
+		let chars = this.getPageCharsSync(pageIndex);
+		return chars && getPrevLineClosestOffset(chars, offset);
+	}
+
+	getClosestWord(position) {
+		let chars = this.getPageCharsSync(position.pageIndex);
+		return chars && getClosestWord(chars, position.rects[0]);
+	}
+
+	getClosestLine(position) {
+		let chars = this.getPageCharsSync(position.pageIndex);
+		return chars && getClosestLine(chars, position.rects[0]);
+	}
+
+	extractRange({ pageIndex, anchor, head, reverse }) {
+		let chars = this.getPageCharsSync(pageIndex);
+		if (!chars) {
+			return null;
 		}
-		let range = extractRange({ chars, startPoint, endPoint });
+		let range = getRangeBySelection({ chars, anchor, head, reverse });
 		if (!range) {
-			return;
+			return null;
 		}
-		return {
-			position: {
-				pageIndex,
-				rects: range.rects
-			},
-			text: range.text,
-			offset: range.offset
+
+		range.position = {
+			pageIndex,
+			rects: range.rects
 		};
+		delete range.rects;
+		return range;
 	}
 
 	async getSortIndex(position) {

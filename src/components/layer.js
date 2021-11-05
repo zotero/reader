@@ -432,16 +432,17 @@ function Layer(props) {
 
 	useEffect(() => {
 		containerNode = document.getElementById('viewerContainer');
-		containerNode.addEventListener('pointerdown', handlePointerDownCallback);
-		containerNode.addEventListener('pointermove', handlePointerMoveCallback);
+		// event.detail doesn't work with pointerdown
+		containerNode.addEventListener('mousedown', handlePointerDownCallback);
+		containerNode.addEventListener('mousemove', handlePointerMoveCallback);
 		containerNode.addEventListener('pointerup', handlePointerUpDownCallback);
 
 		viewer = window.PDFViewerApplication.pdfViewer;
 		viewer.eventBus.on('pagerendered', handlePageRenderCallback);
 
 		return () => {
-			containerNode.removeEventListener('pointerdown', handlePointerDownCallback);
-			containerNode.removeEventListener('pointermove', handlePointerMoveCallback);
+			containerNode.removeEventListener('mousedown', handlePointerDownCallback);
+			containerNode.removeEventListener('mousemove', handlePointerMoveCallback);
 			containerNode.removeEventListener('pointerup', handlePointerUpDownCallback);
 			viewer.eventBus.off('pagerendered', handlePageRenderCallback);
 		};

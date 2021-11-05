@@ -26,55 +26,143 @@ import {
 	isLinux
 } from '../lib/utilities';
 
-// All rects in annotator.js are stored in [left, top, right, bottom] order
+// Note: All rects in annotator.js are stored in [left, top, right, bottom] order
 // where the Y axis starts from the bottom:
 // [231.284, 402.126, 293.107, 410.142]
 
 const NOTE_DIMENSIONS = 22;
 
-async function getSelectionRanges(positionFrom, positionTo) {
-	let selectionRanges = [];
-
-	if (positionFrom.pageIndex > positionTo.pageIndex) {
-		let tmp = positionFrom;
-		positionFrom = positionTo;
-		positionTo = tmp;
+function getModifiedSelectionRanges(selectionRanges, modifier) {
+	if (!selectionRanges.length) {
+		return [];
 	}
 
-	for (let i = positionFrom.pageIndex; i <= positionTo.pageIndex; i++) {
-		let first = i === positionFrom.pageIndex;
-		let last = i === positionTo.pageIndex;
+	let range = selectionRanges.find(x => x.anchor);
+	let anchor = {
+		pageIndex: range.position.pageIndex,
+		offset: range.anchorOffset
+	};
 
-		let startPoint = first ? [positionFrom.rects[0][0], positionFrom.rects[0][1]] : null;
-		let endPoint = last ? [positionTo.rects[0][0], positionTo.rects[0][1]] : null;
-		let selectionRange = await window.extractor.extractRange({
+	range = selectionRanges.find(x => x.head);
+	let head = {
+		pageIndex: range.position.pageIndex,
+		offset: range.headOffset
+	};
+	if (modifier === 'left') {
+		head.offset--;
+	}
+	else if (modifier === 'right') {
+		head.offset++;
+	}
+	else if (modifier === 'up') {
+		head.offset = window.extractor.getPrevLineClosestOffset(head.pageIndex, head.offset);
+		if (head.offset === null) {
+			return [];
+		}
+	}
+	else if (modifier === 'down') {
+		head.offset = window.extractor.getNextLineClosestOffset(head.pageIndex, head.offset);
+		if (head.offset === null) {
+			return [];
+		}
+	}
+	else if (typeof modifier === 'object') {
+		let position = modifier;
+		head = position;
+	}
+	return getSelectionRanges(anchor, head);
+}
+
+function getWordSelectionRanges(position) {
+	let res = window.extractor.getClosestWord(position);
+	if (!res) {
+		return [];
+	}
+	let { anchorOffset, headOffset } = res;
+
+	let anchor = {
+		pageIndex: position.pageIndex,
+		offset: anchorOffset
+	};
+
+	let head = {
+		pageIndex: position.pageIndex,
+		offset: headOffset
+	};
+	return getSelectionRanges(anchor, head);
+}
+
+function getLineSelectionRanges(position) {
+	let res = window.extractor.getClosestLine(position);
+	if (!res) {
+		return [];
+	}
+	let { anchorOffset, headOffset } = res;
+
+	let anchor = {
+		pageIndex: position.pageIndex,
+		offset: anchorOffset
+	};
+
+	let head = {
+		pageIndex: position.pageIndex,
+		offset: headOffset
+	};
+	return getSelectionRanges(anchor, head);
+}
+
+function getSelectionRanges(anchor, head) {
+	let selectionRanges = [];
+	let fromPageIndex = Math.min(anchor.pageIndex, head.pageIndex);
+	let toPageIndex = Math.max(anchor.pageIndex, head.pageIndex);
+	let reverse = anchor.pageIndex > head.pageIndex;
+	for (let i = fromPageIndex; i <= toPageIndex; i++) {
+		let a, h;
+		if (i === anchor.pageIndex) {
+			a = anchor.offset !== undefined ? anchor.offset : [anchor.rects[0][0], anchor.rects[0][1]];
+		}
+
+		if (i === head.pageIndex) {
+			h = head.offset !== undefined ? head.offset : [head.rects[0][0], head.rects[0][1]];
+		}
+
+		let selectionRange = window.extractor.extractRange({
 			pageIndex: i,
-			startPoint,
-			endPoint
+			anchor: a,
+			head: h,
+			reverse
 		});
 		if (!selectionRange) {
-			continue;
+			return [];
 		}
 
-		let pageHeight = (await PDFViewerApplication.pdfDocument.getPage(selectionRange.position.pageIndex + 1)).view[3];
-		let top = pageHeight - selectionRange.position.rects[0][3];
-		if (top < 0) {
-			top = 0;
+		if (i === anchor.pageIndex) {
+			selectionRange.anchor = true;
 		}
 
-		// TODO: Unify all annotations sort index calculation
-		let offset = selectionRange.offset;
-		selectionRange.sortIndex = [
-			i.toString().slice(0, 5).padStart(5, '0'),
-			offset.toString().slice(0, 6).padStart(6, '0'),
-			Math.floor(top).toString().slice(0, 5).padStart(5, '0')
-		].join('|');
+		if (i === head.pageIndex) {
+			selectionRange.head = true;
+		}
 
-		delete selectionRange.offset;
+		if (!selectionRange.collapsed) {
+			// We can synchronously get page viewbox from page view, because it's already loaded when selecting
+			let pageHeight = PDFViewerApplication.pdfViewer.getPageView(selectionRange.position.pageIndex).viewport.viewBox[3];
+			let top = pageHeight - selectionRange.position.rects[0][3];
+			if (top < 0) {
+				top = 0;
+			}
+
+			// TODO: Unify all annotations sort index calculation
+			let offset = Math.min(selectionRange.anchorOffset, selectionRange.headOffset);
+			selectionRange.sortIndex = [
+				i.toString().slice(0, 5).padStart(5, '0'),
+				offset.toString().slice(0, 6).padStart(6, '0'),
+				Math.floor(top).toString().slice(0, 5).padStart(5, '0')
+			].join('|');
+		}
 
 		selectionRanges.push(selectionRange);
 	}
-
 	return selectionRanges;
 }
 
@@ -116,8 +204,12 @@ const Annotator = React.forwardRef((props, ref) => {
 	}));
 
 	function setSelectionRangesRef(ranges) {
-		setSelectionPositions(ranges.map(r => r.position));
+		setSelectionPositions(ranges.filter(x => !x.collapsed).map(x => x.position));
 		selectionRangesRef.current = ranges;
+	}
+
+	function hasSelection() {
+		return !!selectionRangesRef.current.filter(x => !x.collapsed).length;
 	}
 
 	function scrollSidebarTo(id) {
@@ -273,6 +365,25 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (isMod && e.key === 'c') return;
 
+		if (isShift && selectionRangesRef.current.length) {
+			if (e.key === 'ArrowLeft') {
+				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'left');
+				setSelectionRangesRef(selectionRanges);
+			}
+			else if (e.key === 'ArrowRight') {
+				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'right');
+				setSelectionRangesRef(selectionRanges);
+			}
+			else if (e.key === 'ArrowUp') {
+				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'up');
+				setSelectionRangesRef(selectionRanges);
+			}
+			else if (e.key === 'ArrowDown') {
+				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'down');
+				setSelectionRangesRef(selectionRanges);
+			}
+		}
+
 		if ((isCmd || isCtrl && isLinux()) && e.key === '['
 			|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowLeft') {
 			window.history.back();
@@ -374,7 +485,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			|| document.activeElement === document.body) {
 			let annotations = [];
 
-			if (selectionRangesRef.current.length) {
+			if (hasSelection()) {
 				annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 			}
 			else if (selectedIDsRef.current.length) {
@@ -451,7 +562,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 
 			if (enableSelectionRef.current
-				|| selectionRangesRef.current.length < 1
+				|| !hasSelection()
 				|| !pointerInSelection) {
 				event.preventDefault();
 				return;
@@ -866,9 +977,29 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isLeft = event.button === 0;
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
+
 		pointerDownPositionRef.current = position;
 
 		setIsPopupDisabled(false);
+
+		if (event.detail === 2) {
+			let selectionRanges = getWordSelectionRanges(position);
+			setSelectionRangesRef(selectionRanges);
+			return;
+		}
+		else if (event.detail === 3) {
+			let selectionRanges = getLineSelectionRanges(position);
+			setSelectionRangesRef(selectionRanges);
+			return;
+		}
+
+		if (isShift && selectionRangesRef.current.length) {
+			setIsSelectingText(true);
+			setEnableSelection(true);
+			let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, position);
+			setSelectionRangesRef(selectionRanges);
+			return;
+		}
 
 		if (PDFViewerApplication.pdfCursorTools.handTool.active) {
 			return true;
@@ -965,18 +1096,18 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handlePointerUp = useCallback((event) => {
-		if (selectionRangesRef.current.length === 1) {
-			if (modeRef.current === 'highlight') {
-				let selectionRange = selectionRangesRef.current[0];
+		if (modeRef.current === 'highlight') {
+			let ranges = selectionRangesRef.current.filter(x => !x.collapsed);
+			for (let range of ranges) {
 				props.onAddAnnotation({
 					type: 'highlight',
 					color: colorRef.current,
-					sortIndex: selectionRange.sortIndex,
-					position: selectionRange.position,
-					text: selectionRange.text
+					sortIndex: range.sortIndex,
+					position: range.position,
+					text: range.text
 				});
-				setSelectionRangesRef([]);
 			}
+			setSelectionRangesRef([]);
 		}
 
 		if (event.target === document.getElementById('viewer')) {
@@ -1042,7 +1173,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let textPosition = window.pageTextPositions[position.pageIndex];
 		let overText = (
 			!['note', 'image'].includes(modeRef.current)
-			&& !intersectsWithSelectedText(position)
+			&& (!intersectsWithSelectedText(position) || isShift)
 			&& (textPosition && intersectAnnotationWithPoint(textPosition, position))
 			|| isSelectingTextRef.current
 		);
@@ -1063,24 +1194,14 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (pointerDownPositionRef.current && enableSelectionRef.current) {
 			setIsSelectingText(true);
-
-			// let selectionEndPosition = position;
-			// // restrictTextSelectionToPage
-			// if (modeRef.current === 'highlight' && selectionEndPosition.pageIndex !== pointerDownPositionRef.current.pageIndex) {
-			// 	let p = pointerDownPositionRef.current;
-			// 	selectionEndPosition = {
-			// 		pageIndex: p.pageIndex,
-			// 		rects: [[9999, 0, 9999, 0]]
-			// 	};
-			// }
-
-			(async () => {
-				let selectionRanges = await getSelectionRanges(pointerDownPositionRef.current, position);
-				// Checks enableSelectionRef.current again after await
-				if (enableSelectionRef.current) {
-					setSelectionRangesRef(selectionRanges);
-				}
-			})();
+			if (selectionRangesRef.current.length) {
+				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, position);
+				setSelectionRangesRef(selectionRanges);
+			}
+			else {
+				let selectionRanges = getSelectionRanges(pointerDownPositionRef.current, position);
+				setSelectionRangesRef(selectionRanges);
+			}
 		}
 	}, []);
 
@@ -1089,18 +1210,17 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleLayerSelectionPopupHighlight = useCallback((color) => {
-		if (selectionRangesRef.current.length === 1) {
-			let selectionRange = selectionRangesRef.current[0];
+		let ranges = selectionRangesRef.current.filter(x => !x.collapsed);
+		for (let range of ranges) {
 			props.onAddAnnotation({
 				type: 'highlight',
 				color,
-				sortIndex: selectionRange.sortIndex,
-				position: selectionRange.position,
-				text: selectionRange.text
+				sortIndex: range.sortIndex,
+				position: range.position,
+				text: range.text
 			});
-
-			setSelectionRangesRef([]);
 		}
+		setSelectionRangesRef([]);
 	}, []);
 
 	const handleLayerSelectionPopupCopy = useCallback(() => {

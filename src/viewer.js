@@ -165,7 +165,8 @@ class Viewer {
 		// Extract all text rects that will be used for showing text cursor
 		let pageIndex = event.pageNumber - 1;
 		let position = { pageIndex, rects: [] };
-		let selectionRange = await window.extractor.extractRange({ pageIndex });
+		await window.extractor.getPageChars(pageIndex);
+		let selectionRange = window.extractor.extractRange({ pageIndex });
 		if (selectionRange) {
 			position = selectionRange.position;
 		}

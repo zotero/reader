@@ -290,10 +290,12 @@ function overlaps(char1, char2) {
 function getLines(chars) {
 	let lines = [];
 	let line = {
+		offset: 0,
 		chars: [chars[0]],
 		vertical: [90, 270].includes(chars[0].rotation)
 	};
-	for (let char of chars) {
+	for (let i = 0; i < chars.length; i++) {
+		let char = chars[i];
 		let prevChar = line.chars[line.chars.length - 1];
 		if (
 			// Caret jumps to the next line start
@@ -307,7 +309,7 @@ function getLines(chars) {
 			|| !overlaps(prevChar, char)
 		) {
 			lines.push(line);
-			line = { chars: [char], vertical: [90, 270].includes(char.rotation) };
+			line = { offset: i, chars: [char], vertical: [90, 270].includes(char.rotation) };
 		}
 		else {
 			line.chars.push(char);
@@ -344,7 +346,7 @@ function getLines(chars) {
 					break;
 				}
 			}
-			line.words.push({ chars: line.chars.slice(i, j), spaceAfter });
+			line.words.push({ offset: line.offset + i, chars: line.chars.slice(i, j), spaceAfter });
 			i = j;
 		}
 	}
@@ -372,89 +374,80 @@ function getCenterRect(r) {
 	];
 }
 
-function getRangeBySelectionPoints(chars, p1, p2) {
-	let idx1 = 0, idx2 = chars.length - 1;
+function _getRangeBySelection({ chars, anchor, head, reverse }) {
+	// Note: Offsets can be between 0 and chars.length (the cursor can after the last char)
+	if (!chars.length) {
+		return null;
+	}
+	let anchorOffset = reverse ? chars.length - 1 : 0;
+	let headOffset = reverse ? 0 : chars.length - 1;
 	let x1, y1, x2, y2;
-
-	if (p1) {
-		[x1, y1] = p1;
-		idx1 = _getClosestOffset(chars, [x1, y1, x1, y1]);
+	if (Number.isInteger(anchor)) {
+		anchorOffset = anchor;
+		anchorOffset = anchorOffset < 0 ? 0 : anchorOffset;
+		anchorOffset = anchorOffset > chars.length ? chars.length : anchorOffset;
 	}
-	if (p2) {
-		[x2, y2] = p2;
-		idx2 = _getClosestOffset(chars, [x2, y2, x2, y2]);
+	else if (Array.isArray(anchor)) {
+		[x1, y1] = anchor;
+		anchorOffset = _getClosestOffset(chars, [x1, y1, x1, y1]);
 	}
-
-	let start = 'before';
-
-	if (p1) {
-		let { rotation, rect } = chars[idx1];
+	if (Number.isInteger(head)) {
+		headOffset = head;
+		headOffset = headOffset < 0 ? 0 : headOffset;
+		headOffset = headOffset > chars.length ? chars.length : headOffset;
+	}
+	else if (Array.isArray(head)) {
+		[x2, y2] = head;
+		headOffset = _getClosestOffset(chars, [x2, y2, x2, y2]);
+	}
+	if (Array.isArray(anchor)) {
+		let { rotation, rect } = chars[anchorOffset];
 		if (!rotation && x1 > rect[0] + (rect[2] - rect[0]) / 2
 			|| rotation === 90 && y1 > rect[1] + (rect[3] - rect[1]) / 2
 			|| rotation === 180 && x1 < rect[0] + (rect[2] - rect[0]) / 2
 			|| rotation === 270 && y1 < rect[1] + (rect[3] - rect[1]) / 2) {
-			start = 'after';
+			anchorOffset++;
+		}
+	}
+	if (Array.isArray(head)) {
+		let { rotation, rect } = chars[headOffset];
+		if (!rotation && x2 > rect[0] + (rect[2] - rect[0]) / 2
+			|| rotation === 90 && y2 > rect[1] + (rect[3] - rect[1]) / 2
+			|| rotation === 180 && x2 < rect[0] + (rect[2] - rect[0]) / 2
+			|| rotation === 270 && y2 < rect[1] + (rect[3] - rect[1]) / 2) {
+			headOffset++;
 		}
 	}
 
-	let end = 'after';
-	if (p2) {
-		let { rotation, rect } = chars[idx2];
-		if (!rotation && x2 < rect[0] + (rect[2] - rect[0]) / 2
-			|| rotation === 90 && y2 < rect[1] + (rect[3] - rect[1]) / 2
-			|| rotation === 180 && x2 > rect[0] + (rect[2] - rect[0]) / 2
-			|| rotation === 270 && y2 > rect[1] + (rect[3] - rect[1]) / 2) {
-			end = 'before';
-		}
-	}
-
-	let initialIdx1 = idx1;
-	let initialIdx2 = idx2;
-	if (idx1 < idx2) {
-		if (start === 'after') {
-			idx1++;
-		}
-		if (end === 'before') {
-			idx2--;
-		}
-	}
-	else if (idx1 > idx2) {
-		if (start === 'before') {
-			idx1--;
-		}
-		if (end === 'after') {
-			idx2++;
-		}
-	}
-	else if (start === end) {
-		return null;
-	}
-	if (Math.abs(idx1 - idx2) === 1
-		&& initialIdx1 === idx2
-		&& initialIdx2 === idx1) {
-		return null;
-	}
-	return idx1 < idx2 ? [idx1, idx2] : [idx2, idx1];
+	return getRange(chars, anchorOffset, headOffset);
 }
 
-function getRangeByHighlightRects(chars, rects) {
-	let startIndex = Infinity;
+function _getRangeByHighlight(chars, rects) {
+	if (!chars.length) {
+		return null;
+	}
+	let anchorOffset = Infinity;
 	for (let i = 0; i < chars.length; i++) {
 		let char = chars[i];
 		if (quickIntersectRect(getCenterRect(char.rect), rects[0])) {
-			startIndex = i;
+			anchorOffset = i;
 			break;
 		}
 	}
-	let endIndex = 0;
+	let headOffset = 0;
 	for (let i = chars.length - 1; i >= 0; i--) {
 		let char = chars[i];
 		if (quickIntersectRect(getCenterRect(char.rect), rects[rects.length - 1])) {
-			endIndex = i;
+			headOffset = i;
 			break;
 		}
 	}
-	return startIndex < endIndex ? [startIndex, endIndex] : null;
+
+	if (anchorOffset > headOffset) {
+		return null;
+	}
+
+	return getRange(chars, anchorOffset, headOffset);
 }
 
 function getLineSelectionRect(line, charFrom, charTo) {
@@ -476,99 +469,150 @@ function getLineSelectionRect(line, charFrom, charTo) {
 	}
 }
 
-function _extractRange({ chars, rects, startPoint, endPoint }) {
-	// Note: Rotation is rounded in PDF.js
-	chars = chars.filter(x => x.rotation % 90 === 0 && x.c !== ' ');
+function getRange(chars, anchorOffset, headOffset) {
+	let lines = getLines(chars);
+	let charStart;
+	let charEnd;
+	if (anchorOffset < headOffset) {
+		charStart = chars[anchorOffset];
+		charEnd = chars[headOffset - 1];
+	}
+	else if (anchorOffset > headOffset) {
+		charStart = chars[headOffset];
+		charEnd = chars[anchorOffset - 1];
+	}
+	else {
+		return { collapsed: true, anchorOffset, headOffset, rects: [], text: '' };
+	}
+
+	// Get text
+	let text = '';
+	let extracting = false;
+
+	loop1: for (let line of lines) {
+		for (let word of line.words) {
+			let isLastWord = word === line.words[line.words.length - 1];
+			for (let char of word.chars) {
+				let isLastChar = char === word.chars[word.chars.length - 1];
+				if (char === charStart) {
+					extracting = true;
+				}
+				if (!extracting || isLastWord && isLastChar && isDash(char.c) && char !== charEnd) {
+					continue;
+				}
+				text += char.c;
+				if ((isLastChar && word.spaceAfter)
+					|| (isLastWord && isLastChar && text[text.length - 1] !== ' ')) {
+					text += ' ';
+				}
+				if (char === charEnd) {
+					break loop1;
+				}
+			}
+		}
+	}
+	text = text.trim();
+	// Get rects
+	extracting = false;
+	let rects = [];
+	loop2: for (let line of lines) {
+		let charFrom = null;
+		let charTo = null;
+		for (let word of line.words) {
+			for (let char of word.chars) {
+				if (char === charStart || extracting && !charFrom) {
+					extracting = true;
+					charFrom = char;
+				}
+				if (extracting) {
+					charTo = char;
+					if (char === charEnd) {
+						rects.push(getLineSelectionRect(line, charFrom, charTo));
+						break loop2;
+					}
+				}
+			}
+		}
+		if (extracting) {
+			rects.push(getLineSelectionRect(line, charFrom, charTo));
+			charFrom = null;
+		}
+	}
+	rects = rects.map(rect => rect.map(value => parseFloat(value.toFixed(3))));
+	return { anchorOffset, headOffset, rects, text };
+}
+
+function _getNextLineClosestOffset(chars, offset) {
+	if (!chars.length) {
+		return null;
+	}
+	if (offset < 0) {
+		offset = 0;
+	}
+	else if (offset >= chars.length) {
+		offset = chars.length - 1;
+	}
+	let lines = getLines(chars);
+	let char = chars[offset];
+	let idx = lines.findIndex(line => line.chars.includes(char));
+	if (idx < lines.length - 1) {
+		let line = lines[idx + 1];
+		return line.offset + getClosestOffset(line.chars, char.rect);
+	}
+	return chars.length;
+}
+
+function _getPrevLineClosestOffset(chars, offset) {
+	if (!chars.length) {
+		return null;
+	}
+	if (offset < 0) {
+		offset = 0;
+	}
+	else if (offset >= chars.length) {
+		offset = chars.length - 1;
+	}
+	let lines = getLines(chars);
+	let char = chars[offset];
+	let idx = lines.findIndex(line => line.chars.includes(char));
+	if (idx > 0) {
+		let line = lines[idx - 1];
+		return line.offset + _getClosestOffset(line.chars, char.rect);
+	}
+	return 0;
+}
+
+function _getClosestWord(chars, rect) {
 	if (!chars.length) {
 		return null;
 	}
 	let lines = getLines(chars);
-	let range;
-	if (rects) {
-		range = getRangeByHighlightRects(chars, rects);
-		if (!range) {
-			return null;
-		}
+	let offset = _getClosestOffset(chars, rect);
+	let char = chars[offset];
+	let line = lines.find(line => line.chars.includes(char));
+	let word = line.words.find(word => word.chars.includes(char));
+	return { anchorOffset: word.offset, headOffset: word.offset + word.chars.length - 1 };
+}
+
+function _getClosestLine(chars, rect) {
+	if (!chars.length) {
+		return null;
 	}
-	else if (startPoint || endPoint) {
-		range = getRangeBySelectionPoints(chars, startPoint, endPoint);
-		if (!range) {
-			return null;
-		}
-		if (!startPoint) {
-			range[0] = 0;
-		}
-		else if (!endPoint) {
-			range[1] = chars.length - 1;
-		}
-	}
-	else {
-		range = [0, chars.length - 1];
-	}
-	let charStart = chars[range[0]];
-	let charEnd = chars[range[1]];
-	// Get text
-	let text = '';
-	let extracting = false;
-	loop1:
-		for (let line of lines) {
-			for (let word of line.words) {
-				let isLastWord = word === line.words[line.words.length - 1];
-				for (let char of word.chars) {
-					let isLastChar = char === word.chars[word.chars.length - 1];
-					if (char === charStart) {
-						extracting = true;
-					}
-					if (!extracting || isLastWord && isLastChar && isDash(char.c) && char !== charEnd) {
-						continue;
-					}
-					text += char.c;
-					if ((isLastChar && word.spaceAfter)
-						|| (isLastWord && isLastChar && text[text.length - 1] !== ' ')) {
-						text += ' ';
-					}
-					if (char === charEnd) {
-						break loop1;
-					}
-				}
-			}
-		}
-	text = text.trim();
-	// Get rects
-	extracting = false;
-	let rangeRects = [];
-	loop2:
-		for (let line of lines) {
-			let charFrom = null;
-			let charTo = null;
-			for (let word of line.words) {
-				for (let char of word.chars) {
-					if (char === charStart || extracting && !charFrom) {
-						extracting = true;
-						charFrom = char;
-					}
-					if (extracting) {
-						charTo = char;
-						if (char === charEnd) {
-							rangeRects.push(getLineSelectionRect(line, charFrom, charTo));
-							break loop2;
-						}
-					}
-				}
-			}
-			if (extracting) {
-				rangeRects.push(getLineSelectionRect(line, charFrom, charTo));
-				charFrom = null;
-			}
-		}
-	rangeRects = rangeRects.map(rect => rect.map(value => parseFloat(value.toFixed(3))));
-	return { offset: range[0], rects: rangeRects, text };
+	let lines = getLines(chars);
+	let offset = _getClosestOffset(chars, rect);
+	let char = chars[offset];
+	let line = lines.find(line => line.chars.includes(char));
+	return { anchorOffset: line.offset, headOffset: line.offset + line.chars.length - 1 };
 }
 
 export let getClosestOffset = _getClosestOffset;
 export let getPageLabelPoints = _getPageLabelPoints;
 export let getPageLabel = _getPageLabel;
-export let extractRange = _extractRange;
+export let getRangeBySelection = _getRangeBySelection;
+export let getNextLineClosestOffset = _getNextLineClosestOffset;
+export let getPrevLineClosestOffset = _getPrevLineClosestOffset;
+export let getClosestWord = _getClosestWord;
+export let getClosestLine = _getClosestLine;
 
 // module.exports = {
 // 	getClosestOffset: _getClosestOffset,
