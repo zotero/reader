@@ -294,7 +294,7 @@ function getLines(chars) {
 		chars: [chars[0]],
 		vertical: [90, 270].includes(chars[0].rotation)
 	};
-	for (let i = 0; i < chars.length; i++) {
+	for (let i = 1; i < chars.length; i++) {
 		let char = chars[i];
 		let prevChar = line.chars[line.chars.length - 1];
 		if (
@@ -443,11 +443,17 @@ function _getRangeByHighlight(chars, rects) {
 		}
 	}
 
+	headOffset++;
+
 	if (anchorOffset > headOffset) {
 		return null;
 	}
 
-	return getRange(chars, anchorOffset, headOffset);
+	let range = getRange(chars, anchorOffset, headOffset);
+	range.offset = range.anchorOffset;
+	delete range.anchorOffset;
+	delete range.headOffset;
+	return range;
 }
 
 function getLineSelectionRect(line, charFrom, charTo) {
@@ -501,8 +507,9 @@ function getRange(chars, anchorOffset, headOffset) {
 					continue;
 				}
 				text += char.c;
-				if ((isLastChar && word.spaceAfter)
-					|| (isLastWord && isLastChar && text[text.length - 1] !== ' ')) {
+				if (isLastChar
+					&& (word.spaceAfter || isLastWord)
+					&& text[text.length - 1] !== ' ') {
 					text += ' ';
 				}
 				if (char === charEnd) {
@@ -618,5 +625,5 @@ export let getClosestLine = _getClosestLine;
 // 	getClosestOffset: _getClosestOffset,
 // 	getPageLabelPoints: _getPageLabelPoints,
 // 	getPageLabel: _getPageLabel,
-// 	extractRange: _extractRange
+// 	getRangeByHighlight: _getRangeByHighlight
 // };
