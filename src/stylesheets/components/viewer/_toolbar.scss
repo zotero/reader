@@ -152,16 +152,18 @@
 			}
 		}
 
-		&.visiblePageIsLoading {
-			background: icon-url("spinner-14px.png"), $page-number-bg;
-			background-repeat: no-repeat;
-			background-position: $page-number-loading-x center, left top;
-			background-size: 14px 14px, auto;
-
-			@include retina {
-				background-image: icon-url("spinner-14px@2x.png"), $page-number-bg;
-			}
-		}
+		// Disable spinner until migrated to a newer Firefox version that
+		// is more efficient with animations, especially on Apple Silicon
+		//&.visiblePageIsLoading {
+		//	background: icon-url("spinner-14px.png"), $page-number-bg;
+		//	background-repeat: no-repeat;
+		//	background-position: $page-number-loading-x center, left top;
+		//	background-size: 14px 14px, auto;
+		//
+		//	@include retina {
+		//		background-image: icon-url("spinner-14px@2x.png"), $page-number-bg;
+		//	}
+		//}
 
 		.is-blurred & {
 			background: $toolbar-btn-blurred-bg;
