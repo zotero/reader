@@ -287,6 +287,13 @@ function overlaps(char1, char2) {
 	);
 }
 
+function charHeight(char) {
+	return (!char.rotation && char.rect[3] - char.rect[1]
+		|| char.rotation === 90 && char.rect[2] - char.rect[0]
+		|| char.rotation === 180 && char.rect[1] - char.rect[3]
+		|| char.rotation === 270 && char.rect[0] - char.rect[2]);
+}
+
 function getLines(chars) {
 	let lines = [];
 	let line = {
@@ -307,6 +314,8 @@ function getLines(chars) {
 			|| prevChar.rotation !== char.rotation
 			// Chars aren't in the same line
 			|| !overlaps(prevChar, char)
+			// Line's first char is more than 2x larger than the following char
+			|| line.chars.length === 1 && charHeight(prevChar) > charHeight(char) * 2
 		) {
 			lines.push(line);
 			line = { offset: i, chars: [char], vertical: [90, 270].includes(char.rotation) };
