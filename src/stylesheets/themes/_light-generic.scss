@@ -37,7 +37,6 @@ $selection-bg: rgba($accent-color, 0.99);
 
 // Z-index master list
 $z-index-page-popup: 10;
-$z-index-import-bar: 20;
 $z-index-error-wrapper: 1000;
 $z-index-findbar: 10000;
 $z-index-overlay: 40000;
@@ -380,15 +379,6 @@ $collapsed-height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)
 $editor-border: $preview-border;
 $editor-selected-border: $preview-selected-border;
 
-// Import bar
-$import-bar-min-height: 30px;
-$import-bar-bg: $accent-color;
-$import-bar-color: #fff;
-$import-bar-btn-focus-border-radius: null;
-$import-bar-btn-focus-box-shadow: null;
-$import-bar-btn-focus-box-shadow-2x: null;
-$import-bar-btn-dismiss-offset: 0px;
-
 // Page popup
 $page-popup-border-radius: 4px;
 $page-popup-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
@@ -413,7 +403,7 @@ $highlight-annotation-selected-border-color: #6d95e0;
 $highlight-area-selected-border-color: #6d95e0;
 
 // Error message
-$error-message-min-height: $import-bar-min-height;
+$error-message-min-height: 30px;
 $error-message-bg: $red;
 $error-message-btn-focus-border-radius: null;
 $error-message-btn-focus-box-shadow: null;

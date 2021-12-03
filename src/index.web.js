@@ -82,19 +82,6 @@ class ViewerInstance {
 		}
 
 		this._viewer = new Viewer({
-			promptImport: false,
-			onNavigateBack: () => {
-				console.log('Navigate back');
-			},
-			onNavigateForward: () => {
-				console.log('Navigate forward');
-			},
-			onImport() {
-				alert('This will call pdf-worker to extract annotations');
-			},
-			onDismissImport() {
-				alert('You won\'t be asked to import annotations until new annotations will be detected in the PDF file');
-			},
 			onAddToNote() {
 				alert('This will add annotations to the pinned note');
 			},

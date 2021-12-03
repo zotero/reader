@@ -48,13 +48,6 @@ class ViewerInstance {
 		window.addEventListener('message', this.handleMessage);
 		window.itemID = options.itemID;
 		this._viewer = new Viewer({
-			promptImport: options.promptImport,
-			onImport: () => {
-				this._postMessage({ action: 'import' });
-			},
-			onDismissImport: () => {
-				this._postMessage({ action: 'dismissImport' });
-			},
 			onAddToNote: (annotations) => {
 				this._postMessage({ action: 'addToNote', annotations });
 			},
@@ -134,11 +127,6 @@ class ViewerInstance {
 			case 'navigate': {
 				let { location } = message;
 				this._viewer.navigate(location);
-				return;
-			}
-			case 'toggleImportPrompt': {
-				let { enable } = message;
-				this._viewer.setPromptImport(enable);
 				return;
 			}
 			case 'enableAddToNote': {

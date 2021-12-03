@@ -99,10 +99,7 @@ class Viewer {
 					onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
 					onClickTags={options.onClickTags}
 					onPopup={options.onPopup}
-					promptImport={options.promptImport}
-					onImport={options.onImport}
 					onAddToNote={options.onAddToNote}
-					onDismissImport={options.onDismissImport}
 					ref={this.annotatorRef}
 				/>
 			</IntlProvider>,
@@ -281,15 +278,6 @@ class Viewer {
 			return;
 		}
 		this.annotatorRef.current.navigate(location);
-	};
-
-	setPromptImport = async (enable) => {
-		await this._annotatorPromise;
-		await this._pdfjsPromise;
-		if (this._uninitialized) {
-			return;
-		}
-		this.annotatorRef.current.setPromptImport(enable);
 	};
 
 	setEnableAddToNote = async (enable) => {

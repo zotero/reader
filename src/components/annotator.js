@@ -5,7 +5,6 @@ import PropTypes from 'prop-types';
 import Layer from './layer';
 import AnnotationsView from './annotations-view';
 import Toolbar from './toolbar';
-import ImportBar from './import-bar';
 import { annotationColors, selectionColor } from '../lib/colors';
 import {
 	setLayerSelectionDragPreview,
@@ -188,7 +187,6 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_isResizingArea, isResizingAreaRef, setIsResizingArea] = useRefState(false);
 	const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
 	const [_isSelectedOnPointerDown, isSelectedOnPointerDownRef, setIsSelectedOnPointerDown] = useRefState(false);
-	const [_promptImport, promptImport, setPromptImport] = useRefState(props.promptImport);
 	const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
 
 	const lastSelectedAnnotationIDRef = useRef(null);
@@ -199,7 +197,6 @@ const Annotator = React.forwardRef((props, ref) => {
 		navigate,
 		setAnnotations,
 		setColor,
-		setPromptImport,
 		setEnableAddToNote
 	}));
 
@@ -1246,7 +1243,6 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	return (
 		<div>
-			{_promptImport && <ImportBar onImport={props.onImport} onDismiss={props.onDismissImport}/>}
 			<Toolbar
 				toggled={_mode}
 				onMode={handleToolbarModeChange}
@@ -1311,10 +1307,7 @@ Annotator.propTypes = {
 	onUpdateAnnotation: PropTypes.func.isRequired,
 	onDeleteAnnotations: PropTypes.func.isRequired,
 	onPopup: PropTypes.func.isRequired,
-	onClickTags: PropTypes.func.isRequired,
-	promptImport: PropTypes.bool.isRequired,
-	onImport: PropTypes.func.isRequired,
-	onDismissImport: PropTypes.func.isRequired
+	onClickTags: PropTypes.func.isRequired
 };
 
 export default Annotator;

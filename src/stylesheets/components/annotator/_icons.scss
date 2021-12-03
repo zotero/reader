@@ -86,11 +86,3 @@
 	}
 }
 
-// Import bar
-
-.import-bar {
-	.btn-dismiss {
-		@include icon("cross");
-	}
-}
-
