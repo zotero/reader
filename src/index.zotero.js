@@ -18,6 +18,7 @@ document.addEventListener('webviewerloaded', (e) => {
 	// save then. In addition, we don't have styling for those forms,
 	// and they sometimes show popup preventing to leave tab
 	window.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
+	window.PDFViewerApplicationOptions.set('printResolution', 300);
 
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
