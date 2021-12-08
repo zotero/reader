@@ -6,13 +6,13 @@ import Layer from './layer';
 import AnnotationsView from './annotations-view';
 import Toolbar from './toolbar';
 import { annotationColors, selectionColor } from '../lib/colors';
+import LabelPopup from './label-popup';
 import {
 	setLayerSelectionDragPreview,
 	setLayerSingleDragPreview,
 	setSidebarSingleDragPreview,
 	setMultiDragPreview
 } from './drag-preview';
-
 import {
 	copyToClipboard,
 	setCaretToEnd,
@@ -188,6 +188,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_isLastClickRight, isLastClickRightRef, setIsLastClickRight] = useRefState(false);
 	const [_isSelectedOnPointerDown, isSelectedOnPointerDownRef, setIsSelectedOnPointerDown] = useRefState(false);
 	const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
+	const [_labelPopup, labelPopup, setLabelPopup] = useRefState(null);
 
 	const lastSelectedAnnotationIDRef = useRef(null);
 	const pointerDownPositionRef = useRef(null);
@@ -197,7 +198,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		navigate,
 		setAnnotations,
 		setColor,
-		setEnableAddToNote
+		setEnableAddToNote,
+		openPageLabelPopup
 	}));
 
 	function setSelectionRangesRef(ranges) {
@@ -419,6 +421,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 			setSelectionRangesRef([]);
 			setEnableSelection(false);
+			setLabelPopup(null);
 		}
 
 		if ((e.key === 'Delete' || e.key === 'Backspace')
@@ -907,6 +910,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onPopup('openAnnotationPopup', {
 			x,
 			y,
+			standalone: moreButton,
+			currentID: id,
 			ids,
 			colors: annotationColors,
 			selectedColor,
@@ -939,7 +944,16 @@ const Annotator = React.forwardRef((props, ref) => {
 		let annotation = annotationsRef.current.find(x => x.id === id);
 		let selectedColor = annotation.color;
 		let enableAddToNote = annotation.type !== 'ink';
-		props.onPopup('openAnnotationPopup', { x, y, ids: [id], colors: annotationColors, selectedColor, enableAddToNote });
+		props.onPopup('openAnnotationPopup', {
+			x,
+			y,
+			standalone: true,
+			currentID: id,
+			ids: [id],
+			colors: annotationColors,
+			selectedColor,
+			enableAddToNote
+		});
 	}, []);
 
 	function openPagePopup(hasSelection, event) {
@@ -1070,6 +1084,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			props.onPopup('openAnnotationPopup', {
 				x: event.screenX,
 				y: event.screenY,
+				standalone: false,
+				currentID: selectID,
 				ids: selectedIDsRef.current,
 				readOnly,
 				colors: annotationColors,
@@ -1241,6 +1257,135 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 	}, []);
 
+	const handlePageLabelDoubleClick = useCallback((id) => {
+		openPageLabelPopup(true, id);
+	}, []);
+
+	const handlePageLabelPopupClose = useCallback(() => {
+		setLabelPopup(null);
+	}, []);
+
+	const handlePageLabelPopupUpdate = useCallback((type, pageLabel) => {
+		if (!pageLabel) {
+			return;
+		}
+
+		let annotation = annotationsRef.current.find(x => x.id === labelPopup.current.annotationID);
+		if (!annotation) {
+			return;
+		}
+		let pageIndex = annotation.position.pageIndex;
+
+		let isNumeric = parseInt(pageLabel) == pageLabel;
+
+		let annotationsToUpdate = [];
+		if (type === 'single' || !isNumeric && type !== 'selected') {
+			if (!annotation.readOnly) {
+				annotation.pageLabel = pageLabel;
+				annotationsToUpdate = [annotation];
+			}
+		}
+		else if (type === 'selected' && !isNumeric) {
+			let annotations = annotationsRef.current.filter(x => !x.readOnly);
+			annotationsToUpdate = annotations.filter(x => selectedIDsRef.current.includes(x.id));
+			for (let annotation of annotationsToUpdate) {
+				annotation.pageLabel = pageLabel;
+			}
+		}
+		else {
+			let annotations = annotationsRef.current.filter(x => !x.readOnly);
+			switch (type) {
+				case 'selected':
+					annotationsToUpdate = annotations.filter(x => selectedIDsRef.current.includes(x.id));
+					break;
+				case 'page':
+					annotationsToUpdate = annotations.filter(x => x.position.pageIndex === pageIndex);
+					break;
+				case 'from':
+					annotationsToUpdate = annotations.filter(x => x.position.pageIndex >= pageIndex);
+					break;
+				case 'all':
+					annotationsToUpdate = annotations;
+					break;
+			}
+
+			pageLabel = parseInt(pageLabel);
+
+			for (let annotation of annotationsToUpdate) {
+				let newPageLabel = pageLabel + (annotation.position.pageIndex - pageIndex);
+				if (newPageLabel < 1) {
+					continue;
+				}
+				annotation.pageLabel = newPageLabel.toString();
+			}
+		}
+
+		setLabelPopup(null);
+
+		props.onUpdateAnnotations(annotationsToUpdate);
+	}, []);
+
+	function openPageLabelPopup(standalone, annotationID) {
+		let annotations = [];
+
+		let annotation = annotationsRef.current.find(x => x.id === annotationID);
+		if (!annotation) {
+			return;
+		}
+		if (standalone || !selectedIDsRef.current.length) {
+			annotations = [annotation];
+		}
+		else {
+			annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
+		}
+
+		if (annotations.some(x => x.readOnly)) {
+			return;
+		}
+
+		annotations.sort((a, b) => a.position.pageIndex - b.position.pageIndex);
+
+		let single = annotations.length === 1;
+		let selected = annotations.length > 1;
+
+		let currentPageAnnotations = annotationsRef.current.filter(x => x.position.pageIndex === annotations[0].position.pageIndex);
+		let fromCurrentPageAnnotations = annotationsRef.current.filter(x => x.position.pageIndex >= annotations[0].position.pageIndex);
+
+		let page = currentPageAnnotations.some(x => !annotations.includes(x));
+		let from = fromCurrentPageAnnotations.some(x => !annotations.includes(x));
+		let all = annotationsRef.current.length !== currentPageAnnotations.length && annotationsRef.current.length !== fromCurrentPageAnnotations.length;
+
+		let checked;
+
+		if (from) {
+			checked = 'from';
+		}
+		else if (all) {
+			checked = 'all';
+		}
+		else if (page) {
+			checked = 'page';
+		}
+		else if (selected) {
+			checked = 'selected';
+		}
+		else {
+			checked = 'single';
+		}
+
+		setLabelPopup({
+			annotationID,
+			standalone,
+			checked,
+			label: annotation.pageLabel,
+			single,
+			selected,
+			page,
+			from,
+			all
+		});
+	}
+
 	return (
 		<div>
 			<Toolbar
@@ -1256,6 +1401,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 				onAnnotationEditorBlur={handleSidebarAnnotationEditorBlur}
 				onDoubleClickHighlight={handleSidebarAnnotationDoubleClick}
+				onDoubleClickPageLabel={handlePageLabelDoubleClick}
 				onChange={handleSidebarAnnotationChange}
 				onDragStart={handleSidebarAnnotationDragStart}
 				onMenu={handleSidebarAnnotationMenuOpen}
@@ -1290,14 +1436,19 @@ const Annotator = React.forwardRef((props, ref) => {
 				onPointerUp={handleLayerPointerUp}
 				onPointerMove={handleLayerPointerMove}
 				onClickTags={props.onClickTags}
+				onDoubleClickPageLabel={handlePageLabelDoubleClick}
 				onClickEdgeNote={handleLayerEdgeNoteClick}
 				onDragStart={handleLayerAnnotationDragStart}
 				onDragEnd={handleAnnotationDragEnd}
 				onHighlightSelection={handleLayerSelectionPopupHighlight}
 				onCopySelection={handleLayerSelectionPopupCopy}
 				onAddToNoteSelection={handleLayerSelectionPopupAddToNote}
-			>
-			</Layer>
+			/>
+			{_labelPopup && <LabelPopup
+				data={_labelPopup}
+				onClose={handlePageLabelPopupClose}
+				onUpdate={handlePageLabelPopupUpdate}
+			/>}
 		</div>
 	);
 });

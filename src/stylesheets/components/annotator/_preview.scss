@@ -14,6 +14,7 @@
 		border-bottom: $preview-border;
 		line-height: rem(12);
 		white-space: nowrap;
+		user-select: none;
 
 		.selected & {
 			border-bottom: $preview-selected-border;

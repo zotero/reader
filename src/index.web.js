@@ -98,6 +98,9 @@ class ViewerInstance {
 			onClickTags(annotationID, event) {
 				alert('This will open Zotero tagbox popup');
 			},
+			onDoubleClickPageLabel: (id) => {
+				console.log('Open page label popup', id);
+			},
 			onPopup(name, data) {
 				console.log(name, data);
 				alert('This will open ' + name);

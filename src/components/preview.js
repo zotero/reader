@@ -10,8 +10,10 @@ import { IconHighlight, IconNote, IconArea, IconInk } from './icons';
 // TODO: Don't allow to select UI text in popup header and footer
 export function PopupPreview(props) {
 	const intl = useIntl();
-	const [editingPageLabel, setEditingPageLabel] = useState(false);
-	const pageInputRef = useRef();
+
+	function handlePageLabelDoubleClick() {
+		props.onDoubleClickPageLabel(annotation.id);
+	}
 
 	function handleTagsClick(event) {
 		if (props.annotation.readOnly) {
@@ -22,29 +24,6 @@ export function PopupPreview(props) {
 
 	function handleCommentChange(text) {
 		props.onChange({ id: props.annotation.id, comment: text });
-	}
-
-	function handleDoubleClickPage(event) {
-		if (!props.annotation.readOnly) {
-			setEditingPageLabel(true);
-			setTimeout(() => {
-				pageInputRef.current.focus();
-			}, 100);
-		}
-	}
-
-	function handlePageLabelChange(event) {
-		props.onChange({ id: props.annotation.id, pageLabel: event.target.value });
-	}
-
-	function handlePageKeyDown(event) {
-		if (['Escape', 'Enter'].includes(event.key)) {
-			setEditingPageLabel(false);
-		}
-	}
-
-	function handlePageLabelInputBlur(event) {
-		setEditingPageLabel(false);
 	}
 
 	function handleClickMore(event) {
@@ -73,20 +52,9 @@ export function PopupPreview(props) {
 							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
-					<div className="page" onDoubleClick={handleDoubleClickPage}>
+					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
 						<div><FormattedMessage id="pdfReader.page"/></div>
-						{
-							editingPageLabel
-								? <input
-									ref={pageInputRef}
-									value={annotation.pageLabel}
-									onChange={handlePageLabelChange}
-									onKeyDown={handlePageKeyDown}
-									onBlur={handlePageLabelInputBlur}
-									className="editable-control"
-								/>
-								: <div>{annotation.pageLabel}</div>
-						}
+						<div>{annotation.pageLabel}</div>
 					</div>
 				</div>
 				{annotation.authorName && (
@@ -132,8 +100,10 @@ export function PopupPreview(props) {
 
 export function SidebarPreview(props) {
 	const intl = useIntl();
-	const [editingPageLabel, setEditingPageLabel] = useState(false);
-	const pageInputRef = useRef();
+
+	function handlePageLabelDoubleClick() {
+		props.onDoubleClickPageLabel(annotation.id);
+	}
 
 	function handleSectionClick(event, section) {
 		props.onClickSection(props.annotation.id, section, event);
@@ -145,29 +115,6 @@ export function SidebarPreview(props) {
 
 	function handleCommentChange(text) {
 		props.onChange({ id: props.annotation.id, comment: text });
-	}
-
-	function handleDoubleClickPage(event) {
-		if (!props.annotation.readOnly) {
-			setEditingPageLabel(true);
-			setTimeout(() => {
-				pageInputRef.current.focus();
-			}, 100);
-		}
-	}
-
-	function handlePageLabelChange(event) {
-		props.onChange({ id: props.annotation.id, pageLabel: event.target.value });
-	}
-
-	function handlePageKeyDown(event) {
-		if (['Escape', 'Enter'].includes(event.key)) {
-			setEditingPageLabel(false);
-		}
-	}
-
-	function handlePageLabelInputBlur(event) {
-		setEditingPageLabel(false);
 	}
 
 	function handleClickMore(event) {
@@ -279,20 +226,9 @@ export function SidebarPreview(props) {
 							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
-					<div className="page" onDoubleClick={handleDoubleClickPage}>
+					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
 						<div><FormattedMessage id="pdfReader.page"/></div>
-						{
-							editingPageLabel
-								? <input
-									ref={pageInputRef}
-									value={annotation.pageLabel}
-									onChange={handlePageLabelChange}
-									onKeyDown={handlePageKeyDown}
-									onBlur={handlePageLabelInputBlur}
-									className="editable-control"
-								/>
-								: <div>{annotation.pageLabel}</div>
-						}
+						<div>{annotation.pageLabel}</div>
 					</div>
 				</div>
 				{annotation.authorName && (

@@ -67,6 +67,9 @@ class ViewerInstance {
 				let y = event.screenY - (event.clientY - rect.top);
 				this._postMessage({ action: 'openTagsPopup', x, y, id });
 			},
+			onDoubleClickPageLabel: (id) => {
+				this._postMessage({ action: 'openPageLabelPopup', id });
+			},
 			onPopup: (name, data) => {
 				this._postMessage({ action: name, ...data });
 			},
@@ -208,6 +211,10 @@ class ViewerInstance {
 			}
 			case 'setColor': {
 				this._viewer.setColor(data.color);
+				return;
+			}
+			case 'openPageLabelPopup': {
+				this._viewer.openPageLabelPopup(data.standalone, data.id);
 				return;
 			}
 			case 'copy': {

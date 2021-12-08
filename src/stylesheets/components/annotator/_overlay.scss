@@ -1,0 +1,56 @@
+//
+// Overlay
+//
+
+#overlayContainer2 {
+	display: flex;
+	position: absolute;
+	width: 100%;
+	height: 100%;
+	//background-color: $overlay-container-bg;
+	z-index: $z-index-overlay;
+	pointer-events: none;
+
+	.container {
+		flex: 1 1 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		overflow: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+}
+
+#labelOverlay {
+	pointer-events: all;
+
+	.dialog {
+		//border-radius: $page-popup-border-radius;
+		box-shadow: $page-popup-box-shadow;
+		background: linear-gradient(to top, #a9a9a9 0, #a9a9a9 1px, #f6f6f6 1px, #f6f6f6 100%);
+	}
+
+	input[type=radio]:disabled + label {
+		color: #999;
+	}
+
+	.row.radio {
+		user-select: none;
+
+		.choice {
+			&:not(:last-child) {
+				padding-bottom: 5px;
+			}
+
+			display: flex;
+
+			label {
+				padding-left: 5px;
+			}
+		}
+	}
+
+	.buttonRow {
+		user-select: none;
+	}
+}

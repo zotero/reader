@@ -634,6 +634,7 @@ function Layer(props) {
 							onColorChange={(color) => {
 								onChange({ id: popupAnnotation.id, color });
 							}}
+							onDoubleClickPageLabel={props.onDoubleClickPageLabel}
 							onClickTags={onClickTags}
 							onChange={onChange}
 							onPageMenu={props.onPageMenu}
