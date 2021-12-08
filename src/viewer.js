@@ -31,10 +31,10 @@ class Viewer {
 		this._annotationsStore = new AnnotationsStore({
 			readOnly: options.readOnly,
 			annotations: options.annotations,
-			onSetAnnotation: options.onSetAnnotation,
-			onDeleteAnnotations: options.onDeleteAnnotations,
-			onUpdateAnnotations: (annotations) => {
-				this._setAnnotations([...annotations]);
+			onSave: options.onSaveAnnotations,
+			onDelete: options.onDeleteAnnotations,
+			onRender: (annotations) => {
+				this.annotatorRef.current.setAnnotations([...annotations]);
 			}
 		});
 
@@ -95,9 +95,10 @@ class Viewer {
 				<Annotator
 					readOnly={options.readOnly}
 					onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
-					onUpdateAnnotation={this._annotationsStore.updateAnnotation.bind(this._annotationsStore)}
+					onUpdateAnnotations={this._annotationsStore.updateAnnotations.bind(this._annotationsStore)}
 					onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
 					onClickTags={options.onClickTags}
+					onDoubleClickPageLabel={options.onDoubleClickPageLabel}
 					onPopup={options.onPopup}
 					onAddToNote={options.onAddToNote}
 					ref={this.annotatorRef}
@@ -105,7 +106,7 @@ class Viewer {
 			</IntlProvider>,
 			this.node,
 			() => {
-				this._setAnnotations(this._annotationsStore.getAnnotations());
+				this._annotationsStore.render();
 				this._annotatorPromiseResolve();
 			}
 		);
@@ -259,16 +260,12 @@ class Viewer {
 		}
 	}
 
-	_setAnnotations = (annotations) => {
-		this.annotatorRef.current.setAnnotations(annotations);
-	};
-
 	setColor = (color) => {
 		this.annotatorRef.current.setColor(color);
 	};
 
-	importableAnnotationsNum = (num) => {
-
+	openPageLabelPopup = (standalone, id) => {
+		this.annotatorRef.current.openPageLabelPopup(standalone, id);
 	};
 
 	navigate = async (location) => {

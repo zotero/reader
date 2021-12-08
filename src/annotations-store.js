@@ -7,115 +7,70 @@ import { annotationColors } from './lib/colors';
 import { positionsEqual } from './lib/utilities';
 import { debounce } from './lib/debounce';
 
-// TODO: Reorganize annotation set/unset/delete/update functions in index.*.js, viewer.js and annotations-store.js
 // TODO: Debounce image annotation resizing to reduce useless intermediate images
 
 class AnnotationsStore {
 	constructor(options) {
-		this.readOnly = options.readOnly;
-		this.annotations = options.annotations;
-		this.onSetAnnotation = options.onSetAnnotation;
-		this.onDeleteAnnotations = options.onDeleteAnnotations;
-		this.onUpdateAnnotations = options.onUpdateAnnotations;
+		this._readOnly = options.readOnly;
+		this._annotations = options.annotations;
+		this._onSave = options.onSave;
+		this._onDelete = options.onDelete;
+		this.render = () => {
+			this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+			options.onRender(this._annotations);
+		};
 
-		this.renderQueue = queue({
+		this._renderQueue = queue({
 			concurrency: 1,
 			autostart: true
 		});
 
-		this.debounces = [];
-
-		document.addEventListener('pagesinit', async (e) => {
-
-		});
+		this._unsavedAnnotations = [];
+		// Debounce for 1s but no more than 10s
+		this._debounceSave = debounce(() => {
+			if (!this._unsavedAnnotations.length) {
+				return;
+			}
+			// Image is sent in instant mode only
+			let annotations = this._unsavedAnnotations.map(x => ({ ...x, image: undefined }));
+			this._onSave(annotations);
+			this._unsavedAnnotations = [];
+		}, 1000, { maxWait: 10000 });
 
 		window.PDFViewerApplication.eventBus.on('pagerendered', (e) => {
 			setTimeout(() => {
-				this.renderMissingImages();
+				this._renderMissingImages();
 			}, 2000);
 		});
-
-		this.sortAnnotations(this.annotations);
-	}
-
-	async renderMissingImages() {
-		for (let annotation of this.annotations) {
-			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
-				annotation.image = await this.getAnnotationImage(annotation.id);
-				this.set(annotation);
-				this.save(annotation);
-			}
-		}
-	}
-
-	save(annotation) {
-		const DEBOUNCE_ANNOTATION = 1000;
-		const DEBOUNCE_ANNOTATION_MAX = 10000;
-		let fn = this.debounces[annotation.id];
-		if (fn) {
-			fn(annotation);
-		}
-		else {
-			fn = debounce((annotation) => {
-				delete this.debounces[annotation.id];
-				this.onSetAnnotation(annotation);
-			}, DEBOUNCE_ANNOTATION, { maxWait: DEBOUNCE_ANNOTATION_MAX });
-			fn(annotation);
-			this.debounces[annotation.id] = fn;
-		}
-	}
-
-	generateObjectKey() {
-		let len = 8;
-		let allowedKeyChars = '23456789ABCDEFGHIJKLMNPQRSTUVWXYZ';
-
-		var randomstring = '';
-		for (var i = 0; i < len; i++) {
-			var rnum = Math.floor(Math.random() * allowedKeyChars.length);
-			randomstring += allowedKeyChars.substring(rnum, rnum + 1);
-		}
-		return randomstring;
-	}
-
-	set(annotation) {
-		let oldIndex = this.annotations.findIndex(x => x.id === annotation.id);
-		if (oldIndex >= 0) {
-			annotation = { ...annotation };
-			this.annotations.splice(oldIndex, 1, annotation);
-		}
-		else {
-			this.annotations.push(annotation);
-		}
-		this.sortAnnotations(this.annotations);
-		this.onUpdateAnnotations(this.annotations);
-	}
-
-	getAnnotations() {
-		return this.annotations;
-	}
-
-	getAnnotationByID(id) {
-		return this.annotations.find(annotation => annotation.id === id);
-	}
-
-	sortAnnotations(annotations) {
-		annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex)
-		);
 	}
 
 	// Called when changes come from the client side
-	unsetAnnotations(ids) {
-		for (let id of ids) {
-			let index = this.annotations.findIndex(x => x.id === id);
-			if (index >= 0) {
-				this.annotations.splice(index, 1);
+	async setAnnotations(annotations) {
+		for (let annotation of annotations) {
+			this._annotations = this._annotations.filter(x => x.id !== annotation.id);
+			this._annotations.push(annotation);
+		}
+
+		this.render();
+
+		for (let annotation of annotations) {
+			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
+				annotation.image = await this.getAnnotationImage(annotation.id);
+				this._save(annotation, true);
+				this.render();
 			}
 		}
-		this.onUpdateAnnotations(this.annotations);
 	}
 
+	// Called when deletions come from the client side
+	unsetAnnotations(ids) {
+		this._annotations = this._annotations.filter(x => !ids.includes(x.id));
+		this.render();
+	}
+
+	//
 	async addAnnotation(annotation) {
-		if (this.readOnly) {
+		if (this._readOnly) {
 			return;
 		}
 
@@ -127,7 +82,7 @@ class AnnotationsStore {
 		// annotation.sortIndex
 
 		// All other are set automatically
-		annotation.id = this.generateObjectKey();
+		annotation.id = this._generateObjectKey();
 		annotation.dateCreated = (new Date()).toISOString();
 		annotation.dateModified = annotation.dateCreated;
 		annotation.authorName = '';
@@ -140,8 +95,9 @@ class AnnotationsStore {
 		}
 
 		// Immediately render the annotation to prevent
-		// delay from the further async calls
-		this.set(annotation);
+		// delay from further async calls
+		this._save(annotation);
+		this.render();
 
 		annotation.pageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex);
 
@@ -149,105 +105,95 @@ class AnnotationsStore {
 			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
 		}
 
+		this._save(annotation);
+		this.render();
+
 		if (['image', 'ink'].includes(annotation.type)) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
+			this._save(annotation, true);
+			this.render();
 		}
-
-		this.set(annotation);
-		this.save(annotation);
 
 		return annotation;
 	}
 
-	// Called when changes come from the client side
-	async setAnnotations(annotations) {
-		for (let annotation of annotations) {
-			let oldIndex = this.annotations.findIndex(x => x.id === annotation.id);
-			if (oldIndex !== -1) {
-				annotation = { ...annotation };
-				annotation.readOnly = annotation.readOnly || this.readOnly;
-				this.annotations.splice(oldIndex, 1, annotation);
-			}
-			else {
-				this.annotations.push(annotation);
-			}
-		}
-
-		this.sortAnnotations(this.annotations);
-		this.onUpdateAnnotations(this.annotations);
+	async updateAnnotations(annotations) {
+		let updateSortIndex = [];
+		let updateImage = [];
 
 		for (let annotation of annotations) {
-			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
-				annotation.image = await this.getAnnotationImage(annotation.id);
-				this.set(annotation);
-				this.save(annotation);
+			if (annotation.readOnly || this._readOnly) {
+				continue;
+			}
+
+			let existingAnnotation = this._getAnnotationByID(annotation.id);
+
+			annotation = {
+				...existingAnnotation,
+				...annotation,
+				position: { ...existingAnnotation.position, ...annotation.position }
+			};
+			annotation.dateModified = (new Date()).toISOString();
+
+			if (annotation.rects) {
+				annotation.position.rects = annotation.position.rects.map(
+					rect => rect.map(value => parseFloat(value.toFixed(3)))
+				);
+			}
+
+			this._save(annotation);
+
+			if (['note', 'image'].includes(annotation.type)
+				&& !positionsEqual(existingAnnotation.position, annotation.position)) {
+				updateSortIndex.push(annotation);
+			}
+
+			if (
+				['image', 'ink'].includes(annotation.type)
+				&& !positionsEqual(existingAnnotation.position, annotation.position)
+				|| (
+					annotation.type === 'ink'
+					&& existingAnnotation.color.toLowerCase() !== annotation.color.toLowerCase()
+				)
+			) {
+				updateImage.push(annotation);
 			}
 		}
-	}
 
-	async updateAnnotation(annotation) {
-		if (annotation.readOnly || this.readOnly) {
-			return;
-		}
+		this.render();
 
-		let existingAnnotation = this.getAnnotationByID(annotation.id);
-
-		annotation = {
-			...existingAnnotation,
-			...annotation,
-			position: { ...existingAnnotation.position, ...annotation.position }
-		};
-		annotation.dateModified = (new Date()).toISOString();
-
-		if (annotation.rects) {
-			annotation.position.rects = annotation.position.rects.map(
-				rect => rect.map(value => parseFloat(value.toFixed(3)))
-			);
-		}
-
-		// Immediately render the annotation to prevent
-		// delay from the further async calls
-		this.set(annotation);
-
-		if (
-			['note', 'image'].includes(annotation.type)
-			&& !positionsEqual(existingAnnotation.position, annotation.position)
-		) {
+		for (let annotation of updateSortIndex) {
 			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
+			this._save(annotation);
 		}
 
-		if (
-			['image', 'ink'].includes(annotation.type)
-			&& !positionsEqual(existingAnnotation.position, annotation.position)
-			|| annotation.type === 'ink'
-			&& existingAnnotation.color.toLowerCase() !== annotation.color.toLowerCase()
-		) {
+		for (let annotation of updateImage) {
 			annotation.image = await this.getAnnotationImage(annotation.id);
+			this._save(annotation, true);
 		}
 
-		this.set(annotation);
-		this.save(annotation);
+		if (updateSortIndex.length || updateImage.length) {
+			this.render();
+		}
 	}
 
 	deleteAnnotations(ids) {
-		if (this.readOnly) {
+		if (this._readOnly) {
 			return;
 		}
-
-		this.annotations = this.annotations.filter(
+		this._annotations = this._annotations.filter(
 			annotation => !ids.includes(annotation.id) || annotation.readOnly
 		);
-
-		this.onDeleteAnnotations(ids);
-		this.onUpdateAnnotations(this.annotations);
+		this._onDelete(ids);
+		this.render();
 	}
 
 	async getAnnotationImage(annotationID) {
 		return new Promise((resolve) => {
-			this.renderQueue.push(async () => {
+			this._renderQueue.push(async () => {
 				let image = '';
 				try {
-					let annotation = this.getAnnotationByID(annotationID);
+					let annotation = this._getAnnotationByID(annotationID);
 					if (annotation) {
 						image = await renderAreaImage(annotation);
 					}
@@ -259,18 +205,51 @@ class AnnotationsStore {
 		});
 	}
 
-	resetPageLabels(pageIndex, pageLabel) {
-		if (parseInt(pageLabel).toString() !== pageLabel) {
-			return;
+	// Note: Keep in sync with Zotero client
+	_generateObjectKey() {
+		let len = 8;
+		let allowedKeyChars = '23456789ABCDEFGHIJKLMNPQRSTUVWXYZ';
+
+		var randomstring = '';
+		for (var i = 0; i < len; i++) {
+			var rnum = Math.floor(Math.random() * allowedKeyChars.length);
+			randomstring += allowedKeyChars.substring(rnum, rnum + 1);
+		}
+		return randomstring;
+	}
+
+	_save(annotation, instant) {
+		let oldIndex = this._annotations.findIndex(x => x.id === annotation.id);
+		if (oldIndex !== -1) {
+			annotation = { ...annotation };
+			this._annotations.splice(oldIndex, 1, annotation);
+		}
+		else {
+			this._annotations.push(annotation);
 		}
 
-		let startPageNumber = parseInt(pageLabel) - pageIndex;
+		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => x.id !== annotation.id);
 
-		for (let annotation of this.annotations) {
-			let pageNumber = startPageNumber + annotation.position.pageIndex;
-			annotation.pageLabel = pageNumber.toString();
-			this.set(annotation);
-			this.save(annotation);
+		if (instant) {
+			this._onSave([annotation]);
+		}
+		else {
+			this._unsavedAnnotations.push(annotation);
+			this._debounceSave();
+		}
+	}
+
+	_getAnnotationByID(id) {
+		return this._annotations.find(annotation => annotation.id === id);
+	}
+
+	async _renderMissingImages() {
+		for (let annotation of this._annotations) {
+			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
+				annotation.image = await this.getAnnotationImage(annotation.id);
+				this._save(annotation, true);
+				this.render();
+			}
 		}
 	}
 }

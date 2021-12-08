@@ -52,8 +52,8 @@ class ViewerInstance {
 			onAddToNote: (annotations) => {
 				this._postMessage({ action: 'addToNote', annotations });
 			},
-			onSetAnnotation: (annotation) => {
-				this._postMessage({ action: 'setAnnotation', annotation });
+			onSaveAnnotations: (annotations) => {
+				this._postMessage({ action: 'saveAnnotations', annotations });
 			},
 			onDeleteAnnotations: (ids) => {
 				this._postMessage({ action: 'deleteAnnotations', ids });
@@ -182,7 +182,7 @@ class ViewerInstance {
 		// TODO: Fix multiple
 		switch (data.cmd) {
 			case 'addToNote': {
-				let annotations = this._viewer._annotationsStore.annotations
+				let annotations = this._viewer._annotationsStore._annotations
 				.filter(x => data.ids.includes(x.id))
 				.map(x => ({ ...x, attachmentItemID: window.itemID }));
 
@@ -199,12 +199,11 @@ class ViewerInstance {
 				return;
 			}
 			case 'setAnnotationColor': {
+				let annotations = [];
 				for (let id of data.ids) {
-					this._viewer._annotationsStore.updateAnnotation({
-						id,
-						color: data.color
-					});
+					annotations.push({ id, color: data.color });
 				}
+				this._viewer._annotationsStore.updateAnnotations(annotations);
 				return;
 			}
 			case 'setColor': {

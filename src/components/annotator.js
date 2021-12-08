@@ -886,7 +886,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleSidebarAnnotationChange = useCallback((annotation) => {
-		props.onUpdateAnnotation(annotation);
+		props.onUpdateAnnotations([annotation]);
 	}, []);
 
 	const handleSidebarAnnotationMenuOpen = useCallback((id, x, y, moreButton) => {
@@ -932,7 +932,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleLayerAnnotationChange = useCallback((annotation) => {
-		props.onUpdateAnnotation(annotation);
+		props.onUpdateAnnotations([annotation]);
 	}, []);
 
 	const handleLayerAnnotationMoreMenu = useCallback((id, x, y) => {
@@ -1301,13 +1301,5 @@ const Annotator = React.forwardRef((props, ref) => {
 		</div>
 	);
 });
-
-Annotator.propTypes = {
-	onAddAnnotation: PropTypes.func.isRequired,
-	onUpdateAnnotation: PropTypes.func.isRequired,
-	onDeleteAnnotations: PropTypes.func.isRequired,
-	onPopup: PropTypes.func.isRequired,
-	onClickTags: PropTypes.func.isRequired
-};
 
 export default Annotator;

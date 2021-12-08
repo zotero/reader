@@ -86,8 +86,8 @@ class ViewerInstance {
 			onAddToNote() {
 				alert('This will add annotations to the pinned note');
 			},
-			onSetAnnotation: function (annotation) {
-				console.log('Set annotation', annotation);
+			onSaveAnnotations: function (annotation) {
+				console.log('Save annotations', annotation);
 			},
 			onDeleteAnnotations: function (ids) {
 				console.log('Delete annotations', JSON.stringify(ids));
