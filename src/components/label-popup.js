@@ -50,8 +50,14 @@ function LabelPopup({ data, onUpdate, onClose }) {
 		<Overlay id="labelOverlay">
 			<div className="dialog" ref={overlayRef}>
 				<div className="row">
-					<input type="text" className="toolbarField" value={label} onChange={handleChange} ref={inputRef}
-					       onKeyDown={handleInputKeydown}/>
+					<input
+						ref={inputRef}
+						type="text"
+						className="toolbarField"
+						value={label}
+						maxLength={16}
+						onChange={handleChange}
+						onKeyDown={handleInputKeydown}/>
 				</div>
 				<div className="row radio">
 					{data.single && <div className="choice">
@@ -121,7 +127,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					<button
 						className="overlayButton submit"
 						onClick={handleUpdateClick}
-						disabled={!label.trim().length}
+						disabled={disabled}
 					><FormattedMessage id="general.update"/></button>
 				</div>
 			</div>
