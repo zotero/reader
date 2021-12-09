@@ -1195,14 +1195,19 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (overAnnotation) {
 			viewer.classList.add('cursor-pointer');
 			viewer.classList.remove('cursor-text');
+			viewer.classList.remove('cursor-text-selecting');
 		}
 		else if (overText) {
 			viewer.classList.add('cursor-text');
+			if (isSelectingTextRef.current) {
+				viewer.classList.add('cursor-text-selecting');
+			}
 			viewer.classList.remove('cursor-pointer');
 		}
 		else {
 			viewer.classList.remove('cursor-pointer');
 			viewer.classList.remove('cursor-text');
+			viewer.classList.remove('cursor-text-selecting');
 		}
 
 		if (pointerDownPositionRef.current && enableSelectionRef.current) {

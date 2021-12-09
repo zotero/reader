@@ -18,3 +18,8 @@
 .cursor-text .page {
 	cursor: text;
 }
+
+.cursor-text-selecting .textLayer {
+	// Without this .textLayer affects cursor
+	display: none;
+}
