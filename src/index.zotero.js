@@ -236,6 +236,10 @@ class ViewerInstance {
 				PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
 				return;
 			}
+			case 'zoomPageHeight': {
+				PDFViewerApplication.pdfViewer.currentScaleValue = 'page-fit';
+				return;
+			}
 			case 'prevPage': {
 				PDFViewerApplication.pdfViewer.previousPage();
 				return;

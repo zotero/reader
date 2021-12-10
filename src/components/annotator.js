@@ -963,6 +963,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			text: hasSelection && selectionRangesRef.current.map(range => range.text).join('\n'),
 			isZoomAuto: PDFViewerApplication.pdfViewer.currentScaleValue === 'auto',
 			isZoomPageWidth: PDFViewerApplication.pdfViewer.currentScaleValue === 'page-width',
+			isZoomPageHeight: PDFViewerApplication.pdfViewer.currentScaleValue === 'page-fit',
 			enablePrevPage: PDFViewerApplication.pdfViewer.currentPageNumber > 1,
 			enableNextPage: PDFViewerApplication.pdfViewer.currentPageNumber < PDFViewerApplication.pdfViewer.pagesCount
 		});
