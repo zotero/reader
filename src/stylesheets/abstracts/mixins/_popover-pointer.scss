@@ -59,4 +59,21 @@
 			border-top-color: #fff;
 		}
 	}
+
+	#{if($position == "top", "&", "&[class*='left']")} {
+		&::before,
+		&::after {
+			left: 20px;
+		}
+	}
+
+	#{if($position == "top", "&", "&[class*='right']")} {
+		&::before,
+		&::after {
+			left: unset;
+			right: 20px;
+			transform: translateX($border-x);
+		}
+	}
+
 }

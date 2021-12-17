@@ -71,7 +71,7 @@ class ViewerInstance {
 				this._postMessage({ action: 'openPageLabelPopup', id });
 			},
 			onPopup: (name, data) => {
-				this._postMessage({ action: name, ...data });
+				this._postMessage({ action: name, data });
 			},
 			onExternalLink: (url) => {
 				this._postMessage({ action: 'openURL', url });
@@ -181,12 +181,12 @@ class ViewerInstance {
 		}
 	}
 
-	handlePopupAction(data) {
+	handlePopupAction(message) {
 		// TODO: Fix multiple
-		switch (data.cmd) {
+		switch (message.cmd) {
 			case 'addToNote': {
 				let annotations = this._viewer._annotationsStore._annotations
-				.filter(x => data.ids.includes(x.id))
+				.filter(x => message.ids.includes(x.id))
 				.map(x => ({ ...x, attachmentItemID: window.itemID }));
 
 				if (annotations.length) {
@@ -198,23 +198,27 @@ class ViewerInstance {
 				return;
 			}
 			case 'deleteAnnotation': {
-				this._viewer._annotationsStore.deleteAnnotations(data.ids);
+				this._viewer._annotationsStore.deleteAnnotations(message.ids);
 				return;
 			}
 			case 'setAnnotationColor': {
 				let annotations = [];
-				for (let id of data.ids) {
-					annotations.push({ id, color: data.color });
+				for (let id of message.ids) {
+					annotations.push({ id, color: message.color });
 				}
 				this._viewer._annotationsStore.updateAnnotations(annotations);
 				return;
 			}
 			case 'setColor': {
-				this._viewer.setColor(data.color);
+				this._viewer.setColor(message.color);
 				return;
 			}
 			case 'openPageLabelPopup': {
-				this._viewer.openPageLabelPopup(data.standalone, data.id);
+				this._viewer.openPageLabelPopup(message.data);
+				return;
+			}
+			case 'editHighlightedText': {
+				this._viewer.editHighlightedText(message.data);
 				return;
 			}
 			case 'copy': {

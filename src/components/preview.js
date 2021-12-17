@@ -35,7 +35,10 @@ export function PopupPreview(props) {
 
 	let { annotation } = props;
 	return (
-		<div className={cx('preview', { 'read-only': annotation.readOnly })}>
+		<div
+			className={cx('preview', { 'read-only': annotation.readOnly })}
+			data-annotation-id={annotation.id}
+		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))
 				+ ' ' + intl.formatTime(new Date(annotation.dateModified))}
@@ -54,7 +57,7 @@ export function PopupPreview(props) {
 					</div>
 					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
 						<div><FormattedMessage id="pdfReader.page"/></div>
-						<div>{annotation.pageLabel}</div>
+						<div className="label">{annotation.pageLabel}</div>
 					</div>
 				</div>
 				{annotation.authorName && (
@@ -100,6 +103,10 @@ export function PopupPreview(props) {
 
 export function SidebarPreview(props) {
 	const intl = useIntl();
+
+	function handlePageLabelClick(event) {
+		event.stopPropagation();
+	}
 
 	function handlePageLabelDoubleClick() {
 		props.onDoubleClickPageLabel(annotation.id);
@@ -204,9 +211,13 @@ export function SidebarPreview(props) {
 	expandedState['expanded' + props.state] = true;
 
 	return (
-		<div onPointerDown={handlePointerDown} className={cx('preview', {
-			'read-only': annotation.readOnly, ...expandedState
-		})}>
+		<div
+			onPointerDown={handlePointerDown}
+			className={cx('preview', {
+				'read-only': annotation.readOnly, ...expandedState
+			})}
+			data-annotation-id={annotation.id}
+		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))
 				+ ' ' + intl.formatTime(new Date(annotation.dateModified))}
@@ -226,9 +237,13 @@ export function SidebarPreview(props) {
 							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
-					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
+					<div
+						className="page"
+						onClick={handlePageLabelClick}
+						onDoubleClick={handlePageLabelDoubleClick}
+					>
 						<div><FormattedMessage id="pdfReader.page"/></div>
-						<div>{annotation.pageLabel}</div>
+						<div className="label">{annotation.pageLabel}</div>
 					</div>
 				</div>
 				{annotation.authorName && (

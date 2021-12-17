@@ -264,8 +264,12 @@ class Viewer {
 		this.annotatorRef.current.setColor(color);
 	};
 
-	openPageLabelPopup = (standalone, id) => {
-		this.annotatorRef.current.openPageLabelPopup(standalone, id);
+	openPageLabelPopup = (data) => {
+		this.annotatorRef.current.openPageLabelPopup(data);
+	};
+
+	editHighlightedText = (data) => {
+		this.annotatorRef.current.editHighlightedText(data);
 	};
 
 	navigate = async (location) => {

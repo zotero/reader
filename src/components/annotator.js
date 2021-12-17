@@ -199,7 +199,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		setAnnotations,
 		setColor,
 		setEnableAddToNote,
-		openPageLabelPopup
+		openPageLabelPopup,
+		editHighlightedText
 	}));
 
 	function setSelectionRangesRef(ranges) {
@@ -906,17 +907,20 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let readOnly = annotationsRef.current.some(x => ids.includes(x.id) && x.readOnly);
 		let enableAddToNote = !annotationsRef.current.some(x => ids.includes(x.id) && x.type === 'ink');
+		let enableEditHighlightedText = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'highlight');
 
 		props.onPopup('openAnnotationPopup', {
 			x,
 			y,
 			standalone: moreButton,
 			currentID: id,
+			inPage: false,
 			ids,
 			colors: annotationColors,
 			selectedColor,
 			readOnly,
-			enableAddToNote
+			enableAddToNote,
+			enableEditHighlightedText
 		});
 	}, []);
 
@@ -944,15 +948,18 @@ const Annotator = React.forwardRef((props, ref) => {
 		let annotation = annotationsRef.current.find(x => x.id === id);
 		let selectedColor = annotation.color;
 		let enableAddToNote = annotation.type !== 'ink';
+		let enableEditHighlightedText = annotation.type === 'highlight';
 		props.onPopup('openAnnotationPopup', {
 			x,
 			y,
 			standalone: true,
+			inPage: true,
 			currentID: id,
 			ids: [id],
 			colors: annotationColors,
 			selectedColor,
-			enableAddToNote
+			enableAddToNote,
+			enableEditHighlightedText
 		});
 	}, []);
 
@@ -1078,6 +1085,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (isRight && selectID) {
 			let readOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 			let enableAddToNote = !annotationsRef.current.some(x => selectedIDsRef.current.includes(x.id) && x.type === 'ink');
+			let enableEditHighlightedText = selectedIDsRef.current.length === 1 && annotationsRef.current.find(x => x.id === selectedIDsRef.current[0] && x.type === 'highlight');
 			let selectedColor;
 			if (annotationsRef.current.length === 1) {
 				selectedColor = annotationsRef.current[0].color;
@@ -1085,13 +1093,17 @@ const Annotator = React.forwardRef((props, ref) => {
 			props.onPopup('openAnnotationPopup', {
 				x: event.screenX,
 				y: event.screenY,
+				clientX: event.clientX,
+				clientY: event.clientY,
 				standalone: false,
+				inPage: true,
 				currentID: selectID,
 				ids: selectedIDsRef.current,
 				readOnly,
 				colors: annotationColors,
 				selectedColor,
-				enableAddToNote
+				enableAddToNote,
+				enableEditHighlightedText
 			});
 		}
 
@@ -1264,7 +1276,11 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handlePageLabelDoubleClick = useCallback((id) => {
-		openPageLabelPopup(true, id);
+		openPageLabelPopup({
+			standalone: true,
+			currentID: id,
+			inPage: !isSidebarOpenRef.current
+		});
 	}, []);
 
 	const handlePageLabelPopupClose = useCallback(() => {
@@ -1276,7 +1292,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
-		let annotation = annotationsRef.current.find(x => x.id === labelPopup.current.annotationID);
+		let annotation = annotationsRef.current.find(x => x.id === labelPopup.current.currentID);
 		if (!annotation) {
 			return;
 		}
@@ -1331,10 +1347,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations(annotationsToUpdate);
 	}, []);
 
-	function openPageLabelPopup(standalone, annotationID) {
+	function openPageLabelPopup({ currentID, standalone, clientX, clientY, inPage }) {
 		let annotations = [];
 
-		let annotation = annotationsRef.current.find(x => x.id === annotationID);
+		let annotation = annotationsRef.current.find(x => x.id === currentID);
 		if (!annotation) {
 			return;
 		}
@@ -1378,9 +1394,27 @@ const Annotator = React.forwardRef((props, ref) => {
 		else {
 			checked = 'single';
 		}
+		let rect;
+
+		if (inPage) {
+			let anchorNode = document.querySelector(`#viewerContainer [data-annotation-id="${currentID}"] .page .label`);
+			if (annotations.length > 1 || !anchorNode) {
+				rect = [clientX, clientY, clientX, clientY];
+			}
+			else {
+				rect = anchorNode.getBoundingClientRect();
+				rect = [rect.left, rect.top, rect.right, rect.bottom];
+			}
+		}
+		else if (isSidebarOpenRef.current) {
+			let anchorNode = document.querySelector(`#sidebarContainer [data-annotation-id="${currentID}"] .page .label`);
+			rect = anchorNode.getBoundingClientRect();
+			rect = [rect.left, rect.top, rect.right, rect.bottom];
+		}
 
 		setLabelPopup({
-			annotationID,
+			rect,
+			currentID,
 			standalone,
 			checked,
 			label: annotation.pageLabel,
@@ -1390,6 +1424,18 @@ const Annotator = React.forwardRef((props, ref) => {
 			from,
 			all
 		});
+	}
+
+	function editHighlightedText({ currentID }) {
+		window.PDFViewerApplication.pdfSidebar.open();
+		selectAnnotation(currentID, false, false, true, true);
+		setTimeout(() => {
+			let node = document.querySelector(`#sidebarContainer [data-annotation-id="${currentID}"] .content`);
+			var clickEvent = document.createEvent('MouseEvents');
+			clickEvent.initEvent('dblclick', true, true);
+			node.dispatchEvent(clickEvent);
+			node.focus();
+		}, 50);
 	}
 
 	return (
