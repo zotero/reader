@@ -184,6 +184,7 @@ class AnnotationsStore {
 		this._annotations = this._annotations.filter(
 			annotation => !ids.includes(annotation.id) || annotation.readOnly
 		);
+		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => !ids.includes(x.id));
 		this._onDelete(ids);
 		this.render();
 	}
@@ -203,6 +204,15 @@ class AnnotationsStore {
 				resolve(image);
 			});
 		});
+	}
+
+	async resetPageLabels() {
+		// TODO: Don't reset page labels if they can't be reliably extracted from text
+		for (let annotation of this._annotations) {
+			annotation.pageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex);
+			this._save(annotation);
+		}
+		this.render();
 	}
 
 	// Note: Keep in sync with Zotero client
