@@ -920,7 +920,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectedColor,
 			readOnly,
 			enableAddToNote,
-			enableEditHighlightedText
+			enableEditHighlightedText,
+			enableChangePageNumber: true
 		});
 	}, []);
 
@@ -948,7 +949,6 @@ const Annotator = React.forwardRef((props, ref) => {
 		let annotation = annotationsRef.current.find(x => x.id === id);
 		let selectedColor = annotation.color;
 		let enableAddToNote = annotation.type !== 'ink';
-		let enableEditHighlightedText = annotation.type === 'highlight';
 		props.onPopup('openAnnotationPopup', {
 			x,
 			y,
@@ -959,7 +959,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			colors: annotationColors,
 			selectedColor,
 			enableAddToNote,
-			enableEditHighlightedText
+			enableChangePageNumber: true
 		});
 	}, []);
 
@@ -1085,7 +1085,6 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (isRight && selectID) {
 			let readOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 			let enableAddToNote = !annotationsRef.current.some(x => selectedIDsRef.current.includes(x.id) && x.type === 'ink');
-			let enableEditHighlightedText = selectedIDsRef.current.length === 1 && annotationsRef.current.find(x => x.id === selectedIDsRef.current[0] && x.type === 'highlight');
 			let selectedColor;
 			if (annotationsRef.current.length === 1) {
 				selectedColor = annotationsRef.current[0].color;
@@ -1102,8 +1101,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				readOnly,
 				colors: annotationColors,
 				selectedColor,
-				enableAddToNote,
-				enableEditHighlightedText
+				enableAddToNote
 			});
 		}
 
