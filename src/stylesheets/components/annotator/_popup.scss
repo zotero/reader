@@ -64,6 +64,34 @@
 		color: #999;
 	}
 
+	.row.label {
+		display: flex;
+
+		.column {
+			display: flex;
+			align-items: center;
+
+			&.first {
+				input {
+					width: 100px;
+				}
+
+				input:disabled {
+					background-color: $gray-lightest;
+				}
+			}
+
+			&.second {
+				margin-inline-start: 10px;
+				user-select: none;
+
+				label {
+					padding-inline-start: 5px;
+				}
+			}
+		}
+	}
+
 	.row.radio {
 		user-select: none;
 

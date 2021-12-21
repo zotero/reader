@@ -206,15 +206,6 @@ class AnnotationsStore {
 		});
 	}
 
-	async resetPageLabels() {
-		// TODO: Don't reset page labels if they can't be reliably extracted from text
-		for (let annotation of this._annotations) {
-			annotation.pageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex);
-			this._save(annotation);
-		}
-		this.render();
-	}
-
 	// Note: Keep in sync with Zotero client
 	_generateObjectKey() {
 		let len = 8;

@@ -1285,7 +1285,22 @@ const Annotator = React.forwardRef((props, ref) => {
 		setLabelPopup(null);
 	}, []);
 
-	const handlePageLabelPopupUpdate = useCallback((type, pageLabel) => {
+	const handlePageLabelPopupUpdate = useCallback(async (type, pageLabel) => {
+		let annotationsToUpdate = [];
+		if (type === 'auto') {
+			// TODO: Don't reset page labels if they can't be reliably extracted from text
+			setLabelPopup(null);
+			let annotations = annotationsRef.current;
+			for (let annotation of annotations) {
+				annotationsToUpdate.push({
+					id: annotation.id,
+					pageLabel: await window.extractor.getPageLabel(annotation.position.pageIndex)
+				});
+			}
+			props.onUpdateAnnotations(annotationsToUpdate);
+			return;
+		}
+
 		if (!pageLabel) {
 			return;
 		}
@@ -1298,7 +1313,6 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let isNumeric = parseInt(pageLabel) == pageLabel;
 
-		let annotationsToUpdate = [];
 		if (type === 'single' || !isNumeric && type !== 'selected') {
 			if (!annotation.readOnly) {
 				annotation.pageLabel = pageLabel;
@@ -1345,7 +1359,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations(annotationsToUpdate);
 	}, []);
 
-	function openPageLabelPopup({ currentID, standalone, clientX, clientY, inPage }) {
+	async function openPageLabelPopup({ currentID, standalone, clientX, clientY, inPage }) {
 		let annotations = [];
 
 		let annotation = annotationsRef.current.find(x => x.id === currentID);
@@ -1410,12 +1424,15 @@ const Annotator = React.forwardRef((props, ref) => {
 			rect = [rect.left, rect.top, rect.right, rect.bottom];
 		}
 
+		let autoPageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex);
+
 		setLabelPopup({
 			rect,
 			currentID,
 			standalone,
 			checked,
-			label: annotation.pageLabel,
+			pageLabel: annotation.pageLabel,
+			autoPageLabel,
 			single,
 			selected,
 			page,

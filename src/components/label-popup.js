@@ -5,9 +5,9 @@ import { FormattedMessage } from 'react-intl';
 import Popup from './popup';
 
 function LabelPopup({ data, onUpdate, onClose }) {
-	let [label, setLabel] = useState(data.label);
+	let [label, setLabel] = useState(data.pageLabel);
 	let [checked, setChecked] = useState(data.checked);
-	let overlayRef = useRef();
+	let [auto, setAuto] = useState(false);
 	let inputRef = useRef();
 
 	useEffect(() => {
@@ -16,7 +16,12 @@ function LabelPopup({ data, onUpdate, onClose }) {
 	}, []);
 
 	function handleUpdateClick() {
-		onUpdate(checked, label.trim());
+		if (auto) {
+			onUpdate('auto');
+		}
+		else {
+			onUpdate(checked, label.trim());
+		}
 	}
 
 	function handleInputKeydown(event) {
@@ -27,6 +32,10 @@ function LabelPopup({ data, onUpdate, onClose }) {
 
 	function handleChange(event) {
 		setLabel(event.target.value);
+	}
+
+	function handleCheckboxChange(event) {
+		setAuto(event.target.checked);
 	}
 
 	function handleRadioChange(event) {
@@ -46,20 +55,38 @@ function LabelPopup({ data, onUpdate, onClose }) {
 
 	let disabled = !label.trim().length;
 
+	if (auto) {
+		checked = 'all';
+		disabled = false;
+	}
+
 	return (
 		<Popup id="labelPopup" data={data} onClose={onClose}>
-			<div className="row">
-				<input
-					ref={inputRef}
-					type="text"
-					className="toolbarField"
-					value={label}
-					maxLength={16}
-					onChange={handleChange}
-					onKeyDown={handleInputKeydown}/>
+			<div className="row label">
+				<div className="column first">
+					<input
+						ref={inputRef}
+						type="text"
+						className="toolbarField"
+						value={auto ? data.autoPageLabel : label}
+						disabled={auto}
+						maxLength={16}
+						onChange={handleChange}
+						onKeyDown={handleInputKeydown}
+					/>
+				</div>
+				<div className="column second">
+					<input
+						id="renumber-auto-detect"
+						type="checkbox"
+						checked={auto}
+						onChange={handleCheckboxChange}
+					/>
+					<label htmlFor="renumber-auto-detect"><FormattedMessage id="pdfReader.autoDetect"/></label>
+				</div>
 			</div>
 			<div className="row radio">
-				{data.single && <div className="choice">
+				{data.single && !auto && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-selected"
@@ -70,7 +97,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					/>
 					<label htmlFor="renumber-selected"><FormattedMessage id="pdfReader.thisAnnotation"/></label>
 				</div>}
-				{data.selected && <div className="choice">
+				{data.selected && !auto && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-selected"
@@ -81,7 +108,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					/>
 					<label htmlFor="renumber-selected"><FormattedMessage id="pdfReader.selectedAnnotations"/></label>
 				</div>}
-				{data.page && <div className="choice">
+				{data.page && !auto && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-page"
@@ -93,7 +120,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					/>
 					<label htmlFor="renumber-page"><FormattedMessage id="pdfReader.thisPage"/></label>
 				</div>}
-				{data.from && <div className="choice">
+				{data.from && !auto && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-from-page"
@@ -105,7 +132,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					/>
 					<label htmlFor="renumber-from-page"><FormattedMessage id="pdfReader.thisPageAndLaterPages"/></label>
 				</div>}
-				{data.all && <div className="choice">
+				{(data.all || auto) && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-all"
