@@ -56,8 +56,21 @@ function LabelPopup({ data, onUpdate, onClose }) {
 	let disabled = !label.trim().length;
 
 	if (auto) {
-		checked = 'all';
-		disabled = false;
+		if (data.all) {
+			checked = 'all';
+		}
+		else if (data.from) {
+			checked = 'from';
+		}
+		else if (data.page) {
+			checked = 'page';
+		}
+		else if (data.selected) {
+			checked = 'selected';
+		}
+		else if (data.single) {
+			checked = 'single';
+		}
 	}
 
 	return (
@@ -86,60 +99,62 @@ function LabelPopup({ data, onUpdate, onClose }) {
 				</div>
 			</div>
 			<div className="row radio">
-				{data.single && !auto && <div className="choice">
+				{data.single && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-selected"
 						name="renumber"
 						value="single"
 						checked={checked === 'single' && !disabled}
-						onChange={handleRadioChange} disabled={disabled}
+						disabled={disabled || auto}
+						onChange={handleRadioChange}
 					/>
 					<label htmlFor="renumber-selected"><FormattedMessage id="pdfReader.thisAnnotation"/></label>
 				</div>}
-				{data.selected && !auto && <div className="choice">
+				{data.selected && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-selected"
 						name="renumber"
 						value="selected"
 						checked={checked === 'selected' && !disabled}
-						disabled={disabled} onChange={handleRadioChange}
+						disabled={disabled || auto}
+						onChange={handleRadioChange}
 					/>
 					<label htmlFor="renumber-selected"><FormattedMessage id="pdfReader.selectedAnnotations"/></label>
 				</div>}
-				{data.page && !auto && <div className="choice">
+				{data.page && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-page"
 						name="renumber"
 						value="page"
 						checked={checked === 'page'}
-						disabled={forceSingle || disabled}
+						disabled={forceSingle || disabled || auto}
 						onChange={handleRadioChange}
 					/>
 					<label htmlFor="renumber-page"><FormattedMessage id="pdfReader.thisPage"/></label>
 				</div>}
-				{data.from && !auto && <div className="choice">
+				{data.from && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-from-page"
 						name="renumber"
 						value="from"
 						checked={checked === 'from'}
-						disabled={forceSingle || disabled}
+						disabled={forceSingle || disabled || auto}
 						onChange={handleRadioChange}
 					/>
 					<label htmlFor="renumber-from-page"><FormattedMessage id="pdfReader.thisPageAndLaterPages"/></label>
 				</div>}
-				{(data.all || auto) && <div className="choice">
+				{(data.all) && <div className="choice">
 					<input
 						type="radio"
 						id="renumber-all"
 						name="renumber"
 						value="all"
 						checked={checked === 'all'}
-						disabled={forceSingle || disabled}
+						disabled={forceSingle || disabled || auto}
 						onChange={handleRadioChange}
 					/>
 					<label htmlFor="renumber-all"><FormattedMessage id="pdfReader.allPages"/></label>
@@ -148,8 +163,8 @@ function LabelPopup({ data, onUpdate, onClose }) {
 			<div className="row buttons">
 				<button
 					className="overlayButton submit"
-					onClick={handleUpdateClick}
 					disabled={disabled}
+					onClick={handleUpdateClick}
 				><FormattedMessage id="general.update"/></button>
 			</div>
 		</Popup>
