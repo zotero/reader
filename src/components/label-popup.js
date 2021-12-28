@@ -98,7 +98,8 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					<label htmlFor="renumber-auto-detect"><FormattedMessage id="pdfReader.autoDetect"/></label>
 				</div>
 			</div>
-			<div className="row radio">
+			<fieldset className="radio row">
+				<legend><FormattedMessage id="pdfReader.pageNumberPopupHeader"/></legend>
 				{data.single && <div className="choice">
 					<input
 						type="radio"
@@ -159,7 +160,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					/>
 					<label htmlFor="renumber-all"><FormattedMessage id="pdfReader.allPages"/></label>
 				</div>}
-			</div>
+			</fieldset>
 			<div className="row buttons">
 				<button
 					className="overlayButton submit"

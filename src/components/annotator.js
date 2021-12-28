@@ -920,8 +920,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectedColor,
 			readOnly,
 			enableAddToNote,
+			enableEditPageNumber: true,
 			enableEditHighlightedText,
-			enableChangePageNumber: true
 		});
 	}, []);
 
@@ -959,7 +959,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			colors: annotationColors,
 			selectedColor,
 			enableAddToNote,
-			enableChangePageNumber: true
+			enableEditPageNumber: true,
 		});
 	}, []);
 

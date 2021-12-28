@@ -92,6 +92,17 @@
 		}
 	}
 
+	fieldset {
+		border: 0;
+		margin-top: 8px;
+		
+		legend {
+			font-size: $toolbar-field-font-size;
+			font-weight: bold;
+			padding-bottom: 4px;
+		}
+	}
+
 	.row.radio {
 		user-select: none;
 
