@@ -51,15 +51,17 @@
 		left: calc(50% - 50px);
 
 		margin-top: -15px;
+		height: 20px;
+		border-radius: 5px;
 
 		.button {
 			width: 20px;
-			height: 15px;
+			height: 100%;
 			background-color: transparent;
 			border: none;
 			cursor: pointer;
 			outline: 0;
-			vertical-align: bottom;
+			vertical-align: middle;
 
 			&:hover {
 				background-color: lightgrey;
