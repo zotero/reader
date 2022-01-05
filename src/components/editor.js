@@ -72,6 +72,17 @@ function walkUnformat(parent) {
 			}
 		}
 
+		// Unwrap <div><br></div> and some <div>...</div> to avoid doubled line breaks in innerText
+		if (child.nodeName === 'DIV'
+		&& (child.firstChild && child.firstChild.nodeName === 'BR'
+			|| child.nodeName === 'DIV' && child.nextSibling && child.nextSibling.nodeName === 'DIV'
+			&& child.nextSibling.firstChild && child.nextSibling.firstChild.nodeName === 'BR')
+		) {
+			let firstNode = child.firstChild;
+			child.replaceWith(...child.childNodes);
+			child = firstNode;
+		}
+
 		walkUnformat(child);
 		child = child.nextSibling;
 	}
