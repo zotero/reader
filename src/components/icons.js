@@ -51,3 +51,21 @@ export function IconNoteLarge() {
 		</svg>
 	);
 }
+
+export function IconColor({ color }) {
+	return (
+		<svg width="16" height="16" viewBox="0 0 16 16">
+			<rect
+				shapeRendering="geometricPrecision"
+				fill={color}
+				strokeWidth="1"
+				x="2"
+				y="2"
+				stroke="rgba(0, 0, 0, 0.08)"
+				width="12"
+				height="12"
+				rx="3"
+			/>
+		</svg>
+	);
+}

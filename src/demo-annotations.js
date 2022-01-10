@@ -111,10 +111,9 @@ let annotations = [
 		tags: [{
 			name: 'programming languages',
 			color: '#ff0000'
-		},
-			{
-				name: 'compiler'
-			}],
+		}, {
+			name: 'compiler'
+		}],
 		id: 690898672271502,
 		dateModified: '2020-02-07T07:24:37.870Z',
 		authorName: '',
@@ -162,7 +161,13 @@ let annotations = [
 		},
 		text: 'Nested loops can be difficult to optimize for tracing VMs. In a na ̈ıve implementation, inner loops would become hot first, and the VM would start tracing there. ',
 		comment: 'A problem of nested loops',
-		tags: [],
+		tags: [{
+			name: 'This is another tag'
+		}, {
+			name: 'Astrophysics'
+		}, {
+			name: 'Sleep patters and habits testing options'
+		}],
 		id: 674358779481824,
 		dateModified: '2020-02-07T07:23:50.968Z',
 		authorName: '',

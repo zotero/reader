@@ -3,7 +3,12 @@
 //
 
 #annotationsView {
-	@extend %sidebar-view;
+	width: 100%;
+	height: 100%;
+	user-select: none;
+
+	display: flex;
+	flex-direction: column;
 
 	&:focus {
 		outline: none;
@@ -63,6 +68,92 @@
 			height: 14px;
 			background: transparent;
 			border: none;
+		}
+	}
+
+	.annotations {
+		overflow: auto;
+		padding: 4px 4px 0; // Firefox does not render padding-bottom
+		flex: 1;
+		//-webkit-overflow-scrolling: touch;
+
+		> *:last-child {
+			margin-bottom: 8px;
+		}
+	}
+
+	.selector {
+		padding: 8px 8px;
+		border-top: 1px solid #a9a9a9;
+		box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+		z-index: 2;
+		max-height: 120px;
+		overflow: auto;
+
+		.colors {
+			display: flex;
+
+			.color {
+				padding: 2px;
+				display: flex;
+				border-radius: 3px;
+				margin-left: 1px;
+
+				&:hover, &.selected {
+					background-color: #bcc4d2;
+				}
+
+				&.inactive {
+					svg {
+						opacity: 0.4;
+					}
+				}
+			}
+		}
+
+		.tags {
+			display: flex;
+			flex-wrap: wrap;
+
+			&:nth-child(2) {
+				margin-top: 4px;
+			}
+
+			.tag {
+				cursor: default;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: pre;
+				padding: 2px 4px;
+				margin-left: 1px;
+				margin-bottom: 1px;
+
+				border-radius: 6px;
+				border: 1px solid transparent;
+
+				&.color {
+					font-weight: bold;
+				}
+
+				&.selected {
+					color: white;
+					background: rgb(89, 139, 236);
+				}
+
+				&:hover {
+					background: rgb(187, 206, 241);
+					border: 1px solid rgb(109, 149, 224);
+				}
+
+				&:active {
+					color: white;
+					background: rgb(89, 139, 236);
+				}
+
+				&.inactive {
+					opacity: 0.4;
+				}
+			}
 		}
 	}
 }

@@ -122,7 +122,7 @@ class ViewerInstance {
 			state: options.state,
 			location: options.location,
 			sidebarWidth: 240,
-			sidebarOpen: false,
+			sidebarOpen: true,
 			bottomPlaceholderHeight: 0,
 			localizedStrings: {},
 			readOnly: options.readOnly

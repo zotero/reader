@@ -6,6 +6,8 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import { SidebarPreview } from './preview';
 import { searchAnnotations } from '../lib/search';
+import { IconColor } from "./icons";
+import { annotationColors } from "../lib/colors";
 
 function AnnotationsViewSearch({ query, onInput, onClear }) {
 	const intl = useIntl();
@@ -42,6 +44,34 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 	);
 }
 
+function Selector({ tags, colors, onClickTag, onClickColor }) {
+	const intl = useIntl();
+	return (
+		<div className="selector">
+			{colors.length > 1 && <div className="colors">
+				{colors.map((color, index) => (
+					<div
+						key={index}
+						className={cx('color', { selected: color.selected, inactive: color.inactive })}
+						title={color.name ? intl.formatMessage({ id: color.name }) : null}
+						onClick={() => onClickColor(color.color)}
+					><IconColor color={color.color}/></div>
+				))}
+			</div>}
+			{!!tags.length && <div className="tags">
+				{tags.map((tag, index) => (
+					<span
+						key={index}
+						className={cx('tag', { color: !!tag.color, selected: tag.selected, inactive: tag.inactive })}
+						style={{ color: tag.color }}
+						onClick={() => onClickTag(tag.name)}
+					>{tag.name}</span>
+				))}
+			</div>}
+		</div>
+	);
+}
+
 // We get significant performance boost here because `props.annotation`
 // reference is updated only when annotation data is updated
 const Annotation = React.memo((props) => {
@@ -68,8 +98,10 @@ const Annotation = React.memo((props) => {
 });
 
 const AnnotationsView = React.memo(function (props) {
-	const [filteredAnnotations, setFilteredAnnotations] = useState(null);
+	const [searchedAnnotations, setSearchedAnnotations] = useState(null);
 	const [query, setQuery] = useState('');
+	const [selectedTags, setSelectedTags] = useState([]);
+	const [selectedColors, setSelectedColors] = useState([]);
 
 	function getContainerNode() {
 		return document.getElementById('annotationsView');
@@ -78,10 +110,10 @@ const AnnotationsView = React.memo(function (props) {
 	function search(query) {
 		let { annotations } = props;
 		if (query) {
-			setFilteredAnnotations(searchAnnotations(annotations, query));
+			setSearchedAnnotations(searchAnnotations(annotations, query));
 		}
 		else {
-			setFilteredAnnotations(null);
+			setSearchedAnnotations(null);
 		}
 	}
 
@@ -95,50 +127,141 @@ const AnnotationsView = React.memo(function (props) {
 		search();
 	}
 
+	function handleTagClick(name) {
+		console.log('tag click', name)
+		if (selectedTags.includes(name)) {
+			setSelectedTags(selectedTags.filter(x => x !== name));
+		}
+		else {
+			setSelectedTags([...selectedTags, name]);
+		}
+	}
+
+	function handleColorClick(color) {
+		if (selectedColors.includes(color)) {
+			setSelectedColors(selectedColors.filter(x => x !== color));
+		}
+		else {
+			setSelectedColors([...selectedColors, color]);
+		}
+	}
 
 	let containerNode = getContainerNode();
-	if (!containerNode) return null;
+	if (!containerNode) {
+		return null;
+	}
 
 	let { annotations } = props;
-	if (filteredAnnotations) {
-		let newFilteredAnnotations = [];
-		for (let filteredAnnotation of filteredAnnotations) {
+	if (searchedAnnotations) {
+		let newSearchedAnnotations = [];
+		for (let filteredAnnotation of searchedAnnotations) {
 			let annotation = annotations.find(x => x.id === filteredAnnotation.id);
 			if (annotation) {
-				newFilteredAnnotations.push(annotation);
+				newSearchedAnnotations.push(annotation);
 			}
 		}
-		annotations = newFilteredAnnotations;
+		annotations = newSearchedAnnotations;
 	}
+
+	if (selectedTags.length || selectedColors.length) {
+		annotations = annotations.filter(x => x.tags.some(t => selectedTags.includes(t.name)) || selectedColors.includes(x.color));
+	}
+
+	let tags = {};
+	let colors = {};
+	for (let annotation of props.annotations) {
+		for (let tag of annotation.tags) {
+			if (!tags[tag.name]) {
+				tags[tag.name] = { ...tag };
+				tags[tag.name].selected = selectedTags.includes(tag.name);
+				tags[tag.name].inactive = true;
+			}
+		}
+		let color = annotation.color;
+		if (!colors[color]) {
+			let predefinedColor = annotationColors.find(x => x[1] === color);
+			colors[color] = {
+				color,
+				selected: selectedColors.includes(color),
+				inactive: true,
+				name: predefinedColor ? predefinedColor[0] : null
+			};
+		}
+	}
+
+	for (let annotation of annotations) {
+		for (let tag of annotation.tags) {
+			tags[tag.name].inactive = false;
+		}
+		colors[annotation.color].inactive = false;
+	}
+
+	let coloredTags = [];
+	for (let key in tags) {
+		let tag = tags[key];
+		if (tag.color) {
+			coloredTags.push(tag);
+			delete tags[key];
+		}
+	}
+
+	// Sort colored tags and place at beginning
+	coloredTags.sort((a, b) => {
+		return a.position - b.position;
+	});
+
+	let primaryColors = [];
+	for (let annotationColor of annotationColors) {
+		if (colors[annotationColor[1]]) {
+			primaryColors.push(colors[annotationColor[1]]);
+			delete colors[annotationColor[1]];
+		}
+	}
+
+	tags = Object.values(tags);
+	let collator = new Intl.Collator();
+	tags.sort(function (a, b) {
+		return collator.compare(a.tag, b.tag);
+	});
+	tags = [...coloredTags, ...tags];
+
+	colors = Object.values(colors);
+	colors = [...primaryColors, ...colors];
 
 	return ReactDOM.createPortal(
 		<React.Fragment>
-			<AnnotationsViewSearch
-				query={query}
-				onInput={handleSearchInput}
-				onClear={handleSearchClear}
-			/>
-			{annotations.length
-				? annotations.map(annotation => (
-					<Annotation
-						key={annotation.id}
-						isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
-						annotation={annotation}
-						expansionState={props.selectedAnnotationIDs.includes(annotation.id) ? props.expansionState : 0}
-						onSelect={props.onSelectAnnotation}
-						onChange={props.onChange}
-						onClickAnnotationSection={props.onClickAnnotationSection}
-						onDoubleClickHighlight={props.onDoubleClickHighlight}
-						onDoubleClickPageLabel={props.onDoubleClickPageLabel}
-						onMenu={props.onMenu}
-						onDragStart={props.onDragStart}
-						onAnnotationEditorBlur={props.onAnnotationEditorBlur}
-					/>
-				))
-				: !query.length && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
-		</React.Fragment>,
-		containerNode
-	);
+			<div className="annotations">
+				<AnnotationsViewSearch
+					query={query}
+					onInput={handleSearchInput}
+					onClear={handleSearchClear}
+				/>
+				{annotations.length
+					? annotations.map(annotation => (
+						<Annotation
+							key={annotation.id}
+							isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+							annotation={annotation}
+							expansionState={props.selectedAnnotationIDs.includes(annotation.id) ? props.expansionState : 0}
+							onSelect={props.onSelectAnnotation}
+							onChange={props.onChange}
+							onClickAnnotationSection={props.onClickAnnotationSection}
+							onDoubleClickHighlight={props.onDoubleClickHighlight}
+							onDoubleClickPageLabel={props.onDoubleClickPageLabel}
+							onMenu={props.onMenu}
+							onDragStart={props.onDragStart}
+							onAnnotationEditorBlur={props.onAnnotationEditorBlur}
+						/>
+					))
+					: !query.length && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
+			</div>
+			{(!!tags.length || colors.length > 1) && <Selector
+				tags={tags}
+				colors={colors}
+				onClickTag={handleTagClick}
+				onClickColor={handleColorClick}
+			/>}
+		</React.Fragment>, containerNode);
 });
 
 export default AnnotationsView;
