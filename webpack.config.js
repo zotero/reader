@@ -91,9 +91,9 @@ const configWeb = {
 		contentBase: path.join(__dirname, 'build/'),
 		openPage: 'web/viewer.html',
 		open: false,
-		watchOptions: {
-			poll: true
-		}
+		// watchOptions: {
+		// 	poll: true
+		// }
 	}
 };
 
