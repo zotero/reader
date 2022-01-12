@@ -272,6 +272,10 @@ class Viewer {
 		this.annotatorRef.current.editHighlightedText(data);
 	};
 
+	clearSelector = () => {
+		this.annotatorRef.current.clearSelector();
+	};
+
 	navigate = async (location) => {
 		await this._annotatorPromise;
 		await this._pdfjsPromise;

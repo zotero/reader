@@ -44,10 +44,10 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 	);
 }
 
-function Selector({ tags, colors, onClickTag, onClickColor }) {
+function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor }) {
 	const intl = useIntl();
 	return (
-		<div className="selector">
+		<div className="selector" onContextMenu={onContextMenu}>
 			{colors.length > 1 && <div className="colors">
 				{colors.map((color, index) => (
 					<div
@@ -103,7 +103,13 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	const [selectedTags, setSelectedTags] = useState([]);
 	const [selectedColors, setSelectedColors] = useState([]);
 
-	useImperativeHandle(ref, () => ({ getAnnotations }));
+	useImperativeHandle(ref, () => ({
+		getAnnotations,
+		clearSelector: () => {
+			setSelectedTags([]);
+			setSelectedColors([]);
+		}
+	}));
 
 	// Deselect tags and colors that no longer exist in any annotation
 	let _selectedColors = [];
@@ -184,6 +190,19 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 		else {
 			setSelectedTags([...selectedTags, name]);
 		}
+	}
+
+	function handleSelectorContextMenu(event) {
+		if (!event.target.classList.contains('colors')
+			&& !event.target.classList.contains('tags')) {
+			return;
+		}
+
+		props.onSelectorMenu({
+			x: event.screenX,
+			y: event.screenY,
+			enableClearSelection: selectedColors.length || selectedTags.length
+		});
 	}
 
 	let containerNode = getContainerNode();
@@ -284,6 +303,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 			{(!!tags.length || colors.length > 1) && <Selector
 				tags={tags}
 				colors={colors}
+				onContextMenu={handleSelectorContextMenu}
 				onClickTag={handleTagClick}
 				onClickColor={handleColorClick}
 			/>}

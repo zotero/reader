@@ -201,7 +201,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		setColor,
 		setEnableAddToNote,
 		openPageLabelPopup,
-		editHighlightedText
+		editHighlightedText,
+		clearSelector: annotationsViewRef.current.clearSelector
 	}));
 
 	function setSelectionRangesRef(ranges) {
@@ -1464,6 +1465,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		}, 50);
 	}
 
+	function handleSelectorMenuOpen(data) {
+		props.onPopup('openSelectorPopup', data);
+	}
+
 	return (
 		<div>
 			<Toolbar
@@ -1484,6 +1489,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				onChange={handleSidebarAnnotationChange}
 				onDragStart={handleSidebarAnnotationDragStart}
 				onMenu={handleSidebarAnnotationMenuOpen}
+				onSelectorMenu={handleSelectorMenuOpen}
 			/>
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}

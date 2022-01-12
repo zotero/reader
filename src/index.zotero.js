@@ -221,6 +221,10 @@ class ViewerInstance {
 				this._viewer.editHighlightedText(message.data);
 				return;
 			}
+			case 'clearSelector': {
+				this._viewer.clearSelector();
+				return;
+			}
 			case 'copy': {
 				return;
 			}
