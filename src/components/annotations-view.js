@@ -103,6 +103,27 @@ const AnnotationsView = React.memo(function (props) {
 	const [selectedTags, setSelectedTags] = useState([]);
 	const [selectedColors, setSelectedColors] = useState([]);
 
+	// Deselect tags and colors that no longer exist in any annotation
+	let _selectedColors = [];
+	for (let selectedColor of selectedColors) {
+		if (props.annotations.some(a => a.color === selectedColor)) {
+			_selectedColors.push(selectedColor);
+		}
+	}
+	if (selectedColors.length !== _selectedColors.length) {
+		setSelectedColors(_selectedColors);
+	}
+
+	let _selectedTags = [];
+	for (let selectedTag of selectedTags) {
+		if (props.annotations.some(a => a.tags.some(t => selectedTag === t.name))) {
+			_selectedTags.push(selectedTag);
+		}
+	}
+	if (selectedTags.length !== _selectedTags.length) {
+		setSelectedTags(_selectedTags);
+	}
+
 	function getContainerNode() {
 		return document.getElementById('annotationsView');
 	}
@@ -127,22 +148,21 @@ const AnnotationsView = React.memo(function (props) {
 		search();
 	}
 
-	function handleTagClick(name) {
-		console.log('tag click', name)
-		if (selectedTags.includes(name)) {
-			setSelectedTags(selectedTags.filter(x => x !== name));
-		}
-		else {
-			setSelectedTags([...selectedTags, name]);
-		}
-	}
-
 	function handleColorClick(color) {
 		if (selectedColors.includes(color)) {
 			setSelectedColors(selectedColors.filter(x => x !== color));
 		}
 		else {
 			setSelectedColors([...selectedColors, color]);
+		}
+	}
+
+	function handleTagClick(name) {
+		if (selectedTags.includes(name)) {
+			setSelectedTags(selectedTags.filter(x => x !== name));
+		}
+		else {
+			setSelectedTags([...selectedTags, name]);
 		}
 	}
 
