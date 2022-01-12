@@ -190,6 +190,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
 	const [_labelPopup, labelPopup, setLabelPopup] = useRefState(null);
 
+	const annotationsViewRef = useRef();
 	const lastSelectedAnnotationIDRef = useRef(null);
 	const pointerDownPositionRef = useRef(null);
 	const selectionRangesRef = useRef([]);
@@ -363,7 +364,17 @@ const Annotator = React.forwardRef((props, ref) => {
 			document.getElementById('viewerContainer').focus();
 		}
 
-		if (isMod && e.key === 'c') return;
+		if (isMod && e.key === 'c') {
+			return;
+		}
+
+		if (isMod && e.key === 'a'
+			&& document.activeElement
+			&& document.activeElement.nodeName !== 'INPUT'
+			&& !isSelectingTextRef.current
+			&& !labelPopup.current) {
+			setSelectedIDs(annotationsViewRef.current.getAnnotations().map(x => x.id));
+		}
 
 		if (isShift && selectionRangesRef.current.length) {
 			if (e.key === 'ArrowLeft') {
@@ -1462,6 +1473,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				onColorPick={handleToolbarColorClick}
 			/>
 			<AnnotationsView
+				ref={annotationsViewRef}
 				annotations={_annotations}
 				selectedAnnotationIDs={_selectedIDs}
 				expansionState={_expansionState}

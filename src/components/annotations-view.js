@@ -1,6 +1,6 @@
 'use strict';
 
-import React, { useState } from 'react';
+import React, { forwardRef, memo, useImperativeHandle, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
@@ -97,11 +97,13 @@ const Annotation = React.memo((props) => {
 	);
 });
 
-const AnnotationsView = React.memo(function (props) {
+const AnnotationsView = memo(forwardRef(function (props, ref) {
 	const [searchedAnnotations, setSearchedAnnotations] = useState(null);
 	const [query, setQuery] = useState('');
 	const [selectedTags, setSelectedTags] = useState([]);
 	const [selectedColors, setSelectedColors] = useState([]);
+
+	useImperativeHandle(ref, () => ({ getAnnotations }));
 
 	// Deselect tags and colors that no longer exist in any annotation
 	let _selectedColors = [];
@@ -122,6 +124,24 @@ const AnnotationsView = React.memo(function (props) {
 	}
 	if (selectedTags.length !== _selectedTags.length) {
 		setSelectedTags(_selectedTags);
+	}
+
+	function getAnnotations() {
+		let { annotations } = props;
+		if (searchedAnnotations) {
+			let newSearchedAnnotations = [];
+			for (let filteredAnnotation of searchedAnnotations) {
+				let annotation = annotations.find(x => x.id === filteredAnnotation.id);
+				if (annotation) {
+					newSearchedAnnotations.push(annotation);
+				}
+			}
+			annotations = newSearchedAnnotations;
+		}
+		if (selectedTags.length || selectedColors.length) {
+			annotations = annotations.filter(x => x.tags.some(t => selectedTags.includes(t.name)) || selectedColors.includes(x.color));
+		}
+		return annotations;
 	}
 
 	function getContainerNode() {
@@ -171,21 +191,7 @@ const AnnotationsView = React.memo(function (props) {
 		return null;
 	}
 
-	let { annotations } = props;
-	if (searchedAnnotations) {
-		let newSearchedAnnotations = [];
-		for (let filteredAnnotation of searchedAnnotations) {
-			let annotation = annotations.find(x => x.id === filteredAnnotation.id);
-			if (annotation) {
-				newSearchedAnnotations.push(annotation);
-			}
-		}
-		annotations = newSearchedAnnotations;
-	}
-
-	if (selectedTags.length || selectedColors.length) {
-		annotations = annotations.filter(x => x.tags.some(t => selectedTags.includes(t.name)) || selectedColors.includes(x.color));
-	}
+	let annotations = getAnnotations();
 
 	let tags = {};
 	let colors = {};
@@ -282,6 +288,6 @@ const AnnotationsView = React.memo(function (props) {
 				onClickColor={handleColorClick}
 			/>}
 		</React.Fragment>, containerNode);
-});
+}));
 
 export default AnnotationsView;
