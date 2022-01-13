@@ -73,6 +73,9 @@ class ViewerInstance {
 			onPopup: (name, data) => {
 				this._postMessage({ action: name, data });
 			},
+			onClosePopup: (data) => {
+				this._postMessage({ action: 'closePopup', data });
+			},
 			onExternalLink: (url) => {
 				this._postMessage({ action: 'openURL', url });
 			},

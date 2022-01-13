@@ -1,6 +1,6 @@
 'use strict';
 
-import React, { forwardRef, memo, useImperativeHandle, useState } from 'react';
+import React, { forwardRef, memo, useImperativeHandle, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
@@ -102,6 +102,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	const [query, setQuery] = useState('');
 	const [selectedTags, setSelectedTags] = useState([]);
 	const [selectedColors, setSelectedColors] = useState([]);
+	const prevAnnotationsLengthRef = useRef(props.annotations.length);
 
 	useImperativeHandle(ref, () => ({
 		getAnnotations,
@@ -212,6 +213,11 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 
 	let annotations = getAnnotations();
 
+	if (prevAnnotationsLengthRef.current > annotations.length) {
+		props.onDeselectAnnotations();
+	}
+	prevAnnotationsLengthRef.current = annotations.length;
+
 	let tags = {};
 	let colors = {};
 	for (let annotation of props.annotations) {
@@ -285,9 +291,9 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 					? annotations.map(annotation => (
 						<Annotation
 							key={annotation.id}
-							isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+							isSelected={props.selectedIDs.includes(annotation.id)}
 							annotation={annotation}
-							expansionState={props.selectedAnnotationIDs.includes(annotation.id) ? props.expansionState : 0}
+							expansionState={props.selectedIDs.includes(annotation.id) ? props.expansionState : 0}
 							onSelect={props.onSelectAnnotation}
 							onChange={props.onChange}
 							onClickAnnotationSection={props.onClickAnnotationSection}

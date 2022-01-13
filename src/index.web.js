@@ -105,6 +105,9 @@ class ViewerInstance {
 				console.log(name, data);
 				alert('This will open ' + name);
 			},
+			onClosePopup(data) {
+				console.log('onClosePopup', data);
+			},
 			onExternalLink(url) {
 				alert('This will navigate to the external link: ' + url);
 			},

@@ -100,6 +100,7 @@ class Viewer {
 					onClickTags={options.onClickTags}
 					onDoubleClickPageLabel={options.onDoubleClickPageLabel}
 					onPopup={options.onPopup}
+					onClosePopup={options.onClosePopup}
 					onAddToNote={options.onAddToNote}
 					ref={this.annotatorRef}
 				/>

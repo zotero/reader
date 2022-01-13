@@ -1465,9 +1465,14 @@ const Annotator = React.forwardRef((props, ref) => {
 		}, 50);
 	}
 
-	function handleSelectorMenuOpen(data) {
+	const handleSelectorMenuOpen = useCallback((data) => {
 		props.onPopup('openSelectorPopup', data);
-	}
+	}, []);
+
+	const handleDeselectAnnotations = useCallback(() => {
+		setSelectedIDs([]);
+		props.onClosePopup();
+	}, []);
 
 	return (
 		<div>
@@ -1480,7 +1485,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			<AnnotationsView
 				ref={annotationsViewRef}
 				annotations={_annotations}
-				selectedAnnotationIDs={_selectedIDs}
+				selectedIDs={_selectedIDs}
 				expansionState={_expansionState}
 				onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 				onAnnotationEditorBlur={handleSidebarAnnotationEditorBlur}
@@ -1490,6 +1495,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				onDragStart={handleSidebarAnnotationDragStart}
 				onMenu={handleSidebarAnnotationMenuOpen}
 				onSelectorMenu={handleSelectorMenuOpen}
+				onDeselectAnnotations={handleDeselectAnnotations}
 			/>
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}
