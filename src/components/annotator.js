@@ -370,6 +370,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (isMod && e.key === 'a'
+			&& window.PDFViewerApplication.pdfSidebar.isOpen
 			&& document.activeElement
 			&& document.activeElement.nodeName !== 'INPUT'
 			&& !isSelectingTextRef.current
