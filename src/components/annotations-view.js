@@ -1,6 +1,6 @@
 'use strict';
 
-import React, { forwardRef, memo, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, memo, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
@@ -103,6 +103,14 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	const [selectedTags, setSelectedTags] = useState([]);
 	const [selectedColors, setSelectedColors] = useState([]);
 	const prevAnnotationsLengthRef = useRef(props.annotations.length);
+
+	useEffect(() => {
+		let annotations = getAnnotations();
+		if (prevAnnotationsLengthRef.current !== annotations.length) {
+			props.onDeselectAnnotations();
+		}
+		prevAnnotationsLengthRef.current = annotations.length;
+	});
 
 	useImperativeHandle(ref, () => ({
 		getAnnotations,
@@ -212,11 +220,6 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	}
 
 	let annotations = getAnnotations();
-
-	if (prevAnnotationsLengthRef.current > annotations.length) {
-		props.onDeselectAnnotations();
-	}
-	prevAnnotationsLengthRef.current = annotations.length;
 
 	let tags = {};
 	let colors = {};
