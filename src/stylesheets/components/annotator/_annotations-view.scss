@@ -73,13 +73,17 @@
 
 	.annotations {
 		overflow: auto;
-		padding: 4px 4px 0; // Firefox does not render padding-bottom
+		padding: 3px 4px 0; // Firefox does not render padding-bottom
 		flex: 1;
 		//-webkit-overflow-scrolling: touch;
 
 		> *:last-child {
 			margin-bottom: 8px;
 		}
+	}
+
+	.annotation {
+		outline: none;
 	}
 
 	.selector {

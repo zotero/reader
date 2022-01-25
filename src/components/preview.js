@@ -29,7 +29,13 @@ export function PopupPreview(props) {
 	function handleClickMore(event) {
 		if (!props.annotation.readOnly) {
 			event.stopPropagation();
-			props.onMoreMenu(props.annotation.id, event.screenX, event.screenY);
+			props.onMoreMenu({
+				id: props.annotation.id,
+				// button: true,
+				screenX: event.screenX,
+				screenY: event.screenY,
+				selector: `#viewerContainer .preview .more`
+			});
 		}
 	}
 
@@ -66,7 +72,7 @@ export function PopupPreview(props) {
 					</div>
 				)}
 				<div className="right">
-					<div className="more" onClick={handleClickMore}/>
+					<button tabIndex={-1} className="more" onClick={handleClickMore}/>
 				</div>
 			</header>
 
@@ -85,7 +91,8 @@ export function PopupPreview(props) {
 			)}
 
 			{(!annotation.readOnly || !!annotation.tags.length) && (
-				<div
+				<button
+					tabIndex={-1}
 					className="tags"
 					onClick={handleTagsClick}
 				>{annotation.tags.length ? annotation.tags.map((tag, index) => (
@@ -93,7 +100,7 @@ export function PopupPreview(props) {
 						className="tag" key={index}
 						style={{ color: tag.color }}
 					>{tag.name}</span>
-				)) : <FormattedMessage id="pdfReader.addTags"/>}</div>
+				)) : <FormattedMessage id="pdfReader.addTags"/>}</button>
 			)}
 
 		</div>
@@ -127,7 +134,13 @@ export function SidebarPreview(props) {
 	function handleClickMore(event) {
 		if (!props.annotation.readOnly) {
 			event.stopPropagation();
-			props.onMenu(props.annotation.id, event.screenX, event.screenY, true);
+			props.onMenu({
+				id: props.annotation.id,
+				button: true,
+				screenX: event.screenX,
+				screenY: event.screenY,
+				selector: `#annotations [data-sidebar-id="${props.annotation.id}"] .more`
+			});
 		}
 	}
 
@@ -148,7 +161,7 @@ export function SidebarPreview(props) {
 		if (event.button === 2
 			&& !event.target.closest('div[contenteditable="true"]')) {
 			event.stopPropagation();
-			props.onMenu(props.annotation.id, event.screenX, event.screenY);
+			props.onMenu({ id: props.annotation.id, screenX: event.screenX, screenY: event.screenY });
 		}
 	}
 
@@ -252,7 +265,7 @@ export function SidebarPreview(props) {
 					</div>
 				)}
 				<div className="right">
-					<div className="more" onClick={handleClickMore}/>
+					<button tabIndex={-1} className="more" onClick={handleClickMore}/>
 				</div>
 			</header>
 			{annotation.image && (
@@ -268,12 +281,13 @@ export function SidebarPreview(props) {
 			{comment}
 			{(state >= 1 && !annotation.readOnly || annotation.tags.length > 0)
 			&& (
-				<div
+				<button
+					tabIndex={-1}
 					className="tags"
 					onClick={e => handleSectionClick(e, 'tags')}
 					draggable={true}
 					onDragStart={handleDragStart}
-				>{tags}</div>
+				>{tags}</button>
 			)}
 		</div>
 	);

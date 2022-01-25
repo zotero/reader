@@ -117,6 +117,8 @@
 	}
 
 	.tags {
+		width: 100%;
+		text-align: left;
 		padding: rem(3) 8px rem(5);
 
 		// Normalize line height across browsers at 11px font-size

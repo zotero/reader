@@ -31,6 +31,10 @@
 	position: relative;
 }
 
+.treeItem > a:focus {
+	box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+}
+
 .treeItemToggler {
 	position: absolute;
 	height: $outline-item-height;
