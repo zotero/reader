@@ -23,3 +23,25 @@
 	// Without this .textLayer affects cursor
 	display: none;
 }
+
+button {
+	background: none;
+	color: inherit;
+	border: none;
+	padding: 0;
+	font: inherit;
+	cursor: pointer;
+	outline: inherit;
+	display: block;
+
+
+	&:focus-visible {
+		//border: $search-focus-border;
+		box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+	}
+
+	&:-moz-focusring {
+		//border: $search-focus-border;
+		box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+	}
+}

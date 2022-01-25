@@ -107,7 +107,7 @@ export function setLayerSingleDragPreview(event, annotation) {
 		let { canvas, context } = getDragCanvas();
 		let x = 0;
 		let y = 0;
-		let img = document.querySelector('div[data-sidebar-id="' + annotation.id + '"] img');
+		let img = document.querySelector(`[data-sidebar-annotation-id="${annotation.id}"] img`);
 		if (img) {
 			let width = 200;
 			let height = 200 * img.height / img.width;

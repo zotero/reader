@@ -138,6 +138,7 @@ class Viewer {
 
 	_initSelectionBox() {
 		let box = document.createElement('textarea');
+		box.tabIndex = -1;
 		box.style = 'position: absolute;top: 0;left: 0;width: 0;height: 0;z-index: -1;pointer-events: none;';
 		document.body.append(box);
 		window.selectionBox = box;

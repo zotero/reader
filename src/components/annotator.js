@@ -22,8 +22,10 @@ import {
 	intersectAnnotationWithPoint,
 	getPositionBoundingRect,
 	isMac,
-	isLinux
+	isLinux,
+	clearSelection
 } from '../lib/utilities';
+import { p2v, p2v as p2vc } from '../lib/coordinates';
 
 // Note: All rects in annotator.js are stored in [left, top, right, bottom] order
 // where the Y axis starts from the bottom:
@@ -165,6 +167,269 @@ function getSelectionRanges(anchor, head) {
 	return selectionRanges;
 }
 
+class FocusManager {
+	constructor(options) {
+		this.options = options;
+		this.zone = null;
+		this.zones = [
+			{
+				id: 'label-popup-input',
+				selector: '#labelPopup input[type="text"]'
+			},
+			{
+				id: 'label-popup-checkbox',
+				selector: '#labelPopup input[type="checkbox"]'
+			},
+			{
+				id: 'label-popup-radios',
+				selector: '#labelPopup input[type="radio"]'
+			},
+			{
+				id: 'label-popup-button',
+				selector: '#labelPopup button'
+			},
+			{
+				id: 'popup-selection',
+				selector: '#selection-menu [tabindex="-1"]'
+			},
+			{
+				id: 'toolbar',
+				selector: '#toolbarViewer [tabindex="-1"]:not(:disabled)'
+			},
+			{
+				id: 'findbar-input',
+				selector: '#findbar:not(.hidden) #findInput'
+			},
+			{
+				id: 'findbar-navigation',
+				selector: '#findbar:not(.hidden) #findbarInputContainer .splitToolbarButton button'
+			},
+			{
+				id: 'findbar-options',
+				selector: '#findbar:not(.hidden) #findOptions input'
+			},
+			{
+				id: 'sidebar-buttons',
+				selector: '#outerContainer.sidebarOpen #toolbarSidebar button:not(:disabled)'
+			},
+			{
+				id: 'sidebar-search',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) #searchInput'
+			},
+			{
+				id: 'sidebar-thumbnails',
+				selector: '#outerContainer.sidebarOpen #thumbnailView:not(.hidden) a'
+			},
+			{
+				id: 'sidebar-outline',
+				selector: '#outerContainer.sidebarOpen #outlineView:not(.hidden) > .treeItem > a, #outerContainer.sidebarOpen #outlineView:not(.hidden) .treeItemToggler:not(.treeItemsHidden) ~ .treeItems > .treeItem > a'
+			},
+			{
+				id: 'sidebar-annotation',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) #annotations .annotation'
+			},
+			{
+				id: 'sidebar-annotation-dots',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) .annotation.selected .preview:not(.read-only) .more'
+			},
+			{
+				id: 'sidebar-annotation-highlight',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) .annotation.selected .preview:not(.read-only) .highlight .content[contenteditable="true"]'
+			},
+			{
+				id: 'sidebar-annotation-comment',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) .annotation.selected .preview:not(.read-only) .comment .content'
+			},
+			{
+				id: 'sidebar-annotation-tags',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) .annotation.selected .preview:not(.read-only) .tags'
+			},
+			{
+				id: 'sidebar-selector',
+				selector: '#outerContainer.sidebarOpen #annotationsView:not(.hidden) #selector [tabindex="-1"]'
+			},
+			{
+				id: 'view-annotation',
+				selector: '#viewerContainer'
+			},
+			{
+				id: 'view-annotation-dots',
+				selector: '#outerContainer:not(.sidebarOpen) #viewerContainer .preview:not(.read-only) .more'
+			},
+			{
+				id: 'view-annotation-comment',
+				selector: '#outerContainer:not(.sidebarOpen) #viewerContainer .preview:not(.read-only) .comment .content'
+			},
+			{
+				id: 'view-annotation-tags',
+				selector: '#outerContainer:not(.sidebarOpen) #viewerContainer .preview:not(.read-only) .tags'
+			},
+		];
+
+		window.addEventListener('focus', this.onFocus, true);
+	}
+
+	onFocus = (event) => {
+		if (event.target === window) {
+			return;
+		}
+
+		this.zone = null;
+		if (event.target.id === 'viewerContainer') {
+			if (this.options.selectedIDsRef.current.length) {
+				this.zone = this.zones.find(x => x.id === 'view-annotation');
+			}
+			return;
+		}
+
+		loop1: for (let zone of this.zones) {
+			let nodes = Array.from(document.querySelectorAll(zone.selector)).reverse();
+			for (let node of nodes) {
+				if (event.target === node) {
+					this.zone = zone;
+					break loop1;
+				}
+			}
+		}
+
+		if (!['annotations', 'viewerContainer'].includes(event.target.id) && (!this.zone || !this.zone.id.includes('annotation') && !this.zone.id.includes('label-'))) {
+			this.options.selectAnnotation();
+		}
+
+		if (!this.zone || !['label-popup-input', 'label-popup-checkbox', 'label-popup-radios', 'label-popup-button'].includes(this.zone.id)) {
+			this.options.setLabelPopup(null);
+		}
+
+		if (this.zone && this.zone.id !== 'popup-selection') {
+			this.options.setSelectionRangesRef([]);
+		}
+	}
+
+	focus(id) {
+		if (!id) {
+			document.getElementById('viewerContainer').focus();
+			this.options.selectAnnotation();
+			this.zone = null;
+			return;
+		}
+
+		let zone = this.zones.find(x => x.id === id);
+		if (id === 'view-annotation') {
+			let annotation = this.options.getFirstVisibleAnnotation();
+			if (annotation) {
+				if (!this.options.selectedIDsRef.current.length) {
+					this.options.selectAnnotation({ id: annotation.id });
+				}
+				document.getElementById('viewerContainer').focus();
+			}
+			else {
+				this.focus();
+				return;
+			}
+		}
+		else if (id === 'sidebar-annotation') {
+			let annotationID = this.options.selectedIDsRef.current.slice(-1)[0]
+				|| document.querySelector('#annotations .annotation').getAttribute('data-sidebar-annotation-id');
+
+			if (annotationID) {
+				this.options.selectAnnotation({ id: annotationID, selectInSidebar: true });
+				let node = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"]`);
+				if (node) {
+					node.focus();
+				}
+			}
+		}
+		else if (id === 'sidebar-buttons') {
+			Array.from(document.querySelectorAll(zone.selector)).find(x => x.classList.contains('toggled')).focus();
+		}
+		else if (id === 'sidebar-thumbnails') {
+			document.querySelector(zone.selector).focus();
+			document.querySelector(zone.selector).click();
+		}
+		else {
+			document.querySelector(zone.selector).focus();
+		}
+
+		this.zone = zone;
+	}
+
+	tab(reverse) {
+		let zones = this.zones.slice();
+		if (reverse) {
+			zones.reverse();
+		}
+		let idx = zones.indexOf(this.zone);
+		for (let i = idx + 1; i < zones.length; i++) {
+			let zone = zones[i];
+			if (PDFViewerApplication.pdfSidebar.isOpen && zone.id === 'view-annotation') {
+				continue;
+			}
+			if (document.querySelector(zone.selector)) {
+				this.focus(zone.id);
+				return true;
+			}
+		}
+
+		this.focus(null);
+		return true;
+	}
+
+	next(reverse, shift) {
+		if (this.zone.id === 'view-annotation') {
+			let annotations = this.options.annotationsRef.current;
+			if (reverse) {
+				annotations = annotations.slice().reverse();
+			}
+			let lastID = this.options.selectedIDsRef.current.slice(-1)[0];
+			if (lastID) {
+				let annotationIndex = annotations.findIndex(x => x.id === lastID);
+				if (annotations.length > annotationIndex + 1) {
+					let nextAnnotation = annotations[annotationIndex + 1];
+					let nextID = nextAnnotation.id;
+					this.options.selectAnnotation({ id: nextID, shift, scrollSidebar: true, scrollViewer: true });
+				}
+			}
+			return;
+		}
+
+		let nodes = Array.from(document.querySelectorAll(this.zone.selector));
+		if (reverse) {
+			nodes = nodes.reverse();
+		}
+
+		let focus = (node) => {
+			node.focus();
+
+			if (node.id === 'pageNumber') {
+				setTimeout(() => node.select(), 0);
+			}
+
+			if (this.zone.id === 'sidebar-buttons') {
+				node.click();
+			}
+			else if (this.zone.id === 'sidebar-annotation') {
+				let id = node.getAttribute('data-sidebar-annotation-id');
+				this.options.selectAnnotation({ id, shift, scrollSidebar: true, scrollViewer: true, selectInSidebar: true });
+			}
+			else if (this.zone.id === 'sidebar-thumbnails') {
+				node.click();
+			}
+		};
+
+		let canFocus = false;
+		for (let node of nodes) {
+			if (canFocus) {
+				focus(node);
+				canFocus = false;
+				break;
+			}
+			if (node === document.activeElement) {
+				canFocus = true;
+			}
+		}
+	}
+}
+
 const Annotator = React.forwardRef((props, ref) => {
 	// useRefState synchronously sets ref value and asynchronously sets state value.
 	// Annotator component uses reference variables everywhere to immediately access
@@ -194,6 +459,20 @@ const Annotator = React.forwardRef((props, ref) => {
 	const lastSelectedAnnotationIDRef = useRef(null);
 	const pointerDownPositionRef = useRef(null);
 	const selectionRangesRef = useRef([]);
+	const focusManagerRef = useRef(null);
+	const annotationCommentTouched = useRef(false);
+
+	useEffect(() => {
+		focusManagerRef.current = new FocusManager({
+			selectedIDsRef,
+			selectAnnotation,
+			annotationsRef,
+			setSelectionRangesRef,
+			getFirstVisibleAnnotation,
+			setLabelPopup,
+			lastSelectedAnnotationIDRef
+		});
+	}, []);
 
 	useImperativeHandle(ref, () => ({
 		navigate,
@@ -205,6 +484,45 @@ const Annotator = React.forwardRef((props, ref) => {
 		clearSelector: annotationsViewRef.current.clearSelector
 	}));
 
+	function getFirstVisibleAnnotation() {
+		for (let annotation of annotationsRef.current) {
+			let { pageIndex } = annotation.position;
+			let { div, viewport } = PDFViewerApplication.pdfViewer.getPageView(pageIndex);
+
+			let position = p2v(annotation.position, viewport);
+
+			let rectMax = getPositionBoundingRect(position);
+
+			let viewerScrollLeft = PDFViewerApplication.pdfViewer.container.scrollLeft;
+			let viewerScrollTop = PDFViewerApplication.pdfViewer.container.scrollTop;
+			let viewerWidth = PDFViewerApplication.pdfViewer.container.offsetWidth;
+			let viewerHeight = PDFViewerApplication.pdfViewer.container.offsetHeight;
+
+			let visibleRect = [viewerScrollLeft, viewerScrollTop - 10, viewerScrollLeft + viewerWidth, viewerScrollTop + viewerHeight];
+
+			function quickIntersectRect(r1, r2) {
+				return !(r2[0] > r1[2]
+					|| r2[2] < r1[0]
+					|| r2[1] > r1[3]
+					|| r2[3] < r1[1]);
+			}
+
+			rectMax = [
+				div.offsetLeft + rectMax[0],
+				div.offsetTop + rectMax[1],
+				div.offsetLeft + rectMax[2],
+				div.offsetTop + rectMax[3],
+			];
+
+			if (quickIntersectRect(visibleRect, rectMax)) {
+				return annotation;
+				break;
+			}
+		}
+	}
+
+	window.getFirstVisibleAnnotation = getFirstVisibleAnnotation;
+
 	function setSelectionRangesRef(ranges) {
 		setSelectionPositions(ranges.filter(x => !x.collapsed).map(x => x.position));
 		selectionRangesRef.current = ranges;
@@ -215,7 +533,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function scrollSidebarTo(id) {
-		let sidebarItem = document.querySelector(`div[data-sidebar-id="${id}"]`);
+		let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
 		let container = document.getElementById('annotationsView');
 		if (sidebarItem && container) {
 			if (
@@ -263,7 +581,6 @@ const Annotator = React.forwardRef((props, ref) => {
 		let id = location.id || location.annotationKey;
 		let annotation = id && annotationsRef.current.find(x => x.id === id);
 		if (annotation) {
-			// selectAnnotation(id, true, false, true, true);
 			makeBlink(annotation.position);
 			scrollTo({ id, position: annotation.position }, true, true);
 			return;
@@ -324,9 +641,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	let focusSidebarHighlight = (annotationID) => {
 		setTimeout(function () {
-			let content = document.querySelector(
-				`#annotationsView .annotation[data-sidebar-id='${annotationID}'] .highlight .content`
-			);
+			let content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .highlight .content`);
 			if (content) {
 				setCaretToEnd(content);
 			}
@@ -337,9 +652,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		setTimeout(function () {
 			let content;
 			if (PDFViewerApplication.pdfSidebar.isOpen) {
-				content = document.querySelector(
-					`#annotationsView .annotation[data-sidebar-id='${annotationID}'] .comment .content`
-				);
+				content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .comment .content`);
 			}
 			else {
 				content = document.querySelector(`#pagePopupContainer .comment .content`);
@@ -357,77 +670,20 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isAlt = e.altKey;
 		let isShift = e.shiftKey;
 
-		// This is not ideal, but the goal is to keep focus on `selectionBox`
-		// when a speak out keyboard shortcut is pressed, and focus to
-		// `viewerContainer` when other keys are pressed
-		if (document.activeElement === window.selectionBox
-			&& !isMod && !isAlt && !isShift) {
-			document.getElementById('viewerContainer').focus();
-		}
-
-		if (isMod && e.key === 'c') {
-			return;
-		}
-
-		if (isMod && e.key === 'a'
-			&& window.PDFViewerApplication.pdfSidebar.isOpen
-			&& document.activeElement
-			&& document.activeElement.nodeName !== 'INPUT'
-			&& !isSelectingTextRef.current
-			&& !labelPopup.current) {
-			setSelectedIDs(annotationsViewRef.current.getAnnotations().map(x => x.id));
-		}
-
-		if (isShift && selectionRangesRef.current.length) {
-			if (e.key === 'ArrowLeft') {
-				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'left');
-				setSelectionRangesRef(selectionRanges);
-			}
-			else if (e.key === 'ArrowRight') {
-				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'right');
-				setSelectionRangesRef(selectionRanges);
-			}
-			else if (e.key === 'ArrowUp') {
-				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'up');
-				setSelectionRangesRef(selectionRanges);
-			}
-			else if (e.key === 'ArrowDown') {
-				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'down');
-				setSelectionRangesRef(selectionRanges);
-			}
-		}
-
-		if ((isCmd || isCtrl && isLinux()) && e.key === '['
-			|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowLeft') {
-			window.history.back();
-		}
-
-		if ((isCmd || isCtrl && isLinux()) && e.key === ']'
-			|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowRight') {
-			window.history.forward();
-		}
-
-		// Prevent PDF.js keyboard shortcuts for unsupported operations
-		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
-		if (isMod && ['o', 's'].includes(e.key)) {
-			e.stopPropagation();
+		// Tab, Shift-Tab, Escape work everywhere and allow to switch between focus zones and PDF view
+		if (isShift && e.key === 'Tab') {
+			focusManagerRef.current.tab(true);
 			e.preventDefault();
 		}
-
-		if (isMod && isAlt && e.key === 'p') {
-			e.stopPropagation();
-		}
-
-		if (e.key === 'Tab' && e.target === document.getElementById('viewerContainer')) {
-			document.body.focus();
+		else if (e.key === 'Tab') {
+			focusManagerRef.current.tab();
 			e.preventDefault();
 		}
-
-		if (e.key === 'Escape') {
+		else if (e.key === 'Escape') {
 			PDFViewerApplication.pdfCursorTools.handTool.deactivate();
 
 			if (selectedIDsRef.current.length) {
-				selectAnnotation(null);
+				selectAnnotation();
 			}
 			else if (modeRef.current) {
 				setMode(null);
@@ -436,56 +692,149 @@ const Annotator = React.forwardRef((props, ref) => {
 			setSelectionRangesRef([]);
 			setEnableSelection(false);
 			setLabelPopup(null);
+
+			document.getElementById('viewerContainer').focus();
+			focusManagerRef.current.zone = null;
+
+			// Sometimes everything gets selected on Firefox when pressing escape here
+			clearSelection();
 		}
 
-		if ((e.key === 'Delete' || e.key === 'Backspace')
-			&& !e.repeat
-			&& e.target.closest('.comment')) {
-			let id = selectedIDsRef.current[0];
-			let annotation = annotationsRef.current.find(x => x.id === id);
-			if (annotation && !annotation.comment) {
-				props.onDeleteAnnotations([id]);
-			}
-		}
+		// Focused any zone that is not PDF view
 
-		if (e.target === document.getElementById('viewerContainer') || e.target === document.body) {
-			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
-			if (isMod && !isShift && e.key === 'a') {
-				e.preventDefault();
+
+		let lastSelectedAnnotation = annotationsRef.current.find(x => x.id === lastSelectedAnnotationIDRef.current);
+
+		if (focusManagerRef.current.zone) {
+			if (['sidebar-annotation-comment', 'view-annotation-comment'].includes(focusManagerRef.current.zone.id)
+				&& !['Backspace', 'Delete', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+				annotationCommentTouched.current = true;
 			}
-			else if (e.key === 'Enter') {
-				// this.setState({expansionState: 1});
-				let id = selectedIDsRef.current[0];
-				if (id) {
-					focusComment(id);
+
+			if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+				// Allow navigating to next/previous annotation if empty comment was just automatically focused
+				if (['sidebar-annotation-comment'].includes(focusManagerRef.current.zone.id)
+				&& !annotationCommentTouched.current && lastSelectedAnnotation && !lastSelectedAnnotation.comment) {
+					let node = document.querySelector(`[data-sidebar-annotation-id="${lastSelectedAnnotationIDRef.current}"]`);
+					if (node) {
+						node.focus();
+					}
 				}
-				else if (lastSelectedAnnotationIDRef.current) {
-					selectAnnotation(lastSelectedAnnotationIDRef.current, false, false, true, true);
+				if (['view-annotation-comment'].includes(focusManagerRef.current.zone.id)
+					&& !annotationCommentTouched.current) {
+					focusManagerRef.current.zone = focusManagerRef.current.zones.find(x => x.id === 'view-annotation');
 				}
-				else if (annotationsRef.current.length) {
-					selectAnnotation(annotationsRef.current[0].id, false, false, true, true);
+
+				focusManagerRef.current.next(false, isShift);
+			}
+			else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+				// Allow to navigate to next/previous annotation if empty comment was just automatically focused
+				if (['sidebar-annotation-comment'].includes(focusManagerRef.current.zone.id)
+					&& !annotationCommentTouched.current && lastSelectedAnnotation && !lastSelectedAnnotation.comment) {
+					let node = document.querySelector(`[data-sidebar-annotation-id="${lastSelectedAnnotationIDRef.current}"]`);
+					if (node) {
+						node.focus();
+					}
+				}
+				if (['view-annotation-comment'].includes(focusManagerRef.current.zone.id)
+					&& !annotationCommentTouched.current) {
+					focusManagerRef.current.zone = focusManagerRef.current.zones.find(x => x.id === 'view-annotation');
+				}
+
+				focusManagerRef.current.next(true, isShift);
+			}
+			else if ((e.key === ' ' || e.key === 'Enter')
+				&& document.activeElement && document.activeElement.nodeName === 'A') {
+				let prev = document.activeElement.previousElementSibling;
+				if (e.key === 'Enter' && prev.classList.contains('treeItemToggler')) {
+					prev.click();
+				}
+				else {
+					document.activeElement.click();
 				}
 			}
 			else if ((e.key === 'Delete' || e.key === 'Backspace') && !e.repeat) {
 				// TODO: Auto-select the next annotation after deletion in sidebar
-				props.onDeleteAnnotations(selectedIDsRef.current);
-			}
-			else if (e.key === 'ArrowUp') {
-				if (selectedIDsRef.current.length) {
-					let annotation = selectPrevAnnotation(false, e.shiftKey);
-					if (annotation) {
-						scrollTo(annotation, true, true);
+				let id = selectedIDsRef.current[0];
+				let annotation = annotationsRef.current.find(x => x.id === id);
+
+				let hasReadOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
+				if (!hasReadOnly) {
+					if (['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
+						props.onDeleteAnnotations(selectedIDsRef.current);
 					}
-					e.preventDefault();
+					else if (['sidebar-annotation-comment', 'view-annotation-comment'].includes(focusManagerRef.current.zone.id)
+						&& annotation && !annotation.comment && !annotationCommentTouched.current) {
+						props.onDeleteAnnotations([id]);
+					}
 				}
 			}
-			else if (e.key === 'ArrowDown') {
-				if (selectedIDsRef.current.length) {
-					let annotation = selectNextAnnotation(false, e.shiftKey);
-					if (annotation) {
-						scrollTo(annotation, true, true);
-					}
-					e.preventDefault();
+			else if (['sidebar-annotation', 'sidebar-selector', 'sidebar-search'].includes(focusManagerRef.current.zone.id)
+				&& isMod && e.key === 'a'
+			) {
+				setSelectedIDs(annotationsViewRef.current.getAnnotations().map(x => x.id));
+			}
+
+			// Don't bypass keys if focus isn't on an input, contenteditable or button (only for Space)
+			if (!(document.activeElement.nodeName === 'INPUT' && ['text', 'number'].includes(document.activeElement.type)
+				|| document.activeElement.getAttribute('contenteditable')
+				|| e.key === ' ' && document.activeElement.nodeName === 'BUTTON')) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+
+			// Prevent up/down page switching when cursor in page number input
+			if (document.activeElement.id === 'pageNumber' && ['ArrowUp', 'ArrowDown'].includes(e.key)) {
+				e.preventDefault();
+				e.stopPropagation();
+			}
+		}
+		// PDF view is focused
+		else {
+			// This is not ideal, but the goal is to keep focus on `selectionBox`
+			// when a speak out keyboard shortcut is pressed, and focus to
+			// `viewerContainer` when other keys are pressed
+			if (document.activeElement === window.selectionBox && !isMod && !isAlt && !isShift) {
+				document.getElementById('viewerContainer').focus();
+			}
+
+			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
+			if (isMod && !isShift && e.key === 'a') {
+				e.preventDefault();
+			}
+			// Prevent "open file", "download file" PDF.js keyboard shortcuts
+			// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
+			else if (isMod && ['o', 's'].includes(e.key)) {
+				e.stopPropagation();
+				e.preventDefault();
+			}
+			else if (isMod && isAlt && e.key === 'p') {
+				e.stopPropagation();
+			}
+			else if ((isCmd || isCtrl && isLinux()) && e.key === '['
+				|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowLeft') {
+				window.history.back();
+			}
+			else if ((isCmd || isCtrl && isLinux()) && e.key === ']'
+				|| (isAlt && !isMac() || isCmd) && e.key === 'ArrowRight') {
+				window.history.forward();
+			}
+			else if (isShift && selectionRangesRef.current.length) {
+				if (e.key === 'ArrowLeft') {
+					let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'left');
+					setSelectionRangesRef(selectionRanges);
+				}
+				else if (e.key === 'ArrowRight') {
+					let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'right');
+					setSelectionRangesRef(selectionRanges);
+				}
+				else if (e.key === 'ArrowUp') {
+					let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'up');
+					setSelectionRangesRef(selectionRanges);
+				}
+				else if (e.key === 'ArrowDown') {
+					let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, 'down');
+					setSelectionRangesRef(selectionRanges);
 				}
 			}
 		}
@@ -607,7 +956,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			setMode(m);
 		}
 
-		selectAnnotation(null);
+		selectAnnotation();
 	}
 
 	function getAnnotationToSelectID(position, hasModifier) {
@@ -670,64 +1019,36 @@ const Annotator = React.forwardRef((props, ref) => {
 		return selectedID;
 	}
 
-	function selectPrevAnnotation(ctrl, shift) {
-		let lastID = selectedIDsRef.current.slice(-1)[0];
-		if (lastID) {
-			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
-			if (annotationIndex - 1 >= 0) {
-				let nextAnnotation = annotationsRef.current[annotationIndex - 1];
-				let prevID = nextAnnotation.id;
-				selectAnnotation(prevID, ctrl, shift, true, true);
-				return nextAnnotation;
-			}
-			else {
-				scrollTo(annotationsRef.current.find(x => x.id === lastID), true, true);
-			}
-		}
-	}
-
-	function selectNextAnnotation(ctrl, shift) {
-		let lastID = selectedIDsRef.current.slice(-1)[0];
-		if (lastID) {
-			let annotationIndex = annotationsRef.current.findIndex(x => x.id === lastID);
-			if (annotationsRef.current.length > annotationIndex + 1) {
-				let nextAnnotation = annotationsRef.current[annotationIndex + 1];
-				let nextID = nextAnnotation.id;
-				selectAnnotation(nextID, ctrl, shift, true, true);
-				return nextAnnotation;
-			}
-			else {
-				scrollTo(annotationsRef.current.find(x => x.id === lastID), true, true);
-			}
-		}
-	}
-
-	function selectAnnotation(id, ctrl, shift, focusSidebar, focusViewer) {
+	function selectAnnotation({ id, ctrl, shift, selectInSidebar, scrollSidebar, scrollViewer } = {}) {
+		annotationCommentTouched.current = false;
 		if (!id) {
 			setSelectedIDs([]);
 			return 0;
 		}
 		let selectedIDs = selectedIDsRef.current.slice();
+		let annotations = selectInSidebar ? annotationsViewRef.current.getAnnotations() : annotationsRef.current;
 		if (shift && selectedIDs.length) {
-			let annotationIndex = annotationsRef.current.findIndex(x => x.id === id);
-			let lastSelectedIndex = annotationsRef.current.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
-			let selectedIndices = selectedIDs.map(id => annotationsRef.current.findIndex(annotation => annotation.id === id));
+			let annotationIndex = annotations.findIndex(x => x.id === id);
+			let lastSelectedIndex = annotations.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
+			let selectedIndices = selectedIDs.map(id => annotations.findIndex(annotation => annotation.id === id));
 			let minSelectedIndex = Math.min(...selectedIndices);
 			let maxSelectedIndex = Math.max(...selectedIndices);
 			if (annotationIndex < minSelectedIndex) {
 				for (let i = annotationIndex; i < minSelectedIndex; i++) {
-					selectedIDs.push(annotationsRef.current[i].id);
+					selectedIDs.push(annotations[i].id);
 				}
 			}
 			else if (annotationIndex > maxSelectedIndex) {
 				for (let i = maxSelectedIndex + 1; i <= annotationIndex; i++) {
-					selectedIDs.push(annotationsRef.current[i].id);
+					selectedIDs.push(annotations[i].id);
 				}
 			}
 			else {
 				for (let i = Math.min(annotationIndex, lastSelectedIndex); i <= Math.max(annotationIndex, lastSelectedIndex); i++) {
-					if (i === lastSelectedIndex) continue;
-					let id = annotationsRef.current[i].id;
+					if (i === lastSelectedIndex) {
+						continue;
+					}
+					let id = annotations[i].id;
 					if (!selectedIDs.includes(id)) {
 						selectedIDs.push(id);
 					}
@@ -747,7 +1068,9 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectedIDs = [id];
 		}
 
-		if (JSON.stringify(selectedIDsRef.current) === JSON.stringify(selectedIDs)) return 0;
+		if (JSON.stringify(selectedIDsRef.current) === JSON.stringify(selectedIDs)) {
+			return 0;
+		}
 
 		setSelectedIDs(selectedIDs);
 		if (selectedIDs.length >= 2) {
@@ -759,9 +1082,14 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		lastSelectedAnnotationIDRef.current = selectedIDs.slice(-1)[0];
 
-		if (focusSidebar || focusViewer) {
-			let annotation = annotationsRef.current.find(x => x.id === selectedIDs.slice(-1)[0]);
-			scrollTo(annotation, focusSidebar, focusViewer);
+		let annotation = annotations.find(x => x.id === lastSelectedAnnotationIDRef.current);
+		scrollTo(annotation, scrollSidebar, scrollViewer);
+
+		if (selectInSidebar) {
+			focusManagerRef.current.zone = focusManagerRef.current.zones.find(x => x.id === 'sidebar-annotation');
+		}
+		else {
+			focusManagerRef.current.zone = focusManagerRef.current.zones.find(x => x.id === 'view-annotation');
 		}
 
 		return selectedIDs.length;
@@ -777,7 +1105,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		// If some annotations are ink and some not, filter only ink annotations
-		// and allow to drag, otherwise cancel
+		// and allow dragging, otherwise cancel
 		let forceMulti = false;
 		if (annotations.some(x => x.type === 'ink')) {
 			if (annotations.some(x => x.type !== 'ink')) {
@@ -875,8 +1203,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			if (section === 'comment' && expansionStateRef.current === 3) {
 				setExpansionState(2);
 			}
-
-			let selected = selectAnnotation(id, ctrl, shift, true, true);
+			let selected = selectAnnotation({ id, ctrl, shift, scrollSidebar: true, scrollViewer: true, selectInSidebar: true });
 			if (selected === 1) {
 				scrollTo(annotationsRef.current.find(x => x.id === id), true, true);
 				// if (section !== 'header') this.focusSidebarComment(id);
@@ -886,7 +1213,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	const handleSidebarAnnotationEditorBlur = useCallback(() => {
 		setExpansionState(1);
-		document.getElementById('annotationsView').focus();
+		// document.getElementById('annotationsView').focus();
 	}, []);
 
 	const handleSidebarAnnotationDoubleClick = useCallback((id) => {
@@ -903,15 +1230,15 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations([annotation]);
 	}, []);
 
-	const handleSidebarAnnotationMenuOpen = useCallback((id, x, y, moreButton) => {
+	const handleSidebarAnnotationMenuOpen = useCallback(({ id, button, screenX, screenY, selector }) => {
 		let selectedColor;
 		let ids = [id];
 
-		if (moreButton || selectedIDsRef.current.length === 1) {
+		if (button || selectedIDsRef.current.length === 1) {
 			selectedColor = annotationsRef.current.find(x => x.id === id).color;
 		}
 
-		if (!moreButton && selectedIDsRef.current.includes(id)) {
+		if (!button && selectedIDsRef.current.includes(id)) {
 			ids = selectedIDsRef.current;
 		}
 
@@ -920,9 +1247,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		let enableEditHighlightedText = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'highlight');
 
 		props.onPopup('openAnnotationPopup', {
-			x,
-			y,
-			standalone: moreButton,
+			x: screenX,
+			y: screenY,
+			selector,
+			standalone: button,
 			currentID: id,
 			inPage: false,
 			ids,
@@ -955,13 +1283,14 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations([annotation]);
 	}, []);
 
-	const handleLayerAnnotationMoreMenu = useCallback((id, x, y) => {
+	const handleLayerAnnotationMoreMenu = useCallback(({id, screenX, screenY, selector}) => {
 		let annotation = annotationsRef.current.find(x => x.id === id);
 		let selectedColor = annotation.color;
 		let enableAddToNote = annotation.type !== 'ink';
 		props.onPopup('openAnnotationPopup', {
-			x,
-			y,
+			x: screenX,
+			y: screenY,
+			selector,
 			standalone: true,
 			inPage: true,
 			currentID: id,
@@ -987,9 +1316,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function intersectsWithSelectedAnnotations(position) {
-		return !!annotationsRef.current
-		.filter(x => selectedIDsRef.current.includes(x.id))
-		.find(x => intersectAnnotationWithPoint(x.position, position));
+		return !!annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id)).find(x => intersectAnnotationWithPoint(x.position, position));
 	}
 
 	function intersectsWithSelectedText(position) {
@@ -1059,7 +1386,7 @@ const Annotator = React.forwardRef((props, ref) => {
 					color: colorRef.current
 				});
 				// TODO: Fix delay between annotation creation and comment focus
-				selectAnnotation(annotation.id, false, false, true, false);
+				selectAnnotation({ id: annotation.id, scrollSidebar: true });
 				focusComment(annotation.id);
 			})();
 			setMode(null);
@@ -1078,7 +1405,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			&& selectID
 			&& (!isShift || selectedIDsRef.current.length)
 			&& (isCtrl || !intersectsWithSelectedAnnotations(position))) {
-			let selected = selectAnnotation(selectID, isCtrl, isShift, true, false);
+			let selected = selectAnnotation({ id: selectID, ctrl: isCtrl, shift: isShift, scrollSidebar: true });
 			if (selected === 1) {
 				let annotation = annotationsRef.current.find(x => x.id === selectedIDsRef.current[0]);
 				if (!annotation.comment) {
@@ -1089,7 +1416,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (!isCtrl && !selectID) {
-			selectAnnotation(null);
+			selectAnnotation();
 		}
 
 		if (isRight && selectID) {
@@ -1145,7 +1472,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (event.target === document.getElementById('viewer')) {
-			selectAnnotation(null);
+			selectAnnotation();
 			setSelectionRangesRef([]);
 		}
 
@@ -1192,7 +1519,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
 		if (isLeft && selectID) {
 			setSelectionRangesRef([]);
-			selectAnnotation(selectID, isCtrl, isShift, true, false);
+			selectAnnotation({ id: selectID, ctrl: isCtrl, shift: isShift, scrollSidebar: true });
 		}
 	}, []);
 
@@ -1245,7 +1572,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleLayerEdgeNoteClick = useCallback((id) => {
-		selectAnnotation(id, false, false, true, false);
+		selectAnnotation({ id, scrollSidebar: true });
 	}, []);
 
 	const handleLayerSelectionPopupHighlight = useCallback((color) => {
@@ -1419,7 +1746,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let rect;
 
 		if (inPage) {
-			let anchorNode = document.querySelector(`#viewerContainer [data-annotation-id="${currentID}"] .page .label`);
+			let anchorNode = document.querySelector(`.annotation-popup .page .label`);
 			if (annotations.length > 1 || !anchorNode) {
 				rect = [clientX, clientY, clientX, clientY];
 			}
@@ -1429,7 +1756,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 		}
 		else if (isSidebarOpenRef.current) {
-			let anchorNode = document.querySelector(`#sidebarContainer [data-annotation-id="${currentID}"] .page .label`);
+			let anchorNode = document.querySelector(`[data-sidebar-annotation-id="${currentID}"] .page .label`);
 			rect = anchorNode.getBoundingClientRect();
 			rect = [rect.left, rect.top, rect.right, rect.bottom];
 		}
@@ -1452,10 +1779,9 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	function editHighlightedText({ currentID }) {
-		window.PDFViewerApplication.pdfSidebar.open();
-		selectAnnotation(currentID, false, false, true, true);
+		selectAnnotation({ id: currentID, scrollSidebar: true, scrollViewer: true, selectInSidebar: true });
 		setTimeout(() => {
-			let node = document.querySelector(`#sidebarContainer [data-annotation-id="${currentID}"] .content`);
+			let node = document.querySelector(`[data-sidebar-annotation-id="${currentID}"] .content`);
 			var clickEvent = document.createEvent('MouseEvents');
 			clickEvent.initEvent('dblclick', true, true);
 			node.dispatchEvent(clickEvent);

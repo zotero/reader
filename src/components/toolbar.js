@@ -21,7 +21,7 @@ function Toolbar(props) {
 	return ReactDOM.createPortal(
 		<div className="tool-group annotation-tools">
 			<button
-				tabIndex={18}
+				tabIndex={-1}
 				data-l10n-id="highlight_tool"
 				className={cx('toolbarButton highlight', {
 					toggled: toggled === 'highlight'
@@ -33,7 +33,7 @@ function Toolbar(props) {
 				<span className="button-background"/>
 			</button>
 			<button
-				tabIndex={19}
+				tabIndex={-1}
 				className={cx('toolbarButton note', {
 					toggled: toggled === 'note'
 				})}
@@ -45,7 +45,7 @@ function Toolbar(props) {
 				<span className="button-background"/>
 			</button>
 			<button
-				tabIndex={20}
+				tabIndex={-1}
 				className={cx('toolbarButton area', {
 					toggled: toggled === 'image'
 				})}
@@ -58,7 +58,7 @@ function Toolbar(props) {
 			</button>
 			<button
 				id="reader-toolbar-button-color-picker"
-				tabIndex={21}
+				tabIndex={-1}
 				className="toolbarButton global-color"
 				style={{ color }}
 				title={intl.formatMessage({ id: 'pdfReader.pickColor' })}

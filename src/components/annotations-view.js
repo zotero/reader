@@ -31,7 +31,8 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 			<div className="icon icon-search"/>
 			<div className="input-group">
 				<input
-					tabIndex={5}
+					id="searchInput"
+					tabIndex={-1}
 					type="text"
 					placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
 					value={query}
@@ -47,25 +48,27 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor }) {
 	const intl = useIntl();
 	return (
-		<div className="selector" onContextMenu={onContextMenu}>
+		<div id="selector" className="selector" onContextMenu={onContextMenu}>
 			{colors.length > 1 && <div className="colors">
 				{colors.map((color, index) => (
-					<div
+					<button
 						key={index}
+						tabIndex={-1}
 						className={cx('color', { selected: color.selected, inactive: color.inactive })}
 						title={color.name ? intl.formatMessage({ id: color.name }) : null}
 						onClick={() => onClickColor(color.color)}
-					><IconColor color={color.color}/></div>
+					><IconColor color={color.color}/></button>
 				))}
 			</div>}
 			{!!tags.length && <div className="tags">
 				{tags.map((tag, index) => (
-					<span
+					<button
 						key={index}
+						tabIndex={-1}
 						className={cx('tag', { color: !!tag.color, selected: tag.selected, inactive: tag.inactive })}
 						style={{ color: tag.color }}
 						onClick={() => onClickTag(tag.name)}
-					>{tag.name}</span>
+					>{tag.name}</button>
 				))}
 			</div>}
 		</div>
@@ -77,8 +80,9 @@ function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor }) {
 const Annotation = React.memo((props) => {
 	return (
 		<div
+			tabIndex={-1}
 			className={cx('annotation', { selected: props.isSelected })}
-			data-sidebar-id={props.annotation.id}
+			data-sidebar-annotation-id={props.annotation.id}
 		>
 			<SidebarPreview
 				state={props.expansionState}
@@ -284,12 +288,12 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 
 	return ReactDOM.createPortal(
 		<React.Fragment>
-			<div className="annotations">
-				<AnnotationsViewSearch
-					query={query}
-					onInput={handleSearchInput}
-					onClear={handleSearchClear}
-				/>
+			<AnnotationsViewSearch
+				query={query}
+				onInput={handleSearchInput}
+				onClear={handleSearchClear}
+			/>
+			<div id="annotations" className="annotations">
 				{annotations.length
 					? annotations.map(annotation => (
 						<Annotation

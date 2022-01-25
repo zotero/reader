@@ -95,7 +95,7 @@
 	fieldset {
 		border: 0;
 		margin-top: 8px;
-		
+
 		legend {
 			font-size: $toolbar-field-font-size;
 			font-weight: bold;
@@ -113,6 +113,14 @@
 
 			display: flex;
 			align-items: center;
+
+			input:focus-visible {
+				box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+			}
+
+			input:-moz-focusring {
+				box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+			}
 
 			label {
 				padding-left: 5px;

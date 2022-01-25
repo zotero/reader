@@ -80,6 +80,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					<input
 						ref={inputRef}
 						type="text"
+						tabIndex={-1}
 						className="toolbarField"
 						value={auto ? data.autoPageLabel : label}
 						disabled={auto}
@@ -92,6 +93,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 					<input
 						id="renumber-auto-detect"
 						type="checkbox"
+						tabIndex={-1}
 						checked={auto}
 						onChange={handleCheckboxChange}
 					/>
@@ -103,6 +105,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 				{data.single && <div className="choice">
 					<input
 						type="radio"
+						tabIndex={-1}
 						id="renumber-selected"
 						name="renumber"
 						value="single"
@@ -115,6 +118,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 				{data.selected && <div className="choice">
 					<input
 						type="radio"
+						tabIndex={-1}
 						id="renumber-selected"
 						name="renumber"
 						value="selected"
@@ -127,6 +131,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 				{data.page && <div className="choice">
 					<input
 						type="radio"
+						tabIndex={-1}
 						id="renumber-page"
 						name="renumber"
 						value="page"
@@ -139,6 +144,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 				{data.from && <div className="choice">
 					<input
 						type="radio"
+						tabIndex={-1}
 						id="renumber-from-page"
 						name="renumber"
 						value="from"
@@ -151,6 +157,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 				{(data.all) && <div className="choice">
 					<input
 						type="radio"
+						tabIndex={-1}
 						id="renumber-all"
 						name="renumber"
 						value="all"
@@ -163,6 +170,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 			</fieldset>
 			<div className="row buttons">
 				<button
+					tabIndex={-1}
 					className="overlayButton submit"
 					disabled={disabled}
 					onClick={handleUpdateClick}

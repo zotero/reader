@@ -12,10 +12,11 @@ function SelectionMenu(props) {
 	}
 
 	return (
-		<div className="selection-menu">
+		<div id="selection-menu" className="selection-menu">
 			<div className="colors">
 				{annotationColors.map((color, index) => (<button
 					key={index}
+					tabIndex={-1}
 					className="toolbarButton global-color"
 					style={{ color: color[1] }}
 					title={intl.formatMessage({ id: color[0] })}

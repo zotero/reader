@@ -62,10 +62,14 @@ class ViewerInstance {
 				this._postMessage({ action: 'setState', state });
 			},
 			onClickTags: (id, event) => {
-				let rect = event.currentTarget.getBoundingClientRect();
-				let x = event.screenX - (event.clientX - rect.left);
-				let y = event.screenY - (event.clientY - rect.top);
-				this._postMessage({ action: 'openTagsPopup', x, y, id });
+				let selector;
+				if (event.target.closest('#viewerContainer')) {
+					selector = '#viewerContainer .preview .tags';
+				}
+				else {
+					selector = `[data-sidebar-annotation-id="${id}"] .tags`;
+				}
+				this._postMessage({ action: 'openTagsPopup', id, selector });
 			},
 			onDoubleClickPageLabel: (id) => {
 				this._postMessage({ action: 'openPageLabelPopup', id });
