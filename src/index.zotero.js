@@ -67,7 +67,7 @@ class ViewerInstance {
 					selector = '#viewerContainer .preview .tags';
 				}
 				else {
-					selector = `#annotations [data-sidebar-id="${id}"] .tags`;
+					selector = `[data-sidebar-annotation-id="${id}"] .tags`;
 				}
 				this._postMessage({ action: 'openTagsPopup', id, selector });
 			},

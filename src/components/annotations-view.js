@@ -82,7 +82,7 @@ const Annotation = React.memo((props) => {
 		<div
 			tabIndex={-1}
 			className={cx('annotation', { selected: props.isSelected })}
-			data-sidebar-id={props.annotation.id}
+			data-sidebar-annotation-id={props.annotation.id}
 		>
 			<SidebarPreview
 				state={props.expansionState}

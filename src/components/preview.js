@@ -43,7 +43,6 @@ export function PopupPreview(props) {
 	return (
 		<div
 			className={cx('preview', { 'read-only': annotation.readOnly })}
-			data-annotation-id={annotation.id}
 		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))
@@ -139,7 +138,7 @@ export function SidebarPreview(props) {
 				button: true,
 				screenX: event.screenX,
 				screenY: event.screenY,
-				selector: `#annotations [data-sidebar-id="${props.annotation.id}"] .more`
+				selector: `[data-sidebar-annotation-id="${props.annotation.id}"] .more`
 			});
 		}
 	}
@@ -229,7 +228,6 @@ export function SidebarPreview(props) {
 			className={cx('preview', {
 				'read-only': annotation.readOnly, ...expandedState
 			})}
-			data-annotation-id={annotation.id}
 		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))

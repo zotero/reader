@@ -47,6 +47,10 @@
 			&:focus-visible {
 				box-shadow: $selection-popup-btn-focus-box-shadow;
 			}
+
+			&:-moz-focusring {
+				box-shadow: $selection-popup-btn-focus-box-shadow;
+			}
 		}
 
 		.wide-button {

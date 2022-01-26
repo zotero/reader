@@ -317,7 +317,7 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 	annotations = annotations.map(
 		({ id, text, color, comment, image, position, pageLabel }) => {
 			if (image) {
-				let img = document.querySelector('div[data-sidebar-id="' + id + '"] img');
+				let img = document.querySelector(`[data-sidebar-annotation-id="${id}"] img`);
 				if (img) {
 					image = getImageDataURL(img);
 				}
