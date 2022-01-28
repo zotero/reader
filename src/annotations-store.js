@@ -179,7 +179,7 @@ class AnnotationsStore {
 	}
 
 	deleteAnnotations(ids) {
-		if (!zoteroConfirmDeletion(ids.length > 1)) {
+		if (!ids.length || !zoteroConfirmDeletion(ids.length > 1)) {
 			return;
 		}
 		// Don't delete anything if at least one provided annotation can't be deleted
