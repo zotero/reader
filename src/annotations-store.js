@@ -179,6 +179,9 @@ class AnnotationsStore {
 	}
 
 	deleteAnnotations(ids) {
+		if (!zoteroConfirmDeletion(ids.length > 1)) {
+			return;
+		}
 		// Don't delete anything if at least one provided annotation can't be deleted
 		let someReadOnly = this._annotations.some(
 			annotation => ids.includes(annotation.id) && annotation.readOnly
