@@ -468,10 +468,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 			else if ((e.key === 'Delete' || e.key === 'Backspace') && !e.repeat) {
 				// TODO: Auto-select the next annotation after deletion in sidebar
-				let hasReadOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
-				if (!hasReadOnly) {
-					props.onDeleteAnnotations(selectedIDsRef.current);
-				}
+				props.onDeleteAnnotations(selectedIDsRef.current);
 			}
 			else if (e.key === 'ArrowUp') {
 				if (selectedIDsRef.current.length) {

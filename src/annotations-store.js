@@ -12,6 +12,7 @@ import { debounce } from './lib/debounce';
 class AnnotationsStore {
 	constructor(options) {
 		this._readOnly = options.readOnly;
+		this._isAdmin = options.isAdmin;
 		this._annotations = options.annotations;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
@@ -178,12 +179,16 @@ class AnnotationsStore {
 	}
 
 	deleteAnnotations(ids) {
-		if (this._readOnly) {
+		// Don't delete anything if at least one provided annotation can't be deleted
+		let someReadOnly = this._annotations.some(
+			annotation => ids.includes(annotation.id) && annotation.readOnly
+		);
+
+		if ((this._readOnly || someReadOnly) && !this._isAdmin) {
 			return;
 		}
-		this._annotations = this._annotations.filter(
-			annotation => !ids.includes(annotation.id) || annotation.readOnly
-		);
+
+		this._annotations = this._annotations.filter(annotation => !ids.includes(annotation.id));
 		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => !ids.includes(x.id));
 		this._onDelete(ids);
 		this.render();

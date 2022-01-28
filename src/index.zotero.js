@@ -96,7 +96,8 @@ class ViewerInstance {
 			sidebarOpen: options.sidebarOpen,
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight,
 			localizedStrings: options.localizedStrings,
-			readOnly: options.readOnly
+			readOnly: options.readOnly,
+			isAdmin: options.isAdmin
 		});
 
 		this._viewer.setBottomPlaceholderHeight(0);
