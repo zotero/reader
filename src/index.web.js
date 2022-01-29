@@ -128,8 +128,7 @@ class ViewerInstance {
 			sidebarOpen: true,
 			bottomPlaceholderHeight: 0,
 			localizedStrings: {},
-			readOnly: options.readOnly,
-			isAdmin: false
+			readOnly: options.readOnly
 			// password: 'test'
 		});
 	}

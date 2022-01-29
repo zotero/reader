@@ -12,7 +12,6 @@ import { debounce } from './lib/debounce';
 class AnnotationsStore {
 	constructor(options) {
 		this._readOnly = options.readOnly;
-		this._isAdmin = options.isAdmin;
 		this._annotations = options.annotations;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
@@ -179,15 +178,16 @@ class AnnotationsStore {
 	}
 
 	deleteAnnotations(ids) {
-		if (!ids.length || !zoteroConfirmDeletion(ids.length > 1)) {
-			return;
-		}
-		// Don't delete anything if at least one provided annotation can't be deleted
-		let someReadOnly = this._annotations.some(
-			annotation => ids.includes(annotation.id) && annotation.readOnly
+		let someExternal = this._annotations.some(
+			annotation => ids.includes(annotation.id) && annotation.isExternal
 		);
 
-		if ((this._readOnly || someReadOnly) && !this._isAdmin) {
+		// Don't delete anything if the PDF file is read-only, or at least one provided annotation is external
+		if (this._readOnly || someExternal) {
+			return;
+		}
+
+		if (!ids.length || !zoteroConfirmDeletion(ids.length > 1)) {
 			return;
 		}
 
