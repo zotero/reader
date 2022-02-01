@@ -100,7 +100,9 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 		// disabling pointer events still cancels the drag event
 		// TODO: Move this into annotator.js
 		setTimeout(() => {
-			document.getElementById('viewer').classList.add('disable-pointer-events');
+			if (dragging.current) {
+				document.getElementById('viewer').classList.add('disable-pointer-events');
+			}
 		}, 0);
 
 		updatePosition(event.clientX, event.clientY);
