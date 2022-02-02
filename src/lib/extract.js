@@ -178,9 +178,11 @@ export class Extractor {
 		let points = await this.extractPageLabelPoints();
 		if (points && numericPageLabel == pageLabel) {
 			let targetPageIndex = points[0].idx + (numericPageLabel - points[0].num);
-			let targetPageLabel = await this.extractPageLabel(targetPageIndex);
-			if (targetPageLabel == pageLabel) {
-				return targetPageIndex;
+			if (targetPageIndex >= 0 && targetPageIndex < this.pdfViewer.pdfDocument.numPages) {
+				let targetPageLabel = await this.extractPageLabel(targetPageIndex);
+				if (targetPageLabel == pageLabel) {
+					return targetPageIndex;
+				}
 			}
 		}
 
@@ -193,7 +195,7 @@ export class Extractor {
 		}
 
 		if (numericPageLabel == pageLabel && numericPageLabel > 0) {
-			return (numericPageLabel - 1).toString();
+			return numericPageLabel - 1;
 		}
 
 		return null;

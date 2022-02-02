@@ -90,7 +90,7 @@ function getRectCenter(rect) {
 }
 
 function filterNums(chars, pageHeight) {
-	return chars.filter(x => x.c >= '0' && x.c <= '9' && (x.rect[3] < pageHeight * 1 / 5 || x.rect[1] > pageHeight * 3 / 5));
+	return chars.filter(x => x.c >= '0' && x.c <= '9' && (x.rect[3] < pageHeight * 1 / 5 || x.rect[1] > pageHeight * 4 / 5));
 }
 
 function _getPageLabelPoints(pageIndex, chars1, chars2, chars3, chars4, pageHeight) {
@@ -100,7 +100,7 @@ function _getPageLabelPoints(pageIndex, chars1, chars2, chars3, chars4, pageHeig
 	let charsNum4 = filterNums(chars4, pageHeight);
 
 	// Cut off the logic if one of the pages has too many digits
-	if ([charsNum1, charsNum2, charsNum3, charsNum4].find(x => x.length > 100)) {
+	if ([charsNum1, charsNum2, charsNum3, charsNum4].find(x => x.length > 500)) {
 		return null;
 	}
 
