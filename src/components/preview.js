@@ -60,12 +60,8 @@ export function PopupPreview(props) {
 						<div className="label">{annotation.pageLabel}</div>
 					</div>
 				</div>
-				{annotation.authorName && (
-					<div className="center">
-						<div className="author">{annotation.authorName}</div>
-					</div>
-				)}
 				<div className="right">
+					{annotation.authorName && (<div className="author">{annotation.authorName}</div>)}
 					<div className="more" onClick={handleClickMore}/>
 				</div>
 			</header>
@@ -246,12 +242,8 @@ export function SidebarPreview(props) {
 						<div className="label">{annotation.pageLabel}</div>
 					</div>
 				</div>
-				{annotation.authorName && (
-					<div className="center">
-						<div className="author">{annotation.authorName}</div>
-					</div>
-				)}
 				<div className="right">
+					{annotation.authorName && (<div className="author">{annotation.authorName}</div>)}
 					<div className="more" onClick={handleClickMore}/>
 				</div>
 			</header>

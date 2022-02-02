@@ -67,6 +67,7 @@
 		.author {
 			@include text-truncate;
 			color: #707070;
+			margin-inline-end: 4px;
 		}
 	}
 
