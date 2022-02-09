@@ -41,7 +41,8 @@ export function PopupPreview(props) {
 		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))
-				+ ' ' + intl.formatTime(new Date(annotation.dateModified))}
+					+ ' ' + intl.formatTime(new Date(annotation.dateModified))
+					+ (annotation.lastModifiedByUser ? ' (' + annotation.lastModifiedByUser + ')' : '')}
 			>
 				<div className="left">
 					<div
@@ -61,7 +62,11 @@ export function PopupPreview(props) {
 					</div>
 				</div>
 				<div className="right">
-					{annotation.authorName && (<div className="author">{annotation.authorName}</div>)}
+					{annotation.authorName && (
+						<div className={cx('author', { 'non-authoritative': !annotation.isAuthorNameAuthoritative })}>
+							{annotation.authorName}
+						</div>
+					)}
 					<div className="more" onClick={handleClickMore}/>
 				</div>
 			</header>
@@ -216,7 +221,8 @@ export function SidebarPreview(props) {
 		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))
-				+ ' ' + intl.formatTime(new Date(annotation.dateModified))}
+					+ ' ' + intl.formatTime(new Date(annotation.dateModified))
+					+ (annotation.lastModifiedByUser ? ' (' + annotation.lastModifiedByUser + ')' : '')}
 				onClick={e => handleSectionClick(e, 'header')}
 				draggable={true}
 				onDragStart={handleDragStart}
@@ -243,7 +249,11 @@ export function SidebarPreview(props) {
 					</div>
 				</div>
 				<div className="right">
-					{annotation.authorName && (<div className="author">{annotation.authorName}</div>)}
+					{annotation.authorName && (
+						<div className={cx('author', { 'non-authoritative': !annotation.isAuthorNameAuthoritative })}>
+							{annotation.authorName}
+						</div>
+					)}
 					<div className="more" onClick={handleClickMore}/>
 				</div>
 			</header>

@@ -66,8 +66,12 @@
 
 		.author {
 			@include text-truncate;
-			color: #707070;
+			color: #606060;
 			margin-inline-end: 4px;
+
+			&.non-authoritative {
+				color: #c0c0c0;
+			}
 		}
 	}
 
