@@ -271,6 +271,7 @@ export function getAnnotationsFromSelectionRanges(selectionRanges) {
 	for (let selectionRange of selectionRanges) {
 		let pageIndex = selectionRange.position.pageIndex;
 		annotations.push({
+			type: 'highlight',
 			fromText: true,
 			text: selectionRange.text,
 			position: selectionRange.position,
@@ -315,7 +316,7 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 	}).filter(x => x).join('\n\n');
 
 	annotations = annotations.map(
-		({ id, text, color, comment, image, position, pageLabel }) => {
+		({ id, type, text, color, comment, image, position, pageLabel, tags }) => {
 			if (image) {
 				let img = document.querySelector('div[data-sidebar-id="' + id + '"] img');
 				if (img) {
@@ -324,13 +325,15 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 			}
 			return {
 				id,
+				type,
 				attachmentItemID: window.itemID,
 				text: text ? text.trim() : text,
 				color,
 				comment: comment ? comment.trim() : comment,
 				image,
 				position,
-				pageLabel
+				pageLabel,
+				tags
 			};
 		}
 	);
