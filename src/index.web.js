@@ -128,7 +128,8 @@ class ViewerInstance {
 			sidebarOpen: true,
 			bottomPlaceholderHeight: 0,
 			localizedStrings: {},
-			readOnly: options.readOnly
+			readOnly: options.readOnly,
+			authorName: ''
 			// password: 'test'
 		});
 	}

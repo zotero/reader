@@ -30,6 +30,7 @@ class Viewer {
 		});
 		this._annotationsStore = new AnnotationsStore({
 			readOnly: options.readOnly,
+			authorName: options.authorName,
 			annotations: options.annotations,
 			onSave: options.onSaveAnnotations,
 			onDelete: options.onDeleteAnnotations,

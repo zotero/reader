@@ -12,6 +12,7 @@ import { debounce } from './lib/debounce';
 class AnnotationsStore {
 	constructor(options) {
 		this._readOnly = options.readOnly;
+		this._authorName = options.authorName;
 		this._annotations = options.annotations;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
@@ -81,11 +82,11 @@ class AnnotationsStore {
 		annotation.tags = annotation.tags || [];
 		// annotation.sortIndex
 
-		// All other are set automatically
+		// All others are set automatically
 		annotation.id = this._generateObjectKey();
 		annotation.dateCreated = (new Date()).toISOString();
 		annotation.dateModified = annotation.dateCreated;
-		annotation.authorName = '';
+		annotation.authorName = this._authorName;
 		annotation.pageLabel = '-';
 
 		if (annotation.position.rects) {
