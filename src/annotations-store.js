@@ -187,7 +187,7 @@ class AnnotationsStore {
 			return;
 		}
 
-		if (!ids.length || !zoteroConfirmDeletion(ids.length > 1)) {
+		if (!ids.length || ids.length > 1 && !zoteroConfirmDeletion(ids.length > 1)) {
 			return;
 		}
 
