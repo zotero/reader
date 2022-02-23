@@ -234,34 +234,18 @@ class Content extends React.Component {
 		}
 	}
 
-	onSelectionChange = (event) => {
+	onSelectionChange = () => {
 		let { innerRef } = this.props;
 		let selection = window.getSelection();
-
-		// let range = null;
-
-		// if (selection.isCollapsed) {
-		// 	range = selection.getRangeAt(0);
-		// }
-
-
 		let node = selection.anchorNode;
-
-		let found = false;
-		do {
-			if (node === innerRef.current) {
-				found = true;
-				break;
-			}
-		}
-		while (document.body.contains(node) && (node = node.parentElement));
-
 		let isSelected = false;
-
-		if (!selection.isCollapsed && found) {
-			isSelected = true;
+		// Using try … catch to avoid `Error: Permission denied to access property "nodeType"`
+		try {
+			isSelected = !selection.isCollapsed
+				&& innerRef.current.contains(node.nodeType === Node.TEXT_NODE ? node.parentNode : node);
 		}
-
+		catch (e) {
+		}
 		this.props.onSelectionChange(isSelected);
 	}
 
