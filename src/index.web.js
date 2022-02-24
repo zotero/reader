@@ -1,5 +1,6 @@
 import Viewer from './viewer.js';
 import annotations from './demo-annotations';
+import strings from './en-us.strings';
 
 window.development = true;
 
@@ -127,7 +128,7 @@ class ViewerInstance {
 			sidebarWidth: 240,
 			sidebarOpen: true,
 			bottomPlaceholderHeight: 0,
-			localizedStrings: {},
+			localizedStrings: strings,
 			readOnly: options.readOnly,
 			authorName: ''
 			// password: 'test'
