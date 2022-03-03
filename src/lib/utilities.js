@@ -315,6 +315,8 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 		return formatted;
 	}).filter(x => x).join('\n\n');
 
+	let fromText = annotations.some(x => x.fromText);
+
 	annotations = annotations.map(
 		({ id, type, text, color, comment, image, position, pageLabel, tags }) => {
 			if (image) {
@@ -343,7 +345,12 @@ export function setDataTransferAnnotations(dataTransfer, annotations) {
 	// results to dumped base64 content (LibreOffice) or image (Google Docs)
 	dataTransfer.clearData();
 	dataTransfer.setData('zotero/annotation', JSON.stringify(annotations));
-	// TODO: Implement `text/html`, to support rich text and images
-	// It basically needs the same HTML generating code as in Zotero client `editorInstance.js`
-	dataTransfer.setData('text/plain', text);
+
+	// Don't use Note translators if copying text from a PDF page
+	if (fromText) {
+		dataTransfer.setData('text/plain', text);
+	}
+	else {
+		zoteroSetDataTransferAnnotations(dataTransfer, annotations);
+	}
 }
