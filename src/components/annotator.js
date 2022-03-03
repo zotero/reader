@@ -670,6 +670,12 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isAlt = e.altKey;
 		let isShift = e.shiftKey;
 
+		// Allow 'copy' event to be triggered
+		if (isMod && e.key === 'c'
+			&& ['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
+			return;
+		}
+
 		// Tab, Shift-Tab, Escape work everywhere and allow to switch between focus zones and PDF view
 		if (isShift && e.key === 'Tab') {
 			focusManagerRef.current.tab(true);
@@ -841,23 +847,20 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleCopy = useCallback((event) => {
-		if (document.activeElement === document.getElementById('viewerContainer')
-			|| document.activeElement === document.body) {
-			let annotations = [];
+		let annotations = [];
 
-			if (hasSelection()) {
-				annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
-			}
-			else if (selectedIDsRef.current.length) {
-				annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
-			}
-
-			if (annotations.length) {
-				setDataTransferAnnotations(event.clipboardData, annotations);
-			}
-
-			event.preventDefault();
+		if (hasSelection()) {
+			annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
 		}
+		else if (selectedIDsRef.current.length) {
+			annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
+		}
+
+		if (annotations.length) {
+			setDataTransferAnnotations(event.clipboardData, annotations);
+		}
+
+		event.preventDefault();
 	}, []);
 
 	const handleDragEnd = useCallback((event) => {
