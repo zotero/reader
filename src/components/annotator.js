@@ -781,10 +781,13 @@ const Annotator = React.forwardRef((props, ref) => {
 				setSelectedIDs(annotationsViewRef.current.getAnnotations().map(x => x.id));
 			}
 
-			// Don't bypass keys if focus isn't on an input, contenteditable or button (only for Space)
+			// Don't bypass keys if focus isn't on an input, contenteditable or button (only for Space),
+			// and isn't a modifier, and isn't SHIFT or if it is, then at least it's not an arrow key
 			if (!(document.activeElement.nodeName === 'INPUT' && ['text', 'number'].includes(document.activeElement.type)
 				|| document.activeElement.getAttribute('contenteditable')
-				|| e.key === ' ' && document.activeElement.nodeName === 'BUTTON')) {
+				|| e.key === ' ' && document.activeElement.nodeName === 'BUTTON')
+				&& !isMod && !isAlt && (!isShift || ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key))
+			) {
 				e.preventDefault();
 				e.stopPropagation();
 			}
