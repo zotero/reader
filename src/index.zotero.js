@@ -92,6 +92,12 @@ class ViewerInstance {
 			onChangeSidebarOpen: (open) => {
 				this._postMessage({ action: 'changeSidebarOpen', open });
 			},
+			onFocusSplitButton: () => {
+				this._postMessage({ action: 'focusSplitButton' });
+			},
+			onFocusContextPane: () => {
+				this._postMessage({ action: 'focusContextPane' });
+			},
 			buf: options.buf,
 			annotations,
 			state: options.state,
@@ -184,6 +190,15 @@ class ViewerInstance {
 			case 'setToolbarPlaceholderWidth': {
 				let { width } = message;
 				this._viewer.setToolbarPlaceholderWidth(width);
+				return;
+			}
+			case 'focusLastToolbarButton': {
+				document.getElementById('viewFind').focus();
+				return;
+			}
+			case 'tabToolbar': {
+				let { reverse } = message;
+				this._viewer.annotatorRef.current.tabToolbar(reverse);
 				return;
 			}
 		}

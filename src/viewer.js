@@ -103,6 +103,8 @@ class Viewer {
 					onPopup={options.onPopup}
 					onClosePopup={options.onClosePopup}
 					onAddToNote={options.onAddToNote}
+					onFocusSplitButton={options.onFocusSplitButton}
+					onFocusContextPane={options.onFocusContextPane}
 					ref={this.annotatorRef}
 				/>
 			</IntlProvider>,

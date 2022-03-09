@@ -428,6 +428,27 @@ class FocusManager {
 			}
 		}
 	}
+
+	isLastZone() {
+		let zones = this.zones.slice();
+		let idx = zones.indexOf(this.zone);
+		for (let i = idx + 1; i < zones.length; i++) {
+			let zone = zones[i];
+			if (PDFViewerApplication.pdfSidebar.isOpen && zone.id === 'view-annotation') {
+				continue;
+			}
+			if (document.querySelector(zone.selector)) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	tabToolbar = (reverse) => {
+		this.zone = this.zones.find(x => x.id === 'toolbar');
+		this.tab(reverse);
+	}
 }
 
 const Annotator = React.forwardRef((props, ref) => {
@@ -481,7 +502,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		setEnableAddToNote,
 		openPageLabelPopup,
 		editHighlightedText,
-		clearSelector: annotationsViewRef.current.clearSelector
+		clearSelector: annotationsViewRef.current.clearSelector,
+		tabToolbar: (reverse) => focusManagerRef.current.tabToolbar(reverse)
 	}));
 
 	function getFirstVisibleAnnotation() {
@@ -682,6 +704,13 @@ const Annotator = React.forwardRef((props, ref) => {
 			e.preventDefault();
 		}
 		else if (e.key === 'Tab') {
+			if (focusManagerRef.current.zone) {
+				if (focusManagerRef.current.isLastZone()) {
+					props.onFocusContextPane();
+					e.preventDefault();
+					return;
+				}
+			}
 			focusManagerRef.current.tab();
 			e.preventDefault();
 		}
@@ -718,6 +747,16 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 
 			if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+
+				let findButton = document.getElementById('viewFind');
+				if (focusManagerRef.current.zone.id === 'toolbar' && document.activeElement === findButton) {
+					props.onFocusSplitButton();
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+
+
 				// Allow navigating to next/previous annotation if empty comment was just automatically focused
 				if (['sidebar-annotation-comment'].includes(focusManagerRef.current.zone.id)
 				&& !annotationCommentTouched.current && lastSelectedAnnotation && !lastSelectedAnnotation.comment) {
