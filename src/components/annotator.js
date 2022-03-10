@@ -738,6 +738,11 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 		else if (e.key === 'Escape') {
 			PDFViewerApplication.pdfCursorTools.handTool.deactivate();
+			PDFViewerApplication.findBar.close();
+			PDFViewerApplication.findBar.findField.value = '';
+
+			// Focus PDF view
+			focusManagerRef.current.focus();
 
 			if (selectedIDsRef.current.length) {
 				selectAnnotation();
