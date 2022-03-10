@@ -1524,6 +1524,13 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handlePointerUp = useCallback((event) => {
+
+		if (!event.target.closest('#findbar')
+			&& PDFViewerApplication.findBar.opened
+			&& !PDFViewerApplication.findBar.findField.value) {
+			PDFViewerApplication.findBar.close();
+		}
+
 		if (modeRef.current === 'highlight') {
 			let ranges = selectionRangesRef.current.filter(x => !x.collapsed);
 			for (let range of ranges) {
