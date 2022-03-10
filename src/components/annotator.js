@@ -449,6 +449,26 @@ class FocusManager {
 		this.zone = this.zones.find(x => x.id === 'toolbar');
 		this.tab(reverse);
 	}
+
+	focusPDFView = () => {
+		this.focus();
+	}
+
+	focusLast = () => {
+		let zones = this.zones.slice();
+		let lastZone = null;
+		let idx = zones.indexOf(this.zone);
+		for (let i = idx + 1; i < zones.length; i++) {
+			let zone = zones[i];
+			if (PDFViewerApplication.pdfSidebar.isOpen && zone.id === 'view-annotation') {
+				continue;
+			}
+			if (document.querySelector(zone.selector)) {
+				lastZone = zone;
+			}
+		}
+		this.focus(lastZone.id);
+	}
 }
 
 const Annotator = React.forwardRef((props, ref) => {
@@ -503,7 +523,9 @@ const Annotator = React.forwardRef((props, ref) => {
 		openPageLabelPopup,
 		editHighlightedText,
 		clearSelector: annotationsViewRef.current.clearSelector,
-		tabToolbar: (reverse) => focusManagerRef.current.tabToolbar(reverse)
+		tabToolbar: (reverse) => focusManagerRef.current.tabToolbar(reverse),
+		focusPDFView: () => focusManagerRef.current.focusPDFView(),
+		focusLast: () => focusManagerRef.current.focusLast()
 	}));
 
 	function getFirstVisibleAnnotation() {
