@@ -303,6 +303,13 @@ class FocusManager {
 		if (this.zone && this.zone.id !== 'popup-selection') {
 			this.options.setSelectionRangesRef([]);
 		}
+
+		if (event.target.nodeType === Node.ELEMENT_NODE
+			&& !event.target.closest('#findbar')
+			&& PDFViewerApplication.findBar.opened
+			&& !PDFViewerApplication.findBar.findField.value) {
+			PDFViewerApplication.findBar.close();
+		}
 	}
 
 	focus(id) {
@@ -1519,8 +1526,8 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handlePointerUp = useCallback((event) => {
-
-		if (!event.target.closest('#findbar')
+		if (event.target.nodeType === Node.ELEMENT_NODE
+			&& !event.target.closest('#findbar')
 			&& PDFViewerApplication.findBar.opened
 			&& !PDFViewerApplication.findBar.findField.value) {
 			PDFViewerApplication.findBar.close();
