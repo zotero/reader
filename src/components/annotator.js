@@ -450,24 +450,17 @@ class FocusManager {
 		this.tab(reverse);
 	}
 
-	focusPDFView = () => {
-		this.focus();
-	}
-
-	focusLast = () => {
+	focusFirst = () => {
 		let zones = this.zones.slice();
-		let lastZone = null;
-		let idx = zones.indexOf(this.zone);
-		for (let i = idx + 1; i < zones.length; i++) {
-			let zone = zones[i];
+		for (let zone of zones) {
 			if (PDFViewerApplication.pdfSidebar.isOpen && zone.id === 'view-annotation') {
 				continue;
 			}
 			if (document.querySelector(zone.selector)) {
-				lastZone = zone;
+				this.focus(zone.id);
+				return;
 			}
 		}
-		this.focus(lastZone.id);
 	}
 }
 
@@ -524,8 +517,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		editHighlightedText,
 		clearSelector: annotationsViewRef.current.clearSelector,
 		tabToolbar: (reverse) => focusManagerRef.current.tabToolbar(reverse),
-		focusPDFView: () => focusManagerRef.current.focusPDFView(),
-		focusLast: () => focusManagerRef.current.focusLast()
+		focusFirst: () => focusManagerRef.current.focusFirst()
 	}));
 
 	function getFirstVisibleAnnotation() {
@@ -726,12 +718,10 @@ const Annotator = React.forwardRef((props, ref) => {
 			e.preventDefault();
 		}
 		else if (e.key === 'Tab') {
-			if (focusManagerRef.current.zone) {
-				if (focusManagerRef.current.isLastZone()) {
-					props.onFocusContextPane();
-					e.preventDefault();
-					return;
-				}
+			if (!focusManagerRef.current.zone) {
+				props.onFocusContextPane();
+				e.preventDefault();
+				return;
 			}
 			focusManagerRef.current.tab();
 			e.preventDefault();

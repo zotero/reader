@@ -201,12 +201,8 @@ class ViewerInstance {
 				this._viewer.annotatorRef.current.tabToolbar(reverse);
 				return;
 			}
-			case 'focusPDFView': {
-				this._viewer.annotatorRef.current.focusPDFView();
-				return;
-			}
-			case 'focusLast': {
-				this._viewer.annotatorRef.current.focusLast();
+			case 'focusFirst': {
+				this._viewer.annotatorRef.current.focusFirst();
 				return;
 			}
 		}
