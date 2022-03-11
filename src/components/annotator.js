@@ -436,20 +436,21 @@ class FocusManager {
 		}
 	}
 
-	isLastZone() {
+	isFirstZone() {
 		let zones = this.zones.slice();
-		let idx = zones.indexOf(this.zone);
-		for (let i = idx + 1; i < zones.length; i++) {
-			let zone = zones[i];
+		for (let zone of zones) {
 			if (PDFViewerApplication.pdfSidebar.isOpen && zone.id === 'view-annotation') {
 				continue;
 			}
 			if (document.querySelector(zone.selector)) {
+				if (this.zone === zone) {
+					return true;
+				}
 				return false;
 			}
 		}
 
-		return true;
+		return false;
 	}
 
 	tabToolbar = (reverse) => {
@@ -721,6 +722,11 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		// Tab, Shift-Tab, Escape work everywhere and allow to switch between focus zones and PDF view
 		if (isShift && e.key === 'Tab') {
+			if (focusManagerRef.current.isFirstZone()) {
+				props.onFocusContextPane();
+				e.preventDefault();
+				return;
+			}
 			focusManagerRef.current.tab(true);
 			e.preventDefault();
 		}
