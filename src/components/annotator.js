@@ -776,8 +776,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				annotationCommentTouched.current = true;
 			}
 
-			if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-
+			if (!window.rtl && (e.key === 'ArrowRight' || e.key === 'ArrowDown') || window.rtl && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) {
 				let findButton = document.getElementById('viewFind');
 				if (focusManagerRef.current.zone.id === 'toolbar' && document.activeElement === findButton) {
 					props.onFocusSplitButton();
@@ -802,7 +801,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 				focusManagerRef.current.next(false, isShift);
 			}
-			else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+			else if (!window.rtl && (e.key === 'ArrowLeft' || e.key === 'ArrowUp') || window.rtl && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) {
 				// Allow to navigate to next/previous annotation if empty comment was just automatically focused
 				if (['sidebar-annotation-comment'].includes(focusManagerRef.current.zone.id)
 					&& !annotationCommentTouched.current && lastSelectedAnnotation && !lastSelectedAnnotation.comment) {

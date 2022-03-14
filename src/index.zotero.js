@@ -48,6 +48,7 @@ class ViewerInstance {
 
 		window.addEventListener('message', this.handleMessage);
 		window.itemID = options.itemID;
+		window.rtl = options.rtl;
 		this._viewer = new Viewer({
 			onAddToNote: (annotations) => {
 				this._postMessage({ action: 'addToNote', annotations });

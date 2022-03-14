@@ -14,6 +14,10 @@
 	background: $toolbar-sidebar-bg;
 	border-bottom: $toolbar-sidebar-border;
 
+	[dir=rtl] & {
+		transform: scaleX(-1);
+	}
+
 	.splitToolbarButton {
 		display: flex;
 		height: $split-toolbar-btn-height;

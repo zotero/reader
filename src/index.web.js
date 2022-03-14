@@ -48,6 +48,7 @@ async function test() {
 		readOnly: false,
 		buf,
 		annotations,
+		rtl: false,
 		state: null,
 		location: {
 			position: { pageIndex: 0, rects: [[371.395, 266.635, 486.075, 274.651]] }
@@ -82,6 +83,8 @@ class ViewerInstance {
 		if (options.readOnly) {
 			annotations.forEach(x => x.readOnly = true);
 		}
+
+		window.rtl = options.rtl;
 
 		this._viewer = new Viewer({
 			onAddToNote() {
