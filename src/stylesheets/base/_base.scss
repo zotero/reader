@@ -67,3 +67,7 @@ textarea {
 #viewerContainer {
 	transition-duration: 1ms !important;
 }
+
+button:hover {
+	cursor: default;
+}
