@@ -716,6 +716,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		// Allow 'copy' event to be triggered
 		if (isMod && e.key === 'c'
+			&& focusManagerRef.current.zone
 			&& ['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
 			return;
 		}
