@@ -89,6 +89,10 @@ class AnnotationsStore {
 		annotation.authorName = this._authorName;
 		annotation.pageLabel = '-';
 
+		if (!annotation.sortIndex) {
+			annotation.sortIndex = '00000|000000|00000';
+		}
+
 		if (annotation.position.rects) {
 			annotation.position.rects = annotation.position.rects.map(
 				rect => rect.map(value => parseFloat(value.toFixed(3)))
