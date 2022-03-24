@@ -23,7 +23,7 @@ export function PopupPreview(props) {
 	}
 
 	function handleCommentChange(text) {
-		props.onChange({ id: props.annotation.id, comment: text });
+		props.onChange({ id: props.annotation.id, comment: text, onlyTextOrComment: true });
 	}
 
 	function handleClickMore(event) {
@@ -124,11 +124,11 @@ export function SidebarPreview(props) {
 	}
 
 	function handleTextChange(text) {
-		props.onChange({ id: props.annotation.id, text });
+		props.onChange({ id: props.annotation.id, text, onlyTextOrComment: true });
 	}
 
 	function handleCommentChange(text) {
-		props.onChange({ id: props.annotation.id, comment: text });
+		props.onChange({ id: props.annotation.id, comment: text, onlyTextOrComment: true });
 	}
 
 	function handleClickMore(event) {

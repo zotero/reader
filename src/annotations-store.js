@@ -35,6 +35,11 @@ class AnnotationsStore {
 			// Image is sent in instant mode only
 			let annotations = this._unsavedAnnotations.map(x => ({ ...x, image: undefined }));
 			this._onSave(annotations);
+
+			for (let annotation of this._unsavedAnnotations) {
+				delete annotation.onlyTextOrComment;
+			}
+
 			this._unsavedAnnotations = [];
 		}, 1000, { maxWait: 10000 });
 
@@ -132,6 +137,10 @@ class AnnotationsStore {
 			}
 
 			let existingAnnotation = this._getAnnotationByID(annotation.id);
+
+			if (!annotation.onlyTextOrComment) {
+				delete existingAnnotation.onlyTextOrComment;
+			}
 
 			annotation = {
 				...existingAnnotation,
