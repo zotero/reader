@@ -333,7 +333,7 @@ class Viewer {
 	}
 
 	// TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation
-	_setState(state, skipScroll) {
+	async _setState(state, skipScroll) {
 		// window.PDFViewerApplication.pdfSidebar.switchView(state.sidebarView, true);
 		// window.PDFViewerApplication.pdfSidebarResizer._updateWidth(state.sidebarWidth);
 
@@ -348,6 +348,38 @@ class Viewer {
 		if (Number.isInteger(state.rotation)) {
 			window.PDFViewerApplication.pdfViewer.pagesRotation = state.rotation;
 		}
+
+		// Do this now and after pages are fully loaded.
+		// For most PDFs the first one is enough and happens immediately,
+		// for other PDFs we are repeating the navigation to correct it
+		if (!skipScroll) {
+			let dest = [null,
+				{ name: 'XYZ' },
+				// top/left must be null to be ignored
+				state.left || null,
+				state.top === undefined ? null : state.top,
+				parseInt(state.scale) ? state.scale / 100 : state.scale];
+
+			window.PDFViewerApplication.pdfViewer.scrollPageIntoView({
+				pageNumber: (state.pageIndex || 0) + 1,
+				destArray: dest,
+				allowNegativeOffset: true
+			});
+		}
+
+		// Note: Taken from pdf.js source:
+		// For documents with different page sizes, once all pages are
+		// resolved, ensure that the correct location becomes visible on load.
+		// (To reduce the risk, in very large and/or slow loading documents,
+		//  that the location changes *after* the user has started interacting
+		//  with the viewer, wait for either `pagesPromise` or a timeout.)
+		const FORCE_PAGES_LOADED_TIMEOUT = 10000;
+		await Promise.race([
+			window.PDFViewerApplication.pdfViewer.pagesPromise,
+			new Promise(resolve => {
+				setTimeout(resolve, FORCE_PAGES_LOADED_TIMEOUT);
+			}),
+		]);
 
 		if (!skipScroll) {
 			let dest = [null,
