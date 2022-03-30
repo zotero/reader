@@ -1464,6 +1464,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				selectAnnotation({ id: annotation.id, scrollSidebar: true });
 				focusComment(annotation.id);
 			})();
+			setMode(null);
 			return;
 		}
 
