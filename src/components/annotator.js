@@ -933,20 +933,23 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleCopy = useCallback((event) => {
-		let annotations = [];
+		if (!focusManagerRef.current.zone
+			|| ['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
+			let annotations = [];
 
-		if (hasSelection()) {
-			annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
-		}
-		else if (selectedIDsRef.current.length) {
-			annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
-		}
+			if (hasSelection()) {
+				annotations = getAnnotationsFromSelectionRanges(selectionRangesRef.current);
+			}
+			else if (selectedIDsRef.current.length) {
+				annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
+			}
 
-		if (annotations.length) {
-			setDataTransferAnnotations(event.clipboardData, annotations);
-		}
+			if (annotations.length) {
+				setDataTransferAnnotations(event.clipboardData, annotations);
+			}
 
-		event.preventDefault();
+			event.preventDefault();
+		}
 	}, []);
 
 	const handleDragEnd = useCallback((event) => {
