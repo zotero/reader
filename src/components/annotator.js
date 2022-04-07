@@ -721,6 +721,20 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
+		if (isMod && e.key === 'i'
+			&& focusManagerRef.current.zone
+			&& ['sidebar-annotation-highlight', 'sidebar-annotation-comment', 'view-annotation-comment'].includes(focusManagerRef.current.zone.id)) {
+			document.execCommand('italic', false, null);
+			return;
+		}
+
+		if (isMod && e.key === 'b'
+			&& focusManagerRef.current.zone
+			&& ['sidebar-annotation-highlight', 'sidebar-annotation-comment', 'view-annotation-comment'].includes(focusManagerRef.current.zone.id)) {
+			document.execCommand('bold', false, null);
+			return;
+		}
+
 		// Tab, Shift-Tab, Escape work everywhere and allow to switch between focus zones and PDF view
 		if (isShift && e.key === 'Tab') {
 			if (focusManagerRef.current.isFirstZone()) {
