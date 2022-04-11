@@ -79,7 +79,7 @@ class Viewer {
 			this._pdfjsPromiseResolve();
 
 			// For development purposes only, when dropping various test files to the same window
-			window.extractor = new Extractor(window.PDFViewerApplication.pdfViewer);
+			window.extractor = new Extractor(window.PDFViewerApplication.pdfViewer, () => this._annotationsStore._annotations);
 		});
 
 		window.extractor = new Extractor(window.PDFViewerApplication.pdfViewer);

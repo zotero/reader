@@ -12,8 +12,9 @@ import {
 } from './text';
 
 export class Extractor {
-	constructor(pdfViewer) {
+	constructor(pdfViewer, getAnnotations) {
 		this.pdfViewer = pdfViewer;
+		this.getAnnotations = getAnnotations;
 		this.charsCache = {};
 		this.pageLabelsCache = {};
 		this.pageLabelPointsCache = undefined;
@@ -141,6 +142,10 @@ export class Extractor {
 		return getPageLabel(pageIndex, charsPrev, charsCur, charsNext, points);
 	}
 
+	clearLabelsCache() {
+		this.pageLabelsCache = {};
+	}
+
 	async getPageLabel(pageIndex) {
 		if (this.pageLabelsCache[pageIndex]) {
 			return this.pageLabelsCache[pageIndex];
@@ -160,6 +165,17 @@ export class Extractor {
 		}
 		else if (assignedPageLabel) {
 			pageLabel = assignedPageLabel;
+		}
+
+		let annotations = this.getAnnotations().reverse();
+		for (let annotation of annotations) {
+			// Ignore read-only annotation because user can't fix its page label
+			if (!annotation.readOnly && annotation.position.pageIndex <= pageIndex) {
+				if (parseInt(annotation.pageLabel) == annotation.pageLabel) {
+					pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
+				}
+				break;
+			}
 		}
 
 		this.pageLabelsCache[pageIndex] = pageLabel;

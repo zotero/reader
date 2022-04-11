@@ -1722,6 +1722,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handlePageLabelPopupUpdate = useCallback(async (type, pageLabel) => {
+		window.extractor.clearLabelsCache();
 		let annotationsToUpdate = [];
 		if (type === 'auto') {
 			// TODO: Don't reset page labels if they can't be reliably extracted from text
