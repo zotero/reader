@@ -1,17 +1,12 @@
 #!/bin/bash
 
-SCRIPT=$(readlink -f "$0")
-SCRIPT_DIR=$(dirname "$SCRIPT")
-
-PDFJS_DIR=pdf.js
-
-cd "$PDFJS_DIR"
+cd pdf.js
 npm ci
 # TODO: Use `generic` build for the web version
 # npx gulp generic
 # Zotero with FF 60 ESR runs only the `legacy` build
 npx gulp generic-legacy
-cd "$SCRIPT_DIR/../"
+cd ..
 
 mkdir -p build/web
 cp -r "$PDFJS_DIR"/build/generic-legacy/web/* build/web/
