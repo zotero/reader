@@ -3,9 +3,9 @@
 	"version": "1.0.0",
 	"description": "PDF.js based Zotero PDF reader and annotator",
 	"scripts": {
-		"build": "run-s build:pdf.js build:reader",
-		"build:pdf.js": "sh scripts/build-pdfjs",
-		"build:reader": "cross-env NODE_ENV=production webpack --display-modules",
+		"build": "npm run build:pdf.js && npm run build:reader",
+		"build:pdf.js": "scripts/build-pdfjs",
+		"build:reader": "NODE_ENV=production webpack --display-modules",
 		"start": "webpack-dev-server",
 		"test": "echo \"No tests yet\""
 	},
