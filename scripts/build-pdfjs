@@ -9,14 +9,14 @@ npx gulp generic-legacy
 cd ..
 
 mkdir -p build/web
-cp -r "$PDFJS_DIR"/build/generic-legacy/web/* build/web/
-cp -r "$PDFJS_DIR"/build/generic-legacy/build/* build/web/
-cp -r "$PDFJS_DIR"/build/generic-legacy/LICENSE build/web/
+cp -r pdf.js/build/generic-legacy/web/* build/web/
+cp -r pdf.js/build/generic-legacy/build/* build/web/
+cp -r pdf.js/build/generic-legacy/LICENSE build/web/
 
 mkdir -p build/zotero
-cp -r "$PDFJS_DIR"/build/generic-legacy/web/* build/zotero/
-cp -r "$PDFJS_DIR"/build/generic-legacy/build/* build/zotero/
-cp -r "$PDFJS_DIR"/build/generic-legacy/LICENSE build/zotero/
+cp -r pdf.js/build/generic-legacy/web/* build/zotero/
+cp -r pdf.js/build/generic-legacy/build/* build/zotero/
+cp -r pdf.js/build/generic-legacy/LICENSE build/zotero/
 rm build/zotero/*.pdf
 rm build/zotero/*.map
 
