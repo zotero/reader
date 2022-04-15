@@ -934,7 +934,14 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	const handleCopy = useCallback((event) => {
 		if (!focusManagerRef.current.zone
-			|| ['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
+			|| ['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)
+			// Allow copying an annotation when comment text box is focused, but it's empty
+			|| (
+				['sidebar-annotation-comment', 'view-annotation-comment'].includes(focusManagerRef.current.zone.id)
+				&& selectedIDsRef.current.length === 1
+				&& annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id)).some(x => !x.comment)
+			)
+		) {
 			let annotations = [];
 
 			if (hasSelection()) {
