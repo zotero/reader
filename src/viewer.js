@@ -67,6 +67,7 @@ class Viewer {
 		// document.getElementById('back').addEventListener('click', this.handleBackButtonClick);
 		// document.getElementById('forward').addEventListener('click', this.handleForwardButtonClick);
 		// Override the external link click handling
+		window.addEventListener('mousedown', this.handlePointerDown, true);
 		window.addEventListener('click', this.handleClick, true);
 		// Prevent dragging for internal links
 		window.addEventListener('dragstart', this.handleDragStart);
@@ -238,6 +239,45 @@ class Viewer {
 		this.options.onChangeSidebarWidth(width);
 	}
 
+	handlePointerDown = (event) => {
+		let isLeft = event.button === 0;
+		let isRight = event.button === 2;
+		let isCtrl = event.ctrlKey || event.metaKey;
+		let isShift = event.shiftKey;
+		let node = event.target.closest('.thumbnail');
+		if (!node) {
+			return;
+		}
+		if (isLeft) {
+			if (isShift) {
+				let allNodes = Array.from(document.querySelectorAll('.thumbnail'));
+				let idx = allNodes.indexOf(node);
+				let idx2 = allNodes.findIndex(x => x !== node && x.classList.contains('extra-selected'));
+				let from = Math.min(idx, idx2);
+				let to = Math.max(idx, idx2);
+				allNodes.slice(from, to + 1).forEach(x => x.classList.add('extra-selected'));
+				return;
+			}
+			if (!isCtrl) {
+				document.querySelectorAll('.thumbnail.extra-selected').forEach(x => x.classList.remove('extra-selected'));
+			}
+			node.classList.add('extra-selected');
+		}
+		else if (isRight) {
+			if (!node.classList.contains('extra-selected')) {
+				document.querySelectorAll('.thumbnail.extra-selected').forEach(x => x.classList.remove('extra-selected'));
+				node.classList.add('extra-selected');
+			}
+			let pageIndexes = Array.from(document.querySelectorAll('.thumbnail.extra-selected'))
+				.map(x => parseInt(x.getAttribute('data-page-number')) - 1);
+			this.options.onPopup('openThumbnailPopup', {
+				x: event.screenX,
+				y: event.screenY,
+				pageIndexes
+			});
+		}
+	}
+
 	handleClick = (event) => {
 		if (
 			event.button === 0
@@ -330,6 +370,10 @@ class Viewer {
 	setToolbarPlaceholderWidth(width) {
 		let root = document.documentElement;
 		root.style.setProperty('--toolbarPlaceholderWidth', width + 'px');
+	}
+
+	reload(buf) {
+		window.PDFViewerApplication.open(buf);
 	}
 
 	// TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation

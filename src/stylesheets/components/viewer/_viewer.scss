@@ -125,3 +125,18 @@
 	overflow: hidden;
 	z-index: 50000; /* should be higher than anything else in PDF.js! */
 }
+
+#outerContainer.suspend {
+	pointer-events: none;
+	#mainContainer:before {
+		content: '';
+		position: absolute;
+		top: 32px;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 100;
+		background-color: gray;
+		opacity: 0.3;
+	}
+}

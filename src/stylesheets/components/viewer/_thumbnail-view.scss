@@ -56,6 +56,10 @@
 		background-color: $thumbnail-selection-ring-selected-bg;
 	}
 
+	.thumbnail.extra-selected & {
+		background-color: $thumbnail-selection-ring-selected-bg;
+	}
+
 	a:focus > .thumbnail & {
 		background-color: $thumbnail-selection-ring-focus-bg;
 	}

@@ -206,6 +206,18 @@ class ViewerInstance {
 				this._viewer.annotatorRef.current.focusFirst();
 				return;
 			}
+			case 'reloading': {
+				let node = document.getElementById('outerContainer');
+				node.classList.add('suspend');
+				return;
+			}
+			case 'reload': {
+				let { buf } = message;
+				this._viewer.reload(buf);
+				let node = document.getElementById('outerContainer');
+				node.classList.remove('suspend');
+				return;
+			}
 		}
 	}
 
