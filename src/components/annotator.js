@@ -293,7 +293,9 @@ class FocusManager {
 		}
 
 		if (!['annotations', 'viewerContainer'].includes(event.target.id) && (!this.zone || !this.zone.id.includes('annotation') && !this.zone.id.includes('label-'))) {
-			this.options.selectAnnotation();
+			if (event.target.nodeType !== Node.DOCUMENT_NODE) {
+				this.options.selectAnnotation();
+			}
 		}
 
 		if (!this.zone || !['label-popup-input', 'label-popup-checkbox', 'label-popup-radios', 'label-popup-button'].includes(this.zone.id)) {
