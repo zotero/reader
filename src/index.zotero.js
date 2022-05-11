@@ -336,7 +336,12 @@ class ViewerInstance {
 			// }
 			case 'switchcursortool_hand': {
 				// eb.dispatch('switchcursortool', { tool: 1 });
-				PDFViewerApplication.pdfCursorTools.handTool.toggle();
+				if (PDFViewerApplication.pdfCursorTools.activeTool === 0) {
+					PDFViewerApplication.pdfCursorTools.switchTool(1);
+				}
+				else {
+					PDFViewerApplication.pdfCursorTools.switchTool(0);
+				}
 				return;
 			}
 			case 'switchscrollmode_vertical': {

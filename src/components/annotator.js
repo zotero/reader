@@ -716,6 +716,11 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isAlt = e.altKey;
 		let isShift = e.shiftKey;
 
+		// Pass through hand/select tool shortcuts
+		if (['h', 's'].includes(e.key)) {
+			return;
+		}
+
 		// Allow 'copy' event to be triggered
 		if (isMod && e.key === 'c'
 			&& focusManagerRef.current.zone
@@ -757,7 +762,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			e.preventDefault();
 		}
 		else if (e.key === 'Escape') {
-			PDFViewerApplication.pdfCursorTools.handTool.deactivate();
+			PDFViewerApplication.pdfCursorTools.switchTool(0);
 			PDFViewerApplication.findBar.close();
 			PDFViewerApplication.findBar.findField.value = '';
 
@@ -1273,7 +1278,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleToolbarModeChange = useCallback((mode) => {
-		PDFViewerApplication.pdfCursorTools.handTool.deactivate();
+		PDFViewerApplication.pdfCursorTools.switchTool(0);
 		toggleMode(mode);
 	}, []);
 
@@ -1458,7 +1463,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
-		if (PDFViewerApplication.pdfCursorTools.handTool.active) {
+		if (PDFViewerApplication.pdfCursorTools.activeTool === 1) {
 			return true;
 		}
 
