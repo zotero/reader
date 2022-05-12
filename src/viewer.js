@@ -7,6 +7,7 @@ import Annotator from './components/annotator';
 import AnnotationsStore from './annotations-store';
 import { debounce } from './lib/debounce';
 import { Extractor } from './lib/extract';
+import { drawAnnotationsOnCanvas } from './lib/render';
 
 class Viewer {
 	constructor(options) {
@@ -40,6 +41,11 @@ class Viewer {
 		});
 
 		window.pageTextPositions = {};
+
+		window.drawAnnotations = (canvas, viewport, pageIndex) => {
+			let annotations = this._annotationsStore._annotations.filter(x => x.position.pageIndex === pageIndex);
+			drawAnnotationsOnCanvas(canvas, viewport, annotations);
+		};
 
 		this._initSelectionBox();
 		this._applyExtraLocalizations();
