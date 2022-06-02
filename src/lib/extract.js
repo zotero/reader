@@ -146,8 +146,8 @@ export class Extractor {
 		this.pageLabelsCache = {};
 	}
 
-	async getPageLabel(pageIndex) {
-		if (this.pageLabelsCache[pageIndex]) {
+	async getPageLabel(pageIndex, usePrevAnnotation) {
+		if (!usePrevAnnotation && this.pageLabelsCache[pageIndex]) {
 			return this.pageLabelsCache[pageIndex];
 		}
 
@@ -167,18 +167,21 @@ export class Extractor {
 			pageLabel = assignedPageLabel;
 		}
 
-		let annotations = this.getAnnotations().reverse();
-		for (let annotation of annotations) {
-			// Ignore read-only annotation because user can't fix its page label
-			if (!annotation.readOnly && annotation.position.pageIndex <= pageIndex) {
-				if (parseInt(annotation.pageLabel) == annotation.pageLabel) {
-					pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
+		if (usePrevAnnotation) {
+			let annotations = this.getAnnotations().reverse();
+			for (let annotation of annotations) {
+				// Ignore read-only annotation because user can't fix its page label
+				if (!annotation.readOnly && annotation.position.pageIndex <= pageIndex) {
+					if (parseInt(annotation.pageLabel) == annotation.pageLabel) {
+						pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
+					}
+					break;
 				}
-				break;
 			}
 		}
-
-		this.pageLabelsCache[pageIndex] = pageLabel;
+		else {
+			this.pageLabelsCache[pageIndex] = pageLabel;
+		}
 		return pageLabel;
 	}
 

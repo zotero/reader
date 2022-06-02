@@ -109,7 +109,7 @@ class AnnotationsStore {
 		this._save(annotation);
 		this.render();
 
-		annotation.pageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex);
+		annotation.pageLabel = await window.extractor.getPageLabel(annotation.position.pageIndex, true);
 
 		if (annotation.type === 'note' || annotation.type === 'image') {
 			annotation.sortIndex = await window.extractor.getSortIndex(annotation.position);
