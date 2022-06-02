@@ -1741,7 +1741,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (type === 'auto') {
 			// TODO: Don't reset page labels if they can't be reliably extracted from text
 			setLabelPopup(null);
-			let annotations = annotationsRef.current;
+			let annotations = annotationsRef.current.filter(x => !x.readOnly);
 			for (let annotation of annotations) {
 				annotationsToUpdate.push({
 					id: annotation.id,
