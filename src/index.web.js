@@ -1,21 +1,21 @@
 import Viewer from './viewer.js';
-import annotations from './demo-annotations';
 import strings from './en-us.strings';
 
-window.development = true;
-
-let loaded = false;
-
-document.addEventListener('webviewerloaded', function () {
+parent.addEventListener('webviewerloaded', (e) => {
+	window.PDFViewerApplicationOptions.set('eventBusDispatchToDOM', true);
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
 	window.PDFViewerApplicationOptions.set('defaultUrl', '');
 	window.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
 	window.PDFViewerApplicationOptions.set('cMapPacked', true);
-	window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
+	window.PDFViewerApplicationOptions.set('workerSrc', 'pdf.worker.js');
 	window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
 	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
+	// Without this PDF.js forces opening outline view when it exists
 	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 	window.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
+	// Disable interactive forms because our PDF saving mechanism can't
+	// save then. In addition, we don't have styling for those forms,
+	// and they sometimes show popup preventing to leave tab
 	window.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
 	window.PDFViewerApplicationOptions.set('printResolution', 300);
 
@@ -24,125 +24,162 @@ document.addEventListener('webviewerloaded', function () {
 		return window.PDFViewerApplicationOptions;
 	};
 
-	PDFViewerApplication.initializedPromise.then(async function () {
-		if (!window.PDFViewerApplication.pdfViewer || loaded) return;
+	let loaded = false;
+	PDFViewerApplication.initializedPromise.then(function () {
+		window.isReady = true;
+		if (!window.PDFViewerApplication.pdfViewer || loaded) {
+			return;
+		}
 		loaded = true;
-		window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-			console.log('documentinit');
+
+		window.PDFViewerApplication.eventBus.on('documentloaded', async (event) => {
+			let buf = (await window.PDFViewerApplication.pdfDocument.getData()).buffer;
+			window.postMessage({ action: 'loadExternalAnnotations', buf }, [buf]);
 		});
-
-
-		test();
-
-
-		// setTimeout(() => {
-		//   viewer.navigate(annotations[0]);
-		// }, 3000);
 	});
 });
 
-async function test() {
-	let res = await fetch('compressed.tracemonkey-pldi-09.pdf');
-	let buf = await res.arrayBuffer();
-	let vi = new ViewerInstance({
-		readOnly: false,
-		buf,
-		annotations,
-		rtl: false,
-		state: null,
-		location: {
-			position: { pageIndex: 0, rects: [[371.395, 266.635, 486.075, 274.651]] }
-		}
-	});
-
-	vi._viewer.setBottomPlaceholderHeight(0);
-	vi._viewer.setToolbarPlaceholderWidth(0);
-
-	vi._viewer.setEnableAddToNote(false);
-	// vi._viewer.setBottomPlaceholderHeight(400);
-	// vi._viewer.setToolbarPlaceholderWidth(50);
-
-	// vi._viewer.navigate({
-	//   'position': { 'pageIndex': 100, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
-	// })
-
-	setInterval(() => {
-		vi.uninit();
-		vi = new ViewerInstance({
-			buf,
-			annotations,
-			state: null
-		});
-	}, 30000000);
-}
+window.save = async () => {
+	let buf = (await window.PDFViewerApplication.pdfDocument.getData()).buffer;
+	window.postMessage({ action: 'save', buf }, [buf]);
+};
 
 class ViewerInstance {
 	constructor(options) {
+		this._itemID = options.itemID;
+		this._viewer = null;
 
 		let annotations = options.annotations;
 		if (options.readOnly) {
 			annotations.forEach(x => x.readOnly = true);
 		}
 
+		window.addEventListener('message', this.handleMessage);
+		// window.itemID = options.itemID;
 		window.rtl = options.rtl;
-
 		this._viewer = new Viewer({
-			onAddToNote() {
-				alert('This will add annotations to the pinned note');
+			onAddToNote: (annotations) => {
 			},
-			onSaveAnnotations: function (annotation) {
-				console.log('Save annotations', annotation);
+			onSaveAnnotations: (annotations) => {
+				this._postMessage({ action: 'saveAnnotations', annotations });
 			},
-			onDeleteAnnotations: function (ids) {
-				console.log('Delete annotations', JSON.stringify(ids));
+			onDeleteAnnotations: (ids) => {
+				this._postMessage({ action: 'deleteAnnotations', ids });
 			},
-			onSetState: function (state) {
-				console.log('Set state', state);
+			onSetState: (state) => {
+				this._postMessage({ action: 'setState', state });
 			},
-			onClickTags(annotationID, event) {
-				alert('This will open Zotero tagbox popup');
+			onClickTags: (id, event) => {
+				let selector;
+				if (event.target.closest('#viewerContainer')) {
+					selector = '#viewerContainer .preview .tags';
+				}
+				else {
+					selector = `[data-sidebar-annotation-id="${id}"] .tags`;
+				}
+				// this._postMessage({ action: 'openTagsPopup', id, selector });
 			},
-			onDoubleClickPageLabel: (id) => {
-				console.log('Open page label popup', id);
+			onPopup: (name, data) => {
+				// this._postMessage({ action: name, data });
 			},
-			onPopup(name, data) {
-				console.log(name, data);
-				alert('This will open ' + name);
+			onClosePopup: (data) => {
+				this._postMessage({ action: 'closePopup', data });
 			},
-			onClosePopup(data) {
-				console.log('onClosePopup', data);
+			onExternalLink: (url) => {
+				window.open(url, '_blank');
 			},
-			onExternalLink(url) {
-				alert('This will navigate to the external link: ' + url);
+			onDownload: () => {
+				// this._postMessage({ action: 'save' });
 			},
-			onDownload() {
-				alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');
-			},
-			onChangeSidebarWidth(width) {
-				console.log('Changed sidebar width ' + width);
+			onChangeSidebarWidth: (width) => {
+				// this._postMessage({ action: 'changeSidebarWidth', width });
 			},
 			onChangeSidebarOpen: (open) => {
-				console.log('changeSidebarOpen', open);
+				// this._postMessage({ action: 'changeSidebarOpen', open });
 			},
-			buf: options.buf,
+			onFocusSplitButton: () => {
+			},
+			onFocusContextPane: () => {
+			},
+			buf: options.url,
 			annotations,
 			state: options.state,
 			location: options.location,
-			sidebarWidth: 240,
-			sidebarOpen: true,
+			sidebarWidth: options.sidebarWidth,
+			sidebarOpen: options.sidebarOpen,
 			bottomPlaceholderHeight: 0,
 			localizedStrings: strings,
 			readOnly: options.readOnly,
-			authorName: ''
-			// password: 'test'
+			authorName: options.authorName
 		});
+
+		this._viewer.setBottomPlaceholderHeight(0);
+		this._viewer.setToolbarPlaceholderWidth(0);
+	}
+
+	_postMessage(message) {
+		window.postMessage(message);
 	}
 
 	uninit() {
+		window.removeEventListener('message', this.handleMessage);
 		this._viewer.uninit();
+	}
+
+	handleMessage = (event) => {
+		if (event.source === window) {
+			return;
+		}
+
+		let data = event.data;
+		let message = data;
+		switch (message.action) {
+			case 'error': {
+				window.PDFViewerApplication._otherError(message.message, message.moreInfo);
+				return;
+			}
+			case 'navigate': {
+				let { location } = message;
+				this._viewer.navigate(location);
+				return;
+			}
+			case 'setAnnotations': {
+				let { annotations } = message;
+				this._viewer.setAnnotations(annotations);
+				return;
+			}
+			case 'unsetAnnotations': {
+				let { ids } = message;
+				// TODO: Handle conflicts when one user modifies and another deletes an annotation
+				this._viewer.unsetAnnotations(ids);
+				return;
+			}
+		}
 	}
 }
 
-// setTimeout(function () {
-//   PDFViewerApplication.pdfSidebar.switchView(9, true);
-// }, 1000);
+let currentViewerInstance = null;
+
+window.addEventListener('message', async function (event) {
+	let message = event.data;
+
+	if (message.action === 'crash') {
+		document.body.style.pointerEvents = 'none';
+		let popover = document.createElement('div');
+		popover.id = 'crash-popover';
+		popover.append(message.message);
+		document.body.append(popover);
+	}
+
+	if (message.action === 'open') {
+		await PDFViewerApplication.initializedPromise;
+		// TODO: Improve error handling here
+		if (currentViewerInstance) {
+			currentViewerInstance.uninit();
+		}
+		currentViewerInstance = new ViewerInstance({
+			...message
+		});
+		window.postMessage({ action: 'initialized' });
+	}
+});

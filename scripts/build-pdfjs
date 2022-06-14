@@ -8,6 +8,11 @@ npm ci
 npx gulp generic-legacy
 cd ..
 
+mkdir -p build/dev
+cp -r pdf.js/build/generic-legacy/web/* build/dev/
+cp -r pdf.js/build/generic-legacy/build/* build/dev/
+cp -r pdf.js/build/generic-legacy/LICENSE build/dev/
+
 mkdir -p build/web
 cp -r pdf.js/build/generic-legacy/web/* build/web/
 cp -r pdf.js/build/generic-legacy/build/* build/web/

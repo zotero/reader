@@ -1,26 +1,41 @@
 const fs = require('fs');
 
-function modifyWeb() {
-  let filename = './build/web/viewer.html';
-  let html = fs.readFileSync(filename).toString();
+function modifyDev() {
+	let filename = './build/dev/viewer.html';
+	let html = fs.readFileSync(filename).toString();
 
-  let ins = `
+	let ins = `
 <link rel="resource" type="application/l10n" href="locale/locale.properties">
 <script src="pdf.js"></script>
 <script src="viewer.js"></script>
 <script src="annotator.js"></script>
 `;
 
-  html = html.replace(/<!-- This snippet(.*)<\/head>/s, ins + '</head>');
+	html = html.replace(/<!-- This snippet(.*)<\/head>/s, ins + '</head>');
+	fs.writeFileSync(filename, html);
+}
 
-  fs.writeFileSync(filename, html);
+function modifyWeb() {
+	let filename = './build/web/viewer.html';
+	let html = fs.readFileSync(filename).toString();
+
+	let ins = `
+<link rel="resource" type="application/l10n" href="locale/locale.properties">
+<script src="pdf.js"></script>
+<script src="viewer.js"></script>
+<script src="annotator.js"></script>
+`;
+
+	html = html.replace(/<!-- This snippet(.*)<\/head>/s, ins + '</head>');
+
+	fs.writeFileSync(filename, html);
 }
 
 function modifyZotero() {
-  let filename = './build/zotero/viewer.html';
-  let html = fs.readFileSync(filename).toString();
+	let filename = './build/zotero/viewer.html';
+	let html = fs.readFileSync(filename).toString();
 
-  let ins = `
+	let ins = `
 <link rel="resource" type="application/l10n" href="locale/locale.properties">
 <script src="pdf.js"></script>
 <script src="viewer.js"></script>
@@ -32,10 +47,11 @@ function modifyZotero() {
 <script src="annotator.js"></script>
 `;
 
-  html = html.replace(/<!-- This snippet(.*)<\/head>/s, ins + '</head>');
+	html = html.replace(/<!-- This snippet(.*)<\/head>/s, ins + '</head>');
 
-  fs.writeFileSync(filename, html);
+	fs.writeFileSync(filename, html);
 }
 
+modifyDev();
 modifyWeb();
 modifyZotero();

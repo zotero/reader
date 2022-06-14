@@ -2,16 +2,16 @@ const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const WriteFilePlugin = require('write-file-webpack-plugin');
 
-const configWeb = {
+const configDev = {
 	mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
 	devtool: 'source-map',
 	entry: [
-		'./src/index.web.js',
+		'./src/index.dev.js',
 		'./src/stylesheets/main.scss'
 	],
 	output: {
 		path: path.join(__dirname, './build'),
-		filename: 'web/annotator.js',
+		filename: 'dev/annotator.js',
 		library: 'pdf-reader',
 		libraryTarget: 'umd',
 		publicPath: '/',
@@ -47,7 +47,7 @@ const configWeb = {
 					{
 						loader: 'file-loader',
 						options: {
-							name: 'web/viewer.css'
+							name: 'dev/viewer.css'
 						}
 					},
 					{
@@ -81,7 +81,7 @@ const configWeb = {
 	},
 	plugins: [
 		new CopyWebpackPlugin([
-				{ from: 'res/', to: 'web/' }
+				{ from: 'res/', to: 'dev/' }
 			], { copyUnmodified: true }
 		),
 		new WriteFilePlugin()
@@ -89,12 +89,91 @@ const configWeb = {
 	devServer: {
 		port: 3000,
 		contentBase: path.join(__dirname, 'build/'),
-		openPage: 'web/viewer.html',
+		openPage: 'dev/viewer.html',
 		open: false,
 		// watchOptions: {
 		// 	poll: true
 		// }
 	}
+};
+
+
+const configWeb = {
+	mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+	entry: [
+		'./src/index.web.js',
+		'./src/stylesheets/main.scss'
+	],
+	output: {
+		path: path.join(__dirname, './build/web'),
+		filename: 'annotator.js',
+		library: 'pdf-reader',
+		libraryTarget: 'umd',
+		publicPath: '/',
+		umdNamedDefine: true
+	},
+	optimization: {
+		minimize: false
+	},
+	module: {
+		rules: [
+			{
+				test: /\.(js|jsx)$/,
+				exclude: /node_modules/,
+				use: {
+					loader: 'babel-loader',
+					options: {
+						presets: [
+							'@babel/preset-react',
+							[
+								'@babel/preset-env',
+								{
+									useBuiltIns: false,
+									modules: false
+								}
+							]
+						],
+						'plugins': [
+							'@babel/plugin-transform-runtime',
+							'@babel/plugin-proposal-class-properties'
+						]
+					}
+				}
+			},
+			{
+				test: /\.scss$/,
+				use: [
+					{
+						loader: 'file-loader',
+						options: {
+							name: 'viewer.css'
+						}
+					},
+					{
+						loader: 'extract-loader'
+					},
+					{
+						loader: 'css-loader?-url'
+					},
+					{
+						loader: 'postcss-loader'
+					},
+					{
+						loader: 'sass-loader'
+					}
+				]
+			}
+		]
+	},
+	resolve: {
+		extensions: ['*', '.js']
+	},
+	plugins: [
+		new CopyWebpackPlugin([
+				{ from: 'res/', to: '' }
+			], { copyUnmodified: true }
+		)
+	],
 };
 
 const configZotero = {
@@ -181,4 +260,4 @@ const configZotero = {
 	}
 };
 
-module.exports = [configWeb, configZotero];
+module.exports = [configDev, configWeb, configZotero];
