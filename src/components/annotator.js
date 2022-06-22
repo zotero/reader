@@ -1914,12 +1914,12 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	return (
 		<div>
-			<Toolbar
+			{!props.readOnly && <Toolbar
 				toggled={_mode}
 				onMode={handleToolbarModeChange}
 				color={_color}
 				onColorPick={handleToolbarColorClick}
-			/>
+			/>}
 			<AnnotationsView
 				ref={annotationsViewRef}
 				annotations={_annotations}
@@ -1938,7 +1938,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}
 				selectionPositions={_selectionPositions}
-				enableSelectionPopup={!_isSelectingText && !_mode && !_isLastClickRight}
+				enableSelectionPopup={!props.readOnly && !_isSelectingText && !_mode && !_isLastClickRight}
 				enableAddToNote={_enableAddToNote}
 				popupAnnotation={
 					!_isPopupDisabled
