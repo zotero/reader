@@ -171,7 +171,9 @@ export class Extractor {
 			let annotations = this.getAnnotations().reverse();
 			for (let annotation of annotations) {
 				// Ignore read-only annotation because user can't fix its page label
-				if (!annotation.readOnly && annotation.position.pageIndex <= pageIndex) {
+				if (!annotation.readOnly
+					&& annotation.pageLabel !== '-'
+					&& annotation.position.pageIndex <= pageIndex) {
 					if (parseInt(annotation.pageLabel) == annotation.pageLabel) {
 						pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
 					}
