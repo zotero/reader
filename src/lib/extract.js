@@ -32,7 +32,11 @@ export class Extractor {
 		for (let item of textContent.items) {
 			for (let char of item.chars) {
 				// Note: Rotation is rounded in PDF.js
-				if (char.rotation % 90 === 0 && char.c !== ' ') {
+				if (char.rotation % 90 === 0
+					&& char.c !== ' '
+					// Sometimes char can map to null and break strings
+					&& char.c.charCodeAt(0)
+				) {
 					chars.push(char);
 				}
 			}
