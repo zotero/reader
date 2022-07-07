@@ -718,6 +718,11 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		// Pass through hand/select tool shortcuts
 		if (['h', 's'].includes(e.key)) {
+			// PDF.js skips h and s keys if they were pressed when focused an input,
+			// but we have to allow this when selectionBox is focused
+			if (e.target === window.selectionBox) {
+				e.target.blur();
+			}
 			return;
 		}
 
