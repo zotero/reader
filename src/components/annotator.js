@@ -74,41 +74,43 @@ function getModifiedSelectionRanges(selectionRanges, modifier) {
 	return getSelectionRanges(anchor, head);
 }
 
-function getWordSelectionRanges(position) {
-	let res = window.extractor.getClosestWord(position);
-	if (!res) {
+function getWordSelectionRanges(anchorPosition, headPosition) {
+	let anchorWord = window.extractor.getClosestWord(anchorPosition);
+	let headWord = window.extractor.getClosestWord(headPosition);
+	if (!anchorWord || !headWord) {
 		return [];
 	}
-	let { anchorOffset, headOffset } = res;
-
-	let anchor = {
-		pageIndex: position.pageIndex,
-		offset: anchorOffset
-	};
-
-	let head = {
-		pageIndex: position.pageIndex,
-		offset: headOffset
-	};
+	let anchor = { pageIndex: anchorPosition.pageIndex };
+	let head = { pageIndex: headPosition.pageIndex };
+	if (anchorWord.anchorOffset < headWord.anchorOffset && anchor.pageIndex === head.pageIndex
+		|| anchor.pageIndex < head.pageIndex) {
+		anchor.offset = anchorWord.anchorOffset;
+		head.offset = headWord.headOffset;
+	}
+	else {
+		anchor.offset = anchorWord.headOffset;
+		head.offset = headWord.anchorOffset;
+	}
 	return getSelectionRanges(anchor, head);
 }
 
-function getLineSelectionRanges(position) {
-	let res = window.extractor.getClosestLine(position);
-	if (!res) {
+function getLineSelectionRanges(anchorPosition, headPosition) {
+	let anchorLine = window.extractor.getClosestLine(anchorPosition);
+	let headLine = window.extractor.getClosestLine(headPosition);
+	if (!anchorLine || !headLine) {
 		return [];
 	}
-	let { anchorOffset, headOffset } = res;
-
-	let anchor = {
-		pageIndex: position.pageIndex,
-		offset: anchorOffset
-	};
-
-	let head = {
-		pageIndex: position.pageIndex,
-		offset: headOffset
-	};
+	let anchor = { pageIndex: anchorPosition.pageIndex };
+	let head = { pageIndex: headPosition.pageIndex };
+	if (anchorLine.anchorOffset < headLine.anchorOffset && anchor.pageIndex === head.pageIndex
+		|| anchor.pageIndex < head.pageIndex) {
+		anchor.offset = anchorLine.anchorOffset;
+		head.offset = headLine.headOffset;
+	}
+	else {
+		anchor.offset = anchorLine.headOffset;
+		head.offset = headLine.anchorOffset;
+	}
 	return getSelectionRanges(anchor, head);
 }
 
@@ -503,6 +505,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const lastSelectedAnnotationIDRef = useRef(null);
 	const pointerDownPositionRef = useRef(null);
 	const selectionRangesRef = useRef([]);
+	const selectionMode = useRef('chars');
 	const focusManagerRef = useRef(null);
 	const annotationCommentTouched = useRef(false);
 
@@ -1450,15 +1453,22 @@ const Annotator = React.forwardRef((props, ref) => {
 		setIsPopupDisabled(false);
 
 		if (event.detail === 2) {
-			let selectionRanges = getWordSelectionRanges(position);
+			setIsSelectingText(true);
+			setEnableSelection(true);
+			let selectionRanges = getWordSelectionRanges(position, position);
 			setSelectionRangesRef(selectionRanges);
+			selectionMode.current = 'words';
 			return;
 		}
 		else if (event.detail === 3) {
-			let selectionRanges = getLineSelectionRanges(position);
+			setIsSelectingText(true);
+			setEnableSelection(true);
+			let selectionRanges = getLineSelectionRanges(position, position);
 			setSelectionRangesRef(selectionRanges);
+			selectionMode.current = 'lines';
 			return;
 		}
+		selectionMode.current = 'chars';
 
 		if (isShift && selectionRangesRef.current.length) {
 			setIsSelectingText(true);
@@ -1679,7 +1689,16 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (pointerDownPositionRef.current && enableSelectionRef.current) {
 			setIsSelectingText(true);
 			if (selectionRangesRef.current.length) {
-				let selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, position);
+				let selectionRanges;
+				if (selectionMode.current === 'chars') {
+					selectionRanges = getModifiedSelectionRanges(selectionRangesRef.current, position, 'word');
+				}
+				else if (selectionMode.current === 'words') {
+					selectionRanges = getWordSelectionRanges(pointerDownPositionRef.current, position);
+				}
+				else if (selectionMode.current === 'lines') {
+					selectionRanges = getLineSelectionRanges(pointerDownPositionRef.current, position);
+				}
 				setSelectionRangesRef(selectionRanges);
 			}
 			else {
