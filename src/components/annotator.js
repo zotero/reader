@@ -795,6 +795,29 @@ const Annotator = React.forwardRef((props, ref) => {
 			clearSelection();
 		}
 
+		if (!focusManagerRef.current.zone
+			|| ['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
+			if (isAlt && e.code === 'Digit1') {
+				toggleMode('highlight');
+			}
+			else if (isAlt && e.code === 'Digit2') {
+				toggleMode('note');
+			}
+			else if (isAlt && e.code === 'Digit3') {
+				toggleMode('image');
+			}
+			else if (isAlt && e.code === 'Digit4') {
+				let idx = annotationColors.findIndex(x => x[1] === colorRef.current);
+				if (idx === annotationColors.length - 1) {
+					idx = 0;
+				}
+				else {
+					idx++;
+				}
+				setColor(annotationColors[idx][1]);
+			}
+		}
+
 		// Focused any zone that is not PDF view
 
 
