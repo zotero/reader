@@ -66,6 +66,7 @@ class Viewer {
 
 		document.getElementById('download').addEventListener('click', this.handleDownloadButtonClick);
 		document.getElementById('zoomAuto').addEventListener('click', this.handleZoomAutoButtonClick);
+		document.getElementById('navigateBack').addEventListener('click', this.handleNavigateBackButtonClick);
 		window.PDFViewerApplication.eventBus.on('pagerendered', this.handlePageRender);
 		window.PDFViewerApplication.eventBus.on('updateviewarea', this.handleViewAreaUpdate);
 		window.PDFViewerApplication.eventBus.on('documentinit', this.handleDocumentInit);
@@ -132,6 +133,7 @@ class Viewer {
 		ReactDom.unmountComponentAtNode(this.node);
 		document.getElementById('download').removeEventListener('click', this.handleDownloadButtonClick);
 		document.getElementById('zoomAuto').removeEventListener('click', this.handleZoomAutoButtonClick);
+		document.getElementById('navigateBack').removeEventListener('click', this.handleNavigateBackButtonClick);
 		window.PDFViewerApplication.eventBus.off('pagerendered', this.handlePageRender);
 		window.PDFViewerApplication.eventBus.off('updateviewarea', this.handleViewAreaUpdate);
 		window.PDFViewerApplication.eventBus.off('sidebarviewchanged', this.handleSidebarViewChange);
@@ -160,6 +162,7 @@ class Viewer {
 
 	_applyExtraLocalizations() {
 		document.getElementById('zoomAuto').setAttribute('title', this._getLocalizedString('pdfReader.zoomPageWidth'));
+		document.getElementById('navigateBack').setAttribute('title', this._getLocalizedString('general.back'));
 		document.getElementById('viewAnnotations').setAttribute('title', this._getLocalizedString('pdfReader.showAnnotations'));
 	}
 
@@ -169,6 +172,10 @@ class Viewer {
 
 	handleZoomAutoButtonClick = () => {
 		PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
+	}
+
+	handleNavigateBackButtonClick = () => {
+		window.history.back();
 	}
 
 	handlePageRender = async (event) => {
@@ -199,6 +206,18 @@ class Viewer {
 		};
 		this._lastState = state;
 		this._onSetState(state);
+
+		// Enable/disable navigate back button
+		let canNavigateBack = true;
+		try {
+			let { uid } = window.history.state;
+			if (uid == 0) {
+				canNavigateBack = false;
+			}
+		}
+		catch (e) {
+		}
+		document.getElementById('navigateBack').disabled = !canNavigateBack;
 	}
 
 	handleSidebarViewChange = (e) => {

@@ -86,6 +86,10 @@
 		@include icon("zoom-auto");
 	}
 
+	.navigateBack {
+		@include icon("navigate-back");
+	}
+
 	.presentationMode {
 		@include icon("full-screen");
 	}
