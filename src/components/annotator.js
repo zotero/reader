@@ -671,6 +671,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		// viewer.eventBus.off('pagesinit', onDocumentReady);
 		window.addEventListener('keydown', handleKeyDown, true);
 		window.addEventListener('pointerup', handlePointerUp);
+		window.addEventListener('pointerdown', handlePointerDown);
 		window.addEventListener('dragend', handleDragEnd);
 		window.addEventListener('dragstart', handleDragStart);
 		window.addEventListener('copy', handleCopy);
@@ -680,6 +681,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
 			window.removeEventListener('pointerup', handlePointerUp);
+			window.removeEventListener('pointerdown', handlePointerDown);
 			window.removeEventListener('dragend', handleDragEnd);
 			window.removeEventListener('dragstart', handleDragStart);
 			window.removeEventListener('copy', handleCopy);
@@ -1634,6 +1636,21 @@ const Annotator = React.forwardRef((props, ref) => {
 		setIsSelectedOnPointerDown(false);
 
 		pointerDownPositionRef.current = null;
+	}, []);
+
+	const handlePointerDown = useCallback((event) => {
+		if (event.target === document.getElementById('viewer')) {
+			selectAnnotation();
+			setSelectionRangesRef([]);
+
+			setIsSelectingText(false);
+			setIsResizingArea(false);
+			setIsSelectingArea(false);
+			setEnableSelection(false);
+			setIsSelectedOnPointerDown(false);
+
+			pointerDownPositionRef.current = null;
+		}
 	}, []);
 
 	// Layer PointerUp is called before Window PointerUp
