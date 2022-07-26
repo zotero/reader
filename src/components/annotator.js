@@ -1019,14 +1019,10 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	const handlePageRendered = useCallback((event) => {
 		// For now just deselect text when page is re-rendered
-		// TODO: Re-render selection layer after page zoom change or resize,
-		//  figure out what to do when multiple pages are selected
-		//  and some of them are unloaded
-		for (let selectionRange of selectionRangesRef.current) {
-			if (selectionRange.position.pageIndex === event.pageNumber - 1) {
-				setSelectionRangesRef([]);
-			}
-		}
+		// TODO: Figure out what to do when multiple pages are selected and some of them are unloaded
+		setTimeout(() => {
+			setSelectionPositions([...selectionPositionsRef.current]);
+		});
 	}, []);
 
 	const handleDragStart = useCallback((event) => {
