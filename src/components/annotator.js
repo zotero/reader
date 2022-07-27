@@ -492,7 +492,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_blink, blinkRef, setBlink] = useRefState(null);
 	const [_isSidebarOpen, isSidebarOpenRef, setIsSidebarOpen] = useRefState(window.PDFViewerApplication.pdfSidebar.isOpen);
 	const [_isSelectingText, isSelectingTextRef, setIsSelectingText] = useRefState(false);
-	const [_isDraggingAnnotation, isDraggingAnnotationRef, setIsDraggingAnnotation] = useRefState(false);
+	const [_draggingAnnotationIDs, draggingAnnotationIDsRef, setDraggingAnnotationIDs] = useRefState([]);
 	const [_isPopupDisabled, isPopupDisabledRef, setIsPopupDisabled] = useRefState(false);
 	const [_isSelectingArea, isSelectingAreaRef, setIsSelectingArea] = useRefState(false);
 	const [_isResizingArea, isResizingAreaRef, setIsResizingArea] = useRefState(false);
@@ -1001,7 +1001,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	const handleDragEnd = useCallback((event) => {
 		setEnableSelection(false);
-		setIsDraggingAnnotation(false);
+		setDraggingAnnotationIDs([]);
 	}, []);
 
 	const handleSidebarViewChange = useCallback((event) => {
@@ -1216,9 +1216,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		lastSelectedAnnotationIDRef.current = selectedIDs.slice(-1)[0];
-
 		let annotation = annotations.find(x => x.id === lastSelectedAnnotationIDRef.current);
-		scrollTo(annotation, scrollSidebar, scrollViewer);
+		if (annotation) {
+			scrollTo(annotation, scrollSidebar, scrollViewer);
+		}
 
 		if (selectInSidebar) {
 			focusManagerRef.current.zone = focusManagerRef.current.zones.find(x => x.id === 'sidebar-annotation');
@@ -1231,14 +1232,11 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	const handleLayerAnnotationDragStart = useCallback((event) => {
-		let isCtrl = event.ctrlKey || event.metaKey;
-
-		if (isCtrl) {
+		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
+		if (!annotations.length) {
 			event.preventDefault();
-			return;
 		}
 
-		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		// If some annotations are ink and some not, filter only ink annotations
 		// and allow dragging, otherwise cancel
 		let forceMulti = false;
@@ -1261,7 +1259,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		}
 
 		if (annotations.length) {
-			setIsDraggingAnnotation(true);
+			setDraggingAnnotationIDs(annotations.map(x => x.id));
 			setIsPopupDisabled(true);
 			setEnableSelection(false);
 			setDataTransferAnnotations(event.dataTransfer, annotations);
@@ -1269,8 +1267,6 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handleSidebarAnnotationDragStart = useCallback((event, id) => {
-		setIsDraggingAnnotation(true);
-
 		let annotations;
 		if (selectedIDsRef.current.includes(id) && selectedIDsRef.current.length > 1) {
 			annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
@@ -1278,6 +1274,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		else {
 			annotations = [annotationsRef.current.find(x => x.id === id)];
 		}
+
+		setDraggingAnnotationIDs(annotations.map(x => x.id));
 
 		// If some annotations are ink and some not, filter only ink annotations
 		// and allow to drag, otherwise cancel
@@ -1972,6 +1970,35 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onClosePopup();
 	}, []);
 
+	function handleSelectorChange(remove, tag, color) {
+		let selectedAnnotations = annotationsRef.current.filter(x => draggingAnnotationIDsRef.current.includes(x.id));
+		selectedAnnotations = selectedAnnotations.filter(x => !x.readOnly);
+		let annotations = [];
+		for (let annotation of selectedAnnotations) {
+			if (tag) {
+				if (remove) {
+					if (annotation.tags.find(x => x.name === tag.name)) {
+						annotation.tags = annotation.tags.filter(x => x.name !== tag.name);
+						annotations.push(annotation);
+					}
+				}
+				else {
+					if (!annotation.tags.find(x => x.name === tag.name)) {
+						annotation.tags.push(tag);
+						annotations.push(annotation);
+					}
+				}
+			}
+			else if (color) {
+				if (annotation.color !== color) {
+					annotation.color = color;
+					annotations.push(annotation);
+				}
+			}
+		}
+		props.onUpdateAnnotations(annotations);
+	}
+
 	return (
 		<div>
 			{!props.readOnly && <Toolbar
@@ -1994,6 +2021,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				onMenu={handleSidebarAnnotationMenuOpen}
 				onSelectorMenu={handleSelectorMenuOpen}
 				onDeselectAnnotations={handleDeselectAnnotations}
+				onSelectorChange={handleSelectorChange}
 			/>
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}
@@ -2003,7 +2031,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				popupAnnotation={
 					!_isPopupDisabled
 					&& !_isSelectingText
-					&& !_isDraggingAnnotation
+					&& !_draggingAnnotationIDs.length
 					&& !_isSelectingArea
 					&& !_isResizingArea
 					&& !_isLastClickRight

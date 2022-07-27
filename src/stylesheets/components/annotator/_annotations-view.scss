@@ -104,7 +104,7 @@
 				border-radius: 3px;
 				margin-left: 1px;
 
-				&:hover, &.selected {
+				&:hover, &.selected, &.dragged-over  {
 					background-color: #bcc4d2;
 				}
 
@@ -145,7 +145,7 @@
 					background: rgb(89, 139, 236);
 				}
 
-				&:hover {
+				&:hover, &.dragged-over  {
 					background: rgb(187, 206, 241);
 					border: 1px solid rgb(109, 149, 224);
 				}

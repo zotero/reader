@@ -45,8 +45,26 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 	);
 }
 
-function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor }) {
+function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor, onChange }) {
 	const intl = useIntl();
+
+	function handleDragOver(event) {
+		event.preventDefault();
+		event.dataTransfer.dropEffect = "move";
+		event.target.closest('button').classList.add('dragged-over');
+	}
+
+	function handleDragLeave(event) {
+		event.target.closest('button').classList.remove('dragged-over');
+	}
+
+	function handleDrop(event, tag, color) {
+		event.preventDefault();
+		let remove = event.shiftKey || event.metaKey;
+		onChange(remove, tag, color);
+		event.target.closest('button').classList.remove('dragged-over');
+	}
+
 	return (
 		<div id="selector" className="selector" onContextMenu={onContextMenu}>
 			{colors.length > 1 && <div className="colors">
@@ -57,6 +75,9 @@ function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor }) {
 						className={cx('color', { selected: color.selected, inactive: color.inactive })}
 						title={color.name ? intl.formatMessage({ id: color.name }) : null}
 						onClick={() => onClickColor(color.color)}
+						onDragOver={handleDragOver}
+						onDragLeave={handleDragLeave}
+						onDrop={(event) => handleDrop(event, null, color.color)}
 					><IconColor color={color.color}/></button>
 				))}
 			</div>}
@@ -68,6 +89,9 @@ function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor }) {
 						className={cx('tag', { color: !!tag.color, selected: tag.selected, inactive: tag.inactive })}
 						style={{ color: tag.color }}
 						onClick={() => onClickTag(tag.name)}
+						onDragOver={handleDragOver}
+						onDragLeave={handleDragLeave}
+						onDrop={(event) => handleDrop(event, { name: tag.name, color: tag.color })}
 					>{tag.name}</button>
 				))}
 			</div>}
@@ -319,6 +343,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 				onContextMenu={handleSelectorContextMenu}
 				onClickTag={handleTagClick}
 				onClickColor={handleColorClick}
+				onChange={props.onSelectorChange}
 			/>}
 		</React.Fragment>, containerNode);
 }));

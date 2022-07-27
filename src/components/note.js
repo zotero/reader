@@ -110,6 +110,7 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 	}
 
 	function handleDragEnd(event) {
+		document.getElementById('viewer').classList.remove('disable-pointer-events');
 		onDragEnd();
 
 		// This seems to only have an effect in Firefox
@@ -129,8 +130,6 @@ function Note({ annotation, isSelected, enableMoving, onDragStart, onDragEnd, on
 			rect = [left, top, left + width, top + height];
 			onChangePosition({ ...annotation.position, rects: [rect] });
 		}
-
-		document.getElementById('viewer').classList.remove('disable-pointer-events');
 	}
 
 	function handleDragLeave(event) {
