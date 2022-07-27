@@ -2012,6 +2012,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				annotations={_annotations}
 				selectedIDs={_selectedIDs}
 				expansionState={_expansionState}
+				authorName={props.authorName}
 				onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 				onAnnotationEditorBlur={handleSidebarAnnotationEditorBlur}
 				onDoubleClickHighlight={handleSidebarAnnotationDoubleClick}

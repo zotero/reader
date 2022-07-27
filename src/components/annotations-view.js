@@ -6,7 +6,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import { SidebarPreview } from './preview';
 import { searchAnnotations } from '../lib/search';
-import { IconColor } from "./icons";
+import { IconColor, IconUser } from "./icons";
 import { annotationColors } from "../lib/colors";
 
 function AnnotationsViewSearch({ query, onInput, onClear }) {
@@ -45,7 +45,7 @@ function AnnotationsViewSearch({ query, onInput, onClear }) {
 	);
 }
 
-function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor, onChange }) {
+function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickColor, onClickAuthor, onChange }) {
 	const intl = useIntl();
 
 	function handleDragOver(event) {
@@ -95,6 +95,16 @@ function Selector({ tags, colors, onContextMenu, onClickTag, onClickColor, onCha
 					>{tag.name}</button>
 				))}
 			</div>}
+			{authors.length > 1 && <div className="authors">
+				{authors.map((author, index) => (
+					<button
+						key={index}
+						tabIndex={-1}
+						className={cx('author', { selected: author.selected, inactive: author.inactive })}
+						onClick={() => onClickAuthor(author.author)}
+					><IconUser/>{author.author}</button>
+				))}
+			</div>}
 		</div>
 	);
 }
@@ -130,6 +140,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	const [query, setQuery] = useState('');
 	const [selectedTags, setSelectedTags] = useState([]);
 	const [selectedColors, setSelectedColors] = useState([]);
+	const [selectedAuthors, setSelectedAuthors] = useState([]);
 	const prevAnnotationsLengthRef = useRef(props.annotations.length);
 
 	useEffect(() => {
@@ -181,8 +192,12 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 			}
 			annotations = newSearchedAnnotations;
 		}
-		if (selectedTags.length || selectedColors.length) {
-			annotations = annotations.filter(x => x.tags.some(t => selectedTags.includes(t.name)) || selectedColors.includes(x.color));
+		if (selectedTags.length || selectedColors.length || selectedAuthors.length) {
+			annotations = annotations.filter(x => (
+				x.tags.some(t => selectedTags.includes(t.name))
+				|| selectedColors.includes(x.color)
+				|| selectedAuthors.includes(x.authorName)
+			));
 		}
 		return annotations;
 	}
@@ -229,6 +244,15 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 		}
 	}
 
+	function handleAuthorClick(author) {
+		if (selectedAuthors.includes(author)) {
+			setSelectedAuthors(selectedAuthors.filter(x => x !== author));
+		}
+		else {
+			setSelectedAuthors([...selectedAuthors, author]);
+		}
+	}
+
 	function handleSelectorContextMenu(event) {
 		if (!event.target.classList.contains('colors')
 			&& !event.target.classList.contains('tags')) {
@@ -251,6 +275,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 
 	let tags = {};
 	let colors = {};
+	let authors = {};
 	for (let annotation of props.annotations) {
 		for (let tag of annotation.tags) {
 			if (!tags[tag.name]) {
@@ -269,6 +294,15 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 				name: predefinedColor ? predefinedColor[0] : null
 			};
 		}
+		let author = annotation.authorName;
+		if (author && !authors[author]) {
+			authors[author] = {
+				author,
+				selected: selectedAuthors.includes(author),
+				inactive: true,
+				current: author === props.authorName
+			};
+		}
 	}
 
 	for (let annotation of annotations) {
@@ -276,6 +310,10 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 			tags[tag.name].inactive = false;
 		}
 		colors[annotation.color].inactive = false;
+		let author = annotation.authorName;
+		if (author) {
+			authors[author].inactive = false;
+		}
 	}
 
 	let coloredTags = [];
@@ -310,6 +348,17 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	colors = Object.values(colors);
 	colors = [...primaryColors, ...colors];
 
+	authors = Object.values(authors);
+	authors.sort(function (a, b) {
+		if (a.current) {
+			return -1;
+		}
+		else if (b.current) {
+			return 1;
+		}
+		return collator.compare(a.author, b.author);
+	});
+
 	return ReactDOM.createPortal(
 		<React.Fragment>
 			<AnnotationsViewSearch
@@ -340,9 +389,11 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 			{(!!tags.length || colors.length > 1) && <Selector
 				tags={tags}
 				colors={colors}
+				authors={authors}
 				onContextMenu={handleSelectorContextMenu}
 				onClickTag={handleTagClick}
 				onClickColor={handleColorClick}
+				onClickAuthor={handleAuthorClick}
 				onChange={props.onSelectorChange}
 			/>}
 		</React.Fragment>, containerNode);

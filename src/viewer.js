@@ -103,6 +103,7 @@ class Viewer {
 			>
 				<Annotator
 					readOnly={options.readOnly}
+					authorName={options.authorName}
 					onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
 					onUpdateAnnotations={this._annotationsStore.updateAnnotations.bind(this._annotationsStore)}
 					onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}

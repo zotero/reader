@@ -91,7 +91,7 @@
 		border-top: 1px solid #a9a9a9;
 		box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
 		z-index: 2;
-		max-height: 120px;
+		max-height: 140px;
 		overflow: auto;
 
 		.colors {
@@ -146,6 +146,53 @@
 				}
 
 				&:hover, &.dragged-over  {
+					background: rgb(187, 206, 241);
+					border: 1px solid rgb(109, 149, 224);
+				}
+
+				&:active {
+					color: white;
+					background: rgb(89, 139, 236);
+				}
+
+				&.inactive {
+					opacity: 0.4;
+				}
+			}
+		}
+
+		.authors {
+			margin-top: 5px;
+			display: flex;
+			flex-wrap: wrap;
+
+			&:nth-child(2) {
+				margin-top: 4px;
+			}
+
+			.author {
+				cursor: default;
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: pre;
+				padding: 2px 4px;
+				margin-left: 1px;
+				margin-bottom: 1px;
+				display: flex;
+				align-items: center;
+				border-radius: 6px;
+				border: 1px solid transparent;
+
+				svg {
+					margin-inline-end: 4px;
+				}
+
+				&.selected {
+					color: white;
+					background: rgb(89, 139, 236);
+				}
+
+				&:hover {
 					background: rgb(187, 206, 241);
 					border: 1px solid rgb(109, 149, 224);
 				}

@@ -55,7 +55,7 @@ let annotations = [
 		comment: 'werwe',
 		tags: [],
 		id: '04AABBCC',
-		authorName: '',
+		authorName: 'user123',
 		dateModified: '2020-02-19T12:54:22.773Z',
 		pageLabel: '1'
 	},
