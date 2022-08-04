@@ -284,6 +284,7 @@ class Content extends React.Component {
 					suppressContentEditableWarning={true}
 					className="content"
 					contentEditable={!this.props.isReadOnly}
+					dir="auto"
 					onInput={() => {
 						clean(innerRef.current);
 						this.handleChange(innerRef.current.innerHTML);

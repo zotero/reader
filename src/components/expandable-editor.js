@@ -123,7 +123,7 @@ class ExpandableEditor extends React.Component {
 				</div>
 				{showClampedEditor && <div className="clamped-view">
 					<div className={cx('editor', { 'read-only': this.props.isReadOnly || !this.props.isEditable })}>
-						<div className="content" dangerouslySetInnerHTML={{ __html: this.state.clampedHTML }}/>
+						<div className="content" dir="auto" dangerouslySetInnerHTML={{ __html: this.state.clampedHTML }}/>
 					</div>
 				</div>
 				}

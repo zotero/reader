@@ -8,7 +8,8 @@ import {
 	getNextLineClosestOffset,
 	getPrevLineClosestOffset,
 	getClosestWord,
-	getClosestLine
+	getClosestLine,
+	getLines
 } from './text';
 
 export class Extractor {
@@ -41,6 +42,9 @@ export class Extractor {
 				}
 			}
 		}
+
+		// Reverse RTL lines
+		getLines(chars, true);
 
 		this.charsCache[pageIndex] = chars;
 		return chars;
