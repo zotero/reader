@@ -849,6 +849,11 @@ function getLines(chars, reflowRTL) {
 					spaceAfter = true;
 					break;
 				}
+
+				let punctuation = '?.,;!¡¿。、·(){}[]/$';
+				if (punctuation.includes(char.c) || punctuation.includes(char2.c)) {
+					break;
+				}
 			}
 			line.words.push({ from: i, to: j - 1, spaceAfter });
 			i = j - 1;
