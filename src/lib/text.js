@@ -770,6 +770,9 @@ function charHeight(char) {
 }
 
 function getLines(chars, reflowRTL) {
+	if (!chars.length) {
+		return [];
+	}
 	let lines = [];
 	let line = {
 		from: 0,
