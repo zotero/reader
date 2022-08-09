@@ -262,7 +262,7 @@ class ViewerInstance {
 				return;
 			}
 			case 'clearSelector': {
-				this._viewer.clearSelector();
+				this._viewer.clearFilter();
 				return;
 			}
 			case 'copy': {

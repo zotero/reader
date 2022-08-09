@@ -26,6 +26,7 @@ import {
 	clearSelection
 } from '../lib/utilities';
 import { p2v, p2v as p2vc } from '../lib/coordinates';
+import { cleanFilter, filterAnnotations } from '../lib/search';
 
 // Note: All rects in annotator.js are stored in [left, top, right, bottom] order
 // where the Y axis starts from the bottom:
@@ -482,7 +483,9 @@ const Annotator = React.forwardRef((props, ref) => {
 	// the latest value and eliminate the complexity of rebinding custom events.
 	// useRefState state variables are used only for rendering
 
+	const [_filter, filterRef, setFilter] = useRefState({ query: '', colors: [], tags: [], authors: [] });
 	const [_annotations, annotationsRef, setAnnotations] = useRefState([]);
+	const [_allAnnotations, allAnnotationsRef, setAllAnnotations] = useRefState([]);
 	const [_selectedIDs, selectedIDsRef, setSelectedIDs] = useRefState([]);
 	const [_expansionState, expansionStateRef, setExpansionState] = useRefState(0);
 	const [_mode, modeRef, setMode] = useRefState(null);
@@ -501,7 +504,6 @@ const Annotator = React.forwardRef((props, ref) => {
 	const [_enableAddToNote, enableAddToNote, setEnableAddToNote] = useRefState(false);
 	const [_labelPopup, labelPopup, setLabelPopup] = useRefState(null);
 
-	const annotationsViewRef = useRef();
 	const lastSelectedAnnotationIDRef = useRef(null);
 	const pointerDownPositionRef = useRef(null);
 	const selectionRangesRef = useRef([]);
@@ -523,12 +525,22 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	useImperativeHandle(ref, () => ({
 		navigate,
-		setAnnotations,
+		setAnnotations: (annotations) => {
+			setAllAnnotations(annotations);
+			let filter = cleanFilter(annotations, filterRef.current);
+			setFilter(filter);
+			let filteredAnnotations = filterAnnotations(annotations, filter);
+			setAnnotations(filteredAnnotations);
+			if (filteredAnnotations.length !== annotationsRef.current.length) {
+				setSelectedIDs([]);
+				props.onClosePopup();
+			}
+		},
 		setColor,
 		setEnableAddToNote,
 		openPageLabelPopup,
 		editHighlightedText,
-		clearSelector: annotationsViewRef.current.clearSelector,
+		clearFilter: () => setFilter({ query: '', colors: [], tags: [], authors: []}),
 		tabToolbar: (reverse) => focusManagerRef.current.tabToolbar(reverse),
 		focusFirst: () => focusManagerRef.current.focusFirst()
 	}));
@@ -898,10 +910,16 @@ const Annotator = React.forwardRef((props, ref) => {
 					}
 				}
 			}
-			else if (['sidebar-annotation', 'sidebar-selector', 'sidebar-search'].includes(focusManagerRef.current.zone.id)
+			else if ([
+					'sidebar-annotation',
+					'sidebar-selector',
+					'sidebar-search',
+					'view-annotation'
+				].includes(focusManagerRef.current.zone.id)
 				&& isMod && e.key === 'a'
 			) {
-				setSelectedIDs(annotationsViewRef.current.getAnnotations().map(x => x.id));
+				setSelectedIDs(annotationsRef.current.map(x => x.id));
+				e.preventDefault();
 			}
 
 			// Don't bypass keys if focus isn't on an input, contenteditable or button (only for Space),
@@ -932,6 +950,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 			// Prevent Mod + A, as it selects random things in viewer container and makes them draggable
 			if (isMod && !isShift && e.key === 'a') {
+				setSelectedIDs(annotationsRef.current.map(x => x.id));
 				e.preventDefault();
 			}
 			// Prevent "open file", "download file" PDF.js keyboard shortcuts
@@ -1161,7 +1180,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			return 0;
 		}
 		let selectedIDs = selectedIDsRef.current.slice();
-		let annotations = selectInSidebar ? annotationsViewRef.current.getAnnotations() : annotationsRef.current;
+		let annotations = annotationsRef.current;
 		if (shift && selectedIDs.length) {
 			let annotationIndex = annotations.findIndex(x => x.id === id);
 			let lastSelectedIndex = annotations.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
@@ -1965,12 +1984,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		props.onPopup('openSelectorPopup', data);
 	}, []);
 
-	const handleDeselectAnnotations = useCallback(() => {
-		setSelectedIDs([]);
-		props.onClosePopup();
-	}, []);
-
-	function handleSelectorChange(remove, tag, color) {
+	const handleSelectorChange = useCallback((remove, tag, color) => {
 		let selectedAnnotations = annotationsRef.current.filter(x => draggingAnnotationIDsRef.current.includes(x.id));
 		selectedAnnotations = selectedAnnotations.filter(x => !x.readOnly);
 		let annotations = [];
@@ -1997,7 +2011,12 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 		}
 		props.onUpdateAnnotations(annotations);
-	}
+	}, []);
+
+	const handleFilterChange = useCallback((filter) => {
+		setFilter(filter);
+		setAnnotations(filterAnnotations(allAnnotationsRef.current, filter));
+	}, []);
 
 	return (
 		<div>
@@ -2008,7 +2027,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				onColorPick={handleToolbarColorClick}
 			/>}
 			<AnnotationsView
-				ref={annotationsViewRef}
+				filter={_filter}
+				allAnnotations={_allAnnotations}
 				annotations={_annotations}
 				selectedIDs={_selectedIDs}
 				expansionState={_expansionState}
@@ -2021,8 +2041,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				onDragStart={handleSidebarAnnotationDragStart}
 				onMenu={handleSidebarAnnotationMenuOpen}
 				onSelectorMenu={handleSelectorMenuOpen}
-				onDeselectAnnotations={handleDeselectAnnotations}
 				onSelectorChange={handleSelectorChange}
+				onChangeFilter={handleFilterChange}
 			/>
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}

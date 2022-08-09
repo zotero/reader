@@ -289,3 +289,63 @@ export function searchAnnotations(annotations, query) {
 
 	return results.map(x => x.annotation);
 }
+
+export function filterAnnotations(annotations, filter) {
+	let { tags, colors, authors } = filter;
+	if (tags.length || colors.length || authors.length) {
+		annotations = annotations.filter(x => (
+			tags && x.tags.some(t => tags.includes(t.name))
+			|| colors && colors.includes(x.color)
+			|| authors && authors.includes(x.authorName)
+		));
+	}
+
+	if (filter.query) {
+		annotations = annotations.slice();
+		let query = filter.query.toLowerCase();
+		let results = [];
+		for (let annotation of annotations) {
+			let errors = null;
+			let match = null;
+
+			if (annotation.text) {
+				match = approximateMatch(annotation.text.toLowerCase(), query, Math.floor(query.length / 5));
+				if (match.length) {
+					errors = Math.min(...match.map(x => x.errors));
+				}
+			}
+
+			if (annotation.comment) {
+				match = approximateMatch(annotation.comment.toLowerCase(), query, Math.floor(query.length / 5));
+				if (match.length) {
+					let er = Math.min(...match.map(x => x.errors));
+					if (errors !== null) {
+						errors = Math.min(errors, er);
+					}
+					else {
+						errors = er;
+					}
+				}
+			}
+
+			if (errors !== null) {
+				results.push({
+					errors,
+					annotation
+				});
+			}
+		}
+
+		annotations = results.sort((a, b) => a.errors - b.errors).map(x => x.annotation);
+	}
+
+	return annotations;
+}
+
+export function cleanFilter(annotations, filter) {
+	let { query, colors, tags, authors } = filter;
+	colors = colors.filter(color => annotations.some(a => a.colors.includes(color)));
+	tags = tags.filter(tag => annotations.some(a => a.tags.some(x => x.name === tag)));
+	authors = authors.filter(author => annotations.some(a => a.authors.includes(author)));
+	return { query, colors, tags, authors };
+}

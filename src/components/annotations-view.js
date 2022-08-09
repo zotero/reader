@@ -5,7 +5,6 @@ import ReactDOM from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import { SidebarPreview } from './preview';
-import { searchAnnotations } from '../lib/search';
 import { IconColor, IconUser } from "./icons";
 import { annotationColors } from "../lib/colors";
 
@@ -135,122 +134,50 @@ const Annotation = React.memo((props) => {
 	);
 });
 
-const AnnotationsView = memo(forwardRef(function (props, ref) {
-	const [searchedAnnotations, setSearchedAnnotations] = useState(null);
-	const [query, setQuery] = useState('');
-	const [selectedTags, setSelectedTags] = useState([]);
-	const [selectedColors, setSelectedColors] = useState([]);
-	const [selectedAuthors, setSelectedAuthors] = useState([]);
-	const prevAnnotationsLengthRef = useRef(props.annotations.length);
-
-	useEffect(() => {
-		let annotations = getAnnotations();
-		if (prevAnnotationsLengthRef.current !== annotations.length) {
-			props.onDeselectAnnotations();
-		}
-		prevAnnotationsLengthRef.current = annotations.length;
-	});
-
-	useImperativeHandle(ref, () => ({
-		getAnnotations,
-		clearSelector: () => {
-			setSelectedTags([]);
-			setSelectedColors([]);
-		}
-	}));
-
-	// Deselect tags and colors that no longer exist in any annotation
-	let _selectedColors = [];
-	for (let selectedColor of selectedColors) {
-		if (props.annotations.some(a => a.color === selectedColor)) {
-			_selectedColors.push(selectedColor);
-		}
-	}
-	if (selectedColors.length !== _selectedColors.length) {
-		setSelectedColors(_selectedColors);
-	}
-
-	let _selectedTags = [];
-	for (let selectedTag of selectedTags) {
-		if (props.annotations.some(a => a.tags.some(t => selectedTag === t.name))) {
-			_selectedTags.push(selectedTag);
-		}
-	}
-	if (selectedTags.length !== _selectedTags.length) {
-		setSelectedTags(_selectedTags);
-	}
-
-	function getAnnotations() {
-		let { annotations } = props;
-		if (searchedAnnotations) {
-			let newSearchedAnnotations = [];
-			for (let filteredAnnotation of searchedAnnotations) {
-				let annotation = annotations.find(x => x.id === filteredAnnotation.id);
-				if (annotation) {
-					newSearchedAnnotations.push(annotation);
-				}
-			}
-			annotations = newSearchedAnnotations;
-		}
-		if (selectedTags.length || selectedColors.length || selectedAuthors.length) {
-			annotations = annotations.filter(x => (
-				x.tags.some(t => selectedTags.includes(t.name))
-				|| selectedColors.includes(x.color)
-				|| selectedAuthors.includes(x.authorName)
-			));
-		}
-		return annotations;
-	}
-
+const AnnotationsView = memo(function (props) {
 	function getContainerNode() {
 		return document.getElementById('annotationsView');
 	}
 
-	function search(query) {
-		let { annotations } = props;
-		if (query) {
-			setSearchedAnnotations(searchAnnotations(annotations, query));
-		}
-		else {
-			setSearchedAnnotations(null);
-		}
-	}
-
 	function handleSearchInput(query) {
-		setQuery(query);
-		search(query);
+		props.onChangeFilter({ ...props.filter, query });
 	}
 
 	function handleSearchClear() {
-		setQuery('');
-		search();
+		props.onChangeFilter({ ...props.filter, query: '' });
 	}
 
 	function handleColorClick(color) {
-		if (selectedColors.includes(color)) {
-			setSelectedColors(selectedColors.filter(x => x !== color));
+		let { colors } = props.filter;
+		if (colors.includes(color)) {
+			colors = colors.filter(x => x !== color);
 		}
 		else {
-			setSelectedColors([...selectedColors, color]);
+			colors = [...colors, color];
 		}
+		props.onChangeFilter({ ...props.filter, colors });
 	}
 
-	function handleTagClick(name) {
-		if (selectedTags.includes(name)) {
-			setSelectedTags(selectedTags.filter(x => x !== name));
+	function handleTagClick(tag) {
+		let { tags } = props.filter;
+		if (tags.includes(tag)) {
+			tags = tags.filter(x => x !== tag);
 		}
 		else {
-			setSelectedTags([...selectedTags, name]);
+			tags = [...tags, tag];
 		}
+		props.onChangeFilter({ ...props.filter, tags });
 	}
 
 	function handleAuthorClick(author) {
-		if (selectedAuthors.includes(author)) {
-			setSelectedAuthors(selectedAuthors.filter(x => x !== author));
+		let { authors } = props.filter;
+		if (authors.includes(author)) {
+			authors = authors.filter(x => x !== author);
 		}
 		else {
-			setSelectedAuthors([...selectedAuthors, author]);
+			authors = [...authors, author];
 		}
+		props.onChangeFilter({ ...props.filter, authors });
 	}
 
 	function handleSelectorContextMenu(event) {
@@ -262,7 +189,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 		props.onSelectorMenu({
 			x: event.screenX,
 			y: event.screenY,
-			enableClearSelection: selectedColors.length || selectedTags.length
+			enableClearSelection: props.filter.colors.length || props.filter.tags.length || props.filter.authors.length
 		});
 	}
 
@@ -271,16 +198,14 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 		return null;
 	}
 
-	let annotations = getAnnotations();
-
 	let tags = {};
 	let colors = {};
 	let authors = {};
-	for (let annotation of props.annotations) {
+	for (let annotation of props.allAnnotations) {
 		for (let tag of annotation.tags) {
 			if (!tags[tag.name]) {
 				tags[tag.name] = { ...tag };
-				tags[tag.name].selected = selectedTags.includes(tag.name);
+				tags[tag.name].selected = props.filter.tags.includes(tag.name);
 				tags[tag.name].inactive = true;
 			}
 		}
@@ -289,7 +214,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 			let predefinedColor = annotationColors.find(x => x[1] === color);
 			colors[color] = {
 				color,
-				selected: selectedColors.includes(color),
+				selected: props.filter.colors.includes(color),
 				inactive: true,
 				name: predefinedColor ? predefinedColor[0] : null
 			};
@@ -298,14 +223,14 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 		if (author && !authors[author]) {
 			authors[author] = {
 				author,
-				selected: selectedAuthors.includes(author),
+				selected: props.filter.authors.includes(author),
 				inactive: true,
 				current: author === props.authorName
 			};
 		}
 	}
 
-	for (let annotation of annotations) {
+	for (let annotation of props.annotations) {
 		for (let tag of annotation.tags) {
 			tags[tag.name].inactive = false;
 		}
@@ -362,13 +287,13 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 	return ReactDOM.createPortal(
 		<React.Fragment>
 			<AnnotationsViewSearch
-				query={query}
+				query={props.filter.query}
 				onInput={handleSearchInput}
 				onClear={handleSearchClear}
 			/>
 			<div id="annotations" className="annotations">
-				{annotations.length
-					? annotations.map(annotation => (
+				{props.allAnnotations.length
+					? props.annotations.map(annotation => (
 						<Annotation
 							key={annotation.id}
 							isSelected={props.selectedIDs.includes(annotation.id)}
@@ -384,7 +309,7 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 							onAnnotationEditorBlur={props.onAnnotationEditorBlur}
 						/>
 					))
-					: !query.length && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
+					: !props.filter.query.length && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
 			</div>
 			{(!!tags.length || colors.length > 1) && <Selector
 				tags={tags}
@@ -397,6 +322,6 @@ const AnnotationsView = memo(forwardRef(function (props, ref) {
 				onChange={props.onSelectorChange}
 			/>}
 		</React.Fragment>, containerNode);
-}));
+});
 
 export default AnnotationsView;

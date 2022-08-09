@@ -343,8 +343,8 @@ class Viewer {
 		this.annotatorRef.current.editHighlightedText(data);
 	};
 
-	clearSelector = () => {
-		this.annotatorRef.current.clearSelector();
+	clearFilter = () => {
+		this.annotatorRef.current.clearFilter();
 	};
 
 	navigate = async (location) => {
