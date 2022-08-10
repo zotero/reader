@@ -540,7 +540,10 @@ const Annotator = React.forwardRef((props, ref) => {
 		setEnableAddToNote,
 		openPageLabelPopup,
 		editHighlightedText,
-		clearFilter: () => setFilter({ query: '', colors: [], tags: [], authors: []}),
+		clearFilter: () => {
+			setFilter({ ...filterRef.current, colors: [], tags: [], authors: [] });
+			setAnnotations(allAnnotationsRef.current);
+		},
 		tabToolbar: (reverse) => focusManagerRef.current.tabToolbar(reverse),
 		focusFirst: () => focusManagerRef.current.focusFirst()
 	}));
