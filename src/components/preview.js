@@ -180,7 +180,7 @@ export function SidebarPreview(props) {
 				id={annotation.id}
 				clampID="highlight-clamp"
 				text={annotation.text}
-				placeholder={intl.formatMessage({ id: 'pdfReader.addText' })}
+				placeholder={intl.formatMessage({ id: 'pdfReader.noExtractedText' })}
 				isReadOnly={annotation.readOnly}
 				isExpanded={props.state >= 2}
 				isEditable={state === 3}

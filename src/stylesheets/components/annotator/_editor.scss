@@ -70,3 +70,13 @@
 		}
 	}
 }
+
+.highlight {
+	.editor {
+		.content {
+			&:empty::before {
+				color: inherit;
+			}
+		}
+	}
+}
