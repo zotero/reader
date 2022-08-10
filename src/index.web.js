@@ -1,6 +1,9 @@
 import Viewer from './viewer.js';
 import strings from './en-us.strings';
 
+// Keep this until we have a write-enabled pdf-reader web version
+window.isWeb = true;
+
 parent.addEventListener('webviewerloaded', (e) => {
 	window.PDFViewerApplicationOptions.set('eventBusDispatchToDOM', true);
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);

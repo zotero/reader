@@ -265,7 +265,7 @@ export function SidebarPreview(props) {
 							{annotation.authorName}
 						</div>
 					)}
-					<button tabIndex={-1} className="more" onClick={handleClickMore}/>
+					<button tabIndex={-1} className="more" onClick={handleClickMore} title={window.isWeb ? "Annotations can't be edited in Web Library" : ''}/>
 				</div>
 			</header>
 			{annotation.image && (
