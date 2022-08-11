@@ -158,9 +158,10 @@ export function SidebarPreview(props) {
 	}
 
 	function handlePointerDown(event) {
-		if (event.button === 2
-			&& !event.target.closest('div[contenteditable="true"]')) {
+		let editorNode = event.target.closest('div[contenteditable="true"]');
+		if (event.button === 2 && (!editorNode || document.activeElement !== editorNode)) {
 			event.stopPropagation();
+			event.preventDefault();
 			props.onMenu({ id: props.annotation.id, screenX: event.screenX, screenY: event.screenY });
 		}
 	}
