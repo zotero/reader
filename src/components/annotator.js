@@ -1676,6 +1676,13 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
 
+		if (!isShift && !selectedIDsRef.current.length && (!selectionRangesRef.current.length || selectionRangesRef.current[0].text === '') && event.target.nodeName !== 'A') {
+			let link = window.extractor.getPageLinks(position.pageIndex).find(x => intersectAnnotationWithPoint(x.position, position));
+			if (link && intersectAnnotationWithPoint(link.position, pointerDownPositionRef.current)) {
+				props.onExternalLink(link.url);
+			}
+		}
+
 		// Make selected text available for screen readers
 		let text = '';
 		for (let selectionRange of selectionRangesRef.current) {
@@ -1710,6 +1717,11 @@ const Annotator = React.forwardRef((props, ref) => {
 	const handleLayerPointerMove = useCallback((position, event) => {
 		let isShift = event.shiftKey;
 
+		let overLink = (
+			(!isShift || selectedIDsRef.current.length)
+			&& window.extractor.getPageLinks(position.pageIndex).find(x => intersectAnnotationWithPoint(x.position, position))
+		);
+
 		let overAnnotation = (
 			(!isShift || selectedIDsRef.current.length)
 			&& annotationsRef.current.find(x => intersectAnnotationWithPoint(x.position, position))
@@ -1724,7 +1736,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		);
 
 		let viewer = document.getElementById('viewer');
-		if (overAnnotation) {
+		if (overAnnotation || overLink) {
 			viewer.classList.add('cursor-pointer');
 			viewer.classList.remove('cursor-text');
 			viewer.classList.remove('cursor-text-selecting');

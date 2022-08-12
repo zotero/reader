@@ -114,6 +114,7 @@ class Viewer {
 					onAddToNote={options.onAddToNote}
 					onFocusSplitButton={options.onFocusSplitButton}
 					onFocusContextPane={options.onFocusContextPane}
+					onExternalLink={options.onExternalLink}
 					ref={this.annotatorRef}
 				/>
 			</IntlProvider>,

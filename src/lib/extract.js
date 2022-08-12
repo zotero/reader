@@ -9,7 +9,8 @@ import {
 	getPrevLineClosestOffset,
 	getClosestWord,
 	getClosestLine,
-	getLines
+	getLines,
+	extractLinks
 } from './text';
 
 export class Extractor {
@@ -19,6 +20,7 @@ export class Extractor {
 		this.charsCache = {};
 		this.pageLabelsCache = {};
 		this.pageLabelPointsCache = undefined;
+		this.pageLinks = {};
 	}
 
 	async getPageChars(pageIndex) {
@@ -44,9 +46,18 @@ export class Extractor {
 		}
 
 		// Reverse RTL lines
-		getLines(chars, true);
-
+		let lines = getLines(chars, true);
+		let links = extractLinks(lines, chars);
+		this.pageLinks[pageIndex] = links;
 		this.charsCache[pageIndex] = chars;
+		for (let link of links) {
+			let range = this.extractRange({
+				pageIndex,
+				anchor: link.from,
+				head: link.to
+			});
+			link.position = range.position;
+		}
 		return chars;
 	}
 
@@ -228,5 +239,13 @@ export class Extractor {
 		}
 
 		return null;
+	}
+
+	getPageLinks(pageIndex) {
+		let links = this.pageLinks[pageIndex];
+		if (!links) {
+			return [];
+		}
+		return links;
 	}
 }
