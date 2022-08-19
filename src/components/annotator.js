@@ -1678,7 +1678,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isCtrl = event.ctrlKey || event.metaKey;
 		let isShift = event.shiftKey;
 
-		if (!isShift && !selectedIDsRef.current.length && (!selectionRangesRef.current.length || selectionRangesRef.current[0].text === '') && event.target.nodeName !== 'A') {
+		if (isLeft && !isShift && !selectedIDsRef.current.length && (!selectionRangesRef.current.length || selectionRangesRef.current[0].text === '') && event.target.nodeName !== 'A') {
 			let link = window.extractor.getPageLinks(position.pageIndex).find(x => intersectAnnotationWithPoint(x.position, position));
 			if (link && intersectAnnotationWithPoint(link.position, pointerDownPositionRef.current)) {
 				props.onExternalLink(link.url);
