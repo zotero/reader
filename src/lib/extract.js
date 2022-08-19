@@ -193,7 +193,7 @@ export class Extractor {
 				if (!annotation.readOnly
 					&& annotation.pageLabel !== '-'
 					&& annotation.position.pageIndex <= pageIndex) {
-					if (parseInt(annotation.pageLabel) == annotation.pageLabel || (/[0-9]+-[0-9]+/).test(annotation.pageLabel)) {
+					if (parseInt(annotation.pageLabel) == annotation.pageLabel || (/[0-9]+[-\u2013][0-9]+/).test(annotation.pageLabel)) {
 						pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
 					}
 					break;
