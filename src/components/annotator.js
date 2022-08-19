@@ -1,7 +1,7 @@
 'use strict';
 
 import React, { useEffect, useRef, useCallback, useImperativeHandle } from 'react';
-import PropTypes from 'prop-types';
+import ReactDOM from 'react-dom';
 import Layer from './layer';
 import AnnotationsView from './annotations-view';
 import Toolbar from './toolbar';
@@ -526,15 +526,17 @@ const Annotator = React.forwardRef((props, ref) => {
 	useImperativeHandle(ref, () => ({
 		navigate,
 		setAnnotations: (annotations) => {
-			setAllAnnotations(annotations);
-			let filter = cleanFilter(annotations, filterRef.current);
-			setFilter(filter);
-			let filteredAnnotations = filterAnnotations(annotations, filter);
-			setAnnotations(filteredAnnotations);
-			if (filteredAnnotations.length !== annotationsRef.current.length) {
-				setSelectedIDs([]);
-				props.onClosePopup();
-			}
+			ReactDOM.unstable_batchedUpdates(() => {
+				setAllAnnotations(annotations);
+				let filter = cleanFilter(annotations, filterRef.current);
+				setFilter(filter);
+				let filteredAnnotations = filterAnnotations(annotations, filter);
+				setAnnotations(filteredAnnotations);
+				if (filteredAnnotations.length !== annotationsRef.current.length) {
+					setSelectedIDs([]);
+					props.onClosePopup();
+				}
+			});
 		},
 		setColor,
 		setEnableAddToNote,
