@@ -1657,6 +1657,17 @@ const Annotator = React.forwardRef((props, ref) => {
 	}, []);
 
 	const handlePointerDown = useCallback((event) => {
+		if (event.button === 3) {
+			window.history.back();
+			event.preventDefault();
+			return;
+		}
+		else if (event.button === 4) {
+			window.history.forward();
+			event.preventDefault();
+			return;
+		}
+
 		if (event.target === document.getElementById('viewer')) {
 			selectAnnotation();
 			setSelectionRangesRef([]);
