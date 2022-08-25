@@ -56,11 +56,16 @@ class Viewer {
 
 		// Sidebar configuration must be finished before loading the PDF
 		// to avoid the immediate resize and re-render of PDF pages
-		if (this.options.sidebarOpen) {
-			PDFViewerApplication.pdfSidebar.setInitialView(9);
+		if (window.isWeb) {
+			PDFViewerApplication.pdfSidebar.switchView(9);
 		}
 		else {
-			PDFViewerApplication.pdfSidebar.switchView(9);
+			if (this.options.sidebarOpen) {
+				PDFViewerApplication.pdfSidebar.setInitialView(9);
+			}
+			else {
+				PDFViewerApplication.pdfSidebar.switchView(9);
+			}
 		}
 		window.PDFViewerApplication.pdfSidebarResizer._updateWidth(this.options.sidebarWidth);
 
