@@ -1617,6 +1617,9 @@ const Annotator = React.forwardRef((props, ref) => {
 			setEnableSelection(true);
 		}
 
+		if (!selectedIDsRef.current.length) {
+			focusManagerRef.current.zone = null;
+		}
 		setSelectionRangesRef([]);
 	}, []);
 
@@ -1679,6 +1682,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			setIsSelectedOnPointerDown(false);
 
 			pointerDownPositionRef.current = null;
+			focusManagerRef.current.zone = null;
 		}
 	}, []);
 
