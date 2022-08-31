@@ -2059,6 +2059,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				onColorPick={handleToolbarColorClick}
 			/>}
 			<AnnotationsView
+				readOnly={props.readOnly}
 				filter={_filter}
 				allAnnotations={_allAnnotations}
 				annotations={_annotations}

@@ -309,7 +309,7 @@ const AnnotationsView = memo(function (props) {
 							onAnnotationEditorBlur={props.onAnnotationEditorBlur}
 						/>
 					))
-					: !props.filter.query.length && !window.isWeb && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
+					: !props.filter.query.length && !props.readOnly && !window.isWeb && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
 			</div>
 			{(!!tags.length || colors.length > 1) && <Selector
 				tags={tags}
