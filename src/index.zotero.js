@@ -296,6 +296,20 @@ class ViewerInstance {
 				PDFViewerApplication.pdfViewer.nextPage();
 				return;
 			}
+			case 'copyImage': {
+				let annotation = this._viewer._annotationsStore._annotations.find(x => message.data.ids.includes(x.id));
+				if (annotation) {
+					zoteroCopyImage(annotation.image);
+				}
+				return;
+			}
+			case 'saveImageAs': {
+				let annotation = this._viewer._annotationsStore._annotations.find(x => message.data.ids.includes(x.id));
+				if (annotation) {
+					zoteroSaveImageAs(annotation.image);
+				}
+				return;
+			}
 		}
 	}
 

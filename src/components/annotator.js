@@ -1402,6 +1402,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let readOnly = annotationsRef.current.some(x => ids.includes(x.id) && x.readOnly);
 		let enableAddToNote = !annotationsRef.current.some(x => ids.includes(x.id) && x.type === 'ink');
 		let enableEditHighlightedText = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'highlight');
+		let enableImageOptions = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'image');
 
 		props.onPopup('openAnnotationPopup', {
 			x: screenX,
@@ -1417,6 +1418,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			enableAddToNote,
 			enableEditPageNumber: true,
 			enableEditHighlightedText,
+			enableImageOptions
 		});
 	}, []);
 
@@ -1444,6 +1446,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		let annotation = annotationsRef.current.find(x => x.id === id);
 		let selectedColor = annotation.color;
 		let enableAddToNote = annotation.type !== 'ink';
+		let enableImageOptions = annotation.type === 'image';
+
 		props.onPopup('openAnnotationPopup', {
 			x: screenX,
 			y: screenY,
@@ -1456,6 +1460,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectedColor,
 			enableAddToNote,
 			enableEditPageNumber: true,
+			enableImageOptions
 		});
 	}, []);
 
@@ -1586,6 +1591,8 @@ const Annotator = React.forwardRef((props, ref) => {
 		if (isRight && selectID) {
 			let readOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 			let enableAddToNote = !annotationsRef.current.some(x => selectedIDsRef.current.includes(x.id) && x.type === 'ink');
+			let enableImageOptions = selectedIDsRef.current.length === 1 && annotationsRef.current.find(x => x.id === selectedIDsRef.current[0] && x.type === 'image');
+
 			let selectedColor;
 			if (annotationsRef.current.length === 1) {
 				selectedColor = annotationsRef.current[0].color;
@@ -1602,7 +1609,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				readOnly,
 				colors: annotationColors,
 				selectedColor,
-				enableAddToNote
+				enableAddToNote,
+				enableImageOptions
 			});
 		}
 
