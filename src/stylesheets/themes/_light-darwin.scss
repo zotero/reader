@@ -20,7 +20,9 @@ $gray-lightest: #f0f0f0;
 
 :root {
 	--sidebar-width: 240px;
-	--note-font-size: 12px;
+	// TODO: Remove --note-font-size, as it's probably not necessary to change font size for highlights and comments
+	--note-font-size: 12 / 16 * 1rem;
+	font-size: 100%;
 }
 
 $body-bg: #ebebeb;
@@ -31,7 +33,7 @@ $font-family-sans-serif: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", 
 $font-family-base: $font-family-sans-serif;
 
 $font-size-base: rem(11);
-$note-font-size: var(--note-font-size);
+$note-font-size: rem(12);
 $note-line-height: calc(4 / 3); // Force browsers to use exact value to avoid rounding glitches
 
 $selection-color: null;

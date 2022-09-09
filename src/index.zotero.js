@@ -113,6 +113,7 @@ class ViewerInstance {
 
 		this._viewer.setBottomPlaceholderHeight(0);
 		this._viewer.setToolbarPlaceholderWidth(0);
+		this._setFontSize(options.fontSize);
 	}
 
 	_postMessage(message) {
@@ -123,6 +124,11 @@ class ViewerInstance {
 	uninit() {
 		window.removeEventListener('message', this.handleMessage);
 		this._viewer.uninit();
+	}
+
+	_setFontSize(fontSize) {
+		let root = document.documentElement;
+		root.style.fontSize = fontSize + 'em';
 	}
 
 	handleMessage = (event) => {
@@ -217,6 +223,10 @@ class ViewerInstance {
 				let node = document.getElementById('outerContainer');
 				node.classList.remove('suspend');
 				return;
+			}
+			case 'setFontSize': {
+				let { fontSize } = message;
+				this._setFontSize(fontSize);
 			}
 		}
 	}
