@@ -31,6 +31,7 @@ export class Extractor {
 		let page = await this.pdfViewer.pdfDocument.getPage(pageIndex + 1);
 		let textContent = await page.getTextContent();
 
+		let fingerprints = new Set();
 		let chars = [];
 		for (let item of textContent.items) {
 			for (let char of item.chars) {
@@ -40,7 +41,12 @@ export class Extractor {
 					// Sometimes char can map to null and break strings
 					&& char.c.charCodeAt(0)
 				) {
-					chars.push(char);
+					// Some PDF files have their text layer characters repeated many times, therefore remove them
+					let fingerprint = char.c + char.rect.join('');
+					if (!fingerprints.has(fingerprint)) {
+						fingerprints.add(fingerprint);
+						chars.push(char);
+					}
 				}
 			}
 		}
