@@ -6,7 +6,10 @@ window.development = true;
 
 let loaded = false;
 
-document.addEventListener('webviewerloaded', function () {
+function setOptions() {
+	if (!window.PDFViewerApplicationOptions) {
+		return;
+	}
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
 	window.PDFViewerApplicationOptions.set('defaultUrl', '');
 	window.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
@@ -18,7 +21,11 @@ document.addEventListener('webviewerloaded', function () {
 	window.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
 	window.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
 	window.PDFViewerApplicationOptions.set('printResolution', 300);
+}
 
+setOptions();
+document.addEventListener('webviewerloaded', function () {
+	setOptions();
 	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
 		return window.PDFViewerApplicationOptions;
@@ -31,16 +38,27 @@ document.addEventListener('webviewerloaded', function () {
 			console.log('documentinit');
 		});
 
-		test();
+		if (!window.isSecondView) {
+			test();
+		}
 		// setTimeout(() => {
 		//   viewer.navigate(annotations[0]);
 		// }, 3000);
 	});
 });
 
+window.isSecondView = !!window.frameElement && window.frameElement.id === 'secondViewIframe';
+window.addEventListener('DOMContentLoaded', () => {
+	if (window.isSecondView) {
+		document.body.classList.add('second-view');
+	}
+});
+
 async function test() {
 	let res = await fetch('compressed.tracemonkey-pldi-09.pdf');
 	let buf = await res.arrayBuffer();
+
+	// Load primary view
 	let vi = new ViewerInstance({
 		readOnly: false,
 		buf,
@@ -62,6 +80,25 @@ async function test() {
 	// vi._viewer.navigate({
 	//   'position': { 'pageIndex': 100, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
 	// })
+
+	// Load second view
+	let splitWrapper = document.getElementById('splitWrapper');
+	let iframe = document.getElementById('secondViewIframe');
+	iframe.addEventListener('load', async () => {
+		console.log('iframe loaded');
+		let app = iframe.contentWindow.PDFViewerApplication;
+		await app.initializedPromise;
+		let vi2 = new iframe.contentWindow.ViewerInstance({
+			readOnly: true,
+			buf,
+			annotations: [],
+			rtl: false,
+			state: null,
+		});
+	});
+	iframe.src = 'viewer.html?';
+	splitWrapper.classList.add('enable-split');
+	// splitWrapper.classList.add('horizontal');
 }
 
 class ViewerInstance {
@@ -130,3 +167,5 @@ class ViewerInstance {
 		this._viewer.uninit();
 	}
 }
+
+window.ViewerInstance = ViewerInstance;

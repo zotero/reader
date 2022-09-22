@@ -18,7 +18,7 @@ class Viewer {
 		}, 100);
 		this._userID = options.userID;
 		this._label = options.label;
-		this._lastState = null;
+		this._lastState = options.state;
 		this._uninitialized = false;
 		// TODO: Find a better way to determine the event origin
 		this._enableSidebarOpenEvent = true;
@@ -133,6 +133,51 @@ class Viewer {
 		setTimeout(function () {
 			window.PDFViewerApplication.open(options.buf);
 		}, 0);
+
+		this.splitWrapper = document.getElementById('splitWrapper');
+		this.viewSplitter = document.getElementById('viewSplitter');
+		this.secondView = document.getElementById('secondView');
+
+		this.viewSplitter.addEventListener('mousedown', (event) => {
+			if (event.button === 0) {
+				this.splitWrapper.classList.add('resizing');
+			}
+		});
+
+		window.addEventListener('mousemove', (event) => {
+			let splitView = document.getElementById('splitWrapper');
+			if (splitView.classList.contains('resizing')) {
+				if (splitView.classList.contains('horizontal')) {
+					let y = event.clientY;
+					let br = this.splitWrapper.getBoundingClientRect();
+					let p = Math.floor((br.height - (y - br.top)) / br.height * 100);
+					if (p < 20) {
+						p = 20;
+					}
+					else if (p > 80) {
+						p = 80;
+					}
+					this.secondView.style.height = p + '%';
+				}
+				else {
+					let x = event.clientX;
+					let br = this.splitWrapper.getBoundingClientRect();
+					let p = Math.floor((br.width - (x - br.left)) / br.width * 100);
+					if (p < 20) {
+						p = 20;
+					}
+					else if (p > 80) {
+						p = 80;
+					}
+					this.secondView.style.width = p + '%';
+				}
+				PDFViewerApplication.eventBus.dispatch('resize');
+			}
+		}, true);
+
+		window.addEventListener('mouseup', (event) => {
+			this.splitWrapper.classList.remove('resizing');
+		});
 	}
 
 	uninit() {
@@ -157,7 +202,7 @@ class Viewer {
 	_initSelectionBox() {
 		let box = document.createElement('textarea');
 		box.tabIndex = -1;
-		box.style = 'position: absolute;top: 0;left: 0;width: 0;height: 0;z-index: -1;pointer-events: none;';
+		box.style = 'position: absolute;top: -10px;left: -10px;width: 0;height: 0;z-index: -1;pointer-events: none;';
 		document.body.append(box);
 		window.selectionBox = box;
 	}

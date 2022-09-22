@@ -23,6 +23,7 @@ $gray-lightest: #f0f0f0;
 	// TODO: Remove --note-font-size, as it's probably not necessary to change font size for highlights and comments
 	--note-font-size: 12 / 16 * 1rem;
 	font-size: 100%;
+	--bottomPlaceholderHeight: 0;
 }
 
 $body-bg: #ebebeb;

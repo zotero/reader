@@ -1,8 +1,6 @@
 import Viewer from './viewer.js';
 
-let loaded = false;
-
-document.addEventListener('webviewerloaded', (e) => {
+function setOptions() {
 	window.PDFViewerApplicationOptions.set('eventBusDispatchToDOM', true);
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
 	window.PDFViewerApplicationOptions.set('defaultUrl', '');
@@ -24,20 +22,22 @@ document.addEventListener('webviewerloaded', (e) => {
 	window.PDFViewerApplication.externalServices.createPreferences = function () {
 		return window.PDFViewerApplicationOptions;
 	};
+}
 
+// For the primary view we need to wait for `webviewerloaded` to set options,
+// but for the second view we have to do it immediately, to have an effect
+setOptions();
+document.addEventListener('webviewerloaded', (e) => {
+	setOptions();
 	PDFViewerApplication.initializedPromise.then(function () {
 		window.isReady = true;
-		if (!window.PDFViewerApplication.pdfViewer || loaded) return;
-		loaded = true;
-
-		window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-		});
 	});
 });
 
 
 class ViewerInstance {
 	constructor(options) {
+		this.options = options;
 		this._itemID = options.itemID;
 		this._viewer = null;
 
@@ -106,7 +106,7 @@ class ViewerInstance {
 			sidebarWidth: options.sidebarWidth,
 			sidebarOpen: options.sidebarOpen,
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight,
-			localizedStrings: options.localizedStrings,
+			localizedStrings: options.localizedStrings || {},
 			readOnly: options.readOnly,
 			authorName: options.authorName
 		});
@@ -118,7 +118,7 @@ class ViewerInstance {
 
 	_postMessage(message) {
 		// console.log(message);
-		parent.postMessage({ itemID: this._itemID, message }, parent.origin);
+		parent.postMessage({ itemID: this._itemID, message, secondView: window.isSecondView }, parent.origin);
 	}
 
 	uninit() {
@@ -132,7 +132,7 @@ class ViewerInstance {
 	}
 
 	handleMessage = (event) => {
-		if (event.source === parent) {
+		if (event.source === self) {
 			return;
 		}
 
@@ -143,6 +143,13 @@ class ViewerInstance {
 		}
 
 		let message = data.message;
+
+		// Route message to the second view
+		if (!window.isSecondView && data.secondView) {
+			let iframe = document.getElementById('secondViewIframe');
+			iframe.contentWindow.postMessage(event.data, '*');
+			return;
+		}
 
 		switch (message.action) {
 			case 'error': {
@@ -324,6 +331,12 @@ class ViewerInstance {
 	}
 
 	handleMenuAction(cmd) {
+		function secondViewDispatch() {
+			if (window.secondViewIframeWindow) {
+				window.secondViewIframeWindow.PDFViewerApplication.eventBus.dispatch(...arguments);
+			}
+		}
+
 		let eb = window.PDFViewerApplication.eventBus;
 		switch (cmd) {
 			case 'presentationmode': {
@@ -362,34 +375,46 @@ class ViewerInstance {
 				// eb.dispatch('switchcursortool', { tool: 1 });
 				if (PDFViewerApplication.pdfCursorTools.activeTool === 0) {
 					PDFViewerApplication.pdfCursorTools.switchTool(1);
+					if (window.secondViewIframeWindow) {
+						window.secondViewIframeWindow.PDFViewerApplication.pdfCursorTools.switchTool(1);
+					}
 				}
 				else {
 					PDFViewerApplication.pdfCursorTools.switchTool(0);
+					if (window.secondViewIframeWindow) {
+						window.secondViewIframeWindow.PDFViewerApplication.pdfCursorTools.switchTool(0);
+					}
 				}
 				return;
 			}
 			case 'switchscrollmode_vertical': {
 				eb.dispatch('switchscrollmode', { mode: 0 });
+				secondViewDispatch('switchscrollmode', { mode: 0 });
 				return;
 			}
 			case 'switchscrollmode_horizontal': {
 				eb.dispatch('switchscrollmode', { mode: 1 });
+				secondViewDispatch('switchscrollmode', { mode: 1 });
 				return;
 			}
 			case 'switchscrollmode_wrapped': {
 				eb.dispatch('switchscrollmode', { mode: 2 });
+				secondViewDispatch('switchscrollmode', { mode: 2 });
 				return;
 			}
 			case 'switchspreadmode_none': {
 				eb.dispatch('switchspreadmode', { mode: 0 });
+				secondViewDispatch('switchspreadmode', { mode: 0 });
 				return;
 			}
 			case 'switchspreadmode_odd': {
 				eb.dispatch('switchspreadmode', { mode: 1 });
+				secondViewDispatch('switchspreadmode', { mode: 0 });
 				return;
 			}
 			case 'switchspreadmode_even': {
 				eb.dispatch('switchspreadmode', { mode: 2 });
+				secondViewDispatch('switchspreadmode', { mode: 2 });
 				return;
 			}
 			case 'back': {
@@ -449,3 +474,71 @@ window.addEventListener('message', function (event) {
 		parent.postMessage({ itemID, message: { action: 'initialized' } }, parent.origin);
 	}
 });
+
+
+window.isSecondView = !!window.frameElement && window.frameElement.id === 'secondViewIframe';
+window.addEventListener('DOMContentLoaded', () => {
+	if (window.isSecondView) {
+		document.body.classList.add('second-view');
+	}
+});
+
+window.ViewerInstance = ViewerInstance;
+
+window.getSplitType = function () {
+	let splitWrapper = document.getElementById('splitWrapper');
+	if (splitWrapper.classList.contains('enable-split')) {
+		if (splitWrapper.classList.contains('horizontal')) {
+			return 'horizontal';
+		}
+		return 'vertical';
+	}
+	return null;
+};
+
+window.splitView = function (horizontal) {
+	if (!window.isSecondView) {
+		let splitWrapper = document.getElementById('splitWrapper');
+		let secondView = document.getElementById('secondView');
+
+		if (horizontal) {
+			splitWrapper.classList.add('horizontal');
+			secondView.style.width = 'unset';
+			secondView.style.height = '50%';
+		}
+		else {
+			secondView.style.width = '50%';
+			secondView.style.height = 'unset';
+			splitWrapper.classList.remove('horizontal');
+		}
+
+		if (splitWrapper.classList.contains('enable-split')) {
+			window.PDFViewerApplication.eventBus.dispatch('resize');
+			return;
+		}
+
+		let iframe = document.getElementById('secondViewIframe');
+
+		iframe.onload = async () => {
+			let app = iframe.contentWindow.PDFViewerApplication;
+			await app.initializedPromise;
+			let cvi = currentViewerInstance;
+			let vi = new iframe.contentWindow.ViewerInstance({
+				...cvi.options, annotations: [], readOnly: true, state: cvi._viewer._lastState
+			});
+			window.secondViewIframeWindow = iframe.contentWindow;
+			window.PDFViewerApplication.eventBus.dispatch('resize');
+		};
+		iframe.src = 'viewer.html?';
+		splitWrapper.classList.add('enable-split');
+	}
+};
+
+window.unsplitView = function () {
+	let splitWrapper = document.getElementById('splitWrapper');
+	splitWrapper.classList.remove('enable-split');
+	let iframe = document.getElementById('secondViewIframe');
+	iframe.src = '';
+	window.PDFViewerApplication.eventBus.dispatch('resize');
+	window.secondViewIframeWindow = null;
+};

@@ -738,6 +738,19 @@ const Annotator = React.forwardRef((props, ref) => {
 		let isAlt = e.altKey;
 		let isShift = e.shiftKey;
 
+		// Filter keys for the second view
+		let allowedSecondViewKeys = [
+			'ArrowUp',
+			'ArrowDown',
+			'ArrowLeft',
+			'ArrowRight'
+		];
+		if (window.isSecondView && !allowedSecondViewKeys.includes(e.key)) {
+			e.preventDefault();
+			e.stopPropagation();
+			return;
+		}
+
 		// Pass through hand/select tool shortcuts
 		if (['h', 's'].includes(e.key)) {
 			// PDF.js skips h and s keys if they were pressed when focused an input,
