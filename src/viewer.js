@@ -249,10 +249,6 @@ class Viewer {
 			rotation: e.location.rotation,
 			top: e.location.top,
 			left: e.location.left,
-			sidebarView: window.PDFViewerApplication.pdfSidebar.isOpen
-				? window.PDFViewerApplication.pdfSidebar.active
-				: 0,
-			sidebarWidth: window.PDFViewerApplication.pdfSidebarResizer._width || 200,
 			scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
 			spreadMode: PDFViewerApplication.pdfViewer.spreadMode
 		};
@@ -273,10 +269,6 @@ class Viewer {
 	}
 
 	handleSidebarViewChange = (e) => {
-		if (this._lastState) {
-			this._lastState.sidebarView = e.view;
-			this._onSetState(this._lastState);
-		}
 		// Without this context pane in stacked mode is hidden on first tab open
 		setTimeout(() => {
 			PDFViewerApplication.eventBus.dispatch('resize');
@@ -455,9 +447,6 @@ class Viewer {
 
 	// TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation
 	async _setState(state, skipScroll) {
-		// window.PDFViewerApplication.pdfSidebar.switchView(state.sidebarView, true);
-		// window.PDFViewerApplication.pdfSidebarResizer._updateWidth(state.sidebarWidth);
-
 		if (Number.isInteger(state.scrollMode)) {
 			window.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
 		}
