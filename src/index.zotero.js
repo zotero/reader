@@ -449,8 +449,6 @@ class ViewerInstance {
 	}
 }
 
-let currentViewerInstance = null;
-
 window.addEventListener('message', function (event) {
 	let itemID = event.data.itemID;
 	let message = event.data.message;
@@ -465,13 +463,19 @@ window.addEventListener('message', function (event) {
 
 	if (message.action === 'open') {
 		// TODO: Improve error handling here
-		if (currentViewerInstance) {
-			currentViewerInstance.uninit();
+		if (window.viewerInstance) {
+			window.viewerInstance.uninit();
 		}
-		currentViewerInstance = new ViewerInstance({
+		window.viewerInstance = new ViewerInstance({
 			itemID, ...message
 		});
+
 		parent.postMessage({ itemID, message: { action: 'initialized' } }, parent.origin);
+
+		let { secondViewState } = message;
+		if (secondViewState) {
+			window.splitView(secondViewState.splitType === 'horizontal', secondViewState.splitSize, secondViewState);
+		}
 	}
 });
 
@@ -496,7 +500,7 @@ window.getSplitType = function () {
 	return null;
 };
 
-window.splitView = function (horizontal) {
+window.splitView = function (horizontal, size, state) {
 	if (!window.isSecondView) {
 		let splitWrapper = document.getElementById('splitWrapper');
 		let secondView = document.getElementById('secondView');
@@ -504,12 +508,12 @@ window.splitView = function (horizontal) {
 		if (horizontal) {
 			splitWrapper.classList.add('horizontal');
 			secondView.style.width = 'unset';
-			secondView.style.height = '50%';
+			secondView.style.height = size || '50%';
 		}
 		else {
-			secondView.style.width = '50%';
-			secondView.style.height = 'unset';
 			splitWrapper.classList.remove('horizontal');
+			secondView.style.height = 'unset';
+			secondView.style.width = size || '50%';
 		}
 
 		if (splitWrapper.classList.contains('enable-split')) {
@@ -517,20 +521,25 @@ window.splitView = function (horizontal) {
 			return;
 		}
 
-		let iframe = document.getElementById('secondViewIframe');
-
+		let iframe = document.createElement('iframe');
+		iframe.id = 'secondViewIframe';
+		iframe.src = 'viewer.html?';
 		iframe.onload = async () => {
 			let app = iframe.contentWindow.PDFViewerApplication;
+			if (!app) {
+				return;
+			}
 			await app.initializedPromise;
-			let cvi = currentViewerInstance;
-			let vi = new iframe.contentWindow.ViewerInstance({
-				...cvi.options, annotations: [], readOnly: true, state: cvi._viewer._lastState
-			});
+			let cvi = window.viewerInstance;
 			window.secondViewIframeWindow = iframe.contentWindow;
+			window.secondViewIframeWindow.viewerInstance = new iframe.contentWindow.ViewerInstance({
+				...cvi.options, annotations: [], readOnly: true, state: state || cvi._viewer._lastState
+			});
 			window.PDFViewerApplication.eventBus.dispatch('resize');
 		};
-		iframe.src = 'viewer.html?';
 		splitWrapper.classList.add('enable-split');
+		secondView.innerHTML = '';
+		secondView.append(iframe);
 	}
 };
 
@@ -541,4 +550,21 @@ window.unsplitView = function () {
 	iframe.src = '';
 	window.PDFViewerApplication.eventBus.dispatch('resize');
 	window.secondViewIframeWindow = null;
+};
+
+window.getSecondViewState = function () {
+	let splitWrapper = document.getElementById('splitWrapper');
+	if (!splitWrapper.classList.contains('enable-split')) {
+		return;
+	}
+	let state = JSON.parse(JSON.stringify(window.secondViewIframeWindow.viewerInstance._viewer._lastState));
+	state.splitType = splitWrapper.classList.contains('horizontal') ? 'horizontal' : 'vertical';
+	let secondView = document.getElementById('secondView');
+	if (state.splitType === 'vertical') {
+		state.splitSize = secondView.style.width || '50%';
+	}
+	else {
+		state.splitSize = secondView.style.height || '50%';
+	}
+	return state;
 };
