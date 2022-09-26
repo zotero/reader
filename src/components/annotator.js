@@ -740,10 +740,8 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		// Filter keys for the second view
 		let allowedSecondViewKeys = [
-			'ArrowUp',
-			'ArrowDown',
-			'ArrowLeft',
-			'ArrowRight'
+			'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'PageUp', 'PageDown',
+			'Home', 'End', '+', '-', '=', 'c', 'C'
 		];
 		if (window.isSecondView && !allowedSecondViewKeys.includes(e.key)) {
 			e.preventDefault();
