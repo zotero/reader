@@ -532,6 +532,8 @@ window.splitView = function (horizontal, size, state) {
 			await app.initializedPromise;
 			let cvi = window.viewerInstance;
 			window.secondViewIframeWindow = iframe.contentWindow;
+			let { scrollMode, spreadMode } = cvi._viewer._lastState;
+			state = state ? { ...state, scrollMode, spreadMode } : cvi._viewer._lastState;
 			window.secondViewIframeWindow.viewerInstance = new iframe.contentWindow.ViewerInstance({
 				...cvi.options, annotations: [], readOnly: true, state: state || cvi._viewer._lastState
 			});
@@ -566,5 +568,7 @@ window.getSecondViewState = function () {
 	else {
 		state.splitSize = secondView.style.height || '50%';
 	}
+	delete state.scrollMode;
+	delete state.spreadMode;
 	return state;
 };
