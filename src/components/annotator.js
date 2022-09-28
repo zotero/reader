@@ -1892,17 +1892,20 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let isNumeric = parseInt(pageLabel) == pageLabel;
 
-		if (type === 'single' || !isNumeric && type !== 'selected') {
-			if (!annotation.readOnly) {
-				annotation.pageLabel = pageLabel;
-				annotationsToUpdate = [annotation];
-			}
+		if (type === 'page') {
+			let annotations = annotationsRef.current.filter(x => !x.readOnly);
+			annotationsToUpdate = annotations.filter(x => x.position.pageIndex === pageIndex);
+			annotationsToUpdate.forEach(x => x.pageLabel = pageLabel);
 		}
 		else if (type === 'selected' && !isNumeric) {
 			let annotations = annotationsRef.current.filter(x => !x.readOnly);
 			annotationsToUpdate = annotations.filter(x => selectedIDsRef.current.includes(x.id));
-			for (let annotation of annotationsToUpdate) {
+			annotationsToUpdate.forEach(x => x.pageLabel = pageLabel);
+		}
+		else if (type === 'single' || !isNumeric && type !== 'selected') {
+			if (!annotation.readOnly) {
 				annotation.pageLabel = pageLabel;
+				annotationsToUpdate = [annotation];
 			}
 		}
 		else {

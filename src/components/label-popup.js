@@ -45,7 +45,10 @@ function LabelPopup({ data, onUpdate, onClose }) {
 	let forceSingle = false;
 	if (parseInt(label) != label || parseInt(label) < 1) {
 		forceSingle = true;
-		if (data.single) {
+		if (data.page && !['single', 'selected'].includes(checked)) {
+			checked = 'page';
+		}
+		else if (data.single) {
 			checked = 'single';
 		}
 		else {
@@ -136,7 +139,7 @@ function LabelPopup({ data, onUpdate, onClose }) {
 						name="renumber"
 						value="page"
 						checked={checked === 'page'}
-						disabled={forceSingle || disabled || auto}
+						disabled={disabled || auto}
 						onChange={handleRadioChange}
 					/>
 					<label htmlFor="renumber-page"><FormattedMessage id="pdfReader.thisPage"/></label>
