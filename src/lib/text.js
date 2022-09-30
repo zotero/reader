@@ -837,6 +837,8 @@ function getLines(chars, reflowRTL) {
 
 	for (let line of lines) {
 		line.words = [];
+		// TODO: Compute word spacing threshold from more characters than just the current line i.e. current paragraph
+		//  or page or even multiple pages.
 		let wordSp = computeWordSpacingThreshold(chars.slice(line.from, line.to + 1), line.vertical);
 		for (let i = line.from; i <= line.to; i++) {
 			let sp = wordSp - 1;
@@ -917,16 +919,7 @@ function extractLinks(lines, chars) {
 			let char = chars[j];
 			text += char.c;
 		}
-		let match = text.match(doiRegExp);
-		if (match) {
-			let from = sequence.from + match.index;
-			let to = from + match[0].length;
-			let url = 'http://dx.doi.org/' + encodeURIComponent(match[0]);
-			links.push({ from, to, text: match[0], url });
-			continue;
-		}
-
-		match = text.match(urlRegExp);
+		let match = text.match(urlRegExp);
 		if (match) {
 			let url = match[0];
 			if (url.includes('@')) {
@@ -936,6 +929,14 @@ function extractLinks(lines, chars) {
 			let from = sequence.from + match.index;
 			let to = from + url.length;
 			links.push({ from, to, url });
+		}
+		match = text.match(doiRegExp);
+		if (match) {
+			let from = sequence.from + match.index;
+			let to = from + match[0].length;
+			let url = 'http://dx.doi.org/' + encodeURIComponent(match[0]);
+			links.push({ from, to, text: match[0], url });
+			continue;
 		}
 	}
 	return links;
