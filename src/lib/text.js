@@ -934,7 +934,7 @@ function extractLinks(lines, chars) {
 		if (match) {
 			let from = sequence.from + match.index;
 			let to = from + match[0].length;
-			let url = 'http://dx.doi.org/' + encodeURIComponent(match[0]);
+			let url = 'https://doi.org/' + encodeURIComponent(match[0]);
 			links.push({ from, to, text: match[0], url });
 			continue;
 		}
