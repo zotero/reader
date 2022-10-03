@@ -246,7 +246,6 @@ class Viewer {
 		let state = {
 			pageIndex: e.location.pageNumber - 1,
 			scale: e.location.scale,
-			rotation: e.location.rotation,
 			top: e.location.top,
 			left: e.location.left,
 			scrollMode: PDFViewerApplication.pdfViewer.scrollMode,
@@ -453,10 +452,6 @@ class Viewer {
 
 		if (Number.isInteger(state.spreadMode)) {
 			window.PDFViewerApplication.pdfViewer.spreadMode = state.spreadMode;
-		}
-
-		if (Number.isInteger(state.rotation)) {
-			window.PDFViewerApplication.pdfViewer.pagesRotation = state.rotation;
 		}
 
 		// Do this now and after pages are fully loaded.
