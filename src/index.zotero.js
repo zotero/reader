@@ -131,7 +131,7 @@ class ViewerInstance {
 		root.style.fontSize = fontSize + 'em';
 	}
 
-	handleMessage = (event) => {
+	handleMessage = async (event) => {
 		if (event.source === self) {
 			return;
 		}
@@ -225,10 +225,13 @@ class ViewerInstance {
 				return;
 			}
 			case 'reload': {
-				let { buf } = message;
-				this._viewer.reload(buf);
+				let { buf, data } = message;
+				await this._viewer.reload(buf);
 				let node = document.getElementById('outerContainer');
 				node.classList.remove('suspend');
+				if (data && data.rotatedPageIndexes) {
+					await this._viewer._annotationsStore.rerenderPageImages(data.rotatedPageIndexes);
+				}
 				return;
 			}
 			case 'setFontSize': {

@@ -279,6 +279,17 @@ class AnnotationsStore {
 			}
 		}
 	}
+
+	async rerenderPageImages(pageIndexes) {
+		for (let annotation of this._annotations) {
+			if (pageIndexes.includes(annotation.position.pageIndex)
+				&& ['image', 'ink'].includes(annotation.type)) {
+				annotation.image = await this.getAnnotationImage(annotation.id);
+				this._save(annotation, true);
+				this.render();
+			}
+		}
+	}
 }
 
 export default AnnotationsStore;

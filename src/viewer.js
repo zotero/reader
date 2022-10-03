@@ -440,8 +440,8 @@ class Viewer {
 		root.style.setProperty('--toolbarPlaceholderWidth', width + 'px');
 	}
 
-	reload(buf) {
-		window.PDFViewerApplication.open(buf);
+	async reload(buf) {
+		return window.PDFViewerApplication.open(buf);
 	}
 
 	// TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation
