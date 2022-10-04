@@ -96,6 +96,9 @@ class AnnotationsStore {
 		annotation.dateCreated = (new Date()).toISOString();
 		annotation.dateModified = annotation.dateCreated;
 		annotation.authorName = this._authorName;
+		if (this._authorName) {
+			annotation.isAuthorNameAuthoritative = true;
+		}
 		annotation.pageLabel = '-';
 
 		if (!annotation.sortIndex) {
