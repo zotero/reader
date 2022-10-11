@@ -855,7 +855,7 @@ function getLines(chars, reflowRTL) {
 					break;
 				}
 
-				let punctuation = '?.,;!¡¿。、·(){}[]/$';
+				let punctuation = '?.,;!¡¿。、·(){}[]/$:';
 				if (punctuation.includes(char.c) || punctuation.includes(char2.c)) {
 					break;
 				}
