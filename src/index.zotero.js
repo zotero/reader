@@ -108,7 +108,8 @@ class ViewerInstance {
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight,
 			localizedStrings: options.localizedStrings || {},
 			readOnly: options.readOnly,
-			authorName: options.authorName
+			authorName: options.authorName,
+			showAnnotations: options.showAnnotations
 		});
 
 		this._viewer.setBottomPlaceholderHeight(0);
@@ -204,6 +205,11 @@ class ViewerInstance {
 			case 'setToolbarPlaceholderWidth': {
 				let { width } = message;
 				this._viewer.setToolbarPlaceholderWidth(width);
+				return;
+			}
+			case 'showAnnotations': {
+				let { show } = message;
+				this._viewer.showAnnotations(show);
 				return;
 			}
 			case 'focusLastToolbarButton': {

@@ -158,7 +158,8 @@ class ViewerInstance {
 			bottomPlaceholderHeight: 0,
 			localizedStrings: strings,
 			readOnly: options.readOnly,
-			authorName: 'John'
+			authorName: 'John',
+			showAnnotations: true
 			// password: 'test'
 		});
 	}
