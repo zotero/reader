@@ -1517,7 +1517,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		setIsPopupDisabled(false);
 
-		if (event.detail === 2) {
+		if (isLeft && event.detail === 2) {
 			setIsSelectingText(true);
 			setEnableSelection(true);
 			let selectionRanges = getWordSelectionRanges(position, position);
@@ -1525,7 +1525,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectionMode.current = 'words';
 			return;
 		}
-		else if (event.detail === 3) {
+		else if (isLeft && event.detail === 3) {
 			setIsSelectingText(true);
 			setEnableSelection(true);
 			let selectionRanges = getLineSelectionRanges(position, position);
