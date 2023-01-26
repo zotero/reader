@@ -1,7 +1,0 @@
-//
-// Nem ('note em') helper
-//
-
-@function nem($length) {
-	@return calc((#{$length} / 12) * #{var(--note-font-size)});
-}

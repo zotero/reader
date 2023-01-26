@@ -1,0 +1,362 @@
+
+#outerContainer {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+
+#mainContainer {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	min-width: 320px;
+}
+
+#viewerContainer {
+	direction: ltr;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	outline: none;
+}
+
+/* Disable scrollbars */
+/* https://stackoverflow.com/a/49278385 */
+body.portal #viewerContainer {
+	overflow-y: scroll;
+	scrollbar-width: none; /* Firefox */
+	-ms-overflow-style: none; /* Internet Explorer 10+ */
+}
+
+body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
+	width: 0;
+	height: 0;
+}
+
+
+#viewerContainer:not(.pdfPresentationMode) {
+	transition-duration: 200ms;
+	transition-timing-function: ease;
+	box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.05);
+}
+
+#outerContainer.sidebarResizing #viewerContainer {
+	/* Improve responsiveness and avoid visual glitches when the sidebar is resized. */
+	transition-duration: 0s;
+}
+
+#outerContainer.sidebarOpen #viewerContainer:not(.pdfPresentationMode) {
+	transition-property: left;
+	/*left: var(--sidebar-width);*/
+}
+
+
+
+
+
+
+
+
+
+
+
+/* Copyright 2014 Mozilla Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+.pdfViewer .canvasWrapper {
+	overflow: hidden;
+}
+
+
+.pdfViewer .page {
+	box-sizing: content-box;
+	direction: ltr;
+	width: 816px;
+	height: 1056px;
+	margin: 1px auto -8px auto;
+	position: relative;
+	overflow: visible;
+	border: 9px solid transparent;
+	background-clip: content-box;
+}
+
+.page:first-child {
+	 border-top: 19px solid transparent;
+ }
+
+.pdfViewer.removePageBorders .page {
+	margin: 0px auto 10px auto;
+	border: none;
+}
+
+.pdfViewer.singlePageView {
+	display: inline-block;
+}
+
+.pdfViewer.singlePageView .page {
+	margin: 0;
+	border: none;
+}
+
+.pdfViewer.scrollHorizontal, .pdfViewer.scrollWrapped, .spread {
+	margin-left: 3.5px;
+	margin-right: 3.5px;
+	text-align: center;
+}
+
+.pdfViewer.scrollHorizontal, .spread {
+	white-space: nowrap;
+}
+
+.pdfViewer.removePageBorders,
+.pdfViewer.scrollHorizontal .spread,
+.pdfViewer.scrollWrapped .spread {
+	margin-left: 0;
+	margin-right: 0;
+}
+
+.spread .page,
+.pdfViewer.scrollHorizontal .page,
+.pdfViewer.scrollWrapped .page,
+.pdfViewer.scrollHorizontal .spread,
+.pdfViewer.scrollWrapped .spread {
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.spread .page,
+.pdfViewer.scrollHorizontal .page,
+.pdfViewer.scrollWrapped .page {
+	margin-left: -3.5px;
+	margin-right: -3.5px;
+}
+
+.pdfViewer.removePageBorders .spread .page,
+.pdfViewer.removePageBorders.scrollHorizontal .page,
+.pdfViewer.removePageBorders.scrollWrapped .page {
+	margin-left: 5px;
+	margin-right: 5px;
+}
+
+.pdfViewer .page canvas {
+	margin: 0;
+	display: block;
+}
+
+.pdfViewer .page canvas[hidden] {
+	display: none;
+}
+
+.pdfViewer .page .loadingIcon {
+	position: absolute;
+	display: block;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+// Disables spinner
+// background: url('images/loading-icon.gif') center no-repeat;
+}
+
+
+
+
+#sidebarContainer, .toolbar, .secondaryToolbar, .findbar, #overlayContainer, #fileInput {
+	display: none;
+}
+
+.toolbar {
+	display: none;
+}
+
+
+.canvasWrapper {
+	box-shadow: 0 0 2px 0 rgba(0,0,0,.14),0 2px 2px 0 rgba(0,0,0,.12),0 1px 3px 0 rgba(0,0,0,.12);
+}
+
+#viewerContainer {
+	background-color: rgb(250, 250, 250);
+}
+
+#viewer {
+//margin-top: 10px;
+}
+
+.hidden {
+	display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*Print*/
+@page {
+	margin: 0;
+}
+
+#printContainer {
+	display: none;
+}
+
+@media print {
+
+	#root {
+		visibility: hidden;
+	}
+
+	#viewer-container {
+		display: block !important;
+	}
+
+	body {
+		background: rgba(0, 0, 0, 0) none;
+	}
+	body[data-pdfjsprinting] #outerContainer {
+		display: none;
+	}
+	body[data-pdfjsprinting] #printContainer {
+		display: block;
+	}
+	#printContainer {
+		height: 100%;
+	}
+	/* wrapper around (scaled) print canvas elements */
+	#printContainer > .printedPage {
+		page-break-after: always;
+		page-break-inside: avoid;
+
+		/* The wrapper always cover the whole page. */
+		height: 100%;
+		width: 100%;
+
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+	}
+
+	#printContainer > .xfaPrintedPage .xfaPage {
+		position: absolute;
+	}
+
+	#printContainer > .xfaPrintedPage {
+		page-break-after: always;
+		page-break-inside: avoid;
+		width: 100%;
+		height: 100%;
+		position: relative;
+	}
+
+	#printContainer > .printedPage canvas,
+	#printContainer > .printedPage img {
+		/* The intrinsic canvas / image size will make sure that we fit the page. */
+		max-width: 100%;
+		max-height: 100%;
+
+		direction: ltr;
+		display: block;
+	}
+}
+
+
+
+.textLayer {
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	overflow: hidden;
+	opacity: 0.2;
+	line-height: 1;
+	user-select: auto;
+	-webkit-user-select: auto;
+}
+
+.textLayer > span {
+	color: transparent;
+	position: absolute;
+	white-space: pre;
+	/*cursor: text;*/
+	transform-origin: 0% 0%;
+}
+
+.textLayer .highlight {
+	margin: -1px;
+	padding: 1px;
+	background-color: rgba(180, 0, 170, 1);
+	border-radius: 4px;
+}
+
+.textLayer .highlight.begin {
+	border-radius: 4px 0 0 4px;
+}
+
+.textLayer .highlight.end {
+	border-radius: 0 4px 4px 0;
+}
+
+.textLayer .highlight.middle {
+	border-radius: 0;
+}
+
+.textLayer .highlight.selected {
+	background-color: rgba(0, 100, 0, 1);
+}
+
+::selection {
+	background: transparent;
+}
+
+.textLayer .endOfContent {
+	display: block;
+	position: absolute;
+	left: 0;
+	top: 100%;
+	right: 0;
+	bottom: 0;
+	z-index: -1;
+	/*cursor: default;*/
+	user-select: none;
+}
+
+.textLayer .endOfContent.active {
+	top: 0;
+}
+
+.native-text-selection {
+	user-select: auto;
+	-webkit-user-select: auto;
+}

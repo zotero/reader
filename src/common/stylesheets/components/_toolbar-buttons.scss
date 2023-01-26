@@ -1,0 +1,215 @@
+
+
+
+//
+// Toolbar buttons
+//
+
+.toolbarButton {
+	height: $toolbar-btn-height;
+	background: $toolbar-btn-bg;
+	padding: $toolbar-btn-padding;
+	border: $toolbar-btn-border;
+	border-radius: $toolbar-btn-border-radius;
+	margin-inline-start: $toolbar-btn-margin-x;
+	margin-inline-end: $toolbar-btn-margin-x;
+	position: relative;
+	box-shadow: $toolbar-btn-box-shadow;
+
+	@include retina {
+		box-shadow: $toolbar-btn-box-shadow-2x;
+	}
+
+	&:focus-visible {
+		box-shadow: $toolbar-btn-focus-box-shadow;
+		z-index: 1;
+
+		@include retina {
+			box-shadow: $toolbar-btn-focus-box-shadow-2x;
+		}
+	}
+
+	&:-moz-focusring {
+		box-shadow: $toolbar-btn-focus-box-shadow;
+		z-index: 1;
+
+		@include retina {
+			box-shadow: $toolbar-btn-focus-box-shadow-2x;
+		}
+	}
+
+	&:hover {
+		background: $toolbar-btn-hover-bg;
+		border-color: $toolbar-btn-border-hover-color;
+	}
+
+	&:active,
+	&.active {
+		background: $toolbar-btn-active-bg;
+		border-color: $toolbar-btn-border-active-color;
+	}
+
+	&[disabled] {
+		pointer-events: none;
+
+		&::before {
+			opacity: 0.5;
+		}
+	}
+
+	&::before {
+		position: relative;
+		z-index: 2;
+
+		@include state(".toolbarButton:active", ".toolbarButton.active") {
+			top: $toolbar-btn-icon-active-offset;
+		}
+	}
+
+	// Label for screen readers
+	> span:first-child {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		padding: 0;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		white-space: nowrap;
+		border: 0;
+	}
+}
+
+.dropdownToolbarButton {
+	min-width: initial !important;
+	max-width: initial !important;
+	width: auto !important;
+	margin: 0 $dropdown-toolbar-btn-margin-x;
+
+	select {
+		appearance: none;
+		min-width: initial !important;
+		width: auto !important;
+		display: block;
+		width: 100%;
+		height: $dropdown-toolbar-btn-height;
+		font-family: inherit;
+		font-size: $dropdown-toolbar-btn-font-size;
+		color: $dropdown-toolbar-btn-color;
+		background: $dropdown-toolbar-btn-bg;
+		background-blend-mode: $dropdown-toolbar-btn-bg-blend-mode;
+		background-size: $dropdown-toolbar-btn-bg-size;
+		border: $dropdown-toolbar-btn-border;
+		border-radius: $dropdown-toolbar-btn-border-radius;
+		padding: $dropdown-toolbar-btn-padding;
+		line-height: 14px; // Center vertically
+		box-shadow: $dropdown-toolbar-btn-box-shadow;
+
+		@include retina {
+			background-image: $dropdown-toolbar-btn-bg-2x;
+			background-size: $dropdown-toolbar-btn-bg-size-2x;
+			box-shadow: $dropdown-toolbar-btn-box-shadow-2x;
+		}
+
+		@-moz-document url-prefix() {
+			padding: $-moz-dropdown-toolbar-btn-padding; // Compensate additional padding in Firefox
+		}
+
+		&:-moz-focusring {
+			color: transparent;
+			text-shadow: 0 0 0 $dropdown-toolbar-btn-color;
+		}
+
+		&:hover {
+			background-color: $dropdown-toolbar-btn-hover-bg;
+			border-color: $dropdown-toolbar-btn-hover-border-color;
+		}
+
+		&:focus {
+			background-color: $dropdown-toolbar-btn-focus-bg;
+			border-color: $toolbar-field-focus-border-color;
+		}
+	}
+
+	#customScaleOption {
+		display: none;
+	}
+
+	#pageWidthOption {
+		border-bottom: 1px rgba(255, 255, 255, 0.5) solid;
+	}
+}
+
+
+
+
+//
+// Toolbar buttons
+//
+
+.tool-group {
+	display: flex;
+}
+
+.toolbarButton {
+	&.global-color {
+		white-space: nowrap;
+
+		&::before {
+			content: "";
+			display: inline-block;
+			vertical-align: top;
+			width: 12px;
+			height: 12px;
+			margin: 2px;
+			background-color: currentColor;
+			border: 1px solid rgba(0, 0, 0, 0.08);
+			border-radius: 3px;
+		}
+
+		.dropmarker {
+			display: inline-block;
+			vertical-align: top;
+			width: 7px;
+			height: 4px;
+			margin: 6px -1px 0 2px;
+			background: image-url("searchbar-dropmarker.png") no-repeat left top;
+			position: relative;
+			z-index: 1;
+
+			@include retina {
+				background: image-url("searchbar-dropmarker@2x.png") no-repeat left top / 100%;
+			}
+
+			.is-blurred & {
+				opacity: 0.5;
+			}
+		}
+	}
+}
+/*! rtl:begin:ignore */
+.toolbar {
+	.annotation-tools {
+		[dir=rtl] & {
+			transform: scaleX(-1);
+		}
+
+		direction: ltr;
+
+		.toolbarButton {
+
+			@if $platform == "darwin" {
+				@include split-button(
+						$height: 24px,
+						$button: "menubutton",
+						$padding-x: 11px,
+						$padding-y: 4px
+				);
+			}
+		}
+	}
+}
+
+/*! rtl:end:ignore */
+
+

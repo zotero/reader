@@ -1,0 +1,148 @@
+//
+// Findbar
+//
+
+.findbar {
+	flex-wrap: wrap;
+	position: absolute;
+	inset-inline-end: 15px;
+	top: 15px;
+	z-index: $z-index-findbar;
+	padding: $findbar-padding;
+	background-color: $findbar-bg;
+	border-radius: $findbar-border-radius;
+	box-shadow: $findbar-box-shadow;
+	padding-inline-end: 15px;
+
+	&.wrapContainers {
+		flex-direction: column;
+		align-items: flex-start;
+	}
+
+	> *,
+	.splitToolbarButton {
+		display: flex;
+		align-items: center;
+	}
+
+	> * {
+		height: $findbar-height;
+		//pointer-events: none;
+
+		> * {
+			//pointer-events: all;
+	}
+}
+
+#findbarOptionsOneContainer {
+		@include state(".findbar.wrapContainers") {
+			margin: $options-one-container-margin;
+		}
+	}
+
+	#findbarOptionsTwoContainer {
+		@include state(".findbar.wrapContainers") {
+			margin: $options-two-container-margin;
+		}
+	}
+
+	#findbarMessageContainer {
+		height: auto;
+	}
+
+	#findInput {
+		width: $find-input-width;
+
+		&[data-status="pending"] {
+			background-image: icon-url("spinner-14px.png");
+			background-repeat: no-repeat;
+			background-position: center right $find-input-loading-x;
+			background-size: 14px 14px;
+
+			@include retina {
+				background-image: icon-url("spinner-14px@2x.png");
+			}
+		}
+
+		&.notFound {
+			color: $find-input-not-found-color;
+			background-color: $find-input-not-found-bg;
+		}
+	}
+
+	.splitToolbarButton {
+		margin: $findbar-split-toolbar-btn-margin;
+
+		@include state(".findbar.wrapContainers") {
+			margin: $findbar-split-toolbar-btn-wrap-containers-margin;
+		}
+	}
+
+	.toolbarButton {
+		height: $findbar-btn-height;
+		padding: $findbar-btn-padding;
+		background: $findbar-btn-bg;
+
+		&:active {
+			background: $findbar-btn-active-bg;
+		}
+	}
+
+	@if $platform == "darwin" {
+		#findPrevious {
+			padding-left: 4px;
+			padding-right: 5px;
+			margin-right: 1px;
+		}
+
+		#findNext {
+			padding-left: 5px;
+			padding-right: 4px;
+			margin-left: 0;
+		}
+	}
+
+	.toolbarLabel {
+		margin: $findbar-toolbar-label-margin;
+		line-height: $toolbar-label-line-height; // Center vertically
+	}
+
+	#findResultsCount {
+		color: $find-results-count-color;
+		margin: $find-message-margin;
+	}
+
+	#findMsg {
+		color: $find-message-color;
+		margin: $find-message-margin;
+
+		&:empty {
+			display: none;
+		}
+	}
+
+	#findbarCloseContainer {
+			position: absolute;
+			top: 0;
+			right: $findbar-close-container-offset-x;
+
+
+		.findClose {
+			width: $findbar-close-btn-size;
+			height: $findbar-close-btn-size;
+			background-color: $findbar-close-btn-bg;
+			padding: $findbar-close-btn-padding;
+			border: $findbar-close-btn-border;
+			border-radius: $findbar-close-btn-border-radius;
+			margin: $findbar-close-btn-margin;
+
+			&:hover {
+				background-color: $findbar-close-btn-hover-bg;
+			}
+
+			&:active {
+				background-color: $findbar-close-btn-active-bg;
+			}
+		}
+	}
+}

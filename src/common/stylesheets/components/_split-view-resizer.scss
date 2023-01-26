@@ -1,0 +1,55 @@
+
+
+body.enable-vertical-split-view .split-view-resizer {
+	display: block;
+	width: 1px;
+	top: 0;
+	bottom: 0;
+	inset-inline-end: var(--split-view-size);
+	cursor: ew-resize;
+	position: absolute;
+	background-color: #bdbdbd;
+	z-index: 999999999;
+
+	&:before {
+		content: "";
+		height: 100%;
+		width: 7px;
+		position: absolute;
+		margin-inline-start: -3px;
+	}
+
+	&.resizing:after {
+		content: "";
+		position: fixed;
+		inset-block: 0;
+		inset-inline: 0;
+	}
+}
+
+body.enable-horizontal-split-view .split-view-resizer {
+	display: block;
+	height: 1px;
+	left: 0;
+	right: 0;
+	bottom: var(--split-view-size);
+	cursor: ns-resize;
+	position: absolute;
+	background-color: #bdbdbd;
+	z-index: 999999999;
+
+	&:before {
+		content: "";
+		width: 100%;
+		height: 7px;
+		position: absolute;
+		top: -3px;
+	}
+
+	&.resizing:after {
+		content: "";
+		position: fixed;
+		inset-block: 0;
+		inset-inline: 0;
+	}
+}

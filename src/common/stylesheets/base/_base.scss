@@ -1,0 +1,237 @@
+//
+// Base
+//
+
+*,
+::before,
+::after {
+	box-sizing: border-box;
+}
+
+* {
+	padding: 0;
+	margin: 0;
+}
+
+::selection {
+	//color: $selection-color;
+	//background-color: $selection-bg;
+}
+
+::-moz-focus-inner {
+	border: 0;
+}
+
+html,
+body {
+	width: 100%;
+	height: 100%;
+}
+
+html {
+	/* Font size is needed to make the activity bar the correct size. */
+}
+
+body {
+	background-color: $body-bg;
+	font-family: $font-family-base;
+	font-size: $font-size-base;
+}
+
+input:not([type="checkbox"]),
+button,
+select {
+	font-family: inherit;
+	font-size: inherit;
+	outline: none;
+}
+
+textarea {
+	outline: none;
+}
+
+.hidden {
+	display: none !important;
+}
+
+[hidden] {
+	display: none !important;
+}
+
+button:hover {
+	cursor: default;
+}
+
+
+
+#split-view, .split-view {
+	position: absolute;
+	inset-inline-start: 0;
+	inset-inline-end: 0;
+	top: 30px;
+	bottom: var(--bottom-placeholder-height);
+	display: flex;
+	background-color: white;
+
+	.primary, .secondary {
+		display: flex;
+		position: relative;
+		overflow: hidden;
+
+		iframe {
+			display: flex;
+			width: 100%;
+			border: 0;
+		}
+	}
+
+	.primary {
+		flex-grow: 1;
+	}
+
+	.secondary {
+		display: none;
+	}
+}
+
+#portal-view {
+	position: absolute;
+	display: flex;
+	z-index: 99999;
+//z-index: -1;
+	width: 700px;
+	height: 200px;
+	left: 0;
+	top: 0;
+
+	&.disabled {
+		transform: translateX(-99999px) !important;
+	}
+
+	iframe {
+		display: flex;
+		width: 100%;
+		border: 0;
+	}
+}
+
+body.sidebar-open {
+	#split-view, .split-view {
+		inset-inline-start: var(--sidebar-width);
+	}
+}
+
+body.enable-vertical-split-view {
+	.primary {
+		width: 0;
+	}
+
+	.secondary {
+		display: flex !important;
+		width: var(--split-view-size);
+	}
+}
+
+body.enable-horizontal-split-view {
+	.primary {
+		height: 0;
+	}
+
+	#split-view, .split-view {
+		flex-direction: column;
+
+		.secondary {
+			display: flex !important;
+			height: var(--split-view-size);
+		}
+	}
+}
+
+@page {
+	margin: 0;
+}
+
+#printContainer {
+	display: none;
+}
+
+@media print {
+	/* General rules for printing. */
+	body {
+		background: rgba(0, 0, 0, 0) none;
+	}
+
+	/* Rules for browsers that don't support mozPrintCallback. */
+	#sidebarContainer,
+	#secondaryToolbar,
+	.toolbar,
+	#loadingBox,
+	#errorWrapper,
+	.textLayer {
+		display: none;
+	}
+	#viewerContainer {
+		overflow: visible;
+	}
+
+	#mainContainer,
+	#viewerContainer,
+	.page,
+	.page canvas {
+		position: static;
+		padding: 0;
+		margin: 0;
+	}
+
+	.page {
+		float: left;
+		display: none;
+		border: none;
+		box-shadow: none;
+		background-clip: content-box;
+		background-color: rgba(255, 255, 255, 1);
+	}
+
+	.page[data-loaded] {
+		display: block;
+	}
+
+	.fileInput {
+		display: none;
+	}
+
+	/* Rules for browsers that support PDF.js printing */
+	body[data-pdfjsprinting] #outerContainer {
+		display: none;
+	}
+	body[data-pdfjsprinting] #printContainer {
+		display: block;
+	}
+	#printContainer {
+		height: 100%;
+	}
+	/* wrapper around (scaled) print canvas elements */
+	#printContainer > div {
+		position: relative;
+		top: 0;
+		left: 0;
+		width: 1px;
+		height: 1px;
+		overflow: visible;
+		page-break-after: always;
+		page-break-inside: avoid;
+	}
+	#printContainer canvas,
+	#printContainer img {
+		direction: ltr;
+		display: block;
+	}
+}
+
+
+
+
+
+
+
+

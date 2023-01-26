@@ -1,0 +1,68 @@
+
+.outline-view {
+	padding: 4px 8px;
+
+	ul {
+
+		li {
+
+			list-style: none;
+
+			.item {
+				display: flex;
+				align-items: center;
+
+
+
+
+				.title {
+					text-decoration: none;
+					display: block;
+					height: auto;
+					color: #000;
+					font-size: .6875rem;
+					line-height: 1.2;
+					-moz-user-select: none;
+					user-select: none;
+					white-space: normal;
+					padding: 0.21875rem;
+					cursor: pointer;
+
+					&:focus {
+						box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+						border-radius: 3px;
+						outline: none;
+					}
+				}
+
+				.toggle {
+					height: 1.25rem;
+					width: 9px;
+					color: rgba(255,255,255,.5);
+					display: flex;
+					align-items: center;
+					margin-inline-end: 3px;
+					margin-inline-start: 3px;
+				}
+
+				&.expandable.expanded .toggle {
+					@include icon("treeitem-expanded", 9px);
+				}
+
+				&.expandable:not(.expanded) .toggle {
+					html[dir='ltr'] & {
+						@include icon("treeitem-collapsed", 9px);
+					}
+
+					html[dir='rtl'] & {
+						@include icon("treeitem-collapsed-rtl", 9px);
+					}
+				}
+			}
+
+			.children {
+				padding-inline-start: 16px;
+			}
+		}
+	}
+}

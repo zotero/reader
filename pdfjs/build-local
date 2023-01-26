@@ -1,0 +1,24 @@
+#!/bin/bash
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PDFJS_DIR=~/dev/zotero/other/pdf.js
+
+PDFJS_BUILD=$PDFJS_DIR/build/generic-legacy
+DEV_BUILD=./build/dev/pdf
+
+cd "$PDFJS_DIR"
+
+npm ci
+# TODO: Use `generic` build for the web version
+# npx gulp generic
+# Zotero with FF 60 ESR runs only the `legacy` build
+npx gulp generic-legacy
+
+cd "$SCRIPT_DIR/../"
+
+rm -rf $DEV_BUILD
+
+mkdir -p build/dev/pdf
+cp -r $PDFJS_BUILD/* $DEV_BUILD/
+cp -r pdf.js/viewer.css $DEV_BUILD/web/
+rm $DEV_BUILD/web/*.pdf

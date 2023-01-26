@@ -1,0 +1,32 @@
+#!/bin/bash
+
+PDFJS_BUILD=./pdfjs/pdf.js/build/generic-legacy
+DEV_BUILD=./build/dev/pdf
+WEB_BUILD=./build/web/pdf
+ZOTERO_BUILD=./build/zotero/pdf
+
+rm -rf $DEV_BUILD
+rm -rf $WEB_BUILD
+rm -rf $ZOTERO_BUILD
+
+cd pdfjs/pdf.js
+npm ci
+# Zotero with FF 60 ESR runs only the `legacy` build
+npx gulp generic-legacy
+cd ../../
+
+mkdir -p build/dev/pdf
+cp -r $PDFJS_BUILD/* $DEV_BUILD/
+cp -r pdfjs/viewer.css $DEV_BUILD/web/
+rm $DEV_BUILD/web/*.pdf
+
+mkdir -p build/web/pdf
+cp -r $PDFJS_BUILD/* $WEB_BUILD/
+cp -r pdfjs/viewer.css $WEB_BUILD/web/
+rm $WEB_BUILD/web/*.pdf
+
+mkdir -p build/zotero/pdf
+cp -r $PDFJS_BUILD/* $ZOTERO_BUILD/
+cp -r pdfjs/viewer.css $ZOTERO_BUILD/web/
+rm $ZOTERO_BUILD/web/*.pdf
+rm $ZOTERO_BUILD/web/*.map

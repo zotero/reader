@@ -1,0 +1,223 @@
+//
+// Icons
+//
+
+// Toolbar & secondary toolbar
+
+
+// Toolbar
+
+.toolbar {
+	#back {
+		html[dir="ltr"] & {
+			@include icon("back");
+		}
+
+		html[dir="rtl"] & {
+			@include icon("forward");
+		}
+	}
+
+	#forward {
+		html[dir="ltr"] & {
+			@include icon("forward");
+		}
+
+		html[dir="rtl"] & {
+			@include icon("back");
+		}
+	}
+
+	#sidebarToggle {
+		@include icon("application-side-expand");
+
+		html[dir="rtl"] & {
+			@include icon("application-side-expand-rtl");
+		}
+
+		&.toggled {
+			@include icon("application-side-contract");
+
+			html[dir="rtl"] & {
+				@include icon("application-side-contract-rtl");
+			}
+		}
+	}
+
+	#viewFind {
+		@include icon("magnifier");
+	}
+
+	.pageUp {
+		@include icon("page-up");
+	}
+
+	.pageDown {
+		@include icon("page-down");
+	}
+
+	.zoomIn {
+		@include icon("zoom-in");
+	}
+
+	.zoomOut {
+		@include icon("zoom-out");
+	}
+
+	.zoomAuto {
+		@include icon("zoom-auto");
+	}
+
+	.navigateBack {
+		@include icon("navigate-back");
+	}
+
+	.presentationMode {
+		@include icon("full-screen");
+	}
+
+	#secondaryToolbarToggle {
+		@include icon("secondary-toolbar-toggle");
+	}
+}
+
+// Findbar
+
+.findbar {
+	.findPrevious {
+		@include icon($findbar-btn-previous-icon);
+
+		html[dir="rtl"] & {
+			@include icon("#{$findbar-btn-next-icon}");
+		}
+	}
+
+	.findNext {
+		@include icon($findbar-btn-next-icon);
+
+		html[dir="rtl"] & {
+			@include icon("#{$findbar-btn-previous-icon}");
+		}
+	}
+
+	.findClose {
+		@include icon($findbar-close-btn-icon, $findbar-close-btn-icon-size);
+	}
+}
+
+// Secondary toolbar
+
+.secondaryToolbar {
+	.firstPage {
+		@include icon("first-page");
+	}
+
+	.lastPage {
+		@include icon("last-page");
+	}
+
+	.rotateCw {
+		@include icon("rotate-cw");
+	}
+
+	.rotateCcw {
+		@include icon("rotate-ccw");
+	}
+
+	.selectTool {
+		@include icon("select-tool");
+	}
+
+	.handTool {
+		@include icon("hand-tool");
+	}
+
+	.scrollVertical {
+		@include icon("scroll-vertical");
+	}
+
+	.scrollHorizontal {
+		@include icon("scroll-horizontal");
+	}
+
+	.scrollWrapped {
+		@include icon("scroll-wrapped");
+	}
+
+	.spreadNone {
+		@include icon("spread-none");
+	}
+
+	.spreadOdd {
+		@include icon("spread-odd");
+	}
+
+	.spreadEven {
+		@include icon("spread-even");
+	}
+
+	.documentProperties {
+		@include icon("information");
+	}
+}
+
+// Toolbar sidebar
+
+#toolbarSidebar {
+	#viewThumbnail {
+		@include icon($thumbnail-icon);
+
+		@if $thumbnail-icon-toggled {
+			&.toggled {
+				@include icon($thumbnail-icon-toggled);
+			}
+		}
+	}
+
+	#viewOutline {
+		@include icon($outline-icon);
+
+		@if $outline-icon-toggled {
+			&.toggled {
+				@include icon($outline-icon-toggled);
+			}
+		}
+	}
+
+	#viewAttachments {
+		@include icon($attach-icon);
+
+		@if $attach-icon {
+			&.toggled {
+				@include icon($attach-icon-toggled);
+			}
+		}
+	}
+}
+
+// Sidebar
+
+.treeItemToggler {
+	@include icon("treeitem-expanded", 9px);
+
+	&.treeItemsHidden {
+		html[dir='ltr'] & {
+			@include icon("treeitem-collapsed", 9px);
+		}
+
+		html[dir='rtl'] & {
+			@include icon("treeitem-collapsed-rtl", 9px);
+		}
+	}
+}
+
+.attachmentsItem > button {
+	@include icon("page-white");
+}
+
+// Error message
+
+#errorClose {
+	@include icon("cross");
+}
+

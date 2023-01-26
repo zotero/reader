@@ -1,0 +1,424 @@
+//
+// Light theme
+//
+
+//
+// Colors
+//
+
+$accent-color: #0a6cf5; // 215° 96 96
+$accent-color-darken-6: darken($accent-color, 6%);
+$highlight-color: #b3d7ff;
+$blue-btn: #90c8f6;
+$red: #d93425;
+
+$gray-lightest: #f0f0f0;
+
+//
+// Base
+//
+
+:root {
+	--sidebar-width: 240px;
+	// TODO: Remove --note-font-size, as it's probably not necessary to change font size for highlights and comments
+	--note-font-size: 12 / 16 * 1rem;
+	font-size: 100%;
+	--bottomPlaceholderHeight: 0;
+}
+
+$body-bg: #ebebeb;
+$text-color: #000;
+
+$font-family-sans-serif: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
+//$font-family-monospace: TBD
+$font-family-base: $font-family-sans-serif;
+
+$font-size-base: rem(11);
+$note-font-size: rem(12);
+$note-line-height: calc(4 / 3); // Force browsers to use exact value to avoid rounding glitches
+
+$selection-color: null;
+$selection-bg: rgba($highlight-color, 0.99);
+
+// Z-index master list
+$z-index-page-popup: 10;
+$z-index-error-wrapper: 1000;
+$z-index-findbar: 10000;
+$z-index-overlay: 999999999;
+
+// Visibility breakpoints
+$visibility-bp-lg: null;
+$visibility-bp-md: null;
+$visibility-bp-sm: 840px;
+
+//
+// Components
+//
+
+// Toolbar
+$toolbar-height: 32px;
+$toolbar-padding: 0 4px;
+$toolbar-bg: linear-gradient(to top, #a9a9a9 0, #a9a9a9 1px, #f6f6f6 1px, #f6f6f6 100%);
+$toolbar-bg-2x: linear-gradient(to top, #a9a9a9 0, #a9a9a9 0.5px, #f6f6f6 0.5px, #f6f6f6 100%);
+$toolbar-blurred-bg: null;
+$toolbar-blurred-bg-2x: null;
+$toolbar-border: 0;
+
+$page-number-width: calc(#{rem(28)} + 24px);
+$page-number-padding: 0 4px;
+$page-number-bg: linear-gradient(to bottom, #fafafa, #f2f2f2);
+$page-number-border-radius: 3.75px;
+$page-number-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 -1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 rgba(0, 0, 0, 0.1), 0 0 0 1px #c8c7c8;
+$page-number-box-shadow-2x: inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 -0.5px 0 rgba(255, 255, 255, 0.12), 0 0.75px 0 rgba(0, 0, 0, 0.1), 0 0 0 0.5px #c2c1c3;
+$page-number-focus-box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(0, 0, 0, 0.1);
+$page-number-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5), inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 0 0 0.5px rgba(0, 0, 0, 0.1), 0 0.75px 0 rgba(0, 0, 0, 0.125);
+$page-number-loading-x: 4px;
+
+$num-pages-min-width: 76px;
+$num-pages-color: #555;
+
+$toolbar-middle-viewer-bp: 1300px;
+$scale-select-container-bp: 750px;
+
+// Toolbar button
+$toolbar-btn-height: 22px;
+$toolbar-btn-bg: linear-gradient(to bottom, #fafafa, #f2f2f2);
+$toolbar-btn-padding: 3px 11px;
+$toolbar-btn-border: 0;
+$toolbar-btn-border-radius: 3.75px;
+$toolbar-btn-margin-x: 4px;
+$toolbar-btn-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.33), 0 -1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 rgba(0, 0, 0, 0.1), 0 0 0 1px #c8c7c8;
+$toolbar-btn-box-shadow-2x: inset 0 0.5px 0.5px rgba(255, 255, 255, 1), 0 -0.5px 0 rgba(255, 255, 255, 0.12), 0 0.75px 0 rgba(0, 0, 0, 0.1), 0 0 0 0.5px #c2c1c3;
+$toolbar-btn-focus-box-shadow: 0 0 0 4px rgba($accent-color, 0.5), $toolbar-btn-box-shadow;
+$toolbar-btn-focus-box-shadow-2x: 0 0 0 4px rgba($accent-color, 0.5), $toolbar-btn-box-shadow-2x;
+$toolbar-btn-hover-bg: null;
+$toolbar-btn-border-hover-color: null;
+$toolbar-btn-active-bg: linear-gradient(to bottom, #e4e4e4, #ddd);
+$toolbar-btn-blurred-bg: transparent;
+$toolbar-btn-blurred-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.11);
+$toolbar-btn-blurred-box-shadow-2x: inset 0 0 0 0.5px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.11);
+$toolbar-btn-border-active-color: $blue-btn;
+$toolbar-btn-icon-active-offset: 0;
+
+// Toolbar separators
+$toolbar-btn-separator-list: ".toolbarButton#sidebarToggle, .toolbarButton#download, .zoomAuto, .dropdownToolbarButton";
+$toolbar-btn-separator-spacing: 13px;
+$toolbar-btn-visual-separator: false;
+$toolbar-btn-separator-width: null;
+$toolbar-btn-separator-height: null;
+$toolbar-btn-separator-top: null;
+$toolbar-btn-separator-right: null;
+$toolbar-btn-separator-bg: null;
+
+// Toolbar field
+$toolbar-field-height: 22px;
+$toolbar-field-padding: 0 5px;
+$toolbar-field-margin: 0 4px;
+$toolbar-field-border: 0;
+$toolbar-field-color: #000;
+$toolbar-field-bg: #fff;
+$toolbar-field-font-size: $font-size-base;
+$toolbar-field-border-radius: 0.5px;
+$toolbar-field-box-shadow: inset 0 0 0 1px #bdbdbd;
+$toolbar-field-box-shadow-2x: inset 0 0 0.2px 0.5px #999;
+$toolbar-field-hover-border-color: null;
+$toolbar-field-focus-border-color: null;
+$toolbar-field-focus-box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), inset 0 0 0 1px #bdbdbd, 0 0 0 3px rgba($accent-color, 0.5);
+$toolbar-field-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), inset 0 0 0.2px 0.5px #999, 0 0 0 3px rgba($accent-color, 0.5);
+$toolbar-label-margin: null;
+$toolbar-label-line-height: null;
+$toolbar-label-color: #000;
+$toolbar-field-placeholder-color: #777;
+$checkbox-size: 14px;
+$-moz-checkbox-size: 16px;
+$-moz-checkbox-margin: 0 3px;
+$checkbox-box-shadow: none;
+
+// Dropdown toolbar button
+$dropdown-toolbar-btn-margin-x: 4px;
+$dropdown-toolbar-btn-height: 22px;
+$dropdown-toolbar-btn-font-size: $font-size-base;
+$dropdown-toolbar-btn-padding: 0 14px 0 4px;
+$-moz-dropdown-toolbar-btn-padding: 0 11px 0 0px;
+$dropdown-toolbar-btn-color: #252525;
+$dropdown-toolbar-btn-bg: icon-url("darwin/chevron-7.png") no-repeat right 5px center, $toolbar-btn-bg;
+$dropdown-toolbar-btn-bg-2x: icon-url("darwin/chevron-7@2x.png"), $toolbar-btn-bg;
+$dropdown-toolbar-btn-bg-size: 7px 4px, auto;
+$dropdown-toolbar-btn-bg-size-2x: 7.5px 4.5px, auto;
+$dropdown-toolbar-btn-bg-blend-mode: null;
+$dropdown-toolbar-btn-border: 0;
+$dropdown-toolbar-btn-border-radius: 3.75px;
+$dropdown-toolbar-btn-box-shadow: $toolbar-btn-box-shadow;
+$dropdown-toolbar-btn-box-shadow-2x: $toolbar-btn-box-shadow-2x;
+$dropdown-toolbar-btn-hover-bg: null;
+$dropdown-toolbar-btn-hover-border-color: null;
+$dropdown-toolbar-btn-focus-bg: null;
+$dropdown-toolbar-btn-focus-border-color: null;
+
+// Findbar
+$findbar-offset-x: 8px;
+$findbar-offset-y: 49px;
+$findbar-pointer-offset-x: calc(100% - 11px - 8px);
+$findbar-height: 38px;
+$findbar-padding: 0 4px;
+$findbar-bg: #fff;
+$findbar-border-radius: 4px;
+$findbar-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
+
+$options-one-container-margin: -10px 0 0 0;
+$options-two-container-margin: -14px 0 -4px 0;
+
+$findbar-btn-height: 20px;
+$findbar-btn-padding: 2px 11px 2px 11px;
+$findbar-btn-bg: linear-gradient(to bottom, #fefefe, #f7f7f7);
+$findbar-btn-active-bg: linear-gradient(to bottom, #e7e7e7, #e1e1e1);
+$findbar-btn-previous-icon: "back";
+$findbar-btn-next-icon: "forward";
+
+$find-input-width: 200px;
+$find-input-loading-x: 4px;
+$find-input-not-found-color: $text-color;
+$find-input-not-found-bg: tint(#f66, 75%);
+
+$findbar-split-toolbar-btn-margin: 0 8px;
+$findbar-split-toolbar-btn-wrap-containers-margin: 0 33px 0 8px;
+
+$findbar-toolbar-label-margin: 0 11px 0 0;
+
+$find-results-count-color: #777;
+
+$find-message-margin: 2px 11px 8px 4px;
+$find-message-color: rgba(#777, 0.5);
+
+$findbar-close-container-offset-x: 4px;
+
+$findbar-close-btn-size: 12px;
+$findbar-close-btn-padding: 2px;
+$findbar-close-btn-border: 0;
+$findbar-close-btn-border-radius: 50%;
+$findbar-close-btn-margin: 0 9px 0 4px;
+$findbar-close-btn-bg: #808080;
+$findbar-close-btn-hover-bg: null;
+$findbar-close-btn-active-bg: #252525;
+$findbar-close-btn-icon: "darwin/x";
+$findbar-close-btn-icon-size: 8px;
+
+// Secondary toolbar
+$secondary-toolbar-offset-x: 3px;
+$secondary-toolbar-offset-y: $toolbar-height - 3px;
+$secondary-toolbar-padding: 2px;
+$secondary-toolbar-bg: $gray-lightest;
+$secondary-toolbar-border: 1px solid #ccc;
+$secondary-toolbar-border-radius: 0;
+$secondary-toolbar-btn-line-height: 1.2;
+$secondary-toolbar-btn-padding: rem(4.5) 5px rem(4.5) 32px;
+$secondary-toolbar-btn-bg: transparent;
+$secondary-toolbar-btn-hover-bg: $blue-btn;
+$secondary-toolbar-btn-icon-offset-x: 5px;
+$horizontal-toolbar-separator: true;
+$horizontal-toolbar-separator-height: 1px;
+$horizontal-toolbar-separator-bg: #d7d7d7;
+$horizontal-toolbar-separator-margin: 2px 0 2px 28px;
+
+// Sidebar
+$sidebar-bg: #d2d8e2;
+$sidebar-blurred-bg: #e8e8e8;
+$sidebar-border-color: #bdbdbd;
+$sidebar-resizer-cursor: col-resize;
+
+// Toolbar sidebar
+$toolbar-sidebar-height: 31px;
+$toolbar-sidebar-justify-content: center;
+$toolbar-sidebar-align-items: center;
+$toolbar-sidebar-bg: #f6f6f6;
+$toolbar-sidebar-border: 1px solid #a9a9a9;
+
+$split-toolbar-btn-flex: 1 0 auto;
+$split-toolbar-btn-height: 22px;
+$split-toolbar-btn-margin: 0 7px;
+
+$toolbar-sidebar-btn-padding-x: 11px;
+$toolbar-sidebar-btn-padding-y: 3px;
+$toolbar-sidebar-btn-margin: 0;
+$toolbar-sidebar-btn-hover-bg: null;
+$toolbar-sidebar-btn-active-bg: null;
+$toolbar-sidebar-btn-border-width: null;
+$toolbar-sidebar-btn-border-color: null;
+$toolbar-sidebar-btn-spacing: null;
+
+$thumbnail-icon: "darwin/view-thumbnail-linear";
+$thumbnail-icon-toggled: "darwin/view-thumbnail-linear-white";
+$note-icon: "darwin/note-linear";
+$note-icon-toggled: "darwin/note-linear-white";
+$outline-icon: "darwin/view-outline-linear";
+$outline-icon-toggled: "darwin/view-outline-linear-white";
+$attach-icon: "darwin/attach-linear";
+$attach-icon-toggled: "darwin/attach-linear-white";
+
+// Thumbnail view
+$thumbnail-selection-ring-focus-bg: rgba(0, 0, 0, 0.2);
+$thumbnail-selection-ring-selected-bg: rgba(0, 0, 0, 0.1);
+$thumbnail-image-border-color: transparent;
+
+// Outline & attachment view
+$sidebar-item-link-btn-color: $text-color;
+
+// Outline view
+$outline-item-height: rem(20);
+
+// PDF viewer
+$page-bg: #fff;
+$page-outline: none;
+$page-outline-offset: initial;
+
+// Dialogs
+$overlay-container-bg: rgba(0, 0, 0, 0.3);
+$dialog-width: 300px;
+$dialog-padding: 16px;
+$dialog-font-size: $font-size-base;
+$dialog-line-height: 1.2;
+$dialog-bg: #fff;
+$dialog-color: $text-color;
+$dialog-border-radius: 1px;
+$dialog-shadow: 4px 6px 4px gray;
+$btn-row-justify-content: flex-end;
+
+$overlay-btn-height: 19px;
+$overlay-btn-min-width: 94px;
+$overlay-btn-margin-x: 6px;
+$overlay-button-bg: #fff;
+$overlay-btn-border: 0;
+$overlay-btn-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12);
+$overlay-btn-box-shadow-2x: 0 0 0 0.5px rgba(0, 0, 0, 0.125), 0 0 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 0.5px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.06), 0 0.5px 0 rgba(0, 0, 0, 0.05);
+$overlay-btn-focus-border: null;
+$overlay-btn-focus-box-shadow: 0 0 0 4px rgba($accent-color, 0.5), $overlay-btn-box-shadow;
+$overlay-btn-hover-bg: null;
+$overlay-btn-hover-border: null;
+$overlay-btn-active-bg: null;
+$overlay-btn-active-border: null;
+$overlay-btn-border-radius: $toolbar-btn-border-radius;
+
+$dialog-gradient-btn: true;
+$gradient-btn-height: $overlay-btn-height + 2px;
+$gradient-btn-height-2x: $overlay-btn-height + 1px;
+$gradient-btn-min-width: $overlay-btn-min-width + 2px;
+$gradient-btn-min-width-2x: $overlay-btn-min-width + 1px;
+$gradient-btn-color: #fff;
+$gradient-btn-active-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), $accent-color-darken-6;
+$gradient-btn-border-radius: $toolbar-btn-border-radius;
+$gradient-btn-box-shadow: none;
+$gradient-btn-box-shadow-2x: 0 1px 0 rgba(0, 0, 0, 0.03), 0 0.5px 0 rgba(0, 0, 0, 0.09);
+$gradient-btn-focus-box-shadow: inset 0 0 0 1px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+$gradient-btn-focus-box-shadow-2x: inset 0 0 0 0.5px rgba($accent-color, 0.5), 0 0 0 3px rgba($accent-color, 0.5);
+$gradient-label-active-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)), $accent-color-darken-6;
+$gradient-label-border-radius: $gradient-btn-border-radius - 1px;
+$submit-btn-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), $accent-color;
+$submit-btn-label-bg: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0)), $accent-color;
+
+$progress-height: 6px;
+$progress-padding: 0;
+$progress-border: 0;
+$progress-box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.125);
+$progress-box-shadow-2x: inset 0 0 0 0.5px rgba(0, 0, 0, 0.125);
+$progress-bg: #dbdbdb;
+$progress-border-radius: 3px;
+$progress-indicator-bg: #1388ff; // Hard-coded like Zotero’s initial loading bar
+$progress-label-width: 38px;
+
+// Annotation tools
+$highlight-tool-icon: "darwin/highlight";
+$highlight-tool-icon-active: "darwin/highlight-white";
+$note-tool-icon: "darwin/note";
+$note-tool-icon-active: "darwin/note-white";
+$area-tool-icon: "darwin/area";
+$area-tool-icon-active: "darwin/area-white";
+
+// Search
+$search-margin: 6px 13px;
+$search-height: 20px;
+$search-bg: #bcc4d2;
+$search-blurred-bg: #dbdbdb;
+$search-padding: 0 18px 0 23px;
+$search-border: none;
+$search-hover-border: null;
+$search-focus-border: null;
+$search-border-radius: 3.75px;
+$search-box-shadow: 0 0 0 1px #a5afc1;
+$search-blurred-box-shadow: 0 0 0 1px #cdcdcd;
+$search-focus-box-shadow: 0 0 0 4px rgba($accent-color, 0.5), $search-box-shadow;
+$search-placeholder-opacity: 0.3;
+$search-icon-offset-x: 3px;
+$search-icon-offset-y: 2px;
+$clear-icon-offset-x: 3px;
+$clear-icon-offset-y: 3px;
+$search-icon: "darwin/search";
+$clear-icon: "darwin/clear";
+$clear-icon-hover: "darwin/clear";
+
+// Annotation
+$annotation-bg: #fff;
+$annotation-selected-bg: #e4ebf9; // 8% K
+$annotation-border: 1px solid #bcc4d2;
+$annotation-selected-border: 1px solid #6d95e0;
+$annotation-border-radius: 5px;
+$annotation-selected-box-shadow: 0 0 0 2px rgba(#6d95e0, 0.5);
+$annotation-placeholder-color: #6d95e0;
+
+// Annotation popup
+
+// Preview
+$preview-header-height: 21px;
+$preview-border: 1px solid #d7dad7;
+$preview-selected-border: 1px solid rgba(#6d95e0, 0.4);
+
+$page-label-editable-padding: 0;
+$page-label-editable-margin: 0;
+
+$tags-placeholder-color: #6d95e0;
+
+// Expandable editor
+$collapsed-height: calc(3 * #{$note-font-size} * #{$note-line-height} + #{nem(4)} + #{nem(4)});
+
+// Editor
+$editor-border: $preview-border;
+$editor-selected-border: $preview-selected-border;
+
+// Page popup
+$page-popup-border-radius: 5px;
+$page-popup-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
+
+// Selection popup
+$selection-popup-padding: 4px;
+$selection-popup-btn-height: 20px;
+$selection-popup-btn-padding: 2px;
+$selection-popup-btn-bg: transparent;
+$selection-popup-btn-border-radius: 1.75px;
+$selection-popup-btn-box-shadow: none;
+$selection-popup-btn-margin: 0;
+$selection-popup-btn-spacing: 1px;
+$selection-popup-btn-hover-bg: rgba(0, 0, 0, 0.1);
+$selection-popup-btn-hover-box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.2);
+$selection-popup-btn-focus-box-shadow: 0 0 0 3px rgba($accent-color, 0.5), $selection-popup-btn-hover-box-shadow;
+
+// Highlight annotation
+$highlight-annotation-selected-border-color: #6d95e0;
+
+// Highlight area
+$highlight-area-selected-border-color: #6d95e0;
+
+// Error message
+$error-message-min-height: 30px;
+$error-message-bg: $red;
+$error-message-btn-focus-border-radius: 0.5px;
+$error-message-btn-focus-box-shadow: 0 0 0 4px rgba(#fff, 0.5);
+$error-message-btn-focus-box-shadow-2x: 0 0 0 3.5px rgba(#fff, 0.5);
+$error-message-btn-dismiss-offset: 7px;
+$error-more-info-bg: #fbf0f0;
+
+// Editable
+$editable-padding: 2px;
+$editable-border: none;
+$editable-border-radius: 0.5px;
+$editable-box-shadow: 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 1px #ccc;
+$editable-box-shadow-2x: 0 0 0 3px rgba($accent-color, 0.5), 0 0 0 0.5px #ccc;
+$editable-margin: -$editable-padding;

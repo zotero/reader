@@ -1,172 +1,83 @@
-import Viewer from './viewer.js';
-import annotations from './demo-annotations';
-import strings from './en-us.strings';
+import Reader from './common/reader';
+import strings from '../src/en-us.strings';
+import pdf from '../demo/pdf';
+import epub from '../demo/epub';
+import snapshot from '../demo/snapshot';
 
-window.development = true;
+window.dev = true;
 
-let loaded = false;
-
-function setOptions() {
-	if (!window.PDFViewerApplicationOptions) {
-		return;
+async function createReader() {
+	if (window._reader) {
+		throw new Error('Reader is already initialized');
 	}
-	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
-	window.PDFViewerApplicationOptions.set('defaultUrl', '');
-	window.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
-	window.PDFViewerApplicationOptions.set('cMapPacked', true);
-	window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
-	window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
-	window.PDFViewerApplicationOptions.set('textLayerMode', 1);
-	window.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
-	window.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
-	window.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
-	window.PDFViewerApplicationOptions.set('printResolution', 300);
-}
-
-setOptions();
-document.addEventListener('webviewerloaded', function () {
-	setOptions();
-	window.PDFViewerApplication.preferences = window.PDFViewerApplicationOptions;
-	window.PDFViewerApplication.externalServices.createPreferences = function () {
-		return window.PDFViewerApplicationOptions;
-	};
-
-	PDFViewerApplication.initializedPromise.then(async function () {
-		if (!window.PDFViewerApplication.pdfViewer || loaded) return;
-		loaded = true;
-		window.PDFViewerApplication.eventBus.on('documentinit', (e) => {
-			console.log('documentinit');
-		});
-
-		if (!window.isSecondView) {
-			test();
-		}
-		// setTimeout(() => {
-		//   viewer.navigate(annotations[0]);
-		// }, 3000);
-	});
-});
-
-window.isSecondView = !!window.frameElement && window.frameElement.id === 'secondViewIframe';
-window.addEventListener('DOMContentLoaded', () => {
-	if (window.isSecondView) {
-		document.body.classList.add('second-view');
+	let queryString = window.location.search;
+	let urlParams = new URLSearchParams(queryString);
+	let type = urlParams.get('type') || 'pdf';
+	let demo;
+	if (type === 'pdf') {
+		demo = pdf;
 	}
-});
-
-async function test() {
-	let res = await fetch('compressed.tracemonkey-pldi-09.pdf');
+	else if (type === 'epub') {
+		demo = epub;
+	}
+	else if (type === 'snapshot') {
+		demo = snapshot;
+	}
+	let res = await fetch(demo.fileName);
 	let buf = await res.arrayBuffer();
-
-	// Load primary view
-	let vi = new ViewerInstance({
+	let reader = new Reader({
+		type,
+		localizedStrings: strings,
 		readOnly: false,
 		buf,
-		annotations,
-		rtl: false,
-		state: null,
-		location: {
-			position: { pageIndex: 0, rects: [[371.395, 266.635, 486.075, 274.651]] }
+		annotations: demo.annotations,
+		state: demo.state,
+		sidebarWidth: 240,
+		bottomPlaceholderHeight: 0,
+		toolbarPlaceholderWidth: 0,
+		authorName: 'John',
+		showAnnotations: true,
+		platform: 'web',
+		// password: 'test',
+		onOpenContextMenu(params) {
+			reader.openContextMenu(params);
+		},
+		onAddToNote() {
+			alert('Add annotations to the current note');
+		},
+		onSaveAnnotations: function (annotations) {
+			console.log('Save annotations', annotations);
+		},
+		onDeleteAnnotations: function (ids) {
+			console.log('Delete annotations', JSON.stringify(ids));
+		},
+		onChangeViewState: function (state, primary) {
+			console.log('Set state', state, primary);
+		},
+		onClickTags(annotationID, event) {
+			alert('Opening Zotero tagbox popup');
+		},
+		onClosePopup(data) {
+			console.log('onClosePopup', data);
+		},
+		onOpenLink(url) {
+			alert('Navigating to an external link: ' + url);
+		},
+		onToggleSidebar: (open) => {
+			console.log('Sidebar toggled', open);
+		},
+		onChangeSidebarWidth(width) {
+			console.log('Sidebar width changed', width);
+		},
+		onSetDataTransferAnnotations(dataTransfer, annotations, fromText) {
+			console.log('Set formatted dataTransfer annotations', dataTransfer, annotations, fromText);
+		},
+		onConfirm(title, text, confirmationButtonTitle) {
+			return window.confirm(text);
 		}
 	});
-
-	vi._viewer.setBottomPlaceholderHeight(0);
-	vi._viewer.setToolbarPlaceholderWidth(0);
-
-	vi._viewer.setEnableAddToNote(false);
-	// vi._viewer.setBottomPlaceholderHeight(400);
-	// vi._viewer.setToolbarPlaceholderWidth(50);
-
-	// vi._viewer.navigate({
-	//   'position': { 'pageIndex': 100, 'rects': [[371.395, 266.635, 486.075, 274.651]] }
-	// })
-
-	// Load second view
-	let splitWrapper = document.getElementById('splitWrapper');
-	let iframe = document.getElementById('secondViewIframe');
-	iframe.addEventListener('load', async () => {
-		console.log('iframe loaded');
-		let app = iframe.contentWindow.PDFViewerApplication;
-		await app.initializedPromise;
-		let vi2 = new iframe.contentWindow.ViewerInstance({
-			readOnly: true,
-			buf,
-			annotations: [],
-			rtl: false,
-			state: null,
-		});
-	});
-	iframe.src = 'viewer.html?';
-	splitWrapper.classList.add('enable-split');
-	// splitWrapper.classList.add('horizontal');
+	window._reader = reader;
+	await reader.initializedPromise;
 }
 
-class ViewerInstance {
-	constructor(options) {
-
-		let annotations = options.annotations;
-		if (options.readOnly) {
-			annotations.forEach(x => x.readOnly = true);
-		}
-
-		window.rtl = options.rtl;
-
-		this._viewer = new Viewer({
-			onAddToNote() {
-				alert('This will add annotations to the pinned note');
-			},
-			onSaveAnnotations: function (annotation) {
-				console.log('Save annotations', annotation);
-			},
-			onDeleteAnnotations: function (ids) {
-				console.log('Delete annotations', JSON.stringify(ids));
-			},
-			onSetState: function (state) {
-				console.log('Set state', state);
-			},
-			onClickTags(annotationID, event) {
-				alert('This will open Zotero tagbox popup');
-			},
-			onDoubleClickPageLabel: (id) => {
-				console.log('Open page label popup', id);
-			},
-			onPopup(name, data) {
-				console.log(name, data);
-				alert('This will open ' + name);
-			},
-			onClosePopup(data) {
-				console.log('onClosePopup', data);
-			},
-			onExternalLink(url) {
-				alert('This will navigate to the external link: ' + url);
-			},
-			onDownload() {
-				alert('This will call pdf-worker to write all annotations to the PDF file and then triggers the download');
-			},
-			onChangeSidebarWidth(width) {
-				console.log('Changed sidebar width ' + width);
-			},
-			onChangeSidebarOpen: (open) => {
-				console.log('changeSidebarOpen', open);
-			},
-			buf: options.buf,
-			annotations,
-			state: options.state,
-			location: options.location,
-			sidebarWidth: 240,
-			sidebarOpen: true,
-			bottomPlaceholderHeight: 0,
-			localizedStrings: strings,
-			readOnly: options.readOnly,
-			authorName: 'John',
-			showAnnotations: true
-			// password: 'test'
-		});
-	}
-
-	uninit() {
-		this._viewer.uninit();
-	}
-}
-
-window.ViewerInstance = ViewerInstance;
+createReader();

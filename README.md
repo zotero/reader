@@ -12,5 +12,5 @@ Run `npm run build` to produce `dev`, `web` and `zotero` builds in `build/` dire
 
 ## Development
 
-Run `npm start` and open http://localhost:3000/dev/viewer.html.
+Run `npm start` and open http://localhost:3000/dev/reader.html.
 

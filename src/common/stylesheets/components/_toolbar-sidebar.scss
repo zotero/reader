@@ -1,0 +1,74 @@
+//
+// Toolbar sidebar
+//
+
+/*! rtl:begin:ignore */
+#toolbarSidebar {
+	direction: ltr;
+	flex: 0 0 auto;
+	display: flex;
+	justify-content: $toolbar-sidebar-justify-content;
+	align-items: $toolbar-sidebar-align-items;
+	width: 100%;
+	height: $toolbar-sidebar-height;
+	background: $toolbar-sidebar-bg;
+	border-bottom: $toolbar-sidebar-border;
+
+	[dir=rtl] & {
+		transform: scaleX(-1);
+	}
+
+	.splitToolbarButton {
+		display: flex;
+		height: $split-toolbar-btn-height;
+		margin: $split-toolbar-btn-margin;
+		//flex: $split-toolbar-btn-flex;
+	}
+
+	.toolbarButton {
+		flex: 1 0 auto;
+		margin: $toolbar-sidebar-btn-margin;
+
+		@if $platform == "darwin" {
+			@include split-button(
+					$height: $split-toolbar-btn-height,
+					$button: "sidebarbutton",
+					$padding-x: $toolbar-sidebar-btn-padding-x,
+					$padding-y: $toolbar-sidebar-btn-padding-y
+			);
+		} @else {
+			height: $split-toolbar-btn-height;
+			border-color: $toolbar-sidebar-btn-border-color;
+			border-width: $toolbar-sidebar-btn-border-width;
+			border-style: solid;
+			padding: $toolbar-sidebar-btn-padding-y $toolbar-sidebar-btn-padding-x;
+
+			&:hover {
+				background: $toolbar-sidebar-btn-hover-bg;
+			}
+
+			&:active,
+			&.toggled {
+				background: $toolbar-sidebar-btn-active-bg;
+			}
+
+			&[disabled] {
+				pointer-events: none;
+
+				&::before {
+					opacity: 0.5;
+				}
+			}
+
+			& + .toolbarButton {
+				margin-left: $toolbar-sidebar-btn-spacing;
+			}
+		}
+	}
+
+	#viewAttachments {
+		display: none;
+	}
+}
+
+/*! rtl:end:ignore */
