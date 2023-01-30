@@ -2,16 +2,16 @@ import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativ
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
 
-function Thumbnail({ index, thumbnail, selected, pageLabel }) {
-	function handleFocus() {
-		onNavigate({ pageIndex: thumbnail.pageIndex });
-	}
-
+function Thumbnail({ thumbnail, selected, pageLabel, onContextMenu }) {
 	return (
-		<div className={cx('thumbnail', { selected })} data-page-index={thumbnail.pageIndex}>
+		<div
+			className={cx('thumbnail', { selected })}
+			data-page-index={thumbnail.pageIndex}
+			onContextMenu={onContextMenu}
+		>
 			<div className="image">
 				{thumbnail.image
-					? <img width={thumbnail.width} height={thumbnail.height} src={thumbnail.image}/>
+					? <img width={thumbnail.width} height={thumbnail.height} src={thumbnail.image} draggable={false}/>
 					: <div className="placeholder" style={{ width: thumbnail.width + 'px', height: thumbnail.height + 'px' }}/>
 				}
 			</div>
@@ -20,7 +20,7 @@ function Thumbnail({ index, thumbnail, selected, pageLabel }) {
 	);
 }
 
-function ThumbnailsView (props) {
+function ThumbnailsView(props) {
 	const intl = useIntl();
 	const [selected, setSelected] = useState([0]);
 	const containerRef = useRef();
@@ -73,6 +73,9 @@ function ThumbnailsView (props) {
 		let thumbnail = event.target.closest('.thumbnail');
 		if (thumbnail) {
 			let pageIndex = Array.from(containerRef.current.children).indexOf(thumbnail);
+			if (event.buttons !== 1 && selected.includes(pageIndex)) {
+				return;
+			}
 			if (event.shiftKey) {
 				let lastSelected = selected.slice(-1);
 				let min = Math.min(...lastSelected, pageIndex);
@@ -159,6 +162,15 @@ function ThumbnailsView (props) {
 		}
 	}
 
+	function handleContextMenu(event) {
+		event.preventDefault();
+		props.onOpenThumbnailContextMenu({
+			x: event.clientX,
+			y: event.clientY,
+			pageIndexes: selected
+		});
+	}
+
 	return (
 		<div
 			ref={containerRef}
@@ -176,6 +188,7 @@ function ThumbnailsView (props) {
 						thumbnail={thumbnail}
 						selected={selected.includes(index)}
 						pageLabel={pageLabel}
+						onContextMenu={handleContextMenu}
 					/>
 				);
 			})}

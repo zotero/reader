@@ -12,7 +12,7 @@ import {
 	createSelectorContextMenu, createThumbnailContextMenu,
 	createViewContextMenu
 } from './context-menu';
-import { initPDFPrintService } from '../pdf/lib/print';
+import { initPDFPrintService } from '../pdf/pdf-print-service';
 import { ANNOTATION_COLORS } from './defines';
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
@@ -22,12 +22,13 @@ import {
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
-import { act } from 'react-dom/test-utils';
 
 class Reader {
 	constructor(options) {
 		this._type = options.type;
+		this._platform = options.platform;
 		this._buf = options.buf;
+		this._password = options.password;
 
 		this._onSaveAnnotations = options.onSaveAnnotations;
 		this._onDeleteAnnotations = options.onDeleteAnnotations;
@@ -41,6 +42,8 @@ class Reader {
 		this._onCopyImage = options.onCopyImage;
 		this._onSaveImageAs = options.onSaveImageAs;
 		this._onConfirm = options.onConfirm;
+		this._onRotatePages = options.onRotatePages;
+		this._onDeletePages = options.onDeletePages;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 
@@ -66,6 +69,7 @@ class Reader {
 			splitType: null,
 			splitSize: '50%',
 			primary: true,
+			freeze: false,
 			annotations: [],
 			selectedAnnotationIDs: [],
 			filter: {
@@ -166,9 +170,6 @@ class Reader {
 			},
 			onChangeFilter: (filter) => {
 				this._updateState({ filter });
-			},
-			renderAnnotationImage: async (annotation) => {
-				return this._primaryView.renderAnnotationImage(annotation);
 			}
 		});
 
@@ -210,6 +211,7 @@ class Reader {
 					onOpenThumbnailContextMenu={params => this._onOpenContextMenu(createThumbnailContextMenu(this, params))}
 					onCloseContextMenu={this.closeContextMenu.bind(this)}
 					onCloseLabelOverlay={this._handleLabelOverlayClose.bind(this)}
+					onEnterPassword={this.enterPassword.bind(this)}
 					onAddToNote={this._onAddToNote}
 					onNavigate={this.navigate.bind(this)}
 					onUpdateOutline={outline => this._updateState({ outline })}
@@ -388,6 +390,15 @@ class Reader {
 			let root = document.documentElement;
 			root.style.fontSize = this._state.fontSize + 'em';
 		}
+
+		if (init || this._state.freeze !== previousState.freeze) {
+			if (this._state.freeze) {
+				document.body.classList.add('freeze');
+			}
+			else {
+				document.body.classList.remove('freeze');
+			}
+		}
 	}
 
 	disableSplitView() {
@@ -551,14 +562,6 @@ class Reader {
 			this._updateState({ [primary ? 'primaryViewStats' : 'secondaryViewStats']: state });
 		}, 100);
 
-		let onChangeSelectedAnnotations = (ids) => {
-			if (ids.length === 1) {
-				let rect = (primary ? this._primaryView : this._secondaryView).getSelectedAnnotationRect();
-				let annotationPopup = { id: ids[0], rect };
-				this._updateState({ [primary ? 'primaryViewAnnotationPopup' : 'secondaryViewAnnotationPopup']: annotationPopup });
-			}
-		};
-
 		let onAddAnnotation = async (annotation, select) => {
 			annotation = await this._annotationManager.addAnnotation(annotation);
 			if (select) {
@@ -579,6 +582,12 @@ class Reader {
 
 		let onFocus = () => {
 			this.focusView(primary);
+		};
+
+		let onRequestPassword = () => {
+			if (primary) {
+				this._updateState({ passwordOverlay: {} });
+			}
 		};
 
 		let onOpenAnnotationContextMenu = (params) => {
@@ -621,18 +630,18 @@ class Reader {
 		};
 
 		let common = {
+			primary,
 			container,
 			buf: this._buf,
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
-			annotations: this._annotationManager._annotations,
+			annotations: this._state.annotations,
 			showAnnotations: this._state.showAnnotations,
 			findPopup: this._state[primary ? 'primaryViewFindPopup' : 'secondaryViewFindPopup'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
 			onChangeViewState,
 			onChangeViewStats,
-			onChangeSelectedAnnotations,
 			onSetDataTransferAnnotations: this._handleSetDataTransferAnnotations.bind(this),
 			onAddAnnotation,
 			onUpdateAnnotations,
@@ -652,16 +661,24 @@ class Reader {
 		if (this._type === 'pdf') {
 			view = new PDFView({
 				...common,
+				password: this._password,
 				pageLabels: this._state.pageLabels,
 				pdfManager: this._pdfManager,
+				onRequestPassword,
 				onSetThumbnails,
 				onSetOutline,
 			});
 
 			if (primary) {
-				initPDFPrintService((percent) => {
-					console.log(percent);
-				}, view);
+				initPDFPrintService({
+					onProgress: (percent) => {
+						this._updateState({ printOverlay: { percent } });
+					},
+					onFinish: () => {
+						this._updateState({ printOverlay: null });
+					},
+					pdfView: view
+				});
 			}
 		} else if (this._type === 'epub') {
 			view = new EPUBView({
@@ -683,25 +700,7 @@ class Reader {
 
 		let container = this._portalViewContainer;
 
-		let onSetThumbnails = () => {
-		};
-
-		let onSetOutline = () => {
-		};
-
-		let onChangeViewState = () => {
-		};
-
-		let onChangeSelectedAnnotations = (ids) => {
-		};
-
 		let onSetDataTransferAnnotations = (dataTransfer, annotations) => {
-		};
-
-		let onAddAnnotation = async (annotation, select) => {
-		};
-
-		let onUpdateAnnotations = (annotations) => {
 		};
 
 		let onOpenLink = (url) => {
@@ -711,45 +710,48 @@ class Reader {
 		let onFocus = () => {
 		};
 
-		let onUpdateFindStats = (params) => {
+		let onTabOut = (reverse) => {
+			this._focusManager.tabToGroup(reverse);
 		};
 
-		let onOpenAnnotationContextMenu = (params) => {
+		let onKeyDown = (event) => {
+			this._keyboardManager.handleViewKeyDown(event);
 		};
 
-		let onOpenViewContextMenu = (params) => {
-		};
-
-		let onUpdateRects = ({ textSelectionRect }) => {
-		};
-
-		let onSelectAnnotations = (ids) => {
-		};
+		let nop = () => undefined;
 
 		view = new PDFView({
 			portal: true,
 			container,
 			buf: this._buf,
-			tool: this._state.tool,
-			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
-			annotations: this._annotationManager._annotations,
-			state: null,
-			onChangeViewState,
-			onChangeSelectedAnnotations,
+			password: this._password,
+			tool: { type: 'pointer' },
+			selectedAnnotationIDs: [],
+			annotations: this._state.annotations,
+			showAnnotations: this._state.showAnnotations,
+			findPopup: {},
+			viewState: {},
+			location: null,
+			onChangeViewState: nop,
+			onChangeViewStats: nop,
 			onSetDataTransferAnnotations,
-			onAddAnnotation,
-			onUpdateAnnotations,
+			onAddAnnotation: nop,
+			onUpdateAnnotations: nop,
 			onOpenLink,
 			onFocus,
-			onOpenAnnotationContextMenu,
-			onOpenViewContextMenu,
-			onUpdateFindStats,
-			onUpdateRects,
-			onSelectAnnotations,
-			onSetThumbnails,
-			onSetOutline,
+			onRequestPassword: nop,
+			onOpenAnnotationContextMenu: nop,
+			onOpenViewContextMenu: nop,
+			onSetSelectionPopup: nop,
+			onSetAnnotationPopup: nop,
+			onSetOverlayPopup: nop,
+			onSetFindPopup: nop,
+			onSelectAnnotations: nop,
+			onSetThumbnails: nop,
+			onSetOutline: nop,
+			onTabOut,
+			onKeyDown,
 		});
-
 		return view;
 	}
 
@@ -948,12 +950,41 @@ class Reader {
 		else {
 			this._updateState({ primaryViewAnnotationPopup: null });
 			this._updateState({ primaryViewSelectionPopup: null });
-			this._updateState({ primaryOverlayPopup: null });
+			this._updateState({ primaryViewOverlayPopup: null });
 		}
 	}
 
-	reload(buf) {
+	freeze() {
+		this._updateState({ freeze: true });
+	}
 
+	unfreeze() {
+		this._updateState({ freeze: false });
+	}
+
+	print() {
+		this._updateState({ printOverlay: {} });
+	}
+
+	abortPrint() {
+		window.abortPrint();
+	}
+
+	reload(buf) {
+		this._buf = buf;
+		this._primaryViewContainer.replaceChildren();
+		this._primaryView = this._createView(true);
+		if (this._state.splitType) {
+			this._secondaryViewContainer.replaceChildren();
+			this._secondaryView = this._createView(false);
+		}
+		// TODO: Reload portal view as well
+	}
+
+	enterPassword(password) {
+		this._updateState({ passwordOverlay: null });
+		this._password = password;
+		this.reload(this._buf);
 	}
 
 	_handleSetDataTransferAnnotations(dataTransfer, annotation, fromText) {
@@ -1024,18 +1055,27 @@ class Reader {
 		this._updateState({ labelOverlay: null });
 	}
 
-	rotatePages(pageIndexes) {
+	rotatePageLeft() {
 		this._ensureType('pdf');
-		return this._pdfManager.rotatePages(pageIndexes);
+		let { pageIndex } = (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats);
+		this.rotatePages([pageIndex], 270);
 	}
 
-	deletePages(pageIndexes) {
+	rotatePageRight() {
 		this._ensureType('pdf');
-		return this._pdfManager.deletePages(pageIndexes);
+		let { pageIndex } = (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats);
+		this.rotatePages([pageIndex], 90);
 	}
 
-	exportAnnotations() {
+	rotatePages(pageIndexes, degrees) {
+		this._ensureType('pdf');
+		// TODO: Automatically recalculate view state top and left values to prevent unexpected PDF view scroll
+		this._onRotatePages(pageIndexes, degrees);
+	}
 
+	deletePages(pageIndexes, degrees) {
+		this._ensureType('pdf');
+		this._onDeletePages(pageIndexes, degrees);
 	}
 
 	get toolType() {

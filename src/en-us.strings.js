@@ -86,9 +86,13 @@ export default {
 	'general.green': 'Green',
 	'general.blue': 'Blue',
 	'general.purple': 'Purple',
+	'general.magenta': 'Magenta',
+	'general.orange': 'Orange',
+	'general.gray': 'Gray',
 	'general.showInLibrary': 'Show in Library',
 	'general.clearSelection': 'Clear Selection',
 	'general.update': 'Update',
+	'general.print': 'Print',
 	'pdfReader.annotations': 'Annotations',
 	'pdfReader.showAnnotations': 'Show Annotations',
 	'pdfReader.searchAnnotations': 'Search Annotations',
@@ -118,6 +122,8 @@ export default {
 	'pdfReader.promptTransferToPDF.title': 'Store Annotations in File',
 	'pdfReader.promptTransferToPDF.text': 'Annotations will be transferred to the PDF file and will no longer be editable in %S.',
 	'pdfReader.promptPasswordProtected': 'The operation is not supported for password-protected PDF files.',
+	'pdfReader.rotateLeft': 'Rotate Left',
+	'pdfReader.rotateRight': 'Rotate Right',
 	'pdfReader.editPageNumber': 'Edit Page Number…',
 	'pdfReader.editHighlightedText': 'Edit Highlighted Text',
 	'pdfReader.copyImage': 'Copy Image',
@@ -130,5 +136,8 @@ export default {
 	'pdfReader.allPages': 'All pages',
 	'pdfReader.autoDetect': 'Auto-Detect',
 	'pdfReader.deleteAnnotation.singular': 'Are you sure you want to delete the selected annotation?',
-	'pdfReader.deleteAnnotation.plural': 'Are you sure you want to delete the selected annotations?'
+	'pdfReader.deleteAnnotation.plural': 'Are you sure you want to delete the selected annotations?',
+	'pdfReader.enterPassword': 'Enter the password to open this PDF file.',
+	'pdfReader.includeAnnotations': 'Include annotations',
+	'pdfReader.preparingDocumentForPrinting': 'Preparing document for printing…'
 };

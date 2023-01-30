@@ -74,6 +74,12 @@ async function createReader() {
 		},
 		onConfirm(title, text, confirmationButtonTitle) {
 			return window.confirm(text);
+		},
+		onRotatePages(pageIndexes, degrees) {
+			console.log('Rotating pages', pageIndexes, degrees);
+		},
+		onDeletePages(pageIndexes, degrees) {
+			console.log('Deleting pages', pageIndexes, degrees);
 		}
 	});
 	window._reader = reader;

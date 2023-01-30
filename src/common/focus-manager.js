@@ -59,7 +59,6 @@ export class FocusManager {
 	}
 
 	tabToGroup(reverse) {
-
 		if (document.querySelector('.context-menu')) {
 			return;
 		}
@@ -68,8 +67,12 @@ export class FocusManager {
 
 		let group = item.closest('[data-tabstop]') || item;
 
-
-		let groups = Array.from(document.querySelectorAll('[data-tabstop]'));
+		let scope = document;
+		let overlay = document.querySelector('.overlay');
+		if (overlay) {
+			scope = overlay;
+		}
+		let groups = Array.from(scope.querySelectorAll('[data-tabstop]'));
 
 		groups = groups.map((x) => {
 			let proxy = x.getAttribute('data-proxy');
@@ -155,7 +158,7 @@ export class FocusManager {
 			item = items[itemIndex];
 
 			item.focus();
-			if (item.nodeName === 'INPUT') {
+			if (item.nodeName === 'INPUT' && item.type === 'text') {
 				setTimeout(() => item.setSelectionRange(item.value.length, item.value.length));
 			}
 		}

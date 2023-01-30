@@ -169,24 +169,19 @@ export function createThumbnailContextMenu(reader, params) {
 			[
 				{
 					label: reader._getString('pdfReader.rotateLeft'),
-					disabled: !params.readOnly,
-					onCommand: () => reader.rotatePages(params.pageIndexes)
+					disabled: reader._readOnly,
+					onCommand: () => reader.rotatePages(params.pageIndexes, 270)
 				},
 				{
 					label: reader._getString('pdfReader.rotateRight'),
-					disabled: !params.readOnly,
-					onCommand: () => reader.rotatePages(params.pageIndexes)
-				},
-				{
-					label: reader._getString('pdfReader.rotate180'),
-					disabled: !params.readOnly,
-					onCommand: () => reader.rotatePages(params.pageIndexes)
+					disabled: reader._readOnly,
+					onCommand: () => reader.rotatePages(params.pageIndexes, 90)
 				}
 			],
 			[
-				{
+				reader._platform === 'zotero' && {
 					label: reader._getString('general.delete'),
-					disabled: params.readOnly,
+					disabled: reader._readOnly,
 					onCommand: () => reader.deletePages(params.pageIndexes)
 				},
 			]

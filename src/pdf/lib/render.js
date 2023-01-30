@@ -1,6 +1,4 @@
 import { p2v } from './coordinates';
-import { fitRectIntoRect, getPositionBoundingRect } from './utilities';
-
 
 export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 	let ctx = canvas.getContext('2d', { alpha: false });
@@ -20,8 +18,12 @@ export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 			}
 		}
 		else if (annotation.type === 'note') {
+			ctx.save();
 			let [x, y] = position.rects[0];
-			ctx.transform(1, 0, 0, 1, x, y);
+			// TODO: Investigate why devicePixelRatio necessary here but not in page.drawNote
+			let s = 1 / devicePixelRatio;
+			ctx.transform(s, 0, 0, s, x, y);
+
 			ctx.fillStyle = '#000';
 			var path = new Path2D('M0,0V12.707L11.293,24H24V0ZM11,22.293,1.707,13H11ZM23,23H12V12H1V1H23Z');
 			ctx.fill(path);
@@ -43,6 +45,7 @@ export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 			ctx.lineTo(11.5, 23.5);
 			ctx.closePath();
 			ctx.fill();
+			ctx.restore();
 		}
 		else if (annotation.type === 'image') {
 			let rect = position.rects[0];

@@ -156,28 +156,16 @@ body.enable-horizontal-split-view {
 }
 
 @media print {
-	/* General rules for printing. */
 	body {
 		background: rgba(0, 0, 0, 0) none;
 	}
 
-	/* Rules for browsers that don't support mozPrintCallback. */
-	#sidebarContainer,
-	#secondaryToolbar,
-	.toolbar,
-	#loadingBox,
-	#errorWrapper,
-	.textLayer {
+	// If extra pages appear it means there are elements after #printContainer
+	#reader-ui, #clamps {
 		display: none;
 	}
-	#viewerContainer {
-		overflow: visible;
-	}
 
-	#mainContainer,
-	#viewerContainer,
-	.page,
-	.page canvas {
+	.page, .page canvas {
 		position: static;
 		padding: 0;
 		margin: 0;
@@ -196,14 +184,6 @@ body.enable-horizontal-split-view {
 		display: block;
 	}
 
-	.fileInput {
-		display: none;
-	}
-
-	/* Rules for browsers that support PDF.js printing */
-	body[data-pdfjsprinting] #outerContainer {
-		display: none;
-	}
 	body[data-pdfjsprinting] #printContainer {
 		display: block;
 	}
@@ -228,10 +208,15 @@ body.enable-horizontal-split-view {
 	}
 }
 
-
-
-
-
-
-
-
+body.freeze {
+	&:before {
+		content: "";
+		position: absolute;
+		left: 0;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 999999999;
+		background-color: rgba(1, 1, 1, 0.1);
+	}
+}

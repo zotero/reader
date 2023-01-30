@@ -264,7 +264,7 @@ export default class Page {
 	_renderHighlight(annotation) {
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
-		this.actualContext.globalAlpha = 0.5;
+		this.actualContext.globalAlpha = 0.4;
 		this.actualContext.globalCompositeOperation = 'multiply';
 		this.actualContext.fillStyle = annotation.color;
 

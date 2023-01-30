@@ -223,10 +223,11 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 						ref={inputRef}
 						type="text"
 						tabIndex={-1}
+						data-tabstop={1}
 						className="toolbarField"
 						value={auto ? data.autoPageLabel : label}
 						disabled={auto}
-						maxLength={16}
+						maxLength={32}
 						onChange={handleChange}
 						onKeyDown={handleInputKeydown}
 					/>
@@ -235,6 +236,7 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 					<input
 						id="renumber-auto-detect"
 						type="checkbox"
+						data-tabstop={1}
 						tabIndex={-1}
 						checked={auto}
 						onChange={handleCheckboxChange}
@@ -242,7 +244,7 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 					<label htmlFor="renumber-auto-detect"><FormattedMessage id="pdfReader.autoDetect"/></label>
 				</div>
 			</div>
-			<fieldset className="radio row">
+			<fieldset className="radio row" data-tabstop={1}>
 				<legend><FormattedMessage id="pdfReader.pageNumberPopupHeader"/></legend>
 				{data.single && <div className="choice">
 					<input
@@ -315,6 +317,7 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 			<div className="row buttons">
 				<button
 					tabIndex={-1}
+					data-tabstop={1}
 					className="overlayButton submit"
 					disabled={disabled}
 					onClick={handleUpdateClick}

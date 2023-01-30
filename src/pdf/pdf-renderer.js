@@ -1,4 +1,3 @@
-import queue from 'queue';
 import { fitRectIntoRect, getPositionBoundingRect } from './lib/utilities';
 import { p2v } from './lib/coordinates';
 

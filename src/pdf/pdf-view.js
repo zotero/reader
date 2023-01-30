@@ -1,4 +1,4 @@
-import print from './lib/print';
+import print from './pdf-print-service';
 import Page from './page';
 import { Extractor } from './lib/extract';
 import { v2p } from './lib/coordinates';
@@ -13,21 +13,26 @@ import {
 	setTextLayerSelection
 } from './selection';
 import {
+	getPageIndexesFromAnnotations,
 	getPositionBoundingRect,
 	intersectAnnotationWithPoint,
 	quickIntersectRect
 } from './lib/utilities';
-import { isFirefox, isMac, isSafari, throttle } from '../common/lib/utilities';
+import { getAffectedAnnotations, isFirefox, isMac, isSafari, throttle } from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
 import { PDF_NOTE_DIMENSIONS } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
+import { drawAnnotationsOnCanvas } from './lib/render';
 
 class PDFView {
 	constructor(options) {
 		this._options = options;
+		this._primary = options.primary;
 		this._portal = options.portal;
 		this._container = options.container;
+		this._password = options.password;
+		this._onRequestPassword = options.onRequestPassword;
 		this._onSetThumbnails = options.onSetThumbnails;
 		this._onSetOutline = options.onSetOutline;
 		this._onChangeViewState = options.onChangeViewState;
@@ -62,7 +67,9 @@ class PDFView {
 
 		this._findPopup = options.findPopup;
 
-		this._pdfRenderer = new PDFRenderer({ pdfView: this });
+		if (this._primary) {
+			this._pdfRenderer = new PDFRenderer({ pdfView: this });
+		}
 
 
 		// this._annotations = [];
@@ -103,7 +110,7 @@ class PDFView {
 			this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 			this._iframeWindow.onDetachPage = this._detachPage.bind(this);
 			this._init();
-			this._iframeWindow.PDFViewerApplication.open(options.buf);
+			this._iframeWindow.PDFViewerApplication.open(options.buf, { password: this._password });
 			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 			window.if = this._iframeWindow;
 
@@ -173,6 +180,10 @@ class PDFView {
 		this._autoScroll = new AutoScroll({
 			container: this._iframeWindow.document.getElementById('viewerContainer')
 		});
+
+		this._iframeWindow.PDFViewerApplication.onPassword = () => {
+			this._onRequestPassword();
+		};
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));
@@ -289,6 +300,7 @@ class PDFView {
 
 	async _initThumbnails() {
 		this._pdfThumbnails = new PDFThumbnails({
+			pdfView: this,
 			window: this._iframeWindow,
 			onUpdate: (thumbnails) => {
 				this._onSetThumbnails(thumbnails);
@@ -298,7 +310,9 @@ class PDFView {
 
 	async _attachPage(originalPage) {
 		this._init2 && this._init2();
-		if (!this._pdfThumbnails && this._onSetThumbnails) this._initThumbnails();
+		if (this._primary && !this._portal && !this._pdfThumbnails) {
+			this._initThumbnails();
+		}
 		if (!this._extractor) {
 			this._extractor = new Extractor(this._iframeWindow.PDFViewerApplication.pdfViewer, []);
 		}
@@ -307,7 +321,7 @@ class PDFView {
 		await page.updateData();
 		this._pages.push(page);
 		this._updateAnnotationTextSelectionData();
-		this.render();
+		this._render();
 	}
 
 	_detachPage(originalPage) {
@@ -316,7 +330,7 @@ class PDFView {
 
 	_clearFocus() {
 		this._focusedObject = null;
-		this.render();
+		this._render();
 	}
 
 	_focusNext(reverse) {
@@ -346,7 +360,7 @@ class PDFView {
 
 		this._lastFocusedObject = this._focusedObject;
 
-		this.render();
+		this._render();
 
 		return !!this._focusedObject;
 	}
@@ -360,9 +374,11 @@ class PDFView {
 	}
 
 
-	render() {
+	_render(pageIndexes) {
 		for (let page of this._pages) {
-			page.render();
+			if (!pageIndexes || pageIndexes.includes(page.pageIndex)) {
+				page.render();
+			}
 		}
 	}
 
@@ -385,6 +401,11 @@ class PDFView {
 	focus() {
 		this._iframe.focus();
 		// this._iframeWindow.focus();
+	}
+
+	renderPageAnnotationsOnCanvas(canvas, viewport, pageIndex) {
+		let annotations = this._annotations.filter(x => x.position.pageIndex === pageIndex);
+		drawAnnotationsOnCanvas(canvas, viewport, annotations);
 	}
 
 	navigateToPosition(position) {
@@ -440,9 +461,17 @@ class PDFView {
 	}
 
 	setAnnotations(annotations) {
+		let affected = getAffectedAnnotations(this._annotations, annotations, true);
 		this._annotations = annotations;
 		this._updateAnnotationTextSelectionData();
-		this._pdfRenderer.start();
+		let { created, updated, deleted } = affected;
+		let all = [...created, ...updated, ...deleted];
+		let pageIndexes = getPageIndexesFromAnnotations(all);
+		this._render(pageIndexes);
+		if (this._primary) {
+			this._pdfThumbnails.render(pageIndexes, true);
+			this._pdfRenderer.start();
+		}
 	}
 
 	setAnnotationPopup(popup) {
@@ -515,7 +544,7 @@ class PDFView {
 		this._setSelectionRanges();
 		this._clearFocus();
 
-		this.render();
+		this._render();
 
 		// Close annotation popup each time when any annotation is selected, because the click is what opens the popup
 		this._onSetAnnotationPopup();
@@ -581,18 +610,16 @@ class PDFView {
 		else if (location.position) {
 			this.navigateToPosition(location.position);
 			this._highlightedPosition = location.position;
-			this.render();
+			this._render();
 			setTimeout(() => {
 				this._highlightedPosition = null;
-				this.render();
+				this._render();
 			}, 2000);
 		}
-		else if (location.pageIndex) {
-			if (Number.isInteger(location.pageIndex)) {
-				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-					pageNumber: location.pageIndex + 1
-				});
-			}
+		else if (Number.isInteger(location.pageIndex)) {
+			this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({
+				pageNumber: location.pageIndex + 1
+			});
 		}
 		else if (location.pageLabel) {
 
@@ -927,7 +954,7 @@ class PDFView {
 	getActionAtPosition(position, event) {
 		if (this._selectionRanges.length) {
 			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
-			if (intersectAnnotationWithPoint(annotation.position, position)) {
+			if (annotation && intersectAnnotationWithPoint(annotation.position, position)) {
 				let r = position.rects[0];
 				let br = getPositionBoundingRect(annotation.position);
 				let action = { type: 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1], selection: true };
@@ -1116,7 +1143,7 @@ class PDFView {
 		let position = this.pointerEventToPosition(event);
 		if (!position) {
 			this.setSelection();
-			this.render();
+			this._render();
 			return;
 		}
 		// If right click, just select single object under the click
@@ -1129,7 +1156,7 @@ class PDFView {
 			else if (selectableObject && !selectedObjects.includes(selectableObject)) {
 				this.setSelection({ pageIndex: position.pageIndex, ids: [selectableObject.id] });
 			}
-			this.render();
+			this._render();
 			return;
 		}
 		let page = this.getPageByIndex(position.pageIndex);
@@ -1206,7 +1233,7 @@ class PDFView {
 
 		this._autoScroll.enable();
 
-		this.render();
+		this._render();
 	}
 
 	_handlePointerMove = throttle((event) => {
@@ -1231,14 +1258,14 @@ class PDFView {
 					this._selectedOverlay = null;
 					this._onSetOverlayPopup(null);
 				}
-				if (selectAnnotations.length) {
+				if (selectAnnotations?.length) {
 					this.hover = { pageIndex: position.pageIndex, id: selectAnnotations[0].id };
 				}
 			}
 			else {
 				this.updateCursor();
 			}
-			this.render();
+			this._render();
 			return;
 		}
 		let originalPagePosition = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
@@ -1355,7 +1382,7 @@ class PDFView {
 			// When dragging selection
 			this._onSetSelectionPopup();
 		}
-		this.render();
+		this._render();
 	}, 50);
 
 	_getAnnotationFromSelectionRanges(selectionRanges, type, color) {
@@ -1456,7 +1483,7 @@ class PDFView {
 		else {
 			this.updateCursor();
 		}
-		this.render();
+		this._render();
 	}
 
 	cancel() {
@@ -1464,7 +1491,7 @@ class PDFView {
 		this.hover = null;
 		this.action = null;
 		this.updateCursor();
-		this.render();
+		this._render();
 	}
 
 	_handleViewAreaUpdate = (event) => {
@@ -1567,7 +1594,7 @@ class PDFView {
 				this._onSelectAnnotations([]);
 				if (this._lastFocusedObject) {
 					this._focusedObject = this._lastFocusedObject;
-					this.render();
+					this._render();
 				}
 			}
 			else if (this._focusedObject) {

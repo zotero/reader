@@ -7,6 +7,7 @@ const PRINT_RESOLUTION = 300;
 
 class PrintTask {
 	constructor(
+		pdfView,
 		pdfjsWindow,
 		pdfDocument,
 		pagesOverview,
@@ -16,6 +17,7 @@ class PrintTask {
 		onProgress,
 		onFinish
 	) {
+		this._pdfView = pdfView;
 		this.active = true;
 		this.pdfDocument = pdfDocument;
 		this.pagesOverview = pagesOverview;
@@ -55,7 +57,7 @@ class PrintTask {
 		ctx.fillRect(0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
 		ctx.restore();
 
-		return pdfDocument.getPage(pageNumber).then(function (pdfPage) {
+		return pdfDocument.getPage(pageNumber).then((pdfPage) => {
 			const renderContext = {
 				canvasContext: ctx,
 				transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
@@ -64,7 +66,9 @@ class PrintTask {
 				annotationStorage: pdfDocument.annotationStorage
 			};
 			return pdfPage.render(renderContext).promise.then(() => {
-				// window.drawAnnotations(this.scratchCanvas, renderContext.viewport, pageNumber - 1);
+				if (this._includeAnnotations) {
+					this._pdfView.renderPageAnnotationsOnCanvas(this.scratchCanvas, renderContext.viewport, pageNumber - 1);
+				}
 			});
 		}).then(function () {
 			return {
@@ -117,6 +121,7 @@ class PrintTask {
 	}
 
 	destroy() {
+		this.active = false;
 		this.printContainer.textContent = "";
 
 		const body = document.querySelector("body");
@@ -222,8 +227,9 @@ if ("onbeforeprint" in window) {
 }
 
 class PDFPrintService {
-	constructor({ onProgress, pdfView }) {
+	constructor({ onProgress, onFinish, pdfView }) {
 		this._onProgress = onProgress;
+		this._onFinish = onFinish;
 		this._pdfView = pdfView;
 		this._activeTask = null;
 
@@ -257,6 +263,7 @@ class PDFPrintService {
 		const optionalContentConfigPromise = this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.optionalContentConfigPromise;
 
 		this._activeTask = new PrintTask(
+			this._pdfView,
 			this._pdfView._iframeWindow,
 			this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument,
 			pagesOverview,
@@ -264,9 +271,7 @@ class PDFPrintService {
 			printResolution,
 			optionalContentConfigPromise,
 			this._onProgress,
-			() => {
-				this._onProgress(null);
-			}
+			this._onFinish
 		);
 
 		this._pdfView._iframeWindow.PDFViewerApplication.forceRendering();
@@ -288,25 +293,30 @@ class PDFPrintService {
 			this._activeTask = null;
 			dispatchEvent("afterprint");
 		}
+		else {
+			this._onFinish();
+		}
 	}
 }
 
 let printService;
 
-function initPDFPrintService(onProgress, pdfView) {
+function initPDFPrintService({ onProgress, onFinish, pdfView }) {
 	if (printService) {
 		printService._onProgress = onProgress;
+		printService._onFinish = onFinish;
 		printService._pdfView = pdfView;
 		return;
 	}
-	printService = new PDFPrintService({ onProgress, pdfView });
+	printService = new PDFPrintService({ onProgress, onFinish, pdfView });
 	window._print = window.print;
-	window.print = function () {
+	window.print = function (includeAnnotations) {
 		try {
 			dispatchEvent("beforeprint");
 		}
 		finally {
 			let printTask = printService._activeTask;
+			printTask._includeAnnotations = includeAnnotations;
 			printTask.renderPages().then(function () {
 				return printTask.performPrint();
 			}).catch(function () {
@@ -328,32 +338,32 @@ function initPDFPrintService(onProgress, pdfView) {
 		printService.abort();
 	};
 
-	window.addEventListener(
-		"keydown",
-		function (event) {
-			// Intercept Cmd/Ctrl + P in all browsers.
-			// Also intercept Cmd/Ctrl + Shift + P in Chrome and Opera
-			if (
-				event.keyCode === /* P= */ 80 &&
-				(event.ctrlKey || event.metaKey) &&
-				!event.altKey &&
-				(!event.shiftKey || window.chrome || window.opera)
-			) {
-				window.print();
-
-				// The (browser) print dialog cannot be prevented from being shown in
-				// IE11.
-				event.preventDefault();
-				if (event.stopImmediatePropagation) {
-					event.stopImmediatePropagation();
-				}
-				else {
-					event.stopPropagation();
-				}
-			}
-		},
-		true
-	);
+	// window.addEventListener(
+	// 	"keydown",
+	// 	function (event) {
+	// 		// Intercept Cmd/Ctrl + P in all browsers.
+	// 		// Also intercept Cmd/Ctrl + Shift + P in Chrome and Opera
+	// 		if (
+	// 			event.keyCode === /* P= */ 80 &&
+	// 			(event.ctrlKey || event.metaKey) &&
+	// 			!event.altKey &&
+	// 			(!event.shiftKey || window.chrome || window.opera)
+	// 		) {
+	// 			window.print();
+	//
+	// 			// The (browser) print dialog cannot be prevented from being shown in
+	// 			// IE11.
+	// 			event.preventDefault();
+	// 			if (event.stopImmediatePropagation) {
+	// 				event.stopImmediatePropagation();
+	// 			}
+	// 			else {
+	// 				event.stopPropagation();
+	// 			}
+	// 		}
+	// 	},
+	// 	true
+	// );
 }
 
 export { initPDFPrintService };

@@ -1,14 +1,12 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
+import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	const inputRef = useRef();
 
-	useEffect(() => {
-		setTimeout(() => {
-			if (params.open) {
-				inputRef.current?.focus();
-			}
-		}, 100);
+	useLayoutEffect(() => {
+		if (params.open) {
+			inputRef.current?.focus();
+		}
 	}, [params.open]);
 
 	function handleInputChange(event) {

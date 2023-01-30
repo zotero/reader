@@ -13,6 +13,8 @@ import OutlineView from './sidebar/outline-view';
 import OverlayPopup from './view/overlay-popup';
 import ContextMenu from './context-menu';
 import LabelOverlay from './overlay/label-overlay';
+import PasswordOverlay from './overlay/password-overlay';
+import PrintOverlay from './overlay/print-overlay';
 
 
 function View(props) {
@@ -124,6 +126,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							ref={sidebarRef}
 							type={props.type}
 							view={state.sidebarView}
+							enableOutlineView={!!state.outline.length}
 							onChangeView={props.onChangeSidebarView}
 							thumbnailsView={
 								<ThumbnailsView
@@ -172,6 +175,8 @@ const ReaderUI = React.forwardRef((props, ref) => {
 			</div>
 			{state.contextMenu && <ContextMenu params={state.contextMenu} onClose={props.onCloseContextMenu}/>}
 			{state.labelOverlay && <LabelOverlay params={state.labelOverlay} onUpdateAnnotations={props.onUpdateAnnotations} onClose={props.onCloseLabelOverlay}/>}
+			{state.passwordOverlay && <PasswordOverlay params={state.passwordOverlay} onEnterPassword={props.onEnterPassword}/>}
+			{state.printOverlay && <PrintOverlay params={state.printOverlay}/>}
 		</Fragment>
 	);
 });

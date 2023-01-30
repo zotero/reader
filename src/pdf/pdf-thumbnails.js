@@ -100,6 +100,7 @@ class TempImageFactory {
 
 class PDFThumbnails {
 	constructor(options) {
+		this._pdfView = options.pdfView;
 		this._onUpdate = options.onUpdate;
 		this._window = options.window;
 		this._thumbnails = [];
@@ -139,7 +140,7 @@ class PDFThumbnails {
 
 	async _render(pageIndex) {
 		let thumbnail = this._thumbnails[pageIndex];
-		if (thumbnail?.image) {
+		if (thumbnail?.image && !thumbnail.forceRerender) {
 			return;
 		}
 		let { pdfDocument } = this._window.PDFViewerApplication;
@@ -195,6 +196,7 @@ class PDFThumbnails {
 			console.log(e);
 		}
 		finally {
+			this._pdfView.renderPageAnnotationsOnCanvas(canvas, drawViewport, pageIndex);
 			const reducedCanvas = this._reduceImage(canvas, canvasWidth, canvasHeight);
 			this._thumbnails = this._thumbnails.slice();
 			this._thumbnails[pageIndex] = {
@@ -219,8 +221,20 @@ class PDFThumbnails {
 		this._onUpdate(this._thumbnails);
 	}
 
-	async render(pageIndexes = []) {
+	async render(pageIndexes = [], rerenderOnly) {
 		for (let pageIndex of pageIndexes) {
+			let thumbnail = this._thumbnails[pageIndex];
+			// Only already rendered thumbnails will be re-rendered, which means
+			// if thumbnails view isn't actively used, it won't waste resources to
+			// re-render thumbnails whenever annotations are updated
+			if (rerenderOnly) {
+				if (thumbnail.image) {
+					thumbnail.forceRerender = true;
+				}
+				else {
+					continue;
+				}
+			}
 			this._renderQueue.unshift(async () => this._render(pageIndex));
 		}
 	}

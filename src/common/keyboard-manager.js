@@ -33,29 +33,37 @@ export class KeyboardManager {
 			// Option-Escape (speak text on macOS) deselecting text
 			if (key === 'Escape' && !(mod || alt || shift)) {
 				this._reader._lastView.focus();
-				this._reader._updateState({ selectedAnnotationIDs: [] });
+				this._reader.abortPrint();
+				this._reader._updateState({
+					selectedAnnotationIDs: [],
+					labelOverlay: null,
+					contextMenu: null,
+				});
 			}
 		}
 
 		if (mod && key === 'f') {
+			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
-			event.preventDefault();
 		}
-
-		if (mod && key === '=') {
-			this._reader.zoomIn();
+		else if (mod && key === 'p') {
 			event.preventDefault();
+			event.stopPropagation();
+			this._reader.print();
+		}
+		else if (mod && key === '=') {
+			event.preventDefault();
+			this._reader.zoomIn();
 		}
 		else if (mod && key === '-') {
-			this._reader.zoomOut();
 			event.preventDefault();
+			this._reader.zoomOut();
 		}
 		else if (mod && key === '0') {
-			this._reader.zoomReset();
 			event.preventDefault();
+			this._reader.zoomReset();
 		}
-
-		if (['Delete', 'Backspace'].includes(key)) {
+		else if (['Delete', 'Backspace'].includes(key)) {
 			this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
 			// // TODO: Auto-select the next annotation after deletion in sidebar
 			// let id = selectedIDsRef.current[0];

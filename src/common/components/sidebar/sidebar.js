@@ -65,6 +65,7 @@ const Sidebar = React.forwardRef((props, ref) => {
 						className={cx('toolbarButton', { toggled: props.view === 'outline' })}
 						title="Show Document Outline (double-click to expand/collapse all items)"
 						tabIndex={-1}
+						disabled={!props.enableOutlineView}
 						onClick={() => props.onChangeView('outline')}
 					>
 						<span></span>

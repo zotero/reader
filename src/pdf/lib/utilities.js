@@ -157,3 +157,15 @@ export function applyInverseTransform(p, m) {
 	const yt = (-p[0] * m[1] + p[1] * m[0] + m[4] * m[1] - m[5] * m[0]) / d;
 	return [xt, yt];
 }
+
+export function getPageIndexesFromAnnotations(annotations) {
+	let pageIndexes = new Set();
+	for (let annotation of annotations) {
+		pageIndexes.add(annotation.position.pageIndex);
+		if (annotation.position.nextPageRects) {
+			pageIndexes.add(annotation.position.pageIndex + 1);
+		}
+	}
+	return Array.from(pageIndexes).sort();
+}
+

@@ -111,3 +111,67 @@ export function setMultiDragPreview(dataTransfer) {
 	let icon = getDragMultiIcon();
 	dataTransfer.setDragImage(icon, 0, 0);
 }
+
+// https://stackoverflow.com/a/25456134
+export function basicDeepEqual(x, y) {
+	if (x === y) {
+		return true;
+	}
+	else if ((typeof x === 'object' && x != null) && (typeof y === 'object' && y !== null)) {
+		if (Object.keys(x).length !== Object.keys(y).length) {
+			return false;
+		}
+		for (let prop in x) {
+			if (y.hasOwnProperty(prop)) {
+				if (!basicDeepEqual(x[prop], y[prop])) {
+					return false;
+				}
+			}
+			else {
+				return false;
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+/**
+ *
+ * @param oldAnnotations
+ * @param newAnnotations
+ * @param viewOnly Get annotations that only affect view i.e. position or color changes
+ * @returns {{deleted: *[], created: *[], updated: *[]}}
+ */
+export function getAffectedAnnotations(oldAnnotations, newAnnotations, viewOnly) {
+	let deleted = [];
+	// Annotations that newly appeared or disappeared
+	let ids = new Set(newAnnotations.map(x => x.id));
+	for (let annotation of oldAnnotations) {
+		if (!ids.has(annotation.id)) {
+			deleted.push(annotation);
+		}
+	}
+	let created = [];
+	let updated = [];
+	let refs = new Map(oldAnnotations.map(x => [x.id, x]));
+	for (let newAnnotation of newAnnotations) {
+		let oldAnnotation = refs.get(newAnnotation.id);
+		if (!oldAnnotation) {
+			created.push(newAnnotation);
+		}
+		// Annotation ref changed
+		else if (newAnnotation !== oldAnnotation) {
+			if (viewOnly) {
+				if (newAnnotation.color !== oldAnnotation.color
+					|| !basicDeepEqual(newAnnotation.position, oldAnnotation.position)) {
+					updated.push(newAnnotation);
+				}
+			}
+			else {
+				updated.push(newAnnotation);
+			}
+		}
+	}
+	return { created, updated, deleted };
+}

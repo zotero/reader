@@ -22,14 +22,14 @@
 	overflow: hidden;
 }
 
-.popup {
-	position: absolute;
-	background-color: #fff;
-	border-radius: $page-popup-border-radius;
-	box-shadow: $page-popup-box-shadow;
-	@include popover-pointer($width: 16px, $height: 8px);
-	left: -1000px;
-}
+//.popup {
+//	position: absolute;
+//	background-color: #fff;
+//	border-radius: $page-popup-border-radius;
+//	box-shadow: $page-popup-box-shadow;
+//	@include popover-pointer($width: 16px, $height: 8px);
+//	left: -1000px;
+//}
 
 #labelPopup {
 	.row {

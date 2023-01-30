@@ -44,9 +44,9 @@ class AnnotationManager {
 
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 
+		// Necessary to set reader._state.annotation for the first time
 		this.render();
 		this._onChangeFilter(this._filter);
-
 	}
 
 	// Called when changes come from the client side
