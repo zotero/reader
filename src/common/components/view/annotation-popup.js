@@ -14,6 +14,7 @@ function AnnotationPopup(props) {
 			padding={20}
 		>
 			<PopupPreview
+				type={props.type}
 				annotation={annotation}
 				isExpandable={false}
 				enableText={false}

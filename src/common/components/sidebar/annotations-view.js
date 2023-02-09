@@ -122,6 +122,7 @@ const Annotation = React.memo((props) => {
 			onFocus={() => props.onSelect(props.annotation.id)}
 		>
 			<SidebarPreview
+				type={props.type}
 				state={props.expansionState}
 				annotation={props.annotation}
 				selected={props.isSelected}
@@ -385,6 +386,7 @@ const AnnotationsView = memo(function (props) {
 				{props.annotations.length
 					? filteredAnnotations.map(annotation => (
 						<Annotation
+							type={props.type}
 							key={annotation.id}
 							isSelected={props.selectedIDs.includes(annotation.id)}
 							annotation={annotation}

@@ -57,16 +57,18 @@ function View(props) {
 					onAddAnnotation={props.onAddAnnotation}
 				/>
 			}
-			{state[name + 'ViewAnnotationPopup'] && !state.sidebarOpen && <AnnotationPopup
-				params={state[name + 'ViewAnnotationPopup']}
-				annotation={state.annotations.find(x => x.id === state[name + 'ViewAnnotationPopup'].annotation.id)}
-				onChange={(annotation) => props.onUpdateAnnotations([annotation])}
-				onDragStart={() => {}}
-				onOpenTagsPopup={props.onOpenTagsPopup}
-				onOpenPageLabelPopup={props.onOpenPageLabelPopup}
-				onOpenAnnotationContextMenu={props.onOpenAnnotationContextMenu}
-				onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
-			/>}
+			{state[name + 'ViewAnnotationPopup'] && !state.sidebarOpen &&
+				<AnnotationPopup
+					type={props.type}
+					params={state[name + 'ViewAnnotationPopup']}
+					annotation={state.annotations.find(x => x.id === state[name + 'ViewAnnotationPopup'].annotation.id)}
+					onChange={(annotation) => props.onUpdateAnnotations([annotation])}
+					onDragStart={() => {}}
+					onOpenTagsPopup={props.onOpenTagsPopup}
+					onOpenPageLabelPopup={props.onOpenPageLabelPopup}
+					onOpenAnnotationContextMenu={props.onOpenAnnotationContextMenu}
+					onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
+				/>}
 			{state[name + 'ViewOverlayPopup'] &&
 				<OverlayPopup
 					params={state[name + 'ViewOverlayPopup']}
@@ -140,6 +142,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							}
 							annotationsView={
 								<AnnotationsView
+									type={props.type}
 									readOnly={state.readOnly}
 									filter={state.filter}
 									annotations={state.annotations}
