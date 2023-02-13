@@ -115,7 +115,7 @@ function Toolbar(props) {
 						type="input"
 						id="pageNumber"
 						className="toolbarField pageNumber"
-						title="Page"
+						title={props.type == 'pdf' ? "Page" : "Location"}
 						defaultValue=""
 						size="4"
 						min="1"
@@ -124,8 +124,16 @@ function Toolbar(props) {
 						onKeyDown={handlePageNumberKeydown}
 						onBlur={handlePageNumberBlur}
 					/>)}
-				{['pdf', 'epub'].includes(props.type) && props.pageLabel && (
+				{props.type == 'pdf' && props.pageLabel && (
 					<span id="numPages" className="toolbarLabel">{props.pageIndex + 1}/{props.pagesCount}</span>
+				)}
+				{props.type == 'epub' && props.percentage && (
+					<span
+						id="numPages"
+						className="toolbarLabel"
+						title={props.pagesCount && `${props.pageIndex + 1}/${props.pagesCount}`}>
+						{props.percentage}
+					</span>
 				)}
 			</div>
 			<div className="center">

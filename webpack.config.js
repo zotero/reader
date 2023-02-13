@@ -43,6 +43,11 @@ function generateConfig(build) {
 					},
 				},
 				{
+					test: /\.tsx?$/,
+					exclude: /node_modules/,
+					use: 'ts-loader',
+				},
+				{
 					test: /\.s?css$/,
 					use: [
 						MiniCssExtractPlugin.loader,
@@ -65,6 +70,9 @@ function generateConfig(build) {
 					},
 				}
 			],
+		},
+		resolve: {
+			extensions: ['.js', '.ts', '.tsx']
 		},
 		plugins: [
 			new CleanWebpackPlugin({
@@ -95,7 +103,7 @@ function generateConfig(build) {
 		config.plugins.push(
 			new CopyWebpackPlugin({
 				patterns: [
-					{ from: 'demo/epub/demo.epub.html', to: './' },
+					{ from: 'demo/epub/demo.epub', to: './' },
 					{ from: 'demo/pdf/demo.pdf', to: './' },
 					{ from: 'demo/snapshot/demo.html', to: './' }
 				],

@@ -14,6 +14,9 @@ export function PopupPreview(props) {
 	const intl = useIntl();
 
 	function handlePageLabelDoubleClick() {
+		if (props.type !== 'pdf') {
+			return;
+		}
 		props.onDoubleClickPageLabel(annotation.id);
 	}
 
@@ -35,7 +38,7 @@ export function PopupPreview(props) {
 		props.onOpenContextMenu({ ids: [props.annotation.id], x, y, popup: true });
 	}
 
-	let { annotation } = props;
+	let { annotation, type } = props;
 	return (
 		<div
 			className={cx('preview', { 'read-only': annotation.readOnly })}
@@ -57,10 +60,12 @@ export function PopupPreview(props) {
 							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
-					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
-						<div><FormattedMessage id="pdfReader.page"/></div>
-						<div className="label">{annotation.pageLabel}</div>
-					</div>
+					{annotation.pageLabel && (
+						<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
+							<div><FormattedMessage id={type === 'epub' ? 'pdfReader.location' : 'pdfReader.page'}/></div>
+							<div className="label">{annotation.pageLabel}</div>
+						</div>
+					)}
 				</div>
 				<div className="right">
 					{annotation.authorName && (
@@ -119,6 +124,9 @@ export function SidebarPreview(props) {
 	}
 
 	function handlePageLabelDoubleClick(event) {
+		if (props.type !== 'pdf') {
+			return;
+		}
 		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
 		rect = [
 			rect.left,
@@ -185,7 +193,7 @@ export function SidebarPreview(props) {
 		}
 	}
 
-	let { annotation, state } = props;
+	let { annotation, state, type } = props;
 
 	let text = annotation.type === 'highlight' && (
 		<div
@@ -271,14 +279,16 @@ export function SidebarPreview(props) {
 							|| annotation.type === 'ink' && <IconInk/>
 						}
 					</div>
-					<div
-						className="page"
-						onClick={handlePageLabelClick}
-						onDoubleClick={handlePageLabelDoubleClick}
-					>
-						<div><FormattedMessage id="pdfReader.page"/></div>
-						<div className="label">{annotation.pageLabel}</div>
-					</div>
+					{annotation.pageLabel && (
+						<div
+							className="page"
+							onClick={handlePageLabelClick}
+							onDoubleClick={handlePageLabelDoubleClick}
+						>
+							<div><FormattedMessage id={type === 'epub' ? 'pdfReader.location' : 'pdfReader.page'}/></div>
+							<div className="label">{annotation.pageLabel}</div>
+						</div>
+					)}
 				</div>
 				<div className="right">
 					{annotation.authorName && (

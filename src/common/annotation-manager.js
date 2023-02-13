@@ -84,18 +84,16 @@ class AnnotationManager {
 			return null;
 		}
 		// Mandatory properties
-		let { color, pageLabel, sortIndex } = annotation;
+		let { color, sortIndex } = annotation;
 		if (!color) {
 			throw new Error(`Missing 'color' property`);
-		}
-		if (!pageLabel) {
-			throw new Error(`Missing 'pageLabel' property`);
 		}
 		if (!sortIndex) {
 			throw new Error(`Missing 'sortIndex' property`);
 		}
 
 		// Optional properties
+		annotation.pageLabel = annotation.pageLabel || '';
 		annotation.text = annotation.text || '';
 		annotation.comment = annotation.comment || '';
 		annotation.tags = annotation.tags || [];

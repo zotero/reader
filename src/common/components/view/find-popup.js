@@ -63,7 +63,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						className="toolbarButton findPrevious"
 						title="Find the previous occurrence of the phrase"
 						tabIndex="-1"
-						onClick={onFindNext}
+						onClick={onFindPrevious}
 					/>
 					<div className="splitToolbarButtonSeparator"></div>
 					<button
@@ -71,7 +71,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						className="toolbarButton findNext"
 						title="Find the next occurrence of the phrase"
 						tabIndex="-1"
-						onClick={onFindPrevious}
+						onClick={onFindNext}
 					/>
 				</div>
 			</div>

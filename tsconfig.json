@@ -1,0 +1,12 @@
+{
+	"compilerOptions": {
+		"jsx": "react",
+		"allowJs": true,
+		"strict": true,
+		"target": "ES6",
+		"moduleResolution": "Node",
+		"allowSyntheticDefaultImports": true,
+		"noImplicitOverride": true
+	},
+	"exclude": ["pdfjs", "node_modules", "src/pdf", "build"]
+}

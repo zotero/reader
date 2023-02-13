@@ -3,8 +3,8 @@ import React from 'react';
 import { IntlProvider } from 'react-intl';
 import ReaderUI from './components/reader-ui';
 import PDFView from '../pdf/pdf-view';
-import EPUBView from '../epub/epub-view';
-import SnapshotView from '../snapshot/snapshot-view';
+import EPUBView from '../dom/epub/epub-view';
+import SnapshotView from '../dom/snapshot/snapshot-view';
 import AnnotationManager from './annotation-manager';
 import {
 	createAnnotationContextMenu,
@@ -334,6 +334,8 @@ class Reader {
 			else {
 				document.body.classList.remove('sidebar-open');
 			}
+			this._primaryView?.setSidebarOpen(this._state.sidebarOpen);
+			this._secondaryView?.setSidebarOpen(this._state.sidebarOpen);
 		}
 
 
@@ -1043,6 +1045,7 @@ class Reader {
 	}
 
 	_handleOpenPageLabelPopup(id, rect) {
+		this._ensureType('pdf');
 		let pageLabels = this._state.pageLabels;
 		let selectedIDs = this._state.selectedAnnotationIDs;
 		let currentAnnotation = this._annotationManager._getAnnotationByID(id);
@@ -1141,23 +1144,41 @@ class Reader {
 	}
 
 	get canNavigateToFirstPage() {
-		this._ensureType('pdf', 'epub');
+		if (!['pdf', 'epub'].includes(this._type)) {
+			return false;
+		}
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToFirstPage;
 	}
 
 	get canNavigateToLastPage() {
-		this._ensureType('pdf', 'epub');
+		if (!['pdf', 'epub'].includes(this._type)) {
+			return false;
+		}
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToLastPage;
 	}
 
 	get canNavigateToPreviousPage() {
-		this._ensureType('pdf', 'epub');
+		if (!['pdf', 'epub'].includes(this._type)) {
+			return false;
+		}
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToPreviousPage;
 	}
 
 	get canNavigateToNextPage() {
-		this._ensureType('pdf', 'epub');
+		if (!['pdf', 'epub'].includes(this._type)) {
+			return false;
+		}
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToNextPage;
+	}
+
+	get flowMode() {
+		this._ensureType('epub');
+		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).flowMode;
+	}
+
+	set flowMode(value) {
+		this._ensureType('epub');
+		this._lastView.setFlowMode(value);
 	}
 }
 

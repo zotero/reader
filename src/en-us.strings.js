@@ -116,6 +116,7 @@ export default {
 	'pdfReader.nextPage': 'Next Page',
 	'pdfReader.previousPage': 'Previous Page',
 	'pdfReader.page': 'Page',
+	'pdfReader.location': 'Location',
 	'pdfReader.readOnly': 'Read-only',
 	'pdfReader.promptTransferFromPDF.title': 'Import Annotations',
 	'pdfReader.promptTransferFromPDF.text': 'Annotations stored in the PDF file will be moved to %1$S.',

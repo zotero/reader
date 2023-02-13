@@ -1,0 +1,7 @@
+.epub-container {
+	&.resize-debounced {
+		opacity: 0;
+	}
+
+	overflow-anchor: none !important; // https://github.com/futurepress/epub.js/issues/1303#issuecomment-1330435906
+}

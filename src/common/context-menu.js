@@ -115,7 +115,7 @@ export function createAnnotationContextMenu(reader, params) {
 			[
 				{
 					label: reader._getString('pdfReader.editPageNumber'),
-					disabled: !(params.ids.length === 1 && !params.popup),
+					disabled: params.ids.length !== 1 || params.popup || reader._type !== 'pdf',
 					onCommand: () => reader._sidebarOpenPageLabelPopup(params.ids[0])
 				},
 				{

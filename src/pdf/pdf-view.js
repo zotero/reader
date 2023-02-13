@@ -671,6 +671,10 @@ class PDFView {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('rotatecw');
 	}
 
+	setSidebarOpen(_sidebarOpen) {
+		// Ignore
+	}
+
 	getViewPoint(point, pageIndex) {
 		let viewport = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex].viewport;
 		return viewport.convertToViewportPoint(...point);
