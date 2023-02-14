@@ -133,8 +133,8 @@ abstract class DOMView<State> {
 				color: a.color,
 				text: a.text,
 				hasComment: !!a.comment,
-				range: this.toDisplayedRange(a.position)!,
-			})),
+				range: this.toDisplayedRange(a.position),
+			})).filter(a => !!a.range) as DisplayedAnnotation[],
 			...this._findProcessor?.getSectionAnnotations(section) ?? []
 		];
 		if (this._highlightedPosition) {
