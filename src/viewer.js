@@ -35,6 +35,7 @@ class Viewer {
 			annotations: options.annotations,
 			onSave: options.onSaveAnnotations,
 			onDelete: options.onDeleteAnnotations,
+			onSaveImage: options.onSaveImage,
 			onRender: (annotations) => {
 				this.annotatorRef.current.setAnnotations([...annotations]);
 			}

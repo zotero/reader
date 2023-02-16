@@ -59,6 +59,9 @@ class ViewerInstance {
 			onDeleteAnnotations: (ids) => {
 				this._postMessage({ action: 'deleteAnnotations', ids });
 			},
+			onSaveImage: (annotation) => {
+				this._postMessage({ action: 'saveImage', annotation });
+			},
 			onSetState: (state) => {
 				this._postMessage({ action: 'setState', state });
 			},

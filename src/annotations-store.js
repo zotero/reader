@@ -16,6 +16,7 @@ class AnnotationsStore {
 		this._annotations = options.annotations;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
+		this._onSaveImage = options.onSaveImage;
 		this.render = () => {
 			this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 			options.onRender(this._annotations);
@@ -65,9 +66,7 @@ class AnnotationsStore {
 
 		for (let annotation of annotations) {
 			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
-				annotation.image = await this.getAnnotationImage(annotation.id);
-				this._save(annotation, true);
-				this.render();
+				await this._renderAndSaveImageOnly(annotation);
 			}
 		}
 	}
@@ -248,6 +247,20 @@ class AnnotationsStore {
 		return randomstring;
 	}
 
+	async _renderAndSaveImageOnly(annotation) {
+		let image = await this.getAnnotationImage(annotation.id);
+		if (image) {
+			this._onSaveImage({ id: annotation.id, image });
+			annotation.image = image;
+			let oldIndex = this._annotations.findIndex(x => x.id === annotation.id);
+			if (oldIndex !== -1) {
+				annotation = { ...annotation };
+				this._annotations.splice(oldIndex, 1, annotation);
+			}
+			this.render();
+		}
+	}
+
 	_save(annotation, instant) {
 		let oldIndex = this._annotations.findIndex(x => x.id === annotation.id);
 		if (oldIndex !== -1) {
@@ -276,9 +289,7 @@ class AnnotationsStore {
 	async _renderMissingImages() {
 		for (let annotation of this._annotations) {
 			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
-				annotation.image = await this.getAnnotationImage(annotation.id);
-				this._save(annotation, true);
-				this.render();
+				await this._renderAndSaveImageOnly(annotation);
 			}
 		}
 	}
@@ -287,9 +298,7 @@ class AnnotationsStore {
 		for (let annotation of this._annotations) {
 			if (pageIndexes.includes(annotation.position.pageIndex)
 				&& ['image', 'ink'].includes(annotation.type)) {
-				annotation.image = await this.getAnnotationImage(annotation.id);
-				this._save(annotation, true);
-				this.render();
+				await this._renderAndSaveImageOnly(annotation);
 			}
 		}
 	}

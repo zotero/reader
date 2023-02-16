@@ -121,6 +121,9 @@ class ViewerInstance {
 			onDeleteAnnotations: function (ids) {
 				console.log('Delete annotations', JSON.stringify(ids));
 			},
+			onSaveImage: (annotation) => {
+				console.log('Saving image', annotation);
+			},
 			onSetState: function (state) {
 				console.log('Set state', state);
 			},
