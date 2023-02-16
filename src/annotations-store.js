@@ -287,6 +287,12 @@ class AnnotationsStore {
 	}
 
 	async _renderMissingImages() {
+		if (this._renderingTriggered) {
+			return;
+		}
+		else {
+			this._renderingTriggered = true;
+		}
 		for (let annotation of this._annotations) {
 			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
 				await this._renderAndSaveImageOnly(annotation);
