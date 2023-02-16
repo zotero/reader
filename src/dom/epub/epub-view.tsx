@@ -1,4 +1,3 @@
-import { isMac } from '../../common/lib/utilities';
 import {
 	AnnotationPopupParams,
 	AnnotationType,
@@ -14,24 +13,21 @@ import {
 } from "../../common/types";
 import Epub, {
 	Book,
-	Contents,
 	EpubCFI,
-	Location as EPUBLocation,
 	NavItem,
-	Rendition
 } from "epubjs";
 import { getSelectionRanges } from "../common/lib/selection";
 import {
 	makeRangeSpanning,
-	moveRangeEndsIntoTextNodes
+	moveRangeEndsIntoTextNodes,
+	getCommonAncestorElement
 } from "../common/lib/range";
 import {
+	FragmentSelector,
 	FragmentSelectorConformsTo,
 	isFragment,
 	Selector
 } from "../common/lib/selector";
-import Section from "epubjs/types/section";
-import View from "epubjs/types/managers/view";
 import { EPUBFindProcessor } from "./find";
 import {
 	IGNORE_CLASS,
@@ -41,6 +37,13 @@ import {
 import './stylesheets/main.scss';
 import NavStack from "../common/lib/nav-stack";
 import DOMView, { DOMViewOptions } from "../common/dom-view";
+import SectionView from "./section-view";
+// @ts-ignore
+import contentCSS from '!!raw-loader!./stylesheets/content.css';
+import Section from "epubjs/types/section";
+import { closestElement } from "../common/lib/nodes";
+import { isSafari } from "../../common/lib/utilities";
+import section from "epubjs/src/section";
 
 // - All views use iframe to render and isolate the view from the parent window
 // - If need to add additional build steps, a submodule or additional files see pdfjs/
@@ -56,15 +59,21 @@ class EPUBView extends DOMView<EPUBViewState> {
 	protected _findProcessor: EPUBFindProcessor | null = null;
 
 	private readonly _book: Book;
+	
+	private readonly _iframe: HTMLIFrameElement;
 
-	private readonly _rendition: Rendition;
+	private _iframeWindow: Window & typeof globalThis;
 
-	private _displayPromise: Promise<void>;
+	private _iframeDocument!: Document;
+	
+	private _sectionsContainer!: HTMLElement;
+
+	private readonly _sectionViews: Map<number, SectionView>;
+	
+	private _cachedStartCFI: EpubCFI | null = null;
 
 	private _gotMouseUp = false;
 
-	private _lastSelection: { cfi: string, contents: Contents } | null = null;
-	
 	private _lastFocusTarget: HTMLElement | null = null;
 	
 	private readonly _navStack = new NavStack<string>();
@@ -77,27 +86,62 @@ class EPUBView extends DOMView<EPUBViewState> {
 		super(options);
 		
 		this._book = Epub(options.buf);
-		this._book.ready.then(() => this._initLocations());
 		
-		this._rendition = this._book.renderTo(this._container, {
-			width: '100%',
-			height: '100%',
-			ignoreClass: IGNORE_CLASS,
-			manager: 'continuous',
-		});
-		
-		this._rendition.on('rendered', (section: Section, view: View) => {
-			if (view.contents) this._onContentsRendered(view.contents);
-		});
-		this._rendition.on('relocated', (location: EPUBLocation) => this._handleRelocated(location));
-		this._rendition.on('selected',
-			(cfiRange: string, contents: Contents) => this._handleSelected(cfiRange, contents));
-		
-		this._displayPromise = this._rendition.display();
-		this._displayPromise.then(() => {
-			this._setInitialViewState(options.viewState);
+		this._iframe = document.createElement('iframe');
+		this._iframe.sandbox.add('allow-same-origin');
+		if (isSafari) {
+			this._iframe.sandbox.add('allow-scripts');
+		}
+		this._iframe.addEventListener('load', () => this._handleIFrameLoad(), { once: true });
+		this._iframe.srcdoc = '<!DOCTYPE html><html><body></body></html>';
+		options.container.append(this._iframe);
+		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
+
+		this._sectionViews = new Map();
+	}
+	
+	private _handleIFrameLoad() {
+		this._iframeDocument = this._iframe.contentDocument!;
+		const style = this._iframeDocument.createElement('style');
+		style.innerText = contentCSS;
+		this._iframeDocument.head.append(style);
+
+		this._sectionsContainer = this._iframeDocument.createElement('div');
+		this._sectionsContainer.classList.add('sections');
+		this._iframeDocument.body.append(this._sectionsContainer);
+
+		this._book.opened.then(async () => {
+			const locationsPromise = this._initLocations();
+			this._setInitialViewState(this._options.viewState || { flowMode: 'paginated' });
+			await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section)));
+			// Now that all are loaded, un-hide them all at once
+			for (const view of this._sectionViews.values()) {
+				view.container.hidden = false;
+			}
+			await locationsPromise;
 			this._onInitialDisplay();
 		});
+	}
+	
+	private async _displaySection(section: Section) {
+		const container = this._iframeDocument.createElement('div');
+		container.id = 'section-' + section.index;
+		container.classList.add('section-container', 'cfi-stop');
+		container.hidden = true; // Until all are loaded
+		container.setAttribute('data-section-index', String(section.index));
+		const sectionView = new SectionView({
+			section,
+			container,
+			window: this._iframeWindow,
+			document: this._iframeDocument,
+			onInternalLinkClick: (href) => {
+				this.navigate({ href: this._book.path.relative(href) });
+			},
+		});
+		const html = await section.render(this._book.archive.request.bind(this._book.archive));
+		await sectionView.initWithHTML(html);
+		this._sectionsContainer.append(container);
+		this._sectionViews.set(section.index, sectionView);
 	}
 
 	private async _initLocations() {
@@ -116,13 +160,29 @@ class EPUBView extends DOMView<EPUBViewState> {
 				window.localStorage.setItem(localStorageKey, this._book.locations.save());
 			}
 		}
-		await this._displayPromise;
 		this._updateViewStats();
 	}
 
 	private _onInitialDisplay() {
-		this._updateViewStats();
+		// Long-term goal is to make this reader touch friendly, which probably means using
+		// not mouse* but pointer* or touch* events
+		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
+		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
+		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
+		this._iframeWindow.addEventListener('mouseover', this._handleMouseEnter.bind(this));
+		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
+		this._iframeWindow.addEventListener('mouseup', this._handlePointerUp.bind(this));
+		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
+		// @ts-ignore
+		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
+		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
+		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
+		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
+		this._iframeDocument.addEventListener('wheel', this._handleWheel.bind(this), { passive: false });
+		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
+		
 		this._initOutline();
+		setTimeout(() => this._handleResize());
 	}
 
 	private _initOutline() {
@@ -132,19 +192,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 			items: navItem.subitems?.map(toOutlineItem),
 			expanded: true,
 		});
-		
 		if (!this._book.navigation.toc.length) {
 			return;
 		}
-		
-		// first is title page, so make it the root with everything else as its children
-		const [first, ...rest] = this._book.navigation.toc;
-		const root = toOutlineItem({
-			...first,
-			subitems: rest
-		});
-		
-		this._options.onSetOutline([root]);
+		this._options.onSetOutline(this._book.navigation.toc.map(toOutlineItem));
 	}
 
 	private _setInitialViewState(viewState?: EPUBViewState) {
@@ -152,13 +203,13 @@ class EPUBView extends DOMView<EPUBViewState> {
 		// Also make sure this doesn't trigger _updateViewState
 		if (viewState) {
 			if (viewState.scale) {
-				this._rendition.themes.fontSize(viewState.scale + 'em');
+				this._iframeDocument.documentElement.style.setProperty('--content-font-size', viewState.scale + 'em');
 			}
 			else {
 				viewState.scale = 1;
 			}
 			if (viewState.cfi) {
-				this._displayPromise = this._displayPromise.then(() => this._rendition.display(viewState.cfi));
+				this.navigate({ pageNumber: viewState.cfi });
 			}
 			if (viewState.flowMode) {
 				this.setFlowMode(viewState.flowMode);
@@ -170,8 +221,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 		return this._annotationsBySection.get(section) ?? [];
 	}
 
-	protected override _getSectionDocument(section: number): Document | null {
-		return this._rendition.views().find(section)?.contents?.document ?? null;
+	protected override _getSectionRoot(_section: number) {
+		return this._iframeDocument.body;
 	}
 
 	protected override _getSelectorSection(selector: Selector): number {
@@ -182,42 +233,45 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _renderAllAnnotations() {
-		if (!this._rendition) return;
-		for (const view of this._rendition.views().all()) {
+		if (!this._sectionViews) return;
+		for (const view of this._sectionViews.values()) {
 			this._renderAnnotations(view.section.index);
 		}
 	}
+	
+	getCFI(range: Range): EpubCFI | null {
+		const sectionContainer = closestElement(range.commonAncestorContainer)?.closest('[data-section-index]');
+		if (!sectionContainer) {
+			return null;
+		}
+		const section = this._book.section(sectionContainer.getAttribute('data-section-index')!);
+		return new EpubCFI(range, section.cfiBase, IGNORE_CLASS);
+	}
 
-	override toSelector(range: Range): Selector | null {
-		const contents = this._rendition.getContents()
-			.find(c => c.document == range.startContainer.ownerDocument);
-		if (!contents) return null;
-		const cfi = contents.cfiFromRange(range, IGNORE_CLASS);
+	getRange(cfi: EpubCFI | string): Range | null {
+		if (typeof cfi === 'string') {
+			cfi = new EpubCFI(cfi, undefined, IGNORE_CLASS);
+		}
+		const view = this._sectionViews.get(cfi.spinePos);
+		if (!view) {
+			console.error('Unable to find view for CFI', cfi.toString());
+			return null;
+		}
+		return cfi.toRange(this._iframeDocument, IGNORE_CLASS, view.container);
+	}
+
+	override toSelector(range: Range): FragmentSelector | null {
+		const cfi = this.getCFI(range);
+		if (!cfi) {
+			return null;
+		}
 		return {
 			type: 'FragmentSelector',
 			conformsTo: FragmentSelectorConformsTo.EPUB3,
-			value: cfi
+			value: cfi.toString()
 		};
 	}
 	
-	toRange(selector: Selector): Promise<Range | null> {
-		switch (selector.type) {
-			case 'FragmentSelector': {
-				if (selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
-					throw new Error(`Unsupported FragmentSelector.conformsTo: ${selector.conformsTo}`);
-				}
-				if (selector.refinedBy) {
-					throw new Error('Refinement of FragmentSelectors is not supported');
-				}
-				// Book#getRange() returns a promise and searches across all sections
-				return this._book.getRange(selector.value);
-			}
-			default:
-				// No other selector types supported on EPUBs
-				throw new Error(`Unsupported Selector.type: ${selector.type}`);
-		}
-	}
-
 	override toDisplayedRange(selector: Selector): Range | null {
 		switch (selector.type) {
 			case 'FragmentSelector': {
@@ -227,8 +281,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				if (selector.refinedBy) {
 					throw new Error('Refinement of FragmentSelectors is not supported');
 				}
-				// Rendition#getRange() returns a range and searches only the currently displayed section
-				return this._rendition.getRange(selector.value, IGNORE_CLASS) || null;
+				return this.getRange(selector.value);
 			}
 			default:
 				// No other selector types supported on EPUBs
@@ -249,9 +302,32 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 	
+	get startCFI(): EpubCFI | null {
+		if (this._cachedStartCFI) {
+			return this._cachedStartCFI;
+		}
+		
+		for (const view of this._sectionViews.values()) {
+			const rect = view.container.getBoundingClientRect();
+			const visible = this._viewState.flowMode == 'paginated'
+				? !(rect.left > this._iframe.clientWidth || rect.right < 0)
+				: !(rect.top > this._iframe.clientHeight || rect.bottom < 0);
+			if (visible) {
+				const locationInView = view.getStartCFI(this._viewState.flowMode == 'paginated');
+				if (locationInView) {
+					return this._cachedStartCFI = locationInView;
+				}
+			}
+		}
+		return null;
+	}
+	
 	_pushCurrentLocationToNavStack() {
-		this._navStack.push(this._rendition.currentLocation().start.cfi);
-		this._updateViewStats();
+		const cfi = this.startCFI?.toString();
+		if (cfi) {
+			this._navStack.push(cfi);
+			this._updateViewStats();
+		}
 	}
 	
 	override _navigateToSelector(selector: Selector) {
@@ -259,7 +335,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			console.warn("Not a CFI FragmentSelector", selector);
 			return;
 		}
-		this._displayPromise = this._displayPromise.then(() => this._rendition.display(selector.value));
+		this.navigate({ pageNumber: selector.value });
 	}
 
 	protected override _getViewportBoundingRect(range: Range): DOMRect {
@@ -285,14 +361,14 @@ class EPUBView extends DOMView<EPUBViewState> {
 		return iframe;
 	}
 
+	protected override _getSelection(): Selection | null {
+		return this._iframeWindow.getSelection();
+	}
+
 	// Currently type is only 'highlight' but later there will also be 'underline'
 	protected override _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
-		if (!this._lastSelection) {
-			return null;
-		}
-		const { cfi, contents } = this._lastSelection;
-		const selection = contents.window.getSelection();
-		if (!selection || !selection.rangeCount) {
+		const selection = this._iframeWindow.getSelection();
+		if (!selection || selection.isCollapsed) {
 			return null;
 		}
 		const text = selection.toString();
@@ -302,13 +378,14 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return null;
 		}
 
-		const location = this._book.locations.locationFromCfi(cfi);
+		const location = this._book.locations.locationFromCfi(selector.value);
 		const locationLabel = String(location + 1);
 		let sortIndex = locationLabel.padStart(10, '0');
 		
 		// If possible, use the number of characters between the start of the location and the start of the selection
 		// range to disambiguate the sortIndex
-		const offsetRange = this._rendition.getRange(this._book.locations.cfiFromLocation(location) as string);
+		const offsetRange: Range | null = this.getRange(this._book.locations.cfiFromLocation(location) as string);
+
 		if (offsetRange) {
 			if (offsetRange.comparePoint(range.startContainer, range.startOffset) < 0) {
 				offsetRange.setStart(range.startContainer, range.startOffset);
@@ -333,10 +410,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	private _tryUseTool(): boolean {
 		this._updateViewStats();
-		if (this._gotMouseUp && this._lastSelection) {
+		if (this._gotMouseUp) {
 			// Open text selection popup if current tool is pointer
 			if (this._tool.type == 'pointer') {
-				const selection = this._lastSelection.contents.window.getSelection();
+				const selection = this._iframeWindow.getSelection();
 				if (selection) {
 					this._openSelectionPopup(selection);
 					return true;
@@ -347,7 +424,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				if (annotation) {
 					this._options.onAddAnnotation(annotation);
 				}
-				this._lastSelection.contents.window.getSelection()?.removeAllRanges();
+				this._iframeWindow.getSelection()?.removeAllRanges();
 				return true;
 			}
 		}
@@ -357,19 +434,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 	// ***
 	// Event handlers
 	// ***
-
-	private _handleRelocated(_location: EPUBLocation) {
-		this._updateViewStats();
-	}
-
-	private _handleSelected(cfiRange: string, contents: Contents) {
-		this._updateViewStats();
-		this._lastSelection = { cfi: cfiRange, contents };
-		if (this._tryUseTool()) {
-			return;
-		}
-		this._options.onSetSelectionPopup(null);
-	}
 
 	private _handleClick(event: Event) {
 		const link = (event.target as Element).closest('a');
@@ -450,27 +514,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	private _handleKeyDown(event: KeyboardEvent) {
 		const { key } = event;
-		const ctrl = event.ctrlKey;
-		const cmd = event.metaKey && isMac();
-		const _mod = ctrl || cmd;
-		const _alt = event.altKey;
 		const shift = event.shiftKey;
 
 		// Focusable elements in PDF view are annotations and overlays (links, citations, figures).
 		// Once TAB is pressed, arrows can be used to navigate between them
 		const focusableElements: HTMLElement[] = [];
 		let focusedElementIndex = -1;
-		let focusedElement: HTMLElement | null = null;
-		for (const view of this._rendition.views().all()) {
-			if (!view.contents) continue;
-			if (!focusedElement && view.contents.document.activeElement) {
-				focusedElement = view.contents.document.activeElement as HTMLElement;
-			}
-			for (const element of view.contents.document.querySelectorAll('[tabindex="-1"]')) {
-				focusableElements.push(element as HTMLElement);
-				if (element === focusedElement) {
-					focusedElementIndex = focusableElements.length - 1;
-				}
+		const focusedElement: HTMLElement | null = this._iframeDocument.activeElement as HTMLElement | null;
+		for (const element of this._iframeDocument.querySelectorAll('[tabindex="-1"]')) {
+			focusableElements.push(element as HTMLElement);
+			if (element === focusedElement) {
+				focusedElementIndex = focusableElements.length - 1;
 			}
 		}
 
@@ -535,6 +589,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				}
 			}
 		}
+
 		// Pass keydown even to the main window where common keyboard
 		// shortcuts are handled i.e. Delete, Cmd-Minus, Cmd-f, etc.
 		this._options.onKeyDown(event);
@@ -553,7 +608,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _handleScroll(_event: Event) {
-		this._handleViewUpdate();
+		this._cachedStartCFI = null;
+		this._updateViewStats();
+		this._updateViewState();
 	}
 
 	private _handleWheel(event: WheelEvent) {
@@ -581,7 +638,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 
-	private _handleResize(_event: Event) {
+	private _handleResize() {
+		this._iframeDocument.documentElement.style.setProperty('--width', this._iframe.clientWidth + 'px');
 		this._handleViewUpdate();
 	}
 
@@ -595,98 +653,63 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!doc.hasFocus()) {
 			this._getIFrame(doc)?.focus();
 		}
-		if (doc.getSelection()?.isCollapsed ?? true) {
+		const selection = doc.getSelection();
+		if (!selection || selection.isCollapsed) {
 			this._options.onSetSelectionPopup(null);
-			this._lastSelection = null;
+		}
+		else {
+			this._updateViewStats();
+			this._tryUseTool();
 		}
 	}
 	
-	private _handleLinkClicked(_href: string) {
-		this._pushCurrentLocationToNavStack();
-	}
-	
-	private _updateViewState() {
-		if (!this._rendition.currentLocation().start) {
+	protected override _updateViewState() {
+		if (!this.startCFI) {
 			return;
 		}
 		const viewState: EPUBViewState = {
 			...this._viewState,
-			cfi: this._rendition.currentLocation().start.cfi,
+			cfi: this.startCFI.toString(),
 		};
 		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
 	}
 
 	// View stats provide information about the view
-	private _updateViewStats() {
-		const currentLocation = this._rendition.currentLocation();
-		const current = this._book.locations.locationFromCfi(currentLocation.start.cfi);
+	protected override _updateViewStats() {
+		const startCFI = this.startCFI;
+		if (!startCFI) {
+			return;
+		}
+		const current = this._book.locations.locationFromCfi(startCFI.toString());
 		const total = this._book.locations.total;
 		const percentage = new Intl.NumberFormat(undefined, { style: 'percent' })
-			.format(this._book.locations.percentageFromCfi(currentLocation.start.cfi));
+			.format(this._book.locations.percentageFromCfi(startCFI.toString()));
+		const canNavigateToPreviousPage = this.canNavigateToPreviousPage();
+		const canNavigateToNextPage = this.canNavigateToNextPage();
 		const viewStats: ViewStats = {
 			pageIndex: current,
 			pagesCount: total,
 			percentage: percentage,
-			canCopy: !!this._selectedAnnotationIDs.length || !!this._lastSelection,
+			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
 			canZoomIn: this._viewState.scale === undefined || this._viewState.scale < 1.5,
 			canZoomOut: this._viewState.scale === undefined || this._viewState.scale > 0.8,
 			canZoomReset: this._viewState.scale !== undefined && this._viewState.scale !== 1,
 			canNavigateBack: this._navStack.canPopBack(),
 			canNavigateForward: this._navStack.canPopForward(),
-			canNavigateToFirstPage: !currentLocation.atStart,
-			canNavigateToLastPage: !currentLocation.atEnd,
-			canNavigateToPreviousPage: !currentLocation.atStart,
-			canNavigateToNextPage: !currentLocation.atEnd,
+			canNavigateToFirstPage: canNavigateToPreviousPage,
+			canNavigateToLastPage: canNavigateToNextPage,
+			canNavigateToPreviousPage,
+			canNavigateToNextPage,
 			flowMode: this._viewState.flowMode,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
 
-	private _onContentsRendered(contents: Contents) {
-		this._lastSelection = null;
-		// Long-term goal is to make this reader touch friendly, which probably means using
-		// not mouse* but pointer* or touch* events
-		contents.window.addEventListener('contextmenu', this._handleContextMenu.bind(this));
-		contents.window.addEventListener('keydown', this._handleKeyDown.bind(this), true);
-		contents.window.addEventListener('click', this._handleClick.bind(this));
-		contents.window.addEventListener('mouseover', this._handleMouseEnter.bind(this));
-		contents.window.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
-		contents.window.addEventListener('mouseup', this._handlePointerUp.bind(this));
-		contents.window.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
-		// @ts-ignore
-		contents.window.addEventListener('copy', this._handleCopy.bind(this));
-		contents.window.addEventListener('resize', this._handleResize.bind(this));
-		contents.window.addEventListener('focus', this._handleFocus.bind(this));
-		contents.document.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
-		contents.document.addEventListener('wheel', this._handleWheel.bind(this));
-		contents.document.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
-		contents.on('linkClicked', this._handleLinkClicked.bind(this));
-		this._handleViewUpdate();
-	}
-
 	// Called on scroll, resize, etc.
-	private _handleViewUpdate() {
-		this._updateViewState();
-		this._updateViewStats();
-		// Update annotation popup position
-		if (this._annotationPopup) {
-			const { annotation } = this._annotationPopup;
-			if (annotation) {
-				// Note: There is currently a bug in React components part therefore the popup doesn't
-				// properly update its position when window is resized
-				this._openAnnotationPopup(annotation as WADMAnnotation);
-			}
-		}
-		// Update selection popup position
-		if (this._selectionPopup) {
-			const selection = this._lastSelection?.contents.window.getSelection();
-			if (selection) {
-				this._openSelectionPopup(selection);
-			}
-		}
-		// Close overlay popup
-		this._options.onSetOverlayPopup();
+	protected override _handleViewUpdate() {
+		this._cachedStartCFI = null;
+		super._handleViewUpdate();
 		this._renderAllAnnotations();
 	}
 
@@ -700,9 +723,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._options.onSetAnnotationPopup();
 		this._renderAllAnnotations();
 
-		for (const view of this._rendition.views().all()) {
-			view.contents?.window.getSelection()?.empty();
-		}
+		this._iframeWindow.getSelection()?.empty();
 
 		this._updateViewStats();
 	}
@@ -762,27 +783,39 @@ class EPUBView extends DOMView<EPUBViewState> {
 					|| previousPopup.entireWord !== popup.entireWord) {
 				console.log('Initiating new search', popup);
 				this._findProcessor = new EPUBFindProcessor({
+					view: this,
 					book: this._book,
-					rendition: this._rendition,
-					location: this._rendition.currentLocation(),
-					section: this._book.spine.get(this._rendition.currentLocation().start.index),
+					startCFI: this.startCFI,
+					section: this._book.spine.get(this.startCFI?.spinePos),
 					query: popup.query,
 					highlightAll: popup.highlightAll,
 					caseSensitive: popup.caseSensitive,
 					entireWord: popup.entireWord,
 				});
-				this._displayPromise = this._displayPromise.then(() => this.findNext());
+				this.findNext();
 			}
 		}
 	}
 	
 	setFlowMode(flowMode: FlowMode) {
+		if (flowMode == 'paginated' && isSafari) {
+			// Safari's column layout is unusably slow
+			console.error('paginated mode is not supported in Safari');
+			flowMode = 'scrolled';
+		}
+		
 		switch (flowMode) {
 			case 'paginated':
-				this._rendition.flow('paginated');
+				for (const elem of [this._iframe, this._iframeDocument.body]) {
+					elem.classList.add('paginated');
+					elem.classList.remove('scrolled');
+				}
 				break;
 			case 'scrolled':
-				this._rendition.flow('scrolled');
+				for (const elem of [this._iframe, this._iframeDocument.body]) {
+					elem.classList.add('scrolled');
+					elem.classList.remove('paginated');
+				}
 				break;
 		}
 		this._viewState.flowMode = flowMode;
@@ -811,7 +844,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			}
 			if (!result.done) {
 				this.navigate({ pageNumber: result.cfi });
-				this._displayPromise.then(() => this._renderAllAnnotations());
+				this._renderAllAnnotations();
 			}
 		}
 	}
@@ -831,38 +864,52 @@ class EPUBView extends DOMView<EPUBViewState> {
 			}
 			if (!result.done) {
 				this.navigate({ pageNumber: result.cfi });
-				this._displayPromise.then(() => this._renderAllAnnotations());
+				this._renderAllAnnotations();
 			}
 		}
 	}
 
 	zoomIn() {
+		const cfiBefore = this.startCFI;
 		let scale = this._viewState.scale;
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
 		this._viewState.scale = scale;
-		this._rendition.themes.override('font-size', scale + 'em');
+		this._iframeDocument.documentElement.style.setProperty('--content-font-size', scale + 'em');
 		this._handleViewUpdate();
+		if (cfiBefore) {
+			this.navigate({ pageNumber: cfiBefore.toString() }, true);
+		}
 	}
 
 	zoomOut() {
+		const cfiBefore = this.startCFI;
 		let scale = this._viewState.scale;
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
 		this._viewState.scale = scale;
-		this._rendition.themes.override('font-size', scale + 'em');
+		this._iframeDocument.documentElement.style.setProperty('--content-font-size', scale + 'em');
 		this._handleViewUpdate();
+		if (cfiBefore) {
+			this.navigate({ pageNumber: cfiBefore.toString() }, true);
+		}
 	}
 
 	zoomReset() {
+		const cfiBefore = this.startCFI;
 		this._viewState.scale = 1;
-		this._rendition.themes.override('font-size', '1em');
+		this._iframeDocument.documentElement.style.setProperty('--content-font-size', '1em');
 		this._handleViewUpdate();
+		if (cfiBefore) {
+			this.navigate({ pageNumber: cfiBefore.toString() }, true);
+		}
 	}
 
-	override navigate(location: NavLocation) {
+	override navigate(location: NavLocation, skipPushToNavStack = false) {
 		console.log('Navigating to', location);
-		this._pushCurrentLocationToNavStack();
+		if (!skipPushToNavStack) {
+			this._pushCurrentLocationToNavStack();
+		}
 		if (location.pageNumber) {
 			let cfi: string;
 			if (location.pageNumber.startsWith('epubcfi(')) {
@@ -883,23 +930,61 @@ class EPUBView extends DOMView<EPUBViewState> {
 				}
 				cfi = this._book.locations.cfiFromLocation(locationIndex) as string;
 			}
-			this._displayPromise = this._displayPromise.then(() => this._rendition.display(cfi));
+			
+			const range = this.getRange(cfi);
+			if (!range) {
+				console.error('Unable to find range for CFI', cfi.toString());
+				return;
+			}
+			this._scrollIntoView(getCommonAncestorElement(range) as HTMLElement, { block: 'center' });
+		}
+		else if (location.section) {
+			const view = this._sectionViews.get(location.section);
+			if (!view) {
+				console.error('Unable to find view for section', location.section);
+				return;
+			}
+			this._scrollIntoView(view.container, { inline: 'start', block: 'start' });
 		}
 		else if (location.href) {
-			this._displayPromise = this._displayPromise.then(() => this._rendition.display(location.href));
+			const [pathname, hash] = location.href.split('#');
+			const section = this._book.spine.get(pathname);
+			if (!section) {
+				console.error('Unable to find section for pathname', pathname);
+				return;
+			}
+			const target = hash && this._sectionViews.get(section.index)!.container.querySelector('#' + hash);
+			if (target) {
+				this._scrollIntoView(target as HTMLElement, { block: 'center' });
+			}
+			else {
+				this.navigate({ section: section.index }, skipPushToNavStack);
+			}
 		}
 		else {
 			super.navigate(location);
 		}
 	}
 
+	_scrollIntoView(elem: HTMLElement, options?: ScrollIntoViewOptions) {
+		if (this._viewState.flowMode != 'paginated') {
+			elem.scrollIntoView(options);
+			return;
+		}
+		const elemOffset = elem.offsetLeft;
+		const spreadWidth = this._sectionsContainer.offsetWidth + 60;
+		const pageIndex = Math.floor(elemOffset / spreadWidth);
+		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
+		this._handleViewUpdate();
+	}
+
 	// This is like back/forward navigation in browsers. Try Cmd-ArrowLeft and Cmd-ArrowRight in PDF view
 	navigateBack() {
-		this._displayPromise = this._displayPromise.then(() => this._rendition.display(this._navStack.popBack()));
+		this.navigate({ pageNumber: this._navStack.popBack() }, true);
 	}
 
 	navigateForward() {
-		this._displayPromise = this._displayPromise.then(() => this._rendition.display(this._navStack.popForward()));
+		this.navigate({ pageNumber: this._navStack.popForward() }, true);
 	}
 
 	// Possibly we want different navigation types as well.
@@ -911,13 +996,50 @@ class EPUBView extends DOMView<EPUBViewState> {
 	navigateToLastPage() {
 		console.log('Navigate to last page');
 	}
+	
+	canNavigateToPreviousPage() {
+		if (this._viewState.flowMode == 'paginated') {
+			return parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0') > 0;
+		}
+		else {
+			return this._iframeWindow.scrollY >= this._iframe.clientHeight;
+		}
+	}
+	
+	canNavigateToNextPage() {
+		if (this._viewState.flowMode == 'paginated') {
+			// scrollWidth approaches offsetWidth as we advance toward the last page
+			return this._iframeDocument.documentElement.scrollWidth > this._iframeDocument.documentElement.offsetWidth;
+		}
+		else {
+			return this._iframeWindow.scrollY < this._iframeDocument.documentElement.scrollHeight - this._iframe.clientHeight;
+		}
+	}
 
 	navigateToPreviousPage() {
-		this._displayPromise = this._displayPromise.then(() => this._rendition.prev());
+		if (!this.canNavigateToPreviousPage()) {
+			return;
+		}
+		if (this._viewState.flowMode != 'paginated') {
+			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight });
+			return;
+		}
+		const pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
+		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex - 1));
+		this._handleViewUpdate();
 	}
 
 	navigateToNextPage() {
-		this._displayPromise = this._displayPromise.then(() => this._rendition.next());
+		if (!this.canNavigateToNextPage()) {
+			return;
+		}
+		if (this._viewState.flowMode != 'paginated') {
+			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight });
+			return;
+		}
+		const pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
+		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex + 1));
+		this._handleViewUpdate();
 	}
 
 	// Still need to figure out how this is going to work

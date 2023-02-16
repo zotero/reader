@@ -4,5 +4,6 @@ insert_final_newline = true
 
 [*.{js, json, scss, yml, html}]
 charset = utf-8
+indent_size = 4
 indent_style = tab
 trim_trailing_whitespace = true

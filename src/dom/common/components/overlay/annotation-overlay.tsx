@@ -94,7 +94,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		return null;
 	}
 	const doc = ranges[0].commonAncestorContainer.ownerDocument;
-	if (!doc) {
+	if (!doc || !doc.defaultView) {
 		return null;
 	}
 

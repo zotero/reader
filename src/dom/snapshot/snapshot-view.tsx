@@ -15,7 +15,7 @@ import { getSelectionRanges } from "../common/lib/selection";
 import {
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
-	scrollToCenter
+	getCommonAncestorElement
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -86,12 +86,16 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		return this._annotations;
 	}
 
-	protected override _getSectionDocument(_section: number): Document {
-		return this._iframeWindow.document;
+	protected override _getSectionRoot(_section: number) {
+		return this._iframeWindow.document.body;
 	}
 
 	protected _getSelectorSection(_selector: Selector): number {
 		return 0;
+	}
+
+	protected _getSelection(): Selection | null {
+		return this._iframeWindow.getSelection();
 	}
 	
 	protected override _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
@@ -204,7 +208,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	protected _navigateToSelector(selector: Selector) {
 		const range = this.toDisplayedRange(selector);
 		if (range) {
-			scrollToCenter(range);
+			getCommonAncestorElement(range)?.scrollIntoView({ block: 'center' });
 		}
 		else {
 			console.warn('Not a valid snapshot selector', selector);
@@ -216,7 +220,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		return false;
 	}
 
-	private _updateViewState() {
+	protected override _updateViewState() {
 		const viewState = {
 			scale: 1,
 			...this._viewState
@@ -225,7 +229,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		this._options.onChangeViewState(viewState);
 	}
 
-	private _updateViewStats() {
+	protected override _updateViewStats() {
 		const viewStats: ViewStats = {
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
 			canZoomIn: this._viewState.scale === undefined || this._viewState.scale < 1.5,
@@ -376,27 +380,8 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		}
 	}
 
-	private _handleViewUpdate() {
-		this._updateViewState();
-		this._updateViewStats();
-		// Update annotation popup position
-		if (this._annotationPopup) {
-			const { annotation } = this._annotationPopup;
-			if (annotation) {
-				// Note: There is currently a bug in React components part therefore the popup doesn't
-				// properly update its position when window is resized
-				this._openAnnotationPopup(annotation as WADMAnnotation);
-			}
-		}
-		// Update selection popup position
-		if (this._selectionPopup) {
-			const selection = this._iframeWindow.getSelection();
-			if (selection) {
-				this._openSelectionPopup(selection);
-			}
-		}
-		// Close overlay popup
-		this._options.onSetOverlayPopup();
+	protected override _handleViewUpdate() {
+		super._handleViewUpdate();
 		this._renderAnnotations();
 	}
 
@@ -484,7 +469,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		if (this._findProcessor) {
 			const range = this._findProcessor.next();
 			if (range) {
-				scrollToCenter(range);
+				getCommonAncestorElement(range)?.scrollIntoView({ block: 'center' });
 			}
 			this._renderAnnotations();
 		}
@@ -495,7 +480,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		if (this._findProcessor) {
 			const range = this._findProcessor.prev();
 			if (range) {
-				scrollToCenter(range);
+				getCommonAncestorElement(range)?.scrollIntoView({ block: 'center' });
 			}
 			this._renderAnnotations();
 		}

@@ -47,6 +47,7 @@ export type NavLocation = {
 	annotationID?: string;
 	position?: Position;
 	href?: string;
+	section?: number;
 };
 
 export type Position = PDFPosition | Selector;

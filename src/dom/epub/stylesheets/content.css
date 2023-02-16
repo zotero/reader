@@ -1,0 +1,58 @@
+@namespace epub url('http://www.idpf.org/2007/ops');
+
+body {
+	margin: 0;
+	padding: 0;
+}
+
+body.scrolled > .sections > .section-container {
+	margin-inline: auto;
+	margin-bottom: 100px;
+	max-width: 800px;
+}
+
+body.paginated {
+	margin: 40px;
+}
+
+body.paginated > .sections {
+	/* https://github.com/readium/readium-css/blob/5830114/docs/ua-reference/readium1.css#L65 */
+	width: calc(100vw - 80px);
+	height: calc(100vh - 80px);
+	min-height: calc(100vh - 80px);
+	max-height: calc(100vh - 80px);
+	position: relative;
+	left: calc((-100% - 60px) * var(--page-index));
+	top: 0;
+	columns: auto 2;
+	column-gap: 60px;
+	column-fill: auto;
+	overflow: visible;
+}
+
+body.paginated > .sections > .section-container {
+	/* In an ideal world, this would be `break-after: column`. Unfortunately, most browsers don't actually support
+	   that rule. Fortunately, a huge margin-bottom works fine too. */
+	margin-bottom: 9999px;
+}
+
+body.paginated replaced-body * {
+	max-width: 50vw;
+}
+
+@media (max-width: 800px) {
+	body.paginated > .sections {
+		columns: auto 1;
+	}
+
+	body.paginated replaced-body * {
+		max-width: 100vw;
+	}
+}
+
+replaced-body {
+	font-family: "Georgia", serif;
+	font-size: var(--content-font-size);
+	line-height: 1.4;
+	text-align: justify;
+}

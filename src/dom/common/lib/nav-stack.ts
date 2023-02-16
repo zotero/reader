@@ -12,7 +12,7 @@ class NavStack<T> {
 	}
 	
 	push(value: T) {
-		if (!this._backStack.length || value !== this._backStack[this._backStack.length - 1]) {
+		if (this._backStack.length && value === this._backStack[this._backStack.length - 1]) {
 			return;
 		}
 		this._backStack.push(value);

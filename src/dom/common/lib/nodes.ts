@@ -7,3 +7,11 @@ export function getAllTextNodes(root: Node): Text[] {
 	}
 	return nodes;
 }
+
+export function closestElement(node: Node): Element | null {
+	let currentNode: Node | null = node;
+	while (currentNode && currentNode.nodeType !== Node.ELEMENT_NODE) {
+		currentNode = node.parentNode;
+	}
+	return currentNode as Element | null;
+}

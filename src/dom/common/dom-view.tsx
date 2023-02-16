@@ -102,29 +102,59 @@ abstract class DOMView<State> {
 	
 	protected abstract _getSelectorSection(selector: Selector): number;
 
-	protected abstract _getSectionDocument(section: number): Document | null;
+	protected abstract _getSectionRoot(section: number): ParentNode | null;
 
 	protected abstract _getSectionAnnotations(section: number): WADMAnnotation[];
 
 	protected abstract _getViewportBoundingRect(range: Range): DOMRect;
+	
+	protected abstract _getSelection(): Selection | null;
 
 	protected abstract _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
+	
+	protected abstract _updateViewState(): void;
+	
+	protected abstract _updateViewStats(): void;
 
 	// ***
 	// Utilities for subclasses - should be called in appropriate event handlers
 	// ***
 	
+	protected _handleViewUpdate() {
+		this._updateViewState();
+		this._updateViewStats();
+		// Update annotation popup position
+		if (this._annotationPopup) {
+			const { annotation } = this._annotationPopup;
+			if (annotation) {
+				// Note: There is currently a bug in React components part therefore the popup doesn't
+				// properly update its position when window is resized
+				this._openAnnotationPopup(annotation as WADMAnnotation);
+			}
+		}
+		// Update selection popup position
+		if (this._selectionPopup) {
+			const selection = this._getSelection();
+			if (selection) {
+				this._openSelectionPopup(selection);
+			}
+		}
+		// Close overlay popup
+		this._options.onSetOverlayPopup();
+	}
+	
 	protected _renderAnnotations(section: number) {
-		const doc = this._getSectionDocument(section);
-		if (!doc) {
+		const root = this._getSectionRoot(section);
+		if (!root) {
 			return;
 		}
-		let container = doc.querySelector('#annotation-overlay');
+		const doc = root.ownerDocument!;
+		let container = root.querySelector('#annotation-overlay-' + section);
 		if (!container) {
 			container = doc.createElement('div');
-			container.id = 'annotation-overlay';
+			container.id = 'annotation-overlay-' + section;
 			container.classList.add(IGNORE_CLASS);
-			doc.body.append(container);
+			root.append(container);
 		}
 		const displayedAnnotations: DisplayedAnnotation[] = [
 			...this._getSectionAnnotations(section).map(a => ({
@@ -160,14 +190,16 @@ abstract class DOMView<State> {
 	}
 
 	protected _openSelectionPopup(selection: Selection) {
-		if (!selection.rangeCount) {
+		if (selection.isCollapsed) {
 			return;
 		}
 		const range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
 		const domRect = this._getViewportBoundingRect(range);
 		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		const annotation = this._getAnnotationFromTextSelection('highlight');
-		this._options.onSetSelectionPopup({ rect, annotation });
+		if (annotation) {
+			this._options.onSetSelectionPopup({ rect, annotation });
+		}
 	}
 
 	protected _openAnnotationPopup(annotation: WADMAnnotation) {
@@ -211,8 +243,8 @@ abstract class DOMView<State> {
 		const annotation = this._annotationsByID.get(id)!;
 		const selector = this.toSelector(moveRangeEndsIntoTextNodes(range));
 		if (!selector) {
-			console.error(range);
-			throw new Error('Failed to create selector for resize operation');
+			// Probably resized past the end of a section - don't worry about it
+			return;
 		}
 		annotation.position = selector;
 		annotation.text = range.toString();

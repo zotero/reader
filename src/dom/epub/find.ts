@@ -1,20 +1,18 @@
 import {
 	Book,
 	EpubCFI,
-	Location as EPUBLocation,
-	Rendition
 } from "epubjs";
 import Section from "epubjs/types/section";
 import { kmpSearch } from "../common/lib/kmp-search";
 import { getAllTextNodes } from "../common/lib/nodes";
 import FindProcessor from "../common/find";
 import { DisplayedAnnotation } from "../common/components/overlay/annotation-overlay";
-import { IGNORE_CLASS } from "./defines";
+import EPUBView from "./epub-view";
 
 export class EPUBFindProcessor extends FindProcessor {
 	readonly book: Book;
 	
-	readonly rendition: Rendition;
+	readonly view: EPUBView;
 
 	readonly section: Section;
 
@@ -26,8 +24,8 @@ export class EPUBFindProcessor extends FindProcessor {
 
 	constructor(options: {
 		book: Book,
-		rendition: Rendition,
-		location?: EPUBLocation,
+		view: EPUBView,
+		startCFI: EpubCFI | null,
 		section: Section,
 		query: string,
 		highlightAll: boolean,
@@ -37,14 +35,14 @@ export class EPUBFindProcessor extends FindProcessor {
 		super(options);
 
 		this.book = options.book;
-		this.rendition = options.rendition;
+		this.view = options.view;
 		this.section = options.section;
 
 		this._cfi = new EpubCFI();
 		this._buf = [];
 		this._pos = -1;
 
-		this._run(options.location?.start.cfi);
+		this._run(options.startCFI);
 	}
 
 	next(): { done: false, cfi: string } | { done: true, nextProcessor: Promise<EPUBFindProcessor> } {
@@ -54,7 +52,8 @@ export class EPUBFindProcessor extends FindProcessor {
 			const nextProcessor = nextSection.load(this.book.load.bind(this.book))
 				.then(() => new EPUBFindProcessor({
 					book: this.book,
-					rendition: this.rendition,
+					view: this.view,
+					startCFI: null,
 					section: nextSection,
 					query: this.query,
 					highlightAll: this.highlightAll,
@@ -79,7 +78,8 @@ export class EPUBFindProcessor extends FindProcessor {
 			const nextProcessor = nextSection.load(this.book.load.bind(this.book))
 				.then(() => new EPUBFindProcessor({
 					book: this.book,
-					rendition: this.rendition,
+					view: this.view,
+					startCFI: null,
 					section: nextSection,
 					query: this.query,
 					highlightAll: this.highlightAll,
@@ -100,7 +100,7 @@ export class EPUBFindProcessor extends FindProcessor {
 		const selectedCFI = this._buf[this._pos];
 		if (this.highlightAll) {
 			for (const cfi of this._buf) {
-				const range = this.rendition.getRange(cfi, IGNORE_CLASS);
+				const range = this.view.getRange(cfi);
 				if (!range) {
 					continue;
 				}
@@ -114,7 +114,7 @@ export class EPUBFindProcessor extends FindProcessor {
 			}
 		}
 		else {
-			const range = this.rendition.getRange(selectedCFI, IGNORE_CLASS);
+			const range = this.view.getRange(selectedCFI);
 			if (range) {
 				highlights.push({
 					type: 'highlight',
@@ -128,7 +128,7 @@ export class EPUBFindProcessor extends FindProcessor {
 		return highlights;
 	}
 
-	private _run(startCFI?: string) {
+	private _run(startCFI: EpubCFI | null) {
 		if (this._buf.length) {
 			return;
 		}

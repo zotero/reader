@@ -127,15 +127,10 @@ export function caretPositionFromPoint(doc: Document, x: number, y: number): Car
 	return null;
 }
 
-export function scrollToCenter(range: Range) {
+export function getCommonAncestorElement(range: Range): Element | null {
 	let startContainer: Node | null = range.startContainer;
 	while (startContainer && startContainer.nodeType !== Node.ELEMENT_NODE) {
 		startContainer = startContainer.parentNode;
 	}
-	if (startContainer) {
-		(startContainer as Element).scrollIntoView({
-			inline: 'center',
-			block: 'center',
-		});
-	}
+	return startContainer as Element | null;
 }
