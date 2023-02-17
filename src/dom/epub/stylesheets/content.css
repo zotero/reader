@@ -5,6 +5,10 @@ body {
 	padding: 0;
 }
 
+body.scrolled > .sections {
+	margin-inline: 40px;
+}
+
 body.scrolled > .sections > .section-container {
 	margin-inline: auto;
 	margin-bottom: 100px;
