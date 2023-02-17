@@ -44,6 +44,7 @@ import Section from "epubjs/types/section";
 import { closestElement } from "../common/lib/nodes";
 import { isSafari } from "../../common/lib/utilities";
 import Path from "epubjs/src/utils/path";
+import StyleScoper from "./lib/style-scoper";
 
 // - All views use iframe to render and isolate the view from the parent window
 // - If need to add additional build steps, a submodule or additional files see pdfjs/
@@ -103,7 +104,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	private _handleIFrameLoad() {
 		this._iframeDocument = this._iframe.contentDocument!;
 		const style = this._iframeDocument.createElement('style');
-		style.innerText = contentCSS;
+		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
 
 		this._sectionsContainer = this._iframeDocument.createElement('div');
@@ -113,7 +114,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._book.opened.then(async () => {
 			const locationsPromise = this._initLocations();
 			this._setInitialViewState(this._options.viewState || { flowMode: 'scrolled' });
-			await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section)));
+			
+			const styleScoper = new StyleScoper(this._iframeDocument);
+			await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
+			styleScoper.rewriteAll();
 			// Now that all are loaded, un-hide them all at once
 			for (const view of this._sectionViews.values()) {
 				view.container.hidden = false;
@@ -123,7 +127,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		});
 	}
 	
-	private async _displaySection(section: Section) {
+	private async _displaySection(section: Section, styleScoper: StyleScoper) {
 		const container = this._iframeDocument.createElement('div');
 		container.id = 'section-' + section.index;
 		container.classList.add('section-container', 'cfi-stop');
@@ -135,6 +139,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			container,
 			window: this._iframeWindow,
 			document: this._iframeDocument,
+			styleScoper,
 			onInternalLinkClick: (href) => {
 				this.navigate({ href: this._book.path.relative(href) });
 			},

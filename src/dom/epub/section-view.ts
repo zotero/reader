@@ -1,15 +1,18 @@
 import Section from "epubjs/types/section";
 import { EpubCFI } from "epubjs";
 import { IGNORE_CLASS } from "./defines";
+import StyleScoper from "./lib/style-scoper";
 
 class SectionView {
-	section: Section;
+	readonly section: Section;
 	
-	container: HTMLElement;
+	readonly container: HTMLElement;
 
-	private _window: Window & typeof globalThis;
+	private readonly _window: Window & typeof globalThis;
 	
-	private _document: Document;
+	private readonly _document: Document;
+	
+	private readonly _styleScoper: StyleScoper;
 	
 	private readonly _onInternalLinkClick: (href: string) => void;
 	
@@ -18,49 +21,18 @@ class SectionView {
 		container: HTMLElement,
 		window: Window & typeof globalThis,
 		document: Document,
+		styleScoper: StyleScoper,
 		onInternalLinkClick: (href: string) => void,
 	}) {
 		this.section = options.section;
 		this.container = options.container;
 		this._window = options.window;
 		this._document = options.document;
+		this._styleScoper = options.styleScoper;
 		this._onInternalLinkClick = options.onInternalLinkClick;
 	}
 
 	async initWithHTML(html: string): Promise<void> {
-		const processAndAdopt = async (css: string) => {
-			let sheet;
-			try {
-				sheet = new this._window.CSSStyleSheet();
-				await sheet.replace(css);
-			}
-			catch (e) {
-				// Constructor not available
-				const style = this._document.createElement('style');
-				style.textContent = css;
-				if (style.sheet) {
-					sheet = style.sheet;
-				}
-				else {
-					const promise = new Promise<CSSStyleSheet>(
-						resolve => style.addEventListener('load', () => resolve(style.sheet!))
-					);
-					this._document.head.append(style);
-					sheet = await promise;
-				}
-			}
-
-			for (const rule of sheet.cssRules) {
-				if (rule.constructor.name === 'CSSStyleRule') {
-					const styleRule = rule as CSSStyleRule;
-					styleRule.selectorText = `#${this.container.id} :is(${styleRule.selectorText})`;
-				}
-			}
-			if (this._document.adoptedStyleSheets) {
-				this._document.adoptedStyleSheets.push(sheet);
-			}
-		};
-		
 		const onInternalLinkClick = (event: Event) => {
 			event.preventDefault();
 			let href = (event.target as Element).getAttribute('href')!;
@@ -107,13 +79,21 @@ class SectionView {
 				walker.currentNode = newElem;
 			}
 			else if (elem.tagName == 'style') {
-				await processAndAdopt(elem.textContent!);
+				this.container.classList.add(
+					await this._styleScoper.add(elem.innerHTML || '')
+				);
 				toRemove.push(elem);
 			}
 			else if (elem.tagName == 'link' && elem.getAttribute('rel') == 'stylesheet') {
 				const link = elem as HTMLLinkElement;
-				const css = await (await fetch(link.href)).text();
-				await processAndAdopt(css);
+				try {
+					this.container.classList.add(
+						await this._styleScoper.addByURL(link.href)
+					);
+				}
+				catch (e) {
+					console.error(e);
+				}
 				toRemove.push(elem);
 			}
 			else if (elem.tagName == 'a') {
