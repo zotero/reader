@@ -60,3 +60,7 @@ replaced-body {
 	line-height: 1.4;
 	text-align: justify;
 }
+
+replaced-body a {
+	text-decoration: none;
+}
