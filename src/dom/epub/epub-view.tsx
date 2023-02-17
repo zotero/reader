@@ -956,9 +956,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 				console.error('Unable to find section for pathname', pathname);
 				return;
 			}
-			const target = hash && this._sectionViews.get(section.index)!.container.querySelector('#' + hash);
+			const target = hash && this._sectionViews.get(section.index)!.container
+				.querySelector('[id="' + hash.replace(/"/g, '"') + '"]');
 			if (target) {
-				this._scrollIntoView(target as HTMLElement, { block: 'center' });
+				this._scrollIntoView(target as HTMLElement, { block: 'start' });
 			}
 			else {
 				this.navigate({ section: section.index }, skipPushToNavStack);
