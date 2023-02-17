@@ -43,7 +43,7 @@ import contentCSS from '!!raw-loader!./stylesheets/content.css';
 import Section from "epubjs/types/section";
 import { closestElement } from "../common/lib/nodes";
 import { isSafari } from "../../common/lib/utilities";
-import section from "epubjs/src/section";
+import Path from "epubjs/src/utils/path";
 
 // - All views use iframe to render and isolate the view from the parent window
 // - If need to add additional build steps, a submodule or additional files see pdfjs/
@@ -129,6 +129,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		container.classList.add('section-container', 'cfi-stop');
 		container.hidden = true; // Until all are loaded
 		container.setAttribute('data-section-index', String(section.index));
+		this._sectionsContainer.append(container);
 		const sectionView = new SectionView({
 			section,
 			container,
@@ -140,7 +141,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		});
 		const html = await section.render(this._book.archive.request.bind(this._book.archive));
 		await sectionView.initWithHTML(html);
-		this._sectionsContainer.append(container);
 		this._sectionViews.set(section.index, sectionView);
 	}
 
@@ -186,15 +186,18 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _initOutline() {
-		const toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
-			title: navItem.label,
-			location: { href: navItem.href },
-			items: navItem.subitems?.map(toOutlineItem),
-			expanded: true,
-		});
 		if (!this._book.navigation.toc.length) {
 			return;
 		}
+		const navPath = new Path(this._book.packaging.navPath);
+		const toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
+			title: navItem.label,
+			location: {
+				href: navPath.resolve(navItem.href).replace(/^\//, '')
+			},
+			items: navItem.subitems?.map(toOutlineItem),
+			expanded: true,
+		});
 		this._options.onSetOutline(this._book.navigation.toc.map(toOutlineItem));
 	}
 
