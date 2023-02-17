@@ -1,8 +1,15 @@
 @namespace epub url('http://www.idpf.org/2007/ops');
 
+/* Can't combine the following two or it would make the specificity higher than the body.paginated selector below. */
+
+html {
+	margin: 0 !important;
+	padding: 0 !important;
+}
+
 body {
-	margin: 0;
-	padding: 0;
+	margin: 0 !important;
+	padding: 0 !important;
 }
 
 body.scrolled > .sections {
@@ -16,7 +23,7 @@ body.scrolled > .sections > .section-container {
 }
 
 body.paginated {
-	margin: 40px;
+	margin: 40px !important;
 }
 
 body.paginated > .sections {
@@ -41,7 +48,7 @@ body.paginated > .sections > .section-container {
 }
 
 body.paginated replaced-body * {
-	max-width: 50vw;
+	max-width: calc(50vw - 80px);
 }
 
 @media (max-width: 800px) {
