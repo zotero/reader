@@ -112,7 +112,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 		this._book.opened.then(async () => {
 			const locationsPromise = this._initLocations();
-			this._setInitialViewState(this._options.viewState || { flowMode: 'paginated' });
+			this._setInitialViewState(this._options.viewState || { flowMode: 'scrolled' });
 			await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section)));
 			// Now that all are loaded, un-hide them all at once
 			for (const view of this._sectionViews.values()) {
