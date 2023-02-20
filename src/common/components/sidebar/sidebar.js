@@ -4,39 +4,7 @@ import cx from 'classnames';
 import AnnotationsView from './annotations-view';
 // import { cleanFilter, filterAnnotations } from '../../../src/lib/search';
 
-const Sidebar = React.forwardRef((props, ref) => {
-	function scrollAnnotationIntoView(id) {
-		setTimeout(() => {
-			let node = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-			node.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-		});
-	}
-
-	function editHighlightText(id) {
-		document.querySelector(`[data-sidebar-annotation-id="${id}"]`).focus();
-		setTimeout(() => {
-			let node = document.querySelector(`[data-sidebar-annotation-id="${id}"] .content`);
-			var clickEvent = document.createEvent('MouseEvents');
-			clickEvent.initEvent('dblclick', true, true);
-			node.dispatchEvent(clickEvent);
-			node.focus();
-		}, 50);
-	}
-
-	function openPageLabelPopup(id) {
-		let node = document.querySelector(`[data-sidebar-annotation-id="${id}"] .page`);
-		var clickEvent = document.createEvent('MouseEvents');
-		clickEvent.initEvent('dblclick', true, true);
-		node.dispatchEvent(clickEvent);
-		node.focus();
-	}
-
-	useImperativeHandle(ref, () => ({
-		scrollAnnotationIntoView,
-		editHighlightText,
-		openPageLabelPopup
-	}));
-
+function Sidebar(props) {
 	return (
 		<div id="sidebarContainer" className="sidebarOpen">
 			<div id="toolbarSidebar">
@@ -79,6 +47,6 @@ const Sidebar = React.forwardRef((props, ref) => {
 			</div>
 		</div>
 	);
-});
+}
 
 export default Sidebar;

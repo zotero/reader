@@ -88,11 +88,9 @@ export function PopupPreview(props) {
 					<Editor
 						id={annotation.id}
 						text={annotation.comment}
-						focusable={!annotation.readOnly}
 						placeholder={annotation.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
 							: intl.formatMessage({ id: 'pdfReader.addComment' })}
-						isPlainText={false}
-						isReadOnly={annotation.readOnly}
+						readOnly={annotation.readOnly}
 						onChange={handleCommentChange}
 					/>
 				</div>
@@ -206,14 +204,11 @@ export function SidebarPreview(props) {
 			<div className="blockquote-border" style={{ backgroundColor: annotation.color }}/>
 			<ExpandableEditor
 				id={annotation.id}
-				clampID="highlight-clamp"
 				text={annotation.text}
 				placeholder={intl.formatMessage({ id: 'pdfReader.noExtractedText' })}
-				isReadOnly={annotation.readOnly}
-				isExpanded={props.state >= 2}
-				isEditable={state === 3}
+				readOnly={annotation.readOnly || state !== 3}
+				expanded={props.state >= 2}
 				onChange={handleTextChange}
-				onBlur={handleEditorBlur}
 			/>
 		</div>
 	);
@@ -229,16 +224,11 @@ export function SidebarPreview(props) {
 		>
 			<ExpandableEditor
 				id={annotation.id}
-				clampID="comment-clamp"
-				focusable={props.selected}
 				text={annotation.comment}
+				readOnly={annotation.readOnly || !(state === 1 || state === 2 || state === 3)}
+				expanded={state >= 1}
 				placeholder={intl.formatMessage({ id: 'pdfReader.addComment' })}
-				isPlainText={false}
 				onChange={handleCommentChange}
-				isReadOnly={annotation.readOnly}
-				isExpanded={state >= 1}
-				isEditable={state === 1 || state === 2 || state === 3}
-				onBlur={handleEditorBlur}
 			/>
 		</div>;
 
@@ -297,10 +287,14 @@ export function SidebarPreview(props) {
 						</div>
 					)}
 					<button
-						data-tabstop={props.selected ? 1 : undefined}
-						tabIndex={-1}
+						data-tabstop={props.selected && !annotation.readOnly ? 1 : undefined}
+						tabIndex={props.selected && !annotation.readOnly ? -1 : undefined}
 						className="more"
+						disabled={annotation.readOnly}
 						onClick={handleClickMore}
+						// Make sure 'more' button focusing never triggers annotation element focusing,
+						// which triggers annotation selection
+						onFocus={e => e.stopPropagation()}
 					/>
 				</div>
 			</header>
@@ -319,7 +313,7 @@ export function SidebarPreview(props) {
 			&& (
 				<button
 					className="tags"
-					data-tabstop={props.selected ? 1 : undefined}
+					data-tabstop={props.selected && !annotation.readOnly ? 1 : undefined}
 					onClick={e => handleSectionClick(e, 'tags')}
 					draggable={true}
 					onDragStart={handleDragStart}

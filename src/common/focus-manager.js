@@ -1,3 +1,4 @@
+import { pressedNextKey, pressedPreviousKey } from './lib/utilities';
 
 export class FocusManager {
 	constructor(options) {
@@ -50,10 +51,10 @@ export class FocusManager {
 		if (e.target.closest('.outline-view') && ['ArrowLeft', 'ArrowRight'].includes(e.key)) {
 			return;
 		}
-		if (!window.rtl && e.key === 'ArrowRight' || window.rtl && e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+		if (pressedNextKey(e)) {
 			this.tabToItem();
 		}
-		else if (!window.rtl && e.key === 'ArrowLeft' || window.rtl && e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+		else if (pressedPreviousKey(e)) {
 			this.tabToItem(true);
 		}
 	}

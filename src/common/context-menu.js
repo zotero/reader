@@ -98,13 +98,16 @@ export function createViewContextMenu(reader, params) {
 }
 
 export function createAnnotationContextMenu(reader, params) {
+	let annotations = reader._state.annotations.filter(x => params.ids.includes(x.id));
+	let readOnly = annotations.some(x => x.readOnly);
 	return {
 		x: params.x,
 		y: params.y,
 		itemGroups: createItemGroup([
 			ANNOTATION_COLORS.map(([label, color]) => ({
 				label: reader._getString(label),
-				disabled: reader._readOnly,
+				disabled: readOnly,
+				persistent: true,
 				checked: color === params.color,
 				color: color,
 				onCommand: () => {
@@ -115,15 +118,18 @@ export function createAnnotationContextMenu(reader, params) {
 			[
 				{
 					label: reader._getString('pdfReader.editPageNumber'),
-					disabled: params.ids.length !== 1 || params.popup || reader._type !== 'pdf',
+					disabled: readOnly || params.ids.length !== 1 || params.popup || reader._type !== 'pdf',
+					persistent: true,
 					onCommand: () => reader._sidebarOpenPageLabelPopup(params.ids[0])
 				},
 				{
 					label: reader._getString('pdfReader.editHighlightedText'),
-					disabled: !(params.ids.length === 1
+					disabled: readOnly || !(
+						params.ids.length === 1
 						&& reader._state.annotations.find(x => x.id === params.ids[0] && x.type === 'highlight')
 						&& !params.popup
 					),
+					persistent: true,
 					onCommand: () => reader._sidebarEditHighlightText(params.ids[0])
 				}
 			],
@@ -152,7 +158,7 @@ export function createAnnotationContextMenu(reader, params) {
 			[
 				{
 					label: reader._getString('general.delete'),
-					disabled: params.readOnly,
+					disabled: readOnly,
 					persistent: true,
 					onCommand: () => reader._annotationManager.deleteAnnotations(params.ids)
 				},

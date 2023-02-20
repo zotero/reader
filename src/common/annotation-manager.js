@@ -117,7 +117,6 @@ class AnnotationManager {
 	}
 
 	updateAnnotations(annotations) {
-		console.log('upppdating', annotations)
 		if (this._readOnly) {
 			throw new Error('Cannot update annotation for read-only file');
 		}

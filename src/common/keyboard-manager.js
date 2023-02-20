@@ -1,4 +1,5 @@
-import { isLinux, isMac } from './lib/utilities';
+import { isTextBox, isLinux, isMac } from './lib/utilities';
+import { ANNOTATION_COLORS } from './defines';
 
 export class KeyboardManager {
 	constructor(options) {
@@ -28,21 +29,50 @@ export class KeyboardManager {
 				this._reader.navigateForward();
 			}
 		}
-		else {
-			// Escape must be pressed alone. We basically want to prevent
-			// Option-Escape (speak text on macOS) deselecting text
-			if (key === 'Escape' && !(mod || alt || shift)) {
-				this._reader._lastView.focus();
-				this._reader.abortPrint();
-				this._reader._updateState({
-					selectedAnnotationIDs: [],
-					labelOverlay: null,
-					contextMenu: null,
-				});
-			}
+
+		// Escape must be pressed alone. We basically want to prevent
+		// Option-Escape (speak text on macOS) deselecting text
+		if (key === 'Escape' && !(mod || alt || shift)) {
+			this._reader._lastView.focus();
+			this._reader.abortPrint();
+			this._reader._updateState({
+				selectedAnnotationIDs: [],
+				labelOverlay: null,
+				contextMenu: null,
+				tool: {
+					...this._reader._state.tool,
+					type: 'pointer'
+				},
+				primaryViewFindPopup: {
+					...this._reader._state.primaryViewFindPopup,
+					open: false
+				},
+				secondaryViewFindPopup: {
+					...this._reader._state.secondaryViewFindPopup,
+					open: false
+				}
+			});
+			this._reader.setFilter({
+				query: '',
+				colors: [],
+				tags: [],
+				authors: []
+			});
 		}
 
-		if (mod && key === 'f') {
+		if (mod && key === 'a') {
+			// Prevent text selection if not inside a text box
+			if (!isTextBox(event.target)) {
+				event.preventDefault();
+				// If sidebar is open and Mod-A was inside a view or sidebar, select visible annotations
+				if (this._reader._state.sidebarOpen
+					&& this._reader._state.sidebarView === 'annotations'
+					&& (view || event.target.closest('#annotationsView'))) {
+					this._reader.setSelectedAnnotations(this._reader._state.annotations.filter(x => !x._hidden).map(x => x.id));
+				}
+			}
+		}
+		else if (mod && key === 'f') {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
 		}

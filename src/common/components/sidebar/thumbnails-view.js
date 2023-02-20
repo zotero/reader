@@ -1,6 +1,7 @@
 import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
+import { pressedNextKey, pressedPreviousKey } from '../../lib/utilities';
 
 function Thumbnail({ thumbnail, selected, pageLabel, onContextMenu }) {
 	return (
@@ -103,7 +104,7 @@ function ThumbnailsView(props) {
 
 	function handleKeyDown(e) {
 		e.preventDefault();
-		if (!window.rtl && e.key === 'ArrowLeft' || window.rtl && e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+		if (pressedPreviousKey(e)) {
 			let pageIndex = selected[selected.length - 1];
 			if (pageIndex === undefined) {
 				pageIndex = 0;
@@ -128,7 +129,7 @@ function ThumbnailsView(props) {
 			}
 			containerRef.current.children[pageIndex].scrollIntoView({ block: 'nearest', inline: 'nearest' });
 		}
-		else if (!window.rtl && e.key === 'ArrowRight' || window.rtl && e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+		else if (pressedNextKey(e)) {
 			let pageIndex = selected[selected.length - 1];
 			if (pageIndex === undefined) {
 				pageIndex = 0;
@@ -159,6 +160,13 @@ function ThumbnailsView(props) {
 				range.push(i);
 			}
 			setSelected(range);
+		}
+		else if (e.key === 'Escape') {
+			setSelected([props.currentPageIndex]);
+			containerRef.current.children[props.currentPageIndex]?.scrollIntoView({
+				block: 'nearest',
+				inline: 'nearest'
+			});
 		}
 	}
 

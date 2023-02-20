@@ -14,6 +14,31 @@ export function isWin() {
 export let isFirefox = typeof InstallTrigger !== 'undefined';
 export let isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && window['safari'].pushNotification));
 
+export function isTextBox(node) {
+	return ['INPUT'].includes(node.nodeName) && node.type === 'text' || node.getAttribute('contenteditable') === 'true';
+}
+
+export function pressedNextKey(event) {
+	let { key } = event;
+	return !window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown';
+}
+
+export function pressedPreviousKey(event) {
+	let { key } = event;
+	return !window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp';
+}
+
+export function setCaretToEnd(target) {
+	let range = document.createRange();
+	let sel = window.getSelection();
+	range.selectNodeContents(target);
+	range.collapse(false);
+	sel.removeAllRanges();
+	sel.addRange(range);
+	target.focus();
+	range.detach();
+}
+
 // https://github.com/jashkenas/underscore/blob/master/underscore.js
 // (c) 2009-2018 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
 // Underscore may be freely distributed under the MIT license.

@@ -275,8 +275,9 @@ class Reader {
 		this._readerRef.current?.setState(this._state);
 
 		if (this._state.annotations !== previousState.annotations) {
-			this._primaryView?.setAnnotations(this._state.annotations);
-			this._secondaryView?.setAnnotations(this._state.annotations);
+			let annotations = this._state.annotations.filter(x => !x._hidden);
+			this._primaryView?.setAnnotations(annotations);
+			this._secondaryView?.setAnnotations(annotations);
 		}
 
 		if (this._state.selectedAnnotationIDs !== previousState.selectedAnnotationIDs) {
@@ -620,7 +621,7 @@ class Reader {
 		};
 
 		let onSelectAnnotations = (ids) => {
-			this.setSelectedAnnotations(ids, { skipViewNavigation: true });
+			this.setSelectedAnnotations(ids, true);
 		};
 
 		let onTabOut = (reverse) => {
@@ -637,7 +638,7 @@ class Reader {
 			buf: this._buf,
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
-			annotations: this._state.annotations,
+			annotations: this._state.annotations.filter(x => !x._hidden),
 			showAnnotations: this._state.showAnnotations,
 			findPopup: this._state[primary ? 'primaryViewFindPopup' : 'secondaryViewFindPopup'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
@@ -784,6 +785,8 @@ class Reader {
 			}
 			this._lastPortalRect = rect.slice();
 
+			this._portalView._iframeWindow.PDFViewerApplication.pdfViewer.currentScale = 1;
+
 			// TODO: Detect and zoom to paragraph width while ignoring margins, but preserve zoom
 			//  level lower than in the current view, and reduce overlay popup dimensions
 			this._portalView._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(dest);
@@ -885,18 +888,37 @@ class Reader {
 		this._lastView.navigateToNextPage();
 	}
 
-	setSelectedAnnotations(ids, options = {}) {
+	setSelectedAnnotations(ids, triggeredFromView) {
 		this._updateState({ selectedAnnotationIDs: ids });
 		if (ids.length === 1) {
 			let id = ids[0];
-
-			if (!options.skipViewNavigation) {
-				let annotation = this._annotationManager._annotations.find(x => x.id === id);
-				if (annotation) {
+			let annotation = this._annotationManager._annotations.find(x => x.id === id);
+			if (annotation) {
+				if (triggeredFromView) {
+					if (annotation.comment) {
+						let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+						if (sidebarItem) {
+							// Make sure to call this after all events, because mousedown will re-focus the View
+							setTimeout(() => sidebarItem.focus());
+						}
+					}
+					else {
+						setTimeout(() => {
+							let content;
+							if (this._state.sidebarOpen) {
+								content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
+							}
+							else {
+								content = document.querySelector(`.annotation-popup .comment .content`);
+							}
+							content?.focus();
+						}, 50);
+					}
+				}
+				else {
 					this._lastView.navigate({ annotationID: annotation.id });
 				}
 			}
-
 			let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
 			if (sidebarItem) {
 				this.setSidebarView('annotations');
@@ -965,7 +987,12 @@ class Reader {
 	}
 
 	print() {
-		this._updateState({ printOverlay: {} });
+		if (this._state.annotations.length) {
+			this._updateState({ printOverlay: {} });
+		}
+		else {
+			window.print();
+		}
 	}
 
 	abortPrint() {

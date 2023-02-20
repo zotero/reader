@@ -1,4 +1,3 @@
-import print from './pdf-print-service';
 import Page from './page';
 import { Extractor } from './lib/extract';
 import { v2p } from './lib/coordinates';
@@ -18,12 +17,21 @@ import {
 	intersectAnnotationWithPoint,
 	quickIntersectRect
 } from './lib/utilities';
-import { getAffectedAnnotations, isFirefox, isMac, isSafari, throttle } from '../common/lib/utilities';
+import {
+	getAffectedAnnotations,
+	isFirefox,
+	isMac,
+	isSafari,
+	pressedNextKey,
+	pressedPreviousKey,
+	throttle
+} from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
 import { PDF_NOTE_DIMENSIONS } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
+import PopupDelayer from '../common/lib/popup-delayer';
 
 class PDFView {
 	constructor(options) {
@@ -71,6 +79,7 @@ class PDFView {
 			this._pdfRenderer = new PDFRenderer({ pdfView: this });
 		}
 
+		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
 		// this._annotations = [];
 
@@ -122,13 +131,9 @@ class PDFView {
 				let x = event.target.scrollLeft;
 				let y = event.target.scrollTop;
 
-
 				if (this._overlayPopup) {
-					if (this._selectedOverlay) {
-						this._onSetOverlayPopup({ rect: this.getClientRect(this._selectedOverlay.position.rects[0], this._selectedOverlay.position.pageIndex) });
-					}
+					this._onSetOverlayPopup();
 				}
-
 
 				// TODO: Consider creating "getSelectionAnnotationPopup"
 				if (this._annotationPopup) {
@@ -161,6 +166,7 @@ class PDFView {
 		this._iframeWindow.document.body.draggable = true;
 
 
+		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
@@ -484,6 +490,7 @@ class PDFView {
 
 	setOverlayPopup(popup) {
 		this._overlayPopup = popup;
+		this._overlayPopupDelayer.setOpen(!!popup);
 	}
 
 	setFindPopup(popup) {
@@ -956,6 +963,10 @@ class PDFView {
 	// - Don't allow to select anything under the currently selected element
 	// - Move text selection into getSingleSelectedObjectAction
 	getActionAtPosition(position, event) {
+		if (this._portal) {
+			let action = { type: 'none' };
+			return { action, selectAnnotations: [] };
+		}
 		if (this._selectionRanges.length) {
 			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
 			if (annotation && intersectAnnotationWithPoint(annotation.position, position)) {
@@ -1139,7 +1150,8 @@ class PDFView {
 
 		if (event.button === 2) {
 			let br = this._iframe.getBoundingClientRect();
-			this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+			// Trigger view context menu after focus even fires and focuses the current view
+			setTimeout(() => this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY }));
 			return;
 		}
 
@@ -1165,6 +1177,17 @@ class PDFView {
 		}
 		let page = this.getPageByIndex(position.pageIndex);
 		let { action, selectAnnotations } = this.getActionAtPosition(position, event);
+
+		if (action.type === 'overlay') {
+			if (action.overlay.type === 'internal-link') {
+				this.navigate({ dest: action.overlay.dest });
+			}
+			else if (action.overlay.type === 'external-link') {
+				this._onOpenLink(action.overlay.url);
+			}
+			return;
+		}
+
 		this.action = action;
 		this.pointerDownPosition = position;
 		// Select text, and/or object, otherwise unselect
@@ -1250,17 +1273,20 @@ class PDFView {
 				let { action, selectAnnotations } = this.getActionAtPosition(position, event);
 				this.updateCursor(action);
 				if (action.type === 'overlay') {
-					// TODO: Open overlay after a delay, close after delay as well
 					if (this._selectedOverlay !== action.overlay) {
-						this._selectedOverlay = action.overlay;
-						let rect = this.getClientRect(action.overlay.position.rects[0], action.overlay.position.pageIndex);
-						let overlayPopup = { ...action.overlay, rect, width: 400, height: 200, scale: 1 };
-						this._onSetOverlayPopup(overlayPopup);
+						this._overlayPopupDelayer.open(action.overlay, () => {
+							this._selectedOverlay = action.overlay;
+							let rect = this.getClientRect(action.overlay.position.rects[0], action.overlay.position.pageIndex);
+							let overlayPopup = { ...action.overlay, rect, width: 400, height: 200, scale: 1 };
+							this._onSetOverlayPopup(overlayPopup);
+						});
 					}
 				}
-				else if (this._selectedOverlay) {
-					this._selectedOverlay = null;
-					this._onSetOverlayPopup(null);
+				else /*if (this._selectedOverlay)*/ {
+					this._overlayPopupDelayer.close(() => {
+						this._selectedOverlay = null;
+						this._onSetOverlayPopup(null);
+					});
 				}
 				if (selectAnnotations?.length) {
 					this.hover = { pageIndex: position.pageIndex, id: selectAnnotations[0].id };
@@ -1562,6 +1588,10 @@ class PDFView {
 		});
 	}
 
+	_handleContextMenu(event) {
+		event.preventDefault();
+	}
+
 	_handleKeyDown(event) {
 		let { key } = event;
 		let ctrl = event.ctrlKey;
@@ -1630,11 +1660,11 @@ class PDFView {
 		}
 
 		if (this._focusedObject) {
-			if (!window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown') {
+			if (pressedNextKey(event)) {
 				this._focusNext();
 				event.preventDefault();
 			}
-			else if (!window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp') {
+			else if (pressedPreviousKey(event)) {
 				this._focusNext(true);
 				event.preventDefault();
 			}

@@ -82,12 +82,13 @@ function View(props) {
 const ReaderUI = React.forwardRef((props, ref) => {
 	let [state, setState] = useState(props.state);
 	let sidebarRef = useRef();
+	let annotationsViewRef = useRef();
 
 	useImperativeHandle(ref, () => ({
 		setState,
-		sidebarScrollAnnotationIntoView: (id) => sidebarRef.current?.scrollAnnotationIntoView(id),
-		sidebarEditHighlightText: (id) => sidebarRef.current?.editHighlightText(id),
-		sidebarOpenPageLabelPopup: (id) => sidebarRef.current?.openPageLabelPopup(id)
+		sidebarScrollAnnotationIntoView: (id) => annotationsViewRef.current?.scrollAnnotationIntoView(id),
+		sidebarEditHighlightText: (id) => annotationsViewRef.current?.editHighlightText(id),
+		sidebarOpenPageLabelPopup: (id) => annotationsViewRef.current?.openPageLabelPopup(id)
 	}));
 
 	let findPopup = state.primary ? state.primaryViewFindPopup : state.secondaryViewFindPopup;
@@ -126,7 +127,6 @@ const ReaderUI = React.forwardRef((props, ref) => {
 				<div>
 					{state.sidebarOpen === true &&
 						<Sidebar
-							ref={sidebarRef}
 							type={props.type}
 							view={state.sidebarView}
 							enableOutlineView={!!state.outline.length}
@@ -143,6 +143,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							}
 							annotationsView={
 								<AnnotationsView
+									ref={annotationsViewRef}
 									type={props.type}
 									readOnly={state.readOnly}
 									filter={state.filter}

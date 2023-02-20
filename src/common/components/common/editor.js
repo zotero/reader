@@ -1,8 +1,5 @@
-import React from 'react';
+import React, { Fragment, useEffect, useImperativeHandle, useLayoutEffect, useRef } from 'react';
 import cx from 'classnames';
-
-// TODO: Avoid resetting cursor and losing the recently typed text
-//  when a new annotation is synced
 
 const supportedFormats = ['i', 'b', 'sub', 'sup'];
 const multiline = true;
@@ -14,7 +11,9 @@ function getFormatter(str) {
 	for (let result of results) {
 		let format = result[0];
 		let offset = result[1];
-		if (offset < 0) continue;
+		if (offset < 0) {
+			continue;
+		}
 		let lastIndex = str.toLowerCase().indexOf('</' + format + '>', offset);
 		if (lastIndex >= 0) {
 			let parts = [];
@@ -72,9 +71,9 @@ function walkUnformat(parent) {
 
 		// Unwrap <div><br></div> and some <div>...</div> to avoid doubled line breaks in innerText
 		if (child.nodeName === 'DIV'
-		&& (child.firstChild && child.firstChild.nodeName === 'BR'
-			|| child.nodeName === 'DIV' && child.nextSibling && child.nextSibling.nodeName === 'DIV'
-			&& child.nextSibling.firstChild && child.nextSibling.firstChild.nodeName === 'BR')
+			&& (child.firstChild && child.firstChild.nodeName === 'BR'
+				|| child.nodeName === 'DIV' && child.nextSibling && child.nextSibling.nodeName === 'DIV'
+				&& child.nextSibling.firstChild && child.nextSibling.firstChild.nodeName === 'BR')
 		) {
 			let firstNode = child.firstChild;
 			child.replaceWith(...child.childNodes);
@@ -102,7 +101,6 @@ function clean(parent) {
 
 					child.replaceWith(aa);
 					child = aa;
-					continue;
 				}
 			}
 
@@ -165,223 +163,145 @@ var actions = [
 	}
 ];
 
-class BubbleButton extends React.Component {
-	handleClick = (event) => {
+function ToolbarButton({ action, onCommand }) {
+	function handleClick(event) {
 		event.preventDefault();
-		this.props.onCommand(this.props.action.command);
+		onCommand(action.command);
 	}
 
-	render() {
-		return (
-			<button
-				className={cx('button', 'icon-' + this.props.action.command)}
-				dangerouslySetInnerHTML={{ __html: this.props.action.icon }}
-				onPointerDown={this.handleClick}
-			/>
-		);
-	}
+	return (
+		<button
+			className={cx('button', 'icon-' + action.command)}
+			dangerouslySetInnerHTML={{ __html: action.icon }}
+			onPointerDown={handleClick}
+		/>
+	);
 }
 
-class Bubble extends React.Component {
-	render() {
-		return (
-			<div
-				className="bubble"
-				style={{ top: this.props.top }}
-			>
-				{
-					actions.map((action, idx) => (
-						<BubbleButton
-							key={idx}
-							action={action}
-							onCommand={this.props.onCommand}
-						/>
-					))
-				}
-			</div>
-		);
-	}
-}
+function Toolbar({ onCommand }) {
+	let editorRef = useRef();
 
-class Content extends React.Component {
-	currentText = null;
+	useLayoutEffect(() => {
+		update();
+	}, []);
 
-	constructor(props) {
-		super(props);
+	useEffect(() => {
+		document.addEventListener('selectionchange', handleSelectionChange);
+		document.addEventListener('scroll', handleScroll, true);
+		return () => {
+			document.removeEventListener('selectionchange', handleSelectionChange);
+			document.removeEventListener('scroll', handleScroll, true);
+		};
+	});
+
+	function handleSelectionChange() {
+		update();
 	}
 
-	componentDidMount() {
-		document.addEventListener('selectionchange', this.onSelectionChange);
-		this.props.innerRef.current.innerText = this.props.text;
-		walkFormat(this.props.innerRef.current);
-		this.currentText = this.props.text;
+	// For annotation in View
+	function handleScroll() {
+		update();
 	}
 
-	componentWillUnmount() {
-		document.removeEventListener('selectionchange', this.onSelectionChange);
-	}
-
-	componentDidUpdate(prevProps) {
-		if (
-			this.props.id !== prevProps.id
-			|| this.currentText !== prevProps.text
-		) {
-			this.props.innerRef.current.innerText = this.props.text;
-			walkFormat(this.props.innerRef.current);
-			this.currentText = this.props.text;
-		}
-	}
-
-	onSelectionChange = () => {
-		let { innerRef } = this.props;
+	function update() {
 		let selection = window.getSelection();
-		let node = selection.anchorNode;
-		let isSelected = false;
-		// Using try … catch to avoid `Error: Permission denied to access property "nodeType"`
-		try {
-			isSelected = !selection.isCollapsed
-				&& innerRef.current.contains(node.nodeType === Node.TEXT_NODE ? node.parentNode : node);
+		if (!selection || selection.isCollapsed) {
+			editorRef.current.style.display = 'none';
+			return;
 		}
-		catch (e) {
-		}
-		this.props.onSelectionChange(isSelected);
-	}
-
-	shouldComponentUpdate(nextProps) {
-		if (
-			this.props.id !== nextProps.id
-			|| this.currentText !== nextProps.text
-			|| this.props.isReadOnly !== nextProps.isReadOnly
-		) {
-			return true;
-		}
-		return false;
-	}
-
-	handleChange = (html) => {
-		this.refs.renderer.innerHTML = html;
-		walkUnformat(this.refs.renderer);
-		let text = this.refs.renderer.innerText;
-		text = text.replace(/\n<\//g, '<\/');
-		text = text.trim();
-		this.currentText = text;
-		this.props.onChange(text);
-	}
-
-	clearSelection() {
-		let selection = window.getSelection ? window.getSelection() : document.selection ? document.selection : null;
-		if (selection) selection.empty ? selection.empty() : selection.removeAllRanges();
-	}
-
-	render() {
-		let { plainTextOnly, text, placeholder, onChange, innerRef, tabIndex, onBlur } = this.props;
-		return (
-			<React.Fragment>
-				<div
-					ref={innerRef}
-					suppressContentEditableWarning={true}
-					className="content"
-					data-tabstop={this.props.focusable ? 1 : undefined}
-					tabIndex={this.props.focusable ? -1 : undefined}
-					contentEditable={!this.props.isReadOnly}
-					dir="auto"
-					onInput={() => {
-						clean(innerRef.current);
-						this.handleChange(innerRef.current.innerHTML);
-					}}
-					placeholder={placeholder}
-					onKeyDown={(event) => {
-						event.stopPropagation();
-						if (event.key === 'Escape') {
-							this.clearSelection();
-							innerRef.current.blur();
-							this.props.onBlur();
-						}
-					}}
-					onScroll={this.props.onScroll}
-				/>
-				<div className="renderer" ref="renderer"></div>
-			</React.Fragment>
-		);
-	}
-}
-
-class Editor extends React.Component {
-	constructor(props) {
-		super(props);
-	}
-
-	contentRef = React.createRef();
-
-	state = {
-		isSelected: false,
-		bubbleTop: null
-	}
-
-	componentDidMount() {
-		this._isMounted = true;
-	}
-
-	componentWillUnmount() {
-		this._isMounted = false;
-	}
-
-	getSelectionTop() {
-		let selection = window.getSelection();
-		if (!selection || selection.isCollapsed) return null;
 		let range = selection.getRangeAt(0);
 		let selectionRect = range.getBoundingClientRect();
-
 		let editorNode = range.startContainer.parentNode.closest('.editor');
-		if (editorNode !== this.refs.editor) return null;
-		let editorRect = editorNode.getBoundingClientRect();
-		return selectionRect.y - editorRect.y;
-	}
-
-	handleSelection = () => {
-		if (!this._isMounted) return;
-		let top = this.getSelectionTop();
-		if (this.state.bubbleTop !== top) {
-			this.setState({ bubbleTop: top });
+		if (!editorNode.parentNode.contains(editorRef.current)) {
+			editorRef.current.style.display = 'none';
+			return;
 		}
+		let editorRect = editorNode.getBoundingClientRect();
+		let top = selectionRect.y - editorRect.y;
+		editorRef.current.style.display = 'flex';
+		editorRef.current.style.top = top + 'px';
 	}
 
-	handleScroll = () => {
-		this.setState({ bubbleTop: this.getSelectionTop() });
+	return (
+		<div ref={editorRef} className="editor-toolbar">
+			{actions.map((action, idx) => (
+				<ToolbarButton key={idx} action={action} onCommand={onCommand}/>
+			))}
+		</div>
+	);
+}
+
+let Content = React.forwardRef((props, ref) => {
+	// Store last value to prevent contenteditable content updating while typing, which reset cursor position
+	let lastValueRef = useRef();
+	let innerRef = useRef();
+	let rendererRef = useRef();
+
+	useEffect(() => {
+		if (lastValueRef.current !== props.text) {
+			lastValueRef.current = props.text;
+			innerRef.current.innerText = props.text;
+			walkFormat(innerRef.current);
+		}
+	});
+
+	useImperativeHandle(ref, () => ({
+		focus: () => innerRef.current.focus()
+	}));
+
+	function handleInput(event) {
+		// Cleanup and transform contenteditable HTML into Zotero HTML-flavored plain-text,
+		// trigger onChange, and store the new plain-text value to prevent the newly updated
+		// prop causing Content component re-rendering which would cause cursor position reset
+		clean(innerRef.current);
+		rendererRef.current.innerHTML = innerRef.current.innerHTML;
+		walkUnformat(rendererRef.current);
+		let text = rendererRef.current.innerText;
+		text = text.replace(/\n<\//g, '<\/');
+		text = text.trim();
+		lastValueRef.current = text;
+		props.onChange(text);
 	}
 
-	handleBalloonCommand = (command) => {
-		this.contentRef.current.focus();
+	return (
+		<Fragment>
+			<div
+				ref={innerRef}
+				suppressContentEditableWarning={true}
+				className="content"
+				contentEditable={!props.readOnly}
+				dir="auto"
+				placeholder={props.placeholder}
+				data-tabstop={!props.readOnly ? 1 : undefined}
+				tabIndex={!props.readOnly ? -1 : undefined}
+				onInput={handleInput}
+			/>
+			<div className="renderer" ref={rendererRef}></div>
+		</Fragment>
+	);
+});
+
+function Editor(props) {
+	let contentRef = useRef();
+
+	function handleBalloonCommand(command) {
+		contentRef.current.focus();
 		document.execCommand(command, false, null);
 	}
 
-	render() {
-		return (
-			<div ref="editor" className={cx('editor', { 'read-only': this.props.isReadOnly })}>
-				{
-					!this.props.isPlainText
-					&& !this.props.isReadOnly
-					&& this.state.bubbleTop !== null
-					&& <Bubble
-						top={this.state.bubbleTop}
-						onCommand={this.handleBalloonCommand}
-					/>
-				}
-				<Content
-					id={this.props.id}
-					text={this.props.text}
-					focusable={this.props.focusable}
-					onChange={this.props.onChange}
-					innerRef={this.contentRef}
-					isReadOnly={this.props.isReadOnly}
-					onSelectionChange={this.handleSelection}
-					onBlur={this.props.onBlur}
-					placeholder={this.props.placeholder}
-					onScroll={this.handleScroll}
-				/>
-			</div>
-		);
-	}
+	return (
+		<div className={cx('editor', { 'read-only': props.readOnly })}>
+			{!props.readOnly && <Toolbar onCommand={handleBalloonCommand}/>}
+			<Content
+				ref={contentRef}
+				id={props.id}
+				text={props.text}
+				readOnly={props.readOnly}
+				placeholder={props.placeholder}
+				onChange={props.onChange}
+			/>
+		</div>
+	);
 }
 
 export default Editor;

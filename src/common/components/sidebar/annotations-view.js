@@ -5,6 +5,7 @@ import cx from 'classnames';
 import { SidebarPreview } from '../common/preview';
 import { IconColor, IconUser } from "../common/icons";
 import { ANNOTATION_COLORS } from "../../defines";
+import { pressedNextKey, pressedPreviousKey, setCaretToEnd } from '../../lib/utilities';
 
 function AnnotationsViewSearch({ query, onInput, onClear }) {
 	const intl = useIntl();
@@ -118,8 +119,8 @@ const Annotation = React.memo((props) => {
 			tabIndex={-1}
 			className={cx('annotation', { selected: props.isSelected })}
 			data-sidebar-annotation-id={props.annotation.id}
-			data-focusable-with-pointer={true}
-			onFocus={() => props.onSelect(props.annotation.id)}
+			onMouseDown={(event) => event.stopPropagation()}
+			onFocus={() => props.onFocus(props.annotation.id)}
 		>
 			<SidebarPreview
 				type={props.type}
@@ -132,21 +133,108 @@ const Annotation = React.memo((props) => {
 				onDoubleClickPageLabel={props.onDoubleClickPageLabel}
 				onOpenContextMenu={props.onOpenContextMenu}
 				onChange={props.onChange}
-				onEditorBlur={props.onAnnotationEditorBlur}
 			/>
 		</div>
 	);
 });
 
-const AnnotationsView = memo(function (props) {
+const AnnotationsView = memo(React.forwardRef((props, ref) => {
+	// Expansion state:
+	// 0 - None or multiple annotations are selected
+	// 1 - Single annotation selected, comment expanded
+	// 2 - Single annotation selected, comment expanded, highlight expanded
+	// 3 - Single annotation selected, comment expanded, highlight expanded and editable
 	const [expansionState, setExpansionState] = useState(0);
+	const pointerDownRef = useRef(false);
+	const selectionTimeRef = useRef(0);
+
+	function scrollAnnotationIntoView(id) {
+		setTimeout(() => {
+			let node = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+			node.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+		});
+	}
+
+	function editHighlightText(id) {
+		document.querySelector(`[data-sidebar-annotation-id="${id}"]`).focus();
+		setTimeout(() => {
+			setExpansionState(3);
+			focusSidebarHighlight(id);
+		}, 50);
+	}
+
+	function openPageLabelPopup(id) {
+		let node = document.querySelector(`[data-sidebar-annotation-id="${id}"] .page`);
+		var clickEvent = document.createEvent('MouseEvents');
+		clickEvent.initEvent('dblclick', true, true);
+		node.dispatchEvent(clickEvent);
+		node.focus();
+	}
+
+	useImperativeHandle(ref, () => ({
+		scrollAnnotationIntoView,
+		editHighlightText,
+		openPageLabelPopup
+	}));
 
 	useEffect(() => {
-		setExpansionState(1);
-	}, [JSON.stringify(props.selectedIDs) + props.selectedIDs.length]);
+		window.addEventListener('pointerdown', handlePointerDown);
+		window.addEventListener('pointerup', handlePointerUp);
+		// Because after canceled drag event pointerup isn't triggered
+		window.addEventListener('dragend', handlePointerUp);
+		return () => {
+			window.removeEventListener('pointerdown', handlePointerDown);
+			window.removeEventListener('pointerup', handlePointerUp);
+			window.removeEventListener('dragend', handlePointerUp);
+		};
+	});
 
-	function getContainerNode() {
-		return document.getElementById('annotationsView');
+	useEffect(() => {
+		if (props.selectedIDs.length === 1) {
+			setExpansionState(1);
+		}
+		else {
+			setExpansionState(0);
+		}
+		selectionTimeRef.current = Date.now();
+	}, [props.selectedIDs]);
+
+	function handlePointerDown() {
+		pointerDownRef.current = true;
+	}
+
+	function handlePointerUp() {
+		pointerDownRef.current = false;
+	}
+
+	// Don't selection annotation if focus was triggered by pointerdown event
+	function handleAnnotationFocus(id) {
+		// Note: Mousedown and canceled dragstart will focus the annotation element but won't select the actual annotation,
+		// because, wiht mouse, selection is only triggered by click event in handleSidebarAnnotationSectionClick
+		if (!pointerDownRef.current && !(props.selectedIDs.length === 1 && props.selectedIDs[0] === id)) {
+			props.onSelectAnnotations([id]);
+		}
+	}
+
+	// Allow navigating to next/previous annotation if inner annotation element like
+	// more button, empty comment or tags are focused
+	function handleKeyDown(event) {
+		let node = event.target;
+		// Don't do anything if annotation element is focused, because focus-manager will do the navigation
+		if (node.classList.contains('annotation')) {
+			return;
+		}
+		let annotationNode = node.closest('.annotation');
+		if (!node.classList.contains('content') || !node.innerText) {
+			if (pressedPreviousKey(event)) {
+				annotationNode.previousElementSibling?.focus();
+				event.preventDefault();
+			}
+			else if (pressedNextKey(event)) {
+				annotationNode.nextElementSibling?.focus();
+				event.preventDefault();
+			}
+		}
 	}
 
 	function handleSearchInput(query) {
@@ -204,16 +292,12 @@ const AnnotationsView = memo(function (props) {
 	}
 
 	function handleSidebarAnnotationSectionClick(id, section, event) {
-
-		// return props.onSelectAnnotations([id]);
 		let ctrl = event.ctrlKey || event.metaKey;
 		let shift = event.shiftKey;
-
 		let annotation = props.annotations.find(x => x.id === id);
 		if (section === 'tags' && !ctrl && !shift && !annotation.readOnly) {
 			return props.onOpenTagsPopup(id, event);
 		}
-
 		if (section === 'highlight' && props.selectedIDs.length === 1
 			&& props.selectedIDs[0] === id) {
 			if (expansionState >= 1 && expansionState <= 2) {
@@ -224,33 +308,25 @@ const AnnotationsView = memo(function (props) {
 			if (section === 'comment' && expansionState === 3) {
 				setExpansionState(2);
 			}
-			// let selected = selectAnnotation({ id, ctrl, shift, scrollSidebar: true, scrollViewer: true, selectInSidebar: true });
-			// if (selected === 1) {
-			// 	scrollTo(annotationsRef.current.find(x => x.id === id), true, showAnnotationsRef.current);
-			// 	// if (section !== 'header') this.focusSidebarComment(id);
-			// }
-			props.onSelectAnnotations([id]);
+			if (!(props.selectedIDs.length === 1 && props.selectedIDs[0] === id)) {
+				props.onSelectAnnotations([id]);
+			}
 		}
 	}
 
-
-
-	function handleSidebarAnnotationEditorBlur() {
-		setExpansionState(1);
-		// document.getElementById('annotationsView').focus();
-	}
-	let focusSidebarHighlight = (annotationID) => {
+	function focusSidebarHighlight(annotationID) {
 		setTimeout(function () {
 			let content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .highlight .content`);
 			if (content) {
-				// setCaretToEnd(content);
+				setCaretToEnd(content);
 			}
 		}, 100);
-	};
+	}
 
 	function handleSidebarAnnotationDoubleClick(id) {
 		if (props.selectedIDs.length === 1
-			&& props.selectedIDs[0] === id) {
+			&& props.selectedIDs[0] === id
+			&& Date.now() - selectionTimeRef.current > 500) {
 			if (expansionState >= 1 && expansionState <= 2) {
 				setExpansionState(3);
 				focusSidebarHighlight(id);
@@ -373,8 +449,6 @@ const AnnotationsView = memo(function (props) {
 		return collator.compare(a.author, b.author);
 	});
 
-
-
 	return (
 		<React.Fragment>
 			<AnnotationsViewSearch
@@ -382,7 +456,7 @@ const AnnotationsView = memo(function (props) {
 				onInput={handleSearchInput}
 				onClear={handleSearchClear}
 			/>
-			<div id="annotations" className="annotations" data-tabstop={1}>
+			<div id="annotations" className="annotations" data-tabstop={1} onKeyDownCapture={handleKeyDown}>
 				{props.annotations.length
 					? filteredAnnotations.map(annotation => (
 						<Annotation
@@ -391,29 +465,31 @@ const AnnotationsView = memo(function (props) {
 							isSelected={props.selectedIDs.includes(annotation.id)}
 							annotation={annotation}
 							expansionState={props.selectedIDs.includes(annotation.id) ? expansionState : 0}
-							onSelect={(id) => props.onSelectAnnotations([id])}
+							onFocus={handleAnnotationFocus}
 							onChange={props.onChange}
 							onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 							onDoubleClickHighlight={handleSidebarAnnotationDoubleClick}
 							onDoubleClickPageLabel={props.onOpenPageLabelPopup}
 							onOpenContextMenu={handleContextMenuOpen}
 							onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
-							onAnnotationEditorBlur={handleSidebarAnnotationEditorBlur}
 						/>
 					))
 					: !props.filter.query.length && !props.readOnly && !window.isWeb && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
 			</div>
-			{(!!tags.length || colors.length > 1) && <Selector
-				tags={tags}
-				colors={colors}
-				authors={authors}
-				onContextMenu={handleSelectorContextMenu}
-				onClickTag={handleTagClick}
-				onClickColor={handleColorClick}
-				onClickAuthor={handleAuthorClick}
-				onChange={() => {}} // TODO: Should just change filter instead
-			/>}
+			{(!!tags.length || colors.length > 1) && (
+				<Selector
+					tags={tags}
+					colors={colors}
+					authors={authors}
+					onContextMenu={handleSelectorContextMenu}
+					onClickTag={handleTagClick}
+					onClickColor={handleColorClick}
+					onClickAuthor={handleAuthorClick}
+					onChange={() => {
+					}} // TODO: Should just change filter instead
+				/>
+			)}
 		</React.Fragment>);
-});
+}));
 
 export default AnnotationsView;

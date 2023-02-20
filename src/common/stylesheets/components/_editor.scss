@@ -9,11 +9,7 @@
 
 	.content {
 		word-wrap: break-word;
-		padding: nem(4) 8px nem(4);
-
-		@-moz-document url-prefix() {
-			padding: nem(3) 8px nem(5);
-		}
+		padding: nem(3) 8px nem(3);
 
 		&:focus {
 			outline: 0;
@@ -41,7 +37,7 @@
 		overflow: hidden;
 	}
 
-	.bubble {
+	.editor-toolbar {
 		font-size: 12px;
 		position: absolute;
 		background-color: #FFF;

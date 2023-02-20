@@ -9,6 +9,12 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 		}
 	}, [params.open]);
 
+	function handleInputBlur(event) {
+		if (!event.target.value) {
+			onChange({ ...params, open: false });
+		}
+	}
+
 	function handleInputChange(event) {
 		onChange({ ...params, query: event.target.value });
 	}
@@ -54,6 +60,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 					tabIndex="-1"
 					data-tabstop={1}
 					autoComplete="off"
+					onBlur={handleInputBlur}
 					onChange={handleInputChange}
 					onKeyDown={handleInputKeyDown}
 				/>
