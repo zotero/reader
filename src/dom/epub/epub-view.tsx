@@ -45,6 +45,8 @@ import { closestElement } from "../common/lib/nodes";
 import { isSafari } from "../../common/lib/utilities";
 import Path from "epubjs/src/utils/path";
 import StyleScoper from "./lib/style-scoper";
+import PageMapping from "./lib/page-mapping";
+import { debounce } from "../../common/lib/debounce";
 
 // - All views use iframe to render and isolate the view from the parent window
 // - If need to add additional build steps, a submodule or additional files see pdfjs/
@@ -63,13 +65,15 @@ class EPUBView extends DOMView<EPUBViewState> {
 	
 	private readonly _iframe: HTMLIFrameElement;
 
-	private _iframeWindow: Window & typeof globalThis;
+	private readonly _iframeWindow: Window & typeof globalThis;
 
 	private _iframeDocument!: Document;
 	
 	private _sectionsContainer!: HTMLElement;
 
-	private readonly _sectionViews: Map<number, SectionView>;
+	private readonly _sectionViews: SectionView[] = [];
+	
+	private _cachedStartRange: Range | null = null;
 	
 	private _cachedStartCFI: EpubCFI | null = null;
 
@@ -82,6 +86,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 	private _wheelAmount = 0;
 	
 	private _wheelResetTimeout: number | null = null;
+	
+	private readonly _pageMapping = new PageMapping();
+	
+	private _lastLocation = 0;
 
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
@@ -97,8 +105,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframe.srcdoc = '<!DOCTYPE html><html><body></body></html>';
 		options.container.append(this._iframe);
 		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
-
-		this._sectionViews = new Map();
 	}
 	
 	private _handleIFrameLoad() {
@@ -112,7 +118,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.body.append(this._sectionsContainer);
 
 		this._book.opened.then(async () => {
-			const locationsPromise = this._initLocations();
 			this._setInitialViewState(this._options.viewState || { flowMode: 'scrolled' });
 			
 			const styleScoper = new StyleScoper(this._iframeDocument);
@@ -122,7 +127,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			for (const view of this._sectionViews.values()) {
 				view.container.hidden = false;
 			}
-			await locationsPromise;
+			await this._initPageMapping();
 			this._onInitialDisplay();
 		});
 	}
@@ -146,25 +151,35 @@ class EPUBView extends DOMView<EPUBViewState> {
 		});
 		const html = await section.render(this._book.archive.request.bind(this._book.archive));
 		await sectionView.initWithHTML(html);
-		this._sectionViews.set(section.index, sectionView);
+		this._sectionViews[section.index] = sectionView;
 	}
 
-	private async _initLocations() {
+	private async _initPageMapping() {
+		// Use physical page numbers if we can get any
+		if (this._pageMapping.addPhysicalPages(this._sectionViews.values())) {
+			this._updateViewStats();
+			return;
+		}
+		
+		// Otherwise, load/generate EPUB.js locations
 		const localStorageKey = this._book.key() + '-locations';
 		if (window.dev && !this._viewState.persistedLocations) {
 			this._viewState.persistedLocations = window.localStorage.getItem(localStorageKey) || undefined;
 		}
+		
+		let locations;
 		if (this._viewState.persistedLocations) {
-			this._book.locations.load(this._viewState.persistedLocations);
+			locations = this._book.locations.load(this._viewState.persistedLocations);
 		}
 		else {
-			await this._book.locations.generate(150);
+			locations = await this._book.locations.generate(1800);
 			this._viewState.persistedLocations = this._book.locations.save();
 			this._updateViewState();
 			if (window.dev) {
 				window.localStorage.setItem(localStorageKey, this._book.locations.save());
 			}
 		}
+		this._pageMapping.addEPUBLocations(this, locations);
 		this._updateViewStats();
 	}
 
@@ -247,20 +262,27 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 	
-	getCFI(range: Range): EpubCFI | null {
-		const sectionContainer = closestElement(range.commonAncestorContainer)?.closest('[data-section-index]');
+	getCFI(rangeOrNode: Range | Node): EpubCFI | null {
+		let commonAncestorNode;
+		if ('nodeType' in rangeOrNode) {
+			commonAncestorNode = rangeOrNode;
+		}
+		else {
+			commonAncestorNode = rangeOrNode.commonAncestorContainer;
+		}
+		const sectionContainer = closestElement(commonAncestorNode)?.closest('[data-section-index]');
 		if (!sectionContainer) {
 			return null;
 		}
 		const section = this._book.section(sectionContainer.getAttribute('data-section-index')!);
-		return new EpubCFI(range, section.cfiBase, IGNORE_CLASS);
+		return new EpubCFI(rangeOrNode, section.cfiBase, IGNORE_CLASS);
 	}
 
 	getRange(cfi: EpubCFI | string): Range | null {
 		if (typeof cfi === 'string') {
 			cfi = new EpubCFI(cfi, undefined, IGNORE_CLASS);
 		}
-		const view = this._sectionViews.get(cfi.spinePos);
+		const view = this._sectionViews[cfi.spinePos];
 		if (!view) {
 			console.error('Unable to find view for CFI', cfi.toString());
 			return null;
@@ -310,24 +332,57 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 	
-	get startCFI(): EpubCFI | null {
-		if (this._cachedStartCFI) {
-			return this._cachedStartCFI;
+	get startRange(): Range | null {
+		if (!this._cachedStartRange) {
+			this._updateStartRangeAndCFI();
 		}
-		
+		return this._cachedStartRange;
+	}
+	
+	get startCFI(): EpubCFI | null {
+		if (!this._cachedStartCFI) {
+			this._updateStartRangeAndCFI();
+		}
+		return this._cachedStartCFI;
+	}
+	
+	private _invalidateStartRangeAndCFI = debounce(
+		() => {
+			this._cachedStartRange = null;
+			this._cachedStartCFI = null;
+			this._updateStartRangeAndCFI();
+			this._updateViewStats();
+		},
+		100
+	);
+	
+	private _updateStartRangeAndCFI() {
 		for (const view of this._sectionViews.values()) {
 			const rect = view.container.getBoundingClientRect();
 			const visible = this._viewState.flowMode == 'paginated'
 				? !(rect.left > this._iframe.clientWidth || rect.right < 0)
 				: !(rect.top > this._iframe.clientHeight || rect.bottom < 0);
 			if (visible) {
-				const locationInView = view.getStartCFI(this._viewState.flowMode == 'paginated');
-				if (locationInView) {
-					return this._cachedStartCFI = locationInView;
+				const startRange = view.getFirstVisibleRange(
+					this._viewState.flowMode == 'paginated',
+					false
+				);
+				if (startRange) {
+					this._cachedStartRange = startRange;
+				}
+				const startCFIRange = view.getFirstVisibleRange(
+					this._viewState.flowMode == 'paginated',
+					true
+				);
+				if (startCFIRange) {
+					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase, IGNORE_CLASS);
+				}
+				
+				if (startRange && startCFIRange) {
+					break;
 				}
 			}
 		}
-		return null;
 	}
 	
 	_pushCurrentLocationToNavStack() {
@@ -386,31 +441,23 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return null;
 		}
 
-		const location = this._book.locations.locationFromCfi(selector.value);
-		const locationLabel = String(location + 1);
-		let sortIndex = locationLabel.padStart(10, '0');
-		
-		// If possible, use the number of characters between the start of the location and the start of the selection
-		// range to disambiguate the sortIndex
-		const offsetRange: Range | null = this.getRange(this._book.locations.cfiFromLocation(location) as string);
-
-		if (offsetRange) {
-			if (offsetRange.comparePoint(range.startContainer, range.startOffset) < 0) {
-				offsetRange.setStart(range.startContainer, range.startOffset);
-				// Why can locationFromCfi() return a location that apparently starts after the CFI? No idea
-				// But we'll work around it by inverting the offset
-				sortIndex += '|' + String(999 - offsetRange.toString().length).padStart(3, '0');
-			}
-			else {
-				offsetRange.setEnd(range.startContainer, range.startOffset);
-				sortIndex += '|' + String(offsetRange.toString().length).padStart(3, '0');
-			}
+		const pageLabel = this._pageMapping.getPageLabel(range);
+		if (!pageLabel) {
+			return null;
 		}
+		
+		// Use the number of characters between the start of the page and the start of the selection range
+		// to disambiguate the sortIndex
+		const section = this._getSelectorSection(selector);
+		const offsetRange = this._iframeDocument.createRange();
+		offsetRange.setStart(this._sectionViews[section].container, 0);
+		offsetRange.setEnd(range.startContainer, range.startOffset);
+		const sortIndex = String(section).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
 		return {
 			type,
 			color,
 			sortIndex,
-			pageLabel: locationLabel,
+			pageLabel,
 			position: selector,
 			text
 		};
@@ -616,8 +663,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _handleScroll(_event: Event) {
-		this._cachedStartCFI = null;
-		this._updateViewStats();
+		this._invalidateStartRangeAndCFI();
 		this._updateViewState();
 	}
 
@@ -647,7 +693,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _handleResize() {
-		this._iframeDocument.documentElement.style.setProperty('--width', this._iframe.clientWidth + 'px');
 		this._handleViewUpdate();
 	}
 
@@ -682,23 +727,18 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
 	}
-
+	
 	// View stats provide information about the view
 	protected override _updateViewStats() {
-		const startCFI = this.startCFI;
-		if (!startCFI) {
-			return;
-		}
-		const current = this._book.locations.locationFromCfi(startCFI.toString());
-		const total = this._book.locations.total;
-		const percentage = new Intl.NumberFormat(undefined, { style: 'percent' })
-			.format(this._book.locations.percentageFromCfi(startCFI.toString()));
+		const startRange = this.startRange;
+		const pageIndex = startRange && this._pageMapping.getPageIndex(startRange);
+		const pageLabel = startRange && this._pageMapping.getPageLabel(startRange);
 		const canNavigateToPreviousPage = this.canNavigateToPreviousPage();
 		const canNavigateToNextPage = this.canNavigateToNextPage();
 		const viewStats: ViewStats = {
-			pageIndex: current,
-			pagesCount: total,
-			percentage: percentage,
+			pageIndex: pageIndex ?? undefined,
+			pageLabel: pageLabel ?? undefined,
+			pagesCount: this._pageMapping.length,
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
 			canZoomIn: this._viewState.scale === undefined || this._viewState.scale < 1.5,
 			canZoomOut: this._viewState.scale === undefined || this._viewState.scale > 0.8,
@@ -714,10 +754,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._options.onChangeViewStats(viewStats);
 	}
 
-	// Called on scroll, resize, etc.
 	protected override _handleViewUpdate() {
-		this._cachedStartCFI = null;
 		super._handleViewUpdate();
+		this._invalidateStartRangeAndCFI();
 		this._renderAllAnnotations();
 	}
 
@@ -919,40 +958,19 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this._pushCurrentLocationToNavStack();
 		}
 		if (location.pageNumber) {
-			let cfi: string;
+			let range;
 			if (location.pageNumber.startsWith('epubcfi(')) {
-				cfi = location.pageNumber;
+				range = this.getRange(location.pageNumber);
 			}
 			else {
-				let locationIndex = parseInt(location.pageNumber);
-				if (isNaN(locationIndex)) {
-					console.warn('Invalid location index', locationIndex);
-					return;
-				}
-				locationIndex--;
-				if (locationIndex < 0) {
-					locationIndex = 0;
-				}
-				if (locationIndex >= this._book.locations.length()) {
-					locationIndex = this._book.locations.length() - 1;
-				}
-				cfi = this._book.locations.cfiFromLocation(locationIndex) as string;
+				range = this._pageMapping.getRange(location.pageNumber);
 			}
 			
-			const range = this.getRange(cfi);
 			if (!range) {
-				console.error('Unable to find range for CFI', cfi.toString());
+				console.error('Unable to find range');
 				return;
 			}
-			this._scrollIntoView(getCommonAncestorElement(range) as HTMLElement, { block: 'center' });
-		}
-		else if (location.section) {
-			const view = this._sectionViews.get(location.section);
-			if (!view) {
-				console.error('Unable to find view for section', location.section);
-				return;
-			}
-			this._scrollIntoView(view.container, { inline: 'start', block: 'start' });
+			this._scrollIntoView(getCommonAncestorElement(range) as HTMLElement, { block: 'start' });
 		}
 		else if (location.href) {
 			const [pathname, hash] = location.href.split('#');
@@ -961,13 +979,18 @@ class EPUBView extends DOMView<EPUBViewState> {
 				console.error('Unable to find section for pathname', pathname);
 				return;
 			}
-			const target = hash && this._sectionViews.get(section.index)!.container
+			const target = hash && this._sectionViews[section.index].container
 				.querySelector('[id="' + hash.replace(/"/g, '"') + '"]');
 			if (target) {
 				this._scrollIntoView(target as HTMLElement, { block: 'start' });
 			}
 			else {
-				this.navigate({ section: section.index }, skipPushToNavStack);
+				const view = this._sectionViews[section.index];
+				if (!view) {
+					console.error('Unable to find view for section', section.index);
+					return;
+				}
+				this._scrollIntoView(view.container, { inline: 'start', block: 'start' });
 			}
 		}
 		else {

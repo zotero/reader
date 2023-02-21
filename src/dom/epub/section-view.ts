@@ -1,6 +1,4 @@
 import Section from "epubjs/types/section";
-import { EpubCFI } from "epubjs";
-import { IGNORE_CLASS } from "./defines";
 import StyleScoper from "./lib/style-scoper";
 
 class SectionView {
@@ -103,6 +101,9 @@ class SectionView {
 				// We'll wait for images to load (or error) before returning
 				toAwait.push((elem as HTMLImageElement).decode());
 			}
+			else if (elem.tagName == 'title') {
+				toRemove.push(elem);
+			}
 		}
 		
 		for (const elem of toRemove) {
@@ -114,26 +115,54 @@ class SectionView {
 		await Promise.allSettled(toAwait).catch();
 	}
 	
-	getStartCFI(horizontal: boolean): EpubCFI | null {
-		const iter = this._document.createNodeIterator(this.container, NodeFilter.SHOW_TEXT);
-		let node: Node | null = null;
-		const range = this._document.createRange();
-		let found = false;
+	/**
+	 * Return a range before or at the top of the viewport.
+	 *
+	 * @param isHorizontal Whether the viewport is laid out horizontally (paginated mode)
+	 * @param textNodesOnly Return only text nodes, for constructing CFIs
+	 */
+	getFirstVisibleRange(isHorizontal: boolean, textNodesOnly: boolean): Range | null {
+		const viewportEnd = isHorizontal ? this._window.frameElement!.clientWidth : this._window.frameElement!.clientHeight;
+		const filter = NodeFilter.SHOW_TEXT | (textNodesOnly ? 0 : NodeFilter.SHOW_ELEMENT);
+		const iter = this._document.createNodeIterator(this.container, filter, (node) => {
+			return node.nodeType == Node.TEXT_NODE && node.nodeValue?.trim().length
+					|| (node as Element).tagName === 'IMG'
+				? NodeFilter.FILTER_ACCEPT
+				: NodeFilter.FILTER_SKIP;
+		});
+		let node = null;
+		let bestRange = null;
 		while ((node = iter.nextNode())) {
-			if (!node.nodeValue?.trim().length) {
+			const range = this._document.createRange();
+			if (node.nodeType == Node.ELEMENT_NODE) {
+				range.selectNode(node);
+			}
+			else {
+				range.selectNodeContents(node);
+			}
+			
+			const rect = range.getBoundingClientRect();
+			// Skip invisible nodes
+			if (!(rect.width || rect.height)) {
 				continue;
 			}
-			range.selectNodeContents(node);
-			const rect = range.getBoundingClientRect();
-			if (rect.width && rect.height && (horizontal ? rect.left : rect.top) >= 0) {
-				found = true;
-				break;
+			const rectStart = isHorizontal ? rect.left : rect.top;
+			const rectEnd = isHorizontal ? rect.right : rect.bottom;
+			// If the range starts past the end of the viewport, we've gone too far -- return our previous best guess
+			if (rectStart > viewportEnd) {
+				return bestRange;
+			}
+			// If it starts in the viewport, return it immediately
+			if (rectStart >= 0 || (rectStart < 0 && rectEnd > 0)) {
+				return range;
+			}
+			// Otherwise, it's above the start of the viewport -- save it as our best guess in case nothing within
+			// the viewport is usable, but keep going
+			else {
+				bestRange = range;
 			}
 		}
-		if (!found) {
-			return null;
-		}
-		return new EpubCFI(range, this.section.cfiBase, IGNORE_CLASS);
+		return null;
 	}
 }
 

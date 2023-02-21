@@ -47,7 +47,6 @@ export type NavLocation = {
 	annotationID?: string;
 	position?: Position;
 	href?: string;
-	section?: number;
 };
 
 export type Position = PDFPosition | Selector;
@@ -81,7 +80,6 @@ export type ViewStats = {
 	pageIndex?: number;
 	pageLabel?: string;
 	pagesCount?: number;
-	percentage?: string;
 	canCopy: boolean;
 	canZoomOut: boolean;
 	canZoomIn: boolean;

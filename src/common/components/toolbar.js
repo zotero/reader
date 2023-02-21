@@ -10,7 +10,7 @@ function Toolbar(props) {
 		if (['pdf', 'epub'].includes(props.type)) {
 			pageInputRef.current.value = props.pageLabel || (props.pageIndex + 1);
 		}
-	}, [props.pageIndex]);
+	}, [props.pageLabel, props.pageIndex]);
 
 	function handleSidebarButtonClick(event) {
 		props.onToggleSidebar(!props.sidebarOpen);
@@ -124,16 +124,8 @@ function Toolbar(props) {
 						onKeyDown={handlePageNumberKeydown}
 						onBlur={handlePageNumberBlur}
 					/>)}
-				{props.type == 'pdf' && props.pageLabel && (
+				{props.pageLabel && (
 					<span id="numPages" className="toolbarLabel">{props.pageIndex + 1}/{props.pagesCount}</span>
-				)}
-				{props.type == 'epub' && props.percentage && (
-					<span
-						id="numPages"
-						className="toolbarLabel"
-						title={props.pagesCount && `${props.pageIndex + 1}/${props.pagesCount}`}>
-						{props.percentage}
-					</span>
 				)}
 			</div>
 			<div className="center">

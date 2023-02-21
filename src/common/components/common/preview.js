@@ -62,7 +62,7 @@ export function PopupPreview(props) {
 					</div>
 					{annotation.pageLabel && (
 						<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
-							<div><FormattedMessage id={type === 'epub' ? 'pdfReader.location' : 'pdfReader.page'}/></div>
+							<div><FormattedMessage id="pdfReader.page"/></div>
 							<div className="label">{annotation.pageLabel}</div>
 						</div>
 					)}
@@ -275,7 +275,7 @@ export function SidebarPreview(props) {
 							onClick={handlePageLabelClick}
 							onDoubleClick={handlePageLabelDoubleClick}
 						>
-							<div><FormattedMessage id={type === 'epub' ? 'pdfReader.location' : 'pdfReader.page'}/></div>
+							<div><FormattedMessage id="pdfReader.page"/></div>
 							<div className="label">{annotation.pageLabel}</div>
 						</div>
 					)}

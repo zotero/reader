@@ -15,13 +15,13 @@
 	],
 	"dependencies": {
 		"classnames": "^2.3.1",
-		"copy-webpack-plugin": "^11.0.0",
 		"epubjs": "file:epubjs/epub.js",
 		"prop-types": "^15.8.1",
 		"queue": "^6.0.2",
 		"react": "^16.14.0",
 		"react-dom": "^16.14.0",
-		"react-intl": "^5.24.1"
+		"react-intl": "^5.24.1",
+		"sorted-btree": "^1.8.1"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.18.9",
@@ -38,6 +38,7 @@
 		"babel-loader": "^8.2.5",
 		"babel-runtime": "^6.26.0",
 		"clean-webpack-plugin": "^4.0.0",
+		"copy-webpack-plugin": "^11.0.0",
 		"css-loader": "^6.7.1",
 		"css-minimizer-webpack-plugin": "^4.0.0",
 		"eslint": "^8.32.0",

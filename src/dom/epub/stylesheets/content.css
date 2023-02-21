@@ -24,6 +24,7 @@ body.scrolled > .sections > .section-container {
 
 body.paginated {
 	margin: 40px !important;
+	overflow: hidden;
 }
 
 body.paginated > .sections {
