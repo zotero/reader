@@ -15,3 +15,10 @@ export function closestElement(node: Node): Element | null {
 	}
 	return currentNode as Element | null;
 }
+
+export const DOMPURIFY_CONFIG = {
+	ADD_TAGS: ['html', 'head', 'body', 'link', 'style'],
+	// https://github.com/cure53/DOMPurify/blob/c420ec0f4034908a4aea9caf512fb8c1acdec270/src/regexp.js#L10
+	// with blob: added
+	ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+};

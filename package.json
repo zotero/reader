@@ -15,6 +15,7 @@
 	],
 	"dependencies": {
 		"classnames": "^2.3.1",
+		"dompurify": "^3.0.0",
 		"epubjs": "file:epubjs/epub.js",
 		"prop-types": "^15.8.1",
 		"queue": "^6.0.2",
@@ -25,6 +26,7 @@
 	},
 	"devDependencies": {
 		"@babel/core": "^7.18.9",
+		"@types/dompurify": "^2.4.0",
 		"@babel/eslint-parser": "^7.18.9",
 		"@babel/plugin-transform-runtime": "^7.18.9",
 		"@babel/preset-env": "^7.18.9",

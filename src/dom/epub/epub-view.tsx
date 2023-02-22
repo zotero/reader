@@ -88,8 +88,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 	private _wheelResetTimeout: number | null = null;
 	
 	private readonly _pageMapping = new PageMapping();
-	
-	private _lastLocation = 0;
 
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
@@ -98,6 +96,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 		
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin');
+		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
+		// unless the allow-scripts permission is added to the frame's sandbox. That means that we have to allow scripts
+		// and very carefully sanitize in SectionView.
+		// https://bugs.webkit.org/show_bug.cgi?id=218086
 		if (isSafari) {
 			this._iframe.sandbox.add('allow-scripts');
 		}
@@ -115,6 +117,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 		this._sectionsContainer = this._iframeDocument.createElement('div');
 		this._sectionsContainer.classList.add('sections');
+		this._sectionsContainer.hidden = true;
 		this._iframeDocument.body.append(this._sectionsContainer);
 
 		this._book.opened.then(async () => {
@@ -123,10 +126,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 			const styleScoper = new StyleScoper(this._iframeDocument);
 			await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
 			styleScoper.rewriteAll();
-			// Now that all are loaded, un-hide them all at once
-			for (const view of this._sectionViews.values()) {
-				view.container.hidden = false;
-			}
+			
+			this._sectionsContainer.hidden = false;
 			await this._initPageMapping();
 			this._onInitialDisplay();
 		});
@@ -136,7 +137,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		const container = this._iframeDocument.createElement('div');
 		container.id = 'section-' + section.index;
 		container.classList.add('section-container', 'cfi-stop');
-		container.hidden = true; // Until all are loaded
 		container.setAttribute('data-section-index', String(section.index));
 		this._sectionsContainer.append(container);
 		const sectionView = new SectionView({

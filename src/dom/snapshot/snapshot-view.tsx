@@ -1,4 +1,7 @@
-import { isMac } from '../../common/lib/utilities';
+import {
+	isMac,
+	isSafari
+} from '../../common/lib/utilities';
 import {
 	AnnotationPopupParams,
 	AnnotationType,
@@ -27,6 +30,8 @@ import DOMView, { DOMViewOptions } from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import NavStack from "../common/lib/nav-stack";
 import { SnapshotFindProcessor } from "./find";
+import DOMPurify from "dompurify";
+import { DOMPURIFY_CONFIG } from "../common/lib/nodes";
 
 class SnapshotView extends DOMView<SnapshotViewState> {
 	private readonly _iframe: HTMLIFrameElement;
@@ -44,7 +49,22 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		const text = enc.decode(options.buf);
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin');
-		this._iframe.srcdoc = text;
+		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
+		// unless the allow-scripts permission is added to the frame's sandbox. That means that we have to allow scripts
+		// and very carefully sanitize.
+		// https://bugs.webkit.org/show_bug.cgi?id=218086
+		if (isSafari) {
+			this._iframe.sandbox.add('allow-scripts');
+			const doc = new DOMParser().parseFromString(text, 'text/html');
+			doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
+				...DOMPURIFY_CONFIG,
+				RETURN_DOM: true,
+			}));
+			this._iframe.srcdoc = new XMLSerializer().serializeToString(doc);
+		}
+		else {
+			this._iframe.srcdoc = text;
+		}
 		this._iframe.addEventListener('load', () => {
 			this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
 			this._setInitialViewState(options.viewState);

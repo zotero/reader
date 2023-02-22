@@ -1,5 +1,8 @@
 import Section from "epubjs/types/section";
 import StyleScoper from "./lib/style-scoper";
+import { isSafari } from "../../common/lib/utilities";
+import DOMPurify from "dompurify";
+import { DOMPURIFY_CONFIG } from "../common/lib/nodes";
 
 class SectionView {
 	readonly section: Section;
@@ -62,6 +65,14 @@ class SectionView {
 		const toRemove = [];
 		const toAwait = [];
 		
+		// Work around a WebKit bug - see DOMView constructor for details
+		if (isSafari) {
+			DOMPurify.sanitize(document.documentElement, {
+				...DOMPURIFY_CONFIG,
+				IN_PLACE: true,
+			});
+		}
+
 		const REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
 		
 		let elem: Element | null = null;
