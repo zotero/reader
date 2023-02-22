@@ -103,7 +103,9 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 			return;
 		}
 
-		event.dataTransfer.setDragImage((event.target as Element).closest('g')!, 0, 0);
+		const elem = (event.target as Element).closest('g')!;
+		const br = elem.getBoundingClientRect();
+		event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
 		onDragStart(event.dataTransfer);
 	};
 
