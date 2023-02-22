@@ -415,15 +415,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		);
 	}
 
-	private _getIFrame(node: Node): HTMLIFrameElement | null {
-		const doc = node.nodeType == Node.DOCUMENT_NODE ? node as Document : node.ownerDocument;
-		const iframe = doc?.defaultView?.frameElement;
-		if (!(iframe instanceof HTMLIFrameElement)) {
-			return null;
-		}
-		return iframe;
-	}
-
 	protected override _getSelection(): Selection | null {
 		return this._iframeWindow.getSelection();
 	}
@@ -515,11 +506,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	private _handleContextMenu(event: MouseEvent) {
 		// Prevent native context menu
 		event.preventDefault();
-		const iframe = this._getIFrame(event.target as Element);
-		if (!iframe) {
-			return;
-		}
-		const br = iframe.getBoundingClientRect();
+		const br = this._iframe.getBoundingClientRect();
 		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
 	}
 
@@ -701,12 +688,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._lastFocusTarget = event.target as HTMLElement;
 	}
 
-	private _handleSelectionChange(event: Event) {
-		const doc = (event.target as Element).ownerDocument || event.target as Document;
-		if (!doc.hasFocus()) {
-			this._getIFrame(doc)?.focus();
+	private _handleSelectionChange() {
+		if (!this._iframeDocument.hasFocus()) {
+			this._iframe.focus();
 		}
-		const selection = doc.getSelection();
+		const selection = this._iframeDocument.getSelection();
 		if (!selection || selection.isCollapsed) {
 			this._options.onSetSelectionPopup(null);
 		}

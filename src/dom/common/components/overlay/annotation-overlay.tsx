@@ -181,7 +181,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 								height: '100%',
 							}}
 							draggable={true}
-							onClick={onClick}
+							onMouseUp={onClick}
 							onDragStart={handleDragStart}
 							onDragEnd={handleDragEnd}
 							data-annotation-id={annotation.id}/>
