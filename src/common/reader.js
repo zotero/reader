@@ -13,7 +13,7 @@ import {
 	createViewContextMenu
 } from './context-menu';
 import { initPDFPrintService } from '../pdf/pdf-print-service';
-import { ANNOTATION_COLORS } from './defines';
+import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE } from './defines';
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import { PDFManager } from '../pdf/pdf-manager';
@@ -162,7 +162,6 @@ class Reader {
 			readOnly: this._state.readOnly,
 			authorName: options.authorName,
 			annotations: options.annotations,
-			localizedStrings: this._localizedStrings,
 			onSave: this._onSaveAnnotations,
 			onDelete: this._onDeleteAnnotations,
 			onRender: (annotations) => {
@@ -559,11 +558,11 @@ class Reader {
 				state = { ...state, splitType, splitSize };
 			}
 			this._onChangeViewState(state, primary);
-		}, 300);
+		}, DEBOUNCE_STATE_CHANGE);
 
 		let onChangeViewStats = debounce((state) => {
 			this._updateState({ [primary ? 'primaryViewStats' : 'secondaryViewStats']: state });
-		}, 100);
+		}, DEBOUNCE_STATS_CHANGE);
 
 		let onAddAnnotation = async (annotation, select) => {
 			annotation = await this._annotationManager.addAnnotation(annotation);

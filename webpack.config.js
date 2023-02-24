@@ -5,7 +5,7 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 
-function generateConfig(build) {
+function generateReaderConfig(build) {
 	let config = {
 		name: build,
 		mode: build === 'dev' ? 'development' : 'production',
@@ -82,7 +82,7 @@ function generateConfig(build) {
 				filename: '[name].css',
 			}),
 			new HtmlWebpackPlugin({
-				template: './index.html',
+				template: './index.reader.html',
 				filename: './[name].html',
 				templateParameters: {
 					build
@@ -120,17 +120,126 @@ function generateConfig(build) {
 			devMiddleware: {
 				writeToDisk: true,
 			},
-			open: '/dev/editor.html',
+			open: '/dev/reader.html?type=pdf',
 			port: 3000,
 		};
 	}
 
+	return config;
+}
+
+function generateViewConfig(build) {
+	let config = {
+		name: build,
+		mode: build === 'view-dev' ? 'development' : 'production',
+		devtool: 'source-map',
+		entry: {
+			view: ['./src/index.' + build + '.js']
+		},
+		output: {
+			path: path.resolve(__dirname, './build/' + build),
+			filename: 'view.js',
+			libraryTarget: 'umd',
+			publicPath: '',
+			library: {
+				name: 'view',
+				type: 'umd',
+				umdNamedDefine: true,
+			},
+		},
+		optimization: {
+			minimize: true,
+			minimizer: [new CssMinimizerPlugin()],
+		},
+		module: {
+			rules: [
+				{
+					test: /\.(js|jsx)$/,
+					exclude: /node_modules/,
+					use: {
+						loader: 'babel-loader',
+						options: {
+							presets: [
+								['@babel/preset-env', { useBuiltIns: false }],
+							],
+						},
+					},
+				},
+				{
+					test: /\.tsx?$/,
+					exclude: /node_modules/,
+					use: 'ts-loader',
+				},
+				{
+					test: /\.s?css$/,
+					use: [
+						MiniCssExtractPlugin.loader,
+						{
+							loader: 'css-loader',
+						},
+						{
+							loader: 'postcss-loader',
+						},
+						{
+							loader: 'sass-loader',
+						},
+					]
+				}
+			],
+		},
+		resolve: {
+			extensions: ['.js', '.ts', '.tsx']
+		},
+		plugins: [
+			new CleanWebpackPlugin({
+				cleanOnceBeforeBuildPatterns: ['**/*', '!pdf/**']
+			}),
+			new MiniCssExtractPlugin({
+				filename: '[name].css',
+			}),
+			new HtmlWebpackPlugin({
+				template: './index.view.html',
+				filename: './[name].html',
+				templateParameters: {
+					build
+				},
+			}),
+		],
+	};
+
+	if (build === 'view-dev') {
+		config.plugins.push(
+			new CopyWebpackPlugin({
+				patterns: [
+					{ from: 'demo/epub/demo.epub', to: './' },
+					{ from: 'demo/snapshot/demo.html', to: './' }
+				],
+				options: {
+
+				}
+			})
+		);
+		config.devServer = {
+			static: {
+				directory: path.resolve(__dirname, 'build/'),
+				watch: true,
+			},
+			devMiddleware: {
+				writeToDisk: true,
+			},
+			open: '/view-dev/view.html?type=snapshot',
+			port: 3001,
+		};
+	}
 
 	return config;
 }
 
 module.exports = [
-	generateConfig('zotero'),
-	generateConfig('web'),
-	generateConfig('dev')
+	generateReaderConfig('zotero'),
+	generateReaderConfig('web'),
+	generateReaderConfig('dev'),
+	generateViewConfig('ios'),
+	generateViewConfig('android'),
+	generateViewConfig('view-dev'),
 ];
