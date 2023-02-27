@@ -15,51 +15,21 @@ class SectionView {
 	
 	private readonly _styleScoper: StyleScoper;
 	
-	private readonly _onInternalLinkClick: (href: string) => void;
-	
 	constructor(options: {
 		section: Section,
 		container: HTMLElement,
 		window: Window & typeof globalThis,
 		document: Document,
 		styleScoper: StyleScoper,
-		onInternalLinkClick: (href: string) => void,
 	}) {
 		this.section = options.section;
 		this.container = options.container;
 		this._window = options.window;
 		this._document = options.document;
 		this._styleScoper = options.styleScoper;
-		this._onInternalLinkClick = options.onInternalLinkClick;
 	}
 
 	async initWithHTML(html: string): Promise<void> {
-		const onInternalLinkClick = (event: Event) => {
-			event.preventDefault();
-			let href = (event.target as Element).getAttribute('href')!;
-			const canonical = this.section.canonical;
-			// This is a hack - we're using the URL constructor to resolve the relative path based on the section's
-			// canonical URL, but it'll error without a host. So give it one!
-			const url = new URL(href, new URL(canonical, 'https://www.example.com/'));
-			href = url.pathname + url.hash;
-			this._onInternalLinkClick(href);
-		};
-		
-		const rewriteLink = (a: HTMLAnchorElement) => {
-			const href = a.getAttribute('href');
-			if (href === null) {
-				return;
-			}
-			if (href.startsWith('http://') || href.startsWith('https://')) {
-				a.target = '_blank';
-				return;
-			}
-			if (href.startsWith('mailto:')) {
-				return;
-			}
-			a.addEventListener('click', onInternalLinkClick);
-		};
-		
 		const sectionDoc = new DOMParser().parseFromString(html, 'application/xhtml+xml');
 		const walker = this._document.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 		const toRemove = [];
@@ -104,9 +74,6 @@ class SectionView {
 					console.error(e);
 				}
 				toRemove.push(elem);
-			}
-			else if (elem.tagName == 'a') {
-				rewriteLink(elem as HTMLAnchorElement);
 			}
 			else if (elem.tagName == 'img') {
 				// We'll wait for images to load (or error) before returning
