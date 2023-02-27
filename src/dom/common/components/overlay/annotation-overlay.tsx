@@ -9,6 +9,7 @@ import {
 } from "../../lib/range";
 import PropTypes from "prop-types";
 import { AnnotationType } from "../../../../common/types";
+import ReactDOM from "react-dom";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -21,6 +22,8 @@ export type DisplayedAnnotation = {
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	const { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
+	
+	const [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
 	
 	const handleClick = (event: React.MouseEvent, id: string) => {
 		// Cycle selection if clicked annotation is already selected
@@ -39,38 +42,61 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	};
 	
 	return <>
-		{annotations.map((annotation, i) => {
-			if (annotation.type == 'highlight') {
-				return (
-					<Highlight
-						annotation={annotation}
-						key={annotation.id || i}
-						selected={!!annotation.id && selectedAnnotationIDs.includes(annotation.id)}
-						onClick={event => annotation.id && handleClick(event, annotation.id)}
-						onDragStart={dataTransfer => annotation.id && onDragStart(dataTransfer, annotation.id)}
-						onResize={range => annotation.id && onResize(annotation.id, range)}
-						disablePointerEvents={disablePointerEvents || !annotation.id}
-					/>
-				);
-			}
-
-			/*else if (annotation.type == 'image') {
-				if (rawRange.startContainer instanceof HTMLElement && rawRange.startContainer.tagName == 'IMG') {
-					// Select the containing img element
-					rawRange.selectNode(rawRange.startContainer);
+		<svg
+			className="annotation-container"
+			style={{
+				mixBlendMode: 'multiply',
+				zIndex: '9999',
+				pointerEvents: 'none',
+				position: 'absolute',
+				left: '0',
+				top: '0',
+				overflow: 'visible'
+			}}
+		>
+			{annotations.map((annotation, i) => {
+				if (annotation.type == 'highlight') {
+					if (annotation.id) {
+						return (
+							<Highlight
+								annotation={annotation}
+								key={annotation.id}
+								selected={selectedAnnotationIDs.includes(annotation.id)}
+								onClick={event => handleClick(event, annotation.id!)}
+								onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
+								onResize={range => onResize(annotation.id!, range)}
+								disablePointerEvents={disablePointerEvents}
+								widgetContainer={widgetContainer}
+							/>
+						);
+					}
+					else {
+						return (
+							<Highlight
+								annotation={annotation}
+								key={i}
+								selected={false}
+								disablePointerEvents={true}
+								widgetContainer={widgetContainer}
+							/>
+						);
+					}
 				}
-				const ranges = [rawRange];
-				return (
-					<Image
-						annotation={annotation}
-						ranges={ranges}
-						key={annotation.id}
-						selected={props.selectedAnnotationIDs.includes(annotation.id)}
-						onClick={() => props.onClick(annotation)}/>
-				);
-			}*/
-			return null;
-		})}
+				return null;
+			})}
+		</svg>
+		<svg
+			className="annotation-container"
+			style={{
+				zIndex: '9999',
+				pointerEvents: 'none',
+				position: 'absolute',
+				left: '0',
+				top: '0',
+				overflow: 'visible'
+			}}
+			ref={c => setWidgetContainer(c)}
+		/>
 	</>;
 };
 AnnotationOverlay.displayName = 'AnnotationOverlay';
@@ -84,8 +110,8 @@ type AnnotationOverlayProps = {
 	disablePointerEvents: boolean;
 };
 
-const Highlight: React.FC<HighlightProps> = (props) => {
-	const { annotation, selected, onClick, onDragStart, onResize, disablePointerEvents } = props;
+const Highlight: React.FC<HighlightProps> = React.memo((props) => {
+	const { annotation, selected, onClick, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
 	const [dragImage, setDragImage] = useState<Element | null>(null);
 	const [isResizing, setResizing] = useState(false);
 
@@ -99,7 +125,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 	}
 
 	const handleDragStart = (event: React.DragEvent) => {
-		if (annotation.text === undefined) {
+		if (!onDragStart || annotation.text === undefined) {
 			return;
 		}
 
@@ -140,92 +166,73 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		commentIconPosition = null;
 	}
 	return <>
-		<svg
-			className="annotation-container"
-			style={{
-				mixBlendMode: 'multiply',
-				zIndex: '9999',
-				pointerEvents: 'none',
-				position: 'absolute',
-				left: '0',
-				top: '0',
-				overflow: 'visible'
-			}}
-		>
-			<g fill={annotation.color}>
-				{[...highlightRects.entries()].map(([key, rect]) => (
-					<rect
-						x={rect.x + doc.defaultView!.scrollX}
-						y={rect.y + doc.defaultView!.scrollY}
-						width={rect.width}
-						height={rect.height}
-						opacity="50%"
-						key={key}/>
-				))}
-				{!disablePointerEvents && !isResizing && [...highlightRects.entries()].map(([key, rect]) => (
-					// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
-					<foreignObject
-						x={rect.x + doc.defaultView!.scrollX}
-						y={rect.y + doc.defaultView!.scrollY}
-						width={rect.width}
-						height={rect.height}
-						key={key + '-foreign'}
-					>
-						<div
-							// @ts-ignore
-							xmlns="http://www.w3.org/1999/xhtml"
-							style={{
-								pointerEvents: 'auto',
-								cursor: 'pointer',
-								width: '100%',
-								height: '100%',
-							}}
-							draggable={true}
-							onMouseUp={onClick}
-							onDragStart={handleDragStart}
-							onDragEnd={handleDragEnd}
-							data-annotation-id={annotation.id}/>
-					</foreignObject>
-				))}
-				{!disablePointerEvents && selected && supportsCaretPositionFromPoint() && (
-					<Resizer
-						annotation={annotation}
-						highlightRects={[...highlightRects.values()]}
-						onPointerDown={() => setResizing(true)}
-						onPointerUp={() => setResizing(false)}
-						onResize={onResize}
-					/>
+		<g fill={annotation.color}>
+			{[...highlightRects.entries()].map(([key, rect]) => (
+				<rect
+					x={rect.x + doc.defaultView!.scrollX}
+					y={rect.y + doc.defaultView!.scrollY}
+					width={rect.width}
+					height={rect.height}
+					opacity="50%"
+					key={key}/>
+			))}
+			{!disablePointerEvents && !isResizing && [...highlightRects.entries()].map(([key, rect]) => (
+				// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
+				<foreignObject
+					x={rect.x + doc.defaultView!.scrollX}
+					y={rect.y + doc.defaultView!.scrollY}
+					width={rect.width}
+					height={rect.height}
+					key={key + '-foreign'}
+				>
+					<div
+						// @ts-ignore
+						xmlns="http://www.w3.org/1999/xhtml"
+						style={{
+							pointerEvents: 'auto',
+							cursor: 'pointer',
+							width: '100%',
+							height: '100%',
+						}}
+						draggable={true}
+						onMouseUp={onClick}
+						onDragStart={handleDragStart}
+						onDragEnd={handleDragEnd}
+						data-annotation-id={annotation.id}/>
+				</foreignObject>
+			))}
+			{!disablePointerEvents && onResize && selected && supportsCaretPositionFromPoint() && (
+				<Resizer
+					annotation={annotation}
+					highlightRects={[...highlightRects.values()]}
+					onPointerDown={() => setResizing(true)}
+					onPointerUp={() => setResizing(false)}
+					onResize={onResize}
+				/>
+			)}
+		</g>
+		{widgetContainer && ((selected && !isResizing) || commentIconPosition) && ReactDOM.createPortal(
+			<>
+				{selected && !isResizing && (
+					<SelectionBorder range={annotation.range}/>
 				)}
-			</g>
-		</svg>
-		<svg
-			className="annotation-container"
-			style={{
-				zIndex: '9999',
-				pointerEvents: 'none',
-				position: 'absolute',
-				left: '0',
-				top: '0',
-				overflow: 'visible'
-			}}
-		>
-			{selected && !isResizing && (
-				<SelectionBorder range={annotation.range}/>
-			)}
-			{commentIconPosition && (
-				<CommentIcon {...commentIconPosition} color={annotation.color!}/>
-			)}
-		</svg>
+				{commentIconPosition && (
+					<CommentIcon {...commentIconPosition} color={annotation.color!}/>
+				)}
+			</>,
+			widgetContainer
+		)}
 	</>;
-};
+});
 Highlight.displayName = 'Highlight';
 type HighlightProps = {
 	annotation: DisplayedAnnotation;
 	selected: boolean;
-	onClick: (event: React.MouseEvent) => void;
-	onDragStart: (dataTransfer: DataTransfer) => void;
-	onResize: (range: Range) => void;
+	onClick?: (event: React.MouseEvent) => void;
+	onDragStart?: (dataTransfer: DataTransfer) => void;
+	onResize?: (range: Range) => void;
 	disablePointerEvents: boolean;
+	widgetContainer: Element | null;
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = (props) => {

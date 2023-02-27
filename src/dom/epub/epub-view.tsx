@@ -1,13 +1,9 @@
 import {
-	AnnotationPopupParams,
 	AnnotationType,
 	FindPopupParams,
 	NavLocation,
 	NewAnnotation,
 	OutlineItem,
-	OverlayPopupParams,
-	SelectionPopupParams,
-	Tool,
 	ViewStats,
 	WADMAnnotation
 } from "../../common/types";
@@ -57,31 +53,23 @@ import { debounce } from "../../common/lib/debounce";
 //   - Add demo annotations
 
 class EPUBView extends DOMView<EPUBViewState> {
-	private _annotationsBySection!: Map<number, WADMAnnotation[]>;
-	
-	protected _findProcessor: EPUBFindProcessor | null = null;
+	protected _find: EPUBFindProcessor | null = null;
 
 	private readonly _book: Book;
-	
-	private readonly _iframe: HTMLIFrameElement;
-
-	private readonly _iframeWindow: Window & typeof globalThis;
-
-	private _iframeDocument!: Document;
 	
 	private _sectionsContainer!: HTMLElement;
 
 	private readonly _sectionViews: SectionView[] = [];
 	
+	private _cachedStartView: SectionView | null = null;
+	
 	private _cachedStartRange: Range | null = null;
 	
 	private _cachedStartCFI: EpubCFI | null = null;
-
-	private _gotMouseUp = false;
-
-	private _lastFocusTarget: HTMLElement | null = null;
 	
-	private readonly _navStack = new NavStack<string>();
+	private _cachedEndView: SectionView | null = null;
+	
+	protected readonly _navStack = new NavStack<string>();
 	
 	private _wheelAmount = 0;
 	
@@ -91,26 +79,18 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
-		
 		this._book = Epub(options.buf);
-		
-		this._iframe = document.createElement('iframe');
-		this._iframe.sandbox.add('allow-same-origin');
-		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
-		// unless the allow-scripts permission is added to the frame's sandbox. That means that we have to allow scripts
-		// and very carefully sanitize in SectionView.
-		// https://bugs.webkit.org/show_bug.cgi?id=218086
-		if (isSafari) {
-			this._iframe.sandbox.add('allow-scripts');
-		}
-		this._iframe.addEventListener('load', () => this._handleIFrameLoad(), { once: true });
-		this._iframe.srcdoc = '<!DOCTYPE html><html><body></body></html>';
-		options.container.append(this._iframe);
-		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
+	}
+
+	protected _getSrcDoc() {
+		return '<!DOCTYPE html><html><body></body></html>';
 	}
 	
-	private _handleIFrameLoad() {
-		this._iframeDocument = this._iframe.contentDocument!;
+	protected async _onInitialDisplay(viewState: Partial<EPUBViewState>) {
+		this._iframeDocument.addEventListener('wheel', this._handleWheel.bind(this), { passive: false });
+		
+		await this._book.opened;
+
 		const style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
@@ -120,17 +100,33 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._sectionsContainer.hidden = true;
 		this._iframeDocument.body.append(this._sectionsContainer);
 
-		this._book.opened.then(async () => {
-			this._setInitialViewState(this._options.viewState || { flowMode: 'scrolled' });
-			
-			const styleScoper = new StyleScoper(this._iframeDocument);
-			await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
-			styleScoper.rewriteAll();
-			
-			this._sectionsContainer.hidden = false;
-			await this._initPageMapping();
-			this._onInitialDisplay();
-		});
+		const styleScoper = new StyleScoper(this._iframeDocument);
+		await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
+		styleScoper.rewriteAll();
+
+		this._sectionsContainer.hidden = false;
+		await this._initPageMapping();
+		this._initOutline();
+		
+		// Validate viewState and its properties
+		// Also make sure this doesn't trigger _updateViewState
+		if (viewState.scale) {
+			this._iframeDocument.documentElement.style.setProperty('--content-font-size', viewState.scale + 'em');
+		}
+		else {
+			viewState.scale = 1;
+		}
+		if (viewState.cfi) {
+			this.navigate({ pageNumber: viewState.cfi });
+		}
+		if (viewState.flowMode) {
+			this.setFlowMode(viewState.flowMode);
+		}
+		else {
+			this.setFlowMode('scrolled');
+		}
+
+		setTimeout(() => this._handleViewUpdate());
 	}
 	
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {
@@ -145,9 +141,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 			window: this._iframeWindow,
 			document: this._iframeDocument,
 			styleScoper,
-			onInternalLinkClick: (href) => {
-				this.navigate({ href: this._book.path.relative(href) });
-			},
 		});
 		const html = await section.render(this._book.archive.request.bind(this._book.archive));
 		await sectionView.initWithHTML(html);
@@ -183,28 +176,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._updateViewStats();
 	}
 
-	private _onInitialDisplay() {
-		// Long-term goal is to make this reader touch friendly, which probably means using
-		// not mouse* but pointer* or touch* events
-		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
-		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
-		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
-		this._iframeWindow.addEventListener('mouseover', this._handleMouseEnter.bind(this));
-		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
-		this._iframeWindow.addEventListener('mouseup', this._handlePointerUp.bind(this));
-		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
-		// @ts-ignore
-		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
-		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
-		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
-		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
-		this._iframeDocument.addEventListener('wheel', this._handleWheel.bind(this), { passive: false });
-		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
-		
-		this._initOutline();
-		setTimeout(() => this._handleResize());
-	}
-
 	private _initOutline() {
 		if (!this._book.navigation.toc.length) {
 			return;
@@ -221,47 +192,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._options.onSetOutline(this._book.navigation.toc.map(toOutlineItem));
 	}
 
-	private _setInitialViewState(viewState?: EPUBViewState) {
-		// Validate viewState and its properties
-		// Also make sure this doesn't trigger _updateViewState
-		if (viewState) {
-			if (viewState.scale) {
-				this._iframeDocument.documentElement.style.setProperty('--content-font-size', viewState.scale + 'em');
-			}
-			else {
-				viewState.scale = 1;
-			}
-			if (viewState.cfi) {
-				this.navigate({ pageNumber: viewState.cfi });
-			}
-			if (viewState.flowMode) {
-				this.setFlowMode(viewState.flowMode);
-			}
-		}
+	protected override _getAnnotationOverlayParent() {
+		return this._iframeDocument?.body;
 	}
 
-	protected override _getSectionAnnotations(section: number): WADMAnnotation[] {
-		return this._annotationsBySection.get(section) ?? [];
-	}
-
-	protected override _getSectionRoot(_section: number) {
-		return this._iframeDocument.body;
-	}
-
-	protected override _getSelectorSection(selector: Selector): number {
+	private _getSelectorSection(selector: Selector): number {
 		if (!isFragment(selector) || selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
 			throw new Error('Unsupported selector');
 		}
 		return new EpubCFI(selector.value).spinePos;
 	}
 
-	private _renderAllAnnotations() {
-		if (!this._sectionViews) return;
-		for (const view of this._sectionViews.values()) {
-			this._renderAnnotations(view.section.index);
-		}
-	}
-	
 	getCFI(rangeOrNode: Range | Node): EpubCFI | null {
 		let commonAncestorNode;
 		if ('nodeType' in rangeOrNode) {
@@ -332,60 +273,98 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 	
+	get views(): SectionView[] {
+		return this._sectionViews;
+	}
+	
+	get startView(): SectionView | null {
+		if (!this._cachedStartView) {
+			this._updateBoundaries();
+		}
+		return this._cachedStartView;
+	}
+
 	get startRange(): Range | null {
 		if (!this._cachedStartRange) {
-			this._updateStartRangeAndCFI();
+			this._updateBoundaries();
 		}
 		return this._cachedStartRange;
 	}
 	
 	get startCFI(): EpubCFI | null {
 		if (!this._cachedStartCFI) {
-			this._updateStartRangeAndCFI();
+			this._updateBoundaries();
 		}
 		return this._cachedStartCFI;
+	}
+
+	get endView(): SectionView | null {
+		if (!this._cachedEndView) {
+			this._updateBoundaries();
+		}
+		return this._cachedEndView;
+	}
+	
+	get visibleViews(): SectionView[] {
+		if (!this._cachedStartView || !this._cachedEndView) {
+			this._updateBoundaries();
+		}
+		if (!this._cachedStartView || !this._cachedEndView) {
+			return [];
+		}
+		const startIdx = this._sectionViews.indexOf(this._cachedStartView);
+		const endIdx = this._sectionViews.indexOf(this._cachedEndView);
+		return this._sectionViews.slice(startIdx, endIdx + 1);
 	}
 	
 	private _invalidateStartRangeAndCFI = debounce(
 		() => {
 			this._cachedStartRange = null;
 			this._cachedStartCFI = null;
-			this._updateStartRangeAndCFI();
+			this._updateBoundaries();
 			this._updateViewStats();
 		},
 		100
 	);
 	
-	private _updateStartRangeAndCFI() {
+	private _updateBoundaries() {
+		let foundStart = false;
 		for (const view of this._sectionViews.values()) {
 			const rect = view.container.getBoundingClientRect();
 			const visible = this._viewState.flowMode == 'paginated'
 				? !(rect.left > this._iframe.clientWidth || rect.right < 0)
 				: !(rect.top > this._iframe.clientHeight || rect.bottom < 0);
-			if (visible) {
+			if (!foundStart) {
+				if (!visible) {
+					continue;
+				}
+				this._cachedStartView = view;
 				const startRange = view.getFirstVisibleRange(
 					this._viewState.flowMode == 'paginated',
 					false
 				);
-				if (startRange) {
-					this._cachedStartRange = startRange;
-				}
 				const startCFIRange = view.getFirstVisibleRange(
 					this._viewState.flowMode == 'paginated',
 					true
 				);
+				if (startRange) {
+					this._cachedStartRange = startRange;
+				}
 				if (startCFIRange) {
 					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase, IGNORE_CLASS);
 				}
-				
 				if (startRange && startCFIRange) {
-					break;
+					foundStart = true;
 				}
+			}
+			else if (!visible) {
+				this._cachedEndView = view;
+				break;
 			}
 		}
 	}
 	
-	_pushCurrentLocationToNavStack() {
+	private _pushCurrentLocationToNavStack() {
 		const cfi = this.startCFI?.toString();
 		if (cfi) {
 			this._navStack.push(cfi);
@@ -393,7 +372,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 	
-	override _navigateToSelector(selector: Selector) {
+	protected _navigateToSelector(selector: Selector) {
 		if (!isFragment(selector) || selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
 			console.warn("Not a CFI FragmentSelector", selector);
 			return;
@@ -401,7 +380,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this.navigate({ pageNumber: selector.value });
 	}
 
-	protected override _getViewportBoundingRect(range: Range): DOMRect {
+	protected _getViewportBoundingRect(range: Range): DOMRect {
 		const rect = range.getBoundingClientRect();
 		const iframe = range.commonAncestorContainer.ownerDocument?.defaultView?.frameElement;
 		if (!iframe) {
@@ -415,12 +394,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 		);
 	}
 
-	protected override _getSelection(): Selection | null {
-		return this._iframeWindow.getSelection();
-	}
-
 	// Currently type is only 'highlight' but later there will also be 'underline'
-	protected override _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
+	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		const selection = this._iframeWindow.getSelection();
 		if (!selection || selection.isCollapsed) {
 			return null;
@@ -454,205 +429,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 		};
 	}
 
-	private _tryUseTool(): boolean {
-		this._updateViewStats();
-		if (this._gotMouseUp) {
-			// Open text selection popup if current tool is pointer
-			if (this._tool.type == 'pointer') {
-				const selection = this._iframeWindow.getSelection();
-				if (selection) {
-					this._openSelectionPopup(selection);
-					return true;
-				}
-			}
-			if (this._tool.type === 'highlight') {
-				const annotation = this._getAnnotationFromTextSelection('highlight', this._tool.color);
-				if (annotation) {
-					this._options.onAddAnnotation(annotation);
-				}
-				this._iframeWindow.getSelection()?.removeAllRanges();
-				return true;
-			}
+	protected _isExternalLink(link: HTMLAnchorElement) {
+		const href = link.getAttribute('href');
+		if (!href) {
+			return false;
 		}
-		return false;
+		return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:');
 	}
 
 	// ***
 	// Event handlers
 	// ***
-
-	private _handleClick(event: Event) {
-		const link = (event.target as Element).closest('a');
-		if (link && link.target === '_blank') { // target is _blank on external links
-			event.preventDefault();
-			this._options.onOpenLink(link.href);
-		}
-	}
-
-	private _handleMouseEnter(event: MouseEvent) {
-		const link = (event.target as Element).closest('a');
-		if (link && link.target === '_blank') { // target is _blank on external links
-			this._overlayPopupDelayer.open(link, () => {
-				this._openExternalLinkOverlayPopup(link);
-			});
-		}
-		else {
-			this._overlayPopupDelayer.close(() => {
-				this._options.onSetOverlayPopup();
-			});
-		}
-	}
-
-	private _handleContextMenu(event: MouseEvent) {
-		// Prevent native context menu
-		event.preventDefault();
-		const br = this._iframe.getBoundingClientRect();
-		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
-	}
-
-	private _handlePointerDown(event: MouseEvent) {
-		this._gotMouseUp = false;
-
-		this._options.onSetOverlayPopup();
-
-		if (event.button === 2) {
-			return;
-		}
-
-		if (!(event.target as Element).closest('.annotation-container')) {
-			// Deselect annotations when clicking outside the annotation layer
-			if (this._selectedAnnotationIDs.length) {
-				this._options.onSelectAnnotations([]);
-			}
-			
-			// Disable pointer events on the annotation layer until mouseup
-			this._disableAnnotationPointerEvents = true;
-			this._renderAllAnnotations();
-		}
-		
-		// Create note annotation on pointer down event, if note tool is active.
-		// The note tool will be automatically deactivated in reader.js,
-		// because this is what we do in PDF reader
-		if (this._tool.type === 'note') {
-			throw new Error('Unimplemented');
-
-			/*this._onAddAnnotation({
-				type: 'note',
-				color: this._tool.color,
-				sortIndex: '00000|000000|00000',
-				pageLabel: '1',
-				position: { /!* Figure out how to encode note position *!/ },
-			}, true);*/
-		}
-	}
-
-	private _handlePointerUp(_event: MouseEvent) {
-		this._gotMouseUp = true;
-		this._tryUseTool();
-
-		this._disableAnnotationPointerEvents = false;
-		this._renderAllAnnotations();
-	}
-
-	private _handleKeyDown(event: KeyboardEvent) {
-		const { key } = event;
-		const shift = event.shiftKey;
-
-		// Focusable elements in PDF view are annotations and overlays (links, citations, figures).
-		// Once TAB is pressed, arrows can be used to navigate between them
-		const focusableElements: HTMLElement[] = [];
-		let focusedElementIndex = -1;
-		const focusedElement: HTMLElement | null = this._iframeDocument.activeElement as HTMLElement | null;
-		for (const element of this._iframeDocument.querySelectorAll('[tabindex="-1"]')) {
-			focusableElements.push(element as HTMLElement);
-			if (element === focusedElement) {
-				focusedElementIndex = focusableElements.length - 1;
-			}
-		}
-
-		if (key === 'Escape') {
-			if (this._selectedAnnotationIDs.length) {
-				this._options.onSelectAnnotations([]);
-			}
-			else if (focusedElement) {
-				focusedElement.blur();
-			}
-			// The keyboard shortcut was handled here, therefore no need to
-			// pass it to this._onKeyDown(event) below
-			return;
-		}
-		else if (shift && key === 'Tab') {
-			if (focusedElement) {
-				focusedElement.blur();
-			}
-			else {
-				this._options.onTabOut(true);
-			}
-			event.preventDefault();
-			return;
-		}
-		else if (key === 'Tab') {
-			if (!focusedElement) {
-				// In PDF view the first visible object (annotation, overlay) is focused
-				if (focusableElements.length) {
-					focusableElements[0].focus();
-				}
-				else {
-					this._options.onTabOut();
-				}
-			}
-			else {
-				this._options.onTabOut();
-			}
-			event.preventDefault();
-			return;
-		}
-
-		if (focusedElement) {
-			if (!window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown') {
-				focusableElements[focusedElementIndex + 1]?.focus();
-				event.preventDefault();
-				return;
-			}
-			else if (!window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp') {
-				focusableElements[focusedElementIndex - 1]?.focus();
-				event.preventDefault();
-				return;
-			}
-			else if (['Enter', 'Space'].includes(key)) {
-				if (focusedElement.classList.contains('highlight')) {
-					const annotationID = focusedElement.getAttribute('data-annotation-id')!;
-					const annotation = this._annotationsByID.get(annotationID);
-					if (annotation) {
-						this._options.onSelectAnnotations([annotationID]);
-						this._openAnnotationPopup(annotation);
-						return;
-					}
-				}
-			}
-		}
-
-		// Pass keydown even to the main window where common keyboard
-		// shortcuts are handled i.e. Delete, Cmd-Minus, Cmd-f, etc.
-		this._options.onKeyDown(event);
-	}
-
-	private _handleDragStart(event: DragEvent) {
-		if (!event.dataTransfer) {
-			return;
-		}
-		const annotation = this._getAnnotationFromTextSelection('highlight');
-		if (!annotation) {
-			return;
-		}
-		console.log('Dragging text', annotation);
-		this._options.onSetDataTransferAnnotations(event.dataTransfer, annotation, true);
-	}
-
-	private _handleScroll(_event: Event) {
-		this._invalidateStartRangeAndCFI();
-		this._updateViewState();
-	}
 
 	private _handleWheel(event: WheelEvent) {
 		if (this._viewState.flowMode && this._viewState.flowMode !== 'paginated') {
@@ -679,27 +466,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 
-	private _handleResize() {
-		this._handleViewUpdate();
-	}
-
-	private _handleFocus(event: FocusEvent) {
-		this._options.onFocus();
-		this._lastFocusTarget = event.target as HTMLElement;
-	}
-
-	private _handleSelectionChange() {
-		if (!this._iframeDocument.hasFocus()) {
-			this._iframe.focus();
+	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
+		let href = link.getAttribute('href')!;
+		const section = this._sectionViews.find(view => view.container.contains(link))?.section;
+		if (!section) {
+			return;
 		}
-		const selection = this._iframeDocument.getSelection();
-		if (!selection || selection.isCollapsed) {
-			this._options.onSetSelectionPopup(null);
-		}
-		else {
-			this._updateViewStats();
-			this._tryUseTool();
-		}
+		// This is a hack - we're using the URL constructor to resolve the relative path based on the section's
+		// canonical URL, but it'll error without a host. So give it one!
+		const url = new URL(href, new URL(section.canonical, 'https://www.example.com/'));
+		href = url.pathname + url.hash;
+		this.navigate({ href: this._book.path.relative(href) });
 	}
 	
 	protected override _updateViewState() {
@@ -743,59 +520,15 @@ class EPUBView extends DOMView<EPUBViewState> {
 	protected override _handleViewUpdate() {
 		super._handleViewUpdate();
 		this._invalidateStartRangeAndCFI();
-		this._renderAllAnnotations();
+		if (this._find) {
+			this._find.onScroll();
+		}
+		this._renderAnnotations();
 	}
 
 	// ***
 	// Setters that get called once there are changes in reader._state
 	// ***
-
-	setSelectedAnnotationIDs(ids: string[]) {
-		this._selectedAnnotationIDs = ids;
-		// Close annotation popup each time when any annotation is selected, because the click is what opens the popup
-		this._options.onSetAnnotationPopup();
-		this._renderAllAnnotations();
-
-		this._iframeWindow.getSelection()?.empty();
-
-		this._updateViewStats();
-	}
-
-	setTool(tool: Tool) {
-		this._tool = tool;
-	}
-
-	override setAnnotations(annotations: WADMAnnotation[]) {
-		super.setAnnotations(annotations);
-		this._annotationsBySection = new Map();
-		for (const annotation of annotations) {
-			const section = this.toSection(annotation.position);
-			let array = this._annotationsBySection.get(section);
-			if (!array) {
-				array = [];
-				this._annotationsBySection.set(section, array);
-			}
-			array.push(annotation);
-		}
-		this._renderAllAnnotations();
-	}
-
-	setShowAnnotations(show: boolean) {
-		this._showAnnotations = show;
-	}
-
-	setAnnotationPopup(popup: AnnotationPopupParams<WADMAnnotation>) {
-		this._annotationPopup = popup;
-	}
-
-	setSelectionPopup(popup: SelectionPopupParams<WADMAnnotation>) {
-		this._selectionPopup = popup;
-	}
-
-	setOverlayPopup(popup: OverlayPopupParams) {
-		this._overlayPopup = popup;
-		this._overlayPopupDelayer.setOpen(!!popup);
-	}
 
 	// Unlike annotation, selection and overlay popups, find popup open state is determined
 	// with .open property. All popup properties are preserved even when it's closed
@@ -804,28 +537,29 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._findPopup = popup;
 		if (!popup.open && previousPopup && previousPopup.open !== popup.open) {
 			console.log('Closing find popup');
-			if (this._findProcessor) {
-				this._findProcessor = null;
+			if (this._find) {
+				this._find = null;
 			}
 		}
 		else if (popup.open) {
 			if (!previousPopup
 					|| previousPopup.query !== popup.query
-					|| previousPopup.highlightAll !== popup.highlightAll
 					|| previousPopup.caseSensitive !== popup.caseSensitive
 					|| previousPopup.entireWord !== popup.entireWord) {
 				console.log('Initiating new search', popup);
-				this._findProcessor = new EPUBFindProcessor({
+				this._find = new EPUBFindProcessor({
 					view: this,
-					book: this._book,
-					startCFI: this.startCFI,
-					section: this._book.spine.get(this.startCFI?.spinePos),
+					startRange: this.startRange!,
 					query: popup.query,
 					highlightAll: popup.highlightAll,
 					caseSensitive: popup.caseSensitive,
 					entireWord: popup.entireWord,
 				});
 				this.findNext();
+			}
+			else if (previousPopup && previousPopup.highlightAll !== popup.highlightAll) {
+				this._find!.highlightAll = popup.highlightAll;
+				this._renderAnnotations();
 			}
 		}
 	}
@@ -858,47 +592,27 @@ class EPUBView extends DOMView<EPUBViewState> {
 	// Public methods to control the view from the outside
 	// ***
 
-	focus() {
-		this._lastFocusTarget?.focus();
-	}
-
 	async findNext() {
 		console.log('Find next');
-		if (this._findProcessor) {
-			let processor = this._findProcessor;
-			const startSection = processor.section;
-			let result = processor.next();
-			while (result.done) {
-				processor = this._findProcessor = await result.nextProcessor;
-				result = processor.next();
-				if (processor.section == startSection) {
-					break;
-				}
+		if (this._find) {
+			const processor = this._find;
+			const result = processor.next();
+			if (result) {
+				this._scrollIntoView(getCommonAncestorElement(result.range) as HTMLElement);
 			}
-			if (!result.done) {
-				this.navigate({ pageNumber: result.cfi });
-				this._renderAllAnnotations();
-			}
+			this._renderAnnotations();
 		}
 	}
 
 	async findPrevious() {
 		console.log('Find previous');
-		if (this._findProcessor) {
-			let processor = this._findProcessor;
-			const startSection = processor.section;
-			let result = processor.prev();
-			while (result.done) {
-				processor = this._findProcessor = await result.nextProcessor;
-				result = processor.prev();
-				if (processor.section == startSection) {
-					break;
-				}
+		if (this._find) {
+			const processor = this._find;
+			const result = processor.prev();
+			if (result) {
+				this._scrollIntoView(getCommonAncestorElement(result.range) as HTMLElement);
 			}
-			if (!result.done) {
-				this.navigate({ pageNumber: result.cfi });
-				this._renderAllAnnotations();
-			}
+			this._renderAnnotations();
 		}
 	}
 
@@ -984,7 +698,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 
-	_scrollIntoView(elem: HTMLElement, options?: ScrollIntoViewOptions) {
+	private _scrollIntoView(elem: HTMLElement, options?: ScrollIntoViewOptions) {
 		if (this._viewState.flowMode != 'paginated') {
 			elem.scrollIntoView(options);
 			return;
