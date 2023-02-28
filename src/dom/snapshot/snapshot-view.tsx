@@ -27,7 +27,7 @@ import NavStack from "../common/lib/nav-stack";
 import DOMPurify from "dompurify";
 import {
 	DOMPURIFY_CONFIG,
-	getAllTextNodes
+	getVisibleTextNodes
 } from "../common/lib/nodes";
 import DefaultFindProcessor from "../common/find";
 import {
@@ -154,7 +154,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	
 	private _getSearchContext() {
 		if (!this._searchContext) {
-			this._searchContext = createSearchContext(getAllTextNodes(this._iframeDocument.body));
+			this._searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
 		}
 		return this._searchContext;
 	}

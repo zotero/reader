@@ -1,8 +1,12 @@
-export function getAllTextNodes(root: Node): Text[] {
+export function getVisibleTextNodes(root: Node): Text[] {
+	const range = root.ownerDocument!.createRange();
 	const nodeIterator = root.ownerDocument!.createNodeIterator(root, NodeFilter.SHOW_TEXT);
 	const nodes = [];
 	let next = null;
 	while ((next = nodeIterator.nextNode())) {
+		range.selectNodeContents(next);
+		const rect = range.getBoundingClientRect();
+		if (!rect.width || !rect.height) continue;
 		nodes.push(next as Text);
 	}
 	return nodes;

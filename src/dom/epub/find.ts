@@ -38,6 +38,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	prev(): FindResult | null {
 		if (this._selectedProcessor) {
 			this._selectedProcessor.prev(false);
+			this._setFindState();
 			if (this._selectedProcessor.current) {
 				return this._selectedProcessor.current;
 			}

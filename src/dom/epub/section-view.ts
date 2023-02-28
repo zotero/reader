@@ -4,7 +4,7 @@ import { isSafari } from "../../common/lib/utilities";
 import DOMPurify from "dompurify";
 import {
 	DOMPURIFY_CONFIG,
-	getAllTextNodes
+	getVisibleTextNodes
 } from "../common/lib/nodes";
 import {
 	createSearchContext,
@@ -154,7 +154,7 @@ class SectionView {
 	
 	get searchContext() {
 		if (!this._searchContext) {
-			this._searchContext = createSearchContext(getAllTextNodes(this.container));
+			this._searchContext = createSearchContext(getVisibleTextNodes(this.container));
 		}
 		return this._searchContext;
 	}
