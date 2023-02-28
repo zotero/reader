@@ -16,7 +16,9 @@ class DefaultFindProcessor implements FindProcessor {
 
 	private readonly _buf: FindResult[];
 
-	private _pos = -1;
+	private _pos: number | null = null;
+	
+	private _initialPos: number | null = null;
 
 	private readonly _onSetFindState?: (state?: FindState) => void;
 
@@ -31,12 +33,8 @@ class DefaultFindProcessor implements FindProcessor {
 		
 		this._buf = [];
 		
-		this._run(options.container, options.startRange);
-	}
-
-	private _run(container: Element, startRange?: Range) {
 		const ranges = executeSearch(
-			getAllTextNodes(container),
+			getAllTextNodes(options.container),
 			this.findState.query,
 			{
 				caseSensitive: this.findState.caseSensitive,
@@ -54,9 +52,9 @@ class DefaultFindProcessor implements FindProcessor {
 					range,
 				}
 			};
-			if (this._pos == -1 && startRange) {
-				if (range.compareBoundaryPoints(Range.START_TO_START, startRange) >= 0) {
-					this._pos = this._buf.length;
+			if (this._initialPos === null && options.startRange) {
+				if (range.compareBoundaryPoints(Range.START_TO_START, options.startRange) >= 0) {
+					this._initialPos = this._buf.length;
 				}
 			}
 			this._buf.push(result);
@@ -65,11 +63,22 @@ class DefaultFindProcessor implements FindProcessor {
 	}
 	
 	prev(loop = true): FindResult | null {
-		this._pos--;
-		if (loop) {
-			this._pos %= this._buf.length;
-			if (this._pos < 0) {
+		if (this._pos === null) {
+			if (this._initialPos === null) {
 				this._pos = this._buf.length - 1;
+			}
+			else {
+				this._pos = this._initialPos;
+				this._initialPos = null;
+			}
+		}
+		else {
+			this._pos--;
+			if (loop) {
+				this._pos %= this._buf.length;
+				if (this._pos < 0) {
+					this._pos = this._buf.length - 1;
+				}
 			}
 		}
 		this._setFindState();
@@ -77,25 +86,40 @@ class DefaultFindProcessor implements FindProcessor {
 	}
 	
 	next(loop = true): FindResult | null {
-		this._pos++;
-		if (loop) {
-			this._pos %= this._buf.length;
+		if (this._pos === null) {
+			if (this._initialPos === null) {
+				this._pos = 0;
+			}
+			else {
+				this._pos = this._initialPos;
+				this._initialPos = null;
+			}
+		}
+		else {
+			this._pos++;
+			if (loop) {
+				this._pos %= this._buf.length;
+			}
 		}
 		this._setFindState();
 		return this.current;
 	}
 	
-	reset(toEnd: boolean) {
-		this._pos = toEnd ? this._buf.length : -1;
+	get position(): number | null {
+		return this._pos;
+	}
+	
+	set position(value) {
+		this._pos = value;
 		this._setFindState();
 	}
 	
-	get position(): number | null {
-		return this._pos == -1 ? null : this._pos;
+	get initialPosition(): number | null {
+		return this._initialPos;
 	}
 	
 	get current(): FindResult | null {
-		if (this._pos < 0 || this._pos >= this._buf.length) {
+		if (this._pos === null || this._pos < 0 || this._pos >= this._buf.length) {
 			return null;
 		}
 		return this._buf[this._pos];
@@ -105,8 +129,11 @@ class DefaultFindProcessor implements FindProcessor {
 		return this._buf;
 	}
 
-	getAnnotations(enableSelected = true): DisplayedAnnotation[] {
-		const selected = enableSelected && this._pos >= 0 && this._pos < this._buf.length ? this._buf[this._pos] : null;
+	getAnnotations(): DisplayedAnnotation[] {
+		const selected
+			= (this._pos !== null && this._pos >= 0 && this._pos < this._buf.length)
+				? this._buf[this._pos]
+				: null;
 		const highlights: DisplayedAnnotation[] = [];
 		if (this.findState.highlightAll) {
 			for (const result of this._buf) {
@@ -136,7 +163,7 @@ class DefaultFindProcessor implements FindProcessor {
 				...this.findState,
 				result: {
 					total: this._buf.length,
-					index: this._pos == -1 ? 0 : this._pos,
+					index: this._pos === null ? 0 : this._pos,
 					snippets: []
 				}
 			});

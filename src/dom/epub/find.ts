@@ -48,7 +48,6 @@ export class EPUBFindProcessor implements FindProcessor {
 		const stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
-				this._selectedProcessor.reset(true);
 				return this._selectedProcessor.prev(false);
 			}
 			
@@ -72,11 +71,11 @@ export class EPUBFindProcessor implements FindProcessor {
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) + 1 : 0;
 		nextIndex %= this.view.views.length;
+		if (this._selectedProcessor) this._selectedProcessor.position = null;
 		this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
 		const stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
-				this._selectedProcessor.reset(false);
 				return this._selectedProcessor.next(false);
 			}
 
@@ -94,7 +93,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		for (const processor of this._processors.values()) {
 			if (!processor) continue;
 			processor.findState.highlightAll = this.findState.highlightAll;
-			for (const highlight of processor.getAnnotations(this._selectedProcessor == processor)) {
+			for (const highlight of processor.getAnnotations()) {
 				highlights.push(highlight);
 			}
 		}
@@ -125,7 +124,7 @@ export class EPUBFindProcessor implements FindProcessor {
 			onSetFindState: () => this._setFindState(),
 		});
 		this._processors[view.section.index] = processor;
-		if (processor.current) {
+		if (!this._selectedProcessor && processor.initialPosition !== null) {
 			this._selectedProcessor = processor;
 		}
 		this._totalResults += processor.getResults().length;
