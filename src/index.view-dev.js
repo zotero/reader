@@ -101,14 +101,14 @@ async function main() {
 	// It seems EPUB view isn't fully functioning for 10 or more seconds. TODO: Fix
 
 	// Examples:
-	// // Initiate search. It should trigger 'onFindResult' with search 'results', although currently doesn't do that. TODO: Fix
+	// // Initiate search
 	// window._view.find({
 	// 	query: 'the',
 	// 	highlightAll: false,
 	// 	caseSensitive: false,
 	// 	entireWord: false,
 	// });
-	// // Cancel search, although it still shows highlighted search results TODO: Fix
+	// // Cancel search
 	// window._view.find(null);
 	// window._view.zoomIn();
 	// window._view.zoomIn();
