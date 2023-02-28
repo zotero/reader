@@ -148,14 +148,14 @@ abstract class DOMView<State> {
 			// Open text selection popup if current tool is pointer
 			if (this._tool.type == 'pointer') {
 				const selection = this._iframeWindow.getSelection();
-				if (selection) {
+				if (selection && !selection.isCollapsed) {
 					this._openSelectionPopup(selection);
 					return true;
 				}
 			}
 			if (this._tool.type === 'highlight') {
 				const annotation = this._getAnnotationFromTextSelection('highlight', this._tool.color);
-				if (annotation) {
+				if (annotation && annotation.text) {
 					this._options.onAddAnnotation(annotation);
 				}
 				this._iframeWindow.getSelection()?.removeAllRanges();
@@ -493,7 +493,7 @@ abstract class DOMView<State> {
 
 		this._options.onSetOverlayPopup();
 
-		if (event.button === 2) {
+		if (event.button !== 0) {
 			return;
 		}
 
@@ -524,7 +524,11 @@ abstract class DOMView<State> {
 		}
 	}
 
-	protected _handlePointerUp(_event: PointerEvent) {
+	protected _handlePointerUp(event: PointerEvent) {
+		if (event.button !== 0) {
+			return;
+		}
+
 		this._gotPointerUp = true;
 		this._tryUseTool();
 
