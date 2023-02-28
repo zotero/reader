@@ -2,6 +2,8 @@ import View from './common/view';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
 
+window.dev = true;
+
 window.createView = (options) => {
 	let view = new View({
 		...options,
