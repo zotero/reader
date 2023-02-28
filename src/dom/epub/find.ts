@@ -5,37 +5,32 @@ import DefaultFindProcessor, {
 import { DisplayedAnnotation } from "../common/components/overlay/annotation-overlay";
 import EPUBView from "./epub-view";
 import SectionView from "./section-view";
+import { FindState } from "../../common/types";
 
 export class EPUBFindProcessor implements FindProcessor {
 	readonly view: EPUBView;
 
-	readonly query: string;
-
-	highlightAll: boolean;
-
-	readonly caseSensitive: boolean;
-
-	readonly entireWord: boolean;
+	readonly findState: FindState;
 	
 	private _processors: DefaultFindProcessor[] = [];
 	
 	private _selectedProcessor: DefaultFindProcessor | null = null;
+	
+	private _totalResults = 0;
+
+	private readonly _onSetFindState?: (state?: FindState) => void;
 
 	constructor(options: {
 		view: EPUBView,
 		startRange: Range,
-		query: string,
-		highlightAll: boolean,
-		caseSensitive: boolean,
-		entireWord: boolean
+		findState: FindState,
+		onSetFindState?: (state?: FindState) => void,
 	}) {
 		this.view = options.view;
-		this.query = options.query;
-		this.highlightAll = options.highlightAll;
-		this.caseSensitive = options.caseSensitive;
-		this.entireWord = options.entireWord;
+		this.findState = options.findState;
+		this._onSetFindState = options.onSetFindState;
 
-		this._processViews(this.view.visibleViews, options.startRange);
+		this._processViews(this.view.visibleViews, options.startRange, 99);
 	}
 
 	prev(): FindResult | null {
@@ -98,21 +93,24 @@ export class EPUBFindProcessor implements FindProcessor {
 		const highlights = [];
 		for (const processor of this._processors.values()) {
 			if (!processor) continue;
-			processor.highlightAll = this.highlightAll;
-			for (const highlight of processor.getAnnotations()) {
+			processor.findState.highlightAll = this.findState.highlightAll;
+			for (const highlight of processor.getAnnotations(this._selectedProcessor == processor)) {
 				highlights.push(highlight);
 			}
 		}
 		return highlights;
 	}
 
-	onScroll() {
+	handleViewUpdate() {
 		this._processViews(this.view.visibleViews);
 	}
 
-	_processViews(views: SectionView[], startRange?: Range | undefined) {
+	private _processViews(views: SectionView[], startRange?: Range, maxResults?: number) {
 		for (const view of views) {
 			this._getOrCreateProcessor(view, startRange);
+			if (maxResults !== undefined && this._totalResults > maxResults) {
+				break;
+			}
 		}
 	}
 
@@ -123,15 +121,41 @@ export class EPUBFindProcessor implements FindProcessor {
 		const processor = new DefaultFindProcessor({
 			container: view.container,
 			startRange,
-			query: this.query,
-			highlightAll: this.highlightAll,
-			caseSensitive: this.caseSensitive,
-			entireWord: this.entireWord,
+			findState: { ...this.findState },
+			onSetFindState: () => this._setFindState(),
 		});
 		this._processors[view.section.index] = processor;
 		if (processor.current) {
 			this._selectedProcessor = processor;
 		}
+		this._totalResults += processor.getResults().length;
+		this._setFindState();
 		return processor;
+	}
+
+	private _setFindState() {
+		if (this._onSetFindState) {
+			let index = 0;
+			for (const processor of this._processors) {
+				if (!processor) {
+					continue;
+				}
+				if (this._selectedProcessor == processor) {
+					index += processor.position ?? 0;
+					break;
+				}
+				else {
+					index += processor.getResults().length;
+				}
+			}
+			this._onSetFindState({
+				...this.findState,
+				result: {
+					total: this._totalResults,
+					index,
+					snippets: []
+				}
+			});
+		}
 	}
 }

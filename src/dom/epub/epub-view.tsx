@@ -521,7 +521,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		super._handleViewUpdate();
 		this._invalidateStartRangeAndCFI();
 		if (this._find) {
-			this._find.onScroll();
+			this._find.handleViewUpdate();
 		}
 		this._renderAnnotations();
 	}
@@ -539,6 +539,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			console.log('Closing find popup');
 			if (this._find) {
 				this._find = null;
+				this._handleViewUpdate();
 			}
 		}
 		else if (state.active) {
@@ -551,15 +552,13 @@ class EPUBView extends DOMView<EPUBViewState> {
 				this._find = new EPUBFindProcessor({
 					view: this,
 					startRange: this.startRange!,
-					query: state.query,
-					highlightAll: state.highlightAll,
-					caseSensitive: state.caseSensitive,
-					entireWord: state.entireWord,
+					findState: { ...state },
+					onSetFindState: this._options.onSetFindState,
 				});
 				this.findNext();
 			}
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {
-				this._find!.highlightAll = state.highlightAll;
+				this._find!.findState.highlightAll = state.highlightAll;
 				this._renderAnnotations();
 			}
 		}

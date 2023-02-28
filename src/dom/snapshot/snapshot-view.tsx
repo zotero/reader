@@ -223,26 +223,25 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 			console.log('Closing find popup');
 			if (this._find) {
 				this._find = null;
+				this._handleViewUpdate();
 			}
 		}
 		else if (state.active) {
 			if (!previousState
-				|| previousState.query !== state.query
-				|| previousState.caseSensitive !== state.caseSensitive
-				|| previousState.entireWord !== state.entireWord
-				|| previousState.active !== state.active) {
+					|| previousState.query !== state.query
+					|| previousState.caseSensitive !== state.caseSensitive
+					|| previousState.entireWord !== state.entireWord
+					|| previousState.active !== state.active) {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
 					container: this._iframeDocument.body,
-					query: state.query,
-					highlightAll: state.highlightAll,
-					caseSensitive: state.caseSensitive,
-					entireWord: state.entireWord,
+					findState: { ...state },
+					onSetFindState: this._options.onSetFindState,
 				});
 				this.findNext();
 			}
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {
-				this._find!.highlightAll = state.highlightAll;
+				this._find!.findState.highlightAll = state.highlightAll;
 				this._renderAnnotations();
 			}
 		}
