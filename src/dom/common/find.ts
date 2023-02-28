@@ -157,6 +157,34 @@ class DefaultFindProcessor implements FindProcessor {
 		return highlights;
 	}
 	
+	getSnippets(): string[] {
+		return this._buf.map(({ range }) => {
+			range = range.cloneRange();
+			let snippet = range.toString();
+			if (range.startOffset > 0) {
+				const textBeforeRange = range.startContainer.nodeValue!.substring(0, range.startOffset);
+				const beforeContext = textBeforeRange.match(/\b([\w\W]){1,20}$/);
+				if (beforeContext) {
+					snippet = beforeContext[0].trimStart() + snippet;
+					if (beforeContext[0] != textBeforeRange) {
+						snippet = '…' + snippet;
+					}
+				}
+			}
+			if (range.endOffset < range.startContainer.nodeValue!.length) {
+				const textAfterRange = range.startContainer.nodeValue!.substring(range.endOffset);
+				const afterContext = textAfterRange.match(/^([\w\W]){1,20}\b/);
+				if (afterContext) {
+					snippet += afterContext[0].trimEnd();
+					if (afterContext[0] != textAfterRange) {
+						snippet += '…';
+					}
+				}
+			}
+			return snippet;
+		});
+	}
+	
 	private _setFindState() {
 		if (this._onSetFindState) {
 			this._onSetFindState({
@@ -164,7 +192,7 @@ class DefaultFindProcessor implements FindProcessor {
 				result: {
 					total: this._buf.length,
 					index: this._pos === null ? 0 : this._pos,
-					snippets: []
+					snippets: this.getSnippets(),
 				}
 			});
 		}

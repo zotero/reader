@@ -65,6 +65,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	next(): FindResult | null {
 		if (this._selectedProcessor) {
 			this._selectedProcessor.next(false);
+			this._setFindState();
 			if (this._selectedProcessor.current) {
 				return this._selectedProcessor.current;
 			}
@@ -76,7 +77,9 @@ export class EPUBFindProcessor implements FindProcessor {
 		const stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
-				return this._selectedProcessor.next(false);
+				const result = this._selectedProcessor.next(false);
+				this._setFindState();
+				return result;
 			}
 
 			nextIndex++;
@@ -121,7 +124,6 @@ export class EPUBFindProcessor implements FindProcessor {
 			container: view.container,
 			startRange,
 			findState: { ...this.findState },
-			onSetFindState: () => this._setFindState(),
 		});
 		this._processors[view.section.index] = processor;
 		if (!this._selectedProcessor && processor.initialPosition !== null) {
@@ -135,24 +137,27 @@ export class EPUBFindProcessor implements FindProcessor {
 	private _setFindState() {
 		if (this._onSetFindState) {
 			let index = 0;
+			let foundSelected = false;
+			const snippets = [];
 			for (const processor of this._processors) {
 				if (!processor) {
 					continue;
 				}
 				if (this._selectedProcessor == processor) {
 					index += processor.position ?? 0;
-					break;
+					foundSelected = true;
 				}
-				else {
+				else if (!foundSelected) {
 					index += processor.getResults().length;
 				}
+				snippets.push(...processor.getSnippets());
 			}
 			this._onSetFindState({
 				...this.findState,
 				result: {
 					total: this._totalResults,
 					index,
-					snippets: []
+					snippets,
 				}
 			});
 		}
