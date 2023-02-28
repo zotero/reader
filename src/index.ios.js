@@ -28,8 +28,8 @@ window.createView = (options) => {
 		onOpenLink: (url) => {
 			postMessage('onOpenLink', { url });
 		},
-		onFindResults: (params) => {
-			postMessage('onFindResults', params);
+		onFindResult: (result) => {
+			postMessage('onFindResult', result);
 		},
 		onChangeViewState: (state) => {
 			postMessage('onChangeViewState', { state });

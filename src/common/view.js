@@ -38,13 +38,12 @@ class View {
 			this._annotationManager.updateAnnotations(annotations);
 		};
 
-		let onSetFindPopup = (params) => {
-			delete params.open;
-			this._options.onFindResults(params);
+		let onSetFindState = (params) => {
+			this._options.onFindResult(params.result);
 		};
 
-		// This is quite hacky, but this way we enable search functionality over the existing findPopup
-		let findPopup = {
+		// This is quite hacky, but this way we enable search functionality over the existing findState
+		let findState = {
 			open: !!this._options.findParams,
 			query: '',
 			highlightAll: true,
@@ -52,6 +51,7 @@ class View {
 			entireWord: false,
 			resultsCount: null,
 			resultIndex: 0,
+			// View can be created with an active search
 			...(this._options.findParams || {})
 		};
 
@@ -64,7 +64,7 @@ class View {
 			tool: this._options.tool || { type: 'pointer' },
 			selectedAnnotationIDs: this._options.selectedAnnotationIDs || [],
 			annotations: this._options.annotations || [],
-			findPopup,
+			findState,
 			viewState: this._options.viewState || null,
 			location: this._options.location || null,
 			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
@@ -74,7 +74,7 @@ class View {
 			onOpenLink: this._options.onOpenLink,
 			onSetSelectionPopup: this._options.onSetSelectionPopup,
 			onSetAnnotationPopup: this._options.onSetAnnotationPopup,
-			onSetFindPopup,
+			onSetFindState,
 			onSelectAnnotations: this._options.onSelectAnnotations,
 			onSetDataTransferAnnotations: nop,
 			onFocus: nop,
@@ -116,17 +116,15 @@ class View {
 	 * @param {String} params.highlightAll
 	 * @param {String} params.caseSensitive
 	 * @param {String} params.entireWord
-	 * @param {String} params.resultIndex Scroll to specific search result
+	 * @param {String} params.index Focus specific result
 	 */
 	find(params) {
-		this._view.setFindPopup({
-			open: !!params,
+		this._view.setFindState({
+			active: !!params,
 			query: '',
 			highlightAll: true,
 			caseSensitive: false,
 			entireWord: false,
-			resultsCount: null,
-			resultIndex: 0,
 			...(params || {})
 		});
 	}

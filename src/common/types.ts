@@ -118,14 +118,21 @@ export type OverlayPopupParams = {
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 
-export type FindPopupParams = {
-	open: boolean;
+export type FindState = {
+	popupOpen: boolean;
+	active: boolean;
 	query: string;
 	highlightAll: boolean;
 	caseSensitive: boolean;
 	entireWord: boolean;
-	resultsCount?: number;
-	resultIndex?: number;
+	// For mobile app to focus specific result
+	index: number | null,
+	result: {
+		total: number,
+		index: number,
+		// Mobile app lists all results in a popup
+		snippets: string[]
+	} | null;
 };
 
 export type MaybePromise<T> = Promise<T> | T;

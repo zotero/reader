@@ -4,7 +4,7 @@ import {
 	AnnotationType,
 	ArrayRect,
 	WADMAnnotation,
-	FindPopupParams,
+	FindState,
 	NewAnnotation,
 	OutlineItem,
 	OverlayPopupParams,
@@ -58,7 +58,7 @@ abstract class DOMView<State> {
 
 	protected _overlayPopup: OverlayPopupParams | null;
 
-	protected _findPopup: FindPopupParams | null;
+	protected _findState: FindState | null;
 
 	protected abstract _find: FindProcessor | null;
 
@@ -90,7 +90,7 @@ abstract class DOMView<State> {
 		this._annotationPopup = options.annotationPopup;
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
-		this._findPopup = options.findPopup;
+		this._findState = options.findState;
 		this._viewState = options.viewState || {};
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
@@ -629,7 +629,7 @@ export type DOMViewOptions<State> = {
 	annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 	selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
 	overlayPopup: OverlayPopupParams | null;
-	findPopup: FindPopupParams | null;
+	findState: FindState;
 	viewState?: State;
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
@@ -642,7 +642,7 @@ export type DOMViewOptions<State> = {
 	onSetSelectionPopup: (params?: SelectionPopupParams<WADMAnnotation> | null) => void;
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
-	onSetFindPopup: (params?: FindPopupParams) => void;
+	onSetFindState: (state?: FindState) => void;
 	onOpenViewContextMenu: (params: { x: number, y: number }) => void;
 	onFocus: () => void;
 	onTabOut: (isShiftTab?: boolean) => void;

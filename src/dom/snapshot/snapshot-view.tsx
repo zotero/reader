@@ -4,7 +4,7 @@ import {
 import {
 	AnnotationType,
 	WADMAnnotation,
-	FindPopupParams,
+	FindState,
 	NavLocation,
 	NewAnnotation,
 	ViewStats
@@ -216,32 +216,33 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 	// Unlike annotation, selection and overlay popups, find popup open state is determined
 	// with .open property. All popup properties are preserved even when it's closed
-	setFindPopup(popup: FindPopupParams) {
-		const previousPopup = this._findPopup;
-		this._findPopup = popup;
-		if (!popup.open && previousPopup && previousPopup.open !== popup.open) {
+	setFindState(state: FindState) {
+		const previousState = this._findState;
+		this._findState = state;
+		if (!state.active && previousState && previousState.active !== state.active) {
 			console.log('Closing find popup');
 			if (this._find) {
 				this._find = null;
 			}
 		}
-		else if (popup.open) {
-			if (!previousPopup
-				|| previousPopup.query !== popup.query
-				|| previousPopup.caseSensitive !== popup.caseSensitive
-				|| previousPopup.entireWord !== popup.entireWord) {
-				console.log('Initiating new search', popup);
+		else if (state.active) {
+			if (!previousState
+				|| previousState.query !== state.query
+				|| previousState.caseSensitive !== state.caseSensitive
+				|| previousState.entireWord !== state.entireWord
+				|| previousState.active !== state.active) {
+				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
 					container: this._iframeDocument.body,
-					query: popup.query,
-					highlightAll: popup.highlightAll,
-					caseSensitive: popup.caseSensitive,
-					entireWord: popup.entireWord,
+					query: state.query,
+					highlightAll: state.highlightAll,
+					caseSensitive: state.caseSensitive,
+					entireWord: state.entireWord,
 				});
 				this.findNext();
 			}
-			else if (previousPopup && previousPopup.highlightAll !== popup.highlightAll) {
-				this._find!.highlightAll = popup.highlightAll;
+			else if (previousState && previousState.highlightAll !== state.highlightAll) {
+				this._find!.highlightAll = state.highlightAll;
 				this._renderAnnotations();
 			}
 		}

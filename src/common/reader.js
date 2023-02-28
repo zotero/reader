@@ -105,28 +105,28 @@ class Reader {
 			primaryViewAnnotationPopup: null,
 			primaryViewSelectionPopup: null,
 			primaryViewOverlayPopup: null,
-			primaryViewFindPopup: {
-				open: false,
+			primaryViewFindState: {
+				popupOpen: false,
+				active: false,
 				query: '',
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
-				resultsCount: null,
-				resultIndex: 0
+				result: null,
 			},
 			secondaryViewState: null,
 			secondaryViewStats: {},
 			secondaryViewAnnotationPopup: null,
 			secondaryViewSelectionPopup: null,
 			secondaryViewOverlayPopup: null,
-			secondaryViewFindPopup: {
-				open: false,
+			secondaryViewFindState: {
+				popupOpen: false,
+				active: false,
 				query: '',
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
-				resultsCount: null,
-				resultIndex: 0
+				result: null
 			}
 		};
 
@@ -217,7 +217,7 @@ class Reader {
 					onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 					onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 
-					onChangeFindPopup={this._handleFindPopupChange.bind(this)}
+					onChangeFindState={this._handleFindStateChange.bind(this)}
 					onFindNext={this.findNext.bind(this)}
 					onFindPrevious={this.findPrevious.bind(this)}
 					onToggleFindPopup={this.toggleFindPopup.bind(this)}
@@ -320,11 +320,11 @@ class Reader {
 			this._secondaryView?.setOverlayPopup(this._state.secondaryViewOverlayPopup);
 		}
 
-		if (this._state.primaryViewFindPopup !== previousState.primaryViewFindPopup) {
-			this._primaryView?.setFindPopup(this._state.primaryViewFindPopup);
+		if (this._state.primaryViewFindState !== previousState.primaryViewFindState) {
+			this._primaryView?.setFindState(this._state.primaryViewFindState);
 		}
-		if (this._state.secondaryViewFindPopup !== previousState.secondaryViewFindPopup) {
-			this._secondaryView?.setFindPopup(this._state.secondaryViewFindPopup);
+		if (this._state.secondaryViewFindState !== previousState.secondaryViewFindState) {
+			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
 		}
 
 		if (init || this._state.sidebarOpen !== previousState.sidebarOpen) {
@@ -491,8 +491,8 @@ class Reader {
 		this._focusManager.restoreFocus();
 	}
 
-	_handleFindPopupChange(primary, params) {
-		this._updateState({ [primary ? 'primaryViewFindPopup' : 'secondaryViewFindPopup']: params });
+	_handleFindStateChange(primary, params) {
+		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
 	}
 
 	findNext(primary) {
@@ -513,13 +513,13 @@ class Reader {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
 		}
-		let key = primary ? 'primaryViewFindPopup' : 'secondaryViewFindPopup';
-		let findPopup = this._state[key];
+		let key = primary ? 'primaryViewFindState' : 'secondaryViewFindState';
+		let findState = this._state[key];
 		if (open === undefined) {
-			open = !findPopup.open;
+			open = !findState.popupOpen;
 		}
-		findPopup = { ...findPopup, open };
-		this._updateState({ [key]: findPopup });
+		findState = { ...findState, popupOpen: open, active: false, result: null };
+		this._updateState({ [key]: findState });
 	}
 
 	_sidebarScrollAnnotationIntoViev(id) {
@@ -615,8 +615,8 @@ class Reader {
 			}
 		};
 
-		let onSetFindPopup = (params) => {
-			this._updateState({ [primary ? 'primaryViewFindPopup' : 'secondaryViewFindPopup']: params });
+		let onSetFindState = (params) => {
+			this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
 		};
 
 		let onSelectAnnotations = (ids) => {
@@ -639,7 +639,7 @@ class Reader {
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),
 			showAnnotations: this._state.showAnnotations,
-			findPopup: this._state[primary ? 'primaryViewFindPopup' : 'secondaryViewFindPopup'],
+			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
 			onChangeViewState,
@@ -654,7 +654,7 @@ class Reader {
 			onSetSelectionPopup,
 			onSetAnnotationPopup,
 			onSetOverlayPopup,
-			onSetFindPopup,
+			onSetFindState,
 			onSelectAnnotations,
 			onTabOut,
 			onKeyDown
@@ -731,7 +731,7 @@ class Reader {
 			selectedAnnotationIDs: [],
 			annotations: this._state.annotations,
 			showAnnotations: this._state.showAnnotations,
-			findPopup: {},
+			findState: {},
 			viewState: {},
 			location: null,
 			onChangeViewState: nop,
@@ -747,7 +747,7 @@ class Reader {
 			onSetSelectionPopup: nop,
 			onSetAnnotationPopup: nop,
 			onSetOverlayPopup: nop,
-			onSetFindPopup: nop,
+			onSetFindState: nop,
 			onSelectAnnotations: nop,
 			onSetThumbnails: nop,
 			onSetOutline: nop,

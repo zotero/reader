@@ -140,5 +140,6 @@ export default {
 	'pdfReader.deleteAnnotation.plural': 'Are you sure you want to delete the selected annotations?',
 	'pdfReader.enterPassword': 'Enter the password to open this PDF file.',
 	'pdfReader.includeAnnotations': 'Include annotations',
-	'pdfReader.preparingDocumentForPrinting': 'Preparing document for printing…'
+	'pdfReader.preparingDocumentForPrinting': 'Preparing document for printing…',
+	'pdfReader.phraseNotFound': 'Phrase not found'
 };

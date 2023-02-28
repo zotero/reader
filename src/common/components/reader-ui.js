@@ -22,8 +22,8 @@ function View(props) {
 
 	let name = primary ? 'primary' : 'secondary';
 
-	function handleFindPopupChange(params) {
-		props.onChangeFindPopup(primary, params);
+	function handleFindStateChange(params) {
+		props.onChangeFindState(primary, params);
 	}
 
 	function handleFindNext() {
@@ -42,10 +42,10 @@ function View(props) {
 				data-proxy={`#${name}-view > iframe`}
 				style={{ position: 'absolute' }}
 			/>
-			{state[name + 'ViewFindPopup'].open &&
+			{state[name + 'ViewFindState'].popupOpen &&
 				<FindPopup
-					params={state[name + 'ViewFindPopup']}
-					onChange={handleFindPopupChange}
+					params={state[name + 'ViewFindState']}
+					onChange={handleFindStateChange}
 					onFindNext={handleFindNext}
 					onFindPrevious={handleFindPrevious}
 				/>
@@ -91,7 +91,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 		sidebarOpenPageLabelPopup: (id) => annotationsViewRef.current?.openPageLabelPopup(id)
 	}));
 
-	let findPopup = state.primary ? state.primaryViewFindPopup : state.secondaryViewFindPopup;
+	let findState = state.primary ? state.primaryViewFindState : state.secondaryViewFindState;
 	let viewStats = state.primary ? state.primaryViewStats : state.secondaryViewStats;
 
 	return (
@@ -110,7 +110,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					enableNavigateBack={viewStats.canNavigateBack}
 					enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 					enableNavigateToNextPage={viewStats.canNavigateToNextPage}
-					findPopupOpen={findPopup.open}
+					findPopupOpen={findState.popupOpen}
 					tool={state.tool}
 					onToggleSidebar={props.onToggleSidebar}
 					onZoomIn={props.onZoomIn}

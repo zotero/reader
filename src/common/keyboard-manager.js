@@ -43,13 +43,13 @@ export class KeyboardManager {
 					...this._reader._state.tool,
 					type: 'pointer'
 				},
-				primaryViewFindPopup: {
-					...this._reader._state.primaryViewFindPopup,
-					open: false
+				primaryViewFindState: {
+					...this._reader._state.primaryViewFindState,
+					popupOpen: false
 				},
-				secondaryViewFindPopup: {
-					...this._reader._state.secondaryViewFindPopup,
-					open: false
+				secondaryViewFindState: {
+					...this._reader._state.secondaryViewFindState,
+					popupOpen: false
 				}
 			});
 			this._reader.setFilter({

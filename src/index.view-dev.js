@@ -40,14 +40,20 @@ window.createView = (options) => {
 		onOpenLink: (url) => {
 			console.log('Open external link', url);
 		},
-		onFindResults: (params) => {
-			// This part is not finished and might need to be revised
-			// TODO: This is not currently called because onSetFindPopup is not called from EPUB and snapshot views.
-			// TODO: It should include 'results':
-			//  { query: 'zotero', …, results: [{ snippet: '…Zotero is a free, easy-to-use tool…' }]}
-			// TODO: Once user picks a result, trigger the search again with 'resultIndex' to scroll the result:
-			//  view.find({ query: …, …, resultIndex: 123 })
-			console.log('Received find results', params);
+		onFindResult: (result) => {
+			// TODO: This is not currently called because onSetFindState is not called from EPUB and snapshot views.
+
+			// 'result' example:
+			// let result = {
+			// 	total: 2
+			// 	index: 0,
+			// 	snippets: ['…first result snippet…', '…second result snippet…']
+			// };
+
+			// Once user picks a result, trigger the same search again, but with the snippet index
+			// to focus specific result:
+			// view.find({ …, index: 123 })
+			console.log('Received find result', result);
 		},
 		onChangeViewState: (state) => {
 			// Provides view state that can be later used to re-create the view at the same position, zoom, etc.
@@ -95,10 +101,10 @@ async function main() {
 	// It seems EPUB view isn't fully functioning for 10 or more seconds. TODO: Fix
 
 	// Examples:
-	// // Initiate search. It should trigger 'onFindResults' with search 'results', although currently doesn't do that. TODO: Fix
+	// // Initiate search. It should trigger 'onFindResult' with search 'results', although currently doesn't do that. TODO: Fix
 	// window._view.find({
 	// 	query: 'the',
-	// 	highlightAll: true,
+	// 	highlightAll: false,
 	// 	caseSensitive: false,
 	// 	entireWord: false,
 	// });

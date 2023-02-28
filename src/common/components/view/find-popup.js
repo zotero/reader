@@ -1,37 +1,43 @@
 import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
+import { FormattedMessage } from 'react-intl';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	const inputRef = useRef();
 
 	useLayoutEffect(() => {
-		if (params.open) {
+		if (params.popupOpen) {
 			inputRef.current?.focus();
 		}
-	}, [params.open]);
+	}, [params.popupOpen]);
 
 	function handleInputBlur(event) {
 		if (!event.target.value) {
-			onChange({ ...params, open: false });
+			onChange({ ...params, popupOpen: false, active: false });
 		}
 	}
 
 	function handleInputChange(event) {
-		onChange({ ...params, query: event.target.value });
+		onChange({ ...params, query: event.target.value, active: true, result: null });
 	}
 
 	function handleInputKeyDown(event) {
 		if (event.key === 'Enter') {
-			if (event.shiftKey) {
-				onFindPrevious();
+			if (params.active) {
+				if (event.shiftKey) {
+					onFindPrevious();
+				}
+				else {
+					onFindNext();
+				}
 			}
 			else {
-				onFindNext();
+				onChange({ ...params, active: true });
 			}
 		}
 	}
 
 	function handleCloseClick() {
-		onChange({ ...params, open: false });
+		onChange({ ...params, popupOpen: false, active: false });
 	}
 
 	function handleHighlightAllChange(event) {
@@ -92,7 +98,8 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 				<label htmlFor="findEntireWord" className="toolbarLabel">Whole words</label>
 			</div>
 			<div id="findbarMessageContainer">
-				<span id="findResultsCount" className="toolbarLabel">{params.resultsCount}</span>
+				{params.result && <span id="findResultsCount" className="toolbarLabel">{
+					params.result.total > 0 ? (params.result.index + 1 + ' / ' + params.result.total) : (<FormattedMessage id="pdfReader.phraseNotFound"/>)}</span>}
 				<span id="findMsg" className="toolbarLabel"></span>
 			</div>
 			<div id="findbarCloseContainer">

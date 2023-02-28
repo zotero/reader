@@ -53,6 +53,7 @@ class PDFView {
 		this._onSetSelectionPopup = options.onSetSelectionPopup;
 		this._onSetAnnotationPopup = options.onSetAnnotationPopup;
 		this._onSetOverlayPopup = options.onSetOverlayPopup;
+		this._onSetFindState = options.onSetFindState;
 		this._onOpenViewContextMenu = options.onOpenViewContextMenu;
 		this._onKeyDown = options.onKeyDown;
 
@@ -73,7 +74,7 @@ class PDFView {
 		this._focusedObject = null;
 		this._lastFocusedObject = null;
 
-		this._findPopup = options.findPopup;
+		this._findState = options.findState;
 
 		if (this._primary) {
 			this._pdfRenderer = new PDFRenderer({ pdfView: this });
@@ -193,6 +194,8 @@ class PDFView {
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));
+		this._iframeWindow.PDFViewerApplication.eventBus.on('updatefindmatchescount', this._updateFindMatchesCount.bind(this));
+		this._iframeWindow.PDFViewerApplication.eventBus.on('updatefindcontrolstate', this._updateFindControlState.bind(this));
 	}
 
 	async _init2() {
@@ -245,6 +248,23 @@ class PDFView {
 		if (this._location) {
 			this.navigate(this._location);
 		}
+	}
+
+	_updateFindMatchesCount({ matchesCount }) {
+		let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+		if (this._pdfjsFindState === 3) {
+			result = null;
+		}
+		this._onSetFindState({ ...this._findState, result });
+	}
+
+	_updateFindControlState({ matchesCount, state, rawQuery }) {
+		this._pdfjsFindState = state;
+		let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+		if (this._pdfjsFindState === 3 || !rawQuery.length) {
+			result = null;
+		}
+		this._onSetFindState({ ...this._findState, result });
 	}
 
 	async _setState(state, skipScroll) {
@@ -493,41 +513,42 @@ class PDFView {
 		this._overlayPopupDelayer.setOpen(!!popup);
 	}
 
-	setFindPopup(popup) {
-		if (!popup.open && this._findPopup.open !== popup.open) {
+	setFindState(state) {
+		if (!state.active && this._findState.active !== state.active) {
 			this._iframeWindow.PDFViewerApplication.eventBus.dispatch('findbarclose', { source: this._iframeWindow });
 		}
 
-		if (popup.open) {
-			if (this._findPopup.query !== popup.query
-				|| this._findPopup.highlightAll !== popup.highlightAll
-				|| this._findPopup.caseSensitive !== popup.caseSensitive
-				|| this._findPopup.entireWord !== popup.entireWord) {
+		if (state.active) {
+			if (this._findState.query !== state.query
+				|| this._findState.highlightAll !== state.highlightAll
+				|| this._findState.caseSensitive !== state.caseSensitive
+				|| this._findState.entireWord !== state.entireWord
+				|| this._findState.active !== state.active) {
 				this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
 					source: this._iframeWindow,
 					type: 'find',
-					query: popup.query,
+					query: state.query,
 					phraseSearch: true,
-					caseSensitive: popup.caseSensitive,
-					entireWord: popup.entireWord,
-					highlightAll: popup.highlightAll,
+					caseSensitive: state.caseSensitive,
+					entireWord: state.entireWord,
+					highlightAll: state.highlightAll,
 					findPrevious: false
 				});
 			}
 		}
 
-		this._findPopup = popup;
+		this._findState = state;
 	}
 
 	findNext() {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
 			source: this._iframeWindow,
 			type: 'again',
-			query: this._findPopup.query,
+			query: this._findState.query,
 			phraseSearch: true,
-			caseSensitive: this._findPopup.caseSensitive,
-			entireWord: this._findPopup.entireWord,
-			highlightAll: this._findPopup.highlightAll,
+			caseSensitive: this._findState.caseSensitive,
+			entireWord: this._findState.entireWord,
+			highlightAll: this._findState.highlightAll,
 			findPrevious: false
 		});
 	}
@@ -536,11 +557,11 @@ class PDFView {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
 			source: this._iframeWindow,
 			type: 'again',
-			query: this._findPopup.query,
+			query: this._findState.query,
 			phraseSearch: true,
-			caseSensitive: this._findPopup.caseSensitive,
-			entireWord: this._findPopup.entireWord,
-			highlightAll: this._findPopup.highlightAll,
+			caseSensitive: this._findState.caseSensitive,
+			entireWord: this._findState.entireWord,
+			highlightAll: this._findState.highlightAll,
 			findPrevious: true
 		});
 	}
