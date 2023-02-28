@@ -1,6 +1,8 @@
 import { DisplayedAnnotation } from "./components/overlay/annotation-overlay";
-import { executeSearch } from "./lib/dom-text-search";
-import { getAllTextNodes } from "./lib/nodes";
+import {
+	executeSearch,
+	SearchContext
+} from "./lib/dom-text-search";
 import { FindState } from "../../common/types";
 
 export interface FindProcessor {
@@ -23,7 +25,7 @@ class DefaultFindProcessor implements FindProcessor {
 	private readonly _onSetFindState?: (state?: FindState) => void;
 
 	constructor(options: {
-		container: Element,
+		searchContext: SearchContext,
 		startRange?: Range,
 		findState: FindState,
 		onSetFindState?: (state?: FindState) => void,
@@ -34,7 +36,7 @@ class DefaultFindProcessor implements FindProcessor {
 		this._buf = [];
 		
 		const ranges = executeSearch(
-			getAllTextNodes(options.container),
+			options.searchContext,
 			this.findState.query,
 			{
 				caseSensitive: this.findState.caseSensitive,

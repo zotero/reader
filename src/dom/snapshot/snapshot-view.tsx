@@ -25,13 +25,22 @@ import DOMView from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import NavStack from "../common/lib/nav-stack";
 import DOMPurify from "dompurify";
-import { DOMPURIFY_CONFIG } from "../common/lib/nodes";
-import DefaultFindProcessor, { FindProcessor } from "../common/find";
+import {
+	DOMPURIFY_CONFIG,
+	getAllTextNodes
+} from "../common/lib/nodes";
+import DefaultFindProcessor from "../common/find";
+import {
+	createSearchContext,
+	SearchContext
+} from "../common/lib/dom-text-search";
 
 class SnapshotView extends DOMView<SnapshotViewState> {
 	private readonly _navStack = new NavStack<[number, number]>();
 
 	protected _find: DefaultFindProcessor | null = null;
+	
+	private _searchContext: SearchContext | null = null;
 
 	protected _getSrcDoc() {
 		const enc = new TextDecoder('utf-8');
@@ -142,6 +151,13 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	protected _isExternalLink(link: HTMLAnchorElement) {
 		return !link.getAttribute('href')?.startsWith('#');
 	}
+	
+	private _getSearchContext() {
+		if (!this._searchContext) {
+			this._searchContext = createSearchContext(getAllTextNodes(this._iframeDocument.body));
+		}
+		return this._searchContext;
+	}
 
 	// Popups:
 	// - For each popup (except find popup) 'rect' bounding box has to be provided.
@@ -234,7 +250,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 					|| previousState.active !== state.active) {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
-					container: this._iframeDocument.body,
+					searchContext: this._getSearchContext(),
 					findState: { ...state },
 					onSetFindState: this._options.onSetFindState,
 				});

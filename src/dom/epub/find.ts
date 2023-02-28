@@ -30,7 +30,9 @@ export class EPUBFindProcessor implements FindProcessor {
 		this.findState = options.findState;
 		this._onSetFindState = options.onSetFindState;
 
-		this._processViews(this.view.visibleViews, options.startRange, 99);
+		// Process visible views first, and then the rest of the views if we haven't exceeded 999 results yet
+		this._processViews(this.view.visibleViews, options.startRange);
+		this._processViews(this.view.views, undefined, 999);
 	}
 
 	prev(): FindResult | null {
@@ -109,10 +111,10 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	private _processViews(views: SectionView[], startRange?: Range, maxResults?: number) {
 		for (const view of views) {
-			this._getOrCreateProcessor(view, startRange);
 			if (maxResults !== undefined && this._totalResults > maxResults) {
 				break;
 			}
+			this._getOrCreateProcessor(view, startRange);
 		}
 	}
 
@@ -121,7 +123,7 @@ export class EPUBFindProcessor implements FindProcessor {
 			return this._processors[view.section.index];
 		}
 		const processor = new DefaultFindProcessor({
-			container: view.container,
+			searchContext: view.searchContext,
 			startRange,
 			findState: { ...this.findState },
 		});

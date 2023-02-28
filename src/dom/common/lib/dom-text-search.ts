@@ -1,5 +1,5 @@
 export function executeSearch(
-	nodes: CharacterData[],
+	context: SearchContext,
 	term: string,
 	options: {
 		caseSensitive: boolean,
@@ -10,28 +10,17 @@ export function executeSearch(
 		return [];
 	}
 	
-	let sectionText = '';
-	const charDataRanges: CharDataRange[] = [];
-	for (const charData of nodes) {
-		const data = normalize(charData.data, options.caseSensitive);
-		charDataRanges.push({
-			charData,
-			start: sectionText.length,
-			end: sectionText.length + data.length - 1
-		});
-		sectionText += data;
-	}
-
+	const { text, charDataRanges } = context;
 	const ranges = [];
 
 	// https://stackoverflow.com/a/6969486
-	let termRe = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	let termRe = normalize(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	if (options.entireWord) {
 		termRe = '\\b' + termRe + '\\b';
 	}
-	const re = new RegExp(termRe, 'g');
+	const re = new RegExp(termRe, 'g' + (options.caseSensitive ? '' : 'i'));
 	let matches;
-	while ((matches = re.exec(sectionText))) {
+	while ((matches = re.exec(text))) {
 		const [match] = matches;
 		const range = new Range();
 		const { charData: startCharData, start: startOffset } = binarySearch(charDataRanges, matches.index)!;
@@ -44,10 +33,22 @@ export function executeSearch(
 	return ranges;
 }
 
-function normalize(s: string, caseSensitive: boolean) {
-	if (!caseSensitive) {
-		s = s.toLowerCase();
+export function createSearchContext(nodes: CharacterData[]): SearchContext {
+	let text = '';
+	const charDataRanges: CharDataRange[] = [];
+	for (const charData of nodes) {
+		const data = normalize(charData.data);
+		charDataRanges.push({
+			charData,
+			start: text.length,
+			end: text.length + data.length - 1,
+		});
+		text += data;
 	}
+	return { text, charDataRanges };
+}
+
+function normalize(s: string) {
 	return s
 		// Remove smart quotes
 		.replace(/[\u2018\u2019]/g, "'")
@@ -72,7 +73,12 @@ function binarySearch(charDataRanges: CharDataRange[], pos: number) {
 	return null;
 }
 
-type CharDataRange = {
+export type SearchContext = {
+	text: string;
+	charDataRanges: CharDataRange[];
+}
+
+export type CharDataRange = {
 	charData: CharacterData;
 	start: number;
 	end: number;

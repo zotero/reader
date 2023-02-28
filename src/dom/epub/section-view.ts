@@ -2,7 +2,14 @@ import Section from "epubjs/types/section";
 import StyleScoper from "./lib/style-scoper";
 import { isSafari } from "../../common/lib/utilities";
 import DOMPurify from "dompurify";
-import { DOMPURIFY_CONFIG } from "../common/lib/nodes";
+import {
+	DOMPURIFY_CONFIG,
+	getAllTextNodes
+} from "../common/lib/nodes";
+import {
+	createSearchContext,
+	SearchContext
+} from "../common/lib/dom-text-search";
 
 class SectionView {
 	readonly section: Section;
@@ -14,6 +21,8 @@ class SectionView {
 	private readonly _document: Document;
 	
 	private readonly _styleScoper: StyleScoper;
+	
+	private _searchContext: SearchContext | null = null;
 	
 	constructor(options: {
 		section: Section,
@@ -141,6 +150,13 @@ class SectionView {
 			}
 		}
 		return null;
+	}
+	
+	get searchContext() {
+		if (!this._searchContext) {
+			this._searchContext = createSearchContext(getAllTextNodes(this.container));
+		}
+		return this._searchContext;
 	}
 }
 
