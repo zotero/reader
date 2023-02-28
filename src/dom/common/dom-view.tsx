@@ -72,7 +72,7 @@ abstract class DOMView<State> {
 
 	protected _highlightedPosition: Selector | null = null;
 
-	protected _gotMouseUp = false;
+	protected _gotPointerUp = false;
 
 	protected constructor(options: DOMViewOptions<State>) {
 		this._options = options;
@@ -144,7 +144,7 @@ abstract class DOMView<State> {
 
 	protected _tryUseTool(): boolean {
 		this._updateViewStats();
-		if (this._gotMouseUp) {
+		if (this._gotPointerUp) {
 			// Open text selection popup if current tool is pointer
 			if (this._tool.type == 'pointer') {
 				const selection = this._iframeWindow.getSelection();
@@ -284,9 +284,9 @@ abstract class DOMView<State> {
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
-		this._iframeWindow.addEventListener('mouseover', this._handleMouseEnter.bind(this));
-		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
-		this._iframeWindow.addEventListener('mouseup', this._handlePointerUp.bind(this));
+		this._iframeWindow.addEventListener('pointerover', this._handlePointerOver.bind(this));
+		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
+		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		// @ts-ignore
 		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
@@ -298,7 +298,7 @@ abstract class DOMView<State> {
 		this._onInitialDisplay(this._options.viewState || {});
 	}
 
-	protected _handleMouseEnter(event: MouseEvent) {
+	protected _handlePointerOver(event: PointerEvent) {
 		const link = (event.target as Element).closest('a');
 		if (link && this._isExternalLink(link)) {
 			this._overlayPopupDelayer.open(link, () => {
@@ -488,8 +488,8 @@ abstract class DOMView<State> {
 		event.preventDefault();
 	}
 
-	protected _handlePointerDown(event: MouseEvent) {
-		this._gotMouseUp = false;
+	protected _handlePointerDown(event: PointerEvent) {
+		this._gotPointerUp = false;
 
 		this._options.onSetOverlayPopup();
 
@@ -524,8 +524,8 @@ abstract class DOMView<State> {
 		}
 	}
 
-	protected _handlePointerUp(_event: MouseEvent) {
-		this._gotMouseUp = true;
+	protected _handlePointerUp(_event: PointerEvent) {
+		this._gotPointerUp = true;
 		this._tryUseTool();
 
 		this._disableAnnotationPointerEvents = false;
