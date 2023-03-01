@@ -46,7 +46,7 @@ class SectionView {
 		
 		// Work around a WebKit bug - see DOMView constructor for details
 		if (isSafari) {
-			DOMPurify.sanitize(document.documentElement, {
+			DOMPurify.sanitize(sectionDoc.documentElement, {
 				...DOMPURIFY_CONFIG,
 				IN_PLACE: true,
 			});
