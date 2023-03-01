@@ -65,6 +65,9 @@ class Reader {
 
 		this._lastPortalRect = [0, 0, 0, 0];
 
+		this._enableAnnotationDeletionFromComment = false;
+		this._annotationSelectionTriggeredFromView = false;
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -200,7 +203,7 @@ class Reader {
 					onResizeSidebar={(width) => { this.setSidebarWidth(width); this._onChangeSidebarWidth(width); }}
 					onResizeSplitView={this.setSplitViewSize.bind(this)}
 					onAddAnnotation={(annotation) => { this._annotationManager.addAnnotation(annotation); this.setSelectedAnnotations([]); } }
-					onUpdateAnnotations={this._annotationManager.updateAnnotations.bind(this._annotationManager)}
+					onUpdateAnnotations={(annotations) => { this._annotationManager.updateAnnotations(annotations); this._enableAnnotationDeletionFromComment = false; }}
 					onDeleteAnnotations={this._annotationManager.deleteAnnotations.bind(this._annotationManager)}
 					onOpenTagsPopup={this._onOpenTagsPopup}
 					onOpenPageLabelPopup={this._handleOpenPageLabelPopup.bind(this)}
@@ -888,12 +891,15 @@ class Reader {
 	}
 
 	setSelectedAnnotations(ids, triggeredFromView) {
+		this._enableAnnotationDeletionFromComment = false;
+		this._annotationSelectionTriggeredFromView = triggeredFromView;
 		this._updateState({ selectedAnnotationIDs: ids });
 		if (ids.length === 1) {
 			let id = ids[0];
 			let annotation = this._annotationManager._annotations.find(x => x.id === id);
 			if (annotation) {
 				if (triggeredFromView) {
+					this._enableAnnotationDeletionFromComment = true;
 					if (annotation.comment) {
 						let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
 						if (sidebarItem) {

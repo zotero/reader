@@ -94,26 +94,49 @@ export class KeyboardManager {
 			this._reader.zoomReset();
 		}
 		else if (['Delete', 'Backspace'].includes(key)) {
-			this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
-			// // TODO: Auto-select the next annotation after deletion in sidebar
-			// let id = selectedIDsRef.current[0];
-			// let annotation = annotationsRef.current.find(x => x.id === id);
-			//
-			// let hasReadOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
-			// if (!hasReadOnly) {
-			// 	if (['sidebar-annotation', 'view-annotation'].includes(focusManagerRef.current.zone.id)) {
-			// 		props.onDeleteAnnotations(selectedIDsRef.current);
-			// 	}
-			// 	else if (['sidebar-annotation-comment', 'view-annotation-comment'].includes(focusManagerRef.current.zone.id)
-			// 		&& annotation && !annotation.comment && !annotationCommentTouched.current) {
-			// 		props.onDeleteAnnotations([id]);
-			// 	}
-			// }
+			let selectedIDs = this._reader._state.selectedAnnotationIDs;
+			// Don't delete if some selected annotations are read-only
+			let hasReadOnly = !!this._reader._state.annotations.find(x => selectedIDs.includes(x.id) && x.readOnly);
+			if (hasReadOnly) {
+				return;
+			}
+			// Allow deleting annotation from annotation comment with some exceptions
+			if (selectedIDs.length === 1) {
+				let annotation = this._reader._state.annotations.find(x => x.id === selectedIDs[0]);
+				if (event.target.closest('.content')
+					&& (
+						event.target.closest('.highlight')
+						|| annotation.comment
+						|| !this._reader._enableAnnotationDeletionFromComment
+					)
+				) {
+					return;
+				}
+			}
+			// Focus next annotation if annotations were selected not from a view
+			if (!this._reader._annotationSelectionTriggeredFromView) {
+				let { annotations } = this._reader._state;
+				let firstIndex = annotations.findIndex(x => selectedIDs.includes(x.id));
+				let lastIndex = annotations.findLastIndex(x => selectedIDs.includes(x.id));
+				let id;
+				if (lastIndex + 1 < annotations.length) {
+					id = annotations[lastIndex + 1].id;
+				}
+				if (firstIndex - 1 >= 0) {
+					id = annotations[firstIndex - 1].id;
+				}
+				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
+				if (id) {
+					let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+					if (sidebarItem) {
+						setTimeout(() => sidebarItem.focus());
+					}
+				}
+			}
+			else {
+				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
+			}
 		}
-
-
-
-		// Cmd-a should select all annotations
 	}
 
 	handleViewKeyDown(event) {
