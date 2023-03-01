@@ -18,6 +18,7 @@ class PageMapping {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
+		const startTime = performance.now();
 		let consecutiveSectionsWithoutMatches = 0;
 		for (const view of views) {
 			let matchesFound = false;
@@ -25,6 +26,7 @@ class PageMapping {
 				const elems = view.container.querySelectorAll(matcher.selector);
 				if (elems.length) {
 					matchesFound = true;
+					console.log(`Found ${elems.length} physical page numbers using selector '${matcher.selector}'`);
 				}
 				for (const elem of elems) {
 					const pageNumber = matcher.extract(elem);
@@ -33,17 +35,16 @@ class PageMapping {
 					this._tree.set(range, pageNumber);
 				}
 			}
-			if (!matchesFound) {
-				if (++consecutiveSectionsWithoutMatches >= 3) {
-					console.log('Aborting physical page mapping generation after 3 sections without matches');
-					break;
-				}
-			}
-			else {
+			if (matchesFound) {
 				consecutiveSectionsWithoutMatches = 0;
 			}
+			else if (++consecutiveSectionsWithoutMatches >= 3) {
+				console.log('Aborting physical page mapping generation after 3 sections without matches');
+				break;
+			}
 		}
-		console.log(`Added ${this._tree.length} physical page mappings`);
+		console.log(`Added ${this._tree.length} physical page mappings in ${
+			((performance.now() - startTime) / 1000).toFixed(2)}s`);
 		return !!this._tree.length;
 	}
 	
@@ -51,6 +52,7 @@ class PageMapping {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
+		const startTime = performance.now();
 		let locationNumber = 0;
 		for (const view of views) {
 			const textNodes = getAllTextNodes(view.body);
@@ -78,7 +80,8 @@ class PageMapping {
 				}
 			}
 		}
-		console.log(`Added ${this._tree.length} EPUB location mappings`);
+		console.log(`Added ${this._tree.length} EPUB location mappings in ${
+			((performance.now() - startTime) / 1000).toFixed(2)}s`);
 		return !!this._tree.length;
 	}
 	
