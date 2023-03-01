@@ -148,32 +148,30 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private async _initPageMapping() {
-		// Use physical page numbers if we can get any
-		if (this._pageMapping.addPhysicalPages(this._sectionViews.values())) {
+		const localStorageKey = this._book.key() + '-page-mapping';
+		if (window.dev && !this._viewState.savedPageMapping) {
+			this._viewState.savedPageMapping = window.localStorage.getItem(localStorageKey) || undefined;
+		}
+		
+		// Use persisted page mappings if present
+		if (this._viewState.savedPageMapping && this._pageMapping.load(this._viewState.savedPageMapping, this)) {
 			this._updateViewStats();
 			return;
 		}
 		
-		// Otherwise, load/generate EPUB.js locations
-		const localStorageKey = this._book.key() + '-locations';
-		if (window.dev && !this._viewState.persistedLocations) {
-			this._viewState.persistedLocations = window.localStorage.getItem(localStorageKey) || undefined;
-		}
-		
-		let locations;
-		if (this._viewState.persistedLocations) {
-			locations = this._book.locations.load(this._viewState.persistedLocations);
-		}
-		else {
-			locations = await this._book.locations.generate(1800);
-			this._viewState.persistedLocations = this._book.locations.save();
+		if (
+			// Otherwise, try extracting physical page numbers
+			this._pageMapping.addPhysicalPages(this._sectionViews.values())
+			// Fall back to generating EPUB locations
+			|| this._pageMapping.addEPUBLocations(this._sectionViews.values())
+		) {
+			this._updateViewStats();
+			this._viewState.savedPageMapping = this._pageMapping.save(this);
 			this._updateViewState();
 			if (window.dev) {
-				window.localStorage.setItem(localStorageKey, this._book.locations.save());
+				window.localStorage.setItem(localStorageKey, this._viewState.savedPageMapping);
 			}
 		}
-		this._pageMapping.addEPUBLocations(this, locations);
-		this._updateViewStats();
 	}
 
 	private _initOutline() {
@@ -788,7 +786,7 @@ type FlowMode = 'paginated' | 'scrolled';
 
 export type EPUBViewState = {
 	cfi?: string;
-	persistedLocations?: string;
+	savedPageMapping?: string;
 	scale?: number;
 	flowMode?: FlowMode;
 };

@@ -15,6 +15,8 @@ class SectionView {
 	readonly section: Section;
 	
 	readonly container: HTMLElement;
+	
+	body!: HTMLElement;
 
 	private readonly _window: Window & typeof globalThis;
 	
@@ -98,6 +100,7 @@ class SectionView {
 		}
 		
 		this.container.append(...sectionDoc.childNodes);
+		this.body = this.container.querySelector('replaced-body')!;
 		
 		await Promise.allSettled(toAwait).catch();
 	}

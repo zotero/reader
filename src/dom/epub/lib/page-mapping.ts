@@ -1,11 +1,13 @@
-import EpubView from "../epub-view";
 import BTree from "sorted-btree";
 import SectionView from "../section-view";
+import EPUBView from "../epub-view";
+import { getAllTextNodes } from "../../common/lib/nodes";
+import { EPUB_LOCATION_BREAK_INTERVAL } from "../defines";
 
 class PageMapping {
 	private readonly _tree = new BTree<Range, string>(
 		undefined,
-		(a, b) => a.compareBoundaryPoints(Range.START_TO_START, b)
+		(a, b) => a.compareBoundaryPoints(Range.START_TO_START, b) || a.compareBoundaryPoints(Range.END_TO_END, b)
 	);
 	
 	get length(): number {
@@ -45,16 +47,36 @@ class PageMapping {
 		return !!this._tree.length;
 	}
 	
-	addEPUBLocations(view: EpubView, locations: string[]): boolean {
+	addEPUBLocations(views: Iterable<SectionView>): boolean {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
-		for (const [loc, cfi] of locations.entries()) {
-			const range = view.getRange(cfi);
-			if (!range) {
-				continue;
+		let locationNumber = 0;
+		for (const view of views) {
+			const textNodes = getAllTextNodes(view.body);
+			let remainingBeforeBreak = 0;
+			for (const node of textNodes) {
+				if (/^\s*$/.test(node.data)) continue;
+				
+				let offset = 0;
+				let length = node.length;
+				if (length <= remainingBeforeBreak) {
+					remainingBeforeBreak -= length;
+					continue;
+				}
+				while (length > remainingBeforeBreak) {
+					offset += remainingBeforeBreak;
+					length -= remainingBeforeBreak;
+					
+					const range = node.ownerDocument.createRange();
+					range.setStart(node, offset);
+					range.collapse(true);
+					this._tree.set(range, (locationNumber + 1).toString());
+					
+					remainingBeforeBreak = EPUB_LOCATION_BREAK_INTERVAL;
+					locationNumber++;
+				}
 			}
-			this._tree.set(range, String(loc + 1));
 		}
 		console.log(`Added ${this._tree.length} EPUB location mappings`);
 		return !!this._tree.length;
@@ -80,6 +102,23 @@ class PageMapping {
 			}
 		}
 		return null;
+	}
+	
+	save(view: EPUBView): string {
+		return JSON.stringify(this._tree.toArray()
+			.map(([range, label]) => [view.getCFI(range)?.toString(), label])
+			.filter(([cfi, _]) => !!cfi));
+	}
+	
+	load(saved: string, view: EPUBView): boolean {
+		const array = JSON.parse(saved);
+		if (!Array.isArray(array)) {
+			throw new Error('Unable to load persisted page mapping:\n' + saved);
+		}
+		this._tree.setPairs(array
+			.map(([cfi, label]) => [view.getRange(cfi), label])
+			.filter(([range, label]) => !!range && typeof label === 'string') as [Range, string][]);
+		return !!this._tree.length;
 	}
 }
 
