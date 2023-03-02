@@ -130,7 +130,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected abstract _getViewportBoundingRect(range: Range): DOMRect;
 	
-	protected abstract _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
+	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
 	
 	protected abstract _updateViewState(): void;
 	
@@ -141,6 +141,15 @@ abstract class DOMView<State extends DOMViewState> {
 	// ***
 	// Utilities - called in appropriate event handlers
 	// ***
+	
+	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
+		const selection = this._iframeDocument.getSelection();
+		if (!selection || selection.isCollapsed) {
+			return null;
+		}
+		const range = makeRangeSpanning(...getSelectionRanges(selection));
+		return this._getAnnotationFromRange(range, type, color);
+	}
 
 	protected _tryUseTool(): boolean {
 		this._updateViewStats();
@@ -242,7 +251,7 @@ abstract class DOMView<State extends DOMViewState> {
 		const range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
 		const domRect = this._getViewportBoundingRect(range);
 		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		const annotation = this._getAnnotationFromTextSelection('highlight');
+		const annotation = this._getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
 			this._options.onSetSelectionPopup({ rect, annotation });
 		}
@@ -455,13 +464,15 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 
 		const annotation = this._annotationsByID.get(id)!;
-		const selector = this.toSelector(moveRangeEndsIntoTextNodes(range));
-		if (!selector) {
+		const updatedAnnotation = this._getAnnotationFromRange(range, annotation.type);
+		if (!updatedAnnotation) {
 			// Probably resized past the end of a section - don't worry about it
 			return;
 		}
-		annotation.position = selector;
-		annotation.text = range.toString();
+		annotation.position = updatedAnnotation.position;
+		annotation.pageLabel = updatedAnnotation.pageLabel;
+		annotation.sortIndex = updatedAnnotation.sortIndex;
+		annotation.text = updatedAnnotation.text;
 		this._options.onUpdateAnnotations([annotation]);
 	}
 

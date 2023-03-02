@@ -72,13 +72,12 @@ class SnapshotView extends DOMView<DOMViewState> {
 		return this._iframeDocument?.body;
 	}
 
-	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
-		const selection = this._iframeWindow.getSelection();
-		if (!selection || !selection.rangeCount) {
+	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
+		range = moveRangeEndsIntoTextNodes(range);
+		if (range.collapsed) {
 			return null;
 		}
-		const text = selection.toString();
-		const range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
+		const text = range.toString();
 		const selector = this.toSelector(range);
 		if (!selector) {
 			return null;

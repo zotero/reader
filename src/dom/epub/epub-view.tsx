@@ -393,13 +393,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	// Currently type is only 'highlight' but later there will also be 'underline'
-	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
-		const selection = this._iframeWindow.getSelection();
-		if (!selection || selection.isCollapsed) {
+	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
+		range = moveRangeEndsIntoTextNodes(range);
+		if (range.collapsed) {
 			return null;
 		}
-		const text = selection.toString();
-		const range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
+		const text = range.toString();
 		const selector = this.toSelector(range);
 		if (!selector) {
 			return null;
