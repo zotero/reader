@@ -336,7 +336,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 
 	function handleContextMenuOpen(params) {
-		if (props.selectedIDs.includes(params.ids[0])) {
+		if (!params.button && props.selectedIDs.includes(params.ids[0])) {
 			params.ids = props.selectedIDs.slice();
 		}
 		props.onOpenAnnotationContextMenu(params);

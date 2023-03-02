@@ -282,6 +282,7 @@ abstract class DOMView<State> {
 		this._iframeDocument = this._iframe.contentDocument!;
 
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
+		this._iframeWindow.addEventListener('keyup', this._options.onKeyUp);
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
 		this._iframeWindow.addEventListener('pointerover', this._handlePointerOver.bind(this));
@@ -650,6 +651,7 @@ export type DOMViewOptions<State> = {
 	onOpenViewContextMenu: (params: { x: number, y: number }) => void;
 	onFocus: () => void;
 	onTabOut: (isShiftTab?: boolean) => void;
+	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	buf: ArrayBuffer;
 };

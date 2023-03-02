@@ -55,6 +55,7 @@ class PDFView {
 		this._onSetOverlayPopup = options.onSetOverlayPopup;
 		this._onSetFindState = options.onSetFindState;
 		this._onOpenViewContextMenu = options.onOpenViewContextMenu;
+		this._onKeyUp = options.onKeyUp;
 		this._onKeyDown = options.onKeyDown;
 
 		this._onTabOut = options.onTabOut;
@@ -168,6 +169,7 @@ class PDFView {
 
 
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
+		this._iframeWindow.addEventListener('keyup', this._onKeyUp);
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
@@ -1027,53 +1029,7 @@ class PDFView {
 			}
 			// If annotation isn't selected
 			else {
-				let id = selectableAnnotation.id;
-				let selectedIDs = this._selectedAnnotationIDs.slice();
-				let annotations = this._annotations;
-				if (event.shiftKey && selectedIDs.length) {
-					let annotationIndex = annotations.findIndex(x => x.id === id);
-					let lastSelectedIndex = annotations.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
-					let selectedIndices = selectedIDs.map(id => annotations.findIndex(annotation => annotation.id === id));
-					let minSelectedIndex = Math.min(...selectedIndices);
-					let maxSelectedIndex = Math.max(...selectedIndices);
-					if (annotationIndex < minSelectedIndex) {
-						for (let i = annotationIndex; i < minSelectedIndex; i++) {
-							selectedIDs.push(annotations[i].id);
-						}
-					}
-					else if (annotationIndex > maxSelectedIndex) {
-						for (let i = maxSelectedIndex + 1; i <= annotationIndex; i++) {
-							selectedIDs.push(annotations[i].id);
-						}
-					}
-					else {
-						for (let i = Math.min(annotationIndex, lastSelectedIndex); i <= Math.max(annotationIndex, lastSelectedIndex); i++) {
-							if (i === lastSelectedIndex) {
-								continue;
-							}
-							let id = annotations[i].id;
-							if (!selectedIDs.includes(id)) {
-								selectedIDs.push(id);
-							}
-						}
-					}
-					selectAnnotations = selectedIDs.map(id => this._annotations.find(x => x.id === id));
-				}
-				else if ((event.ctrlKey || event.metaKey) && selectedIDs.length) {
-					let existingIndex = selectedIDs.indexOf(id);
-					if (existingIndex >= 0) {
-						selectedIDs.splice(existingIndex, 1);
-					}
-					else {
-						selectedIDs.push(id);
-					}
-					selectAnnotations = selectedIDs.map(id => this._annotations.find(x => x.id === id));
-				}
-				else {
-					selectAnnotations = [selectableAnnotation];
-				}
-
-
+				selectAnnotations = [selectableAnnotation];
 				let annotation = selectableAnnotation;
 				if (['note'].includes(annotation.type)) {
 					let r = position.rects[0];

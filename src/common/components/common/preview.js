@@ -151,7 +151,7 @@ export function SidebarPreview(props) {
 		// Prevent selecting annotation
 		event.stopPropagation();
 		let { x, y } = getPopupCoordinatesFromClickEvent(event);
-		props.onOpenContextMenu({ ids: [props.annotation.id], x, y });
+		props.onOpenContextMenu({ ids: [props.annotation.id], x, y, button: true });
 	}
 
 	function handleDragStart(event) {

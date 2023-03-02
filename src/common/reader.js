@@ -634,6 +634,10 @@ class Reader {
 			this._keyboardManager.handleViewKeyDown(event);
 		};
 
+		let onKeyUp = (event) => {
+			this._keyboardManager.handleViewKeyUp(event);
+		};
+
 		let common = {
 			primary,
 			container,
@@ -660,7 +664,8 @@ class Reader {
 			onSetFindState,
 			onSelectAnnotations,
 			onTabOut,
-			onKeyDown
+			onKeyDown,
+			onKeyUp
 		};
 
 		if (this._type === 'pdf') {
@@ -723,6 +728,10 @@ class Reader {
 			this._keyboardManager.handleViewKeyDown(event);
 		};
 
+		let onKeyUp = (event) => {
+			this._keyboardManager.handleViewKeyUp(event);
+		};
+
 		let nop = () => undefined;
 
 		view = new PDFView({
@@ -756,6 +765,7 @@ class Reader {
 			onSetOutline: nop,
 			onTabOut,
 			onKeyDown,
+			onKeyUp
 		});
 		return view;
 	}
@@ -891,46 +901,100 @@ class Reader {
 	}
 
 	setSelectedAnnotations(ids, triggeredFromView) {
+		// Prevent accidental annotation deselection if modifier is pressed
+		if (!ids.length && triggeredFromView && (this._keyboardManager.shift || this._keyboardManager.mod)) {
+			return;
+		}
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = triggeredFromView;
-		this._updateState({ selectedAnnotationIDs: ids });
+		let selectedLength = this._state.selectedAnnotationIDs.length;
 		if (ids.length === 1) {
 			let id = ids[0];
 			let annotation = this._annotationManager._annotations.find(x => x.id === id);
 			if (annotation) {
-				if (triggeredFromView) {
-					this._enableAnnotationDeletionFromComment = true;
-					if (annotation.comment) {
-						let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-						if (sidebarItem) {
-							// Make sure to call this after all events, because mousedown will re-focus the View
-							setTimeout(() => sidebarItem.focus());
+				if (this._keyboardManager.shift && this._state.selectedAnnotationIDs.length) {
+					let selectedIDs = this._state.selectedAnnotationIDs.slice();
+					let annotations = this._state.annotations;
+
+					let annotationIndex = annotations.findIndex(x => x.id === id);
+					let lastSelectedIndex = annotations.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
+					let selectedIndices = selectedIDs.map(id => annotations.findIndex(annotation => annotation.id === id));
+					let minSelectedIndex = Math.min(...selectedIndices);
+					let maxSelectedIndex = Math.max(...selectedIndices);
+					if (annotationIndex < minSelectedIndex) {
+						for (let i = annotationIndex; i < minSelectedIndex; i++) {
+							selectedIDs.push(annotations[i].id);
+						}
+					}
+					else if (annotationIndex > maxSelectedIndex) {
+						for (let i = maxSelectedIndex + 1; i <= annotationIndex; i++) {
+							selectedIDs.push(annotations[i].id);
 						}
 					}
 					else {
-						setTimeout(() => {
-							let content;
-							if (this._state.sidebarOpen) {
-								content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
+						for (let i = Math.min(annotationIndex, lastSelectedIndex); i <= Math.max(annotationIndex, lastSelectedIndex); i++) {
+							if (i === lastSelectedIndex) {
+								continue;
 							}
-							else {
-								content = document.querySelector(`.annotation-popup .comment .content`);
+							let id = annotations[i].id;
+							if (!selectedIDs.includes(id)) {
+								selectedIDs.push(id);
 							}
-							content?.focus();
-						}, 50);
+						}
 					}
+					this._updateState({ selectedAnnotationIDs: selectedIDs });
+				}
+				else if (this._keyboardManager.mod && this._state.selectedAnnotationIDs.length) {
+					let selectedIDs = this._state.selectedAnnotationIDs.slice();
+					let existingIndex = selectedIDs.indexOf(id);
+					if (existingIndex >= 0) {
+						selectedIDs.splice(existingIndex, 1);
+					}
+					else {
+						selectedIDs.push(id);
+					}
+					this._updateState({ selectedAnnotationIDs: selectedIDs });
 				}
 				else {
-					this._lastView.navigate({ annotationID: annotation.id });
+					this._updateState({ selectedAnnotationIDs: ids });
+
+					if (triggeredFromView) {
+						this._enableAnnotationDeletionFromComment = true;
+						if (annotation.comment) {
+							let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+							if (sidebarItem) {
+								// Make sure to call this after all events, because mousedown will re-focus the View
+								setTimeout(() => sidebarItem.focus());
+							}
+						}
+						else {
+							setTimeout(() => {
+								let content;
+								if (this._state.sidebarOpen) {
+									content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
+								}
+								else {
+									content = document.querySelector(`.annotation-popup .comment .content`);
+								}
+								content?.focus();
+							}, 50);
+						}
+					}
+					else {
+						this._lastView.navigate({ annotationID: annotation.id });
+					}
 				}
 			}
 			let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-			if (sidebarItem) {
+			if (sidebarItem && this._state.selectedAnnotationIDs.length > selectedLength) {
 				this.setSidebarView('annotations');
 				setTimeout(() => {
 					sidebarItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
 				}, 50);
 			}
+		}
+		else {
+			this._updateState({ selectedAnnotationIDs: ids });
 		}
 	}
 

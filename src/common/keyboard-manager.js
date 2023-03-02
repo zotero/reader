@@ -5,6 +5,18 @@ export class KeyboardManager {
 	constructor(options) {
 		this._reader = options.reader;
 		window.addEventListener('keydown', this._handleKeyDown.bind(this), true);
+		window.addEventListener('keyup', this._handleKeyUp.bind(this), true);
+	}
+
+	_handleKeyUp(event, view) {
+		let { key } = event;
+		let ctrl = event.ctrlKey;
+		let cmd = event.metaKey && isMac();
+		let mod = ctrl || cmd;
+		let alt = event.altKey;
+		let shift = event.shiftKey;
+		this.shift = shift;
+		this.mod = mod;
 	}
 
 	_handleKeyDown(event, view) {
@@ -14,6 +26,9 @@ export class KeyboardManager {
 		let mod = ctrl || cmd;
 		let alt = event.altKey;
 		let shift = event.shiftKey;
+
+		this.shift = shift;
+		this.mod = mod;
 
 		if (event.repeat) {
 			return;
@@ -141,6 +156,10 @@ export class KeyboardManager {
 
 	handleViewKeyDown(event) {
 		this._handleKeyDown(event, true);
+	}
+
+	handleViewKeyUp(event) {
+		this._handleKeyUp(event, true);
 	}
 }
 
