@@ -24,15 +24,14 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 	if (range.endContainer.nodeType !== Node.TEXT_NODE) {
 		let endNode: Node | null = range.endContainer.childNodes[Math.min(range.endOffset, range.endContainer.childNodes.length - 1)];
 		if (endNode.nodeType !== Node.TEXT_NODE) {
-			endNode = document.createTreeWalker(endNode, NodeFilter.SHOW_TEXT).lastChild();
+			endNode = document.createTreeWalker(endNode, NodeFilter.SHOW_TEXT).nextNode();
 		}
 		if (endNode) {
 			let offset = 0;
 			if (endNode.nodeValue) {
-				offset = endNode.nodeValue.length;
 				// As above
-				while (offset > 0 && endNode.nodeValue.charAt(offset - 1) == '\n') {
-					offset--;
+				while (offset < endNode.nodeValue.length && endNode.nodeValue.charAt(offset) == '\n') {
+					offset++;
 				}
 			}
 			range.setEnd(endNode, offset);
