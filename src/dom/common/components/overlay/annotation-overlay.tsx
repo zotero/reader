@@ -67,6 +67,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 								onResize={range => onResize(annotation.id!, range)}
 								disablePointerEvents={disablePointerEvents}
 								widgetContainer={widgetContainer}
+								scale={scale}
 							/>
 						);
 					}
