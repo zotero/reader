@@ -33,7 +33,7 @@ import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
 import { isSafari } from "../../common/lib/utilities";
 
-abstract class DOMView<State> {
+abstract class DOMView<State extends DOMViewState> {
 	protected readonly _container: Element;
 	
 	protected readonly _iframe: HTMLIFrameElement;
@@ -230,6 +230,7 @@ abstract class DOMView<State> {
 				}}
 				onResize={(id, range) => this._handleAnnotationResize(id, range)}
 				disablePointerEvents={this._disableAnnotationPointerEvents}
+				scale={this._viewState.scale}
 			/>
 		), container);
 	}
@@ -624,7 +625,7 @@ abstract class DOMView<State> {
 	}
 }
 
-export type DOMViewOptions<State> = {
+export type DOMViewOptions<State extends DOMViewState> = {
 	portal?: boolean;
 	container: Element;
 	tool: Tool;
@@ -655,5 +656,9 @@ export type DOMViewOptions<State> = {
 	onKeyDown: (event: KeyboardEvent) => void;
 	buf: ArrayBuffer;
 };
+
+export interface DOMViewState {
+	scale?: number;
+}
 
 export default DOMView;

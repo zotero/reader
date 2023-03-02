@@ -21,7 +21,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	const { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
+	const { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents, scale } = props;
 	
 	const [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
 	
@@ -78,6 +78,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 								selected={false}
 								disablePointerEvents={true}
 								widgetContainer={widgetContainer}
+								scale={scale}
 							/>
 						);
 					}
@@ -108,6 +109,8 @@ type AnnotationOverlayProps = {
 	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
 	onResize: (id: string, range: Range) => void;
 	disablePointerEvents: boolean;
+	// Passed down to invalidate memoized subcomponents on zoom
+	scale?: number;
 };
 
 const Highlight: React.FC<HighlightProps> = React.memo((props) => {
@@ -233,6 +236,7 @@ type HighlightProps = {
 	onResize?: (range: Range) => void;
 	disablePointerEvents: boolean;
 	widgetContainer: Element | null;
+	scale?: number;
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = (props) => {

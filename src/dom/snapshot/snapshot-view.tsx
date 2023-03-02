@@ -21,7 +21,7 @@ import {
 	Selector,
 	textPositionToRange
 } from "../common/lib/selector";
-import DOMView from "../common/dom-view";
+import DOMView, { DOMViewState } from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import NavStack from "../common/lib/nav-stack";
 import DOMPurify from "dompurify";
@@ -35,7 +35,7 @@ import {
 	SearchContext
 } from "../common/lib/dom-text-search";
 
-class SnapshotView extends DOMView<SnapshotViewState> {
+class SnapshotView extends DOMView<DOMViewState> {
 	private readonly _navStack = new NavStack<[number, number]>();
 
 	protected _find: DefaultFindProcessor | null = null;
@@ -58,7 +58,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		}
 	}
 
-	protected _onInitialDisplay(viewState: Partial<SnapshotViewState>) {
+	protected _onInitialDisplay(viewState: Partial<DOMViewState>) {
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
 		if (viewState.scale !== undefined) {
@@ -338,9 +338,5 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		// Ignore
 	}
 }
-
-export type SnapshotViewState = {
-	scale?: number;
-};
 
 export default SnapshotView;
