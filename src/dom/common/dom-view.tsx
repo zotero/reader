@@ -12,6 +12,7 @@ import {
 	Tool,
 	ViewStats,
 	NavLocation,
+	MaybePromise,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import ReactDOM from "react-dom";
@@ -110,7 +111,7 @@ abstract class DOMView<State extends DOMViewState> {
 	
 	protected abstract _getSrcDoc(): string;
 
-	protected abstract _onInitialDisplay(viewState: Partial<State>): void;
+	protected abstract _onInitialDisplay(viewState: Partial<State>): MaybePromise<void>;
 
 	// ***
 	// Utilities for annotations - abstractions over the specific types of selectors used by the two views
@@ -177,6 +178,11 @@ abstract class DOMView<State extends DOMViewState> {
 	protected _handleViewUpdate() {
 		this._updateViewState();
 		this._updateViewStats();
+		this._renderAnnotations();
+		this._repositionPopups();
+	}
+	
+	protected _repositionPopups() {
 		// Update annotation popup position
 		if (this._annotationPopup) {
 			const { annotation } = this._annotationPopup;
@@ -186,6 +192,7 @@ abstract class DOMView<State extends DOMViewState> {
 				this._openAnnotationPopup(annotation as WADMAnnotation);
 			}
 		}
+
 		// Update selection popup position
 		if (this._selectionPopup) {
 			const selection = this._iframeWindow.getSelection();
@@ -193,6 +200,7 @@ abstract class DOMView<State extends DOMViewState> {
 				this._openSelectionPopup(selection);
 			}
 		}
+
 		// Close overlay popup
 		this._options.onSetOverlayPopup();
 	}
@@ -233,11 +241,9 @@ abstract class DOMView<State extends DOMViewState> {
 			<AnnotationOverlay
 				annotations={displayedAnnotations}
 				selectedAnnotationIDs={this._selectedAnnotationIDs}
-				onSelect={id => this._openAnnotationPopup(this._annotationsByID.get(id)!)}
-				onDragStart={(dataTransfer, id) => {
-					this._options.onSetDataTransferAnnotations(dataTransfer, this._annotationsByID.get(id)!);
-				}}
-				onResize={(id, range) => this._handleAnnotationResize(id, range)}
+				onSelect={this._handleAnnotationSelect}
+				onDragStart={this._handleAnnotationDragStart}
+				onResize={this._handleAnnotationResize}
 				disablePointerEvents={this._disableAnnotationPointerEvents}
 				scale={this._viewState.scale}
 			/>
@@ -287,7 +293,7 @@ abstract class DOMView<State extends DOMViewState> {
 	// Event handlers
 	// ***
 
-	protected _handleIFrameLoad() {
+	protected async _handleIFrameLoad() {
 		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
 		this._iframeDocument = this._iframe.contentDocument!;
 
@@ -306,7 +312,10 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
-		this._onInitialDisplay(this._options.viewState || {});
+		await this._onInitialDisplay(this._options.viewState || {});
+		setTimeout(() => {
+			this._handleViewUpdate();
+		});
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
@@ -455,7 +464,15 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 	}
 
-	private _handleAnnotationResize(id: string, range: Range) {
+	private _handleAnnotationSelect = (id: string) => {
+		this._openAnnotationPopup(this._annotationsByID.get(id)!);
+	};
+
+	private _handleAnnotationDragStart = (dataTransfer: DataTransfer, id: string) => {
+		this._options.onSetDataTransferAnnotations(dataTransfer, this._annotationsByID.get(id)!);
+	};
+
+	private _handleAnnotationResize = (id: string, range: Range) => {
 		if (!range.toString().length
 			// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
 			|| range.startContainer.nodeType == Node.ELEMENT_NODE && (range.startContainer as Element).closest('svg')
@@ -474,7 +491,7 @@ abstract class DOMView<State extends DOMViewState> {
 		annotation.sortIndex = updatedAnnotation.sortIndex;
 		annotation.text = updatedAnnotation.text;
 		this._options.onUpdateAnnotations([annotation]);
-	}
+	};
 
 	protected _handleCopy(event: ClipboardEvent) {
 		if (!event.clipboardData) {
@@ -553,8 +570,8 @@ abstract class DOMView<State extends DOMViewState> {
 		this._handleViewUpdate();
 	}
 
-	private _handleScroll() {
-		this._handleViewUpdate();
+	protected _handleScroll() {
+		this._repositionPopups();
 	}
 
 	private _handleFocus() {

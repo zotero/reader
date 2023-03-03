@@ -64,8 +64,6 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (viewState.scale !== undefined) {
 			this._iframeDocument.body.style.fontSize = viewState.scale + 'em';
 		}
-
-		this._handleViewUpdate();
 	}
 
 	protected _getAnnotationOverlayParent() {
@@ -218,11 +216,6 @@ class SnapshotView extends DOMView<DOMViewState> {
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement): void {
 		this._iframeDocument.location.hash = link.getAttribute('href')!;
-	}
-
-	protected override _handleViewUpdate() {
-		super._handleViewUpdate();
-		this._renderAnnotations();
 	}
 
 	// ***

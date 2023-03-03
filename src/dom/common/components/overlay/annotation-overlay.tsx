@@ -297,9 +297,15 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		if (pos) {
 			const newRange = props.annotation.range.cloneRange();
 			if (isStart) {
+				if (newRange.startContainer === pos.offsetNode && newRange.startOffset === pos.offset) {
+					return;
+				}
 				newRange.setStart(pos.offsetNode, pos.offset);
 			}
 			else {
+				if (newRange.endContainer === pos.offsetNode && newRange.endOffset === pos.offset) {
+					return;
+				}
 				newRange.setEnd(pos.offsetNode, pos.offset);
 			}
 			props.onResize(newRange);

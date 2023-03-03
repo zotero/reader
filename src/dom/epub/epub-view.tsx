@@ -125,8 +125,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		else {
 			this.setFlowMode('scrolled');
 		}
-
-		setTimeout(() => this._handleViewUpdate());
 	}
 	
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {
@@ -462,6 +460,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this._wheelResetTimeout = window.setTimeout(() => this._wheelAmount = 0, PAGE_TURN_WHEEL_TIMEOUT);
 		}
 	}
+	
+	protected override _handleScroll() {
+		super._handleScroll();
+		this._invalidateStartRangeAndCFI();
+	}
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
 		let href = link.getAttribute('href')!;
@@ -520,7 +523,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (this._find) {
 			this._find.handleViewUpdate();
 		}
-		this._renderAnnotations();
 	}
 
 	// ***
