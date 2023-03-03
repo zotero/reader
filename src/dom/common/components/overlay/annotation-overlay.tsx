@@ -25,7 +25,10 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	
 	const [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
 	
-	const handleClick = (event: React.MouseEvent, id: string) => {
+	const handlePointerDown = (event: React.PointerEvent, id: string) => {
+		if (event.button !== 0) {
+			return;
+		}
 		// Cycle selection if clicked annotation is already selected
 		if (selectedAnnotationIDs.includes(id)) {
 			const targets = event.view.document.elementsFromPoint(event.clientX, event.clientY)
@@ -62,7 +65,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 								annotation={annotation}
 								key={annotation.id}
 								selected={selectedAnnotationIDs.includes(annotation.id)}
-								onClick={event => handleClick(event, annotation.id!)}
+								onPointerDown={event => handlePointerDown(event, annotation.id!)}
 								onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
 								onResize={range => onResize(annotation.id!, range)}
 								disablePointerEvents={disablePointerEvents}
@@ -115,7 +118,7 @@ type AnnotationOverlayProps = {
 };
 
 const Highlight: React.FC<HighlightProps> = React.memo((props) => {
-	const { annotation, selected, onClick, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
+	const { annotation, selected, onPointerDown, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
 	const [dragImage, setDragImage] = useState<Element | null>(null);
 	const [isResizing, setResizing] = useState(false);
 
@@ -199,7 +202,7 @@ const Highlight: React.FC<HighlightProps> = React.memo((props) => {
 							height: '100%',
 						}}
 						draggable={true}
-						onMouseUp={onClick}
+						onPointerDown={onPointerDown}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}
 						data-annotation-id={annotation.id}/>
@@ -232,7 +235,7 @@ Highlight.displayName = 'Highlight';
 type HighlightProps = {
 	annotation: DisplayedAnnotation;
 	selected: boolean;
-	onClick?: (event: React.MouseEvent) => void;
+	onPointerDown?: (event: React.PointerEvent) => void;
 	onDragStart?: (dataTransfer: DataTransfer) => void;
 	onResize?: (range: Range) => void;
 	disablePointerEvents: boolean;
