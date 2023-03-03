@@ -449,9 +449,6 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	private _handleSelectionChange() {
-		if (!this._iframeDocument.hasFocus()) {
-			this._iframe.focus();
-		}
 		const selection = this._iframeDocument.getSelection();
 		if (!selection || selection.isCollapsed) {
 			this._options.onSetSelectionPopup(null);
