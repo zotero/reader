@@ -76,6 +76,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 	private _wheelResetTimeout: number | null = null;
 	
 	private readonly _pageMapping = new PageMapping();
+	
+	private readonly _rangeCache = new Map<string, Range>();
 
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
@@ -216,6 +218,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	getRange(cfi: EpubCFI | string): Range | null {
+		if (this._rangeCache.has(cfi.toString())) {
+			return this._rangeCache.get(cfi.toString())!.cloneRange();
+		}
 		if (typeof cfi === 'string') {
 			cfi = new EpubCFI(cfi, undefined, IGNORE_CLASS);
 		}
@@ -224,7 +229,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 			console.error('Unable to find view for CFI', cfi.toString());
 			return null;
 		}
-		return cfi.toRange(this._iframeDocument, IGNORE_CLASS, view.container);
+		const range = cfi.toRange(this._iframeDocument, IGNORE_CLASS, view.container);
+		this._rangeCache.set(cfi.toString(), range.cloneRange());
+		return range;
 	}
 
 	override toSelector(range: Range): FragmentSelector | null {
