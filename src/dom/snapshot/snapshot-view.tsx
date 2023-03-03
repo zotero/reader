@@ -67,7 +67,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
 		if (viewState.scale !== undefined) {
-			this._iframeDocument.body.style.fontSize = viewState.scale + 'em';
+			this._iframeDocument.documentElement.style.fontSize = viewState.scale + 'em';
 		}
 	}
 
@@ -291,7 +291,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
 		this._viewState.scale = scale;
-		this._iframeDocument.body.style.fontSize = scale + 'em';
+		this._iframeDocument.documentElement.style.fontSize = scale + 'em';
 		this._handleViewUpdate();
 	}
 
@@ -300,13 +300,13 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
 		this._viewState.scale = scale;
-		this._iframeDocument.body.style.fontSize = scale + 'em';
+		this._iframeDocument.documentElement.style.fontSize = scale + 'em';
 		this._handleViewUpdate();
 	}
 
 	zoomReset() {
 		this._viewState.scale = 1;
-		this._iframeDocument.body.style.fontSize = '';
+		this._iframeDocument.documentElement.style.fontSize = '';
 		this._handleViewUpdate();
 	}
 
