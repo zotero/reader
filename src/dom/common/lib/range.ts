@@ -4,16 +4,25 @@
  * generation.
  */
 export function moveRangeEndsIntoTextNodes(range: Range): Range {
+	const doc = range.commonAncestorContainer.ownerDocument!;
 	range = range.cloneRange();
 	if (range.startContainer.nodeType !== Node.TEXT_NODE) {
-		let startNode: Node | null = range.startContainer.childNodes[Math.max(range.startOffset, 0)];
-		if (startNode.nodeType !== Node.TEXT_NODE) {
-			startNode = document.createTreeWalker(startNode, NodeFilter.SHOW_TEXT).nextNode();
+		// The startContainer isn't a text node, so the range's start needs to be moved
+		// First see if range.startOffset points to a child of the startContainer
+		let startNode: Node | null = range.startContainer.childNodes.length
+			? range.startContainer.childNodes[Math.max(range.startOffset, 0)]
+			: null;
+		if (!startNode || startNode.nodeType !== Node.TEXT_NODE) {
+			// If it didn't point to a child or the child wasn't text, find the next text node in the document
+			const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+			walker.currentNode = startNode || range.startContainer;
+			startNode = walker.nextNode();
 		}
 		if (startNode) {
+			// At this point, we know we have a text node, so we'll set the range's end inside it
 			let offset = 0;
 			if (startNode.nodeValue) {
-				// Cut off leading newlines - they aren't necessary and confuse epub.js and dom-range-* alike
+				// Cut off leading newlines - they aren't necessary and confuse epub.js
 				while (offset < startNode.nodeValue.length && startNode.nodeValue.charAt(offset) == '\n') {
 					offset++;
 				}
@@ -22,16 +31,23 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 		}
 	}
 	if (range.endContainer.nodeType !== Node.TEXT_NODE) {
-		let endNode: Node | null = range.endContainer.childNodes[Math.min(range.endOffset, range.endContainer.childNodes.length - 1)];
-		if (endNode.nodeType !== Node.TEXT_NODE) {
-			endNode = document.createTreeWalker(endNode, NodeFilter.SHOW_TEXT).nextNode();
+		// Similar procedure to above
+		let endNode: Node | null = range.endContainer.childNodes.length
+			? range.endContainer.childNodes[Math.min(range.endOffset, range.endContainer.childNodes.length - 1)]
+			: null;
+		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
+			const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+			walker.currentNode = endNode || range.endContainer;
+			// Get the previous node on this end instead of the next
+			endNode = walker.previousNode();
 		}
 		if (endNode) {
 			let offset = 0;
 			if (endNode.nodeValue) {
-				// As above
-				while (offset < endNode.nodeValue.length && endNode.nodeValue.charAt(offset) == '\n') {
-					offset++;
+				// And cut off trailing newlines instead of leading
+				offset = endNode.nodeValue.length;
+				while (offset > 0 && endNode.nodeValue.charAt(offset - 1) == '\n') {
+					offset--;
 				}
 			}
 			range.setEnd(endNode, offset);
