@@ -55,6 +55,7 @@ class PDFView {
 		this._onSetOverlayPopup = options.onSetOverlayPopup;
 		this._onSetFindState = options.onSetFindState;
 		this._onOpenViewContextMenu = options.onOpenViewContextMenu;
+		this._onOpenAnnotationContextMenu = options.onOpenAnnotationContextMenu;
 		this._onKeyUp = options.onKeyUp;
 		this._onKeyDown = options.onKeyDown;
 
@@ -1125,30 +1126,34 @@ class PDFView {
 			return;
 		}
 
-		if (event.button === 2) {
-			let br = this._iframe.getBoundingClientRect();
-			// Trigger view context menu after focus even fires and focuses the current view
-			setTimeout(() => this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY }));
-			return;
-		}
-
 		let shift = event.shiftKey;
 		let position = this.pointerEventToPosition(event);
-		if (!position) {
-			this.setSelection();
+
+
+		if (event.button === 2) {
+			let br = this._iframe.getBoundingClientRect();
+			let selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
+			let selectedAnnotations = this.getSelectedAnnotations();
+			if (!selectableAnnotation) {
+				if (this._selectedAnnotationIDs.length !== 0) {
+					this._onSelectAnnotations([]);
+				}
+				this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+			}
+			else if (!selectedAnnotations.includes(selectableAnnotation)) {
+				this._onSelectAnnotations([selectableAnnotation.id]);
+				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY });
+			}
+			else {
+				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY });
+			}
 			this._render();
 			return;
 		}
-		// If right click, just select single object under the click
-		if (event.button === 2) {
-			let selectableObject = this.getSelectableAnnotations(position)[0];
-			let selectedObjects = this.getSelectedObjects(position.pageIndex);
-			if (!selectableObject) {
-				this.setSelection();
-			}
-			else if (selectableObject && !selectedObjects.includes(selectableObject)) {
-				this.setSelection({ pageIndex: position.pageIndex, ids: [selectableObject.id] });
-			}
+
+
+		if (!position) {
+			this.setSelection();
 			this._render();
 			return;
 		}
@@ -1169,7 +1174,7 @@ class PDFView {
 		this.pointerDownPosition = position;
 		// Select text, and/or object, otherwise unselect
 
-		if (selectAnnotations) {
+		if (selectAnnotations && !(selectAnnotations.length === 0 && this._selectedAnnotationIDs.length === 0)) {
 			this._onSelectAnnotations(selectAnnotations.map(x => x.id));
 			action.alreadySelectedAnnotations = true;
 			this._openAnnotationPopup();

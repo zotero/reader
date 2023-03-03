@@ -100,6 +100,7 @@ export function createViewContextMenu(reader, params) {
 export function createAnnotationContextMenu(reader, params) {
 	let annotations = reader._state.annotations.filter(x => params.ids.includes(x.id));
 	let readOnly = annotations.some(x => x.readOnly);
+	let currentColor = annotations.length === 1 && annotations[0].color;
 	return {
 		x: params.x,
 		y: params.y,
@@ -108,7 +109,7 @@ export function createAnnotationContextMenu(reader, params) {
 				label: reader._getString(label),
 				disabled: readOnly,
 				persistent: true,
-				checked: color === params.color,
+				checked: color === currentColor,
 				color: color,
 				onCommand: () => {
 					let annotations = params.ids.map(id => ({ id, color }));

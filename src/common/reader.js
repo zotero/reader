@@ -600,7 +600,8 @@ class Reader {
 		};
 
 		let onOpenViewContextMenu = (params) => {
-			this._onOpenContextMenu(createViewContextMenu(this, params));
+			// Trigger view context menu after focus even fires and focuses the current view
+			setTimeout(() => this._onOpenContextMenu(createViewContextMenu(this, params)));
 		};
 
 		let onSetSelectionPopup = (selectionPopup) => {
