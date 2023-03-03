@@ -9,9 +9,7 @@ import {
 	NewAnnotation,
 	ViewStats
 } from "../../common/types";
-import { getSelectionRanges } from "../common/lib/selection";
 import {
-	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	getCommonAncestorElement
 } from "../common/lib/range";
@@ -34,6 +32,9 @@ import {
 	createSearchContext,
 	SearchContext
 } from "../common/lib/dom-text-search";
+
+// @ts-ignore
+import contentCSS from '!!raw-loader!./stylesheets/content.css';
 
 class SnapshotView extends DOMView<DOMViewState> {
 	private readonly _navStack = new NavStack<[number, number]>();
@@ -59,6 +60,10 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected _onInitialDisplay(viewState: Partial<DOMViewState>) {
+		const style = this._iframeDocument.createElement('style');
+		style.innerHTML = contentCSS;
+		this._iframeDocument.head.append(style);
+
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
 		if (viewState.scale !== undefined) {

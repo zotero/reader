@@ -12,9 +12,7 @@ import Epub, {
 	EpubCFI,
 	NavItem,
 } from "epubjs";
-import { getSelectionRanges } from "../common/lib/selection";
 import {
-	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	getCommonAncestorElement
 } from "../common/lib/range";
@@ -30,12 +28,9 @@ import {
 	PAGE_TURN_WHEEL_THRESHOLD,
 	PAGE_TURN_WHEEL_TIMEOUT
 } from "./defines";
-import './stylesheets/main.scss';
 import NavStack from "../common/lib/nav-stack";
 import DOMView, { DOMViewOptions } from "../common/dom-view";
 import SectionView from "./section-view";
-// @ts-ignore
-import contentCSS from '!!raw-loader!./stylesheets/content.css';
 import Section from "epubjs/types/section";
 import { closestElement } from "../common/lib/nodes";
 import { isSafari } from "../../common/lib/utilities";
@@ -43,6 +38,9 @@ import Path from "epubjs/src/utils/path";
 import StyleScoper from "./lib/style-scoper";
 import PageMapping from "./lib/page-mapping";
 import { debounce } from "../../common/lib/debounce";
+
+// @ts-ignore
+import contentCSS from '!!raw-loader!./stylesheets/content.css';
 
 // - All views use iframe to render and isolate the view from the parent window
 // - If need to add additional build steps, a submodule or additional files see pdfjs/

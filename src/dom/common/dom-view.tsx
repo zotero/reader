@@ -43,7 +43,7 @@ abstract class DOMView<State extends DOMViewState> {
 	
 	protected _iframeDocument!: Document;
 
-	protected _tool: Tool;
+	protected _tool!: Tool;
 
 	protected _selectedAnnotationIDs: string[];
 
@@ -79,13 +79,7 @@ abstract class DOMView<State extends DOMViewState> {
 		this._options = options;
 		this._container = options.container;
 
-		// The variables below are from reader._state and are constantly updated
-		// using setTool, setAnnotation, etc.
-
-		// Tool type can be 'highlight', 'note' or 'pointer' (no tool at all), also 'underline' in future
-		this._tool = options.tool;
 		this._selectedAnnotationIDs = options.selectedAnnotationIDs;
-		this.setAnnotations(options.annotations);
 		// Don't show annotations if this is false
 		this._showAnnotations = options.showAnnotations;
 		this._annotationPopup = options.annotationPopup;
@@ -311,6 +305,10 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframeWindow.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
+
+		// Pass options to setters that were delayed until iframe initialization
+		this.setTool(this._options.tool);
+		this.setAnnotations(this._options.annotations);
 
 		await this._onInitialDisplay(this._options.viewState || {});
 		setTimeout(() => {
@@ -584,6 +582,9 @@ abstract class DOMView<State extends DOMViewState> {
 
 	setTool(tool: Tool) {
 		this._tool = tool;
+		const selectionColor = (tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR)
+			+ '80'; // 50% opacity, like annotations
+		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
 	}
 
 	setAnnotations(annotations: WADMAnnotation[]) {

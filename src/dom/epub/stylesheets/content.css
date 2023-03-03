@@ -12,6 +12,10 @@ body {
 	padding: 0 !important;
 }
 
+body > .sections > .section-container ::selection {
+	background-color: var(--selection-color);
+}
+
 body.scrolled > .sections {
 	margin-inline: 40px;
 }
