@@ -584,7 +584,7 @@ export default class Page {
 			let position = annotation.position;
 			ctx.globalAlpha = 0.5;
 			ctx.globalCompositeOperation = 'multiply';
-			ctx.fillStyle = annotation.color;
+			ctx.fillStyle = annotation.color || SELECTION_COLOR;
 			let rects = position.rects;
 			if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
 				rects = position.nextPageRects;
