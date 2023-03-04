@@ -18,7 +18,11 @@ export class FocusManager {
 	}
 
 	restoreFocus() {
+		let selectedAnnotationIDs = this._reader._state.selectedAnnotationIDs.slice();
 		this._lastActiveElement?.focus();
+		if (selectedAnnotationIDs.length > 1) {
+			this._reader._updateState({ selectedAnnotationIDs });
+		}
 	}
 
 	_handleFocus(event) {
@@ -29,11 +33,11 @@ export class FocusManager {
 			// Close find popup on blur if search query is empty
 			if (!event.target.closest('.find-popup')) {
 				let state = this._reader._state.primaryViewFindState;
-				if (!state.query) {
+				if (state && !state.query) {
 					this._reader._updateState({ primaryViewFindState: { ...state, popupOpen: false } });
 				}
 				state = this._reader._state.secondaryViewState;
-				if (!state.query) {
+				if (state && !state.query) {
 					this._reader._updateState({ secondaryViewState: { ...state, popupOpen: false } });
 				}
 			}
@@ -66,9 +70,11 @@ export class FocusManager {
 			return;
 		}
 		if (pressedNextKey(e)) {
+			e.preventDefault();
 			this.tabToItem();
 		}
 		else if (pressedPreviousKey(e)) {
+			e.preventDefault();
 			this.tabToItem(true);
 		}
 	}

@@ -58,7 +58,7 @@ function ContextMenu({ params, onClose }) {
 	}
 
 	return (
-		<div className="context-menu-overlay" onPointerDown={handlePointerDown}>
+		<div className="context-menu-overlay" onClick={handlePointerDown}>
 			<div ref={containerRef} className="context-menu" style={position.style}>
 				{params.itemGroups.map((items, i) => (
 					<div key={i} className="group">

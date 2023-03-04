@@ -152,6 +152,7 @@ class Reader {
 		}
 
 		this._focusManager = new FocusManager({
+			reader: this,
 			onDeselectAnnotations: () => {
 				this.setSelectedAnnotations([]);
 			}
@@ -570,7 +571,7 @@ class Reader {
 		let onAddAnnotation = async (annotation, select) => {
 			annotation = await this._annotationManager.addAnnotation(annotation);
 			if (select) {
-				this.setSelectedAnnotations([annotation.id]);
+				this.setSelectedAnnotations([annotation.id], true);
 			}
 			if (annotation.type === 'note') {
 				this._updateState({ tool: { ...this._state.tool, type: 'pointer' } });

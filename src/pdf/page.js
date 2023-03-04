@@ -491,7 +491,7 @@ export default class Page {
 
 
 		if (action) {
-			if (action.type === 'moveAndDrag') {
+			if (action.type === 'moveAndDrag' && action.triggered) {
 				if (action.annotation.position.pageIndex === this.pageIndex) {
 
 					let padding = 5 * this.devicePixelRatio;

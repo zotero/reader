@@ -128,7 +128,7 @@ export class KeyboardManager {
 					return;
 				}
 			}
-			// Focus next annotation if annotations were selected not from a view
+			// Focus next annotation if deleted annotations were selected not from a view
 			if (selectedIDs.length >= 1 && !this._reader._annotationSelectionTriggeredFromView) {
 				let { annotations } = this._reader._state;
 				let firstIndex = annotations.findIndex(x => selectedIDs.includes(x.id));

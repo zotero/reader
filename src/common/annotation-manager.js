@@ -79,7 +79,7 @@ class AnnotationManager {
 	}
 
 	//
-	async addAnnotation(annotation) {
+	addAnnotation(annotation) {
 		if (this._readOnly) {
 			return null;
 		}

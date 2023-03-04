@@ -176,7 +176,7 @@ class PDFView {
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
-		this._iframeWindow.addEventListener('dragend', this._handlePointerUp.bind(this));
+		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
@@ -581,7 +581,7 @@ class PDFView {
 		this._onSetAnnotationPopup();
 	}
 
-	_openAnnotationPopup(annotation) {
+	_openAnnotationPopup() {
 		let annotations = this.getSelectedAnnotations();
 		if (annotations.length === 1) {
 			let annotation = annotations[0];
@@ -904,7 +904,7 @@ class PDFView {
 		if (intersectAnnotationWithPoint(annotation.position, position)) {
 			let r = position.rects[0];
 			let br = getPositionBoundingRect(annotation.position);
-			return { type: 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
+			return { type: annotation.type === 'note' ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 		}
 
 		return null;
@@ -1018,7 +1018,7 @@ class PDFView {
 			}
 		}
 
-		let selectableAnnotation = this.getSelectableAnnotations(position)[0];
+		let selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
 
 		let action = null;
 		// If annotation was pressed
@@ -1176,7 +1176,9 @@ class PDFView {
 
 		if (selectAnnotations && !(selectAnnotations.length === 0 && this._selectedAnnotationIDs.length === 0)) {
 			this._onSelectAnnotations(selectAnnotations.map(x => x.id));
-			action.alreadySelectedAnnotations = true;
+			if (selectAnnotations.length) {
+				action.alreadySelectedAnnotations = true;
+			}
 			this._openAnnotationPopup();
 		}
 
@@ -1427,65 +1429,67 @@ class PDFView {
 		if (this.pointerDownPosition) {
 			// let position = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
 			let action = this.action;
-			if (action.triggered) {
-				if (action.type === 'updateAnnotationRange') {
-					action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
-					this._onUpdateAnnotations([action.annotation]);
+			if (action) {
+				if (action.triggered) {
+					if (action.type === 'updateAnnotationRange') {
+						action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+						this._onUpdateAnnotations([action.annotation]);
+					}
+					else if (action.type === 'resize') {
+						let sortIndex = this._extractor.getSortIndex(action.position);
+						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
+					}
+					else if (action.type === 'moveAndDrag') {
+						let sortIndex = this._extractor.getSortIndex(action.position);
+						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
+					}
+					else if (action.type === 'highlight' && action.annotation) {
+						action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+						this._onAddAnnotation(action.annotation);
+					}
+					else if (action.type === 'image') {
+						action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+						this._onAddAnnotation(action.annotation);
+					}
 				}
-				else if (action.type === 'resize') {
-					let sortIndex = this._extractor.getSortIndex(action.position);
-					this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
-				}
-				else if (action.type === 'moveAndDrag') {
-					let sortIndex = this._extractor.getSortIndex(action.position);
-					this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
-				}
-				else if (action.type === 'highlight' && action.annotation) {
-					action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
-					this._onAddAnnotation(action.annotation);
-				}
-				else if (action.type === 'image') {
-					action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
-					this._onAddAnnotation(action.annotation);
-				}
-			}
-			else if (!this.action.alreadySelectedAnnotations) {
-				let selectableAnnotations = this.getSelectableAnnotations(position);
+				else if (!this.action.alreadySelectedAnnotations) {
+					let selectableAnnotations = this.getSelectableAnnotations(position);
 
-				let lastSelectedAnnotationID = this._selectedAnnotationIDs.slice(-1)[0];
-				let annotation = selectableAnnotations.find(annotation => annotation.id === lastSelectedAnnotationID);
-				let nextID;
+					let lastSelectedAnnotationID = this._selectedAnnotationIDs.slice(-1)[0];
+					let annotation = selectableAnnotations.find(annotation => annotation.id === lastSelectedAnnotationID);
+					let nextID;
 
-				let indexOfCurrentID = selectableAnnotations.indexOf(annotation);
-				if (indexOfCurrentID !== -1) {
-					if (indexOfCurrentID < selectableAnnotations.length - 1) {
-						nextID = selectableAnnotations[indexOfCurrentID + 1].id;
+					let indexOfCurrentID = selectableAnnotations.indexOf(annotation);
+					if (indexOfCurrentID !== -1) {
+						if (indexOfCurrentID < selectableAnnotations.length - 1) {
+							nextID = selectableAnnotations[indexOfCurrentID + 1].id;
+						}
+						else if (selectableAnnotations.length) {
+							nextID = selectableAnnotations[0].id;
+						}
 					}
 					else if (selectableAnnotations.length) {
 						nextID = selectableAnnotations[0].id;
 					}
-				}
-				else if (selectableAnnotations.length) {
-					nextID = selectableAnnotations[0].id;
-				}
 
-				if (nextID) {
-					this._onSelectAnnotations([nextID]);
-					this._openAnnotationPopup();
+					if (nextID) {
+						this._onSelectAnnotations([nextID]);
+						this._openAnnotationPopup();
+					}
+				}
+				if (action.type === 'selectText') {
+					let selectionRange = this._selectionRanges[0];
+					if (selectionRange && !selectionRange.collapsed) {
+						let rect = this.getClientRectForPopup(selectionRange.position);
+						let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+						annotation.pageLabel = this._pageLabels[annotation.position.pageIndex] || '-';
+						this._onSetSelectionPopup({ rect, annotation });
+						setTextLayerSelection(this._iframeWindow, this._selectionRanges);
+					}
 				}
 			}
-			if (action.type === 'selectText') {
-				let selectionRange = this._selectionRanges[0];
-				if (selectionRange && !selectionRange.collapsed) {
-					let rect = this.getClientRectForPopup(selectionRange.position);
-					let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
-					annotation.pageLabel = this._pageLabels[annotation.position.pageIndex] || '-';
-					this._onSetSelectionPopup({ rect, annotation });
-					setTextLayerSelection(this._iframeWindow, this._selectionRanges);
-				}
-			}
-			this.pointerDownPosition = null;
 			this.action = null;
+			this.pointerDownPosition = null;
 		}
 		// Update cursor after finishing the current action
 		if (position) {
@@ -1606,6 +1610,8 @@ class PDFView {
 
 
 		if (key === 'Escape') {
+			this.action = null;
+			this.pointerDownPosition = null;
 			if (this._selectedAnnotationIDs.length) {
 				this._onSelectAnnotations([]);
 				if (this._lastFocusedObject) {
@@ -1689,7 +1695,10 @@ class PDFView {
 	}
 
 	_handleDragEnd(event) {
-
+		if (event.dataTransfer.dropEffect === 'none') {
+			this.action = null;
+		}
+		this._handlePointerUp(event);
 	}
 
 	_handleDrop(event) {
