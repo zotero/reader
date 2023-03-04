@@ -2,6 +2,7 @@ import { pressedNextKey, pressedPreviousKey } from './lib/utilities';
 
 export class FocusManager {
 	constructor(options) {
+		this._reader = options.reader;
 		this._onDeselectAnnotations = options.onDeselectAnnotations;
 		window.addEventListener('focusin', this._handleFocus.bind(this));
 		window.addEventListener('mousedown', this._handleMouseDown.bind(this));
@@ -21,8 +22,21 @@ export class FocusManager {
 	}
 
 	_handleFocus(event) {
-		if ('closest' in event.target && !event.target.closest('.annotation, .annotation-popup, .selection-popup, .find-popup .overlay-popup, .context-menu, iframe')) {
-			this._onDeselectAnnotations();
+		if ('closest' in event.target) {
+			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .find-popup .overlay-popup, .context-menu, iframe')) {
+				this._onDeselectAnnotations();
+			}
+			// Close find popup on blur if search query is empty
+			if (!event.target.closest('.find-popup')) {
+				let state = this._reader._state.primaryViewFindState;
+				if (!state.query) {
+					this._reader._updateState({ primaryViewFindState: { ...state, popupOpen: false } });
+				}
+				state = this._reader._state.secondaryViewState;
+				if (!state.query) {
+					this._reader._updateState({ secondaryViewState: { ...state, popupOpen: false } });
+				}
+			}
 		}
 	}
 
