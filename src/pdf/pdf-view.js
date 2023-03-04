@@ -527,6 +527,9 @@ class PDFView {
 				|| this._findState.caseSensitive !== state.caseSensitive
 				|| this._findState.entireWord !== state.entireWord
 				|| this._findState.active !== state.active) {
+				// Immediately update find state because pdf.js find will trigger _updateFindMatchesCount
+				// and _updateFindControlState that update the current find state
+				this._findState = state;
 				this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
 					source: this._iframeWindow,
 					type: 'find',
@@ -539,8 +542,9 @@ class PDFView {
 				});
 			}
 		}
-
-		this._findState = state;
+		else {
+			this._findState = state;
+		}
 	}
 
 	findNext() {

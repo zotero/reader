@@ -1,8 +1,19 @@
 import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
 import { FormattedMessage } from 'react-intl';
+import { debounce } from '../../lib/debounce';
+import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
+
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	const inputRef = useRef();
+	const [query, setQuery] = useState(params.query);
+
+	const debounceInputChange = useCallback(debounce(value => {
+		let query = inputRef.current.value;
+		if (!(query.length === 1 && RegExp(/^\p{Script=Latin}/, 'u').test(query))) {
+			onChange({ ...params, query, active: true, result: null });
+		}
+	}, DEBOUNCE_FIND_POPUP_INPUT), [onChange]);
 
 	useLayoutEffect(() => {
 		if (params.popupOpen) {
@@ -10,8 +21,14 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 		}
 	}, [params.popupOpen]);
 
+	useEffect(() => {
+		setQuery(params.query);
+	}, [params.query]);
+
 	function handleInputChange(event) {
-		onChange({ ...params, query: event.target.value, active: true, result: null });
+		let value = event.target.value;
+		setQuery(value);
+		debounceInputChange();
 	}
 
 	function handleInputKeyDown(event) {
@@ -56,7 +73,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 					className="toolbarField"
 					title="Find"
 					placeholder="Find in document…"
-					value={params.query}
+					value={query !== null ? query : params.query}
 					tabIndex="-1"
 					data-tabstop={1}
 					autoComplete="off"
