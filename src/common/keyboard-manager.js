@@ -129,7 +129,7 @@ export class KeyboardManager {
 				}
 			}
 			// Focus next annotation if annotations were selected not from a view
-			if (!this._reader._annotationSelectionTriggeredFromView) {
+			if (selectedIDs.length >= 1 && !this._reader._annotationSelectionTriggeredFromView) {
 				let { annotations } = this._reader._state;
 				let firstIndex = annotations.findIndex(x => selectedIDs.includes(x.id));
 				let lastIndex = annotations.findLastIndex(x => selectedIDs.includes(x.id));
