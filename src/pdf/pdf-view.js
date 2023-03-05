@@ -600,8 +600,8 @@ class PDFView {
 		this._onSetSelectionPopup();
 	}
 
-	_isSelectionCollpased() {
-		return !this._selectionRanges.length || this._selectionRanges[0].collapsed;
+	_isSelectionCollapsed() {
+		return !this._selectionRanges.length || !!this._selectionRanges[0].collapsed;
 	}
 
 	showAnnotations(show) {
@@ -1504,6 +1504,7 @@ class PDFView {
 			this.updateCursor();
 		}
 		this._render();
+		this._updateViewStats();
 	}
 
 	cancel() {
@@ -1560,7 +1561,7 @@ class PDFView {
 			pageIndex: currentPageNumber - 1,
 			pageLabel: '123',
 			pagesCount,
-			canCopy: true,
+			canCopy: !this._isSelectionCollapsed() || this._selectedAnnotationIDs.length,
 			canZoomOut: true,
 			canZoomIn: true,
 			canZoomReset: currentScaleValue !== 'page-width',
@@ -1639,7 +1640,7 @@ class PDFView {
 			event.preventDefault();
 		}
 		else if (key === 'Tab') {
-			if (!this._focusedObject && this._isSelectionCollpased() && !this._selectedAnnotationIDs.length) {
+			if (!this._focusedObject && this._isSelectionCollapsed() && !this._selectedAnnotationIDs.length) {
 				if (!this._focusNext()) {
 					this._onTabOut();
 				}
@@ -1710,7 +1711,26 @@ class PDFView {
 	}
 
 	_handleCopy(event) {
-
+		if (!event.clipboardData) {
+			return;
+		}
+		// Copying annotation
+		if (this._selectedAnnotationIDs.length) {
+			let annotation = this._annotations.find(x => x.id === this._selectedAnnotationIDs[0]);
+			if (!annotation) {
+				return;
+			}
+			this._onSetDataTransferAnnotations(event.clipboardData, annotation);
+		}
+		// Copying text
+		else {
+			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+			if (!annotation) {
+				return;
+			}
+			this._onSetDataTransferAnnotations(event.clipboardData, annotation, true);
+		}
+		event.preventDefault();
 	}
 
 	getDragMultiIcon() {

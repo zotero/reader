@@ -7,6 +7,7 @@ export class FocusManager {
 		window.addEventListener('focusin', this._handleFocus.bind(this));
 		window.addEventListener('mousedown', this._handleMouseDown.bind(this));
 		window.addEventListener('keydown', this._handleKeyDown.bind(this), true);
+		window.addEventListener('copy', this._handleCopy.bind(this), true);
 
 		// Some browsers (Chrome) trigger focus event when focusing an iframe and some not (Firefox),
 		// therefore just use an interval because document.activeElement is always correct
@@ -185,6 +186,16 @@ export class FocusManager {
 		}
 	}
 
-
-
+	// Allow copying annotations from sidebar
+	_handleCopy(event) {
+		let ids = this._reader._state.selectedAnnotationIDs;
+		if (ids.length > 0) {
+			let annotation = this._reader._state.annotations.find(x => x.id === ids[0]);
+			if (!document.activeElement?.closest('.comment')
+				|| (!annotation.comment && this._reader._annotationSelectionTriggeredFromView)) {
+				this._reader._handleSetDataTransferAnnotations(event.clipboardData, annotation);
+				event.preventDefault();
+			}
+		}
+	}
 }
