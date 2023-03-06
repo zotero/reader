@@ -13,11 +13,18 @@ import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 export function PopupPreview(props) {
 	const intl = useIntl();
 
-	function handlePageLabelDoubleClick() {
-		if (props.type !== 'pdf') {
+	function handlePageLabelDoubleClick(event) {
+		if (props.type !== 'pdf' || props.annotation.readOnly) {
 			return;
 		}
-		props.onDoubleClickPageLabel(annotation.id);
+		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
+		rect = [
+			rect.left,
+			rect.top,
+			rect.right,
+			rect.bottom
+		];
+		props.onDoubleClickPageLabel(props.annotation.id, rect);
 	}
 
 	function handleTagsClick(event) {
@@ -35,7 +42,7 @@ export function PopupPreview(props) {
 		// Prevent selecting annotation
 		event.stopPropagation();
 		let { x, y } = getPopupCoordinatesFromClickEvent(event);
-		props.onOpenContextMenu({ ids: [props.annotation.id], x, y, popup: true });
+		props.onOpenContextMenu({ ids: [props.annotation.id], currentID: props.annotation.id, x, y, popup: true, view: true });
 	}
 
 	let { annotation, type } = props;
@@ -122,7 +129,7 @@ export function SidebarPreview(props) {
 	}
 
 	function handlePageLabelDoubleClick(event) {
-		if (props.type !== 'pdf') {
+		if (props.type !== 'pdf' || props.annotation.readOnly) {
 			return;
 		}
 		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
@@ -132,7 +139,7 @@ export function SidebarPreview(props) {
 			rect.right,
 			rect.bottom
 		];
-		props.onDoubleClickPageLabel(annotation.id, rect);
+		props.onDoubleClickPageLabel(props.annotation.id, rect);
 	}
 
 	function handleSectionClick(event, section) {
@@ -151,7 +158,7 @@ export function SidebarPreview(props) {
 		// Prevent selecting annotation
 		event.stopPropagation();
 		let { x, y } = getPopupCoordinatesFromClickEvent(event);
-		props.onOpenContextMenu({ ids: [props.annotation.id], x, y, button: true });
+		props.onOpenContextMenu({ ids: [props.annotation.id], currentID: props.annotation.id, x, y, button: true });
 	}
 
 	function handleDragStart(event) {
@@ -186,7 +193,7 @@ export function SidebarPreview(props) {
 		if (event.button === 2 && (!editorNode || document.activeElement !== editorNode)) {
 			event.stopPropagation();
 			event.preventDefault();
-			props.onOpenContextMenu({ ids: [props.annotation.id], x: event.clientX, y: event.clientY });
+			props.onOpenContextMenu({ ids: [props.annotation.id], currentID: props.annotation.id, x: event.clientX, y: event.clientY });
 			return false;
 		}
 	}

@@ -11,7 +11,7 @@ function getData(params) {
 	if (!annotation) {
 		return;
 	}
-	if (!annotations.length) {
+	if (!params.selectedAnnotations.length) {
 		annotations = [params.currentAnnotation];
 	}
 	else {

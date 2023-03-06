@@ -1146,10 +1146,10 @@ class PDFView {
 			}
 			else if (!selectedAnnotations.includes(selectableAnnotation)) {
 				this._onSelectAnnotations([selectableAnnotation.id]);
-				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY });
+				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
 			else {
-				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY });
+				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
 			this._render();
 			return;

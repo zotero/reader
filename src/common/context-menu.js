@@ -105,6 +105,14 @@ export function createAnnotationContextMenu(reader, params) {
 		x: params.x,
 		y: params.y,
 		itemGroups: createItemGroup([
+			[
+				(reader._platform === 'zotero' || window.dev) && {
+					label: reader._getString('pdfReader.addToNote'),
+					disabled: !reader._state.enableAddToNote,
+					persistent: true,
+					onCommand: () => reader._sidebarEditHighlightText(params.ids[0])
+				}
+			],
 			ANNOTATION_COLORS.map(([label, color]) => ({
 				label: reader._getString(label),
 				disabled: readOnly,
@@ -117,13 +125,14 @@ export function createAnnotationContextMenu(reader, params) {
 				}
 			})),
 			[
-				{
+				// If context menu was triggered not from a view and, unless it was annotation popup
+				(!params.view || params.popup) && {
 					label: reader._getString('pdfReader.editPageNumber'),
-					disabled: readOnly || params.ids.length !== 1 || params.popup || reader._type !== 'pdf',
+					disabled: readOnly || reader._type !== 'pdf',
 					persistent: true,
-					onCommand: () => reader._sidebarOpenPageLabelPopup(params.ids[0])
+					onCommand: () => reader._sidebarOpenPageLabelPopup(params.currentID)
 				},
-				{
+				!params.view && {
 					label: reader._getString('pdfReader.editHighlightedText'),
 					disabled: readOnly || !(
 						params.ids.length === 1
@@ -135,7 +144,7 @@ export function createAnnotationContextMenu(reader, params) {
 				}
 			],
 			[
-				{
+				(reader._platform === 'zotero' || window.dev) && {
 					label: reader._getString('pdfReader.copyImage'),
 					disabled: !(params.ids.length === 1 && reader._state.annotations.find(x => x.id === params.ids[0] && x.type === 'image')),
 					onCommand: () => {
@@ -145,7 +154,7 @@ export function createAnnotationContextMenu(reader, params) {
 						}
 					}
 				},
-				{
+				(reader._platform === 'zotero' || window.dev) && {
 					label: reader._getString('pdfReader.saveImageAs'),
 					disabled: !(params.ids.length === 1 && reader._state.annotations.find(x => x.id === params.ids[0] && x.type === 'image')),
 					onCommand: () => {
