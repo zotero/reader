@@ -24,9 +24,7 @@ import {
 } from "../common/lib/selector";
 import { EPUBFindProcessor } from "./find";
 import {
-	IGNORE_CLASS,
-	PAGE_TURN_WHEEL_THRESHOLD,
-	PAGE_TURN_WHEEL_TIMEOUT
+	IGNORE_CLASS
 } from "./defines";
 import NavStack from "../common/lib/nav-stack";
 import DOMView, { DOMViewOptions } from "../common/dom-view";
@@ -69,9 +67,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 	
 	protected readonly _navStack = new NavStack<string>();
 	
-	private _wheelAmount = 0;
+	private _animatingPageTurn = false;
 	
-	private _wheelResetTimeout: number | null = null;
+	private _touchStartID: number | null = null;
+	
+	private _touchStartX = 0;
 	
 	private readonly _pageMapping = new PageMapping();
 	
@@ -87,17 +87,41 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 	
 	protected async _onInitialDisplay(viewState: Partial<EPUBViewState>) {
-		this._iframeDocument.addEventListener('wheel', this._handleWheel.bind(this), { passive: false });
-		
 		await this._book.opened;
 
 		const style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
 
+		const swipeIndicatorLeft = this._iframeDocument.createElement('div');
+		swipeIndicatorLeft.classList.add('swipe-indicator-left');
+		this._iframeDocument.body.append(swipeIndicatorLeft);
+		
+		const swipeIndicatorRight = this._iframeDocument.createElement('div');
+		swipeIndicatorRight.classList.add('swipe-indicator-right');
+		this._iframeDocument.body.append(swipeIndicatorRight);
+
 		this._sectionsContainer = this._iframeDocument.createElement('div');
 		this._sectionsContainer.classList.add('sections');
 		this._sectionsContainer.hidden = true;
+		this._handleTransitionStart = (event) => {
+			if (event.propertyName == 'left') {
+				this._animatingPageTurn = true;
+				const update = () => {
+					if (!this._animatingPageTurn) {
+						return;
+					}
+					this._handleViewUpdate();
+					window.requestAnimationFrame(update);
+				};
+				window.requestAnimationFrame(update);
+			}
+		};
+		this._sectionsContainer.addEventListener('transitionstart', this._handleTransitionStart);
+		this._sectionsContainer.addEventListener('transitionend', this._handleTransitionEnd);
+		this._iframeDocument.body.addEventListener('touchstart', this._handleTouchStart);
+		this._iframeDocument.body.addEventListener('touchmove', this._handleTouchMove);
+		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
 		this._iframeDocument.body.append(this._sectionsContainer);
 
 		const styleScoper = new StyleScoper(this._iframeDocument);
@@ -441,31 +465,90 @@ class EPUBView extends DOMView<EPUBViewState> {
 	// Event handlers
 	// ***
 
-	private _handleWheel(event: WheelEvent) {
-		if (this._viewState.flowMode && this._viewState.flowMode !== 'paginated') {
+	private _handleTransitionStart = (event: TransitionEvent) => {
+		if (this._viewState.flowMode != 'paginated') {
 			return;
 		}
+		if (event.propertyName == 'left') {
+			this._animatingPageTurn = true;
+			const update = () => {
+				if (!this._animatingPageTurn) {
+					return;
+				}
+				this._handleViewUpdate();
+				window.requestAnimationFrame(update);
+			};
+			window.requestAnimationFrame(update);
+		}
+	};
 
+	private _handleTransitionEnd = (event: TransitionEvent) => {
+		if (this._viewState.flowMode != 'paginated') {
+			return;
+		}
+		if (event.propertyName == 'left') {
+			this._animatingPageTurn = false;
+			this._handleViewUpdate();
+		}
+	};
+
+	private _handleTouchStart = (event: TouchEvent) => {
+		if (this._viewState.flowMode != 'paginated' || this._touchStartID !== null) {
+			return;
+		}
+		this._touchStartID = event.changedTouches[0].identifier;
+		this._touchStartX = event.changedTouches[0].clientX;
+	};
+
+	private _handleTouchMove = (event: TouchEvent) => {
+		if (this._viewState.flowMode != 'paginated' || this._touchStartID === null || this._animatingPageTurn) {
+			return;
+		}
+		const touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
+		if (!touch) {
+			return;
+		}
 		event.preventDefault();
-		if (this._wheelResetTimeout) {
-			window.clearTimeout(this._wheelResetTimeout);
+		let swipeAmount = (touch.clientX - this._touchStartX) / 100;
+		// If on the first/last page, clamp the CSS variable so the indicator doesn't expand all the way
+		if (swipeAmount < 0 && !this.canNavigateToNextPage()) {
+			swipeAmount = Math.max(swipeAmount, -0.6);
 		}
-		const delta = event.deltaX || event.deltaY;
-		this._wheelAmount += delta;
-		if (Math.abs(this._wheelAmount) >= PAGE_TURN_WHEEL_THRESHOLD) {
-			if (delta > 0) {
-				this.navigateToNextPage();
-			}
-			else if (delta < 0) {
-				this.navigateToPreviousPage();
-			}
-			this._wheelAmount = 0;
+		else if (swipeAmount > 0 && !this.canNavigateToPreviousPage()) {
+			swipeAmount = Math.min(swipeAmount, 0.6);
 		}
-		else {
-			this._wheelResetTimeout = window.setTimeout(() => this._wheelAmount = 0, PAGE_TURN_WHEEL_TIMEOUT);
+		this._iframeDocument.body.classList.add('swiping');
+		this._iframeDocument.documentElement.style.setProperty('--swipe-amount', swipeAmount.toString());
+	};
+
+	private _handleTouchEnd = (event: TouchEvent) => {
+		if (this._viewState.flowMode != 'paginated' || this._touchStartID === null) {
+			return;
 		}
-	}
-	
+		const touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
+		if (!touch) {
+			return;
+		}
+		event.preventDefault();
+		this._iframeDocument.body.classList.remove('swiping');
+		this._iframeDocument.documentElement.style.setProperty('--swipe-amount', '0');
+		this._touchStartID = null;
+		
+		// Don't actually switch pages if we're already doing that
+		if (this._animatingPageTurn) {
+			return;
+		}
+		
+		// Switch pages after swiping 100px
+		const swipeAmount = (touch.clientX - this._touchStartX) / 100;
+		if (swipeAmount <= -1) {
+			this.navigateToNextPage();
+		}
+		if (swipeAmount >= 1) {
+			this.navigateToPreviousPage();
+		}
+	};
+
 	protected override _handleScroll() {
 		super._handleScroll();
 		this._invalidateStartRangeAndCFI();

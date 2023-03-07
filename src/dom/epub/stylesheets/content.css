@@ -28,7 +28,34 @@ body.scrolled > .sections > .section-container {
 
 body.paginated {
 	margin: 40px !important;
-	overflow: hidden;
+	overflow: clip;
+	overscroll-behavior: none;
+}
+
+body:not(.paginated) :is(.swipe-indicator-left, .swipe-indicator-right) {
+	display: none;
+}
+
+.swipe-indicator-left, .swipe-indicator-right {
+	position: absolute;
+	top: calc(50% - 50px);
+	width: 80px;
+	height: 100px;
+	background-color: #bdbdbd;
+	z-index: 9999;
+	pointer-events: none;
+}
+
+.swipe-indicator-left {
+	left: calc((min(var(--swipe-amount, 0), 1) - 1) * 80px);
+	opacity: calc(min(var(--swipe-amount, 0), 1) * 0.8);
+	border-radius: 0 80px 80px 0;
+}
+
+.swipe-indicator-right {
+	left: calc(100vw + (max(var(--swipe-amount, 0), -1) * 80px));
+	opacity: calc(max(var(--swipe-amount, 0), -1) * -0.8);
+	border-radius: 80px 0 0 80px;
 }
 
 body.paginated > .sections {
@@ -38,12 +65,14 @@ body.paginated > .sections {
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
 	position: relative;
-	left: calc((-100% - 60px) * var(--page-index));
+	left: calc((-100% - 60px) * var(--page-index, 0));
 	top: 0;
 	columns: auto 2;
 	column-gap: 60px;
 	column-fill: auto;
 	overflow: visible;
+	transition: left ease-in-out 0.3s;
+	overscroll-behavior: none;
 }
 
 body.paginated > .sections > .section-container {
