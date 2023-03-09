@@ -680,7 +680,7 @@ export type DOMViewOptions<State extends DOMViewState> = {
 	onTabOut: (isShiftTab?: boolean) => void;
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
-	buf: ArrayBuffer;
+	buf: Uint8Array;
 };
 
 export interface DOMViewState {

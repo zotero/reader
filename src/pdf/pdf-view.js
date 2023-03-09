@@ -61,7 +61,7 @@ class PDFView {
 
 		this._onTabOut = options.onTabOut;
 
-		this._viewState = options.viewState || { pageIndex: 3, scale: "page-width", scrollMode: 0, spreadMode: 0 };
+		this._viewState = options.viewState || { pageIndex: 0, scale: "page-width", scrollMode: 0, spreadMode: 0 };
 		this._location = options.location;
 
 		this._tool = options.tool;
@@ -100,6 +100,9 @@ class PDFView {
 		this._iframeWindow = null;
 
 		let setOptions = () => {
+			if (!this._iframeWindow.PDFViewerApplicationOptions) {
+				return;
+			}
 			this._iframeWindow.PDFViewerApplicationOptions.set('isEvalSupported', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('defaultUrl', '');
 			this._iframeWindow.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
@@ -122,7 +125,7 @@ class PDFView {
 			this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 			this._iframeWindow.onDetachPage = this._detachPage.bind(this);
 			this._init();
-			this._iframeWindow.PDFViewerApplication.open(options.buf, { password: this._password });
+			this._iframeWindow.PDFViewerApplication.open({ data: options.buf, password: this._password });
 			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 			window.if = this._iframeWindow;
 

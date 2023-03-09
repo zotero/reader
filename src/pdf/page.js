@@ -33,7 +33,7 @@ export default class Page {
 	}
 
 	async initOverlays() {
-		let page = await PDFViewerApplication.pdfDocument.getPage(this.pageIndex + 1);
+		let page = await this.layer._iframeWindow.PDFViewerApplication.pdfDocument.getPage(this.pageIndex + 1);
 		let annotations = await page.getAnnotations();
 		for (let annotation of annotations) {
 			let overlay = {
