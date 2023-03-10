@@ -567,6 +567,35 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this.navigate({ href: this._book.path.relative(href) });
 	}
 	
+	protected override _handleKeyDown(event: KeyboardEvent) {
+		const { key } = event;
+
+		if (this._viewState.flowMode == 'paginated') {
+			if (key == 'PageUp') {
+				this.navigateToPreviousPage();
+				event.preventDefault();
+				return;
+			}
+			if (key == 'PageDown') {
+				this.navigateToNextPage();
+				event.preventDefault();
+				return;
+			}
+			if (key == 'Home') {
+				this.navigateToFirstPage();
+				event.preventDefault();
+				return;
+			}
+			if (key == 'End') {
+				this.navigateToLastPage();
+				event.preventDefault();
+				return;
+			}
+		}
+
+		super._handleKeyDown(event);
+	}
+
 	protected override _updateViewState() {
 		if (!this.startCFI) {
 			return;
@@ -846,6 +875,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		const pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
 		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex - 1));
 		this._handleViewUpdate();
+		this._maybeDisablePageTurnTransition();
 	}
 
 	navigateToNextPage() {
@@ -859,7 +889,20 @@ class EPUBView extends DOMView<EPUBViewState> {
 		const pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
 		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex + 1));
 		this._handleViewUpdate();
+		this._maybeDisablePageTurnTransition();
 	}
+
+	private _maybeDisablePageTurnTransition() {
+		if (this._animatingPageTurn || this._sectionsContainer.classList.contains('disable-transition')) {
+			this._animatingPageTurn = false;
+			this._sectionsContainer.classList.add('disable-transition');
+			this._enablePageTurnTransition();
+		}
+	}
+
+	private _enablePageTurnTransition = debounce(() => {
+		this._sectionsContainer.classList.remove('disable-transition');
+	}, 250);
 
 	// Still need to figure out how this is going to work
 	print() {

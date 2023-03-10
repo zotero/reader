@@ -71,8 +71,11 @@ body.paginated > .sections {
 	column-gap: 60px;
 	column-fill: auto;
 	overflow: visible;
-	transition: left ease-in-out 0.3s;
 	overscroll-behavior: none;
+}
+
+body.paginated > .sections:not(.disable-transition) {
+	transition: left ease-in-out 0.3s;
 }
 
 body.paginated > .sections > .section-container {
