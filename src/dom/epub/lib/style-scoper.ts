@@ -68,11 +68,30 @@ class StyleScoper {
 	
 	rewriteAll() {
 		for (const { sheet, scopeClass } of this._sheets.values()) {
-			for (const rule of sheet.cssRules) {
-				if (rule.constructor.name === 'CSSStyleRule') {
-					const styleRule = rule as CSSStyleRule;
-					styleRule.selectorText = `.${scopeClass} :is(${styleRule.selectorText})`;
-				}
+			this._visitStyleSheet(sheet, scopeClass);
+		}
+	}
+	
+	private _visitStyleSheet(sheet: CSSStyleSheet, scopeClass: string) {
+		for (const rule of sheet.cssRules) {
+			this._visitRule(rule, scopeClass);
+		}
+	}
+	
+	private _visitRule(rule: CSSRule, scopeClass: string) {
+		if (rule.constructor.name === 'CSSStyleRule') {
+			const styleRule = rule as CSSStyleRule;
+			styleRule.selectorText = `.${scopeClass} :is(${styleRule.selectorText})`;
+		}
+		else if (rule.constructor.name === 'CSSImportRule') {
+			const importRule = rule as CSSImportRule;
+			this._visitStyleSheet(importRule.styleSheet, scopeClass);
+		}
+		
+		// If this rule contains child rules, visit each of them
+		if ('cssRules' in rule) {
+			for (const childRule of rule.cssRules as CSSRuleList) {
+				this._visitRule(childRule, scopeClass);
 			}
 		}
 	}
@@ -80,7 +99,6 @@ class StyleScoper {
 
 type SheetMetadata = {
 	sheet: CSSStyleSheet;
-	
 	scopeClass: string;
 };
 
