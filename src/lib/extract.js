@@ -34,6 +34,9 @@ export class Extractor {
 		let fingerprints = new Set();
 		let chars = [];
 		for (let item of textContent.items) {
+			if (!item.chars) {
+				continue;
+			}
 			for (let char of item.chars) {
 				// Note: Rotation is rounded in PDF.js
 				if (char.rotation % 90 === 0

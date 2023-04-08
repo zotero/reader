@@ -15,15 +15,6 @@
 
 // Part 1
 
-@page {
-	margin: 0;
-}
-
-#printContainer {
-	display: none;
-}
-
-// Part 2
 
 @page {
 	margin: 0;
@@ -34,43 +25,9 @@
 }
 
 @media print {
-	/* General rules for printing. */
 	body {
 		background: rgba(0, 0, 0, 0) none;
 	}
-
-	/* Rules for browsers that don't support mozPrintCallback. */
-	#sidebarContainer, #secondaryToolbar, .toolbar, #loadingBox, #errorWrapper, .textLayer {
-		display: none;
-	}
-	#viewerContainer {
-		overflow: visible;
-	}
-
-	#mainContainer, #viewerContainer, .page, .page canvas {
-		position: static;
-		padding: 0;
-		margin: 0;
-	}
-
-	.page {
-		float: left;
-		display: none;
-		border: none;
-		box-shadow: none;
-		background-clip: content-box;
-		background-color: rgba(255, 255, 255, 1);
-	}
-
-	.page[data-loaded] {
-		display: block;
-	}
-
-	.fileInput {
-		display: none;
-	}
-
-	/* Rules for browsers that support PDF.js printing */
 	body[data-pdfjsprinting] #outerContainer {
 		display: none;
 	}
@@ -81,18 +38,43 @@
 		height: 100%;
 	}
 	/* wrapper around (scaled) print canvas elements */
-	#printContainer > div {
-		position: relative;
-		top: 0;
-		left: 0;
-		width: 1px;
-		height: 1px;
-		overflow: visible;
+	#printContainer > .printedPage {
 		page-break-after: always;
 		page-break-inside: avoid;
+
+		/* The wrapper always cover the whole page. */
+		height: 100%;
+		width: 100%;
+
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
 	}
-	#printContainer canvas,
-	#printContainer img {
+
+	#printContainer > .xfaPrintedPage .xfaPage {
+		position: absolute;
+	}
+
+	#printContainer > .xfaPrintedPage {
+		page-break-after: always;
+		page-break-inside: avoid;
+		width: 100%;
+		height: 100%;
+		position: relative;
+	}
+
+	#printContainer > .printedPage canvas,
+	#printContainer > .printedPage img {
+		/* The intrinsic canvas / image size will make sure that we fit the page. */
+		max-width: 100%;
+		max-height: 100%;
+
+		direction: ltr;
 		display: block;
+	}
+
+	body > textarea, #clamps, #drag-canvas {
+		display: none;
 	}
 }

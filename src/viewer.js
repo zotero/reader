@@ -132,7 +132,7 @@ class Viewer {
 		);
 
 		setTimeout(function () {
-			window.PDFViewerApplication.open(options.buf);
+			window.PDFViewerApplication.open({ data: options.buf.slice(0) });
 		}, 0);
 
 		this.splitWrapper = document.getElementById('splitWrapper');
@@ -442,7 +442,7 @@ class Viewer {
 	}
 
 	async reload(buf) {
-		return window.PDFViewerApplication.open(buf);
+		return window.PDFViewerApplication.open({ data: buf.slice(0) });
 	}
 
 	// TODO: Try to scroll into the required page avoiding first pages rendering to speed up navigation

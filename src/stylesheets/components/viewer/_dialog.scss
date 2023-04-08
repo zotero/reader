@@ -2,32 +2,27 @@
 // Dialog
 //
 
-#overlayContainer {
-	display: flex;
+#dialogContainer {
 	position: absolute;
-	width: 100%;
-	height: 100%;
-	background-color: $overlay-container-bg;
 	z-index: $z-index-overlay;
-
-	.container {
-		flex: 1 1 0;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		overflow: auto;
-		-webkit-overflow-scrolling: touch;
-	}
 }
 
-.dialog {
-	width: $dialog-width;
+dialog {
+	display: none;
+	align-self: center;
+	margin: auto;
+	//width: $dialog-width;
 	color: $dialog-color;
 	font-size: $dialog-font-size;
 	line-height: $dialog-line-height;
 	background-color: $dialog-bg;
 	border-radius: $dialog-border-radius;
 	box-shadow: $dialog-shadow;
+	border: 0;
+
+	&[open] {
+		display: block;
+	}
 
 	.toolbarField {
 		margin: 0;
@@ -52,7 +47,7 @@
 		align-items: center;
 	}
 
-	.overlayButton {
+	.dialogButton {
 		width: auto;
 		min-width: $overlay-btn-min-width;
 		height: $overlay-btn-height;
@@ -96,7 +91,7 @@
 
 	@if $dialog-gradient-btn {
 		#passwordSubmit,
-		.overlayButton:active {
+		.dialogButton:active {
 			height: $gradient-btn-height;
 			min-width: $gradient-btn-min-width;
 			color: $gradient-btn-color;
@@ -166,21 +161,6 @@
 		}
 	}
 
-	// Password dialog
-	#passwordOverlay & {
-		.toolbarField {
-			width: 100%;
-		}
-	}
-
-	// Print dialog
-	#printServiceOverlay & {
-		.row:nth-child(2) {
-			display: flex;
-			align-items: center;
-		}
-	}
-
 	progress[value] {
 		-webkit-appearance: none;
 		-moz-appearance: none;
@@ -227,6 +207,25 @@
 		flex: 0 0 $progress-label-width;
 		text-align: right;
 	}
+}
+
+// Password dialog
+#passwordDialog {
+	input {
+		width: 100%;
+	}
+}
+
+// Print dialog
+#printServiceDialog {
+	.row:nth-child(2) {
+		display: flex;
+		align-items: center;
+	}
+}
+
+dialog::backdrop {
+	background-color: rgba(0, 0, 0, 0.2);
 }
 
 //.dialog .separator {

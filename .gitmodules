@@ -1,3 +1,4 @@
 [submodule "pdf.js"]
 	path = pdf.js
 	url = https://github.com/zotero/pdf.js.git
+	branch = reader1

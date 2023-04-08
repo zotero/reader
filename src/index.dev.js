@@ -13,6 +13,7 @@ function setOptions() {
 	window.PDFViewerApplicationOptions.set('isEvalSupported', false);
 	window.PDFViewerApplicationOptions.set('defaultUrl', '');
 	window.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
+	window.PDFViewerApplicationOptions.set('standardFontDataUrl', 'standard_fonts/');
 	window.PDFViewerApplicationOptions.set('cMapPacked', true);
 	window.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
 	window.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
@@ -56,7 +57,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 async function test() {
 	let res = await fetch('compressed.tracemonkey-pldi-09.pdf');
-	let buf = await res.arrayBuffer();
+	let buf = new Uint8Array(await res.arrayBuffer());
 
 	// Load primary view
 	let vi = new ViewerInstance({

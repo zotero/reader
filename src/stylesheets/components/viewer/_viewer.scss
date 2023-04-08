@@ -13,6 +13,43 @@
  * limitations under the License.
  */
 
+
+:root {
+	--viewer-container-height: 0;
+	--pdfViewer-padding-bottom: 0;
+	--page-margin: 1px auto -8px;
+	--page-border: 9px solid transparent;
+	--spreadHorizontalWrapped-margin-LR: -3.5px;
+	--loading-icon-delay: 400ms;
+}
+
+@media screen and (forced-colors: active) {
+	:root {
+		--pdfViewer-padding-bottom: 9px;
+		--page-margin: 8px auto -1px;
+		--page-border: 1px solid CanvasText;
+		--spreadHorizontalWrapped-margin-LR: 3.5px;
+	}
+}
+
+[data-main-rotation="90"] {
+	transform: rotate(90deg) translateY(-100%);
+}
+[data-main-rotation="180"] {
+	transform: rotate(180deg) translate(-100%, -100%);
+}
+[data-main-rotation="270"] {
+	transform: rotate(270deg) translateX(-100%);
+}
+
+.pdfViewer {
+	/* Define this variable here and not in :root to avoid to reflow all the UI
+	   when scaling (see #15929). */
+	--scale-factor: 1;
+
+	padding-bottom: var(--pdfViewer-padding-bottom);
+}
+
 #outerContainer {
 	width: 100%;
 	height: 100%;
