@@ -344,8 +344,8 @@ export function filterAnnotations(annotations, filter) {
 
 export function cleanFilter(annotations, filter) {
 	let { query, colors, tags, authors } = filter;
-	colors = colors.filter(color => annotations.some(a => a.colors.includes(color)));
+	colors = colors.filter(color => annotations.some(a => a.color === color));
 	tags = tags.filter(tag => annotations.some(a => a.tags.some(x => x.name === tag)));
-	authors = authors.filter(author => annotations.some(a => a.authors.includes(author)));
+	authors = authors.filter(author => annotations.some(a => a.author === author));
 	return { query, colors, tags, authors };
 }

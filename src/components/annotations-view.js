@@ -232,11 +232,15 @@ const AnnotationsView = memo(function (props) {
 
 	for (let annotation of props.annotations) {
 		for (let tag of annotation.tags) {
-			tags[tag.name].inactive = false;
+			if (tags[tag.name]) {
+				tags[tag.name].inactive = false;
+			}
 		}
-		colors[annotation.color].inactive = false;
+		if (colors[annotation.color]) {
+			colors[annotation.color].inactive = false;
+		}
 		let author = annotation.authorName;
-		if (author) {
+		if (author && authors[author]) {
 			authors[author].inactive = false;
 		}
 	}
