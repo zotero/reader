@@ -353,12 +353,15 @@ class Viewer {
 			// On FF target is document node when mouseup is outside of pdf-reader
 			&& event.target.nodeType === Node.ELEMENT_NODE
 			&& event.target.closest('.annotationLayer')
-			&& !event.target.classList.contains('internalLink')
+			&& event.target.href
 		) {
 			event.preventDefault();
 			event.stopPropagation();
-			if (!PDFViewerApplication.pdfViewer.isInPresentationMode
-				&& event.target.href) {
+
+			if (event.target.getAttribute('href')[0] === '#') {
+				window.PDFViewerApplication.pdfLinkService.setHash(event.target.getAttribute('href').slice(1));
+			}
+			else {
 				this.options.onExternalLink(event.target.href);
 			}
 		}
