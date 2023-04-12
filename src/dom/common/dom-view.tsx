@@ -364,7 +364,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 		if (key === 'Escape') {
 			if (this._selectedAnnotationIDs.length) {
-				this._options.onSelectAnnotations([]);
+				this._options.onSelectAnnotations([], event);
 			}
 			else if (focusedElement) {
 				focusedElement.blur();
@@ -416,7 +416,7 @@ abstract class DOMView<State extends DOMViewState> {
 					const annotationID = focusedElement.getAttribute('data-annotation-id')!;
 					const annotation = this._annotationsByID.get(annotationID);
 					if (annotation) {
-						this._options.onSelectAnnotations([annotationID]);
+						this._options.onSelectAnnotations([annotationID], event);
 						this._openAnnotationPopup(annotation);
 						return;
 					}
@@ -525,7 +525,7 @@ abstract class DOMView<State extends DOMViewState> {
 		if (!(event.target as Element).closest('.annotation-container')) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
-				this._options.onSelectAnnotations([]);
+				this._options.onSelectAnnotations([], event);
 			}
 
 			// Disable pointer events on the annotation layer until mouseup
@@ -670,7 +670,7 @@ export type DOMViewOptions<State extends DOMViewState> = {
 	onAddAnnotation: (annotation: NewAnnotation<WADMAnnotation>, select?: boolean) => void;
 	onUpdateAnnotations: (annotations: Annotation[]) => void;
 	onOpenLink: (url: string) => void;
-	onSelectAnnotations: (ids: string[]) => void;
+	onSelectAnnotations: (ids: string[], triggeringEvent?: KeyboardEvent | MouseEvent) => void;
 	onSetSelectionPopup: (params?: SelectionPopupParams<WADMAnnotation> | null) => void;
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;

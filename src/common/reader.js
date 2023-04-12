@@ -18,7 +18,7 @@ import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import { PDFManager } from '../pdf/pdf-manager';
 import {
-	getImageDataURL,
+	getImageDataURL, isMac,
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
@@ -624,8 +624,8 @@ class Reader {
 			this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
 		};
 
-		let onSelectAnnotations = (ids) => {
-			this.setSelectedAnnotations(ids, true);
+		let onSelectAnnotations = (ids, triggeringEvent) => {
+			this.setSelectedAnnotations(ids, true, triggeringEvent);
 		};
 
 		let onTabOut = (reverse) => {
@@ -902,9 +902,11 @@ class Reader {
 		this._lastView.navigateToNextPage();
 	}
 
-	setSelectedAnnotations(ids, triggeredFromView) {
+	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
 		// Prevent accidental annotation deselection if modifier is pressed
-		if (!ids.length && triggeredFromView && (this._keyboardManager.shift || this._keyboardManager.mod)) {
+		let shift = triggeringEvent ? triggeringEvent.shiftKey : this._keyboardManager.shift;
+		let mod = triggeringEvent ? (triggeringEvent.ctrlKey || triggeringEvent.metaKey && isMac()) : this._keyboardManager.mod;
+		if (!ids.length && triggeredFromView && (shift || mod)) {
 			return;
 		}
 		this._enableAnnotationDeletionFromComment = false;
@@ -914,7 +916,7 @@ class Reader {
 			let id = ids[0];
 			let annotation = this._annotationManager._annotations.find(x => x.id === id);
 			if (annotation) {
-				if (this._keyboardManager.shift && this._state.selectedAnnotationIDs.length) {
+				if (shift && this._state.selectedAnnotationIDs.length) {
 					let selectedIDs = this._state.selectedAnnotationIDs.slice();
 					let annotations = this._state.annotations;
 
@@ -946,7 +948,7 @@ class Reader {
 					}
 					this._updateState({ selectedAnnotationIDs: selectedIDs });
 				}
-				else if (this._keyboardManager.mod && this._state.selectedAnnotationIDs.length) {
+				else if (mod && this._state.selectedAnnotationIDs.length) {
 					let selectedIDs = this._state.selectedAnnotationIDs.slice();
 					let existingIndex = selectedIDs.indexOf(id);
 					if (existingIndex >= 0) {

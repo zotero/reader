@@ -1143,12 +1143,12 @@ class PDFView {
 			let selectedAnnotations = this.getSelectedAnnotations();
 			if (!selectableAnnotation) {
 				if (this._selectedAnnotationIDs.length !== 0) {
-					this._onSelectAnnotations([]);
+					this._onSelectAnnotations([], event);
 				}
 				this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
 			}
 			else if (!selectedAnnotations.includes(selectableAnnotation)) {
-				this._onSelectAnnotations([selectableAnnotation.id]);
+				this._onSelectAnnotations([selectableAnnotation.id], event);
 				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
 			else {
@@ -1182,7 +1182,7 @@ class PDFView {
 		// Select text, and/or object, otherwise unselect
 
 		if (selectAnnotations && !(selectAnnotations.length === 0 && this._selectedAnnotationIDs.length === 0)) {
-			this._onSelectAnnotations(selectAnnotations.map(x => x.id));
+			this._onSelectAnnotations(selectAnnotations.map(x => x.id), event);
 			if (selectAnnotations.length) {
 				action.alreadySelectedAnnotations = true;
 			}
@@ -1480,7 +1480,7 @@ class PDFView {
 					}
 
 					if (nextID) {
-						this._onSelectAnnotations([nextID]);
+						this._onSelectAnnotations([nextID], event);
 						this._openAnnotationPopup();
 					}
 				}
@@ -1621,7 +1621,7 @@ class PDFView {
 			this.action = null;
 			this.pointerDownPosition = null;
 			if (this._selectedAnnotationIDs.length) {
-				this._onSelectAnnotations([]);
+				this._onSelectAnnotations([], event);
 				if (this._lastFocusedObject) {
 					this._focusedObject = this._lastFocusedObject;
 					this._render();
@@ -1666,7 +1666,7 @@ class PDFView {
 			}
 			else if (['Enter', 'Space'].includes(key)) {
 				if (this._focusedObject.type) {
-					this._onSelectAnnotations([this._focusedObject.id]);
+					this._onSelectAnnotations([this._focusedObject.id], event);
 					this._openAnnotationPopup();
 				}
 				else {

@@ -309,7 +309,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 				setExpansionState(2);
 			}
 			if (!(props.selectedIDs.length === 1 && props.selectedIDs[0] === id)) {
-				props.onSelectAnnotations([id]);
+				props.onSelectAnnotations([id], event);
 			}
 		}
 	}
