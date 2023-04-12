@@ -1,27 +1,24 @@
 #!/bin/bash
 
 cd pdf.js
-npm ci
-# TODO: Use `generic` build for the web version
-# npx gulp generic
-# Zotero with FF 60 ESR runs only the `legacy` build
-npx gulp generic-legacy
+npm ci --legacy-peer-deps
+npx gulp generic
 cd ..
 
 mkdir -p build/dev
-cp -r pdf.js/build/generic-legacy/web/* build/dev/
-cp -r pdf.js/build/generic-legacy/build/* build/dev/
-cp -r pdf.js/build/generic-legacy/LICENSE build/dev/
+cp -r pdf.js/build/generic/web/* build/dev/
+cp -r pdf.js/build/generic/build/* build/dev/
+cp -r pdf.js/build/generic/LICENSE build/dev/
 
 mkdir -p build/web
-cp -r pdf.js/build/generic-legacy/web/* build/web/
-cp -r pdf.js/build/generic-legacy/build/* build/web/
-cp -r pdf.js/build/generic-legacy/LICENSE build/web/
+cp -r pdf.js/build/generic/web/* build/web/
+cp -r pdf.js/build/generic/build/* build/web/
+cp -r pdf.js/build/generic/LICENSE build/web/
 
 mkdir -p build/zotero
-cp -r pdf.js/build/generic-legacy/web/* build/zotero/
-cp -r pdf.js/build/generic-legacy/build/* build/zotero/
-cp -r pdf.js/build/generic-legacy/LICENSE build/zotero/
+cp -r pdf.js/build/generic/web/* build/zotero/
+cp -r pdf.js/build/generic/build/* build/zotero/
+cp -r pdf.js/build/generic/LICENSE build/zotero/
 rm build/zotero/*.pdf
 rm build/zotero/*.map
 
