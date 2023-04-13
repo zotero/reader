@@ -1,4 +1,5 @@
 import React, {
+	LegacyRef,
 	useState
 } from 'react';
 import {
@@ -10,13 +11,15 @@ import {
 import PropTypes from "prop-types";
 import { AnnotationType } from "../../../../common/types";
 import ReactDOM from "react-dom";
+import { IconNoteLarge } from "../../../../common/components/common/icons";
+import { closestElement } from "../../lib/nodes";
 
 export type DisplayedAnnotation = {
 	id?: string;
 	type: AnnotationType;
 	color?: string;
 	text?: string;
-	hasComment: boolean;
+	comment?: string;
 	range: Range;
 };
 
@@ -86,6 +89,19 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							/>
 						);
 					}
+				}
+				else if (annotation.type == 'note' && annotation.id) {
+					return (
+						<Note
+							annotation={annotation}
+							key={annotation.id}
+							selected={selectedAnnotationIDs.includes(annotation.id)}
+							onPointerDown={event => handlePointerDown(event, annotation.id!)}
+							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
+							widgetContainer={widgetContainer}
+							scale={scale}
+						/>
+					);
 				}
 				return null;
 			})}
@@ -163,7 +179,7 @@ const Highlight: React.FC<HighlightProps> = React.memo((props) => {
 	}
 
 	let commentIconPosition;
-	if (annotation.hasComment) {
+	if (annotation.comment) {
 		const commentIconRange = ranges[0].cloneRange();
 		collapseToOneCharacterAtStart(commentIconRange);
 		const rect = commentIconRange.getBoundingClientRect();
@@ -221,7 +237,7 @@ const Highlight: React.FC<HighlightProps> = React.memo((props) => {
 		{widgetContainer && ((selected && !isResizing) || commentIconPosition) && ReactDOM.createPortal(
 			<>
 				{selected && !isResizing && (
-					<SelectionBorder range={annotation.range}/>
+					<RangeSelectionBorder range={annotation.range}/>
 				)}
 				{commentIconPosition && (
 					<CommentIcon {...commentIconPosition} color={annotation.color!}/>
@@ -243,15 +259,76 @@ type HighlightProps = {
 	scale?: number;
 };
 
+const Note: React.FC<NoteProps> = React.memo((props) => {
+	const { annotation, selected, onPointerDown, onDragStart, widgetContainer } = props;
+	const iconRef = React.useRef<SVGSVGElement>(null);
+
+	const ranges = splitRangeToTextNodes(annotation.range);
+	if (!ranges.length) {
+		return null;
+	}
+	const doc = ranges[0].commonAncestorContainer.ownerDocument;
+	if (!doc || !doc.defaultView) {
+		return null;
+	}
+
+	const handleDragStart = (event: React.DragEvent) => {
+		if (!onDragStart || annotation.comment === undefined) {
+			return;
+		}
+
+		const elem = event.target as Element;
+		const br = elem.getBoundingClientRect();
+		event.dataTransfer.setDragImage(iconRef.current!, event.clientX - br.left, event.clientY - br.top);
+		onDragStart(event.dataTransfer);
+	};
+
+	const highlightRects = new Map<string, DOMRect>();
+	for (const range of ranges) {
+		for (const rect of range.getClientRects()) {
+			if (rect.width == 0 || rect.height == 0) {
+				continue;
+			}
+			const key = JSON.stringify(rect);
+			if (!highlightRects.has(key)) {
+				highlightRects.set(key, rect);
+			}
+		}
+	}
+
+	const rect = annotation.range.getBoundingClientRect();
+	const ltr = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction != 'rtl';
+	return widgetContainer && ReactDOM.createPortal(
+		<CommentIcon
+			x={rect.x + (ltr ? rect.width + 25 : -25) + doc.defaultView!.scrollX}
+			y={rect.y + doc.defaultView!.scrollY}
+			color={annotation.color!}
+			drawSelectionBorder={selected}
+			large={true}
+			onPointerDown={onPointerDown}
+			onDragStart={handleDragStart}
+			ref={iconRef}
+		/>,
+		widgetContainer
+	);
+});
+Note.displayName = 'Note';
+type NoteProps = {
+	annotation: DisplayedAnnotation;
+	selected: boolean;
+	onPointerDown?: (event: React.PointerEvent) => void;
+	onDragStart?: (dataTransfer: DataTransfer) => void;
+	widgetContainer: Element | null;
+	scale?: number;
+};
+
 const SelectionBorder: React.FC<SelectionBorderProps> = (props) => {
-	const rect = props.range.getBoundingClientRect();
-	const win = props.range.commonAncestorContainer.ownerDocument!.defaultView!;
 	return (
 		<rect
-			x={rect.x + win.scrollX - 5}
-			y={rect.y + win.scrollY - 5}
-			width={rect.width + 10}
-			height={rect.height + 10}
+			x={props.rect.x + props.win.scrollX - 5}
+			y={props.rect.y + props.win.scrollY - 5}
+			width={props.rect.width + 10}
+			height={props.rect.height + 10}
 			fill="none"
 			stroke="#6d95e0"
 			strokeDasharray="10 6"
@@ -260,6 +337,17 @@ const SelectionBorder: React.FC<SelectionBorderProps> = (props) => {
 };
 SelectionBorder.displayName = 'SelectionBorder';
 type SelectionBorderProps = {
+	rect: DOMRect;
+	win: Window;
+};
+
+const RangeSelectionBorder: React.FC<RangeSelectionBorderProps> = (props) => {
+	const rect = props.range.getBoundingClientRect();
+	const win = props.range.commonAncestorContainer.ownerDocument!.defaultView!;
+	return <SelectionBorder rect={rect} win={win}/>;
+};
+RangeSelectionBorder.displayName = 'RangeSelectionBorder';
+type RangeSelectionBorderProps = {
 	range: Range;
 };
 
@@ -347,32 +435,71 @@ type ResizerProps = {
 	onResize: (range: Range) => void;
 };
 
-const CommentIcon: React.FC<CommentIconProps> = React.memo((props) => {
-	return (
-		<g transform={`translate(${props.x - 7}, ${props.y - 7}) scale(0.6)`}>
-			<path
-				d="M 0.5 0.5 L 23.5 0.5 23.5 23.5 11.5 23.5 0.5 12.5 0.5 0.5"
-				fill={props.color}
+let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref) => {
+	const size = props.large ? 24 : 14;
+	const x = props.x - size / 2;
+	const y = props.y - size / 2;
+	return <>
+		<svg
+			color={props.color}
+			x={x}
+			y={y}
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			ref={ref}
+		>
+			<IconNoteLarge/>
+		</svg>
+		{props.drawSelectionBorder && (
+			<SelectionBorder
+				rect={new DOMRect(x, y, size, size)}
+				win={window}
 			/>
-			<path
-				d="M 0.5 12.5 L 11.5 12.5 11.5 23.5 0.5 12.5"
-				fill="rgba(255, 255, 255, 0.4)"
-			/>
-			<path
-				d="M0,0V12.707L11.293,24H24V0ZM11,22.293,1.707,13H11ZM23,23H12V12H1V1H23Z"
-				fill="#000"
-			/>
-		</g>
-	);
+		)}
+		{(props.onPointerDown || props.onDragStart || props.onDragEnd) && (
+			<foreignObject
+				x={x}
+				y={y}
+				width={size}
+				height={size}
+			>
+				<div
+					// @ts-ignore
+					xmlns="http://www.w3.org/1999/xhtml"
+					style={{
+						pointerEvents: 'auto',
+						cursor: 'pointer',
+						width: '100%',
+						height: '100%',
+					}}
+					draggable={true}
+					onPointerDown={props.onPointerDown}
+					onDragStart={props.onDragStart}
+					onDragEnd={props.onDragEnd}/>
+			</foreignObject>
+		)}
+	</>;
 });
 CommentIcon.displayName = 'CommentIcon';
 CommentIcon.propTypes = {
 	x: PropTypes.number.isRequired,
 	y: PropTypes.number.isRequired,
-	color: PropTypes.string.isRequired
+	color: PropTypes.string.isRequired,
+	drawSelectionBorder: PropTypes.bool,
+	large: PropTypes.bool,
+	onPointerDown: PropTypes.func,
+	onDragStart: PropTypes.func,
+	onDragEnd: PropTypes.func,
 };
+CommentIcon = React.memo(CommentIcon);
 type CommentIconProps = {
 	x: number;
 	y: number;
 	color: string;
+	drawSelectionBorder?: boolean;
+	large?: boolean;
+	onPointerDown?: (event: React.PointerEvent) => void;
+	onDragStart?: (event: React.DragEvent) => void;
+	onDragEnd?: (event: React.DragEvent) => void;
 };

@@ -50,7 +50,6 @@ class DefaultFindProcessor implements FindProcessor {
 					type: 'highlight',
 					color: 'rgba(180, 0, 170, 1)',
 					text: '',
-					hasComment: false,
 					range,
 				}
 			};

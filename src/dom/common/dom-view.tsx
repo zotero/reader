@@ -218,7 +218,7 @@ abstract class DOMView<State extends DOMViewState> {
 				type: a.type,
 				color: a.color,
 				text: a.text,
-				hasComment: !!a.comment,
+				comment: a.comment,
 				range: this.toDisplayedRange(a.position),
 			})).filter(a => !!a.range) as DisplayedAnnotation[],
 			...this._find?.getAnnotations() ?? []
@@ -227,7 +227,6 @@ abstract class DOMView<State extends DOMViewState> {
 			displayedAnnotations.push({
 				type: 'highlight',
 				color: SELECTION_COLOR,
-				hasComment: false,
 				range: this.toDisplayedRange(this._highlightedPosition)!,
 			});
 		}
@@ -537,15 +536,13 @@ abstract class DOMView<State extends DOMViewState> {
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
 		if (this._tool.type === 'note') {
-			throw new Error('Unimplemented');
-
-			/*this._onAddAnnotation({
-				type: 'note',
-				color: this._tool.color,
-				sortIndex: '00000|000000|00000',
-				pageLabel: '1',
-				position: { /!* Figure out how to encode note position *!/ },
-			}, true);*/
+			const range = this._iframeDocument.createRange();
+			range.selectNode(event.target as Node);
+			const annotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+			if (annotation) {
+				this._options.onAddAnnotation(annotation, true);
+				event.preventDefault();
+			}
 		}
 	}
 
@@ -641,8 +638,8 @@ abstract class DOMView<State extends DOMViewState> {
 			const selector = location.position as Selector;
 			this._navigateToSelector(selector);
 			this._highlightedPosition = selector;
-
 			this._renderAnnotations();
+			
 			setTimeout(() => {
 				this._highlightedPosition = null;
 				this._renderAnnotations();
