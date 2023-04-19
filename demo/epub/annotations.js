@@ -38,6 +38,25 @@ export default [
 		isAuthorNameAuthoritative: true
 	},
 	{
+		type: "note",
+		color: "#ffd400",
+		sortIndex: "00045|00002155",
+		pageLabel: "203",
+		position: {
+			type: "FragmentSelector",
+			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
+			value: "epubcfi(/6/92!/4/2[chapter-40]/40,/1:0,/1:201)"
+		},
+		text: "Beat thy belly, then, and wag thy ears. Jig it, men, I say; merry’s the word; hurrah! Damn me, won’t you dance? Form, now, Indian-file, and gallop into the double-shuffle? Throw yourselves! Legs! legs!",
+		comment: "What does this mean?",
+		tags: [],
+		id: "GTPE6G89",
+		dateCreated: "2023-04-19T15:38:44.556Z",
+		dateModified: "2023-04-19T15:38:48.755Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
 		type: "highlight",
 		color: "#ffd400",
 		sortIndex: "00050|00011246",

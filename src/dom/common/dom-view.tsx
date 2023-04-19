@@ -26,8 +26,10 @@ import {
 	Selector
 } from "./lib/selector";
 import {
+	caretPositionFromPoint,
 	makeRangeSpanning,
-	moveRangeEndsIntoTextNodes
+	moveRangeEndsIntoTextNodes,
+	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./find";
@@ -72,6 +74,8 @@ abstract class DOMView<State extends DOMViewState> {
 	protected _disableAnnotationPointerEvents = false;
 
 	protected _highlightedPosition: Selector | null = null;
+	
+	protected _previewNote: NewAnnotation<WADMAnnotation> | null = null;
 
 	protected _gotPointerUp = false;
 
@@ -157,7 +161,7 @@ abstract class DOMView<State extends DOMViewState> {
 					return true;
 				}
 			}
-			if (this._tool.type === 'highlight') {
+			if (this._tool.type == 'highlight') {
 				const annotation = this._getAnnotationFromTextSelection('highlight', this._tool.color);
 				if (annotation && annotation.text) {
 					this._options.onAddAnnotation(annotation);
@@ -228,6 +232,15 @@ abstract class DOMView<State extends DOMViewState> {
 				type: 'highlight',
 				color: SELECTION_COLOR,
 				range: this.toDisplayedRange(this._highlightedPosition)!,
+			});
+		}
+		if (this._previewNote && this._tool.type == 'note') {
+			displayedAnnotations.push({
+				type: this._previewNote.type,
+				color: this._previewNote.color,
+				text: this._previewNote.text,
+				comment: this._previewNote.comment,
+				range: this.toDisplayedRange(this._previewNote.position)!,
 			});
 		}
 		ReactDOM.render((
@@ -306,8 +319,8 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
 		// Pass options to setters that were delayed until iframe initialization
-		this.setTool(this._options.tool);
 		this.setAnnotations(this._options.annotations);
+		this.setTool(this._options.tool);
 
 		await this._onInitialDisplay(this._options.viewState || {});
 		setTimeout(() => {
@@ -326,6 +339,30 @@ abstract class DOMView<State extends DOMViewState> {
 			this._overlayPopupDelayer.close(() => {
 				this._options.onSetOverlayPopup();
 			});
+		}
+
+		if (this._tool.type == 'note') {
+			const range = this._iframeDocument.createRange();
+			const werePointerEventsDisabled = this._disableAnnotationPointerEvents;
+			// Disable pointer events and rerender so we can get the cursor position in the text layer,
+			// not the annotation layer, even if the mouse is over the annotation layer
+			this._disableAnnotationPointerEvents = true;
+			this._renderAnnotations();
+			const pos = supportsCaretPositionFromPoint()
+				&& caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+			if (pos) {
+				range.selectNode(pos.offsetNode);
+			}
+			else {
+				range.selectNode(event.target as Node);
+			}
+			this._previewNote = this._getAnnotationFromRange(range, 'note', this._tool.color);
+			this._disableAnnotationPointerEvents = werePointerEventsDisabled;
+			this._renderAnnotations();
+		}
+		else if (this._previewNote !== null) {
+			this._previewNote = null;
+			this._renderAnnotations();
 		}
 	}
 
@@ -521,6 +558,15 @@ abstract class DOMView<State extends DOMViewState> {
 			return;
 		}
 
+		// Create note annotation on pointer down event, if note tool is active.
+		// The note tool will be automatically deactivated in reader.js,
+		// because this is what we do in PDF reader
+		if (this._tool.type == 'note' && this._previewNote) {
+			this._options.onAddAnnotation(this._previewNote, true);
+			event.preventDefault();
+			return;
+		}
+
 		if (!(event.target as Element).closest('.annotation-container')) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
@@ -530,19 +576,6 @@ abstract class DOMView<State extends DOMViewState> {
 			// Disable pointer events on the annotation layer until mouseup
 			this._disableAnnotationPointerEvents = true;
 			this._renderAnnotations();
-		}
-
-		// Create note annotation on pointer down event, if note tool is active.
-		// The note tool will be automatically deactivated in reader.js,
-		// because this is what we do in PDF reader
-		if (this._tool.type === 'note') {
-			const range = this._iframeDocument.createRange();
-			range.selectNode(event.target as Node);
-			const annotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
-			if (annotation) {
-				this._options.onAddAnnotation(annotation, true);
-				event.preventDefault();
-			}
 		}
 	}
 
@@ -579,6 +612,7 @@ abstract class DOMView<State extends DOMViewState> {
 		const selectionColor = (tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR)
 			+ '80'; // 50% opacity, like annotations
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
+		this._renderAnnotations();
 	}
 
 	setAnnotations(annotations: WADMAnnotation[]) {

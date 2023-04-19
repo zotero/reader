@@ -101,7 +101,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (commonAncestorQuery) {
 			const newCommonAncestor = doc.body.querySelector(commonAncestorQuery);
 			if (!newCommonAncestor) {
-				throw new Error('commonAncestorQuery did not match');
+				return null;
 			}
 			const selector: CssSelector = {
 				type: 'CssSelector',

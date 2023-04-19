@@ -85,5 +85,28 @@ export default [
 		dateModified: "2023-02-13T15:49:54.287Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
+	},
+	{
+		type: "note",
+		color: "#ffd400",
+		sortIndex: "0",
+		position: {
+			type: "CssSelector",
+			value: "div:nth-child(3) > div:first-of-type",
+			refinedBy: {
+				type: "TextPositionSelector",
+				start: 137,
+				end: 138
+			}
+		},
+		text: "\n",
+		pageLabel: "",
+		comment: "Good screenshot",
+		tags: [],
+		id: "FTGZITWW",
+		dateCreated: "2023-04-19T15:36:30.155Z",
+		dateModified: "2023-04-19T15:36:39.766Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
 	}
 ];

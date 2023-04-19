@@ -61,49 +61,36 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			}}
 		>
 			{annotations.map((annotation, i) => {
-				if (annotation.type == 'highlight') {
-					if (annotation.id) {
-						return (
-							<Highlight
-								annotation={annotation}
-								key={annotation.id}
-								selected={selectedAnnotationIDs.includes(annotation.id)}
-								onPointerDown={event => handlePointerDown(event, annotation.id!)}
-								onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
-								onResize={range => onResize(annotation.id!, range)}
-								disablePointerEvents={disablePointerEvents}
-								widgetContainer={widgetContainer}
-								scale={scale}
-							/>
-						);
-					}
-					else {
-						return (
-							<Highlight
-								annotation={annotation}
-								key={i}
-								selected={false}
-								disablePointerEvents={true}
-								widgetContainer={widgetContainer}
-								scale={scale}
-							/>
-						);
-					}
+				if (annotation.type != 'highlight') {
+					return null;
 				}
-				else if (annotation.type == 'note' && annotation.id) {
+				if (annotation.id) {
 					return (
-						<Note
+						<Highlight
 							annotation={annotation}
 							key={annotation.id}
 							selected={selectedAnnotationIDs.includes(annotation.id)}
 							onPointerDown={event => handlePointerDown(event, annotation.id!)}
 							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
+							onResize={range => onResize(annotation.id!, range)}
+							disablePointerEvents={disablePointerEvents}
 							widgetContainer={widgetContainer}
 							scale={scale}
 						/>
 					);
 				}
-				return null;
+				else {
+					return (
+						<Highlight
+							annotation={annotation}
+							key={i}
+							selected={false}
+							disablePointerEvents={true}
+							widgetContainer={widgetContainer}
+							scale={scale}
+						/>
+					);
+				}
 			})}
 		</svg>
 		<svg
@@ -117,7 +104,37 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				overflow: 'visible'
 			}}
 			ref={c => setWidgetContainer(c)}
-		/>
+		>
+			{annotations.map((annotation, i) => {
+				if (annotation.type != 'note') {
+					return null;
+				}
+				if (annotation.id) {
+					return (
+						<Note
+							annotation={annotation}
+							key={annotation.id}
+							selected={selectedAnnotationIDs.includes(annotation.id)}
+							onPointerDown={event => handlePointerDown(event, annotation.id!)}
+							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
+							disablePointerEvents={disablePointerEvents}
+							scale={scale}
+						/>
+					);
+				}
+				else {
+					return (
+						<Note
+							annotation={annotation}
+							key={i}
+							selected={false}
+							disablePointerEvents={true}
+							scale={scale}
+						/>
+					);
+				}
+			})}
+		</svg>
 	</>;
 };
 AnnotationOverlay.displayName = 'AnnotationOverlay';
@@ -260,7 +277,7 @@ type HighlightProps = {
 };
 
 const Note: React.FC<NoteProps> = React.memo((props) => {
-	const { annotation, selected, onPointerDown, onDragStart, widgetContainer } = props;
+	const { annotation, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
 	const iconRef = React.useRef<SVGSVGElement>(null);
 
 	const ranges = splitRangeToTextNodes(annotation.range);
@@ -283,33 +300,20 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 		onDragStart(event.dataTransfer);
 	};
 
-	const highlightRects = new Map<string, DOMRect>();
-	for (const range of ranges) {
-		for (const rect of range.getClientRects()) {
-			if (rect.width == 0 || rect.height == 0) {
-				continue;
-			}
-			const key = JSON.stringify(rect);
-			if (!highlightRects.has(key)) {
-				highlightRects.set(key, rect);
-			}
-		}
-	}
-
 	const rect = annotation.range.getBoundingClientRect();
 	const ltr = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction != 'rtl';
-	return widgetContainer && ReactDOM.createPortal(
+	return (
 		<CommentIcon
 			x={rect.x + (ltr ? rect.width + 25 : -25) + doc.defaultView!.scrollX}
 			y={rect.y + doc.defaultView!.scrollY}
 			color={annotation.color!}
-			drawSelectionBorder={selected}
+			opacity={annotation.id ? '100%' : '50%'}
+			selected={selected}
 			large={true}
-			onPointerDown={onPointerDown}
-			onDragStart={handleDragStart}
+			onPointerDown={disablePointerEvents ? undefined : onPointerDown}
+			onDragStart={disablePointerEvents ? undefined : handleDragStart}
 			ref={iconRef}
-		/>,
-		widgetContainer
+		/>
 	);
 });
 Note.displayName = 'Note';
@@ -318,7 +322,7 @@ type NoteProps = {
 	selected: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onDragStart?: (dataTransfer: DataTransfer) => void;
-	widgetContainer: Element | null;
+	disablePointerEvents: boolean;
 	scale?: number;
 };
 
@@ -442,6 +446,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 	return <>
 		<svg
 			color={props.color}
+			opacity={props.opacity}
 			x={x}
 			y={y}
 			width={size}
@@ -451,7 +456,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 		>
 			<IconNoteLarge/>
 		</svg>
-		{props.drawSelectionBorder && (
+		{props.selected && (
 			<SelectionBorder
 				rect={new DOMRect(x, y, size, size)}
 				win={window}
@@ -486,7 +491,8 @@ CommentIcon.propTypes = {
 	x: PropTypes.number.isRequired,
 	y: PropTypes.number.isRequired,
 	color: PropTypes.string.isRequired,
-	drawSelectionBorder: PropTypes.bool,
+	opacity: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+	selected: PropTypes.bool,
 	large: PropTypes.bool,
 	onPointerDown: PropTypes.func,
 	onDragStart: PropTypes.func,
@@ -497,7 +503,8 @@ type CommentIconProps = {
 	x: number;
 	y: number;
 	color: string;
-	drawSelectionBorder?: boolean;
+	opacity?: string | number;
+	selected?: boolean;
 	large?: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onDragStart?: (event: React.DragEvent) => void;
