@@ -27,7 +27,10 @@ import {
 	IGNORE_CLASS
 } from "./defines";
 import NavStack from "../common/lib/nav-stack";
-import DOMView, { DOMViewOptions } from "../common/dom-view";
+import DOMView, {
+	DOMViewOptions,
+	NavigateOptions
+} from "../common/dom-view";
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
 import { closestElement } from "../common/lib/nodes";
@@ -397,12 +400,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 	
-	protected _navigateToSelector(selector: Selector) {
+	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		if (!isFragment(selector) || selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
 			console.warn("Not a CFI FragmentSelector", selector);
 			return;
 		}
-		this.navigate({ pageNumber: selector.value });
+		this.navigate({ pageNumber: selector.value }, options);
 	}
 
 	protected _getViewportBoundingRect(range: Range): DOMRect {
@@ -741,7 +744,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-size', scale + 'em');
 		this._handleViewUpdate();
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, true);
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
 		}
 	}
 
@@ -754,7 +757,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-size', scale + 'em');
 		this._handleViewUpdate();
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, true);
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
 		}
 	}
 
@@ -764,16 +767,20 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-size', '1em');
 		this._handleViewUpdate();
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, true);
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
 		}
 	}
 
-	override navigate(location: NavLocation, skipPushToNavStack = false) {
+	override navigate(location: NavLocation, options: NavigateOptions = {}) {
 		console.log('Navigating to', location);
-		if (!skipPushToNavStack) {
+		if (!options.skipNavStack) {
 			this._pushCurrentLocationToNavStack();
 		}
+		options.behavior ||= 'smooth';
+		
 		if (location.pageNumber) {
+			options.block ||= 'start';
+			
 			let range;
 			if (location.pageNumber.startsWith('epubcfi(')) {
 				range = this.getRange(location.pageNumber);
@@ -786,9 +793,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 				console.error('Unable to find range');
 				return;
 			}
-			this._scrollIntoView(getCommonAncestorElement(range) as HTMLElement, { block: 'start' });
+			this._scrollIntoView(getCommonAncestorElement(range) as HTMLElement, options);
 		}
 		else if (location.href) {
+			options.block ||= 'start';
+			
 			const [pathname, hash] = location.href.split('#');
 			const section = this._book.spine.get(pathname);
 			if (!section) {
@@ -798,7 +807,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			const target = hash && this._sectionViews[section.index].container
 				.querySelector('[id="' + hash.replace(/"/g, '"') + '"]');
 			if (target) {
-				this._scrollIntoView(target as HTMLElement, { block: 'start' });
+				this._scrollIntoView(target as HTMLElement, options);
 			}
 			else {
 				const view = this._sectionViews[section.index];
@@ -806,11 +815,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 					console.error('Unable to find view for section', section.index);
 					return;
 				}
-				this._scrollIntoView(view.container, { inline: 'start', block: 'start' });
+				this._scrollIntoView(view.container, options);
 			}
 		}
 		else {
-			super.navigate(location);
+			super.navigate(location, options);
 		}
 	}
 
@@ -828,11 +837,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	// This is like back/forward navigation in browsers. Try Cmd-ArrowLeft and Cmd-ArrowRight in PDF view
 	navigateBack() {
-		this.navigate({ pageNumber: this._navStack.popBack() }, true);
+		this.navigate({ pageNumber: this._navStack.popBack() }, {
+			skipNavStack: true,
+			behavior: 'auto',
+		});
 	}
 
 	navigateForward() {
-		this.navigate({ pageNumber: this._navStack.popForward() }, true);
+		this.navigate({ pageNumber: this._navStack.popForward() }, {
+			skipNavStack: true,
+			behavior: 'auto',
+		});
 	}
 
 	// Possibly we want different navigation types as well.

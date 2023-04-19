@@ -19,7 +19,10 @@ import {
 	Selector,
 	textPositionToRange
 } from "../common/lib/selector";
-import DOMView, { DOMViewState } from "../common/dom-view";
+import DOMView, {
+	DOMViewState,
+	NavigateOptions
+} from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import NavStack from "../common/lib/nav-stack";
 import DOMPurify from "dompurify";
@@ -184,10 +187,10 @@ class SnapshotView extends DOMView<DOMViewState> {
 		this._updateViewStats();
 	}
 
-	protected _navigateToSelector(selector: Selector) {
+	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		const range = this.toDisplayedRange(selector);
 		if (range) {
-			getCommonAncestorElement(range)?.scrollIntoView({ block: 'center' });
+			getCommonAncestorElement(range)?.scrollIntoView(options);
 		}
 		else {
 			console.warn('Not a valid snapshot selector', selector);
@@ -310,10 +313,13 @@ class SnapshotView extends DOMView<DOMViewState> {
 		this._handleViewUpdate();
 	}
 
-	override navigate(location: NavLocation) {
+	override navigate(location: NavLocation, options: NavigateOptions = {}) {
 		console.log('Navigating to', location);
-		this._pushCurrentLocationToNavStack();
-		super.navigate(location);
+		if (!options.skipNavStack) {
+			this._pushCurrentLocationToNavStack();
+		}
+		options.behavior ||= 'smooth';
+		super.navigate(location, options);
 	}
 
 	navigateBack() {

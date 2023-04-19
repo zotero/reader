@@ -119,7 +119,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	abstract toDisplayedRange(selector: Selector): Range | null;
 	
-	protected abstract _navigateToSelector(selector: Selector): void;
+	protected abstract _navigateToSelector(selector: Selector, options?: NavigateOptions): void;
 
 	// ***
 	// Abstractions over document structure
@@ -659,18 +659,22 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframe.focus();
 	}
 
-	navigate(location: NavLocation) {
+	navigate(location: NavLocation, options: NavigateOptions = {}) {
 		if (location.annotationID) {
+			options.block ||= 'center';
+			
 			const annotation = this._annotationsByID.get(location.annotationID);
 			if (!annotation) {
 				return;
 			}
 			const selector = annotation.position;
-			this._navigateToSelector(selector);
+			this._navigateToSelector(selector, options);
 		}
 		else if (location.position) {
+			options.block ||= 'center';
+			
 			const selector = location.position as Selector;
-			this._navigateToSelector(selector);
+			this._navigateToSelector(selector, options);
 			this._highlightedPosition = selector;
 			this._renderAnnotations();
 			
@@ -716,6 +720,10 @@ export type DOMViewOptions<State extends DOMViewState> = {
 
 export interface DOMViewState {
 	scale?: number;
+}
+
+export interface NavigateOptions extends ScrollIntoViewOptions {
+	skipNavStack?: boolean;
 }
 
 export default DOMView;
