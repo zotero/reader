@@ -82,7 +82,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
-		this._book = Epub(options.buf);
+		this._book = Epub(options.buf.buffer);
 	}
 
 	protected _getSrcDoc() {
