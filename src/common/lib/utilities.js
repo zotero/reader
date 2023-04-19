@@ -12,7 +12,7 @@ export function isWin() {
 
 // https://stackoverflow.com/a/9851769
 export let isFirefox = typeof InstallTrigger !== 'undefined';
-export let isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && window['safari'].pushNotification));
+export let isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && window['safari'].pushNotification)) || !!navigator && /iPhone|iPad|iPod/.test(navigator.platform);
 
 export function isTextBox(node) {
 	return ['INPUT'].includes(node.nodeName) && node.type === 'text' || node.getAttribute('contenteditable') === 'true';
