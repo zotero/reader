@@ -107,7 +107,7 @@ class ViewerInstance {
 			},
 			onFocusContextPane: () => {
 			},
-			buf: options.url,
+			url: options.url,
 			annotations,
 			state: options.state,
 			location: options.location,

@@ -132,7 +132,15 @@ class Viewer {
 		);
 
 		setTimeout(function () {
-			window.PDFViewerApplication.open({ data: options.buf.slice(0) });
+			if (options.buf) {
+				window.PDFViewerApplication.open({ data: options.buf.slice(0) });
+			}
+			else if (options.url) {
+				window.PDFViewerApplication.open({ url: options.url });
+			}
+			else {
+				throw new Error('A buffer or a URL must be provided');
+			}
 		}, 0);
 
 		this.splitWrapper = document.getElementById('splitWrapper');
