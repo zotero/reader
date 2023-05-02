@@ -1,7 +1,11 @@
-// import { getBoundingBox, scaleShape, } from './utilities.js';
-// import { BOX_PADDING } from './defines.js';
-
-import { applyInverseTransform, applyTransform, getPositionBoundingRect, transform } from './lib/utilities';
+import {
+	applyInverseTransform,
+	applyTransform,
+	getPositionBoundingRect,
+	getRotationTransform,
+	transform,
+	scaleShape
+} from './lib/utilities';
 import { SELECTION_COLOR } from '../common/defines';
 
 export default class Page {
@@ -79,10 +83,6 @@ export default class Page {
 		this.previouslyAffected = true;
 	}
 
-	get devicePixelRatio() {
-		return window.devicePixelRatio || 1;
-	}
-
 	// PDF to Canvas transform
 	get transform() {
 		let scale = parseFloat(this.originalCanvas.width) / this.originalPage.viewport.width;
@@ -90,8 +90,8 @@ export default class Page {
 		return transform(scaleTransform, this.originalPage.viewport.transform);
 	}
 
-	getViewPoint(p) {
-		return applyTransform(p, this.transform);
+	getViewPoint(p, transform = this.transform) {
+		return applyTransform(p, transform);
 	}
 
 	getPdfPoint(p) {
@@ -129,7 +129,7 @@ export default class Page {
 				};
 			}
 			else {
-				return {
+				let position2 = {
 					pageIndex: position.pageIndex,
 					rects: position.rects.map((rect) => {
 						let [x1, y2] = applyTransform(rect, transform);
@@ -142,6 +142,14 @@ export default class Page {
 						];
 					})
 				};
+				// For text annotations
+				if (position.fontSize) {
+					position2.fontSize = applyTransform([position.fontSize, 0], transform)[0];
+				}
+				if (position.rotation) {
+					position2.rotation = position.rotation;
+				}
+				return position2;
 			}
 		}
 		else if (position.paths) {
@@ -294,7 +302,7 @@ export default class Page {
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
 		this.actualContext.strokeStyle = annotation.color;
-		this.actualContext.lineWidth = 3 * this.devicePixelRatio;
+		this.actualContext.lineWidth = 3 * devicePixelRatio;
 		let rect = position.rects[0];
 		this.actualContext.strokeRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
 		this.actualContext.restore();
@@ -328,9 +336,6 @@ export default class Page {
 			return;
 		}
 
-		this.actualContext.save();
-		this.actualContext.drawImage(this.originalCanvas, 0, 0);
-
 		let annotations = this.layer._getPageAnnotations(this.pageIndex);
 		let selectedAnnotationIDs = this.layer._selectedAnnotationIDs;
 		let selectionRanges = this.layer._selectionRanges;
@@ -338,6 +343,80 @@ export default class Page {
 		let annotationTextSelectionData = this.layer._annotationTextSelectionData;
 		let focusedObject = this.layer._focusedObject;
 		let highlightedPosition = this.layer._highlightedPosition;
+
+		let doc = this.originalPage.div.ownerDocument;
+		let customAnnotationLayer = this.originalPage.div.querySelector('.customAnnotationLayer');
+		if (!customAnnotationLayer) {
+			customAnnotationLayer = doc.createElement('div');
+			customAnnotationLayer.className = 'customAnnotationLayer';
+			this.originalPage.div.append(customAnnotationLayer);
+		}
+		let customAnnotations = Array.from(customAnnotationLayer.children);
+
+		for (let annotation of annotations) {
+			if (annotation.type === 'text' && annotation.position.pageIndex === this.pageIndex) {
+
+				let position = annotation.position;
+
+				if (action && ['resize', 'rotate'].includes(action.type) && action.annotation.id === annotation.id) {
+					position = action.position;
+				}
+
+				let node = customAnnotations.find(x => x.getAttribute('data-id') === annotation.id);
+
+				let top = this.originalPage.viewport.viewBox[3] - position.rects[0][3];
+				let left = position.rects[0][0];
+				let width = position.rects[0][2] - position.rects[0][0];
+				let height = position.rects[0][3] - position.rects[0][1];
+
+				let style = [
+					`left: calc(${left}px * var(--scale-factor))`,
+					`top: calc(${top}px * var(--scale-factor))`,
+					`min-width: calc(${position.fontSize}px * var(--scale-factor))`,
+					`min-height: calc(${position.fontSize}px * var(--scale-factor))`,
+					`width: calc(${width}px * var(--scale-factor))`,
+					`height: calc(${height}px * var(--scale-factor))`,
+					`color: ${annotation.color}`,
+					`font-size: calc(${position.fontSize}px * var(--scale-factor))`
+				];
+				if (position.rotation) {
+					style.push(`transform: rotate(${-position.rotation}deg)`);
+				}
+
+				style = style.join(';');
+
+				if (!node) {
+					node = doc.createElement('textarea');
+					node.setAttribute('data-id', annotation.id);
+					node.className = 'textAnnotation';
+					node.addEventListener('blur', (event) => {
+						node.classList.remove('focusable');
+						node.contentEditable = false;
+					});
+					customAnnotationLayer.append(node);
+				}
+
+				if (node.getAttribute('style') !== style) {
+					node.setAttribute('style', style);
+				}
+				if (node.getAttribute('data-comment') !== annotation.comment) {
+					node.value = annotation.comment;
+					node.setAttribute('data-comment', annotation.comment);
+				}
+			}
+		}
+
+		// Remove abandoned (deleted) text annotations
+		let textAnnotationNodes = Array.from(this.layer._iframeWindow.document.querySelectorAll(`[data-page-number="${this.pageIndex + 1}"] .textAnnotation`));
+		for (let node of textAnnotationNodes) {
+			let id = node.getAttribute('data-id');
+			if (!annotations.find(x => x.id === id)) {
+				node.remove();
+			}
+		}
+
+		this.actualContext.save();
+		this.actualContext.drawImage(this.originalCanvas, 0, 0);
 
 		for (let annotation of annotations) {
 			if (annotation.type === 'highlight' && !(action?.type === 'updateAnnotationRange' && action.annotation.id === annotation.id)) {
@@ -378,11 +457,11 @@ export default class Page {
 
 			this.actualContext.strokeStyle = '#838383';
 			this.actualContext.beginPath();
-			this.actualContext.setLineDash([10, 6]);
-			this.actualContext.lineWidth = 2 * this.devicePixelRatio;
+			this.actualContext.setLineDash([5 * devicePixelRatio, 3 * devicePixelRatio]);
+			this.actualContext.lineWidth = 2 * devicePixelRatio;
 
 
-			let padding = 5 * this.devicePixelRatio;
+			let padding = 5 * devicePixelRatio;
 
 
 			let rect = getPositionBoundingRect(position, this.pageIndex);
@@ -412,34 +491,116 @@ export default class Page {
 
 				this.actualContext.strokeStyle = '#6d95e0';
 				this.actualContext.beginPath();
-				this.actualContext.setLineDash([10, 6]);
-				this.actualContext.lineWidth = 2 * this.devicePixelRatio;
-
-
-				let padding = 5 * this.devicePixelRatio;
-
-
+				this.actualContext.setLineDash([5 * devicePixelRatio, 3 * devicePixelRatio]);
+				this.actualContext.lineWidth = 2 * devicePixelRatio;
+				let padding = 5 * devicePixelRatio;
 				let rect = getPositionBoundingRect(annotation.position, this.pageIndex);
-
-				if (annotation.type === 'image') {
+				let rotation = 0;
+				if (annotation.type === 'text') {
+					rect = annotation.position.rects[0];
+				}
+				if (['image', 'text'].includes(annotation.type)) {
 					padding = 0;
-					this.actualContext.lineWidth = 3 * this.devicePixelRatio;
-					if (action && action.type === 'resize' && action.triggered) {
+					rotation = annotation.position.rotation;
+					if (action && ['resize', 'rotate'].includes(action.type) && action.triggered) {
 						rect = action.position.rects[0];
+						rotation = action.position.rotation;
 					}
 				}
-
-				rect = this.getViewRect(rect);
-
-
-				rect = [
-					rect[0] - padding,
-					rect[1] - padding,
-					rect[2] + padding,
-					rect[3] + padding,
-				];
-				this.actualContext.rect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				if (annotation.type === 'image') {
+					this.actualContext.lineWidth = 3 * devicePixelRatio;
+				}
+				let tm = this.transform;
+				if (annotation.type === 'text') {
+					tm = getRotationTransform(rect, rotation || 0);
+					tm = transform(this.transform, tm);
+				}
+				let p1 = [rect[0], rect[1]];
+				let p2 = [rect[2], rect[1]];
+				let p3 = [rect[2], rect[3]];
+				let p4 = [rect[0], rect[3]];
+				let pml = [rect[0], rect[1] + (rect[3] - rect[1]) / 2];
+				let pmr = [rect[2], rect[1] + (rect[3] - rect[1]) / 2];
+				let pmt = [rect[0] + (rect[2] - rect[0]) / 2, rect[3]];
+				let pmb = [rect[0] + (rect[2] - rect[0]) / 2, rect[1]];
+				let ROTATION_BOTTOM = 16;
+				let pr = [rect[0] + (rect[2] - rect[0]) / 2, rect[3] + ROTATION_BOTTOM];
+				p1 = this.getViewPoint(p1, tm);
+				p2 = this.getViewPoint(p2, tm);
+				p3 = this.getViewPoint(p3, tm);
+				p4 = this.getViewPoint(p4, tm);
+				pml = this.getViewPoint(pml, tm);
+				pmr = this.getViewPoint(pmr, tm);
+				pmt = this.getViewPoint(pmt, tm);
+				pmb = this.getViewPoint(pmb, tm);
+				pr = this.getViewPoint(pr, tm);
+				let BOX_PADDING = 10 * devicePixelRatio;
+				if (annotation.type !== 'image') {
+					[p1, p2, p3, p4, pml, pmr, pmt, pmb] = scaleShape([p1, p2, p3, p4], [p1, p2, p3, p4, pml, pmr, pmt, pmb], BOX_PADDING);
+				}
+				this.actualContext.beginPath();
+				this.actualContext.moveTo(...p1);
+				this.actualContext.lineTo(...p2);
+				this.actualContext.lineTo(...p3);
+				this.actualContext.lineTo(...p4);
+				this.actualContext.closePath();
+				this.actualContext.moveTo(...pmt);
+				if (annotation.type === 'text') {
+					this.actualContext.lineTo(...pr);
+				}
 				this.actualContext.stroke();
+				const radius = 4 * devicePixelRatio;
+				this.actualContext.fillStyle = '#81b3ff';
+				// Dashed lines
+				if (['image', 'text'].includes(annotation.type)) {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...p1, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+
+				if (['image', 'text'].includes(annotation.type)) {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...p2, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+
+				if (['image', 'text'].includes(annotation.type)) {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...p4, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+
+				if (['image', 'text'].includes(annotation.type)) {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...p3, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+				// Circles
+				if (['image', 'text'].includes(annotation.type)) {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...pmr, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+				if (['image', 'text'].includes(annotation.type)) {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...pml, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+				if (annotation.type === 'image') {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...pmt, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+				if (annotation.type === 'image') {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...pmb, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
+				if (annotation.type === 'text') {
+					this.actualContext.beginPath();
+					this.actualContext.arc(...pr, radius, 0, 2 * Math.PI, false);
+					this.actualContext.fill();
+				}
 			}
 			this.actualContext.restore();
 		}
@@ -493,24 +654,31 @@ export default class Page {
 		if (action) {
 			if (action.type === 'moveAndDrag' && action.triggered) {
 				if (action.annotation.position.pageIndex === this.pageIndex) {
-
-					let padding = 5 * this.devicePixelRatio;
-
 					this.actualContext.strokeStyle = '#aaaaaa';
+					this.actualContext.setLineDash([5 * devicePixelRatio, 3 * devicePixelRatio]);
+					this.actualContext.lineWidth = 2 * devicePixelRatio;
+					let rect = action.position.rects[0];
+					let tm = this.transform;
+					if (annotation.type === 'text') {
+						tm = getRotationTransform(rect, annotation.position.rotation || 0);
+						tm = transform(this.transform, tm);
+					}
+					let p1 = [rect[0], rect[1]];
+					let p2 = [rect[2], rect[1]];
+					let p3 = [rect[2], rect[3]];
+					let p4 = [rect[0], rect[3]];
+					p1 = this.getViewPoint(p1, tm);
+					p2 = this.getViewPoint(p2, tm);
+					p3 = this.getViewPoint(p3, tm);
+					p4 = this.getViewPoint(p4, tm);
+					let BOX_PADDING = 10 * devicePixelRatio;
+					[p1, p2, p3, p4] = scaleShape([p1, p2, p3, p4], [p1, p2, p3, p4], BOX_PADDING);
 					this.actualContext.beginPath();
-					this.actualContext.setLineDash([10, 6]);
-					this.actualContext.lineWidth = 2 * this.devicePixelRatio;
-
-					let position = this.p2v(action.position);
-					let rect = position.rects[0];
-
-					rect = [
-						rect[0] - padding,
-						rect[1] - padding,
-						rect[2] + padding,
-						rect[3] + padding,
-					];
-					this.actualContext.rect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+					this.actualContext.moveTo(...p1);
+					this.actualContext.lineTo(...p2);
+					this.actualContext.lineTo(...p3);
+					this.actualContext.lineTo(...p4);
+					this.actualContext.closePath();
 					this.actualContext.stroke();
 				}
 			}

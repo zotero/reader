@@ -2,8 +2,7 @@
 :root {
 	--viewer-container-height: 0;
 	--pdfViewer-padding-bottom: 0;
-	--page-margin: 1px auto -8px;
-	--page-border: 9px solid transparent;
+	--page-margin: 9px auto 0;
 	--spreadHorizontalWrapped-margin-LR: -3.5px;
 	--loading-icon-delay: 400ms;
 }
@@ -11,7 +10,7 @@
 @media screen and (forced-colors: active) {
 	:root {
 		--pdfViewer-padding-bottom: 9px;
-		--page-margin: 8px auto -1px;
+		--page-margin: 9px auto 0;
 		--page-border: 1px solid CanvasText;
 		--spreadHorizontalWrapped-margin-LR: 3.5px;
 	}
@@ -171,10 +170,11 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	height: 1056px;
 	margin: var(--page-margin);
 	position: relative;
-	overflow: visible;
+	overflow: hidden;
 	border: var(--page-border);
 	background-clip: content-box;
 	background-color: rgba(255, 255, 255, 1);
+	box-shadow: 0 0 2px 0 rgba(0,0,0,.14),0 2px 2px 0 rgba(0,0,0,.12),0 1px 3px 0 rgba(0,0,0,.12);
 }
 
 .pdfViewer .dummyPage {
@@ -184,7 +184,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 }
 
 .page:first-child {
-	 border-top: 19px solid transparent;
+	 margin-top: 19px;
  }
 
 #sidebarContainer, .toolbar, .secondaryToolbar, .findbar, #overlayContainer, #fileInput {
@@ -197,10 +197,6 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 
 .annotationLayer, .annotationEditorLayer {
 	display: none;
-}
-
-.canvasWrapper {
-	box-shadow: 0 0 2px 0 rgba(0,0,0,.14),0 2px 2px 0 rgba(0,0,0,.12),0 1px 3px 0 rgba(0,0,0,.12);
 }
 
 #viewerContainer {
@@ -330,6 +326,9 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 ::selection {
 	background: transparent;
 }
+.customAnnotationLayer ::selection {
+	background-color: Highlight;
+}
 
 .textLayer .endOfContent {
 	display: block;
@@ -345,4 +344,36 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 
 .textLayer .endOfContent.active {
 	top: 0;
+}
+
+.customAnnotationLayer {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.textAnnotation {
+	position: absolute;
+}
+
+.textAnnotation {
+	background-color: transparent;
+	/* $font-family-sans-serif */
+	font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
+	border: none;
+	box-sizing: border-box;
+	outline: none;
+	pointer-events: none;
+	word-break: break-word;
+	cursor: text;
+	resize: none;
+	overflow: hidden;
+}
+
+.textAnnotation:empty:before {
+	content: ' ';
+}
+
+.textAnnotation.focusable {
+	pointer-events: unset;
 }

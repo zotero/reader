@@ -3,7 +3,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
-import { IconHighlight, IconNote, IconArea, IconInk } from './icons';
+import { IconHighlight, IconNote, IconArea, IconInk, IconText } from './icons';
 import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 
 // TODO: Don't allow to select UI text in popup header and footer
@@ -65,6 +65,7 @@ export function PopupPreview(props) {
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
 							|| annotation.type === 'ink' && <IconInk/>
+							|| annotation.type === 'text' && <IconText/>
 						}
 					</div>
 					{annotation.pageLabel && (
@@ -90,7 +91,7 @@ export function PopupPreview(props) {
 				</div>
 			</header>
 
-			{annotation.type !== 'ink' && (
+			{!['ink', 'text'].includes(annotation.type) && (
 				<div className="comment">
 					<Editor
 						id={annotation.id}
@@ -98,6 +99,7 @@ export function PopupPreview(props) {
 						placeholder={annotation.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
 							: intl.formatMessage({ id: 'pdfReader.addComment' })}
 						readOnly={annotation.readOnly}
+						enableRichText={annotation.type !== 'text'}
 						onChange={handleCommentChange}
 					/>
 				</div>
@@ -215,6 +217,7 @@ export function SidebarPreview(props) {
 				placeholder={intl.formatMessage({ id: 'pdfReader.noExtractedText' })}
 				readOnly={annotation.readOnly || state !== 3}
 				expanded={props.state >= 2}
+				enableRichText={annotation.type !== 'text'}
 				onChange={handleTextChange}
 			/>
 		</div>
@@ -235,6 +238,7 @@ export function SidebarPreview(props) {
 				readOnly={annotation.readOnly || !(state === 1 || state === 2 || state === 3)}
 				expanded={state >= 1}
 				placeholder={intl.formatMessage({ id: 'pdfReader.addComment' })}
+				enableRichText={annotation.type !== 'text'}
 				onChange={handleCommentChange}
 			/>
 		</div>;
@@ -274,6 +278,7 @@ export function SidebarPreview(props) {
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
 							|| annotation.type === 'ink' && <IconInk/>
+							|| annotation.type === 'text' && <IconText/>
 						}
 					</div>
 					{annotation.pageLabel && (

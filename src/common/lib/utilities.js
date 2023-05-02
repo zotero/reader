@@ -189,6 +189,7 @@ export function getAffectedAnnotations(oldAnnotations, newAnnotations, viewOnly)
 		else if (newAnnotation !== oldAnnotation) {
 			if (viewOnly) {
 				if (newAnnotation.color !== oldAnnotation.color
+					|| newAnnotation.comment !== oldAnnotation.comment
 					|| !basicDeepEqual(newAnnotation.position, oldAnnotation.position)) {
 					updated.push(newAnnotation);
 				}

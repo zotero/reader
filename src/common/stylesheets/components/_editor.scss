@@ -32,9 +32,14 @@
 	}
 
 	.renderer {
-		width: 0;
-		height: 0;
+		// Note: Renderer can't be zero dimensions or invisible because
+		// element.innerText won't work on some browsers
+		width: 1px;
+		height: 1px;
 		overflow: hidden;
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	.editor-toolbar {

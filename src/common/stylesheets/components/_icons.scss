@@ -35,6 +35,14 @@
 			@include icon($area-tool-icon-active);
 		}
 	}
+
+	.text {
+		@include icon($text-tool-icon);
+
+		&.toggled {
+			@include icon($text-tool-icon-active);
+		}
+	}
 }
 
 // Toolbar sidebar

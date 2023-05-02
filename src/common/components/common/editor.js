@@ -85,7 +85,7 @@ function walkUnformat(parent) {
 	}
 }
 
-function clean(parent) {
+function clean(parent, enableRichText) {
 	let map = {
 		strong: 'b'
 	};
@@ -105,7 +105,7 @@ function clean(parent) {
 			}
 
 			let multilineFormats = multiline ? ['br', 'div'] : [];
-			if (!supportedFormats.concat(multilineFormats).includes(child.nodeName.toLowerCase())) {
+			if (!(enableRichText ? supportedFormats : []).concat(multilineFormats).includes(child.nodeName.toLowerCase())) {
 				let first = child.firstChild;
 				let next = child.nextSibling;
 
@@ -130,7 +130,7 @@ function clean(parent) {
 		else {
 			parent.removeChild(child);
 		}
-		clean(child);
+		clean(child, enableRichText);
 		child = child.nextSibling;
 	}
 }
@@ -241,7 +241,9 @@ let Content = React.forwardRef((props, ref) => {
 		if (lastValueRef.current !== props.text) {
 			lastValueRef.current = props.text;
 			innerRef.current.innerText = props.text;
-			walkFormat(innerRef.current);
+			if (props.enableRichText) {
+				walkFormat(innerRef.current);
+			}
 		}
 	});
 
@@ -253,7 +255,7 @@ let Content = React.forwardRef((props, ref) => {
 		// Cleanup and transform contenteditable HTML into Zotero HTML-flavored plain-text,
 		// trigger onChange, and store the new plain-text value to prevent the newly updated
 		// prop causing Content component re-rendering which would cause cursor position reset
-		clean(innerRef.current);
+		clean(innerRef.current, props.enableRichText);
 		rendererRef.current.innerHTML = innerRef.current.innerHTML;
 		walkUnformat(rendererRef.current);
 		let text = rendererRef.current.innerText;
@@ -291,12 +293,13 @@ function Editor(props) {
 
 	return (
 		<div className={cx('editor', { 'read-only': props.readOnly })}>
-			{!props.readOnly && <Toolbar onCommand={handleBalloonCommand}/>}
+			{!props.readOnly && props.enableRichText && <Toolbar onCommand={handleBalloonCommand}/>}
 			<Content
 				ref={contentRef}
 				id={props.id}
 				text={props.text}
 				readOnly={props.readOnly}
+				enableRichText={props.enableRichText}
 				placeholder={props.placeholder}
 				onChange={props.onChange}
 			/>

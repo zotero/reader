@@ -1,5 +1,22 @@
 export default [
 	{
+		type: "text",
+		color: "#ffd400",
+		sortIndex: "00000|000000|00029",
+		position: {
+			pageIndex: 0,
+			rects: [[17.70514027630181, 729.1404633368757, 132.24914027630183, 762.1404633368757]],
+			fontSize: 14,
+			rotation: 10
+		},
+		comment: "Text annotation example",
+		tags: [],
+		id: "20AABBCC",
+		authorName: "",
+		dateModified: "2023-05-02T18:21:56.895Z",
+		pageLabel: "1"
+	},
+	{
 		type: 'ink',
 		color: '#ffd400',
 		sortIndex: '00000|003202|00000',

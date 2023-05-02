@@ -568,14 +568,15 @@ class Reader {
 			this._updateState({ [primary ? 'primaryViewStats' : 'secondaryViewStats']: state });
 		}, DEBOUNCE_STATS_CHANGE);
 
-		let onAddAnnotation = async (annotation, select) => {
-			annotation = await this._annotationManager.addAnnotation(annotation);
+		let onAddAnnotation = (annotation, select) => {
+			annotation = this._annotationManager.addAnnotation(annotation);
 			if (select) {
 				this.setSelectedAnnotations([annotation.id], true);
 			}
-			if (annotation.type === 'note') {
+			if (['note', 'text'].includes(annotation.type)) {
 				this._updateState({ tool: { ...this._state.tool, type: 'pointer' } });
 			}
+			return annotation;
 		};
 
 		let onUpdateAnnotations = (annotations) => {
@@ -903,6 +904,14 @@ class Reader {
 	}
 
 	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
+		let deleteIDs = [];
+		for (let annotation of this._state.annotations) {
+			if (annotation.type === 'text' && !annotation.comment && !ids.includes(annotation.id)) {
+				deleteIDs.push(annotation.id);
+			}
+		}
+		this._annotationManager.deleteAnnotations(deleteIDs)
+
 		// Prevent accidental annotation deselection if modifier is pressed
 		let shift = triggeringEvent ? triggeringEvent.shiftKey : this._keyboardManager.shift;
 		let mod = triggeringEvent ? (triggeringEvent.ctrlKey || triggeringEvent.metaKey && isMac()) : this._keyboardManager.mod;
@@ -963,25 +972,27 @@ class Reader {
 					this._updateState({ selectedAnnotationIDs: ids });
 
 					if (triggeredFromView) {
-						this._enableAnnotationDeletionFromComment = true;
-						if (annotation.comment) {
-							let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-							if (sidebarItem) {
-								// Make sure to call this after all events, because mousedown will re-focus the View
-								setTimeout(() => sidebarItem.focus());
+						if (annotation.type !== 'text') {
+							this._enableAnnotationDeletionFromComment = true;
+							if (annotation.comment) {
+								let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+								if (sidebarItem) {
+									// Make sure to call this after all events, because mousedown will re-focus the View
+									setTimeout(() => sidebarItem.focus());
+								}
 							}
-						}
-						else {
-							setTimeout(() => {
-								let content;
-								if (this._state.sidebarOpen) {
-									content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
-								}
-								else {
-									content = document.querySelector(`.annotation-popup .comment .content`);
-								}
-								content?.focus();
-							}, 50);
+							else {
+								setTimeout(() => {
+									let content;
+									if (this._state.sidebarOpen) {
+										content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
+									}
+									else {
+										content = document.querySelector(`.annotation-popup .comment .content`);
+									}
+									content?.focus();
+								}, 50);
+							}
 						}
 					}
 					else {

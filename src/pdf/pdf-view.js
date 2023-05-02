@@ -1,6 +1,6 @@
 import Page from './page';
 import { Extractor } from './lib/extract';
-import { v2p } from './lib/coordinates';
+import { p2v, v2p } from './lib/coordinates';
 import {
 	getLineSelectionRanges,
 	getModifiedSelectionRanges,
@@ -12,10 +12,20 @@ import {
 	setTextLayerSelection
 } from './selection';
 import {
+	applyInverseTransform,
+	applyTransform, adjustRectHeightByRatio,
 	getPageIndexesFromAnnotations,
 	getPositionBoundingRect,
 	intersectAnnotationWithPoint,
-	quickIntersectRect
+	quickIntersectRect,
+	transform,
+	getBoundingBox,
+	inverseTransform,
+	scaleShape,
+	getRotationTransform,
+	getScaleTransform,
+	calculateScale,
+	getAxialAlignedBoundingBox
 } from './lib/utilities';
 import {
 	getAffectedAnnotations,
@@ -28,10 +38,11 @@ import {
 } from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
-import { PDF_NOTE_DIMENSIONS } from '../common/defines';
+import { DEFAULT_TEXT_ANNOTATION_FONT_SIZE, PDF_NOTE_DIMENSIONS } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
+import { measureTextAnnotationDimensions } from './lib/text-annotation';
 
 class PDFView {
 	constructor(options) {
@@ -169,7 +180,7 @@ class PDFView {
 	}
 
 	async _init() {
-		this._iframeWindow.document.body.draggable = true;
+		// this._iframeWindow.document.body.draggable = true;
 
 
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
@@ -181,8 +192,10 @@ class PDFView {
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
+		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
 		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
+		this._iframeWindow.addEventListener('input', this._handleInput.bind(this));
 
 		this._dragCanvas = this._iframeWindow.document.createElement('canvas');
 		this._dragCanvas.style.position = 'absolute';
@@ -349,6 +362,7 @@ class PDFView {
 			this._extractor = new Extractor(this._iframeWindow.PDFViewerApplication.pdfViewer, []);
 		}
 		this._detachPage(originalPage);
+		originalPage.div.querySelector('.textLayer').draggable = true;
 		let page = new Page(this, originalPage);
 		await page.updateData();
 		this._pages.push(page);
@@ -713,15 +727,33 @@ class PDFView {
 		// Ignore
 	}
 
-	getViewPoint(point, pageIndex) {
-		let viewport = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex].viewport;
-		return viewport.convertToViewportPoint(...point);
+	getViewPoint(point, pageIndex, tm = [1, 0, 0, 1, 0, 0]) {
+		let originalPage = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+		let scaleTransform = [originalPage.outputScale.sx, 0, 0, originalPage.outputScale.sy, 0, 0];
+		let m = scaleTransform;
+		// m = [1, 0, 0, 1, 0, 0];
+		m = transform(m, originalPage.viewport.transform);
+		m = transform(m, tm);
+		return applyTransform(point, m);
+	}
+
+	getPdfPoint(p, pageIndex, tm) {
+		let originalPage = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+		let scaleTransform = [originalPage.outputScale.sx, 0, 0, originalPage.outputScale.sy, 0, 0];
+		let m = scaleTransform;
+		// m = [1, 0, 0, 1, 0, 0];
+		m = transform(m, originalPage.viewport.transform);
+		m = transform(m, tm);
+		return applyInverseTransform(p, m);
 	}
 
 	getViewRect(rect, pageIndex) {
-		let viewport = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex].viewport;
-		let [x1, y2] = viewport.convertToViewportPoint(...rect);
-		let [x2, y1] = viewport.convertToViewportPoint(...rect.slice(2, 4));
+		let originalPage = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+		let scaleTransform = [originalPage.outputScale.sx, 0, 0, originalPage.outputScale.sy, 0, 0];
+		let m = scaleTransform;
+		m = transform(m, originalPage.viewport.transform);
+		let [x1, y2] = applyTransform(rect.slice(0, 2), m);
+		let [x2, y1] = applyTransform(rect.slice(2, 4), m);
 		return [
 			Math.min(x1, x2),
 			Math.min(y1, y2),
@@ -828,7 +860,7 @@ class PDFView {
 	}
 
 	getSelectedAnnotationAction(annotation, position) {
-		let dd = 10;
+		let dd = 5 * devicePixelRatio;
 
 		let p = this.getViewPoint(position.rects[0], position.pageIndex);
 
@@ -857,15 +889,36 @@ class PDFView {
 				}
 			}
 		}
-		else if (annotation.type === 'image') {
+		else if (['image', 'text'].includes(annotation.type)) {
+
+
+
+
 			let r = annotation.position.rects[0];
-			let bottomLeft = this.getViewPoint([r[0], r[1]], position.pageIndex);
-			let bottomRight = this.getViewPoint([r[2], r[1]], position.pageIndex);
-			let topLeft = this.getViewPoint([r[0], r[3]], position.pageIndex);
-			let topRight = this.getViewPoint([r[2], r[3]], position.pageIndex);
-			let middleLeft = this.getViewPoint([r[0], r[1] + (r[3] - r[1]) / 2], position.pageIndex);
-			let middleRight = this.getViewPoint([r[2], r[1] + (r[3] - r[1]) / 2], position.pageIndex);
-			let middleTop = this.getViewPoint([r[0] + (r[2] - r[0]) / 2, r[3]], position.pageIndex);
+
+
+			let tm = [1, 0, 0, 1, 0, 0];
+
+			if (annotation.type === 'text' && annotation.position.rotation) {
+				tm = getRotationTransform(r, annotation.position.rotation || 0);
+			}
+
+			let bottomLeft = this.getViewPoint([r[0], r[1]], position.pageIndex, tm);
+			let bottomRight = this.getViewPoint([r[2], r[1]], position.pageIndex, tm);
+			let topLeft = this.getViewPoint([r[0], r[3]], position.pageIndex, tm);
+			let topRight = this.getViewPoint([r[2], r[3]], position.pageIndex, tm);
+			let middleLeft = this.getViewPoint([r[0], r[1] + (r[3] - r[1]) / 2], position.pageIndex, tm);
+			let middleRight = this.getViewPoint([r[2], r[1] + (r[3] - r[1]) / 2], position.pageIndex, tm);
+			let middleTop = this.getViewPoint([r[0] + (r[2] - r[0]) / 2, r[3]], position.pageIndex, tm);
+			let middleBottom = this.getViewPoint([r[0] + (r[2] - r[0]) / 2, r[1]], position.pageIndex, tm);
+			let ROTATION_BOTTOM = 16;
+			let rotation = this.getViewPoint([r[0] + (r[2] - r[0]) / 2, r[3] + ROTATION_BOTTOM], position.pageIndex, tm);
+
+			let BOX_PADDING = 10 * devicePixelRatio;
+
+			if (annotation.type === 'text') {
+				[bottomLeft, bottomRight, topLeft, topRight, middleLeft, middleRight, middleTop, middleBottom] = scaleShape([bottomLeft, bottomRight, topRight, topLeft], [bottomLeft, bottomRight, topLeft, topRight, middleLeft, middleRight, middleTop, middleBottom], BOX_PADDING);
+			}
 
 			let bottomLeftRect = [bottomLeft[0] - dd, bottomLeft[1] - dd, bottomLeft[0] + dd, bottomLeft[1] + dd];
 			let bottomRightRect = [bottomRight[0] - dd, bottomRight[1] - dd, bottomRight[0] + dd, bottomRight[1] + dd];
@@ -877,8 +930,18 @@ class PDFView {
 			let topRect = [topLeft[0], topLeft[1] - dd, topRight[0], topRight[1] + dd];
 			let bottomRect = [bottomLeft[0], bottomLeft[1] - dd, bottomRight[0], bottomRight[1] + dd];
 
+			let middleLeftRect = [middleLeft[0] - dd, middleLeft[1] - dd, middleLeft[0] + dd, middleLeft[1] + dd];
+			let middleRightRect = [middleRight[0] - dd, middleRight[1] - dd, middleRight[0] + dd, middleRight[1] + dd];
+			let middleTopRect = [middleTop[0] - dd, middleTop[1] - dd, middleTop[0] + dd, middleTop[1] + dd];
+			let middleBottomRect = [middleBottom[0] - dd, middleBottom[1] - dd, middleBottom[0] + dd, middleBottom[1] + dd];
+			let rotationRect = [rotation[0] - dd, rotation[1] - dd, rotation[0] + dd, rotation[1] + dd];
+
+
 			let dir;
-			if (quickIntersectRect(topRightRect, p)) {
+			if (annotation.type === 'text' && quickIntersectRect(rotationRect, p)) {
+				return { type: 'rotate', annotation };
+			}
+			else if (quickIntersectRect(topRightRect, p)) {
 				dir = 'tr';
 			}
 			else if (quickIntersectRect(topLeftRect, p)) {
@@ -890,28 +953,64 @@ class PDFView {
 			else if (quickIntersectRect(bottomLeftRect, p)) {
 				dir = 'bl';
 			}
-			else if (quickIntersectRect(leftRect, p)) {
+			else if (quickIntersectRect(middleLeftRect, p)) {
 				dir = 'l';
 			}
-			else if (quickIntersectRect(rightRect, p)) {
+			else if (quickIntersectRect(middleRightRect, p)) {
 				dir = 'r';
 			}
-			else if (quickIntersectRect(topRect, p)) {
+			else if (annotation.type === 'image' && quickIntersectRect(middleTopRect, p)) {
 				dir = 't';
 			}
-			else if (quickIntersectRect(bottomRect, p)) {
+			else if (annotation.type === 'image' && quickIntersectRect(middleBottomRect, p)) {
 				dir = 'b';
 			}
-
 			if (dir) {
 				return { type: 'resize', annotation, dir };
 			}
+
+			let rrr = [topLeft[0], topLeft[1], bottomRight[0], bottomRight[1]];
+			//
+			// if (quickIntersectRect(rrr, p)) {
+			// 	let r = position.rects[0];
+			// 	let br = getPositionBoundingRect(annotation.position);
+			// 	return { type: ['note', 'text'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
+			// }
+
+
+			let inside = false;
+			// Get rect with padding but inside object coordinates
+			let p1 = this.getPdfPoint(bottomLeft, position.pageIndex, tm);
+			let p2 = this.getPdfPoint(bottomRight, position.pageIndex, tm);
+			let p3 = this.getPdfPoint(topLeft, position.pageIndex, tm);
+			let p4 = this.getPdfPoint(topRight, position.pageIndex, tm);
+			let points = [p1, p2, p3, p4];
+			let rect = [
+				Math.min(...points.map(x => x[0])),
+				Math.min(...points.map(x => x[1])),
+				Math.max(...points.map(x => x[0])),
+				Math.max(...points.map(x => x[1]))
+			];
+			let pr = this.getPdfPoint(p, position.pageIndex, tm);
+			pr = [pr[0], pr[1], pr[0], pr[1]];
+			if (quickIntersectRect(rect, pr)) {
+				inside = true;
+			}
+
+			if (inside) {
+				let r = position.rects[0];
+				// let br = getBoundingBox(annotation.position.rects[0], tm);
+				let br = getPositionBoundingRect(annotation.position);
+				return { type: ['note', 'text'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
+			}
 		}
+
+
 
 		if (intersectAnnotationWithPoint(annotation.position, position)) {
 			let r = position.rects[0];
 			let br = getPositionBoundingRect(annotation.position);
-			return { type: annotation.type === 'note' ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
+			return { type: ['note', 'text'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 		}
 
 		return null;
@@ -950,8 +1049,19 @@ class PDFView {
 		let annotations = this._getPageAnnotations(position.pageIndex);
 		let selectableAnnotations = [];
 		for (let annotation of annotations) {
-			if (intersectAnnotationWithPoint(annotation.position, position)) {
-				selectableAnnotations.push(annotation);
+			if (annotation.type === 'text' && annotation.position.rotation) {
+				let tm = getRotationTransform(annotation.position.rects[0], annotation.position.rotation);
+				let rect = position.rects[0];
+				let r1 = getBoundingBox(rect, inverseTransform(tm));
+				let r2 = annotation.position.rects[0];
+				if (quickIntersectRect(r1, r2)) {
+					selectableAnnotations.push(annotation);
+				}
+			}
+			else {
+				if (intersectAnnotationWithPoint(annotation.position, position)) {
+					selectableAnnotations.push(annotation);
+				}
 			}
 		}
 
@@ -1039,9 +1149,10 @@ class PDFView {
 			else {
 				selectAnnotations = [selectableAnnotation];
 				let annotation = selectableAnnotation;
-				if (['note'].includes(annotation.type)) {
+				if (['note', 'text'].includes(annotation.type)) {
 					let r = position.rects[0];
 					let br = getPositionBoundingRect(annotation.position);
+
 					action = { type: 'moveAndDrag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 				}
 				else {
@@ -1062,6 +1173,9 @@ class PDFView {
 			}
 			else if (this._tool.type === 'image') {
 				action = { type: 'image' };
+			}
+			else if (this._tool.type === 'text') {
+				action = { type: 'text' };
 			}
 			else {
 				action = { type: 'selectText' };
@@ -1091,21 +1205,29 @@ class PDFView {
 				}
 			}
 			else if (action.type === 'resize') {
-				if (['l', 'r'].includes(action.dir)) {
-					cursor = 'ew-resize';
+				if (action.annotation.position.rotation) {
+					cursor = 'move';
 				}
-				else if (['t', 'b'].includes(action.dir)) {
-					cursor = 'ns-resize';
-				}
-				else if (['tl', 'br'].includes(action.dir)) {
-					cursor = 'nwse-resize';
-				}
-				else if (['bl', 'tr'].includes(action.dir)) {
-					cursor = 'nesw-resize';
+				else {
+					if (['l', 'r'].includes(action.dir)) {
+						cursor = 'ew-resize';
+					}
+					else if (['t', 'b'].includes(action.dir)) {
+						cursor = 'ns-resize';
+					}
+					else if (['tl', 'br'].includes(action.dir)) {
+						cursor = 'nwse-resize';
+					}
+					else if (['bl', 'tr'].includes(action.dir)) {
+						cursor = 'nesw-resize';
+					}
 				}
 			}
 			else if (action.type === 'move') {
 				cursor = 'grab';
+			}
+			else if (action.type === 'rotate') {
+				cursor = 'move';
 			}
 			else if (['selectText'].includes(action.type)) {
 				cursor = 'text';
@@ -1124,7 +1246,9 @@ class PDFView {
 		this._highlightedPosition = null;
 
 		// Clear textLayer selection
-		this._iframeWindow.getSelection().removeAllRanges();
+		if (!event.target.classList.contains('textAnnotation')) {
+			this._iframeWindow.getSelection().removeAllRanges();
+		}
 
 		// Prevents showing focus box after pressing Enter and de-selecting annotation which was select with mouse
 		this._lastFocusedObject = null;
@@ -1202,6 +1326,27 @@ class PDFView {
 			};
 			this._onAddAnnotation({
 				type: 'note',
+				color: this._tool.color,
+				pageLabel: this._pageLabels[this.pointerDownPosition.pageIndex] || '-',
+				sortIndex: this._extractor.getSortIndex(newPosition),
+				position: newPosition
+			}, true);
+		}
+		else if (action.type === 'text') {
+			let rect = position.rects[0];
+			let newPosition = {
+				pageIndex: position.pageIndex,
+				fontSize: DEFAULT_TEXT_ANNOTATION_FONT_SIZE,
+				rotation: 0,
+				rects: [[
+					rect[0] - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
+					rect[1] - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
+					rect[2] + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
+					rect[3] + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2
+				]]
+			};
+			this._onAddAnnotation({
+				type: 'text',
 				color: this._tool.color,
 				pageLabel: this._pageLabels[this.pointerDownPosition.pageIndex] || '-',
 				sortIndex: this._extractor.getSortIndex(newPosition),
@@ -1302,32 +1447,113 @@ class PDFView {
 			action.triggered = true;
 		}
 		else if (action.type === 'resize') {
-			let MIN_SIZE = 20;
 			let rect = action.annotation.position.rects[0].slice();
-
 			let [x, y] = originalPagePosition.rects[0];
+			if (action.annotation.type === 'image') {
+				let MIN_SIZE = 20;
+				let viewBox = page.originalPage.viewport.viewBox;
+				if (action.dir.includes('l')) {
+					x = x > rect[2] - MIN_SIZE && rect[2] - MIN_SIZE || x > viewBox[0] && x || viewBox[0];
+				}
+				else if (action.dir.includes('r')) {
+					x = x < rect[0] + MIN_SIZE && rect[0] + MIN_SIZE || x < viewBox[2] && x || viewBox[2];
+				}
+				if (action.dir.includes('b')) {
+					y = y > rect[3] - MIN_SIZE && rect[3] - MIN_SIZE || y > viewBox[1] && y || viewBox[1];
+				}
+				else if (action.dir.includes('t')) {
+					y = y < rect[1] + MIN_SIZE && rect[1] + MIN_SIZE || y < viewBox[3] && y || viewBox[3];
+				}
+			}
 
-			let viewBox = page.originalPage.viewport.viewBox;
+			if (action.annotation.type === 'text' && action.annotation.position.rotation) {
+				let tm = getRotationTransform(rect, action.annotation.position.rotation);
+				[x, y] = applyInverseTransform([x, y], tm);
+			}
 
 			if (action.dir.includes('l')) {
-				rect[0] = x > rect[2] - MIN_SIZE && rect[2] - MIN_SIZE || x > viewBox[0] && x || viewBox[0];
+				rect[0] = x;
 			}
 			else if (action.dir.includes('r')) {
-				rect[2] = x < rect[0] + MIN_SIZE && rect[0] + MIN_SIZE || x < viewBox[2] && x || viewBox[2];
+				rect[2] = x;
 			}
 
 			if (action.dir.includes('b')) {
-				rect[1] = y > rect[3] - MIN_SIZE && rect[3] - MIN_SIZE || y > viewBox[1] && y || viewBox[1];
+				rect[1] = y;
 			}
 			else if (action.dir.includes('t')) {
-				rect[3] = y < rect[1] + MIN_SIZE && rect[1] + MIN_SIZE || y < viewBox[3] && y || viewBox[3];
+				rect[3] = y;
 			}
 
-			action.position = {
-				pageIndex: action.annotation.position.pageIndex,
-				rects: [rect]
-			};
-
+			let fontSize = 0;
+			if (action.annotation.type === 'text') {
+				let r1 = action.annotation.position.rects[0];
+				let m1 = getRotationTransform(r1, action.annotation.position.rotation);
+				let ratio = (r1[2] - r1[0]) / (r1[3] - r1[1]);
+				if (action.dir.length === 2) {
+					let rect2 = adjustRectHeightByRatio(rect, ratio, action.dir);
+					// if (rect2[3] - rect2[1] < 10) {
+					// 	ratio = ratio * (rect2[3] - rect2[1]) / 10;
+					// 	rect2 = adjustRectHeightByRatio(rect, ratio, action.dir);
+					// }
+					rect = rect2;
+				}
+				let r2 = rect;
+				let m2 = getRotationTransform(r2, action.annotation.position.rotation);
+				let mm = getScaleTransform(r1, r2, m1, m2, action.dir);
+				let mmm = transform(m2, mm);
+				mmm = inverseTransform(mmm);
+				r2 = [
+					...applyTransform(r2, m2),
+					...applyTransform(r2.slice(2), m2)
+				];
+				rect = [
+					...applyTransform(r2, mmm),
+					...applyTransform(r2.slice(2), mmm)
+				];
+				let scale = calculateScale(action.annotation.position.rects[0], rect);
+				if (action.dir.length !== 2) {
+					scale = 1;
+				}
+				fontSize = action.annotation.position.fontSize * scale;
+				fontSize = Math.floor(fontSize * 2) / 2;
+			}
+			action.position = JSON.parse(JSON.stringify(action.annotation.position));
+			action.position.rects = [rect];
+			if (fontSize) {
+				action.position.fontSize = fontSize;
+			}
+			if (action.annotation.type === 'text' && action.dir.length !== 2) {
+				action.position = measureTextAnnotationDimensions({ ...action.annotation, position: action.position });
+			}
+			action.triggered = true;
+		}
+		else if (action.type === 'rotate') {
+			let rect = action.annotation.position.rects[0];
+			let rr = position.rects[0];
+			let m1 = getRotationTransform(rect, action.annotation.position.rotation);
+			rr = getAxialAlignedBoundingBox(rr, inverseTransform(m1));
+			let x = rect[0] + (rect[2] - rect[0]) / 2;
+			let y = rect[1] + (rect[3] - rect[1]) / 2;
+			const angleRadians = -Math.atan2(rr[0] - x, (rr[1] - y));
+			const angleDegrees = angleRadians * (180 / Math.PI);
+			// Note: Add +180 if handle is moved from top to bottom
+			let angle = action.annotation.position.rotation + angleDegrees;
+			// Normalize angle
+			angle = ((angle % 360) + 360) % 360;
+			const stickyAngles = [0, 90, 180, 270, 360];
+			const threshold = 7;
+			for (const rightAngle of stickyAngles) {
+				if (Math.abs(angle - rightAngle) <= threshold) {
+					angle = rightAngle;
+					break;
+				}
+			}
+			if (angle === 360) {
+				angle = 0;
+			}
+			action.position = JSON.parse(JSON.stringify(action.annotation.position));
+			action.position.rotation = angle;
 			action.triggered = true;
 		}
 		else if (action.type === 'selectText') {
@@ -1345,28 +1571,17 @@ class PDFView {
 		// Only note and image annotations are supported
 		else if (action.type === 'moveAndDrag' && dragging) {
 			let rect = getPositionBoundingRect(action.annotation.position);
-			let width = rect[2] - rect[0];
-			let height = rect[3] - rect[1];
-			let [x, y] = originalPagePosition.rects[0];
-			x -= action.x;
-			y -= action.y;
-			let page = this.getPageByIndex(originalPagePosition.pageIndex);
-			let viewBox = page.originalPage.viewport.viewBox;
-			if (x < viewBox[0]) {
-				x = viewBox[0];
-			}
-			if (y < viewBox[1]) {
-				y = viewBox[1];
-			}
-			if (x + width > viewBox[2]) {
-				x = viewBox[2] - width;
-			}
-			if (y + height > viewBox[3]) {
-				y = viewBox[3] - height;
-			}
+			let p = [originalPagePosition.rects[0][0], originalPagePosition.rects[0][1]];
+			let dp = [p[0] - rect[0] - action.x, p[1] - rect[1] - action.y];
+			rect = action.annotation.position.rects[0];
 			action.position = {
 				pageIndex: originalPagePosition.pageIndex,
-				rects: [[x, y, x + width, y + height]]
+				rects: [[
+					rect[0] + dp[0],
+					rect[1] + dp[1],
+					rect[2] + dp[0],
+					rect[3] + dp[1],
+				]]
 			};
 			action.triggered = true;
 		}
@@ -1431,6 +1646,9 @@ class PDFView {
 	}
 
 	_handlePointerUp(event) {
+		if (!this.action && event.target.classList.contains('textAnnotation')) {
+			return;
+		}
 		let position = this.pointerEventToPosition(event);
 
 		if (this.pointerDownPosition) {
@@ -1443,6 +1661,14 @@ class PDFView {
 						this._onUpdateAnnotations([action.annotation]);
 					}
 					else if (action.type === 'resize') {
+						if (action.annotation.type === 'text' && action.dir.length !== 2) {
+							action.position = measureTextAnnotationDimensions({ ...action.annotation, position: action.position }, { adjustSingleLineWidth: true });
+						}
+
+						let sortIndex = this._extractor.getSortIndex(action.position);
+						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
+					}
+					else if (action.type === 'rotate') {
 						let sortIndex = this._extractor.getSortIndex(action.position);
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
@@ -1461,9 +1687,19 @@ class PDFView {
 				}
 				else if (!this.action.alreadySelectedAnnotations) {
 					let selectableAnnotations = this.getSelectableAnnotations(position);
-
 					let lastSelectedAnnotationID = this._selectedAnnotationIDs.slice(-1)[0];
 					let annotation = selectableAnnotations.find(annotation => annotation.id === lastSelectedAnnotationID);
+					if (annotation?.type === 'text') {
+						let node = this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`);
+						if (!node.classList.contains('focusable')) {
+							node.classList.add('focusable');
+							// node.contentEditable = true;
+							// setCaretPosition(event);
+							node.focus();
+							event.preventDefault();
+							event.stopPropagation();
+						}
+					}
 					let nextID;
 
 					let indexOfCurrentID = selectableAnnotations.indexOf(annotation);
@@ -1587,13 +1823,18 @@ class PDFView {
 	}
 
 	_handleKeyDown(event) {
+		if (this.textAnnotationFocused()) {
+			return;
+		}
 		let { key } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
 		let mod = ctrl || cmd;
 		let alt = event.altKey;
 		let shift = event.shiftKey;
-
+		if (event.target.classList.contains('textAnnotation')) {
+			return;
+		}
 		// Set text layer selection again, because previous press of Option-Escape
 		// clear the selection and focuses body (that happens in every text in inside
 		// Zotero client, but not on actual Firefox)
@@ -1679,27 +1920,51 @@ class PDFView {
 	}
 
 	_handleDragStart(event) {
+		if (this.textAnnotationFocused()) {
+			return;
+		}
 		if (!this.action || !['moveAndDrag', 'drag'].includes(this.action.type)) {
 			event.preventDefault();
 			return;
 		}
 		if (!this.action.multiple) {
 			let annotation = this.action.annotation;
-			let page = this.getPageByIndex(annotation.position.pageIndex);
-
 			let canvas = this._dragCanvas;
-			page.renderAnnotationOnCanvas(annotation, canvas);
-
-			// When window.devicePixelRatio > 1, Chrome uses CSS pixels when positioning
-			// image with setDragImage, while Safari/Firefox uses physical pixels. Weird.
-			let pixelRatio = (isSafari || isFirefox || 1) ? window.devicePixelRatio : 1;
-
-			let rect = getPositionBoundingRect(annotation.position);
-			let width = rect[2] - rect[0];
-			let scale = (canvas.width / pixelRatio) / width;
-			event.dataTransfer.setDragImage(canvas, this.action.x * scale, (canvas.height / pixelRatio) - this.action.y * scale);
+			if (annotation.type === 'text') {
+				let ctx = canvas.getContext('2d');
+				let pixelRatio = window.devicePixelRatio;
+				canvas.width = 12 * pixelRatio;
+				canvas.height = 12 * pixelRatio;
+				canvas.style.width = 12 + 'px';
+				canvas.style.height = 12 + 'px';
+				// ctx.fillStyle = annotation.color;
+				// ctx.transform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+				// ctx.beginPath();
+				// let p = new Path2D('M1.4375 0.4375C1.15866 0.4375 0.9375 0.658658 0.9375 0.9375L0.9375 2.46875C0.9375 2.74759 1.15866 2.96875 1.4375 2.96875L1.9375 2.96875C2.21634 2.96875 2.4375 2.74759 2.4375 2.46875L2.4375 1.9375L4.96875 1.9375L4.96875 10.0312L4.46875 10.0312C4.18991 10.0313 3.9375 10.2524 3.9375 10.5312L3.9375 11.0312C3.9375 11.3101 4.18991 11.5625 4.46875 11.5625L5.96875 11.5625L7.5 11.5625C7.77884 11.5625 8 11.3101 8 11.0312L8 10.5312C8 10.2524 7.77884 10.0312 7.5 10.0312L7 10.0312L7 1.9375L9.5 1.9375L9.5 2.46875C9.5 2.74759 9.72116 2.96875 10 2.96875L10.5312 2.96875C10.8101 2.96875 11.0312 2.74759 11.0312 2.46875L11.0312 0.9375C11.0312 0.658658 10.8101 0.4375 10.5312 0.4375L10.0312 0.4375L5.96875 0.4375L1.9375 0.4375L1.4375 0.4375Z');
+				// ctx.fill(p);
+				event.dataTransfer.setDragImage(canvas, 12, 6);
+			}
+			else {
+				let page = this.getPageByIndex(annotation.position.pageIndex);
+				page.renderAnnotationOnCanvas(annotation, canvas);
+				// When window.devicePixelRatio > 1, Chrome uses CSS pixels when positioning
+				// image with setDragImage, while Safari/Firefox uses physical pixels. Weird.
+				let pixelRatio = (isSafari || isFirefox || 1) ? window.devicePixelRatio : 1;
+				let rect = getPositionBoundingRect(annotation.position);
+				let width = rect[2] - rect[0];
+				let scale = (canvas.width / pixelRatio) / width;
+				event.dataTransfer.setDragImage(canvas, this.action.x * scale, (canvas.height / pixelRatio) - this.action.y * scale);
+			}
 		}
 		this._onSetDataTransferAnnotations(event.dataTransfer, this.action.annotation);
+	}
+
+	_handleDragOver(event) {
+		if (this.textAnnotationFocused()) {
+			return;
+		}
+		event.preventDefault();
+		event.dataTransfer.dropEffect = event.dataTransfer.effectAllowed === "copy" ? "copy" : "move";
 	}
 
 	_handleDragEnd(event) {
@@ -1714,7 +1979,7 @@ class PDFView {
 	}
 
 	_handleCopy(event) {
-		if (!event.clipboardData) {
+		if (!event.clipboardData || this.textAnnotationFocused()) {
 			return;
 		}
 		// Copying annotation
@@ -1734,6 +1999,16 @@ class PDFView {
 			this._onSetDataTransferAnnotations(event.clipboardData, annotation, true);
 		}
 		event.preventDefault();
+	}
+
+	_handleInput(event) {
+		let target = event.target;
+		if (target.classList.contains('textAnnotation')) {
+			let id = target.getAttribute('data-id');
+			let comment = target.value;
+			target.setAttribute('data-comment', comment);
+			this._onUpdateAnnotations([{ id, comment }]);
+		}
 	}
 
 	getDragMultiIcon() {
@@ -1773,25 +2048,36 @@ class PDFView {
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
 		let rect = page.div.getBoundingClientRect();
 		// TODO: Use getBoundingClientRect to get position without constants
-		let x = event.clientX + page.div.scrollLeft - rect.left - 9;
-		let y = event.clientY + page.div.scrollTop - rect.top - (pageIndex === 0 ? 20 : 10);
+		let x = event.clientX + page.div.scrollLeft - rect.left;
+		let y = event.clientY + page.div.scrollTop - rect.top;
 		let pp = { pageIndex, rects: [[x, y, x, y]] };
 		return v2p(pp, page.viewport);
 	}
 
-	// Get position outside of the current page
-	pointerEventToAltPosition(event, pageIndex) {
+	// Get position outside the current page
+	pointerEventToAltPosition(event, pageIndex, action) {
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
 		let rect = page.div.getBoundingClientRect();
-		let x = event.clientX + page.div.scrollLeft - rect.left - 9;
-		let y = event.clientY + page.div.scrollTop - rect.top - (pageIndex === 0 ? 20 : 10);
+		let x = event.clientX + page.div.scrollLeft - rect.left;
+		let y = event.clientY + page.div.scrollTop - rect.top;
 		let pageRect = page.pdfPage.view;
-		[x, y] = page.viewport.convertToPdfPoint(x, y);
+
+		if (action) {
+			let tm = getRotationTransform(action.annotation.position.rects[0], action.annotation.position.rotation);
+			[x, y] = this.getPdfPoint([x, y], pageIndex, tm);
+		}
+		else {
+			[x, y] = page.viewport.convertToPdfPoint(x, y);
+		}
 
 		// Keep the position inside the page
 		// x = x > pageRect[2] && pageRect[2] || x > pageRect[0] && x || pageRect[0];
 		// y = y > pageRect[3] && pageRect[3] || y > pageRect[1] && y || pageRect[1];
 		return { pageIndex, rects: [[x, y, x, y]] };
+	}
+
+	textAnnotationFocused() {
+		return this._iframeWindow.document.activeElement.classList.contains('textAnnotation');
 	}
 
 	setScrollMode(mode) {
@@ -1801,17 +2087,6 @@ class PDFView {
 	setSpreadMode(mode) {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchspreadmode', { mode });
 	}
-}
-
-
-function getDragCanvas() {
-	let node = document.getElementById('drag-canvas');
-	if (!node) {
-		node = document.createElement('canvas');
-		node.id = 'drag-canvas';
-		document.body.appendChild(node);
-	}
-	return { canvas: node, context: node.getContext('2d') };
 }
 
 export default PDFView;

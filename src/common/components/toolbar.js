@@ -157,6 +157,16 @@ function Toolbar(props) {
 							<span className="button-background"/>
 						</button>
 					)}
+					{props.type === 'pdf' && (
+						<button
+							tabIndex={-1}
+							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
+							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							onClick={() => handleToolClick('text')}
+						>
+							<span className="button-background"/>
+						</button>
+					)}
 					<button
 						tabIndex={-1}
 						className="toolbarButton global-color"

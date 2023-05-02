@@ -1,5 +1,6 @@
 import { debounce } from './lib/debounce';
 import { approximateMatch } from './lib/approximate-match';
+import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
 
 class AnnotationManager {
 	constructor(options) {
@@ -158,6 +159,11 @@ class AnnotationManager {
 			};
 			if (deleteNextPageRects) {
 				delete annotation.position.nextPageRects;
+			}
+
+			// Updating annotation position when editing comment
+			if (annotation.type === 'text' && existingAnnotation.comment !== annotation.comment) {
+				annotation.position = measureTextAnnotationDimensions(annotation, { adjustSingleLineWidth: true, enableSingleLineMaxWidth: true });
 			}
 
 			annotation.dateModified = (new Date()).toISOString();
