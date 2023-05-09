@@ -568,6 +568,19 @@ abstract class DOMView<State extends DOMViewState> {
 		if (this._tool.type == 'note' && this._previewNote) {
 			this._options.onAddAnnotation(this._previewNote, true);
 			event.preventDefault();
+			
+			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
+			// if the note is added to a link. "Fix" this by eating all click events in the next half second.
+			// Very silly.
+			const clickListener = (event: Event) => {
+				event.stopImmediatePropagation();
+				event.preventDefault();
+			};
+			event.target!.addEventListener('click', clickListener, { once: true, capture: true });
+			setTimeout(() => {
+				event.target!.removeEventListener('click', clickListener);
+			}, 500);
+			
 			return;
 		}
 
