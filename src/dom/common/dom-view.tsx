@@ -221,6 +221,7 @@ abstract class DOMView<State extends DOMViewState> {
 				id: a.id,
 				type: a.type,
 				color: a.color,
+				sortIndex: a.sortIndex,
 				text: a.text,
 				comment: a.comment,
 				range: this.toDisplayedRange(a.position),
@@ -238,6 +239,7 @@ abstract class DOMView<State extends DOMViewState> {
 			displayedAnnotations.push({
 				type: this._previewNote.type,
 				color: this._previewNote.color,
+				sortIndex: this._previewNote.sortIndex,
 				text: this._previewNote.text,
 				comment: this._previewNote.comment,
 				range: this.toDisplayedRange(this._previewNote.position)!,

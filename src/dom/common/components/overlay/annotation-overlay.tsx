@@ -18,6 +18,7 @@ export type DisplayedAnnotation = {
 	id?: string;
 	type: AnnotationType;
 	color?: string;
+	sortIndex?: string;
 	text?: string;
 	comment?: string;
 	range: Range;
@@ -105,35 +106,13 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			}}
 			ref={c => setWidgetContainer(c)}
 		>
-			{annotations.map((annotation, i) => {
-				if (annotation.type != 'note') {
-					return null;
-				}
-				if (annotation.id) {
-					return (
-						<Note
-							annotation={annotation}
-							key={annotation.id}
-							selected={selectedAnnotationIDs.includes(annotation.id)}
-							onPointerDown={event => handlePointerDown(event, annotation.id!)}
-							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
-							disablePointerEvents={disablePointerEvents}
-							scale={scale}
-						/>
-					);
-				}
-				else {
-					return (
-						<Note
-							annotation={annotation}
-							key={i}
-							selected={false}
-							disablePointerEvents={true}
-							scale={scale}
-						/>
-					);
-				}
-			})}
+			<StaggeredNotes
+				annotations={annotations.filter(a => a.type === 'note')}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				onPointerDown={handlePointerDown}
+				onDragStart={onDragStart}
+				disablePointerEvents={disablePointerEvents}
+			/>
 		</svg>
 	</>;
 };
@@ -277,14 +256,10 @@ type HighlightProps = {
 };
 
 const Note: React.FC<NoteProps> = React.memo((props) => {
-	const { annotation, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
+	const { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
 	const iconRef = React.useRef<SVGSVGElement>(null);
 
-	const ranges = splitRangeToTextNodes(annotation.range);
-	if (!ranges.length) {
-		return null;
-	}
-	const doc = ranges[0].commonAncestorContainer.ownerDocument;
+	const doc = annotation.range.commonAncestorContainer.ownerDocument;
 	if (!doc || !doc.defaultView) {
 		return null;
 	}
@@ -302,10 +277,11 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 
 	const rect = annotation.range.getBoundingClientRect();
 	const ltr = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction != 'rtl';
+	const staggerOffset = (staggerIndex || 0) * 15;
 	return (
 		<CommentIcon
-			x={rect.x + (ltr ? rect.width + 25 : -25) + doc.defaultView!.scrollX}
-			y={rect.y + doc.defaultView!.scrollY}
+			x={rect.x + (ltr ? rect.width + 25 : -25) + doc.defaultView!.scrollX + staggerOffset}
+			y={rect.y + doc.defaultView!.scrollY + staggerOffset}
 			color={annotation.color!}
 			opacity={annotation.id ? '100%' : '50%'}
 			selected={selected}
@@ -319,9 +295,56 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 Note.displayName = 'Note';
 type NoteProps = {
 	annotation: DisplayedAnnotation;
+	staggerIndex?: number,
 	selected: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onDragStart?: (dataTransfer: DataTransfer) => void;
+	disablePointerEvents: boolean;
+	scale?: number;
+};
+
+const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
+	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, disablePointerEvents, scale } = props;
+	const staggerMap = new Map<string | undefined, number>();
+	return <>
+		{annotations.map((annotation, i) => {
+			const stagger = staggerMap.has(annotation.sortIndex) ? staggerMap.get(annotation.sortIndex)! : 0;
+			staggerMap.set(annotation.sortIndex, stagger + 1);
+			if (annotation.id) {
+				return (
+					<Note
+						annotation={annotation}
+						staggerIndex={stagger}
+						key={annotation.id}
+						selected={selectedAnnotationIDs.includes(annotation.id)}
+						onPointerDown={event => onPointerDown(event, annotation.id!)}
+						onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
+						disablePointerEvents={disablePointerEvents}
+						scale={scale}
+					/>
+				);
+			}
+			else {
+				return (
+					<Note
+						annotation={annotation}
+						staggerIndex={stagger}
+						key={i}
+						selected={false}
+						disablePointerEvents={true}
+						scale={scale}
+					/>
+				);
+			}
+		})}
+	</>;
+});
+StaggeredNotes.displayName = 'StaggeredNotes';
+type StaggeredNotesProps = {
+	annotations: DisplayedAnnotation[];
+	selectedAnnotationIDs: string[];
+	onPointerDown: (event: React.PointerEvent, id: string) => void;
+	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
 	disablePointerEvents: boolean;
 	scale?: number;
 };

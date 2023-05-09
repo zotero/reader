@@ -36,6 +36,24 @@ export default [
 		isAuthorNameAuthoritative: true
 	},
 	{
+		type: "note",
+		color: "#ffd400",
+		sortIndex: "00008494",
+		position: {
+			type: "CssSelector",
+			value: "div:nth-child(3) > div:first-of-type > p:last-child"
+		},
+		text: "",
+		pageLabel: "",
+		comment: "To do: read that paper",
+		tags: [],
+		id: "NQV7SU47",
+		dateCreated: "2023-05-09T17:11:35.478Z",
+		dateModified: "2023-05-09T17:11:49.530Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
 		type: "highlight",
 		color: "#2ea8e5",
 		sortIndex: "00009850",
