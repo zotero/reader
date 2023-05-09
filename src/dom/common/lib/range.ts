@@ -33,7 +33,7 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 	if (range.endContainer.nodeType !== Node.TEXT_NODE) {
 		// Similar procedure to above
 		let endNode: Node | null = range.endContainer.childNodes.length
-			? range.endContainer.childNodes[Math.min(range.endOffset, range.endContainer.childNodes.length - 1)]
+			? range.endContainer.childNodes[Math.min(range.endOffset - 1, range.endContainer.childNodes.length - 1)]
 			: null;
 		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
 			const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
