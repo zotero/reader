@@ -106,7 +106,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 			}
 			count += node.nodeValue!.length;
 		}
-		return '';
+		return '0';
 	}
 
 	toSelector(range: Range): Selector | null {
