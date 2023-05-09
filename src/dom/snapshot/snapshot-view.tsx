@@ -79,7 +79,6 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
-		range = moveRangeEndsIntoTextNodes(range);
 		if (range.collapsed) {
 			return null;
 		}
@@ -88,13 +87,27 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (!selector) {
 			return null;
 		}
+		const sortIndex = this._getSortIndex(range);
 		return {
 			type,
 			color,
-			sortIndex: '0', // TODO
+			sortIndex,
 			position: selector,
 			text
 		};
+	}
+	
+	private _getSortIndex(range: Range) {
+		const iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
+		let count = 0;
+		let node: Node | null;
+		while ((node = iter.nextNode())) {
+			if (range.startContainer.contains(node)) {
+				return String(count + range.startOffset).padStart(8, '0');
+			}
+			count += node.nodeValue!.length;
+		}
+		return '';
 	}
 
 	toSelector(range: Range): Selector | null {
