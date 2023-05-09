@@ -329,7 +329,8 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
-		const link = (event.target as Element).closest('a');
+		const target = event.target as Element;
+		const link = target.closest('a');
 		if (link && this._isExternalLink(link)) {
 			this._overlayPopupDelayer.open(link, () => {
 				this._openExternalLinkOverlayPopup(link);
@@ -348,13 +349,14 @@ abstract class DOMView<State extends DOMViewState> {
 			// not the annotation layer, even if the mouse is over the annotation layer
 			this._disableAnnotationPointerEvents = true;
 			this._renderAnnotations();
-			const pos = supportsCaretPositionFromPoint()
+			const pos = target.tagName !== 'IMG' // Allow targeting images directly
+				&& supportsCaretPositionFromPoint()
 				&& caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
 			if (pos) {
 				range.selectNode(pos.offsetNode);
 			}
 			else {
-				range.selectNode(event.target as Node);
+				range.selectNode(target);
 			}
 			this._previewNote = this._getAnnotationFromRange(range, 'note', this._tool.color);
 			this._disableAnnotationPointerEvents = werePointerEventsDisabled;

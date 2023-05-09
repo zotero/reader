@@ -10,7 +10,6 @@ import {
 	ViewStats
 } from "../../common/types";
 import {
-	moveRangeEndsIntoTextNodes,
 	getCommonAncestorElement
 } from "../common/lib/range";
 import {
@@ -125,7 +124,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 			};
 			// If the user has highlighted the full text content of the element, no need to add a
 			// TextPositionSelector.
-			if (range.toString().trim() !== newCommonAncestor.textContent?.trim()) {
+			if (range.toString().trim() !== (newCommonAncestor.textContent || '').trim()) {
 				selector.refinedBy = textPositionFromRange(range, newCommonAncestor) || undefined;
 			}
 			return selector;
@@ -152,6 +151,9 @@ class SnapshotView extends DOMView<DOMViewState> {
 				else {
 					range = this._iframeDocument.createRange();
 					range.selectNodeContents(root);
+				}
+				if (!range.getClientRects().length) {
+					range.selectNode(range.commonAncestorContainer);
 				}
 				return range;
 			}
