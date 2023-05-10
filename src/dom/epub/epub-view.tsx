@@ -14,7 +14,7 @@ import Epub, {
 } from "epubjs";
 import {
 	moveRangeEndsIntoTextNodes,
-	getCommonAncestorElement
+	getStartElement
 } from "../common/lib/range";
 import {
 	FragmentSelector,
@@ -717,7 +717,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			const processor = this._find;
 			const result = processor.next();
 			if (result) {
-				this._scrollIntoView(getCommonAncestorElement(result.range) as HTMLElement);
+				this._scrollIntoView(getStartElement(result.range) as HTMLElement);
 			}
 			this._renderAnnotations();
 		}
@@ -729,7 +729,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			const processor = this._find;
 			const result = processor.prev();
 			if (result) {
-				this._scrollIntoView(getCommonAncestorElement(result.range) as HTMLElement);
+				this._scrollIntoView(getStartElement(result.range) as HTMLElement);
 			}
 			this._renderAnnotations();
 		}
@@ -793,7 +793,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				console.error('Unable to find range');
 				return;
 			}
-			this._scrollIntoView(getCommonAncestorElement(range) as HTMLElement, options);
+			this._scrollIntoView(getStartElement(range) as HTMLElement, options);
 		}
 		else if (location.href) {
 			options.block ||= 'start';

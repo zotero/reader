@@ -142,7 +142,7 @@ export function caretPositionFromPoint(doc: Document, x: number, y: number): Car
 	return null;
 }
 
-export function getCommonAncestorElement(range: Range): Element | null {
+export function getStartElement(range: Range): Element | null {
 	let startContainer: Node | null = range.startContainer;
 	while (startContainer && startContainer.nodeType !== Node.ELEMENT_NODE) {
 		startContainer = startContainer.parentNode;

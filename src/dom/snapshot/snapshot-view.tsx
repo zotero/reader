@@ -10,7 +10,7 @@ import {
 	ViewStats
 } from "../../common/types";
 import {
-	getCommonAncestorElement
+	getStartElement
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -205,7 +205,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		const range = this.toDisplayedRange(selector);
 		if (range) {
-			getCommonAncestorElement(range)?.scrollIntoView(options);
+			getStartElement(range)?.scrollIntoView(options);
 		}
 		else {
 			console.warn('Not a valid snapshot selector', selector);
@@ -287,7 +287,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (this._find) {
 			const result = this._find.next();
 			if (result) {
-				getCommonAncestorElement(result.range)?.scrollIntoView({ block: 'center' });
+				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
 			}
 			this._renderAnnotations();
 		}
@@ -298,7 +298,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (this._find) {
 			const result = this._find.prev();
 			if (result) {
-				getCommonAncestorElement(result.range)?.scrollIntoView({ block: 'center' });
+				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
 			}
 			this._renderAnnotations();
 		}
