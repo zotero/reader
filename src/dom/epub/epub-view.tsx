@@ -80,6 +80,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 	
 	private readonly _rangeCache = new Map<string, Range>();
 
+	private _pageProgressionRTL!: boolean;
+
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
 		this._book = Epub(options.buf.buffer);
@@ -91,6 +93,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 	
 	protected async _onInitialDisplay(viewState: Partial<EPUBViewState>) {
 		await this._book.opened;
+		
+		this._pageProgressionRTL = this._book.packaging.metadata.direction === 'rtl';
 
 		const style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
@@ -594,6 +598,27 @@ class EPUBView extends DOMView<EPUBViewState> {
 				event.preventDefault();
 				return;
 			}
+		}
+
+		if (key == 'ArrowLeft') {
+			if (this._pageProgressionRTL) {
+				this.navigateToNextPage();
+			}
+			else {
+				this.navigateToPreviousPage();
+			}
+			event.preventDefault();
+			return;
+		}
+		if (key == 'ArrowRight') {
+			if (this._pageProgressionRTL) {
+				this.navigateToPreviousPage();
+			}
+			else {
+				this.navigateToNextPage();
+			}
+			event.preventDefault();
+			return;
 		}
 
 		super._handleKeyDown(event);
