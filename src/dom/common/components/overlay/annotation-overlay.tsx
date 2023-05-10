@@ -276,11 +276,11 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 	};
 
 	const rect = annotation.range.getBoundingClientRect();
-	const ltr = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction != 'rtl';
+	const rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction === 'rtl';
 	const staggerOffset = (staggerIndex || 0) * 15;
 	return (
 		<CommentIcon
-			x={rect.x + (ltr ? rect.width + 25 : -25) + doc.defaultView!.scrollX + staggerOffset}
+			x={rect.x + (rtl ? -25 : rect.width + 25) + doc.defaultView!.scrollX + (rtl ? -1 : 1) * staggerOffset}
 			y={rect.y + doc.defaultView!.scrollY + staggerOffset}
 			color={annotation.color!}
 			opacity={annotation.id ? '100%' : '50%'}
@@ -383,11 +383,12 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 
 	const [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	
-	// TODO: RTL
+	const rtl = getComputedStyle(closestElement(props.annotation.range.commonAncestorContainer!)!).direction == 'rtl';
+	
 	const highlightRects = Array.from(props.highlightRects)
 		.sort((a, b) => (a.top - b.top) || (a.left - b.left));
-	const startRect = highlightRects[0];
-	const endRect = highlightRects[highlightRects.length - 1];
+	const topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
+	const bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
 	
 	const handlePointerDown = (event: React.PointerEvent, isStart: boolean) => {
 		if (event.button !== 0) {
@@ -430,26 +431,26 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	const win = props.annotation.range.commonAncestorContainer.ownerDocument!.defaultView!;
 	return <>
 		<rect
-			x={startRect.x + win.scrollX - WIDTH}
-			y={startRect.y + win.scrollY}
+			x={topLeftRect.x + win.scrollX - WIDTH}
+			y={topLeftRect.y + win.scrollY}
 			width={WIDTH}
-			height={startRect.height}
+			height={topLeftRect.height}
 			fill={props.annotation.color}
 			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, true)}
 			onPointerUp={event => handlePointerUp(event)}
-			onPointerMove={resizingSide == 'start' ? (event => handleResize(event, true)) : undefined}
+			onPointerMove={resizingSide == 'start' ? (event => handleResize(event, !rtl)) : undefined}
 		/>
 		<rect
-			x={endRect.right + win.scrollX}
-			y={endRect.y + win.scrollY}
+			x={bottomRightRect.right + win.scrollX}
+			y={bottomRightRect.y + win.scrollY}
 			width={WIDTH}
-			height={endRect.height}
+			height={bottomRightRect.height}
 			fill={props.annotation.color}
 			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, false)}
 			onPointerUp={event => handlePointerUp(event)}
-			onPointerMove={resizingSide == 'end' ? (event => handleResize(event, false)) : undefined}
+			onPointerMove={resizingSide == 'end' ? (event => handleResize(event, rtl)) : undefined}
 		/>
 	</>;
 };
