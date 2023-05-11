@@ -455,8 +455,8 @@ class Reader {
 
 	setReadOnly(readOnly) {
 		this._updateState({ readOnly });
-		this._primaryView?.setReadOnly(readOnly);
-		this._secondaryView?.setReadOnly(readOnly);
+		this._primaryView?.setReadOnly?.(readOnly);
+		this._secondaryView?.setReadOnly?.(readOnly);
 	}
 
 	toggleHandTool(enable) {
