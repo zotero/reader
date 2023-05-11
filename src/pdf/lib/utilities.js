@@ -431,3 +431,42 @@ export function setCaretPosition(event) {
 		console.error('Your browser does not support caret position from point.');
 	}
 }
+
+export function distanceBetweenRects(rect1, rect2) {
+	const [x1A, y1A, x2A, y2A] = rect1;
+	const [x1B, y1B, x2B, y2B] = rect2;
+	// Calculate the horizontal distance (dx, dy) between the two rectangles
+	// If rectangles overlap horizontally, dx, dy is set to 0
+	const dx = Math.max(x1A, x1B) > Math.min(x2A, x2B) ? Math.max(x1A, x1B) - Math.min(x2A, x2B) : 0;
+	const dy = Math.max(y1A, y1B) > Math.min(y2A, y2B) ? Math.max(y1A, y1B) - Math.min(y2A, y2B) : 0;
+	return Math.hypot(dx, dy);
+}
+
+export function getTransformFromRects(rect1, rect2) {
+	const x1 = rect1[0];
+	const y1 = rect1[1];
+	const x2 = rect1[2];
+	const y2 = rect1[3];
+
+	const x1Prime = rect2[0];
+	const y1Prime = rect2[1];
+	const x2Prime = rect2[2];
+	const y2Prime = rect2[3];
+
+	// Calculate scaling factors
+	const scaleX = (x2Prime - x1Prime) / (x2 - x1);
+	const scaleY = (y2Prime - y1Prime) / (y2 - y1);
+
+	// Calculate translation factors
+	const translateX = x1Prime - x1 * scaleX;
+	const translateY = y1Prime - y1 * scaleY;
+
+	// Create the transformation matrix for PDF
+	const matrix = [
+		scaleX, 0,
+		0, scaleY,
+		translateX, translateY
+	];
+
+	return matrix;
+}

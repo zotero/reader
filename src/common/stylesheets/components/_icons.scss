@@ -43,6 +43,22 @@
 			@include icon($text-tool-icon-active);
 		}
 	}
+
+	.ink {
+		@include icon($ink-tool-icon);
+
+		&.toggled {
+			@include icon($ink-tool-icon-active);
+		}
+	}
+
+	.eraser {
+		@include icon($eraser-tool-icon);
+
+		&.toggled {
+			@include icon($eraser-tool-icon-active);
+		}
+	}
 }
 
 // Toolbar sidebar

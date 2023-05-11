@@ -319,9 +319,12 @@ export default class Page {
 
 		for (let path of position.paths) {
 			this.actualContext.moveTo(...path.slice(0, 2));
-			for (let i = 2; i < path.length - 1; i += 2) {
+			for (let i = 0; i < path.length - 1; i += 2) {
 				let x = path[i];
 				let y = path[i + 1];
+				if (i === 0) {
+					this.actualContext.moveTo(x, y);
+				}
 				this.actualContext.lineTo(x, y);
 			}
 		}
@@ -431,7 +434,16 @@ export default class Page {
 				}
 			}
 			else if (annotation.type === 'ink') {
-				this._renderInk(annotation);
+				if (action && action.position && action.type === 'resize' && annotation.id === action.annotation.id) {
+					this._renderInk({ ...annotation, position: action.position });
+				}
+				else if (action && action.triggered && action.type === 'erase' && action.annotations.has(annotation.id)) {
+					let { position } = action.annotations.get(annotation.id);
+					this._renderInk({ ...annotation, position });
+				}
+				else {
+					this._renderInk(annotation);
+				}
 			}
 		}
 
@@ -499,11 +511,16 @@ export default class Page {
 				if (annotation.type === 'text') {
 					rect = annotation.position.rects[0];
 				}
-				if (['image', 'text'].includes(annotation.type)) {
+				if (['image', 'text', 'ink'].includes(annotation.type)) {
 					padding = 0;
 					rotation = annotation.position.rotation;
 					if (action && ['resize', 'rotate'].includes(action.type) && action.triggered) {
-						rect = action.position.rects[0];
+						if (annotation.type === 'text') {
+							rect = action.position.rects[0];
+						}
+						else {
+							rect = getPositionBoundingRect(action.position);
+						}
 						rotation = action.position.rotation;
 					}
 				}
@@ -552,25 +569,25 @@ export default class Page {
 				const radius = 4 * devicePixelRatio;
 				this.actualContext.fillStyle = '#81b3ff';
 				// Dashed lines
-				if (['image', 'text'].includes(annotation.type)) {
+				if (['image', 'text', 'ink'].includes(annotation.type)) {
 					this.actualContext.beginPath();
 					this.actualContext.arc(...p1, radius, 0, 2 * Math.PI, false);
 					this.actualContext.fill();
 				}
 
-				if (['image', 'text'].includes(annotation.type)) {
+				if (['image', 'text', 'ink'].includes(annotation.type)) {
 					this.actualContext.beginPath();
 					this.actualContext.arc(...p2, radius, 0, 2 * Math.PI, false);
 					this.actualContext.fill();
 				}
 
-				if (['image', 'text'].includes(annotation.type)) {
+				if (['image', 'text', 'ink'].includes(annotation.type)) {
 					this.actualContext.beginPath();
 					this.actualContext.arc(...p4, radius, 0, 2 * Math.PI, false);
 					this.actualContext.fill();
 				}
 
-				if (['image', 'text'].includes(annotation.type)) {
+				if (['image', 'text', 'ink'].includes(annotation.type)) {
 					this.actualContext.beginPath();
 					this.actualContext.arc(...p3, radius, 0, 2 * Math.PI, false);
 					this.actualContext.fill();
@@ -657,9 +674,10 @@ export default class Page {
 					this.actualContext.strokeStyle = '#aaaaaa';
 					this.actualContext.setLineDash([5 * devicePixelRatio, 3 * devicePixelRatio]);
 					this.actualContext.lineWidth = 2 * devicePixelRatio;
-					let rect = action.position.rects[0];
+					let rect = getPositionBoundingRect(action.position);
 					let tm = this.transform;
 					if (annotation.type === 'text') {
+						rect = action.position.rects[0];
 						tm = getRotationTransform(rect, annotation.position.rotation || 0);
 						tm = transform(this.transform, tm);
 					}
@@ -691,6 +709,11 @@ export default class Page {
 			else if (action.type === 'image' && action.annotation) {
 				if (action.annotation.position.pageIndex === this.pageIndex) {
 					this._renderImage(action.annotation);
+				}
+			}
+			else if (action.type === 'ink' && action.annotation) {
+				if (action.annotation.position.pageIndex === this.pageIndex) {
+					this._renderInk(action.annotation);
 				}
 			}
 		}

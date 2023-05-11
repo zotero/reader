@@ -10,6 +10,7 @@ import {
 	getLines,
 	extractLinks, getRangeByHighlight
 } from './text';
+import { getPositionBoundingRect } from './utilities';
 
 export class Extractor {
 	constructor(pdfViewer, getAnnotations) {
@@ -131,9 +132,10 @@ export class Extractor {
 	getSortIndex(position) {
 		let chars = this.getPageCharsSync(position.pageIndex);
 		let page = position.pageIndex;
-		let offset = chars.length && getClosestOffset(chars, position.rects[0]) || 0;
+		let rect = getPositionBoundingRect(position);
+		let offset = chars.length && getClosestOffset(chars, rect) || 0;
 		let pageHeight = this.pdfViewer._pages[position.pageIndex].viewport.viewBox[3];
-		let top = pageHeight - position.rects[0][3];
+		let top = pageHeight - rect[3];
 		if (top < 0) {
 			top = 0;
 		}

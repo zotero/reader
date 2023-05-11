@@ -89,6 +89,8 @@ class Reader {
 			tool: {
 				type: 'pointer',
 				color: ANNOTATION_COLORS[0][1],
+				pathWidth: 2,
+				eraserSize: 16
 			},
 			thumbnails: [],
 			outline: [],
@@ -1110,7 +1112,7 @@ class Reader {
 		if (annotations.length > 1) {
 			setMultiDragPreview(dataTransfer);
 		}
-		annotations = annotations.filter(x => x.type !== 'ink');
+		// annotations = annotations.filter(x => x.type !== 'ink');
 		let plainText = annotations.map((annotation) => {
 			let formatted = '';
 			if (annotation.text) {
@@ -1151,7 +1153,7 @@ class Reader {
 		// which also prevents word processors from using `text/plain`, and
 		// results to dumped base64 content (LibreOffice) or image (Google Docs)
 		dataTransfer.clearData();
-		dataTransfer.setData('text/plain', plainText);
+		dataTransfer.setData('text/plain', plainText || ' ');
 		this._onSetDataTransferAnnotations(dataTransfer, annotations, fromText);
 	}
 

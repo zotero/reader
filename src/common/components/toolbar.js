@@ -167,6 +167,26 @@ function Toolbar(props) {
 							<span className="button-background"/>
 						</button>
 					)}
+					{props.type === 'pdf' && (
+						<button
+							tabIndex={-1}
+							className={cx('toolbarButton ink', { toggled: props.tool.type === 'ink' })}
+							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							onClick={() => handleToolClick('ink')}
+						>
+							<span className="button-background"/>
+						</button>
+					)}
+					{props.type === 'pdf' && (
+						<button
+							tabIndex={-1}
+							className={cx('toolbarButton eraser', { toggled: props.tool.type === 'eraser' })}
+							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							onClick={() => handleToolClick('eraser')}
+						>
+							<span className="button-background"/>
+						</button>
+					)}
 					<button
 						tabIndex={-1}
 						className="toolbarButton global-color"
