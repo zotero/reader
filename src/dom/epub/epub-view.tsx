@@ -207,7 +207,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!this._book.navigation.toc.length) {
 			return;
 		}
-		const navPath = new Path(this._book.packaging.navPath);
+		const navPath = new Path(this._book.packaging.navPath || this._book.packaging.ncxPath || '');
 		const toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
 			title: navItem.label,
 			location: {
