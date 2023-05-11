@@ -18,7 +18,7 @@ class PageMapping {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
-		const startTime = performance.now();
+		const startTime = new Date().getTime();
 		let consecutiveSectionsWithoutMatches = 0;
 		for (const view of views) {
 			let matchesFound = false;
@@ -44,7 +44,7 @@ class PageMapping {
 			}
 		}
 		console.log(`Added ${this._tree.length} physical page mappings in ${
-			((performance.now() - startTime) / 1000).toFixed(2)}s`);
+			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 		return !!this._tree.length;
 	}
 	
@@ -52,7 +52,7 @@ class PageMapping {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
-		const startTime = performance.now();
+		const startTime = new Date().getTime();
 		let locationNumber = 0;
 		for (const view of views) {
 			const textNodes = getAllTextNodes(view.body);
@@ -81,7 +81,7 @@ class PageMapping {
 			}
 		}
 		console.log(`Added ${this._tree.length} EPUB location mappings in ${
-			((performance.now() - startTime) / 1000).toFixed(2)}s`);
+			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 		return !!this._tree.length;
 	}
 	
