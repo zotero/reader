@@ -1,4 +1,44 @@
 import { p2v } from './coordinates';
+import { getRotationTransform } from './utilities';
+
+let fontFamily = window.getComputedStyle(document.body).getPropertyValue('font-family');
+
+function calculateLines(context, text, maxWidth) {
+	let words = text.split(' ');
+	let lines = [];
+	let line = '';
+
+	for(let n = 0; n < words.length; n++) {
+		let testLine = line + words[n] + ' ';
+		let metrics = context.measureText(testLine);
+		let testWidth = metrics.width;
+		if (testWidth > maxWidth) {
+			if (line.trim() === '') { // This is a single word exceeding the maxWidth
+				// We need to split this word
+				let testWord = '';
+				for(let m = 0; m < words[n].length; m++) {
+					let testChar = testWord + words[n][m];
+					let metricsChar = context.measureText(testChar);
+					let testCharWidth = metricsChar.width;
+					if (testCharWidth > maxWidth) {
+						lines.push(testWord);
+						testWord = words[n][m];
+					} else {
+						testWord = testChar;
+					}
+				}
+				line = testWord + ' ';
+			} else { // This is a line that would exceed the maxWidth if we add the next word
+				lines.push(line.trim());
+				line = words[n] + ' ';
+			}
+		} else {
+			line = testLine;
+		}
+	}
+	lines.push(line.trim());
+	return lines;
+}
 
 export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 	let ctx = canvas.getContext('2d', { alpha: false });
@@ -71,6 +111,23 @@ export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 				}
 			}
 			ctx.stroke();
+		}
+		else if (annotation.type === 'text') {
+			let fontSize = position.fontSize;
+			let lineHeight = fontSize * 1.2; // 1.2 is a common line height for many fonts
+			let rect = position.rects[0];
+			let x = rect[0];
+			let y = rect[3] - lineHeight;
+			let width = rect[2] - rect[0] + 10;
+			ctx.fillStyle = annotation.color;
+			ctx.font = fontSize + 'px ' + fontFamily;
+			let lines = calculateLines(ctx, annotation.comment, width);
+			let tm = getRotationTransform(rect, -position.rotation);
+			ctx.transform(...tm);
+			for (let line of lines) {
+				ctx.fillText(line, x, y);
+				y += lineHeight;
+			}
 		}
 		ctx.restore();
 	}

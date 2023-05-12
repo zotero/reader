@@ -1,6 +1,6 @@
 export function p2v(position, viewport) {
 	if (position.rects) {
-		return {
+		let position2 = {
 			pageIndex: position.pageIndex,
 			rects: position.rects.map((rect) => {
 				let [x1, y2] = viewport.convertToViewportPoint(rect[0], rect[1]);
@@ -13,6 +13,15 @@ export function p2v(position, viewport) {
 				];
 			})
 		};
+
+		// For text annotations
+		if (position.fontSize) {
+			position2.fontSize = viewport.convertToViewportPoint(position.fontSize, 0)[0];
+		}
+		if (position.rotation) {
+			position2.rotation = position.rotation;
+		}
+		return position2;
 	}
 	else if (position.paths) {
 		return {
