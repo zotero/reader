@@ -1,8 +1,6 @@
 import { p2v } from './coordinates';
 import { getRotationTransform } from './utilities';
 
-let fontFamily = window.getComputedStyle(document.body).getPropertyValue('font-family');
-
 function calculateLines(context, text, maxWidth) {
 	let words = text.split(' ');
 	let lines = [];
@@ -120,7 +118,7 @@ export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 			let y = rect[3] - lineHeight;
 			let width = rect[2] - rect[0] + 10;
 			ctx.fillStyle = annotation.color;
-			ctx.font = fontSize + 'px ' + fontFamily;
+			ctx.font = fontSize + 'px ' + window.computedFontFamily;
 			let lines = calculateLines(ctx, annotation.comment, width);
 			let tm = getRotationTransform(rect, -position.rotation);
 			ctx.transform(...tm);

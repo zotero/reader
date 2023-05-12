@@ -23,6 +23,10 @@ import {
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
 
+// Compute style values for usage in views (CSS variables aren't sufficient for that)
+// Font family is necessary for text annotations
+window.computedFontFamily = window.getComputedStyle(document.body).getPropertyValue('font-family');
+
 class Reader {
 	constructor(options) {
 		this._type = options.type;

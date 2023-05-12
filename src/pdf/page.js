@@ -380,7 +380,8 @@ export default class Page {
 					`width: calc(${width}px * var(--scale-factor))`,
 					`height: calc(${height}px * var(--scale-factor))`,
 					`color: ${annotation.color}`,
-					`font-size: calc(${position.fontSize}px * var(--scale-factor))`
+					`font-size: calc(${position.fontSize}px * var(--scale-factor))`,
+					`font-family: ${window.computedFontFamily}`
 				];
 				if (position.rotation) {
 					style.push(`transform: rotate(${-position.rotation}deg)`);

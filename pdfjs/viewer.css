@@ -358,8 +358,6 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 
 .textAnnotation {
 	background-color: transparent;
-	/* $font-family-sans-serif */
-	font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif;
 	border: none;
 	box-sizing: border-box;
 	outline: none;
