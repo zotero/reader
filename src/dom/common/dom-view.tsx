@@ -35,7 +35,6 @@ import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
 import { isSafari } from "../../common/lib/utilities";
 import {
-	getVisibleTextNodes,
 	isElement
 } from "./lib/nodes";
 
@@ -132,8 +131,6 @@ abstract class DOMView<State extends DOMViewState> {
 	
 	protected abstract _getAnnotationOverlayParent(): ParentNode | null;
 
-	protected abstract _getViewportBoundingRect(range: Range): DOMRect;
-	
 	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
 	
 	protected abstract _updateViewState(): void;
@@ -146,6 +143,16 @@ abstract class DOMView<State extends DOMViewState> {
 	// Utilities - called in appropriate event handlers
 	// ***
 	
+	protected _getViewportBoundingRect(range: Range): DOMRect {
+		const rect = range.getBoundingClientRect();
+		return new DOMRect(
+			rect.x + this._iframe.getBoundingClientRect().x - this._container.getBoundingClientRect().x,
+			rect.y + this._iframe.getBoundingClientRect().y - this._container.getBoundingClientRect().y,
+			rect.width,
+			rect.height
+		);
+	}
+
 	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		const selection = this._iframeDocument.getSelection();
 		if (!selection || selection.isCollapsed) {

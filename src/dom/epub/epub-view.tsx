@@ -410,20 +410,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this.navigate({ pageNumber: selector.value }, options);
 	}
 
-	protected _getViewportBoundingRect(range: Range): DOMRect {
-		const rect = range.getBoundingClientRect();
-		const iframe = range.commonAncestorContainer.ownerDocument?.defaultView?.frameElement;
-		if (!iframe) {
-			throw new Error('Range is not inside iframe');
-		}
-		return new DOMRect(
-			rect.x + iframe.getBoundingClientRect().x - this._container.getBoundingClientRect().x,
-			rect.y + iframe.getBoundingClientRect().y - this._container.getBoundingClientRect().y,
-			rect.width,
-			rect.height
-		);
-	}
-
 	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		range = moveRangeEndsIntoTextNodes(range);
 		if (range.collapsed) {

@@ -198,16 +198,6 @@ class SnapshotView extends DOMView<DOMViewState> {
 	// - annotation, selection and overlay popups are closed by calling this._onSetSomePopup()
 	//   with no arguments
 
-	protected override _getViewportBoundingRect(range: Range): DOMRect {
-		const rect = range.getBoundingClientRect();
-		return new DOMRect(
-			rect.x + this._iframe.getBoundingClientRect().x - this._container.getBoundingClientRect().x,
-			rect.y + this._iframe.getBoundingClientRect().y - this._container.getBoundingClientRect().y,
-			rect.width,
-			rect.height
-		);
-	}
-
 	_pushCurrentLocationToNavStack() {
 		this._navStack.push([this._iframeWindow.scrollX, this._iframeWindow.scrollY]);
 		this._updateViewStats();
