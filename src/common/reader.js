@@ -169,7 +169,7 @@ class Reader {
 			authorName: options.authorName,
 			annotations: options.annotations,
 			onSave: this._onSaveAnnotations,
-			onDelete: this._onDeleteAnnotations,
+			onDelete: this._handleDeleteAnnotations,
 			onRender: (annotations) => {
 				this._updateState({ annotations });
 			},
@@ -1170,6 +1170,22 @@ class Reader {
 	_handleLabelOverlayClose() {
 		this._updateState({ labelOverlay: null });
 	}
+
+	_handleDeleteAnnotations = (ids) => {
+		let primaryViewAnnotationPopup = this._state.primaryViewAnnotationPopup;
+		if (primaryViewAnnotationPopup && ids.includes(primaryViewAnnotationPopup.annotation.id)) {
+			primaryViewAnnotationPopup = null;
+		}
+		let secondaryViewAnnotationPopup = this._state.secondaryViewAnnotationPopup;
+		if (secondaryViewAnnotationPopup && ids.includes(secondaryViewAnnotationPopup.annotation.id)) {
+			secondaryViewAnnotationPopup = null;
+		}
+		this._updateState({
+			primaryViewAnnotationPopup,
+			secondaryViewAnnotationPopup
+		});
+		this._onDeleteAnnotations(ids);
+	};
 
 	rotatePageLeft() {
 		this._ensureType('pdf');
