@@ -17,12 +17,16 @@ export function getVisibleTextNodes(root: Node): Text[] {
 	});
 }
 
+export function isElement(node: Node): node is Element {
+	return node.nodeType === Node.ELEMENT_NODE;
+}
+
 export function closestElement(node: Node): Element | null {
 	let currentNode: Node | null = node;
-	while (currentNode && currentNode.nodeType !== Node.ELEMENT_NODE) {
-		currentNode = node.parentNode;
+	while (currentNode && !isElement(currentNode)) {
+		currentNode = currentNode.parentNode;
 	}
-	return currentNode as Element | null;
+	return currentNode;
 }
 
 export const DOMPURIFY_CONFIG = {

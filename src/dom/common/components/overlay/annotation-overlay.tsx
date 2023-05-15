@@ -1,5 +1,4 @@
 import React, {
-	LegacyRef,
 	useState
 } from 'react';
 import {
@@ -21,6 +20,7 @@ export type DisplayedAnnotation = {
 	sortIndex?: string;
 	text?: string;
 	comment?: string;
+	key: string;
 	range: Range;
 };
 
@@ -69,7 +69,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 					return (
 						<Highlight
 							annotation={annotation}
-							key={annotation.id}
+							key={annotation.key}
 							selected={selectedAnnotationIDs.includes(annotation.id)}
 							onPointerDown={event => handlePointerDown(event, annotation.id!)}
 							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
@@ -84,7 +84,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 					return (
 						<Highlight
 							annotation={annotation}
-							key={i}
+							key={annotation.key}
 							selected={false}
 							disablePointerEvents={true}
 							widgetContainer={widgetContainer}
@@ -294,7 +294,7 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 });
 Note.displayName = 'Note';
 type NoteProps = {
-	annotation: DisplayedAnnotation;
+	annotation: DisplayedAnnotation,
 	staggerIndex?: number,
 	selected: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
@@ -307,7 +307,7 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
 	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, disablePointerEvents, scale } = props;
 	const staggerMap = new Map<string | undefined, number>();
 	return <>
-		{annotations.map((annotation, i) => {
+		{annotations.map((annotation) => {
 			const stagger = staggerMap.has(annotation.sortIndex) ? staggerMap.get(annotation.sortIndex)! : 0;
 			staggerMap.set(annotation.sortIndex, stagger + 1);
 			if (annotation.id) {
@@ -315,7 +315,7 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
 					<Note
 						annotation={annotation}
 						staggerIndex={stagger}
-						key={annotation.id}
+						key={annotation.key}
 						selected={selectedAnnotationIDs.includes(annotation.id)}
 						onPointerDown={event => onPointerDown(event, annotation.id!)}
 						onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
@@ -329,7 +329,7 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
 					<Note
 						annotation={annotation}
 						staggerIndex={stagger}
-						key={i}
+						key={annotation.key}
 						selected={false}
 						disablePointerEvents={true}
 						scale={scale}
@@ -349,7 +349,7 @@ type StaggeredNotesProps = {
 	scale?: number;
 };
 
-const SelectionBorder: React.FC<SelectionBorderProps> = (props) => {
+const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
 	return (
 		<rect
 			x={props.rect.x + props.win.scrollX - 5}
@@ -361,7 +361,7 @@ const SelectionBorder: React.FC<SelectionBorderProps> = (props) => {
 			strokeDasharray="10 6"
 			strokeWidth={2}/>
 	);
-};
+}, (prev, next) => JSON.stringify(prev.rect) === JSON.stringify(next.rect) && prev.win === next.win);
 SelectionBorder.displayName = 'SelectionBorder';
 type SelectionBorderProps = {
 	rect: DOMRect;

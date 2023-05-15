@@ -36,10 +36,12 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 			? range.endContainer.childNodes[Math.min(range.endOffset - 1, range.endContainer.childNodes.length - 1)]
 			: null;
 		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
-			const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
-			walker.currentNode = endNode || range.endContainer;
-			// Get the previous node on this end instead of the next
-			endNode = walker.previousNode();
+			// Get the last text node inside the container/child
+			const walker = doc.createTreeWalker(endNode || range.endContainer, NodeFilter.SHOW_TEXT);
+			let node;
+			while ((node = walker.nextNode())) {
+				endNode = node;
+			}
 		}
 		if (endNode) {
 			let offset = 0;

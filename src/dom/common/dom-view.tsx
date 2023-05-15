@@ -21,7 +21,6 @@ import {
 	DisplayedAnnotation
 } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { IGNORE_CLASS } from "../epub/defines";
 import {
 	Selector
 } from "./lib/selector";
@@ -35,6 +34,10 @@ import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
 import { isSafari } from "../../common/lib/utilities";
+import {
+	getVisibleTextNodes,
+	isElement
+} from "./lib/nodes";
 
 abstract class DOMView<State extends DOMViewState> {
 	protected readonly _container: Element;
@@ -75,9 +78,11 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected _highlightedPosition: Selector | null = null;
 	
-	protected _previewNote: NewAnnotation<WADMAnnotation> | null = null;
-
 	protected _gotPointerUp = false;
+
+	protected _previewNoteAnnotation: NewAnnotation<WADMAnnotation> | null = null;
+	
+	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
 	protected constructor(options: DOMViewOptions<State>) {
 		this._options = options;
@@ -213,7 +218,6 @@ abstract class DOMView<State extends DOMViewState> {
 		if (!container) {
 			container = doc.createElement('div');
 			container.id = 'annotation-overlay';
-			container.classList.add(IGNORE_CLASS);
 			root.append(container);
 		}
 		const displayedAnnotations: DisplayedAnnotation[] = [
@@ -224,6 +228,7 @@ abstract class DOMView<State extends DOMViewState> {
 				sortIndex: a.sortIndex,
 				text: a.text,
 				comment: a.comment,
+				key: a.id,
 				range: this.toDisplayedRange(a.position),
 			})).filter(a => !!a.range) as DisplayedAnnotation[],
 			...this._find?.getAnnotations() ?? []
@@ -232,17 +237,19 @@ abstract class DOMView<State extends DOMViewState> {
 			displayedAnnotations.push({
 				type: 'highlight',
 				color: SELECTION_COLOR,
+				key: '_highlightedPosition',
 				range: this.toDisplayedRange(this._highlightedPosition)!,
 			});
 		}
-		if (this._previewNote && this._tool.type == 'note') {
+		if (this._previewNoteAnnotation) {
 			displayedAnnotations.push({
-				type: this._previewNote.type,
-				color: this._previewNote.color,
-				sortIndex: this._previewNote.sortIndex,
-				text: this._previewNote.text,
-				comment: this._previewNote.comment,
-				range: this.toDisplayedRange(this._previewNote.position)!,
+				type: this._previewNoteAnnotation.type,
+				color: this._previewNoteAnnotation.color,
+				sortIndex: this._previewNoteAnnotation.sortIndex,
+				text: this._previewNoteAnnotation.text,
+				comment: this._previewNoteAnnotation.comment,
+				key: '_previewNoteAnnotation',
+				range: this.toDisplayedRange(this._previewNoteAnnotation.position)!,
 			});
 		}
 		ReactDOM.render((
@@ -297,6 +304,29 @@ abstract class DOMView<State extends DOMViewState> {
 		this._options.onSetOverlayPopup(overlayPopup);
 	}
 
+	/**
+	 * For use in the console during development.
+	 */
+	protected _normalizeAnnotations() {
+		this._options.onUpdateAnnotations(this._annotations.map((annotation) => {
+			let range = this.toDisplayedRange(annotation.position);
+			if (!range) {
+				console.warn('Could not create range for annotation', annotation);
+				return annotation;
+			}
+			range = moveRangeEndsIntoTextNodes(range);
+			const newAnnotation = this._getAnnotationFromRange(range, annotation.type, annotation.color);
+			if (!newAnnotation) {
+				console.warn('Could not create annotation from normalized range', annotation);
+				return annotation;
+			}
+			return {
+				...annotation,
+				...newAnnotation,
+			};
+		}));
+	}
+
 	// ***
 	// Event handlers
 	// ***
@@ -310,9 +340,12 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
 		this._iframeWindow.addEventListener('pointerover', this._handlePointerOver.bind(this));
+		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
 		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
+		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
+		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this));
 		// @ts-ignore
 		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
 		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
@@ -345,29 +378,58 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 
 		if (this._tool.type == 'note') {
-			const range = this._iframeDocument.createRange();
-			const werePointerEventsDisabled = this._disableAnnotationPointerEvents;
-			// Disable pointer events and rerender so we can get the cursor position in the text layer,
-			// not the annotation layer, even if the mouse is over the annotation layer
-			this._disableAnnotationPointerEvents = true;
+			const range = this._getNoteTargetRange(event);
+			this._previewNoteAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
 			this._renderAnnotations();
-			const pos = target.tagName !== 'IMG' // Allow targeting images directly
-				&& supportsCaretPositionFromPoint()
+		}
+	}
+
+	protected _handleDragOver(event: DragEvent) {
+		if (!this._draggingNoteAnnotation) {
+			return;
+		}
+		event.preventDefault();
+	}
+	
+	protected _handleDrop(event: DragEvent) {
+		if (!this._draggingNoteAnnotation) {
+			return;
+		}
+		
+		const range = this._getNoteTargetRange(event);
+		const selector = this.toSelector(range);
+		if (!selector) {
+			return;
+		}
+		this._draggingNoteAnnotation.position = selector;
+		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
+	}
+	
+	protected _getNoteTargetRange(event: PointerEvent | DragEvent) {
+		const target = event.target as Element;
+		const werePointerEventsDisabled = this._disableAnnotationPointerEvents;
+		// Disable pointer events and rerender so we can get the cursor position in the text layer,
+		// not the annotation layer, even if the mouse is over the annotation layer
+		this._disableAnnotationPointerEvents = true;
+		this._renderAnnotations();
+		const range = this._iframeDocument.createRange();
+		if (target.tagName === 'IMG') { // Allow targeting images directly
+			range.selectNode(target);
+		}
+		else {
+			const pos = supportsCaretPositionFromPoint()
 				&& caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-			if (pos) {
-				range.selectNode(pos.offsetNode);
+			let node = pos ? pos.offsetNode : target;
+			// Expand to the closest block element
+			while (node.parentNode
+					&& (!isElement(node) || this._iframeWindow.getComputedStyle(node).display.includes('inline'))) {
+				node = node.parentNode;
 			}
-			else {
-				range.selectNode(target);
-			}
-			this._previewNote = this._getAnnotationFromRange(range, 'note', this._tool.color);
-			this._disableAnnotationPointerEvents = werePointerEventsDisabled;
-			this._renderAnnotations();
+			range.selectNode(node);
 		}
-		else if (this._previewNote !== null) {
-			this._previewNote = null;
-			this._renderAnnotations();
-		}
+		this._disableAnnotationPointerEvents = werePointerEventsDisabled;
+		this._renderAnnotations();
+		return range;
 	}
 
 	protected _handleClick(event: MouseEvent) {
@@ -481,6 +543,10 @@ abstract class DOMView<State extends DOMViewState> {
 		this._options.onSetDataTransferAnnotations(event.dataTransfer, annotation, true);
 	}
 
+	private _handleDragEnd(_event: DragEvent) {
+		this._draggingNoteAnnotation = null;
+	}
+
 	private _handleContextMenu(event: MouseEvent) {
 		// Prevent native context menu
 		event.preventDefault();
@@ -504,7 +570,11 @@ abstract class DOMView<State extends DOMViewState> {
 	};
 
 	private _handleAnnotationDragStart = (dataTransfer: DataTransfer, id: string) => {
-		this._options.onSetDataTransferAnnotations(dataTransfer, this._annotationsByID.get(id)!);
+		const annotation = this._annotationsByID.get(id)!;
+		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
+		if (annotation.type === 'note') {
+			this._draggingNoteAnnotation = annotation;
+		}
 	};
 
 	private _handleAnnotationResize = (id: string, range: Range) => {
@@ -565,8 +635,8 @@ abstract class DOMView<State extends DOMViewState> {
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
-		if (this._tool.type == 'note' && this._previewNote) {
-			this._options.onAddAnnotation(this._previewNote, true);
+		if (this._tool.type == 'note' && this._previewNoteAnnotation) {
+			this._options.onAddAnnotation(this._previewNoteAnnotation, true);
 			event.preventDefault();
 			
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
@@ -629,6 +699,9 @@ abstract class DOMView<State extends DOMViewState> {
 		const selectionColor = (tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR)
 			+ '80'; // 50% opacity, like annotations
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
+		if (this._previewNoteAnnotation && tool.type !== 'note') {
+			this._previewNoteAnnotation = null;
+		}
 		this._renderAnnotations();
 	}
 

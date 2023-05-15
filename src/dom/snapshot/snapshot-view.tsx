@@ -81,7 +81,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (range.collapsed) {
 			return null;
 		}
-		const text = range.toString();
+		const text = type == 'highlight' ? range.toString() : undefined;
 		const selector = this.toSelector(range);
 		if (!selector) {
 			return null;
@@ -104,7 +104,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 			if (range.startContainer.contains(node)) {
 				return String(count + range.startOffset).padStart(8, '0');
 			}
-			count += node.nodeValue!.length;
+			count += node.nodeValue!.trim().length;
 		}
 		return '00000000';
 	}
@@ -112,15 +112,26 @@ class SnapshotView extends DOMView<DOMViewState> {
 	toSelector(range: Range): Selector | null {
 		const doc = range.commonAncestorContainer.ownerDocument;
 		if (!doc) return null;
-		const commonAncestorQuery = getUniqueSelectorContaining(range.commonAncestorContainer, doc.body);
-		if (commonAncestorQuery) {
-			const newCommonAncestor = doc.body.querySelector(commonAncestorQuery);
+		let targetElement;
+		// In most cases, the range will wrap a single child of the
+		// commonAncestorContainer. Build a selector targeting that element,
+		// not the container.
+		if (range.startContainer === range.endContainer
+				&& range.startOffset == range.endOffset - 1) {
+			targetElement = range.startContainer.childNodes[range.startOffset];
+		}
+		else {
+			targetElement = range.commonAncestorContainer;
+		}
+		const targetElementQuery = getUniqueSelectorContaining(targetElement, doc.body);
+		if (targetElementQuery) {
+			const newCommonAncestor = doc.body.querySelector(targetElementQuery);
 			if (!newCommonAncestor) {
 				return null;
 			}
 			const selector: CssSelector = {
 				type: 'CssSelector',
-				value: commonAncestorQuery
+				value: targetElementQuery
 			};
 			// If the user has highlighted the full text content of the element, no need to add a
 			// TextPositionSelector.

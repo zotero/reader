@@ -23,9 +23,6 @@ import {
 	Selector
 } from "../common/lib/selector";
 import { EPUBFindProcessor } from "./find";
-import {
-	IGNORE_CLASS
-} from "./defines";
 import NavStack from "../common/lib/nav-stack";
 import DOMView, {
 	DOMViewOptions,
@@ -243,7 +240,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return null;
 		}
 		const section = this._book.section(sectionContainer.getAttribute('data-section-index')!);
-		return new EpubCFI(rangeOrNode, section.cfiBase, IGNORE_CLASS);
+		return new EpubCFI(rangeOrNode, section.cfiBase);
 	}
 
 	getRange(cfi: EpubCFI | string): Range | null {
@@ -251,19 +248,20 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return this._rangeCache.get(cfi.toString())!.cloneRange();
 		}
 		if (typeof cfi === 'string') {
-			cfi = new EpubCFI(cfi, undefined, IGNORE_CLASS);
+			cfi = new EpubCFI(cfi);
 		}
 		const view = this._sectionViews[cfi.spinePos];
 		if (!view) {
 			console.error('Unable to find view for CFI', cfi.toString());
 			return null;
 		}
-		const range = cfi.toRange(this._iframeDocument, IGNORE_CLASS, view.container);
+		const range = cfi.toRange(this._iframeDocument, undefined, view.container);
 		this._rangeCache.set(cfi.toString(), range.cloneRange());
 		return range;
 	}
 
 	override toSelector(range: Range): FragmentSelector | null {
+		range = moveRangeEndsIntoTextNodes(range);
 		const cfi = this.getCFI(range);
 		if (!cfi) {
 			return null;
@@ -298,7 +296,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				if (selector.conformsTo != 'http://www.idpf.org/epub/linking/cfi/epub-cfi.html') {
 					throw new Error(`Unsupported FragmentSelector.conformsTo: ${selector.conformsTo}`);
 				}
-				return new EpubCFI(selector.value, undefined, IGNORE_CLASS).spinePos;
+				return new EpubCFI(selector.value).spinePos;
 			default:
 				// No other selector types supported on EPUBs
 				throw new Error(`Unsupported Selector.type: ${selector.type}`);
@@ -383,7 +381,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 					this._cachedStartRange = startRange;
 				}
 				if (startCFIRange) {
-					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase, IGNORE_CLASS);
+					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase);
 				}
 				if (startRange && startCFIRange) {
 					foundStart = true;
@@ -426,13 +424,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 		);
 	}
 
-	// Currently type is only 'highlight' but later there will also be 'underline'
 	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		range = moveRangeEndsIntoTextNodes(range);
 		if (range.collapsed) {
 			return null;
 		}
-		const text = range.toString();
+		const text = type == 'highlight' ? range.toString() : undefined;
 		const selector = this.toSelector(range);
 		if (!selector) {
 			return null;

@@ -14,7 +14,7 @@ export default [
 		tags: [],
 		id: "TX8S2BZM",
 		dateCreated: "2023-02-21T19:35:47.798Z",
-		dateModified: "2023-03-02T18:06:26.385Z",
+		dateModified: "2023-05-15T18:27:32.257Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -33,7 +33,7 @@ export default [
 		tags: [],
 		id: "PARGMWMZ",
 		dateCreated: "2023-02-21T19:36:03.145Z",
-		dateModified: "2023-03-02T18:06:30.288Z",
+		dateModified: "2023-05-15T18:27:32.257Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -47,12 +47,11 @@ export default [
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
 			value: "epubcfi(/6/92!/4/2[chapter-40]/40,/1:0,/1:201)"
 		},
-		text: "Beat thy belly, then, and wag thy ears. Jig it, men, I say; merry’s the word; hurrah! Damn me, won’t you dance? Form, now, Indian-file, and gallop into the double-shuffle? Throw yourselves! Legs! legs!",
 		comment: "What does this mean?",
 		tags: [],
 		id: "GTPE6G89",
 		dateCreated: "2023-04-19T15:38:44.556Z",
-		dateModified: "2023-04-19T15:38:48.755Z",
+		dateModified: "2023-05-15T18:27:32.257Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -71,7 +70,7 @@ export default [
 		tags: [],
 		id: "4JKDWLSF",
 		dateCreated: "2023-02-21T19:36:34.563Z",
-		dateModified: "2023-03-02T18:06:34.994Z",
+		dateModified: "2023-05-15T18:27:32.257Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -90,7 +89,7 @@ export default [
 		tags: [],
 		id: "YMJAWZXH",
 		dateCreated: "2023-02-21T19:36:16.574Z",
-		dateModified: "2023-03-02T18:06:40.385Z",
+		dateModified: "2023-05-15T18:27:32.257Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -109,7 +108,7 @@ export default [
 		tags: [],
 		id: "YUTUT8H3",
 		dateCreated: "2023-02-21T19:36:44.833Z",
-		dateModified: "2023-03-02T18:06:44.558Z",
+		dateModified: "2023-05-15T18:27:32.258Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	}

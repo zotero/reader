@@ -44,12 +44,13 @@ class DefaultFindProcessor implements FindProcessor {
 			}
 		);
 		for (const range of ranges) {
-			const result: FindResult = {
+			const findResult: FindResult = {
 				range,
 				highlight: {
 					type: 'highlight',
 					color: 'rgba(180, 0, 170, 1)',
 					text: '',
+					key: 'findResult',
 					range,
 				}
 			};
@@ -58,7 +59,7 @@ class DefaultFindProcessor implements FindProcessor {
 					this._initialPos = this._buf.length;
 				}
 			}
-			this._buf.push(result);
+			this._buf.push(findResult);
 		}
 		this._setFindState();
 	}
