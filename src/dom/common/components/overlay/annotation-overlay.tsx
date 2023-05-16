@@ -7,7 +7,6 @@ import {
 	splitRangeToTextNodes,
 	supportsCaretPositionFromPoint
 } from "../../lib/range";
-import PropTypes from "prop-types";
 import { AnnotationType } from "../../../../common/types";
 import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
@@ -61,10 +60,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				overflow: 'visible'
 			}}
 		>
-			{annotations.map((annotation, i) => {
-				if (annotation.type != 'highlight') {
-					return null;
-				}
+			{annotations.filter(annotation => annotation.type == 'highlight').map((annotation) => {
 				if (annotation.id) {
 					return (
 						<Highlight
@@ -107,7 +103,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			ref={c => setWidgetContainer(c)}
 		>
 			<StaggeredNotes
-				annotations={annotations.filter(a => a.type === 'note')}
+				annotations={annotations.filter(a => a.type == 'note')}
 				selectedAnnotationIDs={selectedAnnotationIDs}
 				onPointerDown={handlePointerDown}
 				onDragStart={onDragStart}
@@ -280,6 +276,7 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 	const staggerOffset = (staggerIndex || 0) * 15;
 	return (
 		<CommentIcon
+			annotation={annotation}
 			x={rect.x + (rtl ? -25 : rect.width + 25) + doc.defaultView!.scrollX + (rtl ? -1 : 1) * staggerOffset}
 			y={rect.y + doc.defaultView!.scrollY + staggerOffset}
 			color={annotation.color!}
@@ -505,25 +502,16 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 					draggable={true}
 					onPointerDown={props.onPointerDown}
 					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}/>
+					onDragEnd={props.onDragEnd}
+					data-annotation-id={props.annotation?.id}/>
 			</foreignObject>
 		)}
 	</>;
 });
 CommentIcon.displayName = 'CommentIcon';
-CommentIcon.propTypes = {
-	x: PropTypes.number.isRequired,
-	y: PropTypes.number.isRequired,
-	color: PropTypes.string.isRequired,
-	opacity: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-	selected: PropTypes.bool,
-	large: PropTypes.bool,
-	onPointerDown: PropTypes.func,
-	onDragStart: PropTypes.func,
-	onDragEnd: PropTypes.func,
-};
 CommentIcon = React.memo(CommentIcon);
 type CommentIconProps = {
+	annotation?: { id?: string },
 	x: number;
 	y: number;
 	color: string;

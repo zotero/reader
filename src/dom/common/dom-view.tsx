@@ -287,11 +287,18 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected _openAnnotationPopup(annotation: WADMAnnotation) {
 		// Note: Popup won't be visible if sidebar is opened
-		const range = this.toDisplayedRange(annotation.position);
-		if (!range) {
-			return;
+		let domRect;
+		if (annotation.type == 'note') {
+			domRect = this._iframeDocument.querySelector(`[data-annotation-id="${annotation.id}"]`)
+				?.getBoundingClientRect();
 		}
-		const domRect = this._getViewportBoundingRect(range);
+		if (!domRect) {
+			const range = this.toDisplayedRange(annotation.position);
+			if (!range) {
+				return;
+			}
+			domRect = this._getViewportBoundingRect(range);
+		}
 		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		this._options.onSelectAnnotations([annotation.id]);
 		this._options.onSetAnnotationPopup({ rect, annotation });
@@ -718,10 +725,12 @@ abstract class DOMView<State extends DOMViewState> {
 		this._annotations = annotations;
 		this._annotationsByID = new Map(annotations.map(a => [a.id, a]));
 		this._renderAnnotations();
+		this._repositionPopups();
 	}
 
 	setShowAnnotations(show: boolean) {
 		this._showAnnotations = show;
+		this._renderAnnotations();
 	}
 
 	setSelectedAnnotationIDs(ids: string[]) {
