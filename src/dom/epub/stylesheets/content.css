@@ -100,7 +100,7 @@ body.paginated replaced-body * {
 
 replaced-body {
 	font-family: "Georgia", serif;
-	font-size: var(--content-font-size);
+	font-size: var(--content-font-size) !important;
 	line-height: 1.4;
 	text-align: justify;
 }
