@@ -14,6 +14,7 @@
 	position: relative;
 	display: flex;
 	justify-content: space-between;
+	-moz-window-dragging: drag;
 
 	@include retina {
 		background: $toolbar-bg-2x;
