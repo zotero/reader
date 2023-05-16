@@ -256,6 +256,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return null;
 		}
 		const range = cfi.toRange(this._iframeDocument, undefined, view.container);
+		if (!range) {
+			console.error('Unable to get range for CFI', cfi.toString());
+			return null;
+		}
 		this._rangeCache.set(cfi.toString(), range.cloneRange());
 		return range;
 	}
