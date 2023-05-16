@@ -1459,7 +1459,7 @@ const Annotator = React.forwardRef((props, ref) => {
 				position: position
 			});
 		}
-		}, []);
+	}, []);
 
 	const handleLayerAreaResizeStart = useCallback(() => {
 		setIsResizingArea(true);
