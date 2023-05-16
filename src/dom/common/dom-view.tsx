@@ -222,6 +222,12 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 		const doc = root.ownerDocument!;
 		let container = root.querySelector('#annotation-overlay');
+		if (!this._showAnnotations) {
+			if (container) {
+				container.remove();
+			}
+			return;
+		}
 		if (!container) {
 			container = doc.createElement('div');
 			container.id = 'annotation-overlay';
