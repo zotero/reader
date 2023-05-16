@@ -42,6 +42,22 @@ export function IconInk() {
 	);
 }
 
+export function IconFreetext() {
+	return (
+		<svg width="12" height="12" viewBox="0 0 12 12">
+			<path
+				strokeWidth="1.8"
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				strokeMiterlimit="4"
+				stroke="currentColor"
+				fill="none"
+				d="M 11.20,38.05 C 11.20,38.05 11.20,34.05 11.20,34.05 11.20,34.05 17.90,34.05 17.90,34.05 17.90,34.05 24.85,13.60 24.85,13.60 24.85,13.60 16.90,13.60 16.90,13.60 16.90,13.60 16.90,9.60 16.90,9.60 16.90,9.60 35.90,9.60 35.90,9.60 35.90,9.60 35.90,13.60 35.90,13.60 35.90,13.60 29.20,13.60 29.20,13.60 29.20,13.60 22.25,34.05 22.25,34.05 22.25,34.05 30.20,34.05 30.20,34.05 30.20,34.05 30.20,38.05 30.20,38.05 30.20,38.05 11.20,38.05 11.20,38.05 Z"
+			/>
+		</svg>
+	);
+}
+
 export function IconNoteLarge() {
 	return (
 		<svg width="24" height="24" viewBox="0 0 24 24">

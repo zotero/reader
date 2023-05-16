@@ -846,6 +846,9 @@ const Annotator = React.forwardRef((props, ref) => {
 				}
 				setColor(annotationColors[idx][1]);
 			}
+			else if (isAlt && e.code === 'Digit5') {
+				toggleMode('typewriter');
+			}
 		}
 
 		// Focused any zone that is not PDF view
@@ -1414,6 +1417,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let enableAddToNote = !annotationsRef.current.some(x => ids.includes(x.id) && x.type === 'ink');
 		let enableEditHighlightedText = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'highlight');
 		let enableImageOptions = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'image');
+		let enableTypewriterOptions = ids.length === 1 && annotationsRef.current.find(x => x.id === ids[0] && x.type === 'freetext');
 
 		props.onPopup('openAnnotationPopup', {
 			x: screenX,
@@ -1429,7 +1433,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			enableAddToNote,
 			enableEditPageNumber: true,
 			enableEditHighlightedText,
-			enableImageOptions
+			enableImageOptions,
+			enableTypewriterOptions
 		});
 	}, []);
 
@@ -1437,13 +1442,24 @@ const Annotator = React.forwardRef((props, ref) => {
 		setIsSelectingArea(true);
 	}, []);
 
-	const handleLayerAreaCreation = useCallback((position) => {
-		props.onAddAnnotation({
-			type: 'image',
-			color: colorRef.current,
-			position: position
-		});
-	}, []);
+	const handleLayerAreaCreation = useCallback((position, isTypewriter) => {
+		console.log(isTypewriter + '?')
+		if (isTypewriter) {
+			props.onAddAnnotation({
+				type: 'freetext',
+				//color: colorRef.current,
+				position: position,
+				text: 'this is a test'
+			});
+		}
+		else {
+			props.onAddAnnotation({
+				type: 'image',
+				color: colorRef.current,
+				position: position
+			});
+		}
+		}, []);
 
 	const handleLayerAreaResizeStart = useCallback(() => {
 		setIsResizingArea(true);
@@ -1458,6 +1474,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		let selectedColor = annotation.color;
 		let enableAddToNote = annotation.type !== 'ink';
 		let enableImageOptions = annotation.type === 'image';
+		let enableTypewriterOptions = annotation.type === 'freetext';
 
 		props.onPopup('openAnnotationPopup', {
 			x: screenX,
@@ -1471,7 +1488,8 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectedColor,
 			enableAddToNote,
 			enableEditPageNumber: true,
-			enableImageOptions
+			enableImageOptions,
+			enableTypewriterOptions
 		});
 	}, []);
 
@@ -1603,6 +1621,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			let readOnly = !!annotationsRef.current.find(x => selectedIDsRef.current.includes(x.id) && x.readOnly);
 			let enableAddToNote = !annotationsRef.current.some(x => selectedIDsRef.current.includes(x.id) && x.type === 'ink');
 			let enableImageOptions = selectedIDsRef.current.length === 1 && annotationsRef.current.find(x => x.id === selectedIDsRef.current[0] && x.type === 'image');
+			let enableTypewriterOptions = selectedIDsRef.current.length === 1 && annotationsRef.current.find(x => x.id === selectedIDsRef.current[0] && x.type === 'freetext');
 
 			let selectedColor;
 			if (annotationsRef.current.length === 1) {
@@ -1621,7 +1640,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				colors: annotationColors,
 				selectedColor,
 				enableAddToNote,
-				enableImageOptions
+				enableImageOptions,
+				enableTypewriterOptions
 			});
 		}
 
@@ -1631,7 +1651,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		if (isLeft
 			&& !isCtrl
-			&& !['note', 'image'].includes(modeRef.current)
+			&& !['note', 'image', 'typewriter'].includes(modeRef.current)
 			&& (!selectedIDsRef.current.length || isShift)) {
 			setEnableSelection(true);
 		}
@@ -1765,7 +1785,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		let textPosition = window.pageTextPositions[position.pageIndex];
 		let overText = (
-			!['note', 'image'].includes(modeRef.current)
+			!['note', 'image', 'typewriter'].includes(modeRef.current)
 			&& (!intersectsWithSelectedText(position) || isShift)
 			&& (textPosition && intersectAnnotationWithPoint(textPosition, position))
 			|| isSelectingTextRef.current
@@ -2119,7 +2139,8 @@ const Annotator = React.forwardRef((props, ref) => {
 				selectedAnnotationIDs={_selectedIDs}
 				blink={_blink}
 				enableEdgeNotes={!_isResizingArea} // TODO: disable only for the current note
-				enableAreaSelector={_mode === 'image' && !_selectedIDs.length}
+				enableAreaSelector={(_mode === 'image' || _mode === 'typewriter') && !_selectedIDs.length}
+				isTypewriter={_mode === 'typewriter'} // Allows refactoring of onAreaSelection()
 				onAreaSelectionStart={handleLayerAreaSelectionStart}
 				onAreaSelection={handleLayerAreaCreation}
 				onAreaResizeStart={handleLayerAreaResizeStart}

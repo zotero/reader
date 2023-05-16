@@ -5,7 +5,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
-import { IconHighlight, IconNote, IconArea, IconInk } from './icons';
+import { IconHighlight, IconNote, IconArea, IconInk, IconFreetext } from './icons';
 
 // TODO: Don't allow to select UI text in popup header and footer
 export function PopupPreview(props) {
@@ -59,6 +59,7 @@ export function PopupPreview(props) {
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
 							|| annotation.type === 'ink' && <IconInk/>
+							|| annotation.type === 'freetext' && <IconFreetext/>
 						}
 					</div>
 					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
@@ -249,6 +250,7 @@ export function SidebarPreview(props) {
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
 							|| annotation.type === 'ink' && <IconInk/>
+							|| annotation.type === 'freetext' && <IconFreetext/>
 						}
 					</div>
 					<div

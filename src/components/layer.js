@@ -184,6 +184,50 @@ function PageLayerArea(props) {
 	);
 }
 
+function PageLayerFreetext(props) {
+	function getContainerNode(viewport) {
+		return findOrCreateContainerLayer(
+			viewport.div,
+			'layer-freetext'
+		);
+	}
+
+	let node = getContainerNode(props.view);
+	if (!node) return null;
+
+	return ReactDOM.createPortal(
+		<div>
+			{props.annotations.map(
+				(annotation, index) => {
+					let { position, ...rest } = annotation;
+
+					let viewportAnnotation = {
+						position: p2vc(position, props.view.viewport),
+						...rest
+					};
+
+					return (
+						<div key={annotation.id}>
+							<Area
+								annotation={viewportAnnotation}
+								isSelected={props.selectedAnnotationIDs.includes(annotation.id)}
+								move={props.selectedAnnotationIDs.length === 1}
+								onResizeStart={props.onResizeStart}
+								onDragStart={props.onDragStart}
+								onDragEnd={props.onDragEnd}
+								onChangePosition={(position) => {
+									props.onChangePosition(annotation.id, position);
+								}}
+							/>
+						</div>
+					);
+				}
+			)}
+		</div>,
+		node
+	);
+}
+
 function AreaSelectorLayer(props) {
 	function getContainerNode() {
 		let container = document.getElementById('areaSelectorContainer');
@@ -567,6 +611,18 @@ function Layer(props) {
 				}}
 				onDragStart={props.onDragStart}
 				onDragEnd={props.onDragEnd}
+			/>,
+			<PageLayerFreetext
+				key={'a_' + pageIndex}
+				view={view}
+				selectedAnnotationIDs={selectedAnnotationIDs}
+				annotations={(annotationsByPage[pageIndex].filter(x => x.type === 'freetext') || [])}
+				onResizeStart={props.onAreaResizeStart}
+				onChangePosition={(id, position) => {
+					onChange({ id, position: v2p(position) });
+				}}
+				onDragStart={props.onDragStart}
+				onDragEnd={props.onDragEnd}
 			/>
 		);
 
@@ -575,7 +631,7 @@ function Layer(props) {
 				key={'m_' + pageIndex}
 				view={view}
 				selectedAnnotationIDs={selectedAnnotationIDs}
-				annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'image'].includes(x.type)) || [])}
+				annotations={(annotationsByPage[pageIndex].filter(x => ['highlight', 'image', 'typewriter'].includes(x.type)) || [])}
 				onClick={onClickEdgeNote}
 			/>);
 		}
@@ -609,7 +665,7 @@ function Layer(props) {
 				enableAreaSelector={props.enableAreaSelector}
 				onSelectionStart={props.onAreaSelectionStart}
 				onSelection={(position) => {
-					props.onAreaSelection(v2p(position));
+					props.onAreaSelection(v2p(position), props.isTypewriter);
 				}}
 			/>
 			{

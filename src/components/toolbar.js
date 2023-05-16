@@ -67,6 +67,18 @@ function Toolbar(props) {
 				<span className="button-background"/>
 				<span className="dropmarker"/>
 			</button>
+			<button
+				tabIndex={-1}
+				className={cx('toolbarButton typewriter', {
+					toggled: toggled === 'typewriter'
+				})}
+				title={intl.formatMessage({ id: 'pdfReader.addNote' })}
+				onClick={() => {
+					onMode('typewriter');
+				}}
+			>
+				<span className="button-background"/>
+			</button>
 		</div>,
 		containerNode
 	);
