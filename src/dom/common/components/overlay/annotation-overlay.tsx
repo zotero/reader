@@ -216,7 +216,7 @@ const Highlight: React.FC<HighlightProps> = React.memo((props) => {
 						data-annotation-id={annotation.id}/>
 				</foreignObject>
 			))}
-			{!disablePointerEvents && onResize && selected && supportsCaretPositionFromPoint() && (
+			{(!disablePointerEvents || isResizing) && onResize && selected && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...highlightRects.values()]}
@@ -397,7 +397,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	};
 	
 	const handlePointerUp = (event: React.PointerEvent) => {
-		if (event.button !== 0) {
+		if (event.button !== 0 || !(event.target as Element).hasPointerCapture(event.pointerId)) {
 			return;
 		}
 		(event.target as Element).releasePointerCapture(event.pointerId);
