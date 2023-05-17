@@ -66,6 +66,10 @@
 	.splitToolbarButton {
 		display: flex;
 	}
+  
+	.toolbarButton, .toolbarField {
+		-moz-window-dragging: no-drag;
+	}
 
 	@if $toolbar-btn-separator-list {
 		#{$toolbar-btn-separator-list} {
