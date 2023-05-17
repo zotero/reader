@@ -306,7 +306,6 @@ abstract class DOMView<State extends DOMViewState> {
 			domRect = this._getViewportBoundingRect(range);
 		}
 		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		this._options.onSelectAnnotations([annotation.id]);
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}
 
@@ -369,8 +368,8 @@ abstract class DOMView<State extends DOMViewState> {
 		// @ts-ignore
 		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
 		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
-		this._iframeWindow.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
+		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
 		// Pass options to setters that were delayed until iframe initialization
@@ -586,6 +585,7 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	private _handleAnnotationSelect = (id: string) => {
+		this._options.onSelectAnnotations([id]);
 		this._openAnnotationPopup(this._annotationsByID.get(id)!);
 	};
 
