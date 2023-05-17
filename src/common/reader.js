@@ -1310,6 +1310,20 @@ class Reader {
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToNextPage;
 	}
 
+	get canNavigateToPreviousSection() {
+		if (this._type !== 'epub') {
+			return false;
+		}
+		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToPreviousSection;
+	}
+
+	get canNavigateToNextSection() {
+		if (this._type !== 'epub') {
+			return false;
+		}
+		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).canNavigateToNextSection;
+	}
+
 	get flowMode() {
 		this._ensureType('epub');
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).flowMode;
