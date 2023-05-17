@@ -90,6 +90,8 @@ export type ViewStats = {
 	canNavigateToLastPage?: boolean;
 	canNavigateToPreviousPage?: boolean;
 	canNavigateToNextPage?: boolean;
+	canNavigateToPreviousSection?: boolean;
+	canNavigateToNextSection?: boolean;
 	zoomAutoEnabled?: boolean;
 	zoomPageWidthEnabled?: boolean;
 	zoomPageHeightEnabled?: boolean;

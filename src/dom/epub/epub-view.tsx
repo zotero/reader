@@ -644,6 +644,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 			canNavigateToLastPage: canNavigateToNextPage,
 			canNavigateToPreviousPage,
 			canNavigateToNextPage,
+			canNavigateToPreviousSection: this.canNavigateToPreviousSection(),
+			canNavigateToNextSection: this.canNavigateToNextSection(),
 			flowMode: this._viewState.flowMode,
 		};
 		this._options.onChangeViewStats(viewStats);
@@ -862,14 +864,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 		});
 	}
 
-	// Possibly we want different navigation types as well.
-	// I.e. Books.app has a concept of "chapters"
 	navigateToFirstPage() {
-		console.log('Navigate to first page');
+		this.navigate({ href: this._book.spine.first().href });
 	}
 
 	navigateToLastPage() {
-		console.log('Navigate to last page');
+		this.navigate({ href: this._book.spine.last().href });
 	}
 	
 	canNavigateToPreviousPage() {
@@ -917,6 +917,28 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex + 1));
 		this._handleViewUpdate();
 		this._maybeDisablePageTurnTransition();
+	}
+
+	canNavigateToPreviousSection() {
+		return !!this.startView?.section.prev();
+	}
+
+	canNavigateToNextSection() {
+		return !!this.startView?.section.next();
+	}
+
+	navigateToPreviousSection() {
+		const section = this.startView?.section.prev();
+		if (section) {
+			this.navigate({ href: section.href });
+		}
+	}
+
+	navigateToNextSection() {
+		const section = this.startView?.section.next();
+		if (section) {
+			this.navigate({ href: section.href });
+		}
 	}
 
 	private _maybeDisablePageTurnTransition() {

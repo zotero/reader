@@ -905,6 +905,16 @@ class Reader {
 		this._lastView.navigateToNextPage();
 	}
 
+	navigateToPreviousSection() {
+		this._ensureType('epub');
+		this._lastView.navigateToPreviousSection();
+	}
+
+	navigateToNextSection() {
+		this._ensureType('epub');
+		this._lastView.navigateToNextSection();
+	}
+
 	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
 		let deleteIDs = [];
 		for (let annotation of this._state.annotations) {
