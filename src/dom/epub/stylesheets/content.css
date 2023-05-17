@@ -26,6 +26,10 @@ body.scrolled > .sections > .section-container {
 	max-width: 800px;
 }
 
+body.scrolled replaced-body * {
+	max-width: calc(min(100vw - 80px, 100%));
+}
+
 body.paginated {
 	margin: 40px !important;
 	overflow: hidden;
@@ -100,11 +104,26 @@ body.paginated replaced-body * {
 
 replaced-body {
 	font-family: "Georgia", serif;
-	font-size: var(--content-font-size) !important;
+	font-size: calc(var(--content-font-size) * 13pt) !important;
 	line-height: 1.4;
 	text-align: justify;
 }
 
+replaced-body p {
+	/* Really enforce some of our formatting choices on body paragraphs */
+	font-family: "Georgia", serif !important;
+	line-height: 1.4 !important;
+}
+
 replaced-body a {
 	text-decoration: none;
+}
+
+replaced-body sup {
+	/* Prevent footnote superscripts from affecting the line-height */
+	line-height: 1 !important;
+	font-size: 0.8em !important;
+	vertical-align: baseline !important;
+	position: relative !important;
+	top: -0.5em !important;
 }

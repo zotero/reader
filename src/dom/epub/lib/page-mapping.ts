@@ -134,6 +134,10 @@ const MATCHERS: Matcher[] = [
 	{
 		selector: 'a[id^="PrintPage_"]',
 		extract: el => el.id.split('_').pop()!
+	},
+	{
+		selector: 'a[id^="page_"]',
+		extract: el => el.id.split('_').pop()!
 	}
 ];
 

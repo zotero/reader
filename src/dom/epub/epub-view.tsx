@@ -139,7 +139,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
 		if (viewState.scale) {
-			this._iframeDocument.documentElement.style.setProperty('--content-font-size', viewState.scale + 'em');
+			this._iframeDocument.documentElement.style.setProperty('--content-font-size', String(viewState.scale));
 		}
 		else {
 			viewState.scale = 1;
@@ -755,7 +755,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
 		this._viewState.scale = scale;
-		this._iframeDocument.documentElement.style.setProperty('--content-font-size', scale + 'em');
+		this._iframeDocument.documentElement.style.setProperty('--content-font-size', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
@@ -768,7 +768,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
 		this._viewState.scale = scale;
-		this._iframeDocument.documentElement.style.setProperty('--content-font-size', scale + 'em');
+		this._iframeDocument.documentElement.style.setProperty('--content-font-size', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
@@ -778,7 +778,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	zoomReset() {
 		const cfiBefore = this.startCFI;
 		this._viewState.scale = 1;
-		this._iframeDocument.documentElement.style.setProperty('--content-font-size', '1em');
+		this._iframeDocument.documentElement.style.setProperty('--content-font-size', '1');
 		this._handleViewUpdate();
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
