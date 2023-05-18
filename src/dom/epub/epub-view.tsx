@@ -220,13 +220,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		return this._iframeDocument?.body;
 	}
 
-	private _getSelectorSection(selector: Selector): number {
-		if (!isFragment(selector) || selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
-			throw new Error('Unsupported selector');
-		}
-		return new EpubCFI(selector.value).spinePos;
-	}
-
 	getCFI(rangeOrNode: Range | Node): EpubCFI | null {
 		let commonAncestorNode;
 		if ('nodeType' in rangeOrNode) {
@@ -244,23 +237,24 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	getRange(cfi: EpubCFI | string): Range | null {
-		if (this._rangeCache.has(cfi.toString())) {
-			return this._rangeCache.get(cfi.toString())!.cloneRange();
+		const cfiString = cfi.toString();
+		if (this._rangeCache.has(cfiString)) {
+			return this._rangeCache.get(cfiString)!.cloneRange();
 		}
 		if (typeof cfi === 'string') {
 			cfi = new EpubCFI(cfi);
 		}
 		const view = this._sectionViews[cfi.spinePos];
 		if (!view) {
-			console.error('Unable to find view for CFI', cfi.toString());
+			console.error('Unable to find view for CFI', cfiString);
 			return null;
 		}
 		const range = cfi.toRange(this._iframeDocument, undefined, view.container);
 		if (!range) {
-			console.error('Unable to get range for CFI', cfi.toString());
+			console.error('Unable to get range for CFI', cfiString);
 			return null;
 		}
-		this._rangeCache.set(cfi.toString(), range.cloneRange());
+		this._rangeCache.set(cfiString, range.cloneRange());
 		return range;
 	}
 
@@ -294,19 +288,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 
-	toSection(selector: Selector) {
-		switch (selector.type) {
-			case 'FragmentSelector':
-				if (selector.conformsTo != 'http://www.idpf.org/epub/linking/cfi/epub-cfi.html') {
-					throw new Error(`Unsupported FragmentSelector.conformsTo: ${selector.conformsTo}`);
-				}
-				return new EpubCFI(selector.value).spinePos;
-			default:
-				// No other selector types supported on EPUBs
-				throw new Error(`Unsupported Selector.type: ${selector.type}`);
-		}
-	}
-	
 	get views(): SectionView[] {
 		return this._sectionViews;
 	}
@@ -430,13 +411,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return null;
 		}
 		
-		// Use the number of characters between the start of the page and the start of the selection range
+		// Use the number of characters between the start of the section and the start of the selection range
 		// to disambiguate the sortIndex
-		const section = this._getSelectorSection(selector);
+		const sectionContainer = closestElement(range.startContainer)?.closest('[data-section-index]');
+		if (!sectionContainer) {
+			return null;
+		}
+		const sectionIndex = parseInt(sectionContainer.getAttribute('data-section-index')!);
 		const offsetRange = this._iframeDocument.createRange();
-		offsetRange.setStart(this._sectionViews[section].container, 0);
+		offsetRange.setStart(sectionContainer, 0);
 		offsetRange.setEnd(range.startContainer, range.startOffset);
-		const sortIndex = String(section).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
+		const sortIndex = String(sectionIndex).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
 		return {
 			type,
 			color,
