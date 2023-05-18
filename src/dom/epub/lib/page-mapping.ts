@@ -1,7 +1,7 @@
 import BTree from "sorted-btree";
 import SectionView from "../section-view";
 import EPUBView from "../epub-view";
-import { getAllTextNodes } from "../../common/lib/nodes";
+import { getVisibleTextNodes } from "../../common/lib/nodes";
 import { EPUB_LOCATION_BREAK_INTERVAL } from "../defines";
 
 class PageMapping {
@@ -24,15 +24,20 @@ class PageMapping {
 			let matchesFound = false;
 			for (const matcher of MATCHERS) {
 				const elems = view.container.querySelectorAll(matcher.selector);
-				if (elems.length) {
-					matchesFound = true;
-					console.log(`Found ${elems.length} physical page numbers using selector '${matcher.selector}'`);
-				}
+				let successes = 0;
 				for (const elem of elems) {
 					const pageNumber = matcher.extract(elem);
+					if (!pageNumber) {
+						continue;
+					}
 					const range = elem.ownerDocument.createRange();
 					range.selectNode(elem);
 					this._tree.set(range, pageNumber);
+					successes++;
+				}
+				if (successes) {
+					matchesFound = true;
+					console.log(`Found ${successes} physical page numbers using selector '${matcher.selector}'`);
 				}
 			}
 			if (matchesFound) {
@@ -55,7 +60,7 @@ class PageMapping {
 		const startTime = new Date().getTime();
 		let locationNumber = 0;
 		for (const view of views) {
-			const textNodes = getAllTextNodes(view.body);
+			const textNodes = getVisibleTextNodes(view.body);
 			let remainingBeforeBreak = 0;
 			for (const node of textNodes) {
 				if (/^\s*$/.test(node.data)) continue;
@@ -127,17 +132,13 @@ class PageMapping {
 
 type Matcher = {
 	selector: string;
-	extract: (el: Element) => string;
+	extract: (el: Element) => string | undefined;
 }
 
 const MATCHERS: Matcher[] = [
 	{
-		selector: 'a[id^="PrintPage_"]',
-		extract: el => el.id.split('_').pop()!
-	},
-	{
-		selector: 'a[id^="page_"]',
-		extract: el => el.id.split('_').pop()!
+		selector: 'a[id*="page" i]:empty',
+		extract: el => el.id.match(/page[-_]?(.+)$/i)?.[1]
 	}
 ];
 
