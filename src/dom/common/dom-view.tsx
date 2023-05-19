@@ -809,6 +809,7 @@ export type DOMViewOptions<State extends DOMViewState> = {
 	overlayPopup: OverlayPopupParams | null;
 	findState: FindState;
 	viewState?: State;
+	fontFamily?: string;
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;

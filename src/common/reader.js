@@ -85,6 +85,7 @@ class Reader {
 			readOnly: options.readOnly !== undefined ? options.readOnly : false,
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
 			fontSize: options.fontSize || 1,
+			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			tool: {
 				type: 'pointer',
@@ -331,6 +332,11 @@ class Reader {
 		}
 		if (this._state.secondaryViewFindState !== previousState.secondaryViewFindState) {
 			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
+		}
+
+		if (this._type === 'epub' && this._state.fontFamily !== previousState.fontFamily) {
+			this._primaryView?.setFontFamily(this._state.fontFamily);
+			this._secondaryView?.setFontFamily(this._state.fontFamily);
 		}
 
 		if (init || this._state.sidebarOpen !== previousState.sidebarOpen) {
@@ -698,6 +704,7 @@ class Reader {
 		} else if (this._type === 'epub') {
 			view = new EPUBView({
 				...common,
+				fontFamily: this._state.fontFamily,
 				onSetOutline,
 			});
 		} else if (this._type === 'snapshot') {
@@ -1029,6 +1036,10 @@ class Reader {
 		this._updateState({ fontSize });
 	}
 
+	setFontFamily(fontFamily) {
+		this._updateState({ fontFamily });
+	}
+
 	setSidebarView(view) {
 		this._updateState({ sidebarView: view });
 	}
@@ -1334,18 +1345,6 @@ class Reader {
 	set flowMode(value) {
 		this._ensureType('epub');
 		this._lastView.setFlowMode(value);
-	}
-
-	get fontFamily() {
-		if (this._type !== 'epub') {
-			return undefined;
-		}
-		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).fontFamily;
-	}
-
-	set fontFamily(value) {
-		this._ensureType('epub');
-		this._lastView.setFontFamily(value);
 	}
 }
 

@@ -132,15 +132,16 @@ class EPUBView extends DOMView<EPUBViewState> {
 		await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
 		styleScoper.rewriteAll();
 
+		if (this._options.fontFamily) {
+			this._iframeDocument.documentElement.style.setProperty('--content-font-family', this._options.fontFamily);
+		}
+
 		this._sectionsContainer.hidden = false;
 		await this._initPageMapping();
 		this._initOutline();
 		
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
-		if (viewState.fontFamily) {
-			this._iframeDocument.documentElement.style.setProperty('--content-font-family', viewState.fontFamily);
-		}
 		if (viewState.scale) {
 			this._iframeDocument.documentElement.style.setProperty('--content-scale', String(viewState.scale));
 		}
@@ -148,7 +149,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			viewState.scale = 1;
 		}
 		if (viewState.cfi) {
-			this.navigate({ pageNumber: viewState.cfi });
+			this.navigate({ pageNumber: viewState.cfi }, { behavior: 'auto' });
 		}
 		if (viewState.flowMode) {
 			this.setFlowMode(viewState.flowMode);
@@ -635,7 +636,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 			canNavigateToPreviousSection: this.canNavigateToPreviousSection(),
 			canNavigateToNextSection: this.canNavigateToNextSection(),
 			flowMode: this._viewState.flowMode,
-			fontFamily: this._viewState.fontFamily,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -711,9 +711,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 	
 	setFontFamily(fontFamily: string) {
-		this._viewState.fontFamily = fontFamily;
 		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
-		this._updateViewState();
+		this._renderAnnotations();
 	}
 
 	// ***
@@ -963,9 +962,9 @@ type FlowMode = 'paginated' | 'scrolled';
 export type EPUBViewState = {
 	cfi?: string;
 	savedPageMapping?: string;
-	fontFamily?: string;
 	scale?: number;
 	flowMode?: FlowMode;
+	fontFamily?: string;
 };
 
 export default EPUBView;
