@@ -1325,7 +1325,9 @@ class Reader {
 	}
 
 	get flowMode() {
-		this._ensureType('epub');
+		if (this._type !== 'epub') {
+			return undefined;
+		}
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).flowMode;
 	}
 
