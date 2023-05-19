@@ -273,7 +273,6 @@ abstract class DOMView<State extends DOMViewState> {
 				onDragStart={this._handleAnnotationDragStart}
 				onResize={this._handleAnnotationResize}
 				disablePointerEvents={this._disableAnnotationPointerEvents}
-				scale={this._viewState.scale}
 			/>
 		), container);
 	}

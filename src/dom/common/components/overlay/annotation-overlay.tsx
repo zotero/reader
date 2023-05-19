@@ -24,7 +24,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	const { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents, scale } = props;
+	const { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
 	
 	const [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
 	
@@ -72,7 +72,6 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							onResize={range => onResize(annotation.id!, range)}
 							disablePointerEvents={disablePointerEvents}
 							widgetContainer={widgetContainer}
-							scale={scale}
 						/>
 					);
 				}
@@ -84,7 +83,6 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							selected={false}
 							disablePointerEvents={true}
 							widgetContainer={widgetContainer}
-							scale={scale}
 						/>
 					);
 				}
@@ -121,11 +119,9 @@ type AnnotationOverlayProps = {
 	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
 	onResize: (id: string, range: Range) => void;
 	disablePointerEvents: boolean;
-	// Passed down to invalidate memoized subcomponents on zoom
-	scale?: number;
 };
 
-const Highlight: React.FC<HighlightProps> = React.memo((props) => {
+const Highlight: React.FC<HighlightProps> = (props) => {
 	const { annotation, selected, onPointerDown, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
 	const [dragImage, setDragImage] = useState<Element | null>(null);
 	const [isResizing, setResizing] = useState(false);
@@ -238,7 +234,7 @@ const Highlight: React.FC<HighlightProps> = React.memo((props) => {
 			widgetContainer
 		)}
 	</>;
-});
+};
 Highlight.displayName = 'Highlight';
 type HighlightProps = {
 	annotation: DisplayedAnnotation;
@@ -248,10 +244,9 @@ type HighlightProps = {
 	onResize?: (range: Range) => void;
 	disablePointerEvents: boolean;
 	widgetContainer: Element | null;
-	scale?: number;
 };
 
-const Note: React.FC<NoteProps> = React.memo((props) => {
+const Note: React.FC<NoteProps> = (props) => {
 	const { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
 	const iconRef = React.useRef<SVGSVGElement>(null);
 
@@ -288,7 +283,7 @@ const Note: React.FC<NoteProps> = React.memo((props) => {
 			ref={iconRef}
 		/>
 	);
-});
+};
 Note.displayName = 'Note';
 type NoteProps = {
 	annotation: DisplayedAnnotation,
@@ -297,11 +292,10 @@ type NoteProps = {
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onDragStart?: (dataTransfer: DataTransfer) => void;
 	disablePointerEvents: boolean;
-	scale?: number;
 };
 
-const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, disablePointerEvents, scale } = props;
+const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
+	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, disablePointerEvents } = props;
 	const staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
@@ -317,7 +311,6 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
 						onPointerDown={event => onPointerDown(event, annotation.id!)}
 						onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
 						disablePointerEvents={disablePointerEvents}
-						scale={scale}
 					/>
 				);
 			}
@@ -329,13 +322,12 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = React.memo((props) => {
 						key={annotation.key}
 						selected={false}
 						disablePointerEvents={true}
-						scale={scale}
 					/>
 				);
 			}
 		})}
 	</>;
-});
+};
 StaggeredNotes.displayName = 'StaggeredNotes';
 type StaggeredNotesProps = {
 	annotations: DisplayedAnnotation[];
@@ -343,7 +335,6 @@ type StaggeredNotesProps = {
 	onPointerDown: (event: React.PointerEvent, id: string) => void;
 	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
 	disablePointerEvents: boolean;
-	scale?: number;
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
