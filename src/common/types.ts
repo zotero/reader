@@ -98,6 +98,7 @@ export type ViewStats = {
 	scrollMode?: number;
 	spreadMode?: number;
 	flowMode?: string;
+	fontFamily?: string;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {

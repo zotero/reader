@@ -103,15 +103,15 @@ body.paginated replaced-body * {
 }
 
 replaced-body {
-	font-family: "Georgia", serif;
-	font-size: calc(var(--content-font-size) * 13pt) !important;
+	font-family: var(--content-font-family, "Georgia"), serif;
+	font-size: calc(var(--content-scale) * 13pt) !important;
 	line-height: 1.4;
 	text-align: justify;
 }
 
 replaced-body p {
 	/* Really enforce some of our formatting choices on body paragraphs */
-	font-family: "Georgia", serif !important;
+	font-family: var(--content-font-family, "Georgia"), serif;
 	line-height: 1.4 !important;
 }
 

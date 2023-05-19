@@ -138,8 +138,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 		
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
+		if (viewState.fontFamily) {
+			this._iframeDocument.documentElement.style.setProperty('--content-font-family', viewState.fontFamily);
+		}
 		if (viewState.scale) {
-			this._iframeDocument.documentElement.style.setProperty('--content-font-size', String(viewState.scale));
+			this._iframeDocument.documentElement.style.setProperty('--content-scale', String(viewState.scale));
 		}
 		else {
 			viewState.scale = 1;
@@ -632,6 +635,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			canNavigateToPreviousSection: this.canNavigateToPreviousSection(),
 			canNavigateToNextSection: this.canNavigateToNextSection(),
 			flowMode: this._viewState.flowMode,
+			fontFamily: this._viewState.fontFamily,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -705,6 +709,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		this._viewState.flowMode = flowMode;
 	}
+	
+	setFontFamily(fontFamily: string) {
+		this._viewState.fontFamily = fontFamily;
+		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
+		this._updateViewState();
+	}
 
 	// ***
 	// Public methods to control the view from the outside
@@ -740,7 +750,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
 		this._viewState.scale = scale;
-		this._iframeDocument.documentElement.style.setProperty('--content-font-size', String(scale));
+		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
@@ -753,7 +763,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
 		this._viewState.scale = scale;
-		this._iframeDocument.documentElement.style.setProperty('--content-font-size', String(scale));
+		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
@@ -763,7 +773,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	zoomReset() {
 		const cfiBefore = this.startCFI;
 		this._viewState.scale = 1;
-		this._iframeDocument.documentElement.style.setProperty('--content-font-size', '1');
+		this._iframeDocument.documentElement.style.setProperty('--content-scale', '1');
 		this._handleViewUpdate();
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
@@ -953,6 +963,7 @@ type FlowMode = 'paginated' | 'scrolled';
 export type EPUBViewState = {
 	cfi?: string;
 	savedPageMapping?: string;
+	fontFamily?: string;
 	scale?: number;
 	flowMode?: FlowMode;
 };

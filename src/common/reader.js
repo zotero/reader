@@ -1333,6 +1333,18 @@ class Reader {
 		this._ensureType('epub');
 		this._lastView.setFlowMode(value);
 	}
+
+	get fontFamily() {
+		if (this._type !== 'epub') {
+			return undefined;
+		}
+		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).fontFamily;
+	}
+
+	set fontFamily(value) {
+		this._ensureType('epub');
+		this._lastView.setFontFamily(value);
+	}
 }
 
 export default Reader;
