@@ -18,19 +18,19 @@ class PageMapping {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
-		const startTime = new Date().getTime();
+		let startTime = new Date().getTime();
 		let consecutiveSectionsWithoutMatches = 0;
-		for (const view of views) {
+		for (let view of views) {
 			let matchesFound = false;
-			for (const matcher of MATCHERS) {
-				const elems = view.container.querySelectorAll(matcher.selector);
+			for (let matcher of MATCHERS) {
+				let elems = view.container.querySelectorAll(matcher.selector);
 				let successes = 0;
-				for (const elem of elems) {
-					const pageNumber = matcher.extract(elem);
+				for (let elem of elems) {
+					let pageNumber = matcher.extract(elem);
 					if (!pageNumber) {
 						continue;
 					}
-					const range = elem.ownerDocument.createRange();
+					let range = elem.ownerDocument.createRange();
 					range.selectNode(elem);
 					this._tree.set(range, pageNumber);
 					successes++;
@@ -57,12 +57,12 @@ class PageMapping {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
-		const startTime = new Date().getTime();
+		let startTime = new Date().getTime();
 		let locationNumber = 0;
-		for (const view of views) {
-			const textNodes = getVisibleTextNodes(view.body);
+		for (let view of views) {
+			let textNodes = getVisibleTextNodes(view.body);
 			let remainingBeforeBreak = 0;
-			for (const node of textNodes) {
+			for (let node of textNodes) {
 				if (/^\s*$/.test(node.data)) continue;
 				
 				let offset = 0;
@@ -75,7 +75,7 @@ class PageMapping {
 					offset += remainingBeforeBreak;
 					length -= remainingBeforeBreak;
 					
-					const range = node.ownerDocument.createRange();
+					let range = node.ownerDocument.createRange();
 					range.setStart(node, offset);
 					range.collapse(true);
 					this._tree.set(range, (locationNumber + 1).toString());
@@ -91,7 +91,7 @@ class PageMapping {
 	}
 	
 	getPageIndex(range: Range): number | null {
-		const pageStartRange = this._tree.getPairOrNextLower(range)?.[0];
+		let pageStartRange = this._tree.getPairOrNextLower(range)?.[0];
 		if (!pageStartRange) {
 			return null;
 		}
@@ -104,7 +104,7 @@ class PageMapping {
 	
 	getRange(pageNumber: string): Range | null {
 		// This is slow, but only needs to be called when manually navigating to a physical page number
-		for (const [key, value] of this._tree.entries()) {
+		for (let [key, value] of this._tree.entries()) {
 			if (value === pageNumber) {
 				return key;
 			}
@@ -119,7 +119,7 @@ class PageMapping {
 	}
 	
 	load(saved: string, view: EPUBView): boolean {
-		const array = JSON.parse(saved);
+		let array = JSON.parse(saved);
 		if (!Array.isArray(array)) {
 			throw new Error('Unable to load persisted page mapping:\n' + saved);
 		}

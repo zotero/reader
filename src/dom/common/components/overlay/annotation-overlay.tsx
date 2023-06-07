@@ -24,22 +24,22 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	const { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
+	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
 	
-	const [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
+	let [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
 	
-	const handlePointerDown = (event: React.PointerEvent, id: string) => {
+	let handlePointerDown = (event: React.PointerEvent, id: string) => {
 		if (event.button !== 0) {
 			return;
 		}
 		// Cycle selection if clicked annotation is already selected
 		if (selectedAnnotationIDs.includes(id)) {
-			const targets = event.view.document.elementsFromPoint(event.clientX, event.clientY)
+			let targets = event.view.document.elementsFromPoint(event.clientX, event.clientY)
 				.filter(target => !!target.getAttribute('data-annotation-id'));
 			if (!targets.length) {
 				return;
 			}
-			const nextTarget = targets[(targets.indexOf(event.target as Element) + 1) % targets.length];
+			let nextTarget = targets[(targets.indexOf(event.target as Element) + 1) % targets.length];
 			onSelect(nextTarget.getAttribute('data-annotation-id')!);
 		}
 		else {
@@ -122,11 +122,11 @@ type AnnotationOverlayProps = {
 };
 
 const Highlight: React.FC<HighlightProps> = (props) => {
-	const { annotation, selected, onPointerDown, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
-	const [dragImage, setDragImage] = useState<Element | null>(null);
-	const [isResizing, setResizing] = useState(false);
+	let { annotation, selected, onPointerDown, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
+	let [dragImage, setDragImage] = useState<Element | null>(null);
+	let [isResizing, setResizing] = useState(false);
 
-	const ranges = splitRangeToTextNodes(annotation.range);
+	let ranges = splitRangeToTextNodes(annotation.range);
 	if (!ranges.length) {
 		return null;
 	}
@@ -135,31 +135,31 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		return null;
 	}
 
-	const handleDragStart = (event: React.DragEvent) => {
+	let handleDragStart = (event: React.DragEvent) => {
 		if (!onDragStart || annotation.text === undefined) {
 			return;
 		}
 
-		const elem = (event.target as Element).closest('g')!;
-		const br = elem.getBoundingClientRect();
+		let elem = (event.target as Element).closest('g')!;
+		let br = elem.getBoundingClientRect();
 		event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
 		onDragStart(event.dataTransfer);
 	};
 
-	const handleDragEnd = () => {
+	let handleDragEnd = () => {
 		if (dragImage) {
 			dragImage.remove();
 			setDragImage(null);
 		}
 	};
 
-	const highlightRects = new Map<string, DOMRect>();
-	for (const range of ranges) {
-		for (const rect of range.getClientRects()) {
+	let highlightRects = new Map<string, DOMRect>();
+	for (let range of ranges) {
+		for (let rect of range.getClientRects()) {
 			if (rect.width == 0 || rect.height == 0) {
 				continue;
 			}
-			const key = JSON.stringify(rect);
+			let key = JSON.stringify(rect);
 			if (!highlightRects.has(key)) {
 				highlightRects.set(key, rect);
 			}
@@ -168,9 +168,9 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 
 	let commentIconPosition;
 	if (annotation.comment) {
-		const commentIconRange = ranges[0].cloneRange();
+		let commentIconRange = ranges[0].cloneRange();
 		collapseToOneCharacterAtStart(commentIconRange);
-		const rect = commentIconRange.getBoundingClientRect();
+		let rect = commentIconRange.getBoundingClientRect();
 		commentIconPosition = { x: rect.x + doc.defaultView!.scrollX, y: rect.y + doc.defaultView!.scrollY };
 	}
 	else {
@@ -247,28 +247,28 @@ type HighlightProps = {
 };
 
 const Note: React.FC<NoteProps> = (props) => {
-	const { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
-	const iconRef = React.useRef<SVGSVGElement>(null);
+	let { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
+	let iconRef = React.useRef<SVGSVGElement>(null);
 
-	const doc = annotation.range.commonAncestorContainer.ownerDocument;
+	let doc = annotation.range.commonAncestorContainer.ownerDocument;
 	if (!doc || !doc.defaultView) {
 		return null;
 	}
 
-	const handleDragStart = (event: React.DragEvent) => {
+	let handleDragStart = (event: React.DragEvent) => {
 		if (!onDragStart || annotation.comment === undefined) {
 			return;
 		}
 
-		const elem = event.target as Element;
-		const br = elem.getBoundingClientRect();
+		let elem = event.target as Element;
+		let br = elem.getBoundingClientRect();
 		event.dataTransfer.setDragImage(iconRef.current!, event.clientX - br.left, event.clientY - br.top);
 		onDragStart(event.dataTransfer);
 	};
 
-	const rect = annotation.range.getBoundingClientRect();
-	const rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction === 'rtl';
-	const staggerOffset = (staggerIndex || 0) * 15;
+	let rect = annotation.range.getBoundingClientRect();
+	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction === 'rtl';
+	let staggerOffset = (staggerIndex || 0) * 15;
 	return (
 		<CommentIcon
 			annotation={annotation}
@@ -296,10 +296,10 @@ type NoteProps = {
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, disablePointerEvents } = props;
-	const staggerMap = new Map<string | undefined, number>();
+	let staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
-			const stagger = staggerMap.has(annotation.sortIndex) ? staggerMap.get(annotation.sortIndex)! : 0;
+			let stagger = staggerMap.has(annotation.sortIndex) ? staggerMap.get(annotation.sortIndex)! : 0;
 			staggerMap.set(annotation.sortIndex, stagger + 1);
 			if (annotation.id) {
 				return (
@@ -357,8 +357,8 @@ type SelectionBorderProps = {
 };
 
 const RangeSelectionBorder: React.FC<RangeSelectionBorderProps> = (props) => {
-	const rect = props.range.getBoundingClientRect();
-	const win = props.range.commonAncestorContainer.ownerDocument!.defaultView!;
+	let rect = props.range.getBoundingClientRect();
+	let win = props.range.commonAncestorContainer.ownerDocument!.defaultView!;
 	return <SelectionBorder rect={rect} win={win}/>;
 };
 RangeSelectionBorder.displayName = 'RangeSelectionBorder';
@@ -367,18 +367,18 @@ type RangeSelectionBorderProps = {
 };
 
 const Resizer: React.FC<ResizerProps> = (props) => {
-	const WIDTH = 3;
+	let WIDTH = 3;
 
-	const [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
+	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	
-	const rtl = getComputedStyle(closestElement(props.annotation.range.commonAncestorContainer!)!).direction == 'rtl';
+	let rtl = getComputedStyle(closestElement(props.annotation.range.commonAncestorContainer!)!).direction == 'rtl';
 	
-	const highlightRects = Array.from(props.highlightRects)
+	let highlightRects = Array.from(props.highlightRects)
 		.sort((a, b) => (a.top - b.top) || (a.left - b.left));
-	const topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
-	const bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
+	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
+	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
 	
-	const handlePointerDown = (event: React.PointerEvent, isStart: boolean) => {
+	let handlePointerDown = (event: React.PointerEvent, isStart: boolean) => {
 		if (event.button !== 0) {
 			return;
 		}
@@ -387,7 +387,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		props.onPointerDown();
 	};
 	
-	const handlePointerUp = (event: React.PointerEvent) => {
+	let handlePointerUp = (event: React.PointerEvent) => {
 		if (event.button !== 0 || !(event.target as Element).hasPointerCapture(event.pointerId)) {
 			return;
 		}
@@ -396,10 +396,10 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		props.onPointerUp();
 	};
 
-	const handleResize = (event: React.PointerEvent, isStart: boolean) => {
-		const pos = caretPositionFromPoint(event.view.document, event.clientX, event.clientY);
+	let handleResize = (event: React.PointerEvent, isStart: boolean) => {
+		let pos = caretPositionFromPoint(event.view.document, event.clientX, event.clientY);
 		if (pos) {
-			const newRange = props.annotation.range.cloneRange();
+			let newRange = props.annotation.range.cloneRange();
 			if (isStart) {
 				if (newRange.startContainer === pos.offsetNode && newRange.startOffset === pos.offset) {
 					return;
@@ -416,7 +416,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 	};
 
-	const win = props.annotation.range.commonAncestorContainer.ownerDocument!.defaultView!;
+	let win = props.annotation.range.commonAncestorContainer.ownerDocument!.defaultView!;
 	return <>
 		<rect
 			x={topLeftRect.x + win.scrollX - WIDTH}
@@ -452,9 +452,9 @@ type ResizerProps = {
 };
 
 let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref) => {
-	const size = props.large ? 24 : 14;
-	const x = props.x - size / 2;
-	const y = props.y - size / 2;
+	let size = props.large ? 24 : 14;
+	let x = props.x - size / 2;
+	let y = props.y - size / 2;
 	return <>
 		<svg
 			color={props.color}

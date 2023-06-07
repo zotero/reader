@@ -64,8 +64,8 @@ export function isTextPosition(selector: Selector): selector is TextPositionSele
 }
 
 export function textPositionFromRange(range: Range, root: Element): TextPositionSelector | null {
-	const iter = root.ownerDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
-	const selector: Partial<TextPositionSelector> = {
+	let iter = root.ownerDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
+	let selector: Partial<TextPositionSelector> = {
 		type: 'TextPositionSelector'
 	};
 	let pos = 0;
@@ -88,19 +88,19 @@ export function textPositionFromRange(range: Range, root: Element): TextPosition
 }
 
 export function textPositionToRange(selector: TextPositionSelector, root: Element): Range {
-	const iter = root.ownerDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
-	const range = root.ownerDocument.createRange();
+	let iter = root.ownerDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
+	let range = root.ownerDocument.createRange();
 	let pos = 0;
 	let node: Node | null = null;
 	while ((node = iter.nextNode())) {
 		if (!node.nodeValue) {
 			continue;
 		}
-		const startOffset = selector.start - pos;
+		let startOffset = selector.start - pos;
 		if (startOffset >= 0 && startOffset <= node.nodeValue.length) {
 			range.setStart(node, startOffset);
 		}
-		const endOffset = selector.end - pos;
+		let endOffset = selector.end - pos;
 		if (endOffset >= 0 && endOffset <= node.nodeValue.length) {
 			range.setEnd(node, endOffset);
 		}

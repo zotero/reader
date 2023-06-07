@@ -10,22 +10,22 @@ export function executeSearch(
 		return [];
 	}
 	
-	const { text, charDataRanges } = context;
-	const ranges = [];
+	let { text, charDataRanges } = context;
+	let ranges = [];
 
 	// https://stackoverflow.com/a/6969486
 	let termRe = normalize(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	if (options.entireWord) {
 		termRe = '\\b' + termRe + '\\b';
 	}
-	const re = new RegExp(termRe, 'g' + (options.caseSensitive ? '' : 'i'));
+	let re = new RegExp(termRe, 'g' + (options.caseSensitive ? '' : 'i'));
 	let matches;
 	while ((matches = re.exec(text))) {
-		const [match] = matches;
-		const range = new Range();
-		const { charData: startCharData, start: startOffset } = binarySearch(charDataRanges, matches.index)!;
+		let [match] = matches;
+		let range = new Range();
+		let { charData: startCharData, start: startOffset } = binarySearch(charDataRanges, matches.index)!;
 		range.setStart(startCharData, matches.index - startOffset);
-		const { charData: endCharData, start: endOffset } = binarySearch(charDataRanges, matches.index + match.length)!;
+		let { charData: endCharData, start: endOffset } = binarySearch(charDataRanges, matches.index + match.length)!;
 		range.setEnd(endCharData, matches.index + match.length - endOffset);
 		ranges.push(range);
 	}
@@ -35,9 +35,9 @@ export function executeSearch(
 
 export function createSearchContext(nodes: CharacterData[]): SearchContext {
 	let text = '';
-	const charDataRanges: CharDataRange[] = [];
-	for (const charData of nodes) {
-		const data = normalize(charData.data);
+	let charDataRanges: CharDataRange[] = [];
+	for (let charData of nodes) {
+		let data = normalize(charData.data);
 		charDataRanges.push({
 			charData,
 			start: text.length,
@@ -59,7 +59,7 @@ function binarySearch(charDataRanges: CharDataRange[], pos: number) {
 	let left = 0;
 	let right = charDataRanges.length - 1;
 	while (left <= right) {
-		const mid = Math.floor((left + right) / 2);
+		let mid = Math.floor((left + right) / 2);
 		if (charDataRanges[mid].start <= pos && pos <= charDataRanges[mid].end) {
 			return charDataRanges[mid];
 		}

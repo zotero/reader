@@ -26,13 +26,13 @@ class StyleScoper {
 		}
 		catch (e) {
 			// Constructor not available
-			const style = this._document.createElement('style');
+			let style = this._document.createElement('style');
 			style.innerHTML = css;
 			if (style.sheet) {
 				sheet = style.sheet;
 			}
 			else {
-				const promise = new Promise<CSSStyleSheet>(
+				let promise = new Promise<CSSStyleSheet>(
 					resolve => style.addEventListener('load', () => resolve(style.sheet!))
 				);
 				this._document.head.append(style);
@@ -45,7 +45,7 @@ class StyleScoper {
 			this._document.adoptedStyleSheets.push(sheet);
 		}
 		
-		const scopeClass = `__scope_${this._sheets.size}`;
+		let scopeClass = `__scope_${this._sheets.size}`;
 		this._sheets.set(css, { sheet, scopeClass });
 		return scopeClass;
 	}
@@ -67,30 +67,30 @@ class StyleScoper {
 	}
 	
 	rewriteAll() {
-		for (const { sheet, scopeClass } of this._sheets.values()) {
+		for (let { sheet, scopeClass } of this._sheets.values()) {
 			this._visitStyleSheet(sheet, scopeClass);
 		}
 	}
 	
 	private _visitStyleSheet(sheet: CSSStyleSheet, scopeClass: string) {
-		for (const rule of sheet.cssRules) {
+		for (let rule of sheet.cssRules) {
 			this._visitRule(rule, scopeClass);
 		}
 	}
 	
 	private _visitRule(rule: CSSRule, scopeClass: string) {
 		if (rule.constructor.name === 'CSSStyleRule') {
-			const styleRule = rule as CSSStyleRule;
+			let styleRule = rule as CSSStyleRule;
 			styleRule.selectorText = `.${scopeClass} :is(${styleRule.selectorText})`;
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
-			const importRule = rule as CSSImportRule;
+			let importRule = rule as CSSImportRule;
 			this._visitStyleSheet(importRule.styleSheet, scopeClass);
 		}
 		
 		// If this rule contains child rules, visit each of them
 		if ('cssRules' in rule) {
-			for (const childRule of rule.cssRules as CSSRuleList) {
+			for (let childRule of rule.cssRules as CSSRuleList) {
 				this._visitRule(childRule, scopeClass);
 			}
 		}

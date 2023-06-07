@@ -20,7 +20,7 @@ class NavStack<T> {
 	}
 	
 	popBack(): T {
-		const value = this._backStack.pop();
+		let value = this._backStack.pop();
 		if (!value) {
 			throw new Error('Back stack empty');
 		}
@@ -29,7 +29,7 @@ class NavStack<T> {
 	}
 
 	popForward(): T {
-		const value = this._forwardStack.pop();
+		let value = this._forwardStack.pop();
 		if (!value) {
 			throw new Error('Forward stack empty');
 		}

@@ -46,10 +46,10 @@ class SnapshotView extends DOMView<DOMViewState> {
 	private _searchContext: SearchContext | null = null;
 
 	protected _getSrcDoc() {
-		const enc = new TextDecoder('utf-8');
-		const text = enc.decode(this._options.buf);
+		let enc = new TextDecoder('utf-8');
+		let text = enc.decode(this._options.buf);
 		if (isSafari) {
-			const doc = new DOMParser().parseFromString(text, 'text/html');
+			let doc = new DOMParser().parseFromString(text, 'text/html');
 			doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
 				...DOMPURIFY_CONFIG,
 				RETURN_DOM: true,
@@ -62,7 +62,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected _onInitialDisplay(viewState: Partial<DOMViewState>) {
-		const style = this._iframeDocument.createElement('style');
+		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
 
@@ -81,12 +81,12 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (range.collapsed) {
 			return null;
 		}
-		const text = type == 'highlight' ? range.toString() : undefined;
-		const selector = this.toSelector(range);
+		let text = type == 'highlight' ? range.toString() : undefined;
+		let selector = this.toSelector(range);
 		if (!selector) {
 			return null;
 		}
-		const sortIndex = this._getSortIndex(range);
+		let sortIndex = this._getSortIndex(range);
 		return {
 			type,
 			color,
@@ -97,7 +97,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 	
 	private _getSortIndex(range: Range) {
-		const iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
+		let iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
 		let count = 0;
 		let node: Node | null;
 		while ((node = iter.nextNode())) {
@@ -110,7 +110,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	toSelector(range: Range): Selector | null {
-		const doc = range.commonAncestorContainer.ownerDocument;
+		let doc = range.commonAncestorContainer.ownerDocument;
 		if (!doc) return null;
 		let targetElement;
 		// In most cases, the range will wrap a single child of the
@@ -123,13 +123,13 @@ class SnapshotView extends DOMView<DOMViewState> {
 		else {
 			targetElement = range.commonAncestorContainer;
 		}
-		const targetElementQuery = getUniqueSelectorContaining(targetElement, doc.body);
+		let targetElementQuery = getUniqueSelectorContaining(targetElement, doc.body);
 		if (targetElementQuery) {
-			const newCommonAncestor = doc.body.querySelector(targetElementQuery);
+			let newCommonAncestor = doc.body.querySelector(targetElementQuery);
 			if (!newCommonAncestor) {
 				return null;
 			}
-			const selector: CssSelector = {
+			let selector: CssSelector = {
 				type: 'CssSelector',
 				value: targetElementQuery
 			};
@@ -151,7 +151,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 				if (selector.refinedBy && selector.refinedBy.type != 'TextPositionSelector') {
 					throw new Error('CssSelectors can only be refined by TextPositionSelectors');
 				}
-				const root = this._iframeDocument.querySelector(selector.value);
+				let root = this._iframeDocument.querySelector(selector.value);
 				if (!root) {
 					return null;
 				}
@@ -204,7 +204,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
-		const range = this.toDisplayedRange(selector);
+		let range = this.toDisplayedRange(selector);
 		if (range) {
 			getStartElement(range)?.scrollIntoView(options);
 		}
@@ -214,7 +214,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected override _updateViewState() {
-		const viewState = {
+		let viewState = {
 			scale: 1,
 			...this._viewState
 		};
@@ -223,7 +223,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected override _updateViewStats() {
-		const viewStats: ViewStats = {
+		let viewStats: ViewStats = {
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
 			canZoomIn: this._viewState.scale === undefined || this._viewState.scale < 1.5,
 			canZoomOut: this._viewState.scale === undefined || this._viewState.scale > 0.6,
@@ -249,7 +249,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	// Unlike annotation, selection and overlay popups, find popup open state is determined
 	// with .open property. All popup properties are preserved even when it's closed
 	setFindState(state: FindState) {
-		const previousState = this._findState;
+		let previousState = this._findState;
 		this._findState = state;
 		if (!state.active && previousState && previousState.active !== state.active) {
 			console.log('Closing find popup');
@@ -286,7 +286,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	findNext() {
 		console.log('Find next');
 		if (this._find) {
-			const result = this._find.next();
+			let result = this._find.next();
 			if (result) {
 				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
 			}
@@ -297,7 +297,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	findPrevious() {
 		console.log('Find previous');
 		if (this._find) {
-			const result = this._find.prev();
+			let result = this._find.prev();
 			if (result) {
 				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
 			}

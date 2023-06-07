@@ -1,6 +1,6 @@
 export function getAllTextNodes(root: Node): Text[] {
-	const nodeIterator = root.ownerDocument!.createNodeIterator(root, NodeFilter.SHOW_TEXT);
-	const nodes = [];
+	let nodeIterator = root.ownerDocument!.createNodeIterator(root, NodeFilter.SHOW_TEXT);
+	let nodes = [];
 	let next = null;
 	while ((next = nodeIterator.nextNode())) {
 		nodes.push(next as Text);
@@ -9,10 +9,10 @@ export function getAllTextNodes(root: Node): Text[] {
 }
 
 export function getVisibleTextNodes(root: Node): Text[] {
-	const range = root.ownerDocument!.createRange();
+	let range = root.ownerDocument!.createRange();
 	return getAllTextNodes(root).filter((node) => {
 		range.selectNodeContents(node);
-		const rect = range.getBoundingClientRect();
+		let rect = range.getBoundingClientRect();
 		return rect.width && rect.height;
 	});
 }

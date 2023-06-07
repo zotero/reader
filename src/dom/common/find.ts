@@ -35,7 +35,7 @@ class DefaultFindProcessor implements FindProcessor {
 		
 		this._buf = [];
 		
-		const ranges = executeSearch(
+		let ranges = executeSearch(
 			options.searchContext,
 			this.findState.query,
 			{
@@ -43,8 +43,8 @@ class DefaultFindProcessor implements FindProcessor {
 				entireWord: this.findState.entireWord
 			}
 		);
-		for (const range of ranges) {
-			const findResult: FindResult = {
+		for (let range of ranges) {
+			let findResult: FindResult = {
 				range,
 				highlight: {
 					type: 'highlight',
@@ -132,13 +132,13 @@ class DefaultFindProcessor implements FindProcessor {
 	}
 
 	getAnnotations(): DisplayedAnnotation[] {
-		const selected
+		let selected
 			= (this._pos !== null && this._pos >= 0 && this._pos < this._buf.length)
 				? this._buf[this._pos]
 				: null;
-		const highlights: DisplayedAnnotation[] = [];
+		let highlights: DisplayedAnnotation[] = [];
 		if (this.findState.highlightAll) {
-			for (const result of this._buf) {
+			for (let result of this._buf) {
 				if (selected === result) {
 					highlights.push({
 						...result.highlight,
@@ -164,8 +164,8 @@ class DefaultFindProcessor implements FindProcessor {
 			range = range.cloneRange();
 			let snippet = range.toString();
 			if (range.startOffset > 0) {
-				const textBeforeRange = range.startContainer.nodeValue!.substring(0, range.startOffset);
-				const beforeContext = textBeforeRange.match(/\b([\w\W]){1,20}$/);
+				let textBeforeRange = range.startContainer.nodeValue!.substring(0, range.startOffset);
+				let beforeContext = textBeforeRange.match(/\b([\w\W]){1,20}$/);
 				if (beforeContext) {
 					snippet = beforeContext[0].trimStart() + snippet;
 					if (beforeContext[0] != textBeforeRange) {
@@ -174,8 +174,8 @@ class DefaultFindProcessor implements FindProcessor {
 				}
 			}
 			if (range.endOffset < range.startContainer.nodeValue!.length) {
-				const textAfterRange = range.startContainer.nodeValue!.substring(range.endOffset);
-				const afterContext = textAfterRange.match(/^([\w\W]){1,20}\b/);
+				let textAfterRange = range.startContainer.nodeValue!.substring(range.endOffset);
+				let afterContext = textAfterRange.match(/^([\w\W]){1,20}\b/);
 				if (afterContext) {
 					snippet += afterContext[0].trimEnd();
 					if (afterContext[0] != textAfterRange) {

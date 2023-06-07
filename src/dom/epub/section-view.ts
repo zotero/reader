@@ -41,10 +41,10 @@ class SectionView {
 	}
 
 	async initWithHTML(html: string): Promise<void> {
-		const sectionDoc = new DOMParser().parseFromString(html, 'application/xhtml+xml');
-		const walker = this._document.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
-		const toRemove = [];
-		const toAwait = [];
+		let sectionDoc = new DOMParser().parseFromString(html, 'application/xhtml+xml');
+		let walker = this._document.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
+		let toRemove = [];
+		let toAwait = [];
 		
 		// Work around a WebKit bug - see DOMView constructor for details
 		if (isSafari) {
@@ -54,14 +54,14 @@ class SectionView {
 			});
 		}
 
-		const REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
+		let REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
 		
 		let elem: Element | null = null;
 		// eslint-disable-next-line no-unmodified-loop-condition
 		while ((elem = walker.nextNode() as Element)) {
 			if (REPLACE_TAGS.has(elem.tagName)) {
-				const newElem = this._document.createElement('replaced-' + elem.tagName);
-				for (const attr of elem.getAttributeNames()) {
+				let newElem = this._document.createElement('replaced-' + elem.tagName);
+				for (let attr of elem.getAttributeNames()) {
 					newElem.setAttribute(attr, elem.getAttribute(attr)!);
 				}
 				newElem.append(...elem.childNodes);
@@ -75,7 +75,7 @@ class SectionView {
 				toRemove.push(elem);
 			}
 			else if (elem.tagName == 'link' && elem.getAttribute('rel') == 'stylesheet') {
-				const link = elem as HTMLLinkElement;
+				let link = elem as HTMLLinkElement;
 				try {
 					this.container.classList.add(
 						await this._styleScoper.addByURL(link.href)
@@ -95,7 +95,7 @@ class SectionView {
 			}
 		}
 		
-		for (const elem of toRemove) {
+		for (let elem of toRemove) {
 			elem.remove();
 		}
 		
@@ -112,9 +112,9 @@ class SectionView {
 	 * @param textNodesOnly Return only text nodes, for constructing CFIs
 	 */
 	getFirstVisibleRange(isHorizontal: boolean, textNodesOnly: boolean): Range | null {
-		const viewportEnd = isHorizontal ? this._window.frameElement!.clientWidth : this._window.frameElement!.clientHeight;
-		const filter = NodeFilter.SHOW_TEXT | (textNodesOnly ? 0 : NodeFilter.SHOW_ELEMENT);
-		const iter = this._document.createNodeIterator(this.container, filter, (node) => {
+		let viewportEnd = isHorizontal ? this._window.frameElement!.clientWidth : this._window.frameElement!.clientHeight;
+		let filter = NodeFilter.SHOW_TEXT | (textNodesOnly ? 0 : NodeFilter.SHOW_ELEMENT);
+		let iter = this._document.createNodeIterator(this.container, filter, (node) => {
 			return node.nodeType == Node.TEXT_NODE && node.nodeValue?.trim().length
 					|| (node as Element).tagName === 'IMG'
 				? NodeFilter.FILTER_ACCEPT
@@ -123,7 +123,7 @@ class SectionView {
 		let node = null;
 		let bestRange = null;
 		while ((node = iter.nextNode())) {
-			const range = this._document.createRange();
+			let range = this._document.createRange();
 			if (node.nodeType == Node.ELEMENT_NODE) {
 				range.selectNode(node);
 			}
@@ -131,13 +131,13 @@ class SectionView {
 				range.selectNodeContents(node);
 			}
 			
-			const rect = range.getBoundingClientRect();
+			let rect = range.getBoundingClientRect();
 			// Skip invisible nodes
 			if (!(rect.width || rect.height)) {
 				continue;
 			}
-			const rectStart = isHorizontal ? rect.left : rect.top;
-			const rectEnd = isHorizontal ? rect.right : rect.bottom;
+			let rectStart = isHorizontal ? rect.left : rect.top;
+			let rectEnd = isHorizontal ? rect.right : rect.bottom;
 			// If the range starts past the end of the viewport, we've gone too far -- return our previous best guess
 			if (rectStart > viewportEnd) {
 				return bestRange;

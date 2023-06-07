@@ -48,7 +48,7 @@ export class EPUBFindProcessor implements FindProcessor {
 			nextIndex += this.view.views.length;
 		}
 		this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
-		const stop = this._selectedProcessor;
+		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
 				return this._selectedProcessor.prev(false);
@@ -77,10 +77,10 @@ export class EPUBFindProcessor implements FindProcessor {
 		nextIndex %= this.view.views.length;
 		if (this._selectedProcessor) this._selectedProcessor.position = null;
 		this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
-		const stop = this._selectedProcessor;
+		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
-				const result = this._selectedProcessor.next(false);
+				let result = this._selectedProcessor.next(false);
 				this._setFindState();
 				return result;
 			}
@@ -95,11 +95,11 @@ export class EPUBFindProcessor implements FindProcessor {
 	}
 
 	getAnnotations(): DisplayedAnnotation[] {
-		const highlights = [];
-		for (const processor of this._processors.values()) {
+		let highlights = [];
+		for (let processor of this._processors.values()) {
 			if (!processor) continue;
 			processor.findState.highlightAll = this.findState.highlightAll;
-			for (const highlight of processor.getAnnotations()) {
+			for (let highlight of processor.getAnnotations()) {
 				highlights.push(highlight);
 			}
 		}
@@ -111,7 +111,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	}
 
 	private _processViews(views: SectionView[], startRange?: Range, maxResults?: number) {
-		for (const view of views) {
+		for (let view of views) {
 			if (maxResults !== undefined && this._totalResults > maxResults) {
 				break;
 			}
@@ -123,7 +123,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		if (this._processors[view.section.index]) {
 			return this._processors[view.section.index];
 		}
-		const processor = new DefaultFindProcessor({
+		let processor = new DefaultFindProcessor({
 			searchContext: view.searchContext,
 			startRange,
 			findState: { ...this.findState },
@@ -141,8 +141,8 @@ export class EPUBFindProcessor implements FindProcessor {
 		if (this._onSetFindState) {
 			let index = 0;
 			let foundSelected = false;
-			const snippets = [];
-			for (const processor of this._processors) {
+			let snippets = [];
+			for (let processor of this._processors) {
 				if (!processor) {
 					continue;
 				}

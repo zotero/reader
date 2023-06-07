@@ -35,11 +35,12 @@
 			"rules": {
 				"@typescript-eslint/no-non-null-assertion": "off",
 				"@typescript-eslint/ban-ts-comment": "off",
-				"no-unused-vars": "off",
 				"@typescript-eslint/no-unused-vars": ["error", {
 					"argsIgnorePattern": "^_",
 					"varsIgnorePattern": "^_"
-				}]
+				}],
+				"no-unused-vars": "off",
+				"prefer-const": "off"
 			}
 		}
 	],

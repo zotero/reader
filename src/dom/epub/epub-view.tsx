@@ -93,15 +93,15 @@ class EPUBView extends DOMView<EPUBViewState> {
 		
 		this._pageProgressionRTL = this._book.packaging.metadata.direction === 'rtl';
 
-		const style = this._iframeDocument.createElement('style');
+		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
 
-		const swipeIndicatorLeft = this._iframeDocument.createElement('div');
+		let swipeIndicatorLeft = this._iframeDocument.createElement('div');
 		swipeIndicatorLeft.classList.add('swipe-indicator-left');
 		this._iframeDocument.body.append(swipeIndicatorLeft);
 		
-		const swipeIndicatorRight = this._iframeDocument.createElement('div');
+		let swipeIndicatorRight = this._iframeDocument.createElement('div');
 		swipeIndicatorRight.classList.add('swipe-indicator-right');
 		this._iframeDocument.body.append(swipeIndicatorRight);
 
@@ -111,7 +111,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._handleTransitionStart = (event) => {
 			if (event.propertyName == 'left') {
 				this._animatingPageTurn = true;
-				const update = () => {
+				let update = () => {
 					if (!this._animatingPageTurn) {
 						return;
 					}
@@ -128,7 +128,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
 		this._iframeDocument.body.append(this._sectionsContainer);
 
-		const styleScoper = new StyleScoper(this._iframeDocument);
+		let styleScoper = new StyleScoper(this._iframeDocument);
 		await Promise.all(this._book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
 		styleScoper.rewriteAll();
 
@@ -160,25 +160,25 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 	
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {
-		const container = this._iframeDocument.createElement('div');
+		let container = this._iframeDocument.createElement('div');
 		container.id = 'section-' + section.index;
 		container.classList.add('section-container', 'cfi-stop');
 		container.setAttribute('data-section-index', String(section.index));
 		this._sectionsContainer.append(container);
-		const sectionView = new SectionView({
+		let sectionView = new SectionView({
 			section,
 			container,
 			window: this._iframeWindow,
 			document: this._iframeDocument,
 			styleScoper,
 		});
-		const html = await section.render(this._book.archive.request.bind(this._book.archive));
+		let html = await section.render(this._book.archive.request.bind(this._book.archive));
 		await sectionView.initWithHTML(html);
 		this._sectionViews[section.index] = sectionView;
 	}
 
 	private async _initPageMapping() {
-		const localStorageKey = this._book.key() + '-page-mapping';
+		let localStorageKey = this._book.key() + '-page-mapping';
 		if (window.dev && !this._viewState.savedPageMapping) {
 			this._viewState.savedPageMapping = window.localStorage.getItem(localStorageKey) || undefined;
 		}
@@ -208,8 +208,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!this._book.navigation.toc.length) {
 			return;
 		}
-		const navPath = new Path(this._book.packaging.navPath || this._book.packaging.ncxPath || '');
-		const toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
+		let navPath = new Path(this._book.packaging.navPath || this._book.packaging.ncxPath || '');
+		let toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
 			title: navItem.label,
 			location: {
 				href: navPath.resolve(navItem.href).replace(/^\//, '')
@@ -232,28 +232,28 @@ class EPUBView extends DOMView<EPUBViewState> {
 		else {
 			commonAncestorNode = rangeOrNode.commonAncestorContainer;
 		}
-		const sectionContainer = closestElement(commonAncestorNode)?.closest('[data-section-index]');
+		let sectionContainer = closestElement(commonAncestorNode)?.closest('[data-section-index]');
 		if (!sectionContainer) {
 			return null;
 		}
-		const section = this._book.section(sectionContainer.getAttribute('data-section-index')!);
+		let section = this._book.section(sectionContainer.getAttribute('data-section-index')!);
 		return new EpubCFI(rangeOrNode, section.cfiBase);
 	}
 
 	getRange(cfi: EpubCFI | string): Range | null {
-		const cfiString = cfi.toString();
+		let cfiString = cfi.toString();
 		if (this._rangeCache.has(cfiString)) {
 			return this._rangeCache.get(cfiString)!.cloneRange();
 		}
 		if (typeof cfi === 'string') {
 			cfi = new EpubCFI(cfi);
 		}
-		const view = this._sectionViews[cfi.spinePos];
+		let view = this._sectionViews[cfi.spinePos];
 		if (!view) {
 			console.error('Unable to find view for CFI', cfiString);
 			return null;
 		}
-		const range = cfi.toRange(this._iframeDocument, undefined, view.container);
+		let range = cfi.toRange(this._iframeDocument, undefined, view.container);
 		if (!range) {
 			console.error('Unable to get range for CFI', cfiString);
 			return null;
@@ -264,7 +264,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	override toSelector(range: Range): FragmentSelector | null {
 		range = moveRangeEndsIntoTextNodes(range);
-		const cfi = this.getCFI(range);
+		let cfi = this.getCFI(range);
 		if (!cfi) {
 			return null;
 		}
@@ -331,8 +331,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!this._cachedStartView || !this._cachedEndView) {
 			return [];
 		}
-		const startIdx = this._sectionViews.indexOf(this._cachedStartView);
-		const endIdx = this._sectionViews.indexOf(this._cachedEndView);
+		let startIdx = this._sectionViews.indexOf(this._cachedStartView);
+		let endIdx = this._sectionViews.indexOf(this._cachedEndView);
 		return this._sectionViews.slice(startIdx, endIdx + 1);
 	}
 	
@@ -348,9 +348,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 	
 	private _updateBoundaries() {
 		let foundStart = false;
-		for (const view of this._sectionViews.values()) {
-			const rect = view.container.getBoundingClientRect();
-			const visible = this._viewState.flowMode == 'paginated'
+		for (let view of this._sectionViews.values()) {
+			let rect = view.container.getBoundingClientRect();
+			let visible = this._viewState.flowMode == 'paginated'
 				? !(rect.left > this._iframe.clientWidth || rect.right < 0)
 				: !(rect.top > this._iframe.clientHeight || rect.bottom < 0);
 			if (!foundStart) {
@@ -358,11 +358,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 					continue;
 				}
 				this._cachedStartView = view;
-				const startRange = view.getFirstVisibleRange(
+				let startRange = view.getFirstVisibleRange(
 					this._viewState.flowMode == 'paginated',
 					false
 				);
-				const startCFIRange = view.getFirstVisibleRange(
+				let startCFIRange = view.getFirstVisibleRange(
 					this._viewState.flowMode == 'paginated',
 					true
 				);
@@ -384,7 +384,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 	
 	private _pushCurrentLocationToNavStack() {
-		const cfi = this.startCFI?.toString();
+		let cfi = this.startCFI?.toString();
 		if (cfi) {
 			this._navStack.push(cfi);
 			this._updateViewStats();
@@ -404,28 +404,28 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (range.collapsed) {
 			return null;
 		}
-		const text = type == 'highlight' ? range.toString() : undefined;
-		const selector = this.toSelector(range);
+		let text = type == 'highlight' ? range.toString() : undefined;
+		let selector = this.toSelector(range);
 		if (!selector) {
 			return null;
 		}
 
-		const pageLabel = this._pageMapping.getPageLabel(range);
+		let pageLabel = this._pageMapping.getPageLabel(range);
 		if (!pageLabel) {
 			return null;
 		}
 		
 		// Use the number of characters between the start of the section and the start of the selection range
 		// to disambiguate the sortIndex
-		const sectionContainer = closestElement(range.startContainer)?.closest('[data-section-index]');
+		let sectionContainer = closestElement(range.startContainer)?.closest('[data-section-index]');
 		if (!sectionContainer) {
 			return null;
 		}
-		const sectionIndex = parseInt(sectionContainer.getAttribute('data-section-index')!);
-		const offsetRange = this._iframeDocument.createRange();
+		let sectionIndex = parseInt(sectionContainer.getAttribute('data-section-index')!);
+		let offsetRange = this._iframeDocument.createRange();
 		offsetRange.setStart(sectionContainer, 0);
 		offsetRange.setEnd(range.startContainer, range.startOffset);
-		const sortIndex = String(sectionIndex).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
+		let sortIndex = String(sectionIndex).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
 		return {
 			type,
 			color,
@@ -437,7 +437,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	protected _isExternalLink(link: HTMLAnchorElement) {
-		const href = link.getAttribute('href');
+		let href = link.getAttribute('href');
 		if (!href) {
 			return false;
 		}
@@ -454,7 +454,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		if (event.propertyName == 'left') {
 			this._animatingPageTurn = true;
-			const update = () => {
+			let update = () => {
 				if (!this._animatingPageTurn) {
 					return;
 				}
@@ -487,7 +487,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (this._viewState.flowMode != 'paginated' || this._touchStartID === null || this._animatingPageTurn) {
 			return;
 		}
-		const touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
+		let touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
 		if (!touch) {
 			return;
 		}
@@ -508,7 +508,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (this._viewState.flowMode != 'paginated' || this._touchStartID === null) {
 			return;
 		}
-		const touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
+		let touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
 		if (!touch) {
 			return;
 		}
@@ -523,7 +523,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		
 		// Switch pages after swiping 100px
-		const swipeAmount = (touch.clientX - this._touchStartX) / 100;
+		let swipeAmount = (touch.clientX - this._touchStartX) / 100;
 		if (swipeAmount <= -1) {
 			this.navigateToNextPage();
 		}
@@ -539,19 +539,19 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
 		let href = link.getAttribute('href')!;
-		const section = this._sectionViews.find(view => view.container.contains(link))?.section;
+		let section = this._sectionViews.find(view => view.container.contains(link))?.section;
 		if (!section) {
 			return;
 		}
 		// This is a hack - we're using the URL constructor to resolve the relative path based on the section's
 		// canonical URL, but it'll error without a host. So give it one!
-		const url = new URL(href, new URL(section.canonical, 'https://www.example.com/'));
+		let url = new URL(href, new URL(section.canonical, 'https://www.example.com/'));
 		href = url.pathname + url.hash;
 		this.navigate({ href: this._book.path.relative(href) });
 	}
 	
 	protected override _handleKeyDown(event: KeyboardEvent) {
-		const { key } = event;
+		let { key } = event;
 
 		if (this._viewState.flowMode == 'paginated') {
 			if (key == 'PageUp') {
@@ -604,7 +604,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!this.startCFI) {
 			return;
 		}
-		const viewState: EPUBViewState = {
+		let viewState: EPUBViewState = {
 			...this._viewState,
 			cfi: this.startCFI.toString(),
 		};
@@ -614,12 +614,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 	
 	// View stats provide information about the view
 	protected override _updateViewStats() {
-		const startRange = this.startRange;
-		const pageIndex = startRange && this._pageMapping.getPageIndex(startRange);
-		const pageLabel = startRange && this._pageMapping.getPageLabel(startRange);
-		const canNavigateToPreviousPage = this.canNavigateToPreviousPage();
-		const canNavigateToNextPage = this.canNavigateToNextPage();
-		const viewStats: ViewStats = {
+		let startRange = this.startRange;
+		let pageIndex = startRange && this._pageMapping.getPageIndex(startRange);
+		let pageLabel = startRange && this._pageMapping.getPageLabel(startRange);
+		let canNavigateToPreviousPage = this.canNavigateToPreviousPage();
+		let canNavigateToNextPage = this.canNavigateToNextPage();
+		let viewStats: ViewStats = {
 			pageIndex: pageIndex ?? undefined,
 			pageLabel: pageLabel ?? undefined,
 			pagesCount: this._pageMapping.length,
@@ -655,7 +655,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	// Unlike annotation, selection and overlay popups, find popup open state is determined
 	// with .open property. All popup properties are preserved even when it's closed
 	setFindState(state: FindState) {
-		const previousState = this._findState;
+		let previousState = this._findState;
 		this._findState = state;
 		if (!state.active && previousState && previousState.active !== state.active) {
 			console.log('Closing find popup');
@@ -695,13 +695,13 @@ class EPUBView extends DOMView<EPUBViewState> {
 		
 		switch (flowMode) {
 			case 'paginated':
-				for (const elem of [this._iframe, this._iframeDocument.body]) {
+				for (let elem of [this._iframe, this._iframeDocument.body]) {
 					elem.classList.add('paginated');
 					elem.classList.remove('scrolled');
 				}
 				break;
 			case 'scrolled':
-				for (const elem of [this._iframe, this._iframeDocument.body]) {
+				for (let elem of [this._iframe, this._iframeDocument.body]) {
 					elem.classList.add('scrolled');
 					elem.classList.remove('paginated');
 				}
@@ -722,8 +722,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 	async findNext() {
 		console.log('Find next');
 		if (this._find) {
-			const processor = this._find;
-			const result = processor.next();
+			let processor = this._find;
+			let result = processor.next();
 			if (result) {
 				this._scrollIntoView(getStartElement(result.range) as HTMLElement);
 			}
@@ -734,8 +734,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 	async findPrevious() {
 		console.log('Find previous');
 		if (this._find) {
-			const processor = this._find;
-			const result = processor.prev();
+			let processor = this._find;
+			let result = processor.prev();
 			if (result) {
 				this._scrollIntoView(getStartElement(result.range) as HTMLElement);
 			}
@@ -744,7 +744,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	zoomIn() {
-		const cfiBefore = this.startCFI;
+		let cfiBefore = this.startCFI;
 		let scale = this._viewState.scale;
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
@@ -757,7 +757,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	zoomOut() {
-		const cfiBefore = this.startCFI;
+		let cfiBefore = this.startCFI;
 		let scale = this._viewState.scale;
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
@@ -770,7 +770,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	zoomReset() {
-		const cfiBefore = this.startCFI;
+		let cfiBefore = this.startCFI;
 		this._viewState.scale = 1;
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', '1');
 		this._handleViewUpdate();
@@ -806,19 +806,19 @@ class EPUBView extends DOMView<EPUBViewState> {
 		else if (location.href) {
 			options.block ||= 'start';
 			
-			const [pathname, hash] = location.href.split('#');
-			const section = this._book.spine.get(pathname);
+			let [pathname, hash] = location.href.split('#');
+			let section = this._book.spine.get(pathname);
 			if (!section) {
 				console.error('Unable to find section for pathname', pathname);
 				return;
 			}
-			const target = hash && this._sectionViews[section.index].container
+			let target = hash && this._sectionViews[section.index].container
 				.querySelector('[id="' + hash.replace(/"/g, '"') + '"]');
 			if (target) {
 				this._scrollIntoView(target as HTMLElement, options);
 			}
 			else {
-				const view = this._sectionViews[section.index];
+				let view = this._sectionViews[section.index];
 				if (!view) {
 					console.error('Unable to find view for section', section.index);
 					return;
@@ -836,9 +836,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 			elem.scrollIntoView(options);
 			return;
 		}
-		const elemOffset = elem.offsetLeft;
-		const spreadWidth = this._sectionsContainer.offsetWidth + 60;
-		const pageIndex = Math.floor(elemOffset / spreadWidth);
+		let elemOffset = elem.offsetLeft;
+		let spreadWidth = this._sectionsContainer.offsetWidth + 60;
+		let pageIndex = Math.floor(elemOffset / spreadWidth);
 		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
 		this._handleViewUpdate();
 	}
@@ -893,7 +893,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight });
 			return;
 		}
-		const pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
+		let pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
 		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex - 1));
 		this._handleViewUpdate();
 		this._maybeDisablePageTurnTransition();
@@ -907,7 +907,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight });
 			return;
 		}
-		const pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
+		let pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
 		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex + 1));
 		this._handleViewUpdate();
 		this._maybeDisablePageTurnTransition();
@@ -922,14 +922,14 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	navigateToPreviousSection() {
-		const section = this.startView?.section.prev();
+		let section = this.startView?.section.prev();
 		if (section) {
 			this.navigate({ href: section.href });
 		}
 	}
 
 	navigateToNextSection() {
-		const section = this.startView?.section.next();
+		let section = this.startView?.section.next();
 		if (section) {
 			this.navigate({ href: section.href });
 		}

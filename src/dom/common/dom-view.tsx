@@ -144,7 +144,7 @@ abstract class DOMView<State extends DOMViewState> {
 	// ***
 	
 	protected _getViewportBoundingRect(range: Range): DOMRect {
-		const rect = range.getBoundingClientRect();
+		let rect = range.getBoundingClientRect();
 		return new DOMRect(
 			rect.x + this._iframe.getBoundingClientRect().x - this._container.getBoundingClientRect().x,
 			rect.y + this._iframe.getBoundingClientRect().y - this._container.getBoundingClientRect().y,
@@ -154,11 +154,11 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
-		const selection = this._iframeDocument.getSelection();
+		let selection = this._iframeDocument.getSelection();
 		if (!selection || selection.isCollapsed) {
 			return null;
 		}
-		const range = makeRangeSpanning(...getSelectionRanges(selection));
+		let range = makeRangeSpanning(...getSelectionRanges(selection));
 		return this._getAnnotationFromRange(range, type, color);
 	}
 
@@ -167,14 +167,14 @@ abstract class DOMView<State extends DOMViewState> {
 		if (this._gotPointerUp) {
 			// Open text selection popup if current tool is pointer
 			if (this._tool.type == 'pointer') {
-				const selection = this._iframeWindow.getSelection();
+				let selection = this._iframeWindow.getSelection();
 				if (selection && !selection.isCollapsed) {
 					this._openSelectionPopup(selection);
 					return true;
 				}
 			}
 			if (this._tool.type == 'highlight') {
-				const annotation = this._getAnnotationFromTextSelection('highlight', this._tool.color);
+				let annotation = this._getAnnotationFromTextSelection('highlight', this._tool.color);
 				if (annotation && annotation.text) {
 					this._options.onAddAnnotation(annotation);
 				}
@@ -195,7 +195,7 @@ abstract class DOMView<State extends DOMViewState> {
 	protected _repositionPopups() {
 		// Update annotation popup position
 		if (this._annotationPopup) {
-			const { annotation } = this._annotationPopup;
+			let { annotation } = this._annotationPopup;
 			if (annotation) {
 				// Note: There is currently a bug in React components part therefore the popup doesn't
 				// properly update its position when window is resized
@@ -205,7 +205,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 		// Update selection popup position
 		if (this._selectionPopup) {
-			const selection = this._iframeWindow.getSelection();
+			let selection = this._iframeWindow.getSelection();
 			if (selection) {
 				this._openSelectionPopup(selection);
 			}
@@ -216,11 +216,11 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 	
 	protected _renderAnnotations() {
-		const root = this._getAnnotationOverlayParent();
+		let root = this._getAnnotationOverlayParent();
 		if (!root) {
 			return;
 		}
-		const doc = root.ownerDocument!;
+		let doc = root.ownerDocument!;
 		let container = root.querySelector('#annotation-overlay');
 		if (!this._showAnnotations) {
 			if (container) {
@@ -233,7 +233,7 @@ abstract class DOMView<State extends DOMViewState> {
 			container.id = 'annotation-overlay';
 			root.append(container);
 		}
-		const displayedAnnotations: DisplayedAnnotation[] = [
+		let displayedAnnotations: DisplayedAnnotation[] = [
 			...this._annotations.map(a => ({
 				id: a.id,
 				type: a.type,
@@ -281,10 +281,10 @@ abstract class DOMView<State extends DOMViewState> {
 		if (selection.isCollapsed) {
 			return;
 		}
-		const range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
-		const domRect = this._getViewportBoundingRect(range);
-		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		const annotation = this._getAnnotationFromRange(range, 'highlight');
+		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
+		let domRect = this._getViewportBoundingRect(range);
+		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
+		let annotation = this._getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
 			this._options.onSetSelectionPopup({ rect, annotation });
 		}
@@ -298,22 +298,22 @@ abstract class DOMView<State extends DOMViewState> {
 				?.getBoundingClientRect();
 		}
 		if (!domRect) {
-			const range = this.toDisplayedRange(annotation.position);
+			let range = this.toDisplayedRange(annotation.position);
 			if (!range) {
 				return;
 			}
 			domRect = this._getViewportBoundingRect(range);
 		}
-		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
+		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}
 
 	protected _openExternalLinkOverlayPopup(linkNode: HTMLAnchorElement) {
-		const range = linkNode.ownerDocument.createRange();
+		let range = linkNode.ownerDocument.createRange();
 		range.selectNode(linkNode);
-		const domRect = this._getViewportBoundingRect(range);
-		const rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		const overlayPopup = {
+		let domRect = this._getViewportBoundingRect(range);
+		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
+		let overlayPopup = {
 			type: 'external-link',
 			url: linkNode.href,
 			rect,
@@ -333,7 +333,7 @@ abstract class DOMView<State extends DOMViewState> {
 				return annotation;
 			}
 			range = moveRangeEndsIntoTextNodes(range);
-			const newAnnotation = this._getAnnotationFromRange(range, annotation.type, annotation.color);
+			let newAnnotation = this._getAnnotationFromRange(range, annotation.type, annotation.color);
 			if (!newAnnotation) {
 				console.warn('Could not create annotation from normalized range', annotation);
 				return annotation;
@@ -382,7 +382,7 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
-		const target = event.target as Element;
+		let target = event.target as Element;
 		const link = target.closest('a');
 		if (link && this._isExternalLink(link)) {
 			this._overlayPopupDelayer.open(link, () => {
@@ -396,7 +396,7 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 
 		if (this._tool.type == 'note') {
-			const range = this._getNoteTargetRange(event);
+			let range = this._getNoteTargetRange(event);
 			this._previewNoteAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
 			this._renderAnnotations();
 		}
@@ -414,8 +414,8 @@ abstract class DOMView<State extends DOMViewState> {
 			return;
 		}
 		
-		const range = this._getNoteTargetRange(event);
-		const selector = this.toSelector(range);
+		let range = this._getNoteTargetRange(event);
+		let selector = this.toSelector(range);
 		if (!selector) {
 			return;
 		}
@@ -424,18 +424,18 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 	
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent) {
-		const target = event.target as Element;
-		const werePointerEventsDisabled = this._disableAnnotationPointerEvents;
+		let target = event.target as Element;
+		let werePointerEventsDisabled = this._disableAnnotationPointerEvents;
 		// Disable pointer events and rerender so we can get the cursor position in the text layer,
 		// not the annotation layer, even if the mouse is over the annotation layer
 		this._disableAnnotationPointerEvents = true;
 		this._renderAnnotations();
-		const range = this._iframeDocument.createRange();
+		let range = this._iframeDocument.createRange();
 		if (target.tagName === 'IMG') { // Allow targeting images directly
 			range.selectNode(target);
 		}
 		else {
-			const pos = supportsCaretPositionFromPoint()
+			let pos = supportsCaretPositionFromPoint()
 				&& caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
 			let node = pos ? pos.offsetNode : target;
 			// Expand to the closest block element
@@ -451,7 +451,7 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	protected _handleClick(event: MouseEvent) {
-		const link = (event.target as Element).closest('a');
+		let link = (event.target as Element).closest('a');
 		if (!link) {
 			return;
 		}
@@ -467,15 +467,15 @@ abstract class DOMView<State extends DOMViewState> {
 	protected abstract _handleInternalLinkClick(link: HTMLAnchorElement): void;
 	
 	protected _handleKeyDown(event: KeyboardEvent) {
-		const { key } = event;
-		const shift = event.shiftKey;
+		let { key } = event;
+		let shift = event.shiftKey;
 
 		// Focusable elements in PDF view are annotations and overlays (links, citations, figures).
 		// Once TAB is pressed, arrows can be used to navigate between them
-		const focusableElements: HTMLElement[] = [];
+		let focusableElements: HTMLElement[] = [];
 		let focusedElementIndex = -1;
-		const focusedElement: HTMLElement | null = this._iframeDocument.activeElement as HTMLElement | null;
-		for (const element of this._iframeDocument.querySelectorAll('[tabindex="-1"]')) {
+		let focusedElement: HTMLElement | null = this._iframeDocument.activeElement as HTMLElement | null;
+		for (let element of this._iframeDocument.querySelectorAll('[tabindex="-1"]')) {
 			focusableElements.push(element as HTMLElement);
 			if (element === focusedElement) {
 				focusedElementIndex = focusableElements.length - 1;
@@ -533,8 +533,8 @@ abstract class DOMView<State extends DOMViewState> {
 			}
 			else if (['Enter', 'Space'].includes(key)) {
 				if (focusedElement.classList.contains('highlight')) {
-					const annotationID = focusedElement.getAttribute('data-annotation-id')!;
-					const annotation = this._annotationsByID.get(annotationID);
+					let annotationID = focusedElement.getAttribute('data-annotation-id')!;
+					let annotation = this._annotationsByID.get(annotationID);
 					if (annotation) {
 						this._options.onSelectAnnotations([annotationID], event);
 						this._openAnnotationPopup(annotation);
@@ -553,7 +553,7 @@ abstract class DOMView<State extends DOMViewState> {
 		if (!event.dataTransfer) {
 			return;
 		}
-		const annotation = this._getAnnotationFromTextSelection('highlight');
+		let annotation = this._getAnnotationFromTextSelection('highlight');
 		if (!annotation) {
 			return;
 		}
@@ -568,12 +568,12 @@ abstract class DOMView<State extends DOMViewState> {
 	private _handleContextMenu(event: MouseEvent) {
 		// Prevent native context menu
 		event.preventDefault();
-		const br = this._iframe.getBoundingClientRect();
+		let br = this._iframe.getBoundingClientRect();
 		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
 	}
 
 	private _handleSelectionChange() {
-		const selection = this._iframeDocument.getSelection();
+		let selection = this._iframeDocument.getSelection();
 		if (!selection || selection.isCollapsed) {
 			this._options.onSetSelectionPopup(null);
 		}
@@ -589,7 +589,7 @@ abstract class DOMView<State extends DOMViewState> {
 	};
 
 	private _handleAnnotationDragStart = (dataTransfer: DataTransfer, id: string) => {
-		const annotation = this._annotationsByID.get(id)!;
+		let annotation = this._annotationsByID.get(id)!;
 		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
 		if (annotation.type === 'note') {
 			this._draggingNoteAnnotation = annotation;
@@ -604,8 +604,8 @@ abstract class DOMView<State extends DOMViewState> {
 			return;
 		}
 
-		const annotation = this._annotationsByID.get(id)!;
-		const updatedAnnotation = this._getAnnotationFromRange(range, annotation.type);
+		let annotation = this._annotationsByID.get(id)!;
+		let updatedAnnotation = this._getAnnotationFromRange(range, annotation.type);
 		if (!updatedAnnotation) {
 			// Probably resized past the end of a section - don't worry about it
 			return;
@@ -624,7 +624,7 @@ abstract class DOMView<State extends DOMViewState> {
 		if (this._selectedAnnotationIDs.length) {
 			// It's enough to provide only one of selected annotations,
 			// others will be included automatically by _onSetDataTransferAnnotations
-			const annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0]);
+			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0]);
 			if (!annotation) {
 				return;
 			}
@@ -632,7 +632,7 @@ abstract class DOMView<State extends DOMViewState> {
 			this._options.onSetDataTransferAnnotations(event.clipboardData, annotation);
 		}
 		else {
-			const annotation = this._getAnnotationFromTextSelection('highlight');
+			let annotation = this._getAnnotationFromTextSelection('highlight');
 			if (!annotation) {
 				return;
 			}
@@ -661,7 +661,7 @@ abstract class DOMView<State extends DOMViewState> {
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
 			// if the note is added to a link. "Fix" this by eating all click events in the next half second.
 			// Very silly.
-			const clickListener = (event: Event) => {
+			let clickListener = (event: Event) => {
 				event.stopImmediatePropagation();
 				event.preventDefault();
 			};
@@ -715,7 +715,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	setTool(tool: Tool) {
 		this._tool = tool;
-		const selectionColor = (tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR)
+		let selectionColor = (tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR)
 			+ '80'; // 50% opacity, like annotations
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
 		if (this._previewNoteAnnotation && tool.type !== 'note') {
@@ -774,17 +774,17 @@ abstract class DOMView<State extends DOMViewState> {
 		if (location.annotationID) {
 			options.block ||= 'center';
 			
-			const annotation = this._annotationsByID.get(location.annotationID);
+			let annotation = this._annotationsByID.get(location.annotationID);
 			if (!annotation) {
 				return;
 			}
-			const selector = annotation.position;
+			let selector = annotation.position;
 			this._navigateToSelector(selector, options);
 		}
 		else if (location.position) {
 			options.block ||= 'center';
 			
-			const selector = location.position as Selector;
+			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
 			this._highlightedPosition = selector;
 			this._renderAnnotations();

@@ -2,7 +2,7 @@
  * Generate a CSS selector uniquely pointing to node's closest Element ancestor, relative to root.
  */
 export function getUniqueSelectorContaining(node: Node, root: Element): string | null {
-	const doc = node.ownerDocument;
+	let doc = node.ownerDocument;
 	if (!doc) {
 		return null;
 	}
@@ -19,11 +19,11 @@ export function getUniqueSelectorContaining(node: Node, root: Element): string |
 	}
 	let selector = '';
 	while (element && element !== root) {
-		const joiner = selector ? ' > ' : '';
+		let joiner = selector ? ' > ' : '';
 		if (element.id) {
 			return `#${element.id.replace(/([^a-zA-Z0-9\u00A0-\uFFFF-_])/g, '\\$1')}` + joiner + selector;
 		}
-		const tagName = element.tagName.toLowerCase();
+		let tagName = element.tagName.toLowerCase();
 		let childSelector;
 		if (element.matches(':only-of-type') || element.matches(':only-child')) {
 			childSelector = '';

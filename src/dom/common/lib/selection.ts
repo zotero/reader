@@ -1,5 +1,5 @@
 export function getSelectionRanges(selection: Selection): Range[] {
-	const ranges = [];
+	let ranges = [];
 	for (let i = 0; i < selection.rangeCount; i++) {
 		ranges.push(selection.getRangeAt(i));
 	}

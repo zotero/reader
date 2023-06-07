@@ -4,7 +4,7 @@
  * generation.
  */
 export function moveRangeEndsIntoTextNodes(range: Range): Range {
-	const doc = range.commonAncestorContainer.ownerDocument!;
+	let doc = range.commonAncestorContainer.ownerDocument!;
 	range = range.cloneRange();
 	if (range.startContainer.nodeType !== Node.TEXT_NODE) {
 		// The startContainer isn't a text node, so the range's start needs to be moved
@@ -14,7 +14,7 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 			: null;
 		if (!startNode || startNode.nodeType !== Node.TEXT_NODE) {
 			// If it didn't point to a child or the child wasn't text, find the next text node in the document
-			const walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+			let walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
 			walker.currentNode = startNode || range.startContainer;
 			startNode = walker.nextNode();
 		}
@@ -37,7 +37,7 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 			: null;
 		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
 			// Get the last text node inside the container/child
-			const walker = doc.createTreeWalker(endNode || range.endContainer, NodeFilter.SHOW_TEXT);
+			let walker = doc.createTreeWalker(endNode || range.endContainer, NodeFilter.SHOW_TEXT);
 			let node;
 			while ((node = walker.nextNode())) {
 				endNode = node;
@@ -64,20 +64,20 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
  * instead of one rect for the entire block element.
  */
 export function splitRangeToTextNodes(range: Range): Range[] {
-	const doc = range.commonAncestorContainer.ownerDocument;
+	let doc = range.commonAncestorContainer.ownerDocument;
 	if (!doc) {
 		return [];
 	}
-	const treeWalker = doc.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT,
+	let treeWalker = doc.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT,
 		node => (range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP));
-	const ranges = [];
+	let ranges = [];
 	let node: Node | null = treeWalker.currentNode;
 	while (node) {
 		if (!node.nodeValue) {
 			node = treeWalker.nextNode();
 			continue;
 		}
-		const subRange = document.createRange();
+		let subRange = document.createRange();
 		subRange.setStart(node, range.startContainer == node ? range.startOffset : 0);
 		subRange.setEnd(node, range.endContainer == node ? range.endOffset : node.nodeValue.length);
 		ranges.push(subRange);
@@ -96,9 +96,9 @@ export function makeRangeSpanning(...ranges: Range[]): Range {
 	if (!ranges.length) {
 		return document.createRange();
 	}
-	const result = ranges[0].cloneRange();
+	let result = ranges[0].cloneRange();
 	for (let i = 1; i < ranges.length; i++) {
-		const range = ranges[i];
+		let range = ranges[i];
 		if (result.comparePoint(range.startContainer, range.startOffset) < 0) {
 			result.setStart(range.startContainer, range.startOffset);
 		}
