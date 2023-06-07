@@ -1,5 +1,6 @@
 {
 	"compilerOptions": {
+		"outDir": "./build",
 		"jsx": "react",
 		"allowJs": true,
 		"strict": true,
@@ -8,5 +9,17 @@
 		"allowSyntheticDefaultImports": true,
 		"noImplicitOverride": true
 	},
-	"exclude": ["pdfjs", "node_modules", "src/pdf", "build"]
+	"include": [
+		"./src",
+	],
+	"exclude": [
+		"./demo",
+		"./pdfjs",
+		"node_modules",
+		"./src/common",
+		"./src/pdf",
+		"./src/*.js",
+		"build",
+		"dist"
+	]
 }
