@@ -83,7 +83,7 @@ class StyleScoper {
 	private _visitRule(rule: CSSRule, scopeClass: string) {
 		if (rule.constructor.name === 'CSSStyleRule') {
 			let styleRule = rule as CSSStyleRule;
-			let txt = parser((selectors) => {
+			styleRule.selectorText = parser((selectors) => {
 				selectors.each((selector) => {
 					selector.replaceWith(
 						parser.selector({
@@ -98,9 +98,6 @@ class StyleScoper {
 					);
 				});
 			}).processSync(styleRule.selectorText);
-			console.log(txt)
-			styleRule.selectorText = txt;
-			console.log(styleRule.selectorText)
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
 			let importRule = rule as CSSImportRule;
