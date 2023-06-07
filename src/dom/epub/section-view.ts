@@ -13,19 +13,19 @@ import {
 
 class SectionView {
 	readonly section: Section;
-	
+
 	readonly container: HTMLElement;
-	
+
 	body!: HTMLElement;
 
 	private readonly _window: Window & typeof globalThis;
-	
+
 	private readonly _document: Document;
-	
+
 	private readonly _styleScoper: StyleScoper;
-	
+
 	private _searchContext: SearchContext | null = null;
-	
+
 	constructor(options: {
 		section: Section,
 		container: HTMLElement,
@@ -45,7 +45,7 @@ class SectionView {
 		let walker = this._document.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 		let toRemove = [];
 		let toAwait = [];
-		
+
 		// Work around a WebKit bug - see DOMView constructor for details
 		if (isSafari) {
 			DOMPurify.sanitize(sectionDoc.documentElement, {
@@ -55,7 +55,7 @@ class SectionView {
 		}
 
 		let REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
-		
+
 		let elem: Element | null = null;
 		// eslint-disable-next-line no-unmodified-loop-condition
 		while ((elem = walker.nextNode() as Element)) {
@@ -94,17 +94,17 @@ class SectionView {
 				toRemove.push(elem);
 			}
 		}
-		
+
 		for (let elem of toRemove) {
 			elem.remove();
 		}
-		
+
 		this.container.append(...sectionDoc.childNodes);
 		this.body = this.container.querySelector('replaced-body')!;
-		
+
 		await Promise.allSettled(toAwait).catch();
 	}
-	
+
 	/**
 	 * Return a range before or at the top of the viewport.
 	 *
@@ -130,7 +130,7 @@ class SectionView {
 			else {
 				range.selectNodeContents(node);
 			}
-			
+
 			let rect = range.getBoundingClientRect();
 			// Skip invisible nodes
 			if (!(rect.width || rect.height)) {
@@ -154,7 +154,7 @@ class SectionView {
 		}
 		return null;
 	}
-	
+
 	get searchContext() {
 		if (!this._searchContext) {
 			this._searchContext = createSearchContext(getVisibleTextNodes(this.container));

@@ -9,11 +9,11 @@ class PageMapping {
 		undefined,
 		(a, b) => a.compareBoundaryPoints(Range.START_TO_START, b) || a.compareBoundaryPoints(Range.END_TO_END, b)
 	);
-	
+
 	get length(): number {
 		return this._tree.length;
 	}
-	
+
 	addPhysicalPages(views: Iterable<SectionView>): boolean {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
@@ -52,7 +52,7 @@ class PageMapping {
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 		return !!this._tree.length;
 	}
-	
+
 	addEPUBLocations(views: Iterable<SectionView>): boolean {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
@@ -64,7 +64,7 @@ class PageMapping {
 			let remainingBeforeBreak = 0;
 			for (let node of textNodes) {
 				if (/^\s*$/.test(node.data)) continue;
-				
+
 				let offset = 0;
 				let length = node.length;
 				if (length <= remainingBeforeBreak) {
@@ -74,12 +74,12 @@ class PageMapping {
 				while (length > remainingBeforeBreak) {
 					offset += remainingBeforeBreak;
 					length -= remainingBeforeBreak;
-					
+
 					let range = node.ownerDocument.createRange();
 					range.setStart(node, offset);
 					range.collapse(true);
 					this._tree.set(range, (locationNumber + 1).toString());
-					
+
 					remainingBeforeBreak = EPUB_LOCATION_BREAK_INTERVAL;
 					locationNumber++;
 				}
@@ -89,7 +89,7 @@ class PageMapping {
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 		return !!this._tree.length;
 	}
-	
+
 	getPageIndex(range: Range): number | null {
 		let pageStartRange = this._tree.getPairOrNextLower(range)?.[0];
 		if (!pageStartRange) {
@@ -97,11 +97,11 @@ class PageMapping {
 		}
 		return this._tree.keysArray().indexOf(pageStartRange);
 	}
-	
+
 	getPageLabel(range: Range): string | null {
 		return this._tree.getPairOrNextLower(range)?.[1] ?? null;
 	}
-	
+
 	getRange(pageNumber: string): Range | null {
 		// This is slow, but only needs to be called when manually navigating to a physical page number
 		for (let [key, value] of this._tree.entries()) {
@@ -111,13 +111,13 @@ class PageMapping {
 		}
 		return null;
 	}
-	
+
 	save(view: EPUBView): string {
 		return JSON.stringify(this._tree.toArray()
 			.map(([range, label]) => [view.getCFI(range)?.toString(), label])
 			.filter(([cfi, _]) => !!cfi));
 	}
-	
+
 	load(saved: string, view: EPUBView): boolean {
 		let array = JSON.parse(saved);
 		if (!Array.isArray(array)) {

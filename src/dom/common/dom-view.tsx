@@ -40,11 +40,11 @@ import {
 
 abstract class DOMView<State extends DOMViewState> {
 	protected readonly _container: Element;
-	
+
 	protected readonly _iframe: HTMLIFrameElement;
 
 	protected _iframeWindow!: Window & typeof globalThis;
-	
+
 	protected _iframeDocument!: Document;
 
 	protected _tool!: Tool;
@@ -76,11 +76,11 @@ abstract class DOMView<State extends DOMViewState> {
 	protected _disableAnnotationPointerEvents = false;
 
 	protected _highlightedPosition: Selector | null = null;
-	
+
 	protected _gotPointerUp = false;
 
 	protected _previewNoteAnnotation: NewAnnotation<WADMAnnotation> | null = null;
-	
+
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
 	protected constructor(options: DOMViewOptions<State>) {
@@ -110,7 +110,7 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframe.addEventListener('load', () => this._handleIFrameLoad(), { once: true });
 		options.container.append(this._iframe);
 	}
-	
+
 	protected abstract _getSrcDoc(): string;
 
 	protected abstract _onInitialDisplay(viewState: Partial<State>): MaybePromise<void>;
@@ -122,27 +122,27 @@ abstract class DOMView<State extends DOMViewState> {
 	abstract toSelector(range: Range): Selector | null;
 
 	abstract toDisplayedRange(selector: Selector): Range | null;
-	
+
 	protected abstract _navigateToSelector(selector: Selector, options?: NavigateOptions): void;
 
 	// ***
 	// Abstractions over document structure
 	// ***
-	
+
 	protected abstract _getAnnotationOverlayParent(): ParentNode | null;
 
 	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
-	
+
 	protected abstract _updateViewState(): void;
-	
+
 	protected abstract _updateViewStats(): void;
-	
+
 	protected abstract _isExternalLink(link: HTMLAnchorElement): boolean;
 
 	// ***
 	// Utilities - called in appropriate event handlers
 	// ***
-	
+
 	protected _getViewportBoundingRect(range: Range): DOMRect {
 		let rect = range.getBoundingClientRect();
 		return new DOMRect(
@@ -191,7 +191,7 @@ abstract class DOMView<State extends DOMViewState> {
 		this._renderAnnotations();
 		this._repositionPopups();
 	}
-	
+
 	protected _repositionPopups() {
 		// Update annotation popup position
 		if (this._annotationPopup) {
@@ -214,7 +214,7 @@ abstract class DOMView<State extends DOMViewState> {
 		// Close overlay popup
 		this._options.onSetOverlayPopup();
 	}
-	
+
 	protected _renderAnnotations() {
 		let root = this._getAnnotationOverlayParent();
 		if (!root) {
@@ -408,12 +408,12 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 		event.preventDefault();
 	}
-	
+
 	protected _handleDrop(event: DragEvent) {
 		if (!this._draggingNoteAnnotation) {
 			return;
 		}
-		
+
 		let range = this._getNoteTargetRange(event);
 		let selector = this.toSelector(range);
 		if (!selector) {
@@ -422,7 +422,7 @@ abstract class DOMView<State extends DOMViewState> {
 		this._draggingNoteAnnotation.position = selector;
 		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
 	}
-	
+
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent) {
 		let target = event.target as Element;
 		let werePointerEventsDisabled = this._disableAnnotationPointerEvents;
@@ -463,9 +463,9 @@ abstract class DOMView<State extends DOMViewState> {
 			this._handleInternalLinkClick(link);
 		}
 	}
-	
+
 	protected abstract _handleInternalLinkClick(link: HTMLAnchorElement): void;
-	
+
 	protected _handleKeyDown(event: KeyboardEvent) {
 		let { key } = event;
 		let shift = event.shiftKey;
@@ -657,7 +657,7 @@ abstract class DOMView<State extends DOMViewState> {
 		if (this._tool.type == 'note' && this._previewNoteAnnotation) {
 			this._options.onAddAnnotation(this._previewNoteAnnotation, true);
 			event.preventDefault();
-			
+
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
 			// if the note is added to a link. "Fix" this by eating all click events in the next half second.
 			// Very silly.
@@ -669,7 +669,7 @@ abstract class DOMView<State extends DOMViewState> {
 			setTimeout(() => {
 				event.target!.removeEventListener('click', clickListener);
 			}, 500);
-			
+
 			return;
 		}
 
@@ -773,7 +773,7 @@ abstract class DOMView<State extends DOMViewState> {
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
 		if (location.annotationID) {
 			options.block ||= 'center';
-			
+
 			let annotation = this._annotationsByID.get(location.annotationID);
 			if (!annotation) {
 				return;
@@ -783,12 +783,12 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 		else if (location.position) {
 			options.block ||= 'center';
-			
+
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
 			this._highlightedPosition = selector;
 			this._renderAnnotations();
-			
+
 			setTimeout(() => {
 				this._highlightedPosition = null;
 				this._renderAnnotations();

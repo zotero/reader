@@ -25,9 +25,9 @@ export type DisplayedAnnotation = {
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
-	
+
 	let [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
-	
+
 	let handlePointerDown = (event: React.PointerEvent, id: string) => {
 		if (event.button !== 0) {
 			return;
@@ -46,7 +46,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			onSelect(id);
 		}
 	};
-	
+
 	return <>
 		<svg
 			className="annotation-container"
@@ -370,14 +370,14 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	let WIDTH = 3;
 
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
-	
+
 	let rtl = getComputedStyle(closestElement(props.annotation.range.commonAncestorContainer!)!).direction == 'rtl';
-	
+
 	let highlightRects = Array.from(props.highlightRects)
 		.sort((a, b) => (a.top - b.top) || (a.left - b.left));
 	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
 	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
-	
+
 	let handlePointerDown = (event: React.PointerEvent, isStart: boolean) => {
 		if (event.button !== 0) {
 			return;
@@ -386,7 +386,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		setResizingSide(isStart ? 'start' : 'end');
 		props.onPointerDown();
 	};
-	
+
 	let handlePointerUp = (event: React.PointerEvent) => {
 		if (event.button !== 0 || !(event.target as Element).hasPointerCapture(event.pointerId)) {
 			return;

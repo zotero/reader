@@ -11,11 +11,11 @@ export class EPUBFindProcessor implements FindProcessor {
 	readonly view: EPUBView;
 
 	readonly findState: FindState;
-	
+
 	private _processors: DefaultFindProcessor[] = [];
-	
+
 	private _selectedProcessor: DefaultFindProcessor | null = null;
-	
+
 	private _totalResults = 0;
 
 	private readonly _onSetFindState?: (state?: FindState) => void;
@@ -53,7 +53,7 @@ export class EPUBFindProcessor implements FindProcessor {
 			if (this._selectedProcessor.getResults().length) {
 				return this._selectedProcessor.prev(false);
 			}
-			
+
 			nextIndex--;
 			if (nextIndex < 0) {
 				nextIndex += this.view.views.length;
@@ -61,7 +61,7 @@ export class EPUBFindProcessor implements FindProcessor {
 			this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
 		}
 		while (this._selectedProcessor !== stop);
-		
+
 		return null;
 	}
 

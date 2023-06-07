@@ -9,7 +9,7 @@ export function executeSearch(
 	if (!term) {
 		return [];
 	}
-	
+
 	let { text, charDataRanges } = context;
 	let ranges = [];
 

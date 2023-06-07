@@ -42,7 +42,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	private readonly _navStack = new NavStack<[number, number]>();
 
 	protected _find: DefaultFindProcessor | null = null;
-	
+
 	private _searchContext: SearchContext | null = null;
 
 	protected _getSrcDoc() {
@@ -95,7 +95,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 			text
 		};
 	}
-	
+
 	private _getSortIndex(range: Range) {
 		let iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
 		let count = 0;
@@ -182,7 +182,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 	protected _isExternalLink(link: HTMLAnchorElement) {
 		return !link.getAttribute('href')?.startsWith('#');
 	}
-	
+
 	private _getSearchContext() {
 		if (!this._searchContext) {
 			this._searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));

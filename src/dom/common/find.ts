@@ -19,7 +19,7 @@ class DefaultFindProcessor implements FindProcessor {
 	private readonly _buf: FindResult[];
 
 	private _pos: number | null = null;
-	
+
 	private _initialPos: number | null = null;
 
 	private readonly _onSetFindState?: (state?: FindState) => void;
@@ -32,9 +32,9 @@ class DefaultFindProcessor implements FindProcessor {
 	}) {
 		this.findState = options.findState;
 		this._onSetFindState = options.onSetFindState;
-		
+
 		this._buf = [];
-		
+
 		let ranges = executeSearch(
 			options.searchContext,
 			this.findState.query,
@@ -63,7 +63,7 @@ class DefaultFindProcessor implements FindProcessor {
 		}
 		this._setFindState();
 	}
-	
+
 	prev(loop = true): FindResult | null {
 		if (this._pos === null) {
 			if (this._initialPos === null) {
@@ -86,7 +86,7 @@ class DefaultFindProcessor implements FindProcessor {
 		this._setFindState();
 		return this.current;
 	}
-	
+
 	next(loop = true): FindResult | null {
 		if (this._pos === null) {
 			if (this._initialPos === null) {
@@ -106,27 +106,27 @@ class DefaultFindProcessor implements FindProcessor {
 		this._setFindState();
 		return this.current;
 	}
-	
+
 	get position(): number | null {
 		return this._pos;
 	}
-	
+
 	set position(value) {
 		this._pos = value;
 		this._setFindState();
 	}
-	
+
 	get initialPosition(): number | null {
 		return this._initialPos;
 	}
-	
+
 	get current(): FindResult | null {
 		if (this._pos === null || this._pos < 0 || this._pos >= this._buf.length) {
 			return null;
 		}
 		return this._buf[this._pos];
 	}
-	
+
 	getResults(): FindResult[] {
 		return this._buf;
 	}
@@ -158,7 +158,7 @@ class DefaultFindProcessor implements FindProcessor {
 		}
 		return highlights;
 	}
-	
+
 	getSnippets(): string[] {
 		return this._buf.map(({ range }) => {
 			range = range.cloneRange();
@@ -186,7 +186,7 @@ class DefaultFindProcessor implements FindProcessor {
 			return snippet;
 		});
 	}
-	
+
 	private _setFindState() {
 		if (this._onSetFindState) {
 			this._onSetFindState({
