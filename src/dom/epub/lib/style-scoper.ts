@@ -1,3 +1,5 @@
+import parser from "postcss-selector-parser";
+
 class StyleScoper {
 	private _document: Document;
 	
@@ -81,7 +83,24 @@ class StyleScoper {
 	private _visitRule(rule: CSSRule, scopeClass: string) {
 		if (rule.constructor.name === 'CSSStyleRule') {
 			let styleRule = rule as CSSStyleRule;
-			styleRule.selectorText = `.${scopeClass} :is(${styleRule.selectorText})`;
+			let txt = parser((selectors) => {
+				selectors.each((selector) => {
+					selector.replaceWith(
+						parser.selector({
+							value: '',
+							nodes: [
+								parser.className({ value: scopeClass }),
+								parser.combinator({ value: ' ' }),
+								selector
+							],
+							spaces: selector.spaces
+						})
+					);
+				});
+			}).processSync(styleRule.selectorText);
+			console.log(txt)
+			styleRule.selectorText = txt;
+			console.log(styleRule.selectorText)
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
 			let importRule = rule as CSSImportRule;
