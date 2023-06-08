@@ -244,6 +244,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	getRange(cfi: EpubCFI | string): Range | null {
+		if (!this._sectionViews.length) {
+			// The book isn't loaded yet -- don't spam the console
+			return null;
+		}
 		let cfiString = cfi.toString();
 		if (this._rangeCache.has(cfiString)) {
 			return this._rangeCache.get(cfiString)!.cloneRange();
