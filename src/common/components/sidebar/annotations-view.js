@@ -207,14 +207,14 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		pointerDownRef.current = false;
 	}
 
-	// Don't selection annotation if focus was triggered by pointerdown event
-	function handleAnnotationFocus(id) {
+	// Don't select annotation if focus was triggered by pointerdown event
+	let handleAnnotationFocus = useCallback((id) => {
 		// Note: Mousedown and canceled dragstart will focus the annotation element but won't select the actual annotation,
 		// because, wiht mouse, selection is only triggered by click event in handleSidebarAnnotationSectionClick
 		if (!pointerDownRef.current && !(props.selectedIDs.length === 1 && props.selectedIDs[0] === id)) {
 			props.onSelectAnnotations([id]);
 		}
-	}
+	}, [props.selectedIDs]);
 
 	// Allow navigating to next/previous annotation if inner annotation element like
 	// more button, empty comment or tags are focused
@@ -291,7 +291,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		});
 	}
 
-	function handleSidebarAnnotationSectionClick(id, section, event) {
+	let handleSidebarAnnotationSectionClick = useCallback((id, section, event) => {
 		let ctrl = event.ctrlKey || event.metaKey;
 		let shift = event.shiftKey;
 		let annotation = props.annotations.find(x => x.id === id);
@@ -312,7 +312,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 				props.onSelectAnnotations([id], false, event);
 			}
 		}
-	}
+	}, [expansionState, props.selectedIDs]);
 
 	function focusSidebarHighlight(annotationID) {
 		setTimeout(function () {
@@ -323,7 +323,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		}, 100);
 	}
 
-	function handleSidebarAnnotationDoubleClick(id) {
+	let handleSidebarAnnotationDoubleClick = useCallback((id) => {
 		if (props.selectedIDs.length === 1
 			&& props.selectedIDs[0] === id
 			&& Date.now() - selectionTimeRef.current > 500) {
@@ -332,15 +332,15 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 				focusSidebarHighlight(id);
 			}
 		}
-	}
+	}, [expansionState, props.selectedIDs]);
 
 
-	function handleContextMenuOpen(params) {
+	let handleContextMenuOpen = useCallback((params) => {
 		if (!params.button && props.selectedIDs.includes(params.ids[0])) {
 			params.ids = props.selectedIDs.slice();
 		}
 		props.onOpenAnnotationContextMenu(params);
-	}
+	}, [props.selectedIDs]);
 
 
 

@@ -23,8 +23,8 @@
 		"postcss-selector-parser": "^6.0.13",
 		"prop-types": "^15.8.1",
 		"queue": "^6.0.2",
-		"react": "^16.14.0",
-		"react-dom": "^16.14.0",
+		"react": "^17.0.2",
+		"react-dom": "^17.0.2",
 		"react-intl": "^5.24.1",
 		"sorted-btree": "^1.8.1"
 	},
