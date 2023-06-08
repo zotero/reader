@@ -715,8 +715,11 @@ abstract class DOMView<State extends DOMViewState> {
 
 	setTool(tool: Tool) {
 		this._tool = tool;
-		let selectionColor = (tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR)
-			+ '80'; // 50% opacity, like annotations
+		let selectionColor = tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR;
+		if (selectionColor.startsWith('#')) {
+			// 50% opacity, like annotations -- not needed if we're using a system color
+			selectionColor += '80';
+		}
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
 		if (this._previewNoteAnnotation && tool.type !== 'note') {
 			this._previewNoteAnnotation = null;
