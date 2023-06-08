@@ -1,4 +1,5 @@
 import React, {
+	useEffect,
 	useState
 } from 'react';
 import {
@@ -24,7 +25,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResize, disablePointerEvents } = props;
+	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents } = props;
 
 	let [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
 
@@ -69,6 +70,8 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							selected={selectedAnnotationIDs.includes(annotation.id)}
 							onPointerDown={event => handlePointerDown(event, annotation.id!)}
 							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
+							onResizeStart={() => onResizeStart(annotation.id!)}
+							onResizeEnd={() => onResizeEnd(annotation.id!)}
 							onResize={range => onResize(annotation.id!, range)}
 							disablePointerEvents={disablePointerEvents}
 							widgetContainer={widgetContainer}
@@ -117,14 +120,25 @@ type AnnotationOverlayProps = {
 	selectedAnnotationIDs: string[];
 	onSelect: (id: string) => void;
 	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
+	onResizeStart: (id: string) => void;
+	onResizeEnd: (id: string) => void;
 	onResize: (id: string, range: Range) => void;
 	disablePointerEvents: boolean;
 };
 
 const Highlight: React.FC<HighlightProps> = (props) => {
-	let { annotation, selected, onPointerDown, onDragStart, onResize, disablePointerEvents, widgetContainer } = props;
+	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents, widgetContainer } = props;
 	let [dragImage, setDragImage] = useState<Element | null>(null);
 	let [isResizing, setResizing] = useState(false);
+
+	useEffect(() => {
+		if (isResizing) {
+			onResizeStart?.();
+		}
+		else {
+			onResizeEnd?.();
+		}
+	}, [isResizing, onResizeStart, onResizeEnd]);
 
 	let ranges = splitRangeToTextNodes(annotation.range);
 	if (!ranges.length) {
@@ -177,7 +191,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		commentIconPosition = null;
 	}
 	return <>
-		<g fill={annotation.color}>
+		<g fill={annotation.color} data-annotation-id={annotation.id}>
 			{[...highlightRects.entries()].map(([key, rect]) => (
 				<rect
 					x={rect.x + doc.defaultView!.scrollX}
@@ -208,16 +222,15 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 						draggable={true}
 						onPointerDown={onPointerDown}
 						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
-						data-annotation-id={annotation.id}/>
+						onDragEnd={handleDragEnd}/>
 				</foreignObject>
 			))}
 			{(!disablePointerEvents || isResizing) && onResize && selected && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...highlightRects.values()]}
-					onPointerDown={() => setResizing(true)}
-					onPointerUp={() => setResizing(false)}
+					onResizeStart={() => setResizing(true)}
+					onResizeEnd={() => setResizing(false)}
 					onResize={onResize}
 				/>
 			)}
@@ -241,6 +254,8 @@ type HighlightProps = {
 	selected: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onDragStart?: (dataTransfer: DataTransfer) => void;
+	onResizeStart?: () => void;
+	onResizeEnd?: () => void;
 	onResize?: (range: Range) => void;
 	disablePointerEvents: boolean;
 	widgetContainer: Element | null;
@@ -384,7 +399,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 		(event.target as Element).setPointerCapture(event.pointerId);
 		setResizingSide(isStart ? 'start' : 'end');
-		props.onPointerDown();
+		props.onResizeStart();
 	};
 
 	let handlePointerUp = (event: React.PointerEvent) => {
@@ -393,7 +408,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 		(event.target as Element).releasePointerCapture(event.pointerId);
 		setResizingSide(false);
-		props.onPointerUp();
+		props.onResizeEnd();
 	};
 
 	let handleResize = (event: React.PointerEvent, isStart: boolean) => {
@@ -446,8 +461,8 @@ Resizer.displayName = 'Resizer';
 type ResizerProps = {
 	annotation: DisplayedAnnotation;
 	highlightRects: DOMRect[];
-	onPointerDown: () => void;
-	onPointerUp: () => void;
+	onResizeStart: () => void;
+	onResizeEnd: () => void;
 	onResize: (range: Range) => void;
 };
 
@@ -465,6 +480,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			height={size}
 			viewBox="0 0 24 24"
 			ref={ref}
+			data-annotation-id={props.annotation?.id}
 		>
 			<IconNoteLarge/>
 		</svg>
@@ -493,8 +509,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 					draggable={true}
 					onPointerDown={props.onPointerDown}
 					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}
-					data-annotation-id={props.annotation?.id}/>
+					onDragEnd={props.onDragEnd}/>
 			</foreignObject>
 		)}
 	</>;

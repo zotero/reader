@@ -271,6 +271,8 @@ abstract class DOMView<State extends DOMViewState> {
 				selectedAnnotationIDs={this._selectedAnnotationIDs}
 				onSelect={this._handleAnnotationSelect}
 				onDragStart={this._handleAnnotationDragStart}
+				onResizeStart={this._handleAnnotationResizeStart}
+				onResizeEnd={this._handleAnnotationResizeEnd}
 				onResize={this._handleAnnotationResize}
 				disablePointerEvents={this._disableAnnotationPointerEvents}
 			/>
@@ -311,7 +313,7 @@ abstract class DOMView<State extends DOMViewState> {
 	protected _openExternalLinkOverlayPopup(linkNode: HTMLAnchorElement) {
 		let range = linkNode.ownerDocument.createRange();
 		range.selectNode(linkNode);
-		let domRect = this._getViewportBoundingRect(range);
+		let domRect = range.getBoundingClientRect();
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		let overlayPopup = {
 			type: 'external-link',
@@ -593,6 +595,17 @@ abstract class DOMView<State extends DOMViewState> {
 		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
 		if (annotation.type === 'note') {
 			this._draggingNoteAnnotation = annotation;
+		}
+	};
+
+	private _handleAnnotationResizeStart = (_id: string) => {
+		this._options.onSetAnnotationPopup(null);
+	};
+
+	private _handleAnnotationResizeEnd = (id: string) => {
+		if (this._annotationPopup?.annotation?.id === id
+				|| this._selectedAnnotationIDs.length === 1 && this._selectedAnnotationIDs[0] === id) {
+			this._openAnnotationPopup(this._annotationsByID.get(id)!);
 		}
 	};
 
