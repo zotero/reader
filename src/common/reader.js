@@ -16,7 +16,6 @@ import { initPDFPrintService } from '../pdf/pdf-print-service';
 import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE } from './defines';
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
-import { PDFManager } from '../pdf/pdf-manager';
 import {
 	getImageDataURL, isMac,
 	setMultiDragPreview,
@@ -58,7 +57,6 @@ class Reader {
 		this._secondaryView = null;
 		this._lastViewPrimary = true;
 
-
 		this.uiInitializedPromise = new Promise(resolve => this._resolveUIInitializedPromise = resolve);
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 
@@ -99,7 +97,7 @@ class Reader {
 			},
 			thumbnails: [],
 			outline: [],
-			pageLabels: [],
+			pageLabels: {},
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
 			sidebarView: 'annotations',
@@ -147,15 +145,6 @@ class Reader {
 			delete state.splitType;
 			delete state.splitSize;
 			this._state.secondaryViewState = state;
-		}
-
-		if (this._type === 'pdf') {
-			this._pdfManager = new PDFManager({
-				buf: this._buf,
-				onUpdatePageLabels: (pageLabels) => {
-					this._updateState({ pageLabels });
-				}
-			});
 		}
 
 		this._focusManager = new FocusManager({
@@ -564,7 +553,11 @@ class Reader {
 		};
 
 		let onSetOutline = (outline) => {
-			this._state.outline = outline;
+			this._updateState({ outline });
+		};
+
+		let onSetPageLabels = (pageLabels) => {
+			this._updateState({ pageLabels });
 		};
 
 		let onChangeViewState = debounce((state) => {
@@ -688,10 +681,10 @@ class Reader {
 				...common,
 				password: this._password,
 				pageLabels: this._state.pageLabels,
-				pdfManager: this._pdfManager,
 				onRequestPassword,
 				onSetThumbnails,
 				onSetOutline,
+				onSetPageLabels
 			});
 
 			if (primary) {
@@ -755,6 +748,7 @@ class Reader {
 			container,
 			buf: this._buf,
 			password: this._password,
+			pageLabels: {},
 			tool: { type: 'pointer' },
 			selectedAnnotationIDs: [],
 			annotations: this._state.annotations,
@@ -779,6 +773,7 @@ class Reader {
 			onSelectAnnotations: nop,
 			onSetThumbnails: nop,
 			onSetOutline: nop,
+			onSetPageLabels: nop,
 			onTabOut,
 			onKeyDown,
 			onKeyUp

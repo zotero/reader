@@ -27,41 +27,6 @@ export default class Page {
 		this.actualContext = this.originalPage.canvas.getContext('2d');
 	}
 
-	async updateData() {
-		// let data = await this.originalPage.pdfPage._transport.getContentData({ pageIndex: this.pageIndex });
-		// console.log('Received content data', data)
-		// this.objects = data.objects;
-		this.chars = await this.layer._extractor.getPageChars(this.pageIndex);
-		// this.calculateSnapLines();
-		await this.initOverlays();
-	}
-
-	async initOverlays() {
-		let page = await this.layer._iframeWindow.PDFViewerApplication.pdfDocument.getPage(this.pageIndex + 1);
-		let annotations = await page.getAnnotations();
-		for (let annotation of annotations) {
-			let overlay = {
-				position: {
-					pageIndex: this.pageIndex,
-					rects: [annotation.rect]
-				}
-			};
-			overlay.sortIndex = this.layer._extractor.getSortIndex(overlay.position);
-			if (annotation.url) {
-				overlay.type = 'external-link';
-				overlay.url = annotation.url;
-			}
-			else if (annotation.dest) {
-				overlay.type = 'internal-link';
-				overlay.dest = annotation.dest;
-			}
-			else {
-				continue;
-			}
-			this.overlays.push(overlay);
-		}
-	}
-
 	getSortedObjects() {
 		let annotations = this.layer._getPageAnnotations(this.pageIndex);
 		let objects = [...annotations, ...this.overlays];

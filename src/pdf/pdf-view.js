@@ -1,6 +1,5 @@
 import Page from './page';
-import { Extractor } from './lib/extract';
-import { p2v, v2p } from './lib/coordinates';
+import { v2p } from './lib/coordinates';
 import {
 	getLineSelectionRanges,
 	getModifiedSelectionRanges,
@@ -8,6 +7,7 @@ import {
 	getSelectionRangeHandles,
 	getSelectionRanges,
 	getSelectionRangesByPosition,
+	getSortIndex,
 	getWordSelectionRanges,
 	setTextLayerSelection
 } from './selection';
@@ -60,6 +60,7 @@ class PDFView {
 		this._onRequestPassword = options.onRequestPassword;
 		this._onSetThumbnails = options.onSetThumbnails;
 		this._onSetOutline = options.onSetOutline;
+		this._onSetPageLabels = options.onSetPageLabels;
 		this._onChangeViewState = options.onChangeViewState;
 		this._onChangeViewStats = options.onChangeViewStats;
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
@@ -89,6 +90,7 @@ class PDFView {
 		this._annotations = options.annotations;
 
 		this._pages = [];
+		this._pdfPages = {};
 
 		this._focusedObject = null;
 		this._lastFocusedObject = null;
@@ -172,7 +174,7 @@ class PDFView {
 					let selectionRange = this._selectionRanges[0];
 					if (selectionRange) {
 						let rect = this.getClientRectForPopup(selectionRange.position);
-						this._onSetSelectionPopup({ rect });
+						this._onSetSelectionPopup({ ...this._selectionPopup, rect });
 					}
 				}
 			});
@@ -227,33 +229,8 @@ class PDFView {
 	}
 
 	async _init2() {
-		let items = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline();
-
-		function transformItems(items) {
-			let newItems = [];
-			for (let item of items) {
-				let newItem = {
-					title: item.title,
-					location: {
-						dest: item.dest
-					},
-					items: transformItems(item.items),
-					expanded: false
-				};
-				newItems.push(newItem);
-			}
-			return newItems;
-		}
-
-		if (items) {
-			let outline = transformItems(items);
-
-			if (outline.length === 1) {
-				for (let item of outline) {
-					item.expanded = true;
-				}
-			}
-
+		if (this._primary) {
+			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
 			this._onSetOutline(outline);
 		}
 
@@ -357,6 +334,7 @@ class PDFView {
 			pdfView: this,
 			window: this._iframeWindow,
 			onUpdate: (thumbnails) => {
+				// TODO: When rendering a thumbnails it's also a good chance to getPageData with extracted pageLabel
 				this._onSetThumbnails(thumbnails);
 			}
 		});
@@ -367,13 +345,23 @@ class PDFView {
 		if (this._primary && !this._portal && !this._pdfThumbnails) {
 			this._initThumbnails();
 		}
-		if (!this._extractor) {
-			this._extractor = new Extractor(this._iframeWindow.PDFViewerApplication.pdfViewer, []);
-		}
+
 		this._detachPage(originalPage);
 		originalPage.div.querySelector('.textLayer').draggable = true;
 		let page = new Page(this, originalPage);
-		await page.updateData();
+
+		let pageIndex = originalPage.id - 1;
+
+		if (!this._pdfPages[pageIndex]) {
+			let t = Date.now();
+			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
+			this._pdfPages[pageIndex] = pageData;
+
+			if (pageData.pageLabel) {
+				this._onSetPageLabels({ ...this._pageLabels, [pageIndex]: pageData.pageLabel });
+			}
+		}
+
 		this._pages.push(page);
 		this._updateAnnotationTextSelectionData();
 		this._render();
@@ -381,6 +369,10 @@ class PDFView {
 
 	_detachPage(originalPage) {
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
+	}
+
+	_getPageLabel(pageIndex) {
+		return this._pageLabels[pageIndex] || (pageIndex + 1).toString()/* || '-'*/;
 	}
 
 	_clearFocus() {
@@ -442,9 +434,9 @@ class PDFView {
 		if (annotations.length === 1) {
 			let annotation = annotations[0];
 			if (annotation.type === 'highlight') {
-				let selectionRanges = getSelectionRangesByPosition(this._extractor, annotation.position);
+				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
 				if (selectionRanges.length) {
-					let handles = getSelectionRangeHandles(this._extractor, selectionRanges);
+					let handles = getSelectionRangeHandles(this._pdfPages, selectionRanges);
 					this._annotationTextSelectionData = { selectionRanges, handles };
 					return;
 				}
@@ -785,7 +777,7 @@ class PDFView {
 			Math.max(x1, x2),
 			Math.max(y1, y2)
 		];
-		let pr = page.div.firstChild.getBoundingClientRect();
+		let pr = page.div.getBoundingClientRect();
 
 
 		let node = this._iframeWindow.document.getElementById('viewerContainer');
@@ -817,7 +809,7 @@ class PDFView {
 		];
 
 		if (!this._pp || 1) {
-			let pr = page.div.firstChild.getBoundingClientRect();
+			let pr = page.div.getBoundingClientRect();
 			this._pp = {
 				pr,
 				scrollLeft,
@@ -858,7 +850,7 @@ class PDFView {
 
 		let pr = this._pr;
 		if (!pr) {
-			pr = page.div.firstChild.getBoundingClientRect();
+			pr = page.div.getBoundingClientRect();
 		}
 		return [
 			pr.x + r[0],
@@ -869,6 +861,10 @@ class PDFView {
 	}
 
 	getSelectedAnnotationAction(annotation, position) {
+		if (this._iframeWindow.PDFViewerApplication.pdfViewer._pages[position.pageIndex].outputScale) {
+			return null;
+		}
+
 		let dd = 5 * devicePixelRatio;
 
 		let p = this.getViewPoint(position.rects[0], position.pageIndex);
@@ -1032,11 +1028,11 @@ class PDFView {
 	}
 
 	_getSelectableOverlay(position) {
-		let page = this.getPageByIndex(position.pageIndex);
-		if (!page) {
+		let pdfPage = this._pdfPages[position.pageIndex];
+		if (!pdfPage) {
 			return;
 		}
-		for (let overlay of page.overlays) {
+		for (let overlay of pdfPage.overlays) {
 			if (intersectAnnotationWithPoint(overlay.position, position)) {
 				return overlay;
 			}
@@ -1244,6 +1240,9 @@ class PDFView {
 			else if (action.type === 'rotate') {
 				cursor = 'move';
 			}
+			else if (action.type === 'highlight') {
+				cursor = 'text';
+			}
 			else if (action.type === 'ink') {
 				cursor = 'crosshair';
 			}
@@ -1360,8 +1359,8 @@ class PDFView {
 			this._onAddAnnotation({
 				type: 'note',
 				color: this._tool.color,
-				pageLabel: this._pageLabels[this.pointerDownPosition.pageIndex] || '-',
-				sortIndex: this._extractor.getSortIndex(newPosition),
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
+				sortIndex: getSortIndex(this._pdfPages, newPosition),
 				position: newPosition
 			}, true);
 		}
@@ -1381,8 +1380,8 @@ class PDFView {
 			this._onAddAnnotation({
 				type: 'text',
 				color: this._tool.color,
-				pageLabel: this._pageLabels[this.pointerDownPosition.pageIndex] || '-',
-				sortIndex: this._extractor.getSortIndex(newPosition),
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
+				sortIndex: getSortIndex(this._pdfPages, newPosition),
 				position: newPosition
 			}, true);
 		}
@@ -1391,7 +1390,7 @@ class PDFView {
 			action.annotation = {
 				type: 'ink',
 				color: this._tool.color,
-				pageLabel: this._pageLabels[this.pointerDownPosition.pageIndex] || '-',
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
 					width: this._tool.pathWidth,
@@ -1421,19 +1420,19 @@ class PDFView {
 		if (action.type === 'selectText') {
 			if (event.detail === 1 || !event.detail) {
 				if (shift && this._selectionRanges.length) {
-					this._selectionRanges = getModifiedSelectionRanges(this._extractor, this._selectionRanges, position);
+					this._selectionRanges = getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, position);
 				}
 				else {
-					this._selectionRanges = getSelectionRanges(this._extractor, position, position);
+					this._selectionRanges = getSelectionRanges(this._pdfPages, position, position);
 				}
 				this.action.mode = 'chars';
 			}
 			else if (event.detail === 2) {
-				this._selectionRanges = getWordSelectionRanges(this._extractor, position, position);
+				this._selectionRanges = getWordSelectionRanges(this._pdfPages, position, position);
 				this.action.mode = 'words';
 			}
 			else if (event.detail === 3) {
-				this._selectionRanges = getLineSelectionRanges(this._extractor, position, position);
+				this._selectionRanges = getLineSelectionRanges(this._pdfPages, position, position);
 				this.action.mode = 'lines';
 			}
 		}
@@ -1512,7 +1511,7 @@ class PDFView {
 			return;
 		}
 		if (action.type === 'updateAnnotationRange') {
-			action.selectionRanges = getModifiedSelectionRanges(this._extractor, action.selectionRanges, position);
+			action.selectionRanges = getModifiedSelectionRanges(this._pdfPages, action.selectionRanges, position);
 			let { sortIndex, position: _position, text } = this._getAnnotationFromSelectionRanges(action.selectionRanges);
 			action.annotation = { ...action.annotation, sortIndex, position: _position, text };
 			// Use text cursor once action is triggered
@@ -1676,13 +1675,13 @@ class PDFView {
 		}
 		else if (action.type === 'selectText') {
 			if (action.mode === 'chars') {
-				this._selectionRanges = getModifiedSelectionRanges(this._extractor, this._selectionRanges, position);
+				this._selectionRanges = getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, position);
 			}
 			else if (action.mode === 'words') {
-				this._selectionRanges = getWordSelectionRanges(this._extractor, this.pointerDownPosition, position);
+				this._selectionRanges = getWordSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
 			else if (action.mode === 'lines') {
-				this._selectionRanges = getLineSelectionRanges(this._extractor, this.pointerDownPosition, position);
+				this._selectionRanges = getLineSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
 			action.triggered = true;
 		}
@@ -1720,7 +1719,7 @@ class PDFView {
 			action.annotation = {
 				type: 'image',
 				color: this._tool.color,
-				pageLabel: this._pageLabels[this.pointerDownPosition.pageIndex] || '-',
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
 					rects: [[
@@ -1734,7 +1733,7 @@ class PDFView {
 			action.triggered = true;
 		}
 		else if (action.type === 'highlight') {
-			let selectionRanges = getSelectionRanges(this._extractor, this.pointerDownPosition, position);
+			let selectionRanges = getSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			action.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight', this._tool.color);
 			action.triggered = true;
 		}
@@ -1781,7 +1780,7 @@ class PDFView {
 			type,
 			color,
 			sortIndex: selectionRange.sortIndex,
-			pageLabel: this._pageLabels[selectionRange.position.pageIndex] || '-',
+			pageLabel: this._getPageLabel(selectionRange.position.pageIndex),
 			position: selectionRange.position,
 			text: selectionRange.text
 		};
@@ -1806,7 +1805,7 @@ class PDFView {
 			if (action) {
 				if (action.triggered) {
 					if (action.type === 'updateAnnotationRange') {
-						action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 						this._onUpdateAnnotations([action.annotation]);
 					}
 					else if (action.type === 'resize') {
@@ -1814,23 +1813,23 @@ class PDFView {
 							action.position = measureTextAnnotationDimensions({ ...action.annotation, position: action.position }, { adjustSingleLineWidth: true });
 						}
 
-						let sortIndex = this._extractor.getSortIndex(action.position);
+						let sortIndex = getSortIndex(this._pdfPages, action.position);
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
 					else if (action.type === 'rotate') {
-						let sortIndex = this._extractor.getSortIndex(action.position);
+						let sortIndex = getSortIndex(this._pdfPages, action.position);
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
 					else if (action.type === 'moveAndDrag') {
-						let sortIndex = this._extractor.getSortIndex(action.position);
+						let sortIndex = getSortIndex(this._pdfPages, action.position);
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
 					else if (action.type === 'highlight' && action.annotation) {
-						action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 						this._onAddAnnotation(action.annotation);
 					}
 					else if (action.type === 'image' && action.annotation) {
-						action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 						this._onAddAnnotation(action.annotation);
 					}
 					else if (action.type === 'ink' && action.annotation) {
@@ -1848,11 +1847,11 @@ class PDFView {
 							let paths = lastInkAnnotation.position.paths.slice();
 							paths.push(action.annotation.position.paths[0]);
 							position = { ...position, paths };
-							let sortIndex = this._extractor.getSortIndex(position);
+							let sortIndex = getSortIndex(this._pdfPages, position);
 							this._onUpdateAnnotations([{ id, position, sortIndex }]);
 						}
 						else {
-							action.annotation.sortIndex = this._extractor.getSortIndex(action.annotation.position);
+							action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 							let { id } = this._onAddAnnotation(action.annotation);
 							this._lastAddedInkAnnotationID = id;
 						}
@@ -1902,7 +1901,7 @@ class PDFView {
 					if (selectionRange && !selectionRange.collapsed) {
 						let rect = this.getClientRectForPopup(selectionRange.position);
 						let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
-						annotation.pageLabel = this._pageLabels[annotation.position.pageIndex] || '-';
+						annotation.pageLabel = this._getPageLabel(annotation.position.pageIndex);
 						this._onSetSelectionPopup({ rect, annotation });
 						setTextLayerSelection(this._iframeWindow, this._selectionRanges);
 					}
@@ -1973,9 +1972,10 @@ class PDFView {
 			spreadMode
 		} = this._iframeWindow.PDFViewerApplication.pdfViewer;
 
+		let pageIndex = currentPageNumber - 1;
 		this._onChangeViewStats({
-			pageIndex: currentPageNumber - 1,
-			pageLabel: '123',
+			pageIndex,
+			pageLabel: this._getPageLabel(pageIndex),
 			pagesCount,
 			canCopy: !this._isSelectionCollapsed() || this._selectedAnnotationIDs.length,
 			canZoomOut: true,

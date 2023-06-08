@@ -189,7 +189,7 @@ function ThumbnailsView(props) {
 			onKeyDown={handleKeyDown}
 		>
 			{props.thumbnails.map((thumbnail, index) => {
-				let pageLabel = props.pageLabels.length && props.pageLabels[index] || (index + 1).toString();
+				let pageLabel = props.pageLabels[index] || (index + 1).toString();
 				return (
 					<Thumbnail
 						key={index}

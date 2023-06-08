@@ -52,7 +52,8 @@ function getData(params) {
 		checked = 'single';
 	}
 
-	let autoPageLabel = params.pageLabels[annotation.position.pageIndex];
+	let { pageIndex } = annotation.position;
+	let autoPageLabel = params.pageLabels.length && params.pageLabels[pageIndex] || (pageIndex + 1).toString();
 
 	return {
 		checked,
@@ -110,10 +111,11 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 			// TODO: Don't reset page labels if they can't be reliably extracted from text
 			onClose();
 			let annotations = params.allAnnotations.filter(x => !x.readOnly);
+			let { pageIndex } = annotation.position;
 			for (let annotation of annotations) {
 				annotationsToUpdate.push({
 					id: annotation.id,
-					pageLabel: params.pageLabels[annotation.position.pageIndex]
+					pageLabel: params.pageLabels[pageIndex] || (pageIndex + 1).toString()
 				});
 			}
 			onUpdateAnnotations(annotationsToUpdate);
