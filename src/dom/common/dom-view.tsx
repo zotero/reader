@@ -602,11 +602,8 @@ abstract class DOMView<State extends DOMViewState> {
 		this._options.onSetAnnotationPopup(null);
 	};
 
-	private _handleAnnotationResizeEnd = (id: string) => {
-		if (this._annotationPopup?.annotation?.id === id
-				|| this._selectedAnnotationIDs.length === 1 && this._selectedAnnotationIDs[0] === id) {
-			this._openAnnotationPopup(this._annotationsByID.get(id)!);
-		}
+	private _handleAnnotationResizeEnd = (_id: string) => {
+		// No-op
 	};
 
 	private _handleAnnotationResize = (id: string, range: Range) => {
