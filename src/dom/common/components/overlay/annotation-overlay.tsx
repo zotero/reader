@@ -244,7 +244,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		commentIconPosition = null;
 	}
 	return <>
-		<g fill={annotation.color} data-annotation-id={annotation.id}>
+		<g fill={annotation.color}>
 			{[...highlightRects.entries()].map(([key, rect]) => (
 				<rect
 					x={rect.x}
@@ -275,7 +275,9 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 						draggable={true}
 						onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
 						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}/>
+						onDragEnd={handleDragEnd}
+						data-annotation-id={annotation.id}
+					/>
 				</foreignObject>
 			))}
 			{(!pointerEventsSuppressed || isResizing) && onResize && selected && supportsCaretPositionFromPoint() && (
