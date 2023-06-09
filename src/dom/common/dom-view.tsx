@@ -269,7 +269,7 @@ abstract class DOMView<State extends DOMViewState> {
 			<AnnotationOverlay
 				annotations={displayedAnnotations}
 				selectedAnnotationIDs={this._selectedAnnotationIDs}
-				onSelect={this._handleAnnotationSelect}
+				onPointerDown={this._handleAnnotationPointerDown}
 				onDragStart={this._handleAnnotationDragStart}
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
@@ -585,9 +585,45 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 	}
 
-	private _handleAnnotationSelect = (id: string) => {
-		this._options.onSelectAnnotations([id]);
-		this._openAnnotationPopup(this._annotationsByID.get(id)!);
+	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
+		// Cycle selection on left click if clicked annotation is already selected
+		if (event.button == 0) {
+			if (this._selectedAnnotationIDs.includes(id)) {
+				let targets = this._iframeDocument.elementsFromPoint(event.clientX, event.clientY)
+					.filter(target => !!target.getAttribute('data-annotation-id'));
+				if (!targets.length) {
+					return;
+				}
+				let nextTarget = targets[(targets.indexOf(event.target as Element) + 1) % targets.length];
+				let nextID = nextTarget.getAttribute('data-annotation-id')!;
+				this._options.onSelectAnnotations([nextID], event.nativeEvent);
+				this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+			}
+			else {
+				this._options.onSelectAnnotations([id], event.nativeEvent);
+				this._openAnnotationPopup(this._annotationsByID.get(id)!);
+			}
+		}
+		else if (event.button == 2) {
+			let br = this._iframe.getBoundingClientRect();
+			if (this._selectedAnnotationIDs.includes(id)) {
+				this._options.onOpenAnnotationContextMenu({
+					ids: this._selectedAnnotationIDs,
+					x: br.x + event.clientX,
+					y: br.y + event.clientY,
+					view: true,
+				});
+			}
+			else {
+				this._options.onSelectAnnotations([id], event.nativeEvent);
+				this._options.onOpenAnnotationContextMenu({
+					ids: [id],
+					x: br.x + event.clientX,
+					y: br.y + event.clientY,
+					view: true,
+				});
+			}
+		}
 	};
 
 	private _handleAnnotationDragStart = (id: string, dataTransfer: DataTransfer) => {
@@ -657,14 +693,10 @@ abstract class DOMView<State extends DOMViewState> {
 
 		this._options.onSetOverlayPopup();
 
-		if (event.button !== 0) {
-			return;
-		}
-
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
-		if (this._tool.type == 'note' && this._previewNoteAnnotation) {
+		if (event.button == 0 && this._tool.type == 'note' && this._previewNoteAnnotation) {
 			this._options.onAddAnnotation(this._previewNoteAnnotation, true);
 			event.preventDefault();
 
@@ -829,6 +861,7 @@ export type DOMViewOptions<State extends DOMViewState> = {
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
 	onOpenViewContextMenu: (params: { x: number, y: number }) => void;
+	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
 	onFocus: () => void;
 	onTabOut: (isShiftTab?: boolean) => void;
 	onKeyUp: (event: KeyboardEvent) => void;

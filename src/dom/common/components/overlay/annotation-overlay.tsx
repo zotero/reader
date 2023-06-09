@@ -27,7 +27,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents } = props;
+	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents } = props;
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
@@ -59,24 +59,8 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	});
 
 	let handlePointerDown = useCallback((annotation: DisplayedAnnotation, event: React.PointerEvent) => {
-		if (event.button !== 0) {
-			return;
-		}
-		let { id } = annotation;
-		// Cycle selection if clicked annotation is already selected
-		if (selectedAnnotationIDs.includes(id!)) {
-			let targets = event.view.document.elementsFromPoint(event.clientX, event.clientY)
-				.filter(target => !!target.getAttribute('data-annotation-id'));
-			if (!targets.length) {
-				return;
-			}
-			let nextTarget = targets[(targets.indexOf(event.target as Element) + 1) % targets.length];
-			onSelect(nextTarget.getAttribute('data-annotation-id')!);
-		}
-		else {
-			onSelect(id!);
-		}
-	}, [selectedAnnotationIDs, onSelect]);
+		onPointerDown(annotation.id!, event);
+	}, [onPointerDown]);
 
 	let handleDragStart = useCallback((annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => {
 		onDragStart(annotation.id!, dataTransfer);
@@ -168,7 +152,7 @@ AnnotationOverlay.displayName = 'AnnotationOverlay';
 type AnnotationOverlayProps = {
 	annotations: DisplayedAnnotation[];
 	selectedAnnotationIDs: string[];
-	onSelect: (id: string) => void;
+	onPointerDown: (id: string, event: React.PointerEvent) => void;
 	onDragStart: (id: string, dataTransfer: DataTransfer) => void;
 	onResizeStart: (id: string) => void;
 	onResizeEnd: (id: string) => void;
