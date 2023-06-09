@@ -1,5 +1,6 @@
 import React, {
 	useEffect,
+	useRef,
 	useState
 } from 'react';
 import {
@@ -27,7 +28,7 @@ export type DisplayedAnnotation = {
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents } = props;
 
-	let [widgetContainer, setWidgetContainer] = useState<Element | null>(null);
+	let widgetContainer = useRef<SVGSVGElement>(null);
 
 	let handlePointerDown = (event: React.PointerEvent, id: string) => {
 		if (event.button !== 0) {
@@ -74,7 +75,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							onResizeEnd={() => onResizeEnd(annotation.id!)}
 							onResize={range => onResize(annotation.id!, range)}
 							disablePointerEvents={disablePointerEvents}
-							widgetContainer={widgetContainer}
+							widgetContainer={widgetContainer.current}
 						/>
 					);
 				}
@@ -85,7 +86,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							key={annotation.key}
 							selected={false}
 							disablePointerEvents={true}
-							widgetContainer={widgetContainer}
+							widgetContainer={widgetContainer.current}
 						/>
 					);
 				}
@@ -101,7 +102,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				top: '0',
 				overflow: 'visible'
 			}}
-			ref={c => setWidgetContainer(c)}
+			ref={widgetContainer}
 		>
 			<StaggeredNotes
 				annotations={annotations.filter(a => a.type == 'note')}
@@ -173,6 +174,8 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 			if (rect.width == 0 || rect.height == 0) {
 				continue;
 			}
+			rect.x += doc.defaultView!.scrollX;
+			rect.y += doc.defaultView!.scrollY;
 			let key = JSON.stringify(rect);
 			if (!highlightRects.has(key)) {
 				highlightRects.set(key, rect);
@@ -194,8 +197,8 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		<g fill={annotation.color} data-annotation-id={annotation.id}>
 			{[...highlightRects.entries()].map(([key, rect]) => (
 				<rect
-					x={rect.x + doc.defaultView!.scrollX}
-					y={rect.y + doc.defaultView!.scrollY}
+					x={rect.x}
+					y={rect.y}
 					width={rect.width}
 					height={rect.height}
 					opacity="50%"
@@ -204,8 +207,8 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 			{!disablePointerEvents && !isResizing && [...highlightRects.entries()].map(([key, rect]) => (
 				// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 				<foreignObject
-					x={rect.x + doc.defaultView!.scrollX}
-					y={rect.y + doc.defaultView!.scrollY}
+					x={rect.x}
+					y={rect.y}
 					width={rect.width}
 					height={rect.height}
 					key={key + '-foreign'}
@@ -282,13 +285,15 @@ const Note: React.FC<NoteProps> = (props) => {
 	};
 
 	let rect = annotation.range.getBoundingClientRect();
+	rect.x += doc.defaultView.scrollX;
+	rect.y += doc.defaultView.scrollY;
 	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction === 'rtl';
 	let staggerOffset = (staggerIndex || 0) * 15;
 	return (
 		<CommentIcon
 			annotation={annotation}
-			x={rect.x + (rtl ? -25 : rect.width + 25) + doc.defaultView!.scrollX + (rtl ? -1 : 1) * staggerOffset}
-			y={rect.y + doc.defaultView!.scrollY + staggerOffset}
+			x={rect.left + (rtl ? -25 : rect.width + 25) + (rtl ? -1 : 1) * staggerOffset}
+			y={rect.top + staggerOffset}
 			color={annotation.color!}
 			opacity={annotation.id ? '100%' : '50%'}
 			selected={selected}
@@ -353,28 +358,30 @@ type StaggeredNotesProps = {
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
+	let { rect } = props;
 	return (
 		<rect
-			x={props.rect.x + props.win.scrollX - 5}
-			y={props.rect.y + props.win.scrollY - 5}
-			width={props.rect.width + 10}
-			height={props.rect.height + 10}
+			x={rect.left - 5}
+			y={rect.top - 5}
+			width={rect.width + 10}
+			height={rect.height + 10}
 			fill="none"
 			stroke="#6d95e0"
 			strokeDasharray="10 6"
 			strokeWidth={2}/>
 	);
-}, (prev, next) => JSON.stringify(prev.rect) === JSON.stringify(next.rect) && prev.win === next.win);
+}, (prev, next) => JSON.stringify(prev.rect) === JSON.stringify(next.rect));
 SelectionBorder.displayName = 'SelectionBorder';
 type SelectionBorderProps = {
 	rect: DOMRect;
-	win: Window;
 };
 
 const RangeSelectionBorder: React.FC<RangeSelectionBorderProps> = (props) => {
 	let rect = props.range.getBoundingClientRect();
 	let win = props.range.commonAncestorContainer.ownerDocument!.defaultView!;
-	return <SelectionBorder rect={rect} win={win}/>;
+	rect.x += win.scrollX;
+	rect.y += win.scrollY;
+	return <SelectionBorder rect={rect}/>;
 };
 RangeSelectionBorder.displayName = 'RangeSelectionBorder';
 type RangeSelectionBorderProps = {
@@ -431,11 +438,10 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 	};
 
-	let win = props.annotation.range.commonAncestorContainer.ownerDocument!.defaultView!;
 	return <>
 		<rect
-			x={topLeftRect.x + win.scrollX - WIDTH}
-			y={topLeftRect.y + win.scrollY}
+			x={topLeftRect.left - WIDTH}
+			y={topLeftRect.top}
 			width={WIDTH}
 			height={topLeftRect.height}
 			fill={props.annotation.color}
@@ -445,8 +451,8 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			onPointerMove={resizingSide == 'start' ? (event => handleResize(event, !rtl)) : undefined}
 		/>
 		<rect
-			x={bottomRightRect.right + win.scrollX}
-			y={bottomRightRect.y + win.scrollY}
+			x={bottomRightRect.right}
+			y={bottomRightRect.top}
 			width={WIDTH}
 			height={bottomRightRect.height}
 			fill={props.annotation.color}
@@ -485,10 +491,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			<IconNoteLarge/>
 		</svg>
 		{props.selected && (
-			<SelectionBorder
-				rect={new DOMRect(x, y, size, size)}
-				win={window}
-			/>
+			<SelectionBorder rect={new DOMRect(x, y, size, size)}/>
 		)}
 		{(props.onPointerDown || props.onDragStart || props.onDragEnd) && (
 			<foreignObject
