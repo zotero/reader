@@ -590,7 +590,7 @@ abstract class DOMView<State extends DOMViewState> {
 		this._openAnnotationPopup(this._annotationsByID.get(id)!);
 	};
 
-	private _handleAnnotationDragStart = (dataTransfer: DataTransfer, id: string) => {
+	private _handleAnnotationDragStart = (id: string, dataTransfer: DataTransfer) => {
 		let annotation = this._annotationsByID.get(id)!;
 		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
 		if (annotation.type === 'note') {
@@ -691,10 +691,6 @@ abstract class DOMView<State extends DOMViewState> {
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
 			}
-
-			// Disable pointer events on the annotation layer until mouseup
-			this._disableAnnotationPointerEvents = true;
-			this._renderAnnotations();
 		}
 	}
 
@@ -705,9 +701,6 @@ abstract class DOMView<State extends DOMViewState> {
 
 		this._gotPointerUp = true;
 		this._tryUseTool();
-
-		this._disableAnnotationPointerEvents = false;
-		this._renderAnnotations();
 	}
 
 	protected _handleResize() {

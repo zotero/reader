@@ -1,4 +1,5 @@
 import React, {
+	useCallback,
 	useEffect,
 	useRef,
 	useState
@@ -28,14 +29,42 @@ export type DisplayedAnnotation = {
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let { annotations, selectedAnnotationIDs, onSelect, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents } = props;
 
-	let widgetContainer = useRef<SVGSVGElement>(null);
+	let [isResizing, setResizing] = useState(false);
+	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
+	let pointerEventsSuppressed = disablePointerEvents || isResizing || isPointerDownOutside;
 
-	let handlePointerDown = (event: React.PointerEvent, id: string) => {
+	let handleWindowPointerDown = useCallback((event: PointerEvent) => {
+		if (event.button == 0 && !(event.target as Element).closest('.annotation-container')) {
+			setPointerDownOutside(true);
+		}
+	}, []);
+
+	let handleWindowPointerUp = useCallback((event: PointerEvent) => {
+		if (event.button == 0) {
+			setPointerDownOutside(false);
+		}
+	}, []);
+
+	useEffect(() => {
+		let win = widgetContainer.current?.ownerDocument.defaultView;
+		if (!win) {
+			return undefined;
+		}
+		win.addEventListener('pointerdown', handleWindowPointerDown);
+		win.addEventListener('pointerup', handleWindowPointerUp);
+		return () => {
+			win!.removeEventListener('pointerdown', handleWindowPointerDown);
+			win!.removeEventListener('pointerup', handleWindowPointerUp);
+		};
+	});
+
+	let handlePointerDown = useCallback((annotation: DisplayedAnnotation, event: React.PointerEvent) => {
 		if (event.button !== 0) {
 			return;
 		}
+		let { id } = annotation;
 		// Cycle selection if clicked annotation is already selected
-		if (selectedAnnotationIDs.includes(id)) {
+		if (selectedAnnotationIDs.includes(id!)) {
 			let targets = event.view.document.elementsFromPoint(event.clientX, event.clientY)
 				.filter(target => !!target.getAttribute('data-annotation-id'));
 			if (!targets.length) {
@@ -45,9 +74,29 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			onSelect(nextTarget.getAttribute('data-annotation-id')!);
 		}
 		else {
-			onSelect(id);
+			onSelect(id!);
 		}
-	};
+	}, [selectedAnnotationIDs, onSelect]);
+
+	let handleDragStart = useCallback((annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => {
+		onDragStart(annotation.id!, dataTransfer);
+	}, [onDragStart]);
+
+	let handleResizeStart = useCallback((annotation: DisplayedAnnotation) => {
+		onResizeStart(annotation.id!);
+		setResizing(true);
+	}, [onResizeStart]);
+
+	let handleResizeEnd = useCallback((annotation: DisplayedAnnotation) => {
+		onResizeEnd(annotation.id!);
+		setResizing(false);
+	}, [onResizeEnd]);
+
+	let handleResize = useCallback((annotation: DisplayedAnnotation, range: Range) => {
+		onResize(annotation.id!, range);
+	}, [onResize]);
+
+	let widgetContainer = useRef<SVGSVGElement>(null);
 
 	return <>
 		<svg
@@ -69,12 +118,12 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							annotation={annotation}
 							key={annotation.key}
 							selected={selectedAnnotationIDs.includes(annotation.id)}
-							onPointerDown={event => handlePointerDown(event, annotation.id!)}
-							onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
-							onResizeStart={() => onResizeStart(annotation.id!)}
-							onResizeEnd={() => onResizeEnd(annotation.id!)}
-							onResize={range => onResize(annotation.id!, range)}
-							disablePointerEvents={disablePointerEvents}
+							onPointerDown={handlePointerDown}
+							onDragStart={handleDragStart}
+							onResizeStart={handleResizeStart}
+							onResizeEnd={handleResizeEnd}
+							onResize={handleResize}
+							pointerEventsSuppressed={pointerEventsSuppressed}
 							widgetContainer={widgetContainer.current}
 						/>
 					);
@@ -85,7 +134,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							annotation={annotation}
 							key={annotation.key}
 							selected={false}
-							disablePointerEvents={true}
+							pointerEventsSuppressed={true}
 							widgetContainer={widgetContainer.current}
 						/>
 					);
@@ -108,8 +157,8 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				annotations={annotations.filter(a => a.type == 'note')}
 				selectedAnnotationIDs={selectedAnnotationIDs}
 				onPointerDown={handlePointerDown}
-				onDragStart={onDragStart}
-				disablePointerEvents={disablePointerEvents}
+				onDragStart={handleDragStart}
+				pointerEventsSuppressed={pointerEventsSuppressed}
 			/>
 		</svg>
 	</>;
@@ -120,7 +169,7 @@ type AnnotationOverlayProps = {
 	annotations: DisplayedAnnotation[];
 	selectedAnnotationIDs: string[];
 	onSelect: (id: string) => void;
-	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
+	onDragStart: (id: string, dataTransfer: DataTransfer) => void;
 	onResizeStart: (id: string) => void;
 	onResizeEnd: (id: string) => void;
 	onResize: (id: string, range: Range) => void;
@@ -128,18 +177,9 @@ type AnnotationOverlayProps = {
 };
 
 const Highlight: React.FC<HighlightProps> = (props) => {
-	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents, widgetContainer } = props;
+	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, onResize, pointerEventsSuppressed, widgetContainer } = props;
 	let [dragImage, setDragImage] = useState<Element | null>(null);
 	let [isResizing, setResizing] = useState(false);
-
-	useEffect(() => {
-		if (isResizing) {
-			onResizeStart?.();
-		}
-		else {
-			onResizeEnd?.();
-		}
-	}, [isResizing, onResizeStart, onResizeEnd]);
 
 	let ranges = splitRangeToTextNodes(annotation.range);
 	if (!ranges.length) {
@@ -158,7 +198,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		let elem = (event.target as Element).closest('g')!;
 		let br = elem.getBoundingClientRect();
 		event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
-		onDragStart(event.dataTransfer);
+		onDragStart(annotation, event.dataTransfer);
 	};
 
 	let handleDragEnd = () => {
@@ -166,6 +206,16 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 			dragImage.remove();
 			setDragImage(null);
 		}
+	};
+
+	let handleResizeStart = (annotation: DisplayedAnnotation) => {
+		setResizing(true);
+		onResizeStart?.(annotation);
+	};
+
+	let handleResizeEnd = (annotation: DisplayedAnnotation) => {
+		setResizing(false);
+		onResizeEnd?.(annotation);
 	};
 
 	let highlightRects = new Map<string, DOMRect>();
@@ -204,7 +254,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 					opacity="50%"
 					key={key}/>
 			))}
-			{!disablePointerEvents && !isResizing && [...highlightRects.entries()].map(([key, rect]) => (
+			{!pointerEventsSuppressed && !isResizing && [...highlightRects.entries()].map(([key, rect]) => (
 				// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 				<foreignObject
 					x={rect.x}
@@ -223,17 +273,17 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 							height: '100%',
 						}}
 						draggable={true}
-						onPointerDown={onPointerDown}
+						onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
 						onDragStart={handleDragStart}
 						onDragEnd={handleDragEnd}/>
 				</foreignObject>
 			))}
-			{(!disablePointerEvents || isResizing) && onResize && selected && supportsCaretPositionFromPoint() && (
+			{(!pointerEventsSuppressed || isResizing) && onResize && selected && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...highlightRects.values()]}
-					onResizeStart={() => setResizing(true)}
-					onResizeEnd={() => setResizing(false)}
+					onResizeStart={handleResizeStart}
+					onResizeEnd={handleResizeEnd}
 					onResize={onResize}
 				/>
 			)}
@@ -255,12 +305,12 @@ Highlight.displayName = 'Highlight';
 type HighlightProps = {
 	annotation: DisplayedAnnotation;
 	selected: boolean;
-	onPointerDown?: (event: React.PointerEvent) => void;
-	onDragStart?: (dataTransfer: DataTransfer) => void;
-	onResizeStart?: () => void;
-	onResizeEnd?: () => void;
-	onResize?: (range: Range) => void;
-	disablePointerEvents: boolean;
+	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
+	onResizeStart?: (annotation: DisplayedAnnotation) => void;
+	onResizeEnd?: (annotation: DisplayedAnnotation) => void;
+	onResize?: (annotation: DisplayedAnnotation, range: Range) => void;
+	pointerEventsSuppressed: boolean;
 	widgetContainer: Element | null;
 };
 
@@ -281,7 +331,7 @@ const Note: React.FC<NoteProps> = (props) => {
 		let elem = event.target as Element;
 		let br = elem.getBoundingClientRect();
 		event.dataTransfer.setDragImage(iconRef.current!, event.clientX - br.left, event.clientY - br.top);
-		onDragStart(event.dataTransfer);
+		onDragStart(annotation, event.dataTransfer);
 	};
 
 	let rect = annotation.range.getBoundingClientRect();
@@ -298,7 +348,7 @@ const Note: React.FC<NoteProps> = (props) => {
 			opacity={annotation.id ? '100%' : '50%'}
 			selected={selected}
 			large={true}
-			onPointerDown={disablePointerEvents ? undefined : onPointerDown}
+			onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
 			onDragStart={disablePointerEvents ? undefined : handleDragStart}
 			ref={iconRef}
 		/>
@@ -309,13 +359,13 @@ type NoteProps = {
 	annotation: DisplayedAnnotation,
 	staggerIndex?: number,
 	selected: boolean;
-	onPointerDown?: (event: React.PointerEvent) => void;
-	onDragStart?: (dataTransfer: DataTransfer) => void;
+	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	disablePointerEvents: boolean;
 };
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, disablePointerEvents } = props;
+	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, pointerEventsSuppressed } = props;
 	let staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
@@ -328,9 +378,9 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 						staggerIndex={stagger}
 						key={annotation.key}
 						selected={selectedAnnotationIDs.includes(annotation.id)}
-						onPointerDown={event => onPointerDown(event, annotation.id!)}
-						onDragStart={dataTransfer => onDragStart(dataTransfer, annotation.id!)}
-						disablePointerEvents={disablePointerEvents}
+						onPointerDown={onPointerDown}
+						onDragStart={onDragStart}
+						disablePointerEvents={pointerEventsSuppressed}
 					/>
 				);
 			}
@@ -352,9 +402,9 @@ StaggeredNotes.displayName = 'StaggeredNotes';
 type StaggeredNotesProps = {
 	annotations: DisplayedAnnotation[];
 	selectedAnnotationIDs: string[];
-	onPointerDown: (event: React.PointerEvent, id: string) => void;
-	onDragStart: (dataTransfer: DataTransfer, id: string) => void;
-	disablePointerEvents: boolean;
+	onPointerDown: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onDragStart: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
+	pointerEventsSuppressed: boolean;
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
@@ -406,7 +456,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 		(event.target as Element).setPointerCapture(event.pointerId);
 		setResizingSide(isStart ? 'start' : 'end');
-		props.onResizeStart();
+		props.onResizeStart(props.annotation);
 	};
 
 	let handlePointerUp = (event: React.PointerEvent) => {
@@ -415,7 +465,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 		(event.target as Element).releasePointerCapture(event.pointerId);
 		setResizingSide(false);
-		props.onResizeEnd();
+		props.onResizeEnd(props.annotation);
 	};
 
 	let handleResize = (event: React.PointerEvent, isStart: boolean) => {
@@ -434,7 +484,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 				}
 				newRange.setEnd(pos.offsetNode, pos.offset);
 			}
-			props.onResize(newRange);
+			props.onResize(props.annotation, newRange);
 		}
 	};
 
@@ -467,9 +517,9 @@ Resizer.displayName = 'Resizer';
 type ResizerProps = {
 	annotation: DisplayedAnnotation;
 	highlightRects: DOMRect[];
-	onResizeStart: () => void;
-	onResizeEnd: () => void;
-	onResize: (range: Range) => void;
+	onResizeStart: (annotation: DisplayedAnnotation) => void;
+	onResizeEnd: (annotation: DisplayedAnnotation) => void;
+	onResize: (annotation: DisplayedAnnotation, range: Range) => void;
 };
 
 let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref) => {
