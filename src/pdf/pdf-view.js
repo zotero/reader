@@ -861,6 +861,11 @@ class PDFView {
 	}
 
 	getSelectedAnnotationAction(annotation, position) {
+		if (annotation.position.pageIndex !== position.pageIndex) {
+			return null;
+		}
+
+		// If the page isn't loaded
 		if (!this._iframeWindow.PDFViewerApplication.pdfViewer._pages[position.pageIndex].outputScale) {
 			return null;
 		}
