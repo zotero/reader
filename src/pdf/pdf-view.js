@@ -861,7 +861,7 @@ class PDFView {
 	}
 
 	getSelectedAnnotationAction(annotation, position) {
-		if (this._iframeWindow.PDFViewerApplication.pdfViewer._pages[position.pageIndex].outputScale) {
+		if (!this._iframeWindow.PDFViewerApplication.pdfViewer._pages[position.pageIndex].outputScale) {
 			return null;
 		}
 
@@ -1116,7 +1116,7 @@ class PDFView {
 		if (this._tool.type === 'eraser') {
 			return { action: { type: 'erase', annotations: new Map() }, selectAnnotations: [] };
 		}
-		if (this._selectionRanges.length) {
+		if (this._selectionRanges.length && ![2, 3].includes(event.detail)) {
 			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
 			if (annotation && intersectAnnotationWithPoint(annotation.position, position)) {
 				let r = position.rects[0];

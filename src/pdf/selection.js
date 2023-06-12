@@ -174,7 +174,7 @@ function getRangeByHighlight(structuredText, rects) {
 }
 
 function getLineSelectionRect(line, charFrom, charTo) {
-	if (line.vertical) {
+	if (charFrom.rotation) {
 		return [
 			line.rect[0],
 			Math.min(charFrom.rect[1], charTo.rect[1]),
@@ -720,9 +720,9 @@ export function getSelectionRangeHandles(pdfPages, selectionRanges) {
 	let r = char.rect;
 	let rect = (
 		char.rotation === 0 && [r[0], r[1], r[0], r[3]]
-		|| char.rotation === 90 && [r[0], r[1]]
-		|| char.rotation === 180 && [r[2], r[1]]
-		|| char.rotation === 270 && [r[2], r[3]]
+		|| char.rotation === 90 && [r[0], r[1], r[2], r[1]]
+		|| char.rotation === 180 && [r[2], r[1], r[2], r[3]]
+		|| char.rotation === 270 && [r[0], r[3], r[2], r[3]]
 	);
 	let from = { pageIndex, rect };
 	if (selectionRanges.length === 2) {
@@ -739,10 +739,10 @@ export function getSelectionRangeHandles(pdfPages, selectionRanges) {
 	}
 	r = char.rect;
 	rect = (
-		char.rotation === 0 && [r[2], r[3], r[2], r[1]]
-		|| char.rotation === 90 && [r[2], r[3]]
-		|| char.rotation === 180 && [r[0], r[3]]
-		|| char.rotation === 270 && [r[0], r[1]]
+		char.rotation === 0 && [r[2], r[1], r[2], r[3]]
+		|| char.rotation === 90 && [r[0], r[3], r[2], r[3]]
+		|| char.rotation === 180 && [r[0], r[1], r[0], r[3]]
+		|| char.rotation === 270 && [r[0], r[1], r[2], r[1]]
 	);
 	let to = { pageIndex, rect };
 	return [from, to];
