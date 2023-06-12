@@ -28,6 +28,9 @@ window.computedFontFamily = window.getComputedStyle(document.body).getPropertyVa
 
 class Reader {
 	constructor(options) {
+		window.rtl = options.rtl;
+		document.getElementsByTagName("html")[0].dir = options.rtl ? 'rtl' : 'ltr';
+
 		this._type = options.type;
 		this._platform = options.platform;
 		this._buf = options.buf;
@@ -83,7 +86,6 @@ class Reader {
 				tags: [],
 				authors: []
 			},
-			rtl: !!options.rtl,
 			readOnly: options.readOnly !== undefined ? options.readOnly : false,
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
 			fontSize: options.fontSize || 1,

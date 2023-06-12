@@ -172,7 +172,8 @@
 			vertical-align: top;
 			width: 7px;
 			height: 4px;
-			margin: 6px -1px 0 2px;
+			margin: 6px 0;
+			margin-inline-start: 2px;
 			background: image-url("searchbar-dropmarker.png") no-repeat left top;
 			position: relative;
 			z-index: 1;
@@ -197,6 +198,11 @@
 		direction: ltr;
 
 		.toolbarButton {
+			[dir=rtl] & {
+				&:before {
+					transform: scaleX(-1);
+				}
+			}
 
 			@if $platform == "darwin" {
 				@include split-button(

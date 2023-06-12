@@ -50,6 +50,9 @@ function SplitViewResizer(props) {
 				p = 80;
 			}
 			size = p;
+			if (window.rtl) {
+				size = 100 - size;
+			}
 		}
 
 

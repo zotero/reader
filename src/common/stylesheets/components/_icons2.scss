@@ -35,12 +35,12 @@
 			@include icon("application-side-expand-rtl");
 		}
 
-		&.toggled {
+		body.sidebar-open & {
 			@include icon("application-side-contract");
+		}
 
-			html[dir="rtl"] & {
-				@include icon("application-side-contract-rtl");
-			}
+		html[dir="rtl"] body.sidebar-open & {
+			@include icon("application-side-contract-rtl");
 		}
 	}
 
@@ -70,6 +70,10 @@
 
 	.navigateBack {
 		@include icon("navigate-back");
+
+		html[dir="rtl"] & {
+			transform: scaleX(-1);
+		}
 	}
 
 	.presentationMode {

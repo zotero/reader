@@ -15,7 +15,9 @@
 	background-color: #ffffff;
 	border-radius: $page-popup-border-radius;
 	box-shadow: $page-popup-box-shadow;
+	/*! rtl:begin:ignore */
 	left: -9999px;
+	/*! rtl:end:ignore */
 	min-width: 120px;
 
 	padding: 5px 0;

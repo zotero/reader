@@ -30,6 +30,7 @@ async function createReader() {
 		localizedStrings: strings,
 		readOnly: false,
 		buf,
+		// rtl: true,
 		annotations: demo.annotations,
 		state: demo.state,
 		sidebarWidth: 240,

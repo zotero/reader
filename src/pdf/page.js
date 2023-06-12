@@ -357,6 +357,7 @@ export default class Page {
 				if (!node) {
 					node = doc.createElement('textarea');
 					node.setAttribute('data-id', annotation.id);
+					node.dir = 'auto';
 					node.className = 'textAnnotation';
 					node.addEventListener('blur', (event) => {
 						node.classList.remove('focusable');

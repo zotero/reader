@@ -58,6 +58,9 @@
 }
 
 .view-popup {
+	/*! rtl:begin:ignore */
+	left: 0;
+	/*! rtl:end:ignore */
 	position: absolute;
 	background-color: #fff;
 	border-radius: $page-popup-border-radius;
