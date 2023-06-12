@@ -211,12 +211,11 @@ class PDFThumbnails {
 			canvas.width = 0;
 			canvas.height = 0;
 
-			// Only trigger cleanup, once rendering has finished, when the current
-			// pageView is *not* cached on the `BaseViewer`-instance.
-			const pageCached = this._window.PDFViewerApplication.pdfViewer.isPageCached(pageIndex + 1);
-			if (!pageCached) {
-				pdfPage.cleanup();
-			}
+			this._window.PDFViewerApplication.eventBus.dispatch("thumbnailrendered", {
+				source: this,
+				pageNumber: this.id,
+				pdfPage: this.pdfPage,
+			});
 		}
 		this._onUpdate(this._thumbnails);
 	}
