@@ -492,6 +492,7 @@ abstract class DOMView<State extends DOMViewState> {
 			else if (focusedElement) {
 				focusedElement.blur();
 			}
+			this._iframeWindow.getSelection()?.removeAllRanges();
 			// The keyboard shortcut was handled here, therefore no need to
 			// pass it to this._onKeyDown(event) below
 			return;
