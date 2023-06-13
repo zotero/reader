@@ -21,10 +21,7 @@ import {
 	DisplayedAnnotation
 } from "./components/overlay/annotation-overlay";
 import React from "react";
-import {
-	areSelectorsEqual,
-	Selector
-} from "./lib/selector";
+import { Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
 	makeRangeSpanning,
