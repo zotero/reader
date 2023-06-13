@@ -161,7 +161,7 @@ function Toolbar(props) {
 						<button
 							tabIndex={-1}
 							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
-							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							title={intl.formatMessage({ id: 'pdfReader.addText' })}
 							onClick={() => handleToolClick('text')}
 						>
 							<span className="button-background"/>
@@ -171,7 +171,7 @@ function Toolbar(props) {
 						<button
 							tabIndex={-1}
 							className={cx('toolbarButton ink', { toggled: props.tool.type === 'ink' })}
-							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							title={intl.formatMessage({ id: 'pdfReader.draw' })}
 							onClick={() => handleToolClick('ink')}
 						>
 							<span className="button-background"/>
@@ -181,7 +181,7 @@ function Toolbar(props) {
 						<button
 							tabIndex={-1}
 							className={cx('toolbarButton eraser', { toggled: props.tool.type === 'eraser' })}
-							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							title={intl.formatMessage({ id: 'pdfReader.erase' })}
 							onClick={() => handleToolClick('eraser')}
 						>
 							<span className="button-background"/>
