@@ -22,6 +22,7 @@ import {
 } from "./components/overlay/annotation-overlay";
 import React from "react";
 import {
+	areSelectorsEqual,
 	Selector
 } from "./lib/selector";
 import {
@@ -256,7 +257,10 @@ abstract class DOMView<State extends DOMViewState> {
 				range: this.toDisplayedRange(this._highlightedPosition)!,
 			});
 		}
-		if (this._previewNoteAnnotation) {
+		if (this._previewNoteAnnotation
+			// Don't show preview if dragged note annotation hasn't moved
+			&& !(this._draggingNoteAnnotation
+				&& this._previewNoteAnnotation.sortIndex == this._draggingNoteAnnotation.sortIndex)) {
 			displayedAnnotations.push({
 				type: this._previewNoteAnnotation.type,
 				color: this._previewNoteAnnotation.color,
@@ -361,10 +365,11 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
 		this._iframeWindow.addEventListener('pointerover', this._handlePointerOver.bind(this));
-		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
 		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
+		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
+		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this));
 		// @ts-ignore
@@ -405,37 +410,49 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 	}
 
-	protected _handleDragOver(event: DragEvent) {
+	protected _handleDragEnter(event: DragEvent) {
 		if (!this._draggingNoteAnnotation) {
+			return;
+		}
+		event.preventDefault();
+		let range = this._getNoteTargetRange(event);
+		this._previewNoteAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+		this._renderAnnotations();
+	}
+
+	protected _handleDragOver(event: DragEvent) {
+		if (!this._draggingNoteAnnotation || !this._previewNoteAnnotation) {
 			return;
 		}
 		event.preventDefault();
 	}
 
-	protected _handleDrop(event: DragEvent) {
-		if (!this._draggingNoteAnnotation) {
+	protected _handleDrop() {
+		if (!this._draggingNoteAnnotation || !this._previewNoteAnnotation) {
 			return;
 		}
-
-		let range = this._getNoteTargetRange(event);
-		let selector = this.toSelector(range);
-		if (!selector) {
-			return;
-		}
-		this._draggingNoteAnnotation.position = selector;
+		this._draggingNoteAnnotation.position = this._previewNoteAnnotation.position;
+		this._draggingNoteAnnotation.pageLabel = this._previewNoteAnnotation.pageLabel;
+		this._draggingNoteAnnotation.sortIndex = this._previewNoteAnnotation.sortIndex;
+		this._draggingNoteAnnotation.text = this._previewNoteAnnotation.text;
 		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
 	}
 
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent) {
 		let target = event.target as Element;
-		let werePointerEventsDisabled = this._disableAnnotationPointerEvents;
 		// Disable pointer events and rerender so we can get the cursor position in the text layer,
 		// not the annotation layer, even if the mouse is over the annotation layer
-		this._disableAnnotationPointerEvents = true;
-		this._renderAnnotations();
 		let range = this._iframeDocument.createRange();
 		if (target.tagName === 'IMG') { // Allow targeting images directly
 			range.selectNode(target);
+		}
+		else if (target.closest('[data-annotation-id]')) {
+			let annotation = this._annotationsByID.get(
+				target.closest('[data-annotation-id]')!.getAttribute('data-annotation-id')!
+			)!;
+			let annotationRange = this.toDisplayedRange(annotation.position)!;
+			range.setStart(annotationRange.startContainer, annotationRange.startOffset);
+			range.setEnd(annotationRange.endContainer, annotationRange.endOffset);
 		}
 		else {
 			let pos = supportsCaretPositionFromPoint()
@@ -448,8 +465,6 @@ abstract class DOMView<State extends DOMViewState> {
 			}
 			range.selectNode(node);
 		}
-		this._disableAnnotationPointerEvents = werePointerEventsDisabled;
-		this._renderAnnotations();
 		return range;
 	}
 
@@ -567,6 +582,8 @@ abstract class DOMView<State extends DOMViewState> {
 
 	private _handleDragEnd(_event: DragEvent) {
 		this._draggingNoteAnnotation = null;
+		this._previewNoteAnnotation = null;
+		this._renderAnnotations();
 	}
 
 	private _handleContextMenu(event: MouseEvent) {
@@ -634,6 +651,8 @@ abstract class DOMView<State extends DOMViewState> {
 		if (annotation.type === 'note') {
 			this._draggingNoteAnnotation = annotation;
 		}
+		this._previewNoteAnnotation = null;
+		this._renderAnnotations();
 	};
 
 	private _handleAnnotationResizeStart = (_id: string) => {

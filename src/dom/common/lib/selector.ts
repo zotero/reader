@@ -1,3 +1,5 @@
+import { moveRangeEndsIntoTextNodes } from "./range";
+
 // We generate and support a very limited subset of the Web Annotation Data Model:
 // https://www.w3.org/TR/annotation-model/#selectors
 // Specifically, EPUB annotations are expressed in terms of FragmentSelectors with epubcfi values,
@@ -61,6 +63,36 @@ export function isTextQuote(selector: Selector): selector is TextQuoteSelector {
 
 export function isTextPosition(selector: Selector): selector is TextPositionSelector {
 	return selector.type === 'TextPositionSelector';
+}
+
+export function areSelectorsEqual(s1: Selector, s2: Selector): boolean {
+	if (s1.type !== s2.type) {
+		return false;
+	}
+	switch (s1.type) {
+		case 'FragmentSelector':
+		case 'CssSelector':
+			s2 = s2 as typeof s1;
+			if (s1.value !== s2.value) {
+				return false;
+			}
+			break;
+		case 'TextQuoteSelector':
+			s2 = s2 as typeof s1;
+			if (s1.exact !== s2.exact || s1.prefix !== s2.prefix || s1.suffix !== s2.suffix) {
+				return false;
+			}
+			break;
+		case 'TextPositionSelector':
+			s2 = s2 as typeof s1;
+			if (s1.start !== s2.start || s1.end !== s2.end) {
+				return false;
+			}
+			break;
+	}
+	return !s1.refinedBy && !s2.refinedBy
+		? true
+		: !!(s1.refinedBy && s2.refinedBy && areSelectorsEqual(s1.refinedBy, s2.refinedBy));
 }
 
 export function textPositionFromRange(range: Range, root: Element): TextPositionSelector | null {

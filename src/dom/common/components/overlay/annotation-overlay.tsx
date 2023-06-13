@@ -310,7 +310,6 @@ type HighlightProps = {
 
 const Note: React.FC<NoteProps> = (props) => {
 	let { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
-	let iconRef = React.useRef<SVGSVGElement>(null);
 
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
 	if (!doc || !doc.defaultView) {
@@ -321,10 +320,6 @@ const Note: React.FC<NoteProps> = (props) => {
 		if (!onDragStart || annotation.comment === undefined) {
 			return;
 		}
-
-		let elem = event.target as Element;
-		let br = elem.getBoundingClientRect();
-		event.dataTransfer.setDragImage(iconRef.current!, event.clientX - br.left, event.clientY - br.top);
 		onDragStart(annotation, event.dataTransfer);
 	};
 
@@ -344,7 +339,6 @@ const Note: React.FC<NoteProps> = (props) => {
 			large={true}
 			onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
 			onDragStart={disablePointerEvents ? undefined : handleDragStart}
-			ref={iconRef}
 		/>
 	);
 };
