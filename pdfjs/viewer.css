@@ -7,6 +7,10 @@
 	--loading-icon-delay: 400ms;
 }
 
+body {
+	overflow: hidden;
+}
+
 @media screen and (forced-colors: active) {
 	:root {
 		--pdfViewer-padding-bottom: 9px;
