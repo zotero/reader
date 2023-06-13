@@ -83,6 +83,8 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
+	protected _resizing = false;
+
 	protected constructor(options: DOMViewOptions<State>) {
 		this._options = options;
 		this._container = options.container;
@@ -273,7 +275,6 @@ abstract class DOMView<State extends DOMViewState> {
 				onDragStart={this._handleAnnotationDragStart}
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
-				onResize={this._handleAnnotationResize}
 				disablePointerEvents={this._disableAnnotationPointerEvents}
 			/>
 		), container);
@@ -484,7 +485,7 @@ abstract class DOMView<State extends DOMViewState> {
 			}
 		}
 
-		if (key === 'Escape') {
+		if (key === 'Escape' && !this._resizing) {
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
 			}
@@ -635,26 +636,19 @@ abstract class DOMView<State extends DOMViewState> {
 	};
 
 	private _handleAnnotationResizeStart = (_id: string) => {
+		this._resizing = true;
 		this._options.onSetAnnotationPopup(null);
 	};
 
-	private _handleAnnotationResizeEnd = (_id: string) => {
-		// No-op
-	};
-
-	private _handleAnnotationResize = (id: string, range: Range) => {
-		if (!range.toString().length
-			// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
-			|| range.startContainer.nodeType == Node.ELEMENT_NODE && (range.startContainer as Element).closest('svg')
-			|| range.endContainer.nodeType == Node.ELEMENT_NODE && (range.endContainer as Element).closest('svg')) {
+	private _handleAnnotationResizeEnd = (id: string, range: Range, cancelled: boolean) => {
+		this._resizing = false;
+		if (cancelled) {
 			return;
 		}
-
 		let annotation = this._annotationsByID.get(id)!;
 		let updatedAnnotation = this._getAnnotationFromRange(range, annotation.type);
 		if (!updatedAnnotation) {
-			// Probably resized past the end of a section - don't worry about it
-			return;
+			throw new Error('Invalid resized range');
 		}
 		annotation.position = updatedAnnotation.position;
 		annotation.pageLabel = updatedAnnotation.pageLabel;

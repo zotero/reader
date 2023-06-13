@@ -27,7 +27,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, onResizeStart, onResizeEnd, onResize, disablePointerEvents } = props;
+	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, onResizeStart, onResizeEnd, disablePointerEvents } = props;
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
@@ -71,14 +71,10 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		setResizing(true);
 	}, [onResizeStart]);
 
-	let handleResizeEnd = useCallback((annotation: DisplayedAnnotation) => {
-		onResizeEnd(annotation.id!);
+	let handleResizeEnd = useCallback((annotation: DisplayedAnnotation, range: Range, cancelled: boolean) => {
+		onResizeEnd(annotation.id!, range, cancelled);
 		setResizing(false);
 	}, [onResizeEnd]);
-
-	let handleResize = useCallback((annotation: DisplayedAnnotation, range: Range) => {
-		onResize(annotation.id!, range);
-	}, [onResize]);
 
 	let widgetContainer = useRef<SVGSVGElement>(null);
 
@@ -106,7 +102,6 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							onDragStart={handleDragStart}
 							onResizeStart={handleResizeStart}
 							onResizeEnd={handleResizeEnd}
-							onResize={handleResize}
 							pointerEventsSuppressed={pointerEventsSuppressed}
 							widgetContainer={widgetContainer.current}
 						/>
@@ -155,17 +150,17 @@ type AnnotationOverlayProps = {
 	onPointerDown: (id: string, event: React.PointerEvent) => void;
 	onDragStart: (id: string, dataTransfer: DataTransfer) => void;
 	onResizeStart: (id: string) => void;
-	onResizeEnd: (id: string) => void;
-	onResize: (id: string, range: Range) => void;
+	onResizeEnd: (id: string, range: Range, cancelled: boolean) => void;
 	disablePointerEvents: boolean;
 };
 
 const Highlight: React.FC<HighlightProps> = (props) => {
-	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, onResize, pointerEventsSuppressed, widgetContainer } = props;
+	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
 	let [dragImage, setDragImage] = useState<Element | null>(null);
 	let [isResizing, setResizing] = useState(false);
+	let [resizedRange, setResizedRange] = useState(annotation.range);
 
-	let ranges = splitRangeToTextNodes(annotation.range);
+	let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
 	if (!ranges.length) {
 		return null;
 	}
@@ -194,12 +189,25 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 
 	let handleResizeStart = (annotation: DisplayedAnnotation) => {
 		setResizing(true);
+		setResizedRange(annotation.range);
 		onResizeStart?.(annotation);
 	};
 
-	let handleResizeEnd = (annotation: DisplayedAnnotation) => {
+	let handleResizeEnd = (annotation: DisplayedAnnotation, cancelled: boolean) => {
 		setResizing(false);
-		onResizeEnd?.(annotation);
+		onResizeEnd?.(annotation, resizedRange, cancelled);
+	};
+
+	let handleResize = (annotation: DisplayedAnnotation, range: Range) => {
+		if (!range.toString().length
+				// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
+				|| range.startContainer.nodeType == Node.ELEMENT_NODE && (range.startContainer as Element).closest('svg')
+				|| range.endContainer.nodeType == Node.ELEMENT_NODE && (range.endContainer as Element).closest('svg')
+				// And make sure we stay within one section
+				|| !closestElement(range.commonAncestorContainer)?.closest('[data-section-index]')) {
+			return;
+		}
+		setResizedRange(range);
 	};
 
 	let highlightRects = new Map<string, DOMRect>();
@@ -264,13 +272,13 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 					/>
 				</foreignObject>
 			))}
-			{(!pointerEventsSuppressed || isResizing) && onResize && selected && supportsCaretPositionFromPoint() && (
+			{(!pointerEventsSuppressed || isResizing) && selected && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...highlightRects.values()]}
 					onResizeStart={handleResizeStart}
 					onResizeEnd={handleResizeEnd}
-					onResize={onResize}
+					onResize={handleResize}
 				/>
 			)}
 		</g>
@@ -294,8 +302,7 @@ type HighlightProps = {
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	onResizeStart?: (annotation: DisplayedAnnotation) => void;
-	onResizeEnd?: (annotation: DisplayedAnnotation) => void;
-	onResize?: (annotation: DisplayedAnnotation, range: Range) => void;
+	onResizeEnd?: (annotation: DisplayedAnnotation, range: Range, cancelled: boolean) => void;
 	pointerEventsSuppressed: boolean;
 	widgetContainer: Element | null;
 };
@@ -427,11 +434,13 @@ type RangeSelectionBorderProps = {
 const Resizer: React.FC<ResizerProps> = (props) => {
 	let WIDTH = 3;
 
+	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart } = props;
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
+	let [pointerCapture, setPointerCapture] = useState<{ elem: Element, pointerId: number } | null>(null);
 
-	let rtl = getComputedStyle(closestElement(props.annotation.range.commonAncestorContainer!)!).direction == 'rtl';
+	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction == 'rtl';
 
-	let highlightRects = Array.from(props.highlightRects)
+	highlightRects = Array.from(highlightRects)
 		.sort((a, b) => (a.top - b.top) || (a.left - b.left));
 	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
 	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
@@ -442,35 +451,53 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		}
 		(event.target as Element).setPointerCapture(event.pointerId);
 		setResizingSide(isStart ? 'start' : 'end');
-		props.onResizeStart(props.annotation);
+		setPointerCapture({ elem: event.target as Element, pointerId: event.pointerId });
+		onResizeStart(annotation);
 	};
 
 	let handlePointerUp = (event: React.PointerEvent) => {
-		if (event.button !== 0 || !(event.target as Element).hasPointerCapture(event.pointerId)) {
+		if (event.button !== 0
+				|| !resizingSide
+				|| !(event.target as Element).hasPointerCapture(event.pointerId)) {
 			return;
 		}
 		(event.target as Element).releasePointerCapture(event.pointerId);
 		setResizingSide(false);
-		props.onResizeEnd(props.annotation);
+		setPointerCapture(null);
+		onResizeEnd(annotation, false);
 	};
+
+	let handleKeyDown = useCallback((event: KeyboardEvent) => {
+		if (event.key !== 'Escape' || !resizingSide || !pointerCapture) {
+			return;
+		}
+		pointerCapture.elem.releasePointerCapture(pointerCapture.pointerId);
+		setResizingSide(false);
+		setPointerCapture(null);
+		onResizeEnd(annotation, true);
+	}, [pointerCapture, onResizeEnd, annotation, resizingSide]);
+
+	let win = annotation.range.commonAncestorContainer.ownerDocument?.defaultView;
+
+	useEffect(() => {
+		if (!win) {
+			return undefined;
+		}
+		win.addEventListener('keydown', handleKeyDown, true);
+		return () => win?.removeEventListener('keydown', handleKeyDown, true);
+	}, [win, handleKeyDown]);
 
 	let handleResize = (event: React.PointerEvent, isStart: boolean) => {
 		let pos = caretPositionFromPoint(event.view.document, event.clientX, event.clientY);
 		if (pos) {
-			let newRange = props.annotation.range.cloneRange();
+			let newRange = annotation.range.cloneRange();
 			if (isStart) {
-				if (newRange.startContainer === pos.offsetNode && newRange.startOffset === pos.offset) {
-					return;
-				}
 				newRange.setStart(pos.offsetNode, pos.offset);
 			}
 			else {
-				if (newRange.endContainer === pos.offsetNode && newRange.endOffset === pos.offset) {
-					return;
-				}
 				newRange.setEnd(pos.offsetNode, pos.offset);
 			}
-			props.onResize(props.annotation, newRange);
+			onResize(annotation, newRange);
 		}
 	};
 
@@ -480,7 +507,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			y={topLeftRect.top}
 			width={WIDTH}
 			height={topLeftRect.height}
-			fill={props.annotation.color}
+			fill={annotation.color}
 			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, true)}
 			onPointerUp={event => handlePointerUp(event)}
@@ -491,7 +518,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			y={bottomRightRect.top}
 			width={WIDTH}
 			height={bottomRightRect.height}
-			fill={props.annotation.color}
+			fill={annotation.color}
 			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, false)}
 			onPointerUp={event => handlePointerUp(event)}
@@ -504,7 +531,7 @@ type ResizerProps = {
 	annotation: DisplayedAnnotation;
 	highlightRects: DOMRect[];
 	onResizeStart: (annotation: DisplayedAnnotation) => void;
-	onResizeEnd: (annotation: DisplayedAnnotation) => void;
+	onResizeEnd: (annotation: DisplayedAnnotation, cancelled: boolean) => void;
 	onResize: (annotation: DisplayedAnnotation, range: Range) => void;
 };
 
