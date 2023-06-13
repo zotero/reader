@@ -64,6 +64,7 @@ export function isTextPosition(selector: Selector): selector is TextPositionSele
 }
 
 export function textPositionFromRange(range: Range, root: Element): TextPositionSelector | null {
+	range = moveRangeEndsIntoTextNodes(range);
 	let iter = root.ownerDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
 	let selector: Partial<TextPositionSelector> = {
 		type: 'TextPositionSelector'

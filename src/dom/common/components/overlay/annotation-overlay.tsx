@@ -204,7 +204,8 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 				|| range.startContainer.nodeType == Node.ELEMENT_NODE && (range.startContainer as Element).closest('svg')
 				|| range.endContainer.nodeType == Node.ELEMENT_NODE && (range.endContainer as Element).closest('svg')
 				// And make sure we stay within one section
-				|| !closestElement(range.commonAncestorContainer)?.closest('[data-section-index]')) {
+				|| doc.querySelector('[data-section-index]')
+					&& !closestElement(range.commonAncestorContainer)?.closest('[data-section-index]')) {
 			return;
 		}
 		setResizedRange(range);
