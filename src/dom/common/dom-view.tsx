@@ -604,14 +604,15 @@ abstract class DOMView<State extends DOMViewState> {
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
 		// Cycle selection on left click if clicked annotation is already selected
 		if (event.button == 0) {
-			if (this._selectedAnnotationIDs.includes(id)) {
-				let targets = this._iframeDocument.elementsFromPoint(event.clientX, event.clientY)
-					.filter(target => !!target.getAttribute('data-annotation-id'));
-				if (!targets.length) {
+			if (this._selectedAnnotationIDs.length) {
+				let idsHere = this._iframeDocument.elementsFromPoint(event.clientX, event.clientY)
+					.map(target => target.getAttribute('data-annotation-id'))
+					.filter(Boolean) as string[];
+				if (!idsHere.length) {
 					return;
 				}
-				let nextTarget = targets[(targets.indexOf(event.target as Element) + 1) % targets.length];
-				let nextID = nextTarget.getAttribute('data-annotation-id')!;
+				let selectedID = this._selectedAnnotationIDs.find(id => idsHere.includes(id));
+				let nextID = idsHere[(selectedID ? idsHere.indexOf(selectedID) + 1 : 0) % idsHere.length];
 				this._options.onSelectAnnotations([nextID], event.nativeEvent);
 				this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
 			}
