@@ -192,18 +192,13 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return;
 		}
 
-		if (
-			// Otherwise, try extracting physical page numbers
-			this._pageMapping.addPhysicalPages(this._sectionViews.values())
-			// Fall back to generating EPUB locations
-			|| this._pageMapping.addEPUBLocations(this._sectionViews.values())
-		) {
-			this._updateViewStats();
-			this._viewState.savedPageMapping = this._pageMapping.save(this);
-			this._updateViewState();
-			if (window.dev) {
-				window.localStorage.setItem(localStorageKey, this._viewState.savedPageMapping);
-			}
+		// Otherwise, extract physical page numbers and fall back to EPUB locations
+		this._pageMapping.generate(this._sectionViews.values());
+		this._updateViewStats();
+		this._viewState.savedPageMapping = this._pageMapping.save(this);
+		this._updateViewState();
+		if (window.dev) {
+			window.localStorage.setItem(localStorageKey, this._viewState.savedPageMapping);
 		}
 	}
 
@@ -417,10 +412,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return null;
 		}
 
-		let pageLabel = this._pageMapping.getPageLabel(range);
-		if (!pageLabel) {
-			return null;
-		}
+		let pageLabel = this._pageMapping.isPhysical && this._pageMapping.getPageLabel(range) || '';
 
 		// Use the number of characters between the start of the section and the start of the selection range
 		// to disambiguate the sortIndex

@@ -3,7 +3,7 @@ export default [
 		type: "highlight",
 		color: "#a28ae5",
 		sortIndex: "00003|00000027",
-		pageLabel: "4",
+		pageLabel: "",
 		position: {
 			type: "FragmentSelector",
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
@@ -14,7 +14,7 @@ export default [
 		tags: [],
 		id: "TX8S2BZM",
 		dateCreated: "2023-02-21T19:35:47.798Z",
-		dateModified: "2023-05-15T18:27:32.257Z",
+		dateModified: "2023-06-14T19:26:09.740Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -22,7 +22,7 @@ export default [
 		type: "highlight",
 		color: "#5fb236",
 		sortIndex: "00006|00000049",
-		pageLabel: "17",
+		pageLabel: "",
 		position: {
 			type: "FragmentSelector",
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
@@ -33,7 +33,7 @@ export default [
 		tags: [],
 		id: "PARGMWMZ",
 		dateCreated: "2023-02-21T19:36:03.145Z",
-		dateModified: "2023-05-15T18:27:32.257Z",
+		dateModified: "2023-06-14T19:26:09.740Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -41,7 +41,7 @@ export default [
 		type: "note",
 		color: "#ffd400",
 		sortIndex: "00045|00002155",
-		pageLabel: "203",
+		pageLabel: "",
 		position: {
 			type: "FragmentSelector",
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
@@ -51,7 +51,7 @@ export default [
 		tags: [],
 		id: "GTPE6G89",
 		dateCreated: "2023-04-19T15:38:44.556Z",
-		dateModified: "2023-05-15T18:27:32.257Z",
+		dateModified: "2023-06-14T19:26:09.740Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -59,7 +59,7 @@ export default [
 		type: "highlight",
 		color: "#ffd400",
 		sortIndex: "00050|00011246",
-		pageLabel: "236",
+		pageLabel: "",
 		position: {
 			type: "FragmentSelector",
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
@@ -70,7 +70,7 @@ export default [
 		tags: [],
 		id: "4JKDWLSF",
 		dateCreated: "2023-02-21T19:36:34.563Z",
-		dateModified: "2023-05-15T18:27:32.257Z",
+		dateModified: "2023-06-14T19:26:09.740Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -78,7 +78,7 @@ export default [
 		type: "highlight",
 		color: "#ff6666",
 		sortIndex: "00140|00006394",
-		pageLabel: "638",
+		pageLabel: "",
 		position: {
 			type: "FragmentSelector",
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
@@ -89,7 +89,7 @@ export default [
 		tags: [],
 		id: "YMJAWZXH",
 		dateCreated: "2023-02-21T19:36:16.574Z",
-		dateModified: "2023-05-15T18:27:32.257Z",
+		dateModified: "2023-06-14T19:26:09.740Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -97,7 +97,7 @@ export default [
 		type: "highlight",
 		color: "#f19837",
 		sortIndex: "00142|00000045",
-		pageLabel: "648",
+		pageLabel: "",
 		position: {
 			type: "FragmentSelector",
 			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
@@ -108,7 +108,7 @@ export default [
 		tags: [],
 		id: "YUTUT8H3",
 		dateCreated: "2023-02-21T19:36:44.833Z",
-		dateModified: "2023-05-15T18:27:32.258Z",
+		dateModified: "2023-06-14T19:26:09.740Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	}

@@ -10,11 +10,25 @@ class PageMapping {
 		(a, b) => a.compareBoundaryPoints(Range.START_TO_START, b) || a.compareBoundaryPoints(Range.END_TO_END, b)
 	);
 
+	private _isPhysical = false;
+
 	get length(): number {
 		return this._tree.length;
 	}
 
-	addPhysicalPages(views: Iterable<SectionView>): boolean {
+	get isPhysical(): boolean {
+		return this._isPhysical;
+	}
+
+	generate(views: Iterable<SectionView>) {
+		this._addPhysicalPages(views);
+		if (this._tree.length) {
+			return;
+		}
+		this._addEPUBLocations(views);
+	}
+
+	private _addPhysicalPages(views: Iterable<SectionView>) {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
@@ -50,10 +64,12 @@ class PageMapping {
 		}
 		console.log(`Added ${this._tree.length} physical page mappings in ${
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
-		return !!this._tree.length;
+		if (this._tree.length) {
+			this._isPhysical = true;
+		}
 	}
 
-	addEPUBLocations(views: Iterable<SectionView>): boolean {
+	private _addEPUBLocations(views: Iterable<SectionView>) {
 		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
@@ -87,7 +103,6 @@ class PageMapping {
 		}
 		console.log(`Added ${this._tree.length} EPUB location mappings in ${
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
-		return !!this._tree.length;
 	}
 
 	getPageIndex(range: Range): number | null {
