@@ -7,6 +7,7 @@ import {
 	scaleShape
 } from './lib/utilities';
 import { SELECTION_COLOR } from '../common/defines';
+import { getRectRotationOnText } from './selection';
 
 export default class Page {
 	constructor(layer, originalPage) {
@@ -192,7 +193,7 @@ export default class Page {
 		let width = 7;
 		let height = 7;
 		for (let annotation of annotations) {
-			if (!['highlight', 'image'].includes(annotation.type) || !annotation.comment) {
+			if (!['highlight', 'underline', 'image'].includes(annotation.type) || !annotation.comment) {
 				continue;
 			}
 			let position = annotation.position;
@@ -248,6 +249,45 @@ export default class Page {
 
 		for (let rect of rects) {
 			this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+		}
+		this.actualContext.restore();
+	}
+
+	_renderUnderline(annotation) {
+		let pageData = this.layer._pdfPages[this.pageIndex];
+		if (!pageData) {
+			return;
+		}
+		let structuredText = pageData.structuredText;
+		let position = this.p2v(annotation.position);
+		this.actualContext.save();
+		// this.actualContext.globalAlpha = 0;
+		this.actualContext.globalCompositeOperation = 'multiply';
+		this.actualContext.fillStyle = annotation.color;
+		let rects;
+		let pdfRect;
+		if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
+			rects = position.nextPageRects;
+			pdfRect = annotation.position.nextPageRects[0];
+		}
+		else {
+			rects = position.rects;
+			pdfRect = annotation.position.rects[0];
+		}
+		let viewRect = rects[0];
+		let width = 1;
+		width *= (viewRect[2] - viewRect[0]) / (pdfRect[2] - pdfRect[0]);
+		for (let rect of rects) {
+			// Get the actual line rect taking into account text rotation
+			let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+			let [x1, y1, x2, y2] = rect;
+			let rect2 = (
+				rotation === 0 && [x1, y2 - width, x2, y2]
+				|| rotation === 90 && [x2 - width, y2, x2, y1]
+				|| rotation === 180 && [x1, y1, x2, y1 - width]
+				|| rotation === 270 && [x1, y2, x1 - width, y1]
+			);
+			this.actualContext.fillRect(rect2[0], rect2[1], rect2[2] - rect2[0], rect2[3] - rect2[1]);
 		}
 		this.actualContext.restore();
 	}
@@ -392,6 +432,9 @@ export default class Page {
 			if (annotation.type === 'highlight' && !(action?.type === 'updateAnnotationRange' && action.annotation.id === annotation.id)) {
 				this._renderHighlight(annotation);
 			}
+			if (annotation.type === 'underline' && !(action?.type === 'updateAnnotationRange' && action.annotation.id === annotation.id)) {
+				this._renderUnderline(annotation);
+			}
 			else if (annotation.type === 'note') {
 				this._renderNote(annotation);
 			}
@@ -415,8 +458,14 @@ export default class Page {
 		}
 
 		if (action?.type === 'updateAnnotationRange') {
-			this._renderHighlight(action.annotation);
+			if (action.annotation.type === 'highlight') {
+				this._renderHighlight(action.annotation);
+			}
+			else if (action.annotation.type === 'underline') {
+				this._renderUnderline(action.annotation);
+			}
 		}
+
 
 		this.drawCommentIndicators(annotations);
 
@@ -591,31 +640,72 @@ export default class Page {
 
 		let annotation = annotations.find(x => x.id === selectedAnnotationIDs[0]);
 
-
-		if (annotationTextSelectionData && annotation && !action?.triggered) {
-			this.actualContext.save();
-			this.actualContext.globalCompositeOperation = 'multiply';
-			this.actualContext.fillStyle = annotation.color;
-			let padding = 1 * devicePixelRatio;
-			let handles = annotationTextSelectionData.handles;
-
-			// if (action?.type === 'updateAnnotationRange' && action.handles) {
-			// 	handles = action.handles;
-			// }
-
-			for (let handle of handles) {
-				let rect = this.getViewRect(handle.rect);
-				if (rect[1] === rect[3]) {
-					rect[1] -= padding;
-					rect[3] += padding;
+		if (annotation && ['highlight', 'underline'].includes(annotation.type)) {
+			let annotation2 = annotation;
+			if (action?.annotation) {
+				annotation2 = action.annotation;
+			}
+			if (this.layer._pdfPages[this.pageIndex]
+				&& (!annotation2.position.nextPageRects || this.layer._pdfPages[this.pageIndex + 1])) {
+				let structuredText = this.layer._pdfPages[this.pageIndex].structuredText;
+				let position = this.p2v(annotation2.position);
+				this.actualContext.save();
+				this.actualContext.globalCompositeOperation = 'multiply';
+				this.actualContext.fillStyle = annotation2.color;
+				let startRect;
+				let endRect;
+				let padding = 1 * devicePixelRatio;
+				if (annotation2.position.nextPageRects) {
+					if (position.pageIndex + 1 === this.pageIndex) {
+						let structuredText = this.layer._pdfPages[this.pageIndex + 1].structuredText;
+						let rotation = getRectRotationOnText(structuredText, annotation2.position.nextPageRects.at(-1));
+						let [x1, y1, x2, y2] = position.nextPageRects.at(-1);
+						endRect = (
+							rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
+							|| rotation === 90 && [x1, y1 - padding, x2, y1 + padding]
+							|| rotation === 180 && [x1 - padding, y1, x1 + padding, y2]
+							|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
+						);
+					}
+					else {
+						let rotation = getRectRotationOnText(structuredText, annotation2.position.rects[0]);
+						let [x1, y1, x2, y2] = position.rects[0];
+						startRect = (
+							rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
+							|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
+							|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
+							|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
+						);
+					}
 				}
 				else {
-					rect[0] -= padding;
-					rect[2] += padding;
+					let rotation = getRectRotationOnText(structuredText, annotation2.position.rects[0]);
+					let [x1, y1, x2, y2] = position.rects[0];
+					startRect = (
+						rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
+						|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
+						|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
+						|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
+					);
+					rotation = getRectRotationOnText(structuredText, annotation2.position.rects.at(-1));
+					[x1, y1, x2, y2] = position.rects.at(-1);
+					endRect = (
+						rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
+						|| rotation === 90 && [x1, y1 - padding, x2, y1 + padding]
+						|| rotation === 180 && [x1 - padding, y1, x1 + padding, y2]
+						|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
+					);
 				}
-				this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				if (startRect) {
+					let rect = startRect;
+					this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				}
+				if (endRect) {
+					let rect = endRect;
+					this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				}
+				this.actualContext.restore();
 			}
-			this.actualContext.restore();
 		}
 
 
@@ -671,6 +761,12 @@ export default class Page {
 				if (action.annotation.position.pageIndex === this.pageIndex
 					|| action.annotation.position.nextPageRects && action.annotation.position.pageIndex + 1 === this.pageIndex) {
 					this._renderHighlight(action.annotation);
+				}
+			}
+			else if (action.type === 'underline' && action.annotation) {
+				if (action.annotation.position.pageIndex === this.pageIndex
+					|| action.annotation.position.nextPageRects && action.annotation.position.pageIndex + 1 === this.pageIndex) {
+					this._renderUnderline(action.annotation);
 				}
 			}
 			else if (action.type === 'image' && action.annotation) {
@@ -741,6 +837,21 @@ export default class Page {
 			ctx.transform(scale, 0, 0, -scale, 0, height * pixelRatio);
 			let position = annotation.position;
 			ctx.globalAlpha = 0.5;
+			ctx.globalCompositeOperation = 'multiply';
+			ctx.fillStyle = annotation.color || SELECTION_COLOR;
+			let rects = position.rects;
+			if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
+				rects = position.nextPageRects;
+			}
+			ctx.transform(1, 0, 0, 1, -pdfBoundingRect[0], -pdfBoundingRect[1]);
+			for (let rect of rects) {
+				ctx.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+			}
+		}
+		else if (annotation.type === 'underline') {
+			ctx.transform(scale, 0, 0, -scale, 0, height * pixelRatio);
+			let position = annotation.position;
+			// ctx.globalAlpha = 0.5;
 			ctx.globalCompositeOperation = 'multiply';
 			ctx.fillStyle = annotation.color || SELECTION_COLOR;
 			let rects = position.rects;

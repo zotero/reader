@@ -3,8 +3,8 @@ import { v2p } from './lib/coordinates';
 import {
 	getLineSelectionRanges,
 	getModifiedSelectionRanges,
+	getRectRotationOnText,
 	getReversedSelectionRanges,
-	getSelectionRangeHandles,
 	getSelectionRanges,
 	getSelectionRangesByPosition,
 	getSortIndex,
@@ -363,7 +363,6 @@ class PDFView {
 		}
 
 		this._pages.push(page);
-		this._updateAnnotationTextSelectionData();
 		this._render();
 	}
 
@@ -427,22 +426,6 @@ class PDFView {
 				page.render();
 			}
 		}
-	}
-
-	_updateAnnotationTextSelectionData() {
-		let annotations = this.getSelectedAnnotations();
-		if (annotations.length === 1) {
-			let annotation = annotations[0];
-			if (annotation.type === 'highlight') {
-				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
-				if (selectionRanges.length) {
-					let handles = getSelectionRangeHandles(this._pdfPages, selectionRanges);
-					this._annotationTextSelectionData = { selectionRanges, handles };
-					return;
-				}
-			}
-		}
-		this._annotationTextSelectionData = null;
 	}
 
 	focus() {
@@ -510,7 +493,6 @@ class PDFView {
 	setAnnotations(annotations) {
 		let affected = getAffectedAnnotations(this._annotations, annotations, true);
 		this._annotations = annotations;
-		this._updateAnnotationTextSelectionData();
 		let { created, updated, deleted } = affected;
 		let all = [...created, ...updated, ...deleted];
 		let pageIndexes = getPageIndexesFromAnnotations(all);
@@ -593,7 +575,6 @@ class PDFView {
 
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
-		this._updateAnnotationTextSelectionData();
 		this._setSelectionRanges();
 		this._clearFocus();
 
@@ -861,7 +842,8 @@ class PDFView {
 	}
 
 	getSelectedAnnotationAction(annotation, position) {
-		if (annotation.position.pageIndex !== position.pageIndex) {
+		if (!annotation.position.nextPageRects && annotation.position.pageIndex !== position.pageIndex
+			|| annotation.position.nextPageRects && !this._pdfPages[annotation.position.pageIndex + 1]) {
 			return null;
 		}
 
@@ -877,25 +859,77 @@ class PDFView {
 
 		p = [p[0], p[1], p[0], p[1]];
 
-		if (annotation.type === 'highlight' && this._annotationTextSelectionData) {
-			let { selectionRanges, handles } = this._annotationTextSelectionData;
-			let padding = 3;
-			for (let handle of handles) {
-				let rect = this.getViewRect(handle.rect, handle.pageIndex);
-				let vertical = rect[1] === rect[3];
-				if (vertical) {
-					rect[1] -= padding;
-					rect[3] += padding;
+		if (['highlight', 'underline'].includes(annotation.type)) {
+			// Calculate text resizing handle rectangles taking into account text rotation
+			if (this._pdfPages[annotation.position.pageIndex]
+				&& (!annotation.position.nextPageRects || this._pdfPages[annotation.position.pageIndex + 1])) {
+				let structuredText = this._pdfPages[annotation.position.pageIndex].structuredText;
+				let startHandle;
+				let endHandle;
+				let padding = 3;
+				if (annotation.position.nextPageRects) {
+					if (annotation.position.pageIndex + 1 === position.pageIndex) {
+						let structuredText = this._pdfPages[annotation.position.pageIndex + 1].structuredText;
+						let rotation = getRectRotationOnText(structuredText, annotation.position.nextPageRects.at(-1));
+						let rect = this.getViewRect(annotation.position.nextPageRects.at(-1), annotation.position.pageIndex + 1);
+						let [x1, y1, x2, y2] = rect;
+						rect = (
+							rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
+							|| rotation === 90 && [x1, y1 - padding, x2, y1 + padding]
+							|| rotation === 180 && [x1 - padding, y1, x1 + padding, y2]
+							|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
+						);
+						endHandle = { rect, vertical: [90, 270].includes(rotation) };
+					}
+					else {
+						let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+						let rect = this.getViewRect(annotation.position.rects[0], annotation.position.pageIndex);
+						let [x1, y1, x2, y2] = rect;
+						rect = (
+							rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
+							|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
+							|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
+							|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
+						);
+						startHandle = { rect, vertical: [90, 270].includes(rotation) };
+					}
 				}
 				else {
-					rect[0] -= padding;
-					rect[2] += padding;
+					let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+					let rect = this.getViewRect(annotation.position.rects[0], annotation.position.pageIndex);
+					let [x1, y1, x2, y2] = rect;
+					rect = (
+						rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
+						|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
+						|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
+						|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
+					);
+					startHandle = { rect, vertical: [90, 270].includes(rotation) };
+					rotation = getRectRotationOnText(structuredText, annotation.position.rects.at(-1));
+					rect = this.getViewRect(annotation.position.rects.at(-1), annotation.position.pageIndex);
+					[x1, y1, x2, y2] = rect;
+					rect = (
+						rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
+						|| rotation === 90 && [x1, y1 - padding, x2, y1 + padding]
+						|| rotation === 180 && [x1 - padding, y1, x1 + padding, y2]
+						|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
+					);
+					endHandle = { rect, vertical: [90, 270].includes(rotation) };
 				}
-				if (quickIntersectRect(rect, p)) {
-					if (handle === handles[0]) {
+				if (startHandle) {
+					let { rect, vertical } = startHandle;
+					if (quickIntersectRect(rect, p)) {
+						let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
 						selectionRanges = getReversedSelectionRanges(selectionRanges);
+						return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
 					}
-					return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
+				}
+				if (endHandle) {
+					let { rect, vertical } = endHandle;
+					if (quickIntersectRect(rect, p)) {
+						let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+						return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
+					}
 				}
 			}
 		}
@@ -1181,6 +1215,9 @@ class PDFView {
 			if (this._tool.type === 'highlight') {
 				action = { type: 'highlight' };
 			}
+			else if (this._tool.type === 'underline') {
+				action = { type: 'underline' };
+			}
 			else if (this._tool.type === 'note') {
 				action = { type: 'note' };
 			}
@@ -1245,7 +1282,7 @@ class PDFView {
 			else if (action.type === 'rotate') {
 				cursor = 'move';
 			}
-			else if (action.type === 'highlight') {
+			else if (['highlight', 'underline'].includes(action.type)) {
 				cursor = 'text';
 			}
 			else if (action.type === 'ink') {
@@ -1742,6 +1779,11 @@ class PDFView {
 			action.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight', this._tool.color);
 			action.triggered = true;
 		}
+		else if (action.type === 'underline') {
+			let selectionRanges = getSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
+			action.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'underline', this._tool.color);
+			action.triggered = true;
+		}
 		else if (action.type === 'ink') {
 			let point = position.rects[0].slice(0, 2);
 			action.annotation.position.paths[0] = addPointToPath(action.annotation.position.paths[0], point);
@@ -1830,6 +1872,10 @@ class PDFView {
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
 					else if (action.type === 'highlight' && action.annotation) {
+						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
+						this._onAddAnnotation(action.annotation);
+					}
+					else if (action.type === 'underline' && action.annotation) {
 						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 						this._onAddAnnotation(action.annotation);
 					}

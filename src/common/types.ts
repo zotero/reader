@@ -2,10 +2,13 @@ import { Selector } from "../dom/common/lib/selector";
 
 export type ToolType =
 	| 'highlight'
+	| 'underline'
 	| 'note'
-	| 'pointer'
-	// Future:
-	| 'underline';
+	| 'image'
+	| 'text'
+	| 'ink'
+	| 'eraser'
+	| 'pointer';
 
 export type Tool = {
 	type: ToolType;
@@ -14,9 +17,12 @@ export type Tool = {
 
 export type AnnotationType =
 	| 'highlight'
+	| 'underline'
 	| 'note'
 	| 'image'
-	| 'ink';
+	| 'text'
+	| 'ink'
+	| 'eraser';
 
 export interface Annotation {
 	id: string;

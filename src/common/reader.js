@@ -533,8 +533,8 @@ class Reader {
 		this._readerRef.current.sidebarScrollAnnotationIntoView(id);
 	}
 
-	_sidebarEditHighlightText(id) {
-		this._readerRef.current.sidebarEditHighlightText(id);
+	_sidebarEditAnnotationText(id) {
+		this._readerRef.current.sidebarEditAnnotationText(id);
 	}
 
 	_sidebarOpenPageLabelPopup(id) {

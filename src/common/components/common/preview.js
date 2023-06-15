@@ -3,7 +3,7 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
-import { IconHighlight, IconNote, IconArea, IconInk, IconText } from './icons';
+import { IconHighlight, IconUnderline, IconNote, IconArea, IconInk, IconText } from './icons';
 import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 
 // TODO: Don't allow to select UI text in popup header and footer
@@ -62,6 +62,7 @@ export function PopupPreview(props) {
 					>
 						{
 							annotation.type === 'highlight' && <IconHighlight/>
+							|| annotation.type === 'underline' && <IconUnderline/>
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
 							|| annotation.type === 'ink' && <IconInk/>
@@ -186,8 +187,8 @@ export function SidebarPreview(props) {
 		props.onEditorBlur(props.annotation.id);
 	}
 
-	function handleHighlightDoubleClick() {
-		props.onDoubleClickHighlight(props.annotation.id);
+	function handleTextDoubleClick() {
+		props.onDoubleClickText(props.annotation.id);
 	}
 
 	function handleContextMenu(event) {
@@ -202,11 +203,11 @@ export function SidebarPreview(props) {
 
 	let { annotation, state, type } = props;
 
-	let text = annotation.type === 'highlight' && (
+	let text = ['highlight', 'underline'].includes(annotation.type) && (
 		<div
-			className="highlight"
-			onClick={e => handleSectionClick(e, 'highlight')}
-			onDoubleClick={handleHighlightDoubleClick}
+			className="annotation-text"
+			onClick={e => handleSectionClick(e, 'annotation-text')}
+			onDoubleClick={handleTextDoubleClick}
 			draggable={state !== 3 || annotation.readOnly}
 			onDragStart={handleDragStart}
 		>
@@ -275,6 +276,7 @@ export function SidebarPreview(props) {
 					>
 						{
 							annotation.type === 'highlight' && <IconHighlight/>
+							|| annotation.type === 'underline' && <IconUnderline/>
 							|| annotation.type === 'note' && <IconNote/>
 							|| annotation.type === 'image' && <IconArea/>
 							|| annotation.type === 'ink' && <IconInk/>

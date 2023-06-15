@@ -130,7 +130,7 @@ export default {
 	'pdfReader.rotateLeft': 'Rotate Left',
 	'pdfReader.rotateRight': 'Rotate Right',
 	'pdfReader.editPageNumber': 'Edit Page Number…',
-	'pdfReader.editHighlightedText': 'Edit Highlighted Text',
+	'pdfReader.editAnnotationText': 'Edit Annotation Text',
 	'pdfReader.copyImage': 'Copy Image',
 	'pdfReader.saveImageAs': 'Save Image As…',
 	'pdfReader.pageNumberPopupHeader': 'Change page number for:',

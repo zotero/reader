@@ -1,5 +1,71 @@
 export default [
 	{
+		"type": "underline",
+		"color": "#ff6666",
+		"sortIndex": "00000|001132|00451",
+		"pageLabel": "1",
+		"position": {
+			"pageIndex": 0,
+			"rects": [
+				[213.037, 332.388, 293.107, 340.162],
+				[54, 322.425, 293.107, 330.199],
+				[54, 312.463, 293.107, 320.236],
+				[54, 302.5, 87.866, 310.274]
+			]
+		},
+		"text": "We have implementeda dynamic compiler for JavaScript based on our technique and wehave measured speedups of 10x and more for certain benchmarkprograms",
+		"comment": "",
+		"tags": [],
+		"id": "AC4PRD7A",
+		"dateCreated": "2023-06-19T10:20:10.675Z",
+		"dateModified": "2023-06-19T10:20:17.208Z",
+		"authorName": "John",
+		"isAuthorNameAuthoritative": true
+	},
+	{
+		"type": "underline",
+		"color": "#2ea8e5",
+		"sortIndex": "00000|002514|00388",
+		"pageLabel": "1",
+		"position": {
+			"pageIndex": 0,
+			"rects": [
+				[328.969, 396.149, 556.115, 403.923],
+				[317.014, 386.186, 454.002, 393.96]
+			]
+		},
+		"text": "Compilers for statically typed languages rely on type informa-tion to generate efﬁcient machine code",
+		"comment": "",
+		"tags": [],
+		"id": "MI588RJE",
+		"dateCreated": "2023-06-19T10:23:38.321Z",
+		"dateModified": "2023-06-19T10:23:50.856Z",
+		"authorName": "John",
+		"isAuthorNameAuthoritative": true
+	},
+	{
+		"type": "underline",
+		"color": "#ffd400",
+		"sortIndex": "00000|002790|00437",
+		"pageLabel": "1",
+		"position": {
+			"pageIndex": 0,
+			"rects": [
+				[393.533, 346.336, 556.121, 354.11],
+				[317.014, 336.373, 556.121, 344.147],
+				[317.014, 326.41, 417.267, 334.184]
+			]
+		},
+		"text": "Without exact type information, the compilermust emit slower generalized machine code that can deal with allpotential type combinations",
+		"comment": "",
+		"tags": [],
+		"id": "KEUT3DCG",
+		"dateCreated": "2023-06-19T16:01:16.179Z",
+		"dateModified": "2023-06-19T16:02:34.146Z",
+		"authorName": "John",
+		"isAuthorNameAuthoritative": true
+	},
+	{
 		type: "text",
 		color: "#ffd400",
 		sortIndex: "00000|000000|00029",

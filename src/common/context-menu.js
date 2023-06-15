@@ -110,7 +110,7 @@ export function createAnnotationContextMenu(reader, params) {
 					label: reader._getString('pdfReader.addToNote'),
 					disabled: !reader._state.enableAddToNote,
 					persistent: true,
-					onCommand: () => reader._sidebarEditHighlightText(params.ids[0])
+					onCommand: () => reader._sidebarEditAnnotationText(params.ids[0])
 				}
 			],
 			ANNOTATION_COLORS.map(([label, color]) => ({
@@ -133,14 +133,14 @@ export function createAnnotationContextMenu(reader, params) {
 					onCommand: () => reader._sidebarOpenPageLabelPopup(params.currentID)
 				},
 				!params.view && {
-					label: reader._getString('pdfReader.editHighlightedText'),
+					label: reader._getString('pdfReader.editAnnotationText'),
 					disabled: readOnly || !(
 						params.ids.length === 1
-						&& reader._state.annotations.find(x => x.id === params.ids[0] && x.type === 'highlight')
+						&& reader._state.annotations.find(x => x.id === params.ids[0] && ['highlight', 'underline'].includes(x.type))
 						&& !params.popup
 					),
 					persistent: true,
-					onCommand: () => reader._sidebarEditHighlightText(params.ids[0])
+					onCommand: () => reader._sidebarEditAnnotationText(params.ids[0])
 				}
 			],
 			[

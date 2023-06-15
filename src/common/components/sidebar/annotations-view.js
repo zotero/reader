@@ -129,7 +129,7 @@ const Annotation = React.memo((props) => {
 				selected={props.isSelected}
 				onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
 				onClickSection={props.onClickAnnotationSection}
-				onDoubleClickHighlight={props.onDoubleClickHighlight}
+				onDoubleClickText={props.onDoubleClickText}
 				onDoubleClickPageLabel={props.onDoubleClickPageLabel}
 				onOpenContextMenu={props.onOpenContextMenu}
 				onChange={props.onChange}
@@ -142,8 +142,8 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	// Expansion state:
 	// 0 - None or multiple annotations are selected
 	// 1 - Single annotation selected, comment expanded
-	// 2 - Single annotation selected, comment expanded, highlight expanded
-	// 3 - Single annotation selected, comment expanded, highlight expanded and editable
+	// 2 - Single annotation selected, comment expanded, text expanded
+	// 3 - Single annotation selected, comment expanded, text expanded and editable
 	const [expansionState, setExpansionState] = useState(0);
 	const pointerDownRef = useRef(false);
 	const selectionTimeRef = useRef(0);
@@ -155,11 +155,11 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		});
 	}
 
-	function editHighlightText(id) {
+	function editAnnotationText(id) {
 		document.querySelector(`[data-sidebar-annotation-id="${id}"]`).focus();
 		setTimeout(() => {
 			setExpansionState(3);
-			focusSidebarHighlight(id);
+			focusSidebarAnnotationText(id);
 		}, 50);
 	}
 
@@ -173,7 +173,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 	useImperativeHandle(ref, () => ({
 		scrollAnnotationIntoView,
-		editHighlightText,
+		editAnnotationText,
 		openPageLabelPopup
 	}));
 
@@ -314,9 +314,9 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		}
 	}, [expansionState, props.selectedIDs]);
 
-	function focusSidebarHighlight(annotationID) {
+	function focusSidebarAnnotationText(annotationID) {
 		setTimeout(function () {
-			let content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .highlight .content`);
+			let content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .annotation-text .content`);
 			if (content) {
 				setCaretToEnd(content);
 			}
@@ -329,7 +329,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 			&& Date.now() - selectionTimeRef.current > 500) {
 			if (expansionState >= 1 && expansionState <= 2) {
 				setExpansionState(3);
-				focusSidebarHighlight(id);
+				focusSidebarAnnotationText(id);
 			}
 		}
 	}, [expansionState, props.selectedIDs]);
@@ -468,7 +468,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 							onFocus={handleAnnotationFocus}
 							onChange={props.onChange}
 							onClickAnnotationSection={handleSidebarAnnotationSectionClick}
-							onDoubleClickHighlight={handleSidebarAnnotationDoubleClick}
+							onDoubleClickText={handleSidebarAnnotationDoubleClick}
 							onDoubleClickPageLabel={props.onOpenPageLabelPopup}
 							onOpenContextMenu={handleContextMenuOpen}
 							onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}

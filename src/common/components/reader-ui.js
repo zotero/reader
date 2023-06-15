@@ -87,7 +87,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 	useImperativeHandle(ref, () => ({
 		setState,
 		sidebarScrollAnnotationIntoView: (id) => annotationsViewRef.current?.scrollAnnotationIntoView(id),
-		sidebarEditHighlightText: (id) => annotationsViewRef.current?.editHighlightText(id),
+		sidebarEditAnnotationText: (id) => annotationsViewRef.current?.editAnnotationText(id),
 		sidebarOpenPageLabelPopup: (id) => annotationsViewRef.current?.openPageLabelPopup(id)
 	}));
 

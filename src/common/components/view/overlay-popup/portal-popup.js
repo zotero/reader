@@ -13,12 +13,6 @@ function PortalPopup(props) {
 	let x = props.params.rect[0];
 	let y = props.params.rect[1];
 
-
-
-	function handleColorPick(color) {
-		props.onHighlight(color);
-	}
-
 	function handleOnRender() {
 		let parent = containerRef.current;
 		let top = parent.offsetTop;

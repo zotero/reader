@@ -139,6 +139,13 @@ function Toolbar(props) {
 					</button>
 					<button
 						tabIndex={-1}
+						className={cx('toolbarButton underline', { toggled: props.tool.type === 'underline' })}
+						title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
+						onClick={() => handleToolClick('underline')}>
+						<span className="button-background"/>
+					</button>
+					<button
+						tabIndex={-1}
 						className={cx('toolbarButton note', {
 							toggled: props.tool.type === 'note'
 						})}

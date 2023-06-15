@@ -646,9 +646,9 @@ export function getSelectionRangesByPosition(pdfPages, position) {
 	selectionRanges = [selectionRange];
 
 	if (position.nextPageRects) {
-		let chars = getFlattenedCharsByIndex(pdfPages, position.pageIndex + 1);
+		let structuredText = pdfPages[position.pageIndex + 1].structuredText;
 		selectionRange = extractRangeByRects({
-			chars,
+			structuredText,
 			pageIndex: position.pageIndex + 1,
 			rects: position.nextPageRects
 		});
@@ -708,44 +708,38 @@ export function getReversedSelectionRanges(selectionRanges) {
 	return selectionRanges;
 }
 
-// Doesn't work with reversed selections
-export function getSelectionRangeHandles(pdfPages, selectionRanges) {
-	let selectionRange = selectionRanges[0];
-	let pageIndex = selectionRange.position.pageIndex;
+function getMostCommonValue(arr) {
+	let counts = arr.reduce((a, b) => ({ ...a, [b]: (a[b] || 0) + 1 }), {});
+	return +Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+}
 
-	let structuredText = pdfPages[pageIndex].structuredText;
-	let chars = flattenChars(structuredText);
-
-	let char = chars[selectionRange.anchorOffset];
-	let r = char.rect;
-	let rect = (
-		char.rotation === 0 && [r[0], r[1], r[0], r[3]]
-		|| char.rotation === 90 && [r[0], r[1], r[2], r[1]]
-		|| char.rotation === 180 && [r[2], r[1], r[2], r[3]]
-		|| char.rotation === 270 && [r[0], r[3], r[2], r[3]]
-	);
-	let from = { pageIndex, rect };
-	if (selectionRanges.length === 2) {
-		selectionRange = selectionRanges[1];
+export function getRectRotationOnText(structuredText, rect) {
+	let chars = [];
+	for (let paragraph of structuredText.paragraphs) {
+		if (!quickIntersectRect(paragraph.rect, rect)) {
+			continue;
+		}
+		for (let line of paragraph.lines) {
+			if (!quickIntersectRect(line.rect, rect)) {
+				continue;
+			}
+			for (let word of line.words) {
+				if (!quickIntersectRect(word.rect, rect)) {
+					continue;
+				}
+				for (let char of word.chars) {
+					if (quickIntersectRect(getCenterRect(char.rect), rect)) {
+						chars.push(char);
+					}
+				}
+			}
+		}
 	}
-	pageIndex = selectionRange.position.pageIndex;
-	structuredText = pdfPages[pageIndex].structuredText;
-	chars = flattenChars(structuredText);
-	if (selectionRange.head) {
-		char = chars[selectionRange.headOffset - 1];
+	if (!chars.length) {
+		return 0;
 	}
-	else {
-		char = chars[selectionRange.headOffset];
-	}
-	r = char.rect;
-	rect = (
-		char.rotation === 0 && [r[2], r[1], r[2], r[3]]
-		|| char.rotation === 90 && [r[0], r[3], r[2], r[3]]
-		|| char.rotation === 180 && [r[0], r[1], r[0], r[3]]
-		|| char.rotation === 270 && [r[0], r[1], r[2], r[1]]
-	);
-	let to = { pageIndex, rect };
-	return [from, to];
+	// Get the most common rotation
+	return getMostCommonValue(chars.map(x => x.rotation));
 }
 
 // Based on https://stackoverflow.com/a/16100733

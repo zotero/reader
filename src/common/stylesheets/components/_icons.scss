@@ -20,6 +20,14 @@
 		}
 	}
 
+	.underline {
+		@include icon($underline-tool-icon);
+
+		&.toggled {
+			@include icon($underline-tool-icon-active);
+		}
+	}
+
 	.note {
 		@include icon($note-tool-icon);
 
