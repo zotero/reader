@@ -220,3 +220,14 @@ body.freeze {
 		background-color: rgba(1, 1, 1, 0.1);
 	}
 }
+
+#drag-multi {
+	position: absolute;
+	top: -3000px;
+	left: -1000px;
+
+	&::before {
+		font-size: 30px;
+		content: '⧉';
+	}
+}

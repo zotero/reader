@@ -1289,7 +1289,7 @@ class PDFView {
 				cursor = 'crosshair';
 			}
 			else if (action.type === 'erase') {
-				let size = this._tool.eraserSize;
+				let size = this._tool.size;
 				let viewport = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[0].viewport;
 				[size] = viewport.convertToViewportPoint(size, 0);
 				let adjustedSize = size * window.devicePixelRatio;
@@ -1435,7 +1435,7 @@ class PDFView {
 				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
-					width: this._tool.pathWidth,
+					width: this._tool.size,
 					paths: [[...point]]
 				}
 			};
@@ -1450,7 +1450,7 @@ class PDFView {
 			}
 			annotations.push(...action.annotations.values());
 			let [x, y] = position.rects[0];
-			let updatedAnnotations = eraseInk(x, y, this._tool.eraserSize, annotations);
+			let updatedAnnotations = eraseInk(x, y, this._tool.size, annotations);
 			for (let annotation of updatedAnnotations) {
 				action.annotations.set(annotation.id, annotation);
 			}
@@ -1798,7 +1798,7 @@ class PDFView {
 			}
 			annotations.push(...action.annotations.values());
 			let [x, y] = position.rects[0];
-			let updatedAnnotations = eraseInk(x, y, this._tool.eraserSize, annotations);
+			let updatedAnnotations = eraseInk(x, y, this._tool.size, annotations);
 			for (let annotation of updatedAnnotations) {
 				action.annotations.set(annotation.id, annotation);
 			}

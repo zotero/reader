@@ -29,7 +29,7 @@ function Toolbar(props) {
 		if (props.tool.type === type) {
 			type = 'pointer';
 		}
-		props.onChangeTool({ ...props.tool, type });
+		props.onChangeTool({ type });
 	}
 
 	function handlePageNumberKeydown(event) {
@@ -157,9 +157,9 @@ function Toolbar(props) {
 					{props.type === 'pdf' && (
 						<button
 							tabIndex={-1}
-							className={cx('toolbarButton area', { toggled: props.tool.type === 'image' })}
-							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
-							onClick={() => handleToolClick('image')}
+							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
+							title={intl.formatMessage({ id: 'pdfReader.addText' })}
+							onClick={() => handleToolClick('text')}
 						>
 							<span className="button-background"/>
 						</button>
@@ -167,9 +167,9 @@ function Toolbar(props) {
 					{props.type === 'pdf' && (
 						<button
 							tabIndex={-1}
-							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
-							title={intl.formatMessage({ id: 'pdfReader.addText' })}
-							onClick={() => handleToolClick('text')}
+							className={cx('toolbarButton area', { toggled: props.tool.type === 'image' })}
+							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							onClick={() => handleToolClick('image')}
 						>
 							<span className="button-background"/>
 						</button>
@@ -196,8 +196,9 @@ function Toolbar(props) {
 					)}
 					<button
 						tabIndex={-1}
-						className="toolbarButton global-color"
-						style={{ color: props.tool.color }}
+						className="toolbarButton tool-color"
+						style={{ color: props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && '#676767' || 'transparent' }}
+						disabled={['pointer', 'hand'].includes(props.tool.type)}
 						title={intl.formatMessage({ id: 'pdfReader.pickColor' })}
 						onClick={handleToolColorClick}
 					>

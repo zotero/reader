@@ -21,7 +21,7 @@ function SelectionPopup(props) {
 				{ANNOTATION_COLORS.map((color, index) => (<button
 					key={index}
 					tabIndex={-1}
-					className="toolbarButton global-color"
+					className="toolbarButton tool-color"
 					style={{ color: color[1] }}
 					title={intl.formatMessage({ id: color[0] })}
 					onClick={() => handleColorPick(color[1])}

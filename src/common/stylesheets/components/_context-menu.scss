@@ -27,7 +27,7 @@
 		display: flex;
 		flex-direction: column;
 
-		button {
+		button.row {
 			user-select: none;
 			background: #FFFFFF;
 			cursor: default;
@@ -60,6 +60,31 @@
 				align-items: center;
 				justify-content: space-around;
 				margin-inline-end: 5px;
+			}
+		}
+
+		.slider.row {
+			display: flex;
+			padding: 5px 10px;
+			column-gap: 7px;
+			width: 160px;
+
+			input {
+				width: 0;
+				flex-grow: 1;
+
+				&:focus-visible {
+					box-shadow: $page-number-focus-box-shadow;
+
+					@include retina {
+						box-shadow: $page-number-focus-box-shadow-2x;
+					}
+				}
+			}
+
+			.number {
+				min-width: 30px;
+				text-align: center;
 			}
 		}
 

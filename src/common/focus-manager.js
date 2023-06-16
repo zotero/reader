@@ -67,7 +67,7 @@ export class FocusManager {
 		}
 
 		// Allow to expand/collapse outline items with left and right arrow keys
-		if (e.target.closest('.outline-view') && ['ArrowLeft', 'ArrowRight'].includes(e.key)) {
+		if ((e.target.closest('.outline-view') || e.target.closest('input[type="range"]')) && ['ArrowLeft', 'ArrowRight'].includes(e.key)) {
 			return;
 		}
 		if (pressedNextKey(e)) {

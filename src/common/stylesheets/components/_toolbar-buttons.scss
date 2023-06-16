@@ -49,7 +49,7 @@
 		border-color: $toolbar-btn-border-active-color;
 	}
 
-	&[disabled] {
+	&[disabled]:not(.tool-color) {
 		pointer-events: none;
 
 		&::before {
@@ -152,7 +152,7 @@
 }
 
 .toolbarButton {
-	&.global-color {
+	&.tool-color {
 		white-space: nowrap;
 
 		&::before {

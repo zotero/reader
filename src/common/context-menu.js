@@ -9,13 +9,31 @@ export function createColorContextMenu(reader, params) {
 		x: params.x,
 		y: params.y,
 		itemGroups: createItemGroup([
-			ANNOTATION_COLORS.map(([label, color]) => ({
-				label: reader._getString(label),
-				disabled: reader._readOnly,
-				checked: color === reader._state.tool.color,
-				color: color,
-				onCommand: () => reader.setTool({ ...reader._state.tool, color })
-			})),
+			...[
+				reader._state.tool.type === 'eraser'
+					? []
+					: ANNOTATION_COLORS.map(([label, color]) => ({
+						label: reader._getString(label),
+						disabled: reader._readOnly,
+						checked: color === reader._state.tool.color,
+						color: color,
+						onCommand: () => reader.setTool({ color })
+					}))
+			],
+			[
+				reader._state.tool.type === 'ink' && {
+					slider: true,
+					size: reader._state.tool.size,
+					label: reader._getString('general.copy'),
+					onCommand: (size) => reader.setTool({ size })
+				},
+				reader._state.tool.type === 'eraser' && {
+					slider: true,
+					size: reader._state.tool.size,
+					label: reader._getString('general.copy'),
+					onCommand: (size) => reader.setTool({ size })
+				}
+			]
 		])
 	};
 }
@@ -124,6 +142,17 @@ export function createAnnotationContextMenu(reader, params) {
 					reader._annotationManager.updateAnnotations(annotations);
 				}
 			})),
+			[
+				(annotations.every(x => x.type === 'ink') && {
+					slider: true,
+					size: annotations[0].position.width,
+					label: reader._getString('general.copy'),
+					disabled: readOnly,
+					onCommand: (width) => {
+						reader._annotationManager.updateAnnotations(annotations.map(({ id, sortIndex }) => ({ id, sortIndex, position: { width } })));
+					}
+				})
+			],
 			[
 				// If context menu was triggered not from a view and, unless it was annotation popup
 				(!params.view || params.popup) && {

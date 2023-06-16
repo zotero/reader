@@ -54,10 +54,7 @@ export class KeyboardManager {
 				selectedAnnotationIDs: [],
 				labelOverlay: null,
 				contextMenu: null,
-				tool: {
-					...this._reader._state.tool,
-					type: 'pointer'
-				},
+				tool: this._reader._tools['pointer'],
 				primaryViewFindState: {
 					...this._reader._state.primaryViewFindState,
 					popupOpen: false

@@ -73,6 +73,44 @@ class Reader {
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = false;
 
+		this._tools = {
+			pointer: {
+				type: 'pointer'
+			},
+			hand: {
+				type: 'hand'
+			},
+			highlight: {
+				type: 'highlight',
+				color: ANNOTATION_COLORS[0][1],
+			},
+			underline: {
+				type: 'underline',
+				color: ANNOTATION_COLORS[0][1],
+			},
+			note: {
+				type: 'note',
+				color: ANNOTATION_COLORS[0][1],
+			},
+			image: {
+				type: 'image',
+				color: ANNOTATION_COLORS[0][1],
+			},
+			text: {
+				type: 'text',
+				color: ANNOTATION_COLORS[0][1],
+			},
+			ink: {
+				type: 'ink',
+				color: ANNOTATION_COLORS[3][1],
+				size: 2
+			},
+			eraser: {
+				type: 'eraser',
+				size: 16
+			}
+		};
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -91,12 +129,7 @@ class Reader {
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
-			tool: {
-				type: 'pointer',
-				color: ANNOTATION_COLORS[0][1],
-				pathWidth: 2,
-				eraserSize: 16
-			},
+			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: [],
 			pageLabels: {},
@@ -442,7 +475,14 @@ class Reader {
 		return this._state.splitType;
 	}
 
-	setTool(tool) {
+	setTool(params) {
+		let tool = this._state.tool;
+		if (params.type && tool.type !== params.type) {
+			tool = this._tools[params.type];
+		}
+		for (let key in params) {
+			tool[key] = params[key];
+		}
 		this._updateState({ tool });
 	}
 
@@ -467,9 +507,9 @@ class Reader {
 			enable = this._state.tool.type !== 'hand';
 		}
 		if (enable) {
-			this._updateState({ tool: { ...this._state.tool, type: 'hand' } });
+			this.setTool({ type: 'hand' });
 		} else {
-			this._updateState({ tool: { ...this._state.tool, type: 'pointer' } });
+			this.setTool({ type: 'pointer' });
 		}
 	}
 
@@ -581,7 +621,7 @@ class Reader {
 				this.setSelectedAnnotations([annotation.id], true);
 			}
 			if (['note', 'text'].includes(annotation.type)) {
-				this._updateState({ tool: { ...this._state.tool, type: 'pointer' } });
+				this.setTool({ type: 'pointer' });
 			}
 			return annotation;
 		};
