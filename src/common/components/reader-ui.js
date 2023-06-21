@@ -72,6 +72,7 @@ function View(props) {
 			{state[name + 'ViewOverlayPopup'] &&
 				<OverlayPopup
 					params={state[name + 'ViewOverlayPopup']}
+					onOpenLink={props.onOpenLink}
 					onSetPortal={props.onSetPortal}
 				/>
 			}

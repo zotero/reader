@@ -251,6 +251,7 @@ class Reader {
 					onUpdateOutline={outline => this._updateState({ outline })}
 					onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 					onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
+					onOpenLink={this._onOpenLink}
 
 					onChangeFindState={this._handleFindStateChange.bind(this)}
 					onFindNext={this.findNext.bind(this)}

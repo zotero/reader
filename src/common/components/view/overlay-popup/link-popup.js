@@ -6,6 +6,11 @@ function LinkPopup(props) {
 	const intl = useIntl();
 	const containerRef = useRef();
 
+	function handleLinkClick(event) {
+		event.preventDefault();
+		props.onOpenLink(event.target.href);
+	}
+
 	return (
 		<ViewPopup
 			className="link-popup"
@@ -13,8 +18,7 @@ function LinkPopup(props) {
 			uniqueRef={props.params.ref}
 			padding={10}
 		>
-			<div>A popup to display a link and provide additional actions<br/>(i.e. import an article)</div>
-			<a href={props.params.url}>{props.params.url}</a>
+			<a href={props.params.url} onClick={handleLinkClick}>{props.params.url}</a>
 		</ViewPopup>
 	);
 }
