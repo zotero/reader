@@ -77,7 +77,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected _gotPointerUp = false;
 
-	protected _previewNoteAnnotation: NewAnnotation<WADMAnnotation> | null = null;
+	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
 
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
@@ -162,27 +162,33 @@ abstract class DOMView<State extends DOMViewState> {
 		return this._getAnnotationFromRange(range, type, color);
 	}
 
-	protected _tryUseTool(): boolean {
+	protected _tryUseTool() {
 		this._updateViewStats();
-		if (this._gotPointerUp) {
-			// Open text selection popup if current tool is pointer
-			if (this._tool.type == 'pointer') {
+
+		if (this._tool.type == 'pointer') {
+			if (this._gotPointerUp) {
 				let selection = this._iframeWindow.getSelection();
 				if (selection && !selection.isCollapsed) {
 					this._openSelectionPopup(selection);
-					return true;
 				}
 			}
-			if (this._tool.type == 'highlight') {
-				let annotation = this._getAnnotationFromTextSelection('highlight', this._tool.color);
+			return;
+		}
+
+		if (this._tool.type == 'highlight' || this._tool.type == 'underline') {
+			if (this._gotPointerUp) {
+				let annotation = this._getAnnotationFromTextSelection(this._tool.type, this._tool.color);
 				if (annotation && annotation.text) {
 					this._options.onAddAnnotation(annotation);
 				}
 				this._iframeWindow.getSelection()?.removeAllRanges();
-				return true;
+				this._previewAnnotation = null;
 			}
+			else {
+				this._previewAnnotation = this._getAnnotationFromTextSelection(this._tool.type, this._tool.color);
+			}
+			this._renderAnnotations();
 		}
-		return false;
 	}
 
 	protected _handleViewUpdate() {
@@ -254,22 +260,23 @@ abstract class DOMView<State extends DOMViewState> {
 				range: this.toDisplayedRange(this._highlightedPosition)!,
 			});
 		}
-		if (this._previewNoteAnnotation
+		if (this._previewAnnotation
 			// Don't show preview if dragged note annotation hasn't moved
 			&& !(this._draggingNoteAnnotation
-				&& this._previewNoteAnnotation.sortIndex == this._draggingNoteAnnotation.sortIndex)) {
+				&& this._previewAnnotation.sortIndex == this._draggingNoteAnnotation.sortIndex)) {
 			displayedAnnotations.push({
-				type: this._previewNoteAnnotation.type,
-				color: this._previewNoteAnnotation.color,
-				sortIndex: this._previewNoteAnnotation.sortIndex,
-				text: this._previewNoteAnnotation.text,
-				comment: this._previewNoteAnnotation.comment,
-				key: '_previewNoteAnnotation',
-				range: this.toDisplayedRange(this._previewNoteAnnotation.position)!,
+				type: this._previewAnnotation.type,
+				color: this._previewAnnotation.color,
+				sortIndex: this._previewAnnotation.sortIndex,
+				text: this._previewAnnotation.text,
+				comment: this._previewAnnotation.comment,
+				key: '_previewAnnotation',
+				range: this.toDisplayedRange(this._previewAnnotation.position)!,
 			});
 		}
 		ReactDOM.render((
 			<AnnotationOverlay
+				iframe={this._iframe}
 				annotations={displayedAnnotations}
 				selectedAnnotationIDs={this._selectedAnnotationIDs}
 				onPointerDown={this._handleAnnotationPointerDown}
@@ -402,7 +409,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 		if (this._tool.type == 'note') {
 			let range = this._getNoteTargetRange(event);
-			this._previewNoteAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+			this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
 			this._renderAnnotations();
 		}
 	}
@@ -413,25 +420,25 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 		event.preventDefault();
 		let range = this._getNoteTargetRange(event);
-		this._previewNoteAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+		this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._draggingNoteAnnotation.color);
 		this._renderAnnotations();
 	}
 
 	protected _handleDragOver(event: DragEvent) {
-		if (!this._draggingNoteAnnotation || !this._previewNoteAnnotation) {
+		if (!this._draggingNoteAnnotation || !this._previewAnnotation) {
 			return;
 		}
 		event.preventDefault();
 	}
 
 	protected _handleDrop() {
-		if (!this._draggingNoteAnnotation || !this._previewNoteAnnotation) {
+		if (!this._draggingNoteAnnotation || !this._previewAnnotation) {
 			return;
 		}
-		this._draggingNoteAnnotation.position = this._previewNoteAnnotation.position;
-		this._draggingNoteAnnotation.pageLabel = this._previewNoteAnnotation.pageLabel;
-		this._draggingNoteAnnotation.sortIndex = this._previewNoteAnnotation.sortIndex;
-		this._draggingNoteAnnotation.text = this._previewNoteAnnotation.text;
+		this._draggingNoteAnnotation.position = this._previewAnnotation.position;
+		this._draggingNoteAnnotation.pageLabel = this._previewAnnotation.pageLabel;
+		this._draggingNoteAnnotation.sortIndex = this._previewAnnotation.sortIndex;
+		this._draggingNoteAnnotation.text = this._previewAnnotation.text;
 		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
 	}
 
@@ -566,6 +573,7 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	private _handleDragStart(event: DragEvent) {
+		this._previewAnnotation = null;
 		if (!event.dataTransfer) {
 			return;
 		}
@@ -579,7 +587,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	private _handleDragEnd(_event: DragEvent) {
 		this._draggingNoteAnnotation = null;
-		this._previewNoteAnnotation = null;
+		this._previewAnnotation = null;
 		this._renderAnnotations();
 	}
 
@@ -649,7 +657,7 @@ abstract class DOMView<State extends DOMViewState> {
 		if (annotation.type === 'note') {
 			this._draggingNoteAnnotation = annotation;
 		}
-		this._previewNoteAnnotation = null;
+		this._previewAnnotation = null;
 		this._renderAnnotations();
 	};
 
@@ -708,8 +716,8 @@ abstract class DOMView<State extends DOMViewState> {
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
-		if (event.button == 0 && this._tool.type == 'note' && this._previewNoteAnnotation) {
-			this._options.onAddAnnotation(this._previewNoteAnnotation, true);
+		if (event.button == 0 && this._tool.type == 'note' && this._previewAnnotation) {
+			this._options.onAddAnnotation(this._previewAnnotation, true);
 			event.preventDefault();
 
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
@@ -762,14 +770,14 @@ abstract class DOMView<State extends DOMViewState> {
 
 	setTool(tool: Tool) {
 		this._tool = tool;
-		let selectionColor = tool.type == 'highlight' && tool.color ? tool.color : SELECTION_COLOR;
+		let selectionColor = tool.type == 'highlight' || tool.type == 'underline' ? 'transparent' : SELECTION_COLOR;
 		if (selectionColor.startsWith('#')) {
 			// 50% opacity, like annotations -- not needed if we're using a system color
 			selectionColor += '80';
 		}
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
-		if (this._previewNoteAnnotation && tool.type !== 'note') {
-			this._previewNoteAnnotation = null;
+		if (this._previewAnnotation && tool.type !== 'note') {
+			this._previewAnnotation = null;
 		}
 		this._renderAnnotations();
 	}

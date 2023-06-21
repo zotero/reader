@@ -27,36 +27,37 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, onResizeStart, onResizeEnd, disablePointerEvents } = props;
+	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onDragStart, onResizeStart, onResizeEnd, disablePointerEvents } = props;
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
 	let pointerEventsSuppressed = disablePointerEvents || isResizing || isPointerDownOutside;
 
-	let handleWindowPointerDown = useCallback((event: PointerEvent) => {
-		if (event.button == 0 && !(event.target as Element).closest('.annotation-container')) {
-			setPointerDownOutside(true);
-		}
-	}, []);
-
-	let handleWindowPointerUp = useCallback((event: PointerEvent) => {
-		if (event.button == 0) {
-			setPointerDownOutside(false);
-		}
-	}, []);
-
 	useEffect(() => {
-		let win = widgetContainer.current?.ownerDocument.defaultView;
+		let win = iframe.contentWindow;
 		if (!win) {
 			return undefined;
 		}
+
+		let handleWindowPointerDown = (event: PointerEvent) => {
+			if (event.button == 0 && !(event.target as Element).closest('.annotation-container')) {
+				setPointerDownOutside(true);
+			}
+		};
+
+		let handleWindowPointerUp = (event: PointerEvent) => {
+			if (event.button == 0) {
+				setPointerDownOutside(false);
+			}
+		};
+
 		win.addEventListener('pointerdown', handleWindowPointerDown);
 		win.addEventListener('pointerup', handleWindowPointerUp);
 		return () => {
 			win!.removeEventListener('pointerdown', handleWindowPointerDown);
 			win!.removeEventListener('pointerup', handleWindowPointerUp);
 		};
-	});
+	}, [iframe.contentWindow]);
 
 	let handlePointerDown = useCallback((annotation: DisplayedAnnotation, event: React.PointerEvent) => {
 		onPointerDown(annotation.id!, event);
@@ -91,10 +92,10 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				overflow: 'visible'
 			}}
 		>
-			{annotations.filter(annotation => annotation.type == 'highlight').map((annotation) => {
+			{annotations.filter(annotation => annotation.type == 'highlight' || annotation.type == 'underline').map((annotation) => {
 				if (annotation.id) {
 					return (
-						<Highlight
+						<HighlightOrUnderline
 							annotation={annotation}
 							key={annotation.key}
 							selected={selectedAnnotationIDs.includes(annotation.id)}
@@ -109,7 +110,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				}
 				else {
 					return (
-						<Highlight
+						<HighlightOrUnderline
 							annotation={annotation}
 							key={annotation.key}
 							selected={false}
@@ -145,6 +146,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 AnnotationOverlay.displayName = 'AnnotationOverlay';
 
 type AnnotationOverlayProps = {
+	iframe: HTMLIFrameElement;
 	annotations: DisplayedAnnotation[];
 	selectedAnnotationIDs: string[];
 	onPointerDown: (id: string, event: React.PointerEvent) => void;
@@ -154,7 +156,7 @@ type AnnotationOverlayProps = {
 	disablePointerEvents: boolean;
 };
 
-const Highlight: React.FC<HighlightProps> = (props) => {
+const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
 	let [dragImage, setDragImage] = useState<Element | null>(null);
 	let [isResizing, setResizing] = useState(false);
@@ -211,7 +213,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		setResizedRange(range);
 	};
 
-	let highlightRects = new Map<string, DOMRect>();
+	let rects = new Map<string, DOMRect>();
 	for (let range of ranges) {
 		for (let rect of range.getClientRects()) {
 			if (rect.width == 0 || rect.height == 0) {
@@ -220,8 +222,8 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 			rect.x += doc.defaultView!.scrollX;
 			rect.y += doc.defaultView!.scrollY;
 			let key = JSON.stringify(rect);
-			if (!highlightRects.has(key)) {
-				highlightRects.set(key, rect);
+			if (!rects.has(key)) {
+				rects.set(key, rect);
 			}
 		}
 	}
@@ -238,16 +240,17 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 	}
 	return <>
 		<g fill={annotation.color}>
-			{[...highlightRects.entries()].map(([key, rect]) => (
+			{[...rects.entries()].map(([key, rect]) => (
 				<rect
 					x={rect.x}
-					y={rect.y}
+					y={annotation.type == 'underline' ? rect.y + rect.height : rect.y}
 					width={rect.width}
-					height={rect.height}
+					height={annotation.type == 'underline' ? 3 : rect.height}
 					opacity="50%"
-					key={key}/>
+					key={key}
+				/>
 			))}
-			{!pointerEventsSuppressed && !isResizing && [...highlightRects.entries()].map(([key, rect]) => (
+			{!pointerEventsSuppressed && !isResizing && [...rects.entries()].map(([key, rect]) => (
 				// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 				<foreignObject
 					x={rect.x}
@@ -276,7 +279,7 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 			{(!pointerEventsSuppressed || isResizing) && selected && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
-					highlightRects={[...highlightRects.values()]}
+					highlightRects={[...rects.values()]}
 					onResizeStart={handleResizeStart}
 					onResizeEnd={handleResizeEnd}
 					onResize={handleResize}
@@ -296,8 +299,8 @@ const Highlight: React.FC<HighlightProps> = (props) => {
 		)}
 	</>;
 };
-Highlight.displayName = 'Highlight';
-type HighlightProps = {
+HighlightOrUnderline.displayName = 'HighlightOrUnderline';
+type HighlightOrUnderlineProps = {
 	annotation: DisplayedAnnotation;
 	selected: boolean;
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
