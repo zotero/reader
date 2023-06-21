@@ -8,6 +8,10 @@ window.createReader = (options) => {
 
 	let { onOpenContextMenu } = options;
 	options.onOpenContextMenu = (params) => {
+		if (params.internal) {
+			reader.openContextMenu(params);
+			return;
+		}
 		window.contextMenuParams = params;
 		onOpenContextMenu(params);
 	};

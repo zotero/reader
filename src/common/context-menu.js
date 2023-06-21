@@ -6,6 +6,7 @@ function createItemGroup(itemGroups) {
 
 export function createColorContextMenu(reader, params) {
 	return {
+		internal: true,
 		x: params.x,
 		y: params.y,
 		itemGroups: createItemGroup([
@@ -120,6 +121,7 @@ export function createAnnotationContextMenu(reader, params) {
 	let readOnly = annotations.some(x => x.readOnly);
 	let currentColor = annotations.length === 1 && annotations[0].color;
 	return {
+		internal: true,
 		x: params.x,
 		y: params.y,
 		itemGroups: createItemGroup([
