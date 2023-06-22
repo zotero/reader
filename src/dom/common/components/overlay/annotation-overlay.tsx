@@ -99,6 +99,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							annotation={annotation}
 							key={annotation.key}
 							selected={selectedAnnotationIDs.includes(annotation.id)}
+							singleSelection={selectedAnnotationIDs.length == 1}
 							onPointerDown={handlePointerDown}
 							onDragStart={handleDragStart}
 							onResizeStart={handleResizeStart}
@@ -114,6 +115,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							annotation={annotation}
 							key={annotation.key}
 							selected={false}
+							singleSelection={false}
 							pointerEventsSuppressed={true}
 							widgetContainer={widgetContainer.current}
 						/>
@@ -157,7 +159,7 @@ type AnnotationOverlayProps = {
 };
 
 const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
-	let { annotation, selected, onPointerDown, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
+	let { annotation, selected, singleSelection, onPointerDown, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
 	let [dragImage, setDragImage] = useState<Element | null>(null);
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
@@ -276,7 +278,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					/>
 				</foreignObject>
 			))}
-			{(!pointerEventsSuppressed || isResizing) && selected && supportsCaretPositionFromPoint() && (
+			{(!pointerEventsSuppressed || isResizing) && selected && singleSelection && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...rects.values()]}
@@ -303,6 +305,7 @@ HighlightOrUnderline.displayName = 'HighlightOrUnderline';
 type HighlightOrUnderlineProps = {
 	annotation: DisplayedAnnotation;
 	selected: boolean;
+	singleSelection: boolean;
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	onResizeStart?: (annotation: DisplayedAnnotation) => void;
