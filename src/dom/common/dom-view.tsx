@@ -560,7 +560,9 @@ abstract class DOMView<State extends DOMViewState> {
 					let annotation = this._annotationsByID.get(annotationID);
 					if (annotation) {
 						this._options.onSelectAnnotations([annotationID], event);
-						this._openAnnotationPopup(annotation);
+						if (this._selectedAnnotationIDs.length == 1) {
+							this._openAnnotationPopup(annotation);
+						}
 						return;
 					}
 				}
@@ -622,11 +624,15 @@ abstract class DOMView<State extends DOMViewState> {
 				let selectedID = this._selectedAnnotationIDs.find(id => idsHere.includes(id));
 				let nextID = idsHere[(selectedID ? idsHere.indexOf(selectedID) + 1 : 0) % idsHere.length];
 				this._options.onSelectAnnotations([nextID], event.nativeEvent);
-				this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+				if (this._selectedAnnotationIDs.length == 1) {
+					this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+				}
 			}
 			else {
 				this._options.onSelectAnnotations([id], event.nativeEvent);
-				this._openAnnotationPopup(this._annotationsByID.get(id)!);
+				if (this._selectedAnnotationIDs.length == 1) {
+					this._openAnnotationPopup(this._annotationsByID.get(id)!);
+				}
 			}
 		}
 		else if (event.button == 2) {
