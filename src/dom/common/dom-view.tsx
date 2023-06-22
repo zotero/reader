@@ -37,6 +37,8 @@ import {
 } from "./lib/nodes";
 
 abstract class DOMView<State extends DOMViewState> {
+	initializedPromise: Promise<void>;
+
 	protected readonly _container: Element;
 
 	protected readonly _iframe: HTMLIFrameElement;
@@ -107,7 +109,12 @@ abstract class DOMView<State extends DOMViewState> {
 			this._iframe.sandbox.add('allow-scripts');
 		}
 		this._iframe.srcdoc = this._getSrcDoc();
-		this._iframe.addEventListener('load', () => this._handleIFrameLoad(), { once: true });
+		this.initializedPromise = new Promise((resolve, reject) => {
+			this._iframe.addEventListener(
+				'load',
+				() => this._handleIFrameLoad().then(resolve, reject),
+				{ once: true });
+		});
 		options.container.append(this._iframe);
 	}
 
