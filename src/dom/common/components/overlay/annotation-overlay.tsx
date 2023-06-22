@@ -442,7 +442,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction == 'rtl';
 
 	highlightRects = Array.from(highlightRects)
-		.sort((a, b) => (a.top - b.top) || (a.left - b.left));
+		.sort((a, b) => (a.bottom - b.bottom) || (a.left - b.left));
 	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
 	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
 
