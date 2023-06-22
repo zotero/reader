@@ -26,7 +26,8 @@ import { EPUBFindProcessor } from "./find";
 import NavStack from "../common/lib/nav-stack";
 import DOMView, {
 	DOMViewOptions,
-	NavigateOptions
+	NavigateOptions,
+	CustomScrollIntoViewOptions
 } from "../common/dom-view";
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
@@ -724,7 +725,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			let processor = this._find;
 			let result = processor.next();
 			if (result) {
-				this._scrollIntoView(getStartElement(result.range) as HTMLElement);
+				this._scrollIntoView(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -736,7 +737,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			let processor = this._find;
 			let result = processor.prev();
 			if (result) {
-				this._scrollIntoView(getStartElement(result.range) as HTMLElement);
+				this._scrollIntoView(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -800,7 +801,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				console.error('Unable to find range');
 				return;
 			}
-			this._scrollIntoView(getStartElement(range) as HTMLElement, options);
+			this._scrollIntoView(range, options);
 		}
 		else if (location.href) {
 			options.block ||= 'start';
@@ -830,16 +831,49 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 	}
 
-	private _scrollIntoView(elem: HTMLElement, options?: ScrollIntoViewOptions) {
-		if (this._viewState.flowMode != 'paginated') {
-			elem.scrollIntoView(options);
-			return;
+	private _scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions) {
+		let rect = target.getBoundingClientRect();
+		// Disable smooth scrolling when target is too far away
+		if (options?.behavior == 'smooth'
+				&& Math.abs(rect.top + rect.bottom / 2) > this._iframe.clientHeight * 2) {
+			options.behavior = 'auto';
 		}
-		let elemOffset = elem.offsetLeft;
-		let spreadWidth = this._sectionsContainer.offsetWidth + 60;
-		let pageIndex = Math.floor(elemOffset / spreadWidth);
-		this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
-		this._handleViewUpdate();
+
+		if ('nodeType' in target) {
+			if (this._viewState.flowMode == 'paginated') {
+				let elemOffset = target.offsetLeft;
+				let spreadWidth = this._sectionsContainer.offsetWidth + 60;
+				let pageIndex = Math.floor(elemOffset / spreadWidth);
+				this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
+				this._handleViewUpdate();
+			}
+			else {
+				target.scrollIntoView(options);
+			}
+		}
+		else {
+			let x = rect.x + rect.width / 2;
+			let y = rect.y + rect.height / 2;
+			if (this._viewState.flowMode == 'paginated') {
+				x -= this._sectionsContainer.offsetLeft;
+				let spreadWidth = this._sectionsContainer.offsetWidth + 60;
+				let pageIndex = Math.floor(x / spreadWidth);
+				this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
+				this._handleViewUpdate();
+			}
+			else {
+				x += this._iframeWindow.scrollX;
+				y += this._iframeWindow.scrollY;
+				if (options && options.block == 'center') {
+					y -= this._iframe.clientHeight / 2;
+				}
+				this._iframeWindow.scrollTo({
+					...options,
+					left: x,
+					top: y,
+				});
+			}
+		}
 	}
 
 	// This is like back/forward navigation in browsers. Try Cmd-ArrowLeft and Cmd-ArrowRight in PDF view

@@ -893,7 +893,11 @@ export interface DOMViewState {
 	scale?: number;
 }
 
-export interface NavigateOptions extends ScrollIntoViewOptions {
+export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
+	block?: 'center' | 'start';
+}
+
+export interface NavigateOptions extends CustomScrollIntoViewOptions {
 	skipNavStack?: boolean;
 }
 
