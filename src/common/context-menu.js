@@ -160,7 +160,7 @@ export function createAnnotationContextMenu(reader, params) {
 				(!params.view || params.popup) && {
 					label: reader._getString('pdfReader.editPageNumber'),
 					disabled: readOnly || reader._type !== 'pdf',
-					persistent: true,
+					persistent: reader._type === 'pdf',
 					onCommand: () => reader._sidebarOpenPageLabelPopup(params.currentID)
 				},
 				!params.view && {
