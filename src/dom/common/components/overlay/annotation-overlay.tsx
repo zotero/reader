@@ -14,6 +14,7 @@ import { AnnotationType } from "../../../../common/types";
 import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement } from "../../lib/nodes";
+import { isSafari } from "../../../../common/lib/utilities";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -236,9 +237,18 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	else {
 		commentIconPosition = null;
 	}
+
+	// When the user drags the annotation, we *want* to set the drag image to the rendered annotation -- a highlight
+	// rectangle for a highlight annotation, an underline for an underline annotation. We don't want to include
+	// resizers. But in Safari, passing an SVG sub-element to setDragImage() doesn't actually set the drag image to the
+	// rendered content of that element, but rather to all the text contained within its bounding box (but not
+	// necessarily within the element itself in the DOM tree). This is very weird and means that underline annotations
+	// will have a blank drag image because the underline doesn't overlap any text. So when running in Safari, we pass
+	// the whole outer <g> containing the underline/highlight (potentially small) and the interactive <foreignObject>s
+	// (big) so that we get all the highlighted text to render in the drag image.
 	return <>
-		<g fill={annotation.color}>
-			<g ref={dragImageRef}>
+		<g fill={annotation.color} ref={isSafari ? dragImageRef : undefined}>
+			<g ref={isSafari ? undefined : dragImageRef}>
 				{[...rects.entries()].map(([key, rect]) => (
 					<rect
 						x={rect.x}
