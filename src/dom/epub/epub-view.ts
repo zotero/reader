@@ -701,12 +701,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	setFlowMode(flowMode: FlowMode) {
-		if (flowMode == 'paginated' && isSafari) {
-			// Safari's column layout is unusably slow
-			console.error('paginated mode is not supported in Safari');
-			flowMode = 'scrolled';
-		}
-
 		switch (flowMode) {
 			case 'paginated':
 				for (let elem of [this._iframe, this._iframeDocument.body]) {
