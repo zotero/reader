@@ -306,6 +306,9 @@ abstract class DOMView<State extends DOMViewState> {
 		if (annotation) {
 			this._options.onSetSelectionPopup({ rect, annotation });
 		}
+		else {
+			this._options.onSetSelectionPopup(null);
+		}
 	}
 
 	protected _openAnnotationPopup(annotation: WADMAnnotation) {
