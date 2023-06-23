@@ -130,7 +130,7 @@ export function createAnnotationContextMenu(reader, params) {
 					label: reader._getString('pdfReader.addToNote'),
 					disabled: !reader._state.enableAddToNote,
 					persistent: true,
-					onCommand: () => reader._sidebarEditAnnotationText(params.ids[0])
+					onCommand: () => reader._onAddToNote(annotations)
 				}
 			],
 			ANNOTATION_COLORS.map(([label, color]) => ({

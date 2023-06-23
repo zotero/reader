@@ -83,6 +83,7 @@ async function createReader() {
 			console.log('Deleting pages', pageIndexes, degrees);
 		}
 	});
+	reader.enableAddToNote(true);
 	window._reader = reader;
 	await reader.initializedPromise;
 }
