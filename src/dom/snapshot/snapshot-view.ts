@@ -117,7 +117,8 @@ class SnapshotView extends DOMView<DOMViewState> {
 		// commonAncestorContainer. Build a selector targeting that element,
 		// not the container.
 		if (range.startContainer === range.endContainer
-				&& range.startOffset == range.endOffset - 1) {
+				&& range.startOffset == range.endOffset - 1
+				&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
 			targetElement = range.startContainer.childNodes[range.startOffset];
 		}
 		else {
