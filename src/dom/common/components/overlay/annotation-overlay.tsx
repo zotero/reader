@@ -160,9 +160,10 @@ type AnnotationOverlayProps = {
 
 const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let { annotation, selected, singleSelection, onPointerDown, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
-	let [dragImage, setDragImage] = useState<Element | null>(null);
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
+
+	let dragImageRef = useRef<SVGGElement>(null);
 
 	let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
 	if (!ranges.length) {
@@ -178,17 +179,12 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			return;
 		}
 
-		let elem = (event.target as Element).closest('g')!;
-		let br = elem.getBoundingClientRect();
-		event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
-		onDragStart(annotation, event.dataTransfer);
-	};
-
-	let handleDragEnd = () => {
-		if (dragImage) {
-			dragImage.remove();
-			setDragImage(null);
+		let elem = dragImageRef.current;
+		if (elem) {
+			let br = elem.getBoundingClientRect();
+			event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
 		}
+		onDragStart(annotation, event.dataTransfer);
 	};
 
 	let handleResizeStart = (annotation: DisplayedAnnotation) => {
@@ -242,16 +238,18 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	}
 	return <>
 		<g fill={annotation.color}>
-			{[...rects.entries()].map(([key, rect]) => (
-				<rect
-					x={rect.x}
-					y={annotation.type == 'underline' ? rect.y + rect.height : rect.y}
-					width={rect.width}
-					height={annotation.type == 'underline' ? 3 : rect.height}
-					opacity="50%"
-					key={key}
-				/>
-			))}
+			<g ref={dragImageRef}>
+				{[...rects.entries()].map(([key, rect]) => (
+					<rect
+						x={rect.x}
+						y={annotation.type == 'underline' ? rect.y + rect.height : rect.y}
+						width={rect.width}
+						height={annotation.type == 'underline' ? 3 : rect.height}
+						opacity="50%"
+						key={key}
+					/>
+				))}
+			</g>
 			{!pointerEventsSuppressed && !isResizing && [...rects.entries()].map(([key, rect]) => (
 				// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 				<foreignObject
@@ -273,7 +271,6 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 						draggable={true}
 						onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
 						onDragStart={handleDragStart}
-						onDragEnd={handleDragEnd}
 						data-annotation-id={annotation.id}
 					/>
 				</foreignObject>
