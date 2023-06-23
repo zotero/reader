@@ -296,7 +296,8 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		let shift = event.shiftKey;
 		let annotation = props.annotations.find(x => x.id === id);
 		if (section === 'tags' && !ctrl && !shift && !annotation.readOnly) {
-			return props.onOpenTagsPopup(id, event);
+			let rect = event.target.closest('.tags').getBoundingClientRect();
+			return props.onOpenTagsPopup(id, rect.left, rect.top);
 		}
 		if (section === 'highlight' && props.selectedIDs.length === 1
 			&& props.selectedIDs[0] === id) {

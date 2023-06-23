@@ -31,7 +31,8 @@ export function PopupPreview(props) {
 		if (props.annotation.readOnly) {
 			return;
 		}
-		props.onClickTags(props.annotation.id, event);
+		let rect = event.target.closest('.tags').getBoundingClientRect();
+		props.onOpenTagsPopup(props.annotation.id, rect.left, rect.top);
 	}
 
 	function handleCommentChange(text) {

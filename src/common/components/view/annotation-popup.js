@@ -28,7 +28,7 @@ function AnnotationPopup(props) {
 					props.onChange({ id: popupAnnotation.id, color });
 				}}
 				onDoubleClickPageLabel={props.onOpenPageLabelPopup}
-				onClickTags={props.onOpenTagsPopup}
+				onOpenTagsPopup={props.onOpenTagsPopup}
 				onChange={props.onChange}
 				onOpenPageLabelPopup={props.onOpenPageLabelPopup}
 				onOpenContextMenu={props.onOpenAnnotationContextMenu}
