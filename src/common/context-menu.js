@@ -201,7 +201,7 @@ export function createAnnotationContextMenu(reader, params) {
 					label: reader._getString('general.delete'),
 					disabled: readOnly,
 					persistent: true,
-					onCommand: () => reader._annotationManager.deleteAnnotations(params.ids)
+					onCommand: () => reader.deleteAnnotations(params.ids)
 				},
 			]
 		])
