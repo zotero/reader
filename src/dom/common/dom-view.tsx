@@ -844,6 +844,7 @@ abstract class DOMView<State extends DOMViewState> {
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
 		if (location.annotationID) {
 			options.block ||= 'center';
+			options.ifNeeded ??= true;
 
 			let annotation = this._annotationsByID.get(location.annotationID);
 			if (!annotation) {
@@ -854,6 +855,7 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 		else if (location.position) {
 			options.block ||= 'center';
+			options.ifNeeded ??= true;
 
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
@@ -908,6 +910,7 @@ export interface DOMViewState {
 
 export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
 	block?: 'center' | 'start';
+	ifNeeded?: boolean;
 }
 
 export interface NavigateOptions extends CustomScrollIntoViewOptions {

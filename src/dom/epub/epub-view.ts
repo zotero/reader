@@ -852,6 +852,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 
 		let rect = target.getBoundingClientRect();
+
+		if (options?.ifNeeded && (rect.top >= 0 && rect.bottom < this._iframe.clientHeight)) {
+			return;
+		}
+
 		// Disable smooth scrolling when target is too far away
 		if (options?.behavior == 'smooth'
 				&& Math.abs(rect.top + rect.bottom / 2) > this._iframe.clientHeight * 2) {
