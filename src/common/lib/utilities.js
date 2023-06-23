@@ -201,3 +201,31 @@ export function getAffectedAnnotations(oldAnnotations, newAnnotations, viewOnly)
 	}
 	return { created, updated, deleted };
 }
+
+// findLastIndex polyfill
+if (!Array.prototype.findLastIndex) {
+	Array.prototype.findLastIndex = function (callback, thisArg) {
+		if (this == null) {
+			throw new TypeError('"this" is null or not defined');
+		}
+
+		var o = Object(this);
+		var len = o.length >>> 0;
+
+		if (typeof callback !== 'function') {
+			throw new TypeError('callback must be a function');
+		}
+
+		var k = len - 1;
+
+		while (k >= 0) {
+			var kValue = o[k];
+			if (callback.call(thisArg, kValue, k, o)) {
+				return k;
+			}
+			k--;
+		}
+
+		return -1;
+	};
+}
