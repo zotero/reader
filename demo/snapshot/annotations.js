@@ -13,7 +13,7 @@ export default [
 		tags: [],
 		id: "ZVQG2R4M",
 		dateCreated: "2023-05-09T17:05:57.843Z",
-		dateModified: "2023-05-15T18:28:26.910Z",
+		dateModified: "2023-06-23T19:00:02.837Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -30,7 +30,7 @@ export default [
 		tags: [],
 		id: "UIRHN27J",
 		dateCreated: "2023-05-09T17:05:02.325Z",
-		dateModified: "2023-05-15T18:28:26.910Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -47,7 +47,7 @@ export default [
 		tags: [],
 		id: "NQV7SU47",
 		dateCreated: "2023-05-09T17:11:35.478Z",
-		dateModified: "2023-05-15T18:28:26.910Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -70,7 +70,30 @@ export default [
 		tags: [],
 		id: "73N2RIZ5",
 		dateCreated: "2023-05-09T17:05:30.346Z",
-		dateModified: "2023-05-15T18:28:26.910Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
+		type: "underline",
+		color: "#2ea8e5",
+		sortIndex: "00011104",
+		position: {
+			type: "CssSelector",
+			value: "div:nth-child(18) > p:first-child",
+			refinedBy: {
+				type: "TextPositionSelector",
+				start: 42,
+				end: 62
+			}
+		},
+		text: "click the “…” button",
+		pageLabel: "",
+		comment: "",
+		tags: [],
+		id: "N4IFWQZX",
+		dateCreated: "2023-06-23T18:59:44.374Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -93,7 +116,25 @@ export default [
 		tags: [],
 		id: "MVMY3NWI",
 		dateCreated: "2023-05-09T17:05:16.087Z",
-		dateModified: "2023-05-15T18:28:26.910Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
+		type: "underline",
+		color: "#f19837",
+		sortIndex: "00012284",
+		position: {
+			type: "CssSelector",
+			value: "#dw__toc > h3"
+		},
+		text: "Table of Contents",
+		pageLabel: "",
+		comment: "Come back to this",
+		tags: [],
+		id: "5RAMSIAA",
+		dateCreated: "2023-06-23T18:59:31.824Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -116,7 +157,7 @@ export default [
 		tags: [],
 		id: "RL69GNWI",
 		dateCreated: "2023-05-09T17:05:51.707Z",
-		dateModified: "2023-05-15T18:28:26.910Z",
+		dateModified: "2023-06-23T19:00:02.838Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	}

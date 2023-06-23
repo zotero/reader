@@ -1,5 +1,43 @@
 export default [
 	{
+		type: "underline",
+		color: "#ffd400",
+		sortIndex: "00001|00000229",
+		pageLabel: "",
+		position: {
+			type: "FragmentSelector",
+			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
+			value: "epubcfi(/6/4!/4/2[imprint]/6,/1:0,/1:21)"
+		},
+		text: "This particular ebook",
+		comment: "",
+		tags: [],
+		id: "W3T3CGCU",
+		dateCreated: "2023-06-23T18:49:09.857Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
+		type: "underline",
+		color: "#5fb236",
+		sortIndex: "00001|00000245",
+		pageLabel: "",
+		position: {
+			type: "FragmentSelector",
+			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
+			value: "epubcfi(/6/4!/4/2[imprint]/6,/1:16,/1:49)"
+		},
+		text: "ebook is based on a transcription",
+		comment: "",
+		tags: [],
+		id: "HFLH2D8Q",
+		dateCreated: "2023-06-23T18:49:35.939Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
 		type: "highlight",
 		color: "#a28ae5",
 		sortIndex: "00003|00000027",
@@ -14,7 +52,7 @@ export default [
 		tags: [],
 		id: "TX8S2BZM",
 		dateCreated: "2023-02-21T19:35:47.798Z",
-		dateModified: "2023-06-14T19:26:09.740Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -33,7 +71,7 @@ export default [
 		tags: [],
 		id: "PARGMWMZ",
 		dateCreated: "2023-02-21T19:36:03.145Z",
-		dateModified: "2023-06-14T19:26:09.740Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -51,7 +89,7 @@ export default [
 		tags: [],
 		id: "GTPE6G89",
 		dateCreated: "2023-04-19T15:38:44.556Z",
-		dateModified: "2023-06-14T19:26:09.740Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -70,7 +108,7 @@ export default [
 		tags: [],
 		id: "4JKDWLSF",
 		dateCreated: "2023-02-21T19:36:34.563Z",
-		dateModified: "2023-06-14T19:26:09.740Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -89,7 +127,7 @@ export default [
 		tags: [],
 		id: "YMJAWZXH",
 		dateCreated: "2023-02-21T19:36:16.574Z",
-		dateModified: "2023-06-14T19:26:09.740Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	},
@@ -108,7 +146,26 @@ export default [
 		tags: [],
 		id: "YUTUT8H3",
 		dateCreated: "2023-02-21T19:36:44.833Z",
-		dateModified: "2023-06-14T19:26:09.740Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
+		authorName: "John",
+		isAuthorNameAuthoritative: true
+	},
+	{
+		type: "underline",
+		color: "#e56eee",
+		sortIndex: "00142|00002229",
+		pageLabel: "",
+		position: {
+			type: "FragmentSelector",
+			conformsTo: "http://www.idpf.org/epub/linking/cfi/epub-cfi.html",
+			value: "epubcfi(/6/286!/4/2[endnotes]/4/10[note-5]/2,/1:0,/1:42)"
+		},
+		text: "I remember the first albatross I ever saw.",
+		comment: "Don't we all",
+		tags: [],
+		id: "WJDX68BQ",
+		dateCreated: "2023-06-23T18:50:00.799Z",
+		dateModified: "2023-06-23T18:50:30.466Z",
 		authorName: "John",
 		isAuthorNameAuthoritative: true
 	}
