@@ -81,7 +81,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		if (range.collapsed) {
 			return null;
 		}
-		let text = type == 'highlight' ? range.toString() : undefined;
+		let text = type == 'highlight' || type == 'underline' ? range.toString() : undefined;
 		let selector = this.toSelector(range);
 		if (!selector) {
 			return null;
