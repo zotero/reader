@@ -46,6 +46,7 @@ class PageMapping {
 					}
 					let range = elem.ownerDocument.createRange();
 					range.selectNode(elem);
+					range.collapse(true);
 					this._tree.set(range, pageNumber);
 					successes++;
 				}

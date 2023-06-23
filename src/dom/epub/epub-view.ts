@@ -13,8 +13,7 @@ import Epub, {
 	NavItem,
 } from "epubjs";
 import {
-	moveRangeEndsIntoTextNodes,
-	getStartElement
+	moveRangeEndsIntoTextNodes
 } from "../common/lib/range";
 import {
 	FragmentSelector,
@@ -152,14 +151,18 @@ class EPUBView extends DOMView<EPUBViewState> {
 		else {
 			viewState.scale = 1;
 		}
-		if (viewState.cfi) {
-			this.navigate({ pageNumber: viewState.cfi }, { behavior: 'auto' });
-		}
 		if (viewState.flowMode) {
 			this.setFlowMode(viewState.flowMode);
 		}
 		else {
 			this.setFlowMode('scrolled');
+		}
+		if (viewState.cfi) {
+			// Perform the navigation on the next frame, because apparently the split view layout might not have
+			// settled yet
+			requestAnimationFrame(() => {
+				this.navigate({ pageNumber: viewState.cfi }, { behavior: 'auto' });
+			});
 		}
 	}
 
@@ -344,6 +347,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this._cachedStartRange = null;
 			this._cachedStartCFI = null;
 			this._updateBoundaries();
+			this._updateViewState();
 			this._updateViewStats();
 		},
 		100
@@ -370,9 +374,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 					true
 				);
 				if (startRange) {
+					startRange.collapse(true);
 					this._cachedStartRange = startRange;
 				}
 				if (startCFIRange) {
+					startCFIRange.collapse(true);
 					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase);
 				}
 				if (startRange && startCFIRange) {
@@ -531,6 +537,14 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this.navigateToPreviousPage();
 		}
 	};
+
+	protected override _handleResize() {
+		let beforeCFI = this.startCFI;
+		if (beforeCFI) {
+			this.navigate({ pageNumber: beforeCFI.toString() }, { behavior: 'auto' });
+		}
+		this._handleViewUpdate();
+	}
 
 	protected override _handleScroll() {
 		super._handleScroll();
@@ -832,6 +846,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions) {
+		if (this._viewState.flowMode == 'paginated') {
+			this._scrollIntoViewPaginated(target);
+			return;
+		}
+
 		let rect = target.getBoundingClientRect();
 		// Disable smooth scrolling when target is too far away
 		if (options?.behavior == 'smooth'
@@ -840,39 +859,39 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 
 		if ('nodeType' in target) {
-			if (this._viewState.flowMode == 'paginated') {
-				let elemOffset = target.offsetLeft;
-				let spreadWidth = this._sectionsContainer.offsetWidth + 60;
-				let pageIndex = Math.floor(elemOffset / spreadWidth);
-				this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
-				this._handleViewUpdate();
-			}
-			else {
-				target.scrollIntoView(options);
-			}
+			target.scrollIntoView(options);
+			return;
+		}
+
+		let x = rect.x + rect.width / 2;
+		let y = rect.y;
+		if (options && options.block == 'center') {
+			y += rect.height / 2;
+			y -= this._iframe.clientHeight / 2;
+		}
+		this._iframeWindow.scrollBy({
+			...options,
+			left: x,
+			top: y,
+		});
+		this._invalidateStartRangeAndCFI();
+	}
+
+	private _scrollIntoViewPaginated(target: Range | HTMLElement) {
+		if ('nodeType' in target) {
+			let elemOffset = target.offsetLeft;
+			let spreadWidth = this._sectionsContainer.offsetWidth + 60;
+			let pageIndex = Math.floor(elemOffset / spreadWidth);
+			this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
+			this._handleViewUpdate();
 		}
 		else {
-			let x = rect.x + rect.width / 2;
-			let y = rect.y + rect.height / 2;
-			if (this._viewState.flowMode == 'paginated') {
-				x -= this._sectionsContainer.offsetLeft;
-				let spreadWidth = this._sectionsContainer.offsetWidth + 60;
-				let pageIndex = Math.floor(x / spreadWidth);
-				this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
-				this._handleViewUpdate();
-			}
-			else {
-				x += this._iframeWindow.scrollX;
-				y += this._iframeWindow.scrollY;
-				if (options && options.block == 'center') {
-					y -= this._iframe.clientHeight / 2;
-				}
-				this._iframeWindow.scrollTo({
-					...options,
-					left: x,
-					top: y,
-				});
-			}
+			let rect = target.getBoundingClientRect();
+			let x = rect.x + rect.width / 2 - this._sectionsContainer.offsetLeft;
+			let spreadWidth = this._sectionsContainer.offsetWidth + 60;
+			let pageIndex = Math.floor(x / spreadWidth);
+			this._iframeDocument.documentElement.style.setProperty('--page-index', String(pageIndex));
+			this._handleViewUpdate();
 		}
 	}
 
