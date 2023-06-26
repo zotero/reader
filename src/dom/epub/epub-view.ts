@@ -625,7 +625,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		let viewState: EPUBViewState = {
 			...this._viewState,
-			cfi: shortenCFI(this.startCFI.toString()),
+			cfi: shortenCFI(this.startCFI.toString(true)),
 		};
 		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
