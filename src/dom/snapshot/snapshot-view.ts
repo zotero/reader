@@ -68,9 +68,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
-		if (viewState.scale !== undefined) {
-			this._iframeDocument.documentElement.style.fontSize = viewState.scale + 'em';
-		}
+		this._setScale(viewState.scale || 1);
 		if (viewState.scrollYPercent !== undefined) {
 			this._iframeWindow.scrollTo({
 				top: viewState.scrollYPercent * (this._iframeDocument.body.offsetHeight - this._iframeWindow.innerHeight)
@@ -321,8 +319,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		let scale = this._viewState.scale;
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
-		this._viewState.scale = scale;
-		this._iframeDocument.documentElement.style.fontSize = scale + 'em';
+		this._setScale(scale);
 		this._handleViewUpdate();
 	}
 
@@ -330,15 +327,28 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		let scale = this._viewState.scale;
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
-		this._viewState.scale = scale;
-		this._iframeDocument.documentElement.style.fontSize = scale + 'em';
+		this._setScale(scale);
 		this._handleViewUpdate();
 	}
 
 	zoomReset() {
-		this._viewState.scale = 1;
-		this._iframeDocument.documentElement.style.fontSize = '';
+		this._setScale(1);
 		this._handleViewUpdate();
+	}
+
+	private _setScale(scale: number) {
+		this._viewState.scale = scale;
+		if (scale == 1) {
+			this._iframeDocument.documentElement.style.fontSize = '';
+			return;
+		}
+
+		// Calculate the default root font size, then multiply by scale.
+		// Can't just set font-size to an em value -- the page itself might set a font-size on <html>, and we need to
+		// scale relative to that.
+		this._iframeDocument.documentElement.style.fontSize = '';
+		let defaultSize = parseFloat(getComputedStyle(this._iframeDocument.documentElement).fontSize);
+		this._iframeDocument.documentElement.style.fontSize = (defaultSize * scale) + 'px';
 	}
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {
