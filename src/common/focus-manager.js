@@ -70,11 +70,11 @@ export class FocusManager {
 		if ((e.target.closest('.outline-view') || e.target.closest('input[type="range"]')) && ['ArrowLeft', 'ArrowRight'].includes(e.key)) {
 			return;
 		}
-		if (pressedNextKey(e)) {
+		if (pressedNextKey(e) && !e.target.closest('[contenteditable], input[type="text"]')) {
 			e.preventDefault();
 			this.tabToItem();
 		}
-		else if (pressedPreviousKey(e)) {
+		else if (pressedPreviousKey(e) && !e.target.closest('[contenteditable], input[type="text"]')) {
 			e.preventDefault();
 			this.tabToItem(true);
 		}
