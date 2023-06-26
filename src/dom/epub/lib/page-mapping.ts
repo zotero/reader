@@ -3,6 +3,10 @@ import SectionView from "../section-view";
 import EPUBView from "../epub-view";
 import { getVisibleTextNodes } from "../../common/lib/nodes";
 import { EPUB_LOCATION_BREAK_INTERVAL } from "../defines";
+import {
+	lengthenCFI,
+	shortenCFI
+} from "../cfi";
 
 class PageMapping {
 	private readonly _tree = new BTree<Range, string>(
@@ -130,8 +134,14 @@ class PageMapping {
 
 	save(view: EPUBView): string {
 		return JSON.stringify(this._tree.toArray()
-			.map(([range, label]) => [view.getCFI(range)?.toString(), label])
-			.filter(([cfi, _]) => !!cfi));
+			.map(([range, label]) => {
+				let cfi = view.getCFI(range);
+				if (!cfi) {
+					return null;
+				}
+				return [shortenCFI(cfi.toString()), label];
+			})
+			.filter(Boolean));
 	}
 
 	load(saved: string, view: EPUBView): boolean {
@@ -140,7 +150,7 @@ class PageMapping {
 			throw new Error('Unable to load persisted page mapping:\n' + saved);
 		}
 		this._tree.setPairs(array
-			.map(([cfi, label]) => [view.getRange(cfi), label])
+			.map(([cfi, label]) => [view.getRange(lengthenCFI(cfi)), label])
 			.filter(([range, label]) => !!range && typeof label === 'string') as [Range, string][]);
 		return !!this._tree.length;
 	}

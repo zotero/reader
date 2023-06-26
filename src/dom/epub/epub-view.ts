@@ -31,10 +31,13 @@ import DOMView, {
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
 import { closestElement } from "../common/lib/nodes";
-import { isSafari } from "../../common/lib/utilities";
 import StyleScoper from "./lib/style-scoper";
 import PageMapping from "./lib/page-mapping";
 import { debounce } from "../../common/lib/debounce";
+import {
+	lengthenCFI,
+	shortenCFI
+} from "./cfi";
 
 // @ts-ignore
 import contentCSS from '!!raw-loader!./stylesheets/content.css';
@@ -158,10 +161,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this.setFlowMode('scrolled');
 		}
 		if (viewState.cfi) {
+			let cfi = lengthenCFI(viewState.cfi);
 			// Perform the navigation on the next frame, because apparently the split view layout might not have
 			// settled yet
 			requestAnimationFrame(() => {
-				this.navigate({ pageNumber: viewState.cfi }, { behavior: 'auto' });
+				this.navigate({ pageNumber: cfi }, { behavior: 'auto' });
 			});
 		}
 	}
@@ -620,7 +624,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		let viewState: EPUBViewState = {
 			...this._viewState,
-			cfi: this.startCFI.toString(),
+			cfi: shortenCFI(this.startCFI.toString()),
 		};
 		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
