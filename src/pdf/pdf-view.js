@@ -1786,7 +1786,9 @@ class PDFView {
 		}
 		else if (action.type === 'ink') {
 			let point = position.rects[0].slice(0, 2);
-			action.annotation.position.paths[0] = addPointToPath(action.annotation.position.paths[0], point);
+			point = addPointToPath(action.annotation.position.paths[0], point);
+			point = point.map(value => parseFloat(value.toFixed(3)));
+			action.annotation.position.paths[0] = point;
 			// Already triggered on pointerdown
 		}
 		else if (action.type === 'erase') {

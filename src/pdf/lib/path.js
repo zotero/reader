@@ -96,25 +96,19 @@ export function catmullRomSpline(points, segments) {
 	return smoothedPoints;
 }
 
-
 export function addPointToPath(path, newPoint) {
 	const minThreshold = 5;
 	const maxThreshold = 20;
 	const segments = 10;
-
-	// Add the new point to the path
-	path.push(newPoint[0], newPoint[1]);
-
-	// Filter close points
-	const filteredPath = filterClosePoints(path, minThreshold);
-
 	// Insert missing points
-	const interpolatedPath = insertMissingPoints(filteredPath, maxThreshold);
-
+	const interpolatedPath = insertMissingPoints(path, maxThreshold);
 	// Smooth the path using Catmull-Rom Spline
 	const smoothedPath = catmullRomSpline(interpolatedPath, segments);
-
-	return smoothedPath;
+	// Filter close points
+	const filteredPath = filterClosePoints(smoothedPath, minThreshold);
+	// Add the new point to the path
+	filteredPath.push(newPoint[0], newPoint[1]);
+	return filteredPath;
 }
 
 export function applyTransformationMatrixToInkPosition(matrix, position) {
