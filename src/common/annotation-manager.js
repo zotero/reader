@@ -136,17 +136,17 @@ class AnnotationManager {
 			if (!annotation.onlyTextOrComment) {
 				delete existingAnnotation.onlyTextOrComment;
 			}
-			// if (annotation.image) {
-			// 	let { id, image } = annotation;
-			// 	delete annotation.image;
-			// 	// Instantly save annotation image to avoid batching them and accumulating in memory,
-			// 	// and then doing large transfers between iframe and main Zotero code
-			// 	this._save({ id, image }, true);
-			// 	// If only updating an image skip the code below together with dateModified updating
-			// 	if (Object.keys(annotation).length === 1) {
-			// 		continue;
-			// 	}
-			// }
+			if (annotation.image) {
+				let { image } = annotation;
+				delete annotation.image;
+				// Instantly save annotation image to avoid batching them and accumulating in memory,
+				// and then doing large transfers between iframe and main Zotero code
+				this._save({ ...existingAnnotation, image }, true);
+				// If only updating an image skip the code below together with dateModified updating
+				if (Object.keys(annotation).length === 1) {
+					continue;
+				}
+			}
 			if (annotation.position) {
 				annotation.image = undefined;
 			}
