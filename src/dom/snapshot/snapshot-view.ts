@@ -38,7 +38,7 @@ import {
 // @ts-ignore
 import contentCSS from '!!raw-loader!./stylesheets/content.css';
 
-class SnapshotView extends DOMView<DOMViewState> {
+class SnapshotView extends DOMView<SnapshotViewState> {
 	private readonly _navStack = new NavStack<[number, number]>();
 
 	protected _find: DefaultFindProcessor | null = null;
@@ -61,7 +61,7 @@ class SnapshotView extends DOMView<DOMViewState> {
 		}
 	}
 
-	protected _onInitialDisplay(viewState: Partial<DOMViewState>) {
+	protected _onInitialDisplay(viewState: Partial<SnapshotViewState>) {
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
@@ -70,6 +70,11 @@ class SnapshotView extends DOMView<DOMViewState> {
 		// Also make sure this doesn't trigger _updateViewState
 		if (viewState.scale !== undefined) {
 			this._iframeDocument.documentElement.style.fontSize = viewState.scale + 'em';
+		}
+		if (viewState.scrollYPercent !== undefined) {
+			this._iframeWindow.scrollTo({
+				top: viewState.scrollYPercent * (this._iframeDocument.body.offsetHeight - this._iframeWindow.innerHeight)
+			});
 		}
 	}
 
@@ -215,9 +220,10 @@ class SnapshotView extends DOMView<DOMViewState> {
 	}
 
 	protected override _updateViewState() {
-		let viewState = {
+		let viewState: SnapshotViewState = {
 			scale: 1,
-			...this._viewState
+			...this._viewState,
+			scrollYPercent: this._iframeWindow.scrollY / (this._iframeDocument.body.offsetHeight - this._iframeWindow.innerHeight)
 		};
 		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
@@ -241,6 +247,11 @@ class SnapshotView extends DOMView<DOMViewState> {
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement): void {
 		this._iframeDocument.location.hash = link.getAttribute('href')!;
+	}
+
+	protected override _handleScroll() {
+		super._handleScroll();
+		this._updateViewState();
 	}
 
 	// ***
@@ -341,12 +352,12 @@ class SnapshotView extends DOMView<DOMViewState> {
 
 	navigateBack() {
 		this._iframeWindow.scrollTo(...this._navStack.popBack());
-		this._updateViewStats();
+		this._handleViewUpdate();
 	}
 
 	navigateForward() {
 		this._iframeWindow.scrollTo(...this._navStack.popForward());
-		this._updateViewStats();
+		this._handleViewUpdate();
 	}
 
 	// Still need to figure out how this is going to work
@@ -357,6 +368,10 @@ class SnapshotView extends DOMView<DOMViewState> {
 	setSidebarOpen(_sidebarOpen: boolean) {
 		// Ignore
 	}
+}
+
+export interface SnapshotViewState extends DOMViewState {
+	scrollYPercent?: number;
 }
 
 export default SnapshotView;

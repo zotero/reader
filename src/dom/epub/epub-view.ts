@@ -26,7 +26,8 @@ import NavStack from "../common/lib/nav-stack";
 import DOMView, {
 	DOMViewOptions,
 	NavigateOptions,
-	CustomScrollIntoViewOptions
+	CustomScrollIntoViewOptions,
+	DOMViewState
 } from "../common/dom-view";
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
@@ -1014,12 +1015,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 type FlowMode = 'paginated' | 'scrolled';
 
-export type EPUBViewState = {
+export interface EPUBViewState extends DOMViewState {
 	cfi?: string;
 	savedPageMapping?: string;
-	scale?: number;
 	flowMode?: FlowMode;
 	fontFamily?: string;
-};
+}
 
 export default EPUBView;
