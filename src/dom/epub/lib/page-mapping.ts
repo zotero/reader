@@ -9,6 +9,8 @@ import {
 } from "../cfi";
 
 class PageMapping {
+	static readonly VERSION = 2;
+
 	private readonly _tree = new BTree<Range, string>(
 		undefined,
 		(a, b) => a.compareBoundaryPoints(Range.START_TO_START, b) || a.compareBoundaryPoints(Range.END_TO_END, b)
@@ -133,23 +135,34 @@ class PageMapping {
 	}
 
 	save(view: EPUBView): string {
-		return JSON.stringify(this._tree.toArray()
+		let version = PageMapping.VERSION;
+		let mappings = this._tree.toArray()
 			.map(([range, label]) => {
 				let cfi = view.getCFI(range);
 				if (!cfi) {
 					return null;
 				}
-				return [shortenCFI(cfi.toString()), label];
+				return [shortenCFI(cfi.toString(true)), label];
 			})
-			.filter(Boolean));
+			.filter(Boolean);
+		return JSON.stringify({ version, mappings });
 	}
 
 	load(saved: string, view: EPUBView): boolean {
-		let array = JSON.parse(saved);
-		if (!Array.isArray(array)) {
-			throw new Error('Unable to load persisted page mapping:\n' + saved);
+		let obj = JSON.parse(saved);
+		if (!obj) {
+			return false;
 		}
-		this._tree.setPairs(array
+		if (!obj.version || obj.version < PageMapping.VERSION) {
+			console.warn(`Page mappings are old: ${obj.version} < ${PageMapping.VERSION}`);
+			return false;
+		}
+		let mappings = obj.mappings;
+		if (!Array.isArray(mappings)) {
+			console.error('Unable to load persisted page mapping', saved);
+			return false;
+		}
+		this._tree.setPairs(mappings
 			.map(([cfi, label]) => [view.getRange(lengthenCFI(cfi)), label])
 			.filter(([range, label]) => !!range && typeof label === 'string') as [Range, string][]);
 		return !!this._tree.length;
