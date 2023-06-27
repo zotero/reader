@@ -118,6 +118,8 @@ class PDFView {
 		// }
 		this._iframeWindow = null;
 
+		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
+
 		let setOptions = () => {
 			if (!this._iframeWindow.PDFViewerApplicationOptions) {
 				return;
@@ -147,6 +149,7 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplication.open({ data: options.buf, password: this._password });
 			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 			window.if = this._iframeWindow;
+			this._resolveInitializedPromise();
 
 			if (this._portal) {
 				this._iframeWindow.document.body.classList.add('portal');
