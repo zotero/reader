@@ -86,11 +86,17 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		if (range.collapsed) {
 			return null;
 		}
-		let text = type == 'highlight' || type == 'underline' ? range.toString() : undefined;
+		let text = type == 'highlight' || type == 'underline' ? range.toString().trim() : undefined;
+		// If this annotation type wants text, but we didn't get any, abort
+		if (text === '') {
+			return null;
+		}
+
 		let selector = this.toSelector(range);
 		if (!selector) {
 			return null;
 		}
+
 		let sortIndex = this._getSortIndex(range);
 		return {
 			type,
