@@ -557,7 +557,6 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			height={size}
 			viewBox="0 0 24 24"
 			ref={ref}
-			data-annotation-id={props.annotation?.id}
 		>
 			<IconNoteLarge/>
 		</svg>
@@ -583,7 +582,9 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 					draggable={true}
 					onPointerDown={props.onPointerDown}
 					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}/>
+					onDragEnd={props.onDragEnd}
+					data-annotation-id={props.annotation?.id}
+				/>
 			</foreignObject>
 		)}
 	</>;
