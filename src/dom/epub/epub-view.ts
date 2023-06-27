@@ -952,7 +952,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return;
 		}
 		if (this._flowMode != 'paginated') {
-			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight });
+			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + 35 * this._scale });
 			return;
 		}
 		let pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
@@ -966,7 +966,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return;
 		}
 		if (this._flowMode != 'paginated') {
-			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight });
+			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - 35 * this._scale });
 			return;
 		}
 		let pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
