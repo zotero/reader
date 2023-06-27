@@ -200,15 +200,6 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	};
 
 	let handleResize = (annotation: DisplayedAnnotation, range: Range) => {
-		if (!range.toString().length
-				// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
-				|| range.startContainer.nodeType == Node.ELEMENT_NODE && (range.startContainer as Element).closest('svg')
-				|| range.endContainer.nodeType == Node.ELEMENT_NODE && (range.endContainer as Element).closest('svg')
-				// And make sure we stay within one section
-				|| doc.querySelector('[data-section-index]')
-					&& !closestElement(range.commonAncestorContainer)?.closest('[data-section-index]')) {
-			return;
-		}
 		setResizedRange(range);
 	};
 
@@ -450,8 +441,6 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 
 	highlightRects = Array.from(highlightRects)
 		.sort((a, b) => (a.bottom - b.bottom) || (a.left - b.left));
-	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
-	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
 
 	let handlePointerDown = (event: React.PointerEvent, isStart: boolean) => {
 		if (event.button !== 0) {
@@ -485,7 +474,8 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		onResizeEnd(annotation, true);
 	}, [pointerCapture, onResizeEnd, annotation, resizingSide]);
 
-	let win = annotation.range.commonAncestorContainer.ownerDocument?.defaultView;
+	let doc = annotation.range.commonAncestorContainer.ownerDocument;
+	let win = doc?.defaultView;
 
 	useEffect(() => {
 		if (!win) {
@@ -495,19 +485,55 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		return () => win?.removeEventListener('keydown', handleKeyDown, true);
 	}, [win, handleKeyDown]);
 
-	let handleResize = (event: React.PointerEvent, isStart: boolean) => {
+	let handlePointerMove = (event: React.PointerEvent, isStart: boolean) => {
 		let pos = caretPositionFromPoint(event.view.document, event.clientX, event.clientY);
 		if (pos) {
+			// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
+			if (pos.offsetNode.nodeType == Node.ELEMENT_NODE && (pos.offsetNode as Element).closest('svg')) {
+				return;
+			}
+
+			let relativePosition = annotation.range.comparePoint(pos.offsetNode, pos.offset);
 			let newRange = annotation.range.cloneRange();
 			if (isStart) {
-				newRange.setStart(pos.offsetNode, pos.offset);
+				if (relativePosition <= 0) {
+					newRange.setStart(pos.offsetNode, pos.offset);
+				}
+				else {
+					// Resizing the start past the end - swap the two
+					newRange.setStart(newRange.endContainer, newRange.endOffset);
+					newRange.setEnd(pos.offsetNode, pos.offset);
+				}
 			}
 			else {
-				newRange.setEnd(pos.offsetNode, pos.offset);
+				// eslint-disable-next-line no-lonely-if
+				if (relativePosition >= 0) {
+					newRange.setEnd(pos.offsetNode, pos.offset);
+				}
+				else {
+					// Resizing the end past the start - swap the two
+					newRange.setEnd(newRange.startContainer, newRange.startOffset);
+					newRange.setStart(pos.offsetNode, pos.offset);
+				}
 			}
+
+			if (!newRange.toString().length
+				// Make sure we stay within one section
+				|| doc?.querySelector('[data-section-index]')
+					&& !closestElement(newRange.commonAncestorContainer)?.closest('[data-section-index]')) {
+				return;
+			}
+
 			onResize(annotation, newRange);
 		}
 	};
+
+	if (!highlightRects.length) {
+		return null;
+	}
+
+	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
+	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
 
 	return <>
 		<rect
@@ -519,7 +545,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, true)}
 			onPointerUp={event => handlePointerUp(event)}
-			onPointerMove={resizingSide == 'start' ? (event => handleResize(event, !rtl)) : undefined}
+			onPointerMove={resizingSide == 'start' ? (event => handlePointerMove(event, !rtl)) : undefined}
 		/>
 		<rect
 			x={bottomRightRect.right}
@@ -530,7 +556,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, false)}
 			onPointerUp={event => handlePointerUp(event)}
-			onPointerMove={resizingSide == 'end' ? (event => handleResize(event, rtl)) : undefined}
+			onPointerMove={resizingSide == 'end' ? (event => handlePointerMove(event, rtl)) : undefined}
 		/>
 	</>;
 };
