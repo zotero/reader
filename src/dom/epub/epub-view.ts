@@ -169,9 +169,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 			let cfi = lengthenCFI(viewState.cfi);
 			// Perform the navigation on the next frame, because apparently the split view layout might not have
 			// settled yet
-			requestAnimationFrame(() => {
-				this.navigate({ pageNumber: cfi }, { behavior: 'auto' });
-			});
+			await new Promise(resolve => requestAnimationFrame(resolve));
+			this.navigate({ pageNumber: cfi }, { behavior: 'auto' });
 		}
 	}
 
