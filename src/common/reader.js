@@ -1145,7 +1145,9 @@ class Reader {
 	}
 
 	abortPrint() {
-		window.abortPrint();
+		if (this._type === 'pdf') {
+			window.abortPrint();
+		}
 	}
 
 	reload(buf) {
