@@ -45,6 +45,8 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 	private _searchContext: SearchContext | null = null;
 
+	private _scale!: number;
+
 	protected _getSrcDoc() {
 		let enc = new TextDecoder('utf-8');
 		let text = enc.decode(this._options.buf);
@@ -61,7 +63,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		}
 	}
 
-	protected _onInitialDisplay(viewState: Partial<SnapshotViewState>) {
+	protected _onInitialDisplay(viewState: Partial<Readonly<SnapshotViewState>>) {
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
 		this._iframeDocument.head.append(style);
@@ -218,21 +220,22 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	}
 
 	protected override _updateViewState() {
+		let scale = Math.round(this._scale * 1000) / 1000; // Three decimal places
+		let scrollYPercent = this._iframeWindow.scrollY / (this._iframeDocument.body.offsetHeight - this._iframeWindow.innerHeight);
+		scrollYPercent = Math.round(scrollYPercent * 1000) / 1000; // Three decimal places
 		let viewState: SnapshotViewState = {
-			scale: 1,
-			...this._viewState,
-			scrollYPercent: this._iframeWindow.scrollY / (this._iframeDocument.body.offsetHeight - this._iframeWindow.innerHeight)
+			scale,
+			scrollYPercent,
 		};
-		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
 	}
 
 	protected override _updateViewStats() {
 		let viewStats: ViewStats = {
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
-			canZoomIn: this._viewState.scale === undefined || this._viewState.scale < 1.5,
-			canZoomOut: this._viewState.scale === undefined || this._viewState.scale > 0.6,
-			canZoomReset: this._viewState.scale !== undefined && this._viewState.scale !== 1,
+			canZoomIn: this._scale === undefined || this._scale < 1.5,
+			canZoomOut: this._scale === undefined || this._scale > 0.6,
+			canZoomReset: this._scale !== undefined && this._scale !== 1,
 			canNavigateBack: this._navStack.canPopBack(),
 			canNavigateForward: this._navStack.canPopForward(),
 		};
@@ -316,7 +319,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	}
 
 	zoomIn() {
-		let scale = this._viewState.scale;
+		let scale = this._scale;
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
 		this._setScale(scale);
@@ -324,7 +327,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	}
 
 	zoomOut() {
-		let scale = this._viewState.scale;
+		let scale = this._scale;
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
 		this._setScale(scale);
@@ -337,7 +340,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 	}
 
 	private _setScale(scale: number) {
-		this._viewState.scale = scale;
+		this._scale = scale;
 		if (scale == 1) {
 			this._iframeDocument.documentElement.style.fontSize = '';
 			return;

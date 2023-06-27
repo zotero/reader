@@ -86,6 +86,12 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	private _pageProgressionRTL!: boolean;
 
+	private _scale = 1;
+
+	private _flowMode: FlowMode = 'scrolled';
+
+	private _savedPageMapping!: string;
+
 	constructor(options: DOMViewOptions<EPUBViewState>) {
 		super(options);
 		this._book = Epub(options.buf.buffer);
@@ -95,7 +101,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		return '<!DOCTYPE html><html><body></body></html>';
 	}
 
-	protected async _onInitialDisplay(viewState: Partial<EPUBViewState>) {
+	protected async _onInitialDisplay(viewState: Partial<Readonly<EPUBViewState>>) {
 		await this._book.opened;
 
 		this._pageProgressionRTL = this._book.packaging.metadata.direction === 'rtl';
@@ -144,17 +150,15 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 
 		this._sectionsContainer.hidden = false;
-		await this._initPageMapping();
+		await this._initPageMapping(viewState);
 		this._initOutline();
 
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
-		if (viewState.scale) {
-			this._iframeDocument.documentElement.style.setProperty('--content-scale', String(viewState.scale));
-		}
-		else {
-			viewState.scale = 1;
-		}
+
+		this._scale = viewState.scale || 1;
+		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(this._scale));
+
 		if (viewState.flowMode) {
 			this.setFlowMode(viewState.flowMode);
 		}
@@ -189,14 +193,16 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._sectionViews[section.index] = sectionView;
 	}
 
-	private async _initPageMapping() {
+	private async _initPageMapping(viewState: Partial<Readonly<EPUBViewState>>) {
 		let localStorageKey = this._book.key() + '-page-mapping';
-		if (window.dev && !this._viewState.savedPageMapping) {
-			this._viewState.savedPageMapping = window.localStorage.getItem(localStorageKey) || undefined;
+		let savedPageMapping = viewState.savedPageMapping;
+		if (window.dev && !savedPageMapping) {
+			savedPageMapping = window.localStorage.getItem(localStorageKey) || undefined;
 		}
 
 		// Use persisted page mappings if present
-		if (this._viewState.savedPageMapping && this._pageMapping.load(this._viewState.savedPageMapping, this)) {
+		if (savedPageMapping && this._pageMapping.load(savedPageMapping, this)) {
+			this._savedPageMapping = savedPageMapping;
 			this._updateViewStats();
 			return;
 		}
@@ -204,10 +210,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 		// Otherwise, extract physical page numbers and fall back to EPUB locations
 		this._pageMapping.generate(this._sectionViews.values());
 		this._updateViewStats();
-		this._viewState.savedPageMapping = this._pageMapping.save(this);
+		this._savedPageMapping = savedPageMapping = this._pageMapping.save(this);
 		this._updateViewState();
 		if (window.dev) {
-			window.localStorage.setItem(localStorageKey, this._viewState.savedPageMapping);
+			window.localStorage.setItem(localStorageKey, savedPageMapping);
 		}
 	}
 
@@ -362,7 +368,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		let foundStart = false;
 		for (let view of this._sectionViews.values()) {
 			let rect = view.container.getBoundingClientRect();
-			let visible = this._viewState.flowMode == 'paginated'
+			let visible = this._flowMode == 'paginated'
 				? !(rect.left > this._iframe.clientWidth || rect.right < 0)
 				: !(rect.top > this._iframe.clientHeight || rect.bottom < 0);
 			if (!foundStart) {
@@ -371,11 +377,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 				}
 				this._cachedStartView = view;
 				let startRange = view.getFirstVisibleRange(
-					this._viewState.flowMode == 'paginated',
+					this._flowMode == 'paginated',
 					false
 				);
 				let startCFIRange = view.getFirstVisibleRange(
-					this._viewState.flowMode == 'paginated',
+					this._flowMode == 'paginated',
 					true
 				);
 				if (startRange) {
@@ -460,7 +466,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	// ***
 
 	private _handleTransitionStart = (event: TransitionEvent) => {
-		if (this._viewState.flowMode != 'paginated') {
+		if (this._flowMode != 'paginated') {
 			return;
 		}
 		if (event.propertyName == 'left') {
@@ -477,7 +483,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	};
 
 	private _handleTransitionEnd = (event: TransitionEvent) => {
-		if (this._viewState.flowMode != 'paginated') {
+		if (this._flowMode != 'paginated') {
 			return;
 		}
 		if (event.propertyName == 'left') {
@@ -487,7 +493,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	};
 
 	private _handleTouchStart = (event: TouchEvent) => {
-		if (this._viewState.flowMode != 'paginated' || this._touchStartID !== null) {
+		if (this._flowMode != 'paginated' || this._touchStartID !== null) {
 			return;
 		}
 		this._touchStartID = event.changedTouches[0].identifier;
@@ -495,7 +501,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	};
 
 	private _handleTouchMove = (event: TouchEvent) => {
-		if (this._viewState.flowMode != 'paginated' || this._touchStartID === null || this._animatingPageTurn) {
+		if (this._flowMode != 'paginated' || this._touchStartID === null || this._animatingPageTurn) {
 			return;
 		}
 		let touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
@@ -516,7 +522,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	};
 
 	private _handleTouchEnd = (event: TouchEvent) => {
-		if (this._viewState.flowMode != 'paginated' || this._touchStartID === null) {
+		if (this._flowMode != 'paginated' || this._touchStartID === null) {
 			return;
 		}
 		let touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
@@ -572,7 +578,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	protected override _handleKeyDown(event: KeyboardEvent) {
 		let { key } = event;
 
-		if (this._viewState.flowMode == 'paginated') {
+		if (this._flowMode == 'paginated') {
 			if (key == 'PageUp') {
 				this.navigateToPreviousPage();
 				event.preventDefault();
@@ -624,10 +630,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 			return;
 		}
 		let viewState: EPUBViewState = {
-			...this._viewState,
+			scale: Math.round(this._scale * 1000) / 1000, // Three decimal places
 			cfi: shortenCFI(this.startCFI.toString(true)),
+			savedPageMapping: this._savedPageMapping,
+			flowMode: this._flowMode,
 		};
-		this._viewState = viewState;
 		this._options.onChangeViewState(viewState);
 	}
 
@@ -643,9 +650,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 			pageLabel: pageLabel ?? undefined,
 			pagesCount: this._pageMapping.length,
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
-			canZoomIn: this._viewState.scale === undefined || this._viewState.scale < 1.5,
-			canZoomOut: this._viewState.scale === undefined || this._viewState.scale > 0.8,
-			canZoomReset: this._viewState.scale !== undefined && this._viewState.scale !== 1,
+			canZoomIn: this._scale === undefined || this._scale < 1.5,
+			canZoomOut: this._scale === undefined || this._scale > 0.8,
+			canZoomReset: this._scale !== undefined && this._scale !== 1,
 			canNavigateBack: this._navStack.canPopBack(),
 			canNavigateForward: this._navStack.canPopForward(),
 			canNavigateToFirstPage: canNavigateToPreviousPage,
@@ -654,7 +661,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			canNavigateToNextPage,
 			canNavigateToPreviousSection: this.canNavigateToPreviousSection(),
 			canNavigateToNextSection: this.canNavigateToNextSection(),
-			flowMode: this._viewState.flowMode,
+			flowMode: this._flowMode,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -720,7 +727,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				}
 				break;
 		}
-		this._viewState.flowMode = flowMode;
+		this._flowMode = flowMode;
 	}
 
 	setFontFamily(fontFamily: string) {
@@ -758,10 +765,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	zoomIn() {
 		let cfiBefore = this.startCFI;
-		let scale = this._viewState.scale;
+		let scale = this._scale;
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
-		this._viewState.scale = scale;
+		this._scale = scale;
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
@@ -771,10 +778,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	zoomOut() {
 		let cfiBefore = this.startCFI;
-		let scale = this._viewState.scale;
+		let scale = this._scale;
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
-		this._viewState.scale = scale;
+		this._scale = scale;
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
@@ -784,7 +791,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	zoomReset() {
 		let cfiBefore = this.startCFI;
-		this._viewState.scale = 1;
+		this._scale = 1;
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', '1');
 		this._handleViewUpdate();
 		if (cfiBefore) {
@@ -845,7 +852,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions) {
-		if (this._viewState.flowMode == 'paginated') {
+		if (this._flowMode == 'paginated') {
 			this._scrollIntoViewPaginated(target);
 			return;
 		}
@@ -923,7 +930,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	canNavigateToPreviousPage() {
-		if (this._viewState.flowMode == 'paginated') {
+		if (this._flowMode == 'paginated') {
 			return parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0') > 0;
 		}
 		else {
@@ -932,7 +939,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	canNavigateToNextPage() {
-		if (this._viewState.flowMode == 'paginated') {
+		if (this._flowMode == 'paginated') {
 			// scrollWidth approaches offsetWidth as we advance toward the last page
 			return this._iframeDocument.documentElement.scrollWidth > this._iframeDocument.documentElement.offsetWidth;
 		}
@@ -945,7 +952,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!this.canNavigateToPreviousPage()) {
 			return;
 		}
-		if (this._viewState.flowMode != 'paginated') {
+		if (this._flowMode != 'paginated') {
 			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight });
 			return;
 		}
@@ -959,7 +966,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		if (!this.canNavigateToNextPage()) {
 			return;
 		}
-		if (this._viewState.flowMode != 'paginated') {
+		if (this._flowMode != 'paginated') {
 			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight });
 			return;
 		}
@@ -1019,7 +1026,6 @@ export interface EPUBViewState extends DOMViewState {
 	cfi?: string;
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
-	fontFamily?: string;
 }
 
 export default EPUBView;

@@ -67,8 +67,6 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected abstract _find: FindProcessor | null;
 
-	protected _viewState: Partial<State>;
-
 	protected readonly _options: DOMViewOptions<State>;
 
 	protected _overlayPopupDelayer: PopupDelayer;
@@ -96,7 +94,6 @@ abstract class DOMView<State extends DOMViewState> {
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
 		this._findState = options.findState;
-		this._viewState = options.viewState || {};
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
 		this._iframe = document.createElement('iframe');
@@ -120,7 +117,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected abstract _getSrcDoc(): string;
 
-	protected abstract _onInitialDisplay(viewState: Partial<State>): MaybePromise<void>;
+	protected abstract _onInitialDisplay(viewState: Partial<Readonly<State>>): MaybePromise<void>;
 
 	// ***
 	// Utilities for annotations - abstractions over the specific types of selectors used by the two views
