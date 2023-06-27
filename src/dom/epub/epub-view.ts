@@ -552,7 +552,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	protected override _handleResize() {
 		let beforeCFI = this.startCFI;
 		if (beforeCFI) {
-			this.navigate({ pageNumber: beforeCFI.toString() }, { behavior: 'auto' });
+			this.navigate({ pageNumber: beforeCFI.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
 		this._handleViewUpdate();
 	}
@@ -772,7 +772,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
 	}
 
@@ -785,7 +785,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this._handleViewUpdate();
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
 	}
 
@@ -795,7 +795,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', '1');
 		this._handleViewUpdate();
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true });
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
 	}
 
