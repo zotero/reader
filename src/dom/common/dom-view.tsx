@@ -35,6 +35,7 @@ import { isSafari } from "../../common/lib/utilities";
 import {
 	isElement
 } from "./lib/nodes";
+import { debounce } from "../../common/lib/debounce";
 
 abstract class DOMView<State extends DOMViewState> {
 	initializedPromise: Promise<void>;
@@ -74,6 +75,8 @@ abstract class DOMView<State extends DOMViewState> {
 	protected _disableAnnotationPointerEvents = false;
 
 	protected _highlightedPosition: Selector | null = null;
+
+	protected _pointerMovedWhileDown = false;
 
 	protected _gotPointerUp = false;
 
@@ -194,6 +197,8 @@ abstract class DOMView<State extends DOMViewState> {
 			this._renderAnnotations();
 		}
 	}
+
+	protected _tryUseToolDebounced = debounce(this._tryUseTool.bind(this), 500) as typeof this._tryUseTool;
 
 	protected _handleViewUpdate() {
 		this._updateViewState();
@@ -378,6 +383,7 @@ abstract class DOMView<State extends DOMViewState> {
 		this._iframeWindow.addEventListener('pointerover', this._handlePointerOver.bind(this));
 		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
+		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
@@ -725,6 +731,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected _handlePointerDown(event: PointerEvent) {
 		this._gotPointerUp = false;
+		this._pointerMovedWhileDown = false;
 
 		this._options.onSetOverlayPopup();
 
@@ -764,7 +771,21 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 
 		this._gotPointerUp = true;
-		this._tryUseTool();
+		// If we're using a tool that immediately creates an annotation based on the current selection, we want to use
+		// debounced _tryUseTool() in order to wait for double- and triple-clicks to complete. A multi-click is only
+		// possible if the pointer hasn't moved while down.
+		if (!this._pointerMovedWhileDown && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
+			this._tryUseToolDebounced();
+		}
+		else {
+			this._tryUseTool();
+		}
+	}
+
+	protected _handlePointerMove(event: PointerEvent) {
+		if (event.buttons % 1 == 0) {
+			this._pointerMovedWhileDown = true;
+		}
 	}
 
 	protected _handleResize() {
