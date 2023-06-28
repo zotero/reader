@@ -24,14 +24,18 @@ class DefaultFindProcessor implements FindProcessor {
 
 	private readonly _onSetFindState?: (state?: FindState) => void;
 
+	private readonly _annotationKeyPrefix?: string;
+
 	constructor(options: {
 		searchContext: SearchContext,
 		startRange?: Range,
 		findState: FindState,
 		onSetFindState?: (state?: FindState) => void,
+		annotationKeyPrefix?: string,
 	}) {
 		this.findState = options.findState;
 		this._onSetFindState = options.onSetFindState;
+		this._annotationKeyPrefix = options.annotationKeyPrefix;
 
 		this._buf = [];
 
@@ -50,7 +54,7 @@ class DefaultFindProcessor implements FindProcessor {
 					type: 'highlight',
 					color: 'rgba(180, 0, 170, 1)',
 					text: '',
-					key: 'findResult',
+					key: 'findResult_' + (this._annotationKeyPrefix || '') + this._buf.length,
 					range,
 				}
 			};

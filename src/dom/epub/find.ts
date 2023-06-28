@@ -127,6 +127,7 @@ export class EPUBFindProcessor implements FindProcessor {
 			searchContext: view.searchContext,
 			startRange,
 			findState: { ...this.findState },
+			annotationKeyPrefix: 'section' + view.section.index,
 		});
 		this._processors[view.section.index] = processor;
 		if (!this._selectedProcessor && processor.initialPosition !== null) {
