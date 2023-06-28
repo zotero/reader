@@ -352,11 +352,16 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _invalidateStartRangeAndCFI = debounce(
-		() => {
+		(debounceViewState: boolean) => {
 			this._cachedStartRange = null;
 			this._cachedStartCFI = null;
 			this._updateBoundaries();
-			this._updateViewState();
+			if (debounceViewState) {
+				this._updateViewStateDebounced();
+			}
+			else {
+				this._updateViewState();
+			}
 			this._updateViewStats();
 		},
 		50
@@ -555,7 +560,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected override _handleScroll() {
 		super._handleScroll();
-		this._invalidateStartRangeAndCFI();
+		this._invalidateStartRangeAndCFI(true);
 	}
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
@@ -664,7 +669,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected override _handleViewUpdate() {
 		super._handleViewUpdate();
-		this._invalidateStartRangeAndCFI();
+		this._invalidateStartRangeAndCFI(false);
 		if (this._find) {
 			this._find.handleViewUpdate();
 		}
@@ -889,7 +894,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			left: x,
 			top: y,
 		});
-		this._invalidateStartRangeAndCFI();
+		this._invalidateStartRangeAndCFI(false);
 	}
 
 	private _scrollIntoViewPaginated(target: Range | HTMLElement) {
@@ -958,6 +963,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		if (this._flowMode != 'paginated') {
 			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + 35 * this._scale });
+			this._updateViewState();
 			return;
 		}
 		let pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');
@@ -972,6 +978,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		if (this._flowMode != 'paginated') {
 			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - 35 * this._scale });
+			this._updateViewState();
 			return;
 		}
 		let pageIndex = parseInt(this._iframeDocument.documentElement.style.getPropertyValue('--page-index') || '0');

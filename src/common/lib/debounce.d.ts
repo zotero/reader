@@ -1,4 +1,4 @@
-export function debounce<F extends () => void>(func: F, wait?: number, options?: {
+export function debounce<F extends CallableFunction>(func: F, wait?: number, options?: {
 	leading?: boolean;
 	maxWait?: number;
 	trailing?: boolean;

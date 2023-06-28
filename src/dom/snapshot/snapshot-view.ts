@@ -254,11 +254,12 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement): void {
 		this._iframeDocument.location.hash = link.getAttribute('href')!;
+		this._updateViewState();
 	}
 
 	protected override _handleScroll() {
 		super._handleScroll();
-		this._updateViewState();
+		this._updateViewStateDebounced();
 	}
 
 	// ***
