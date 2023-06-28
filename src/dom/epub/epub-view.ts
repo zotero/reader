@@ -359,7 +359,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this._updateViewState();
 			this._updateViewStats();
 		},
-		100
+		50
 	);
 
 	private _updateBoundaries() {
