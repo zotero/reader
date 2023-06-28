@@ -709,6 +709,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	setFlowMode(flowMode: FlowMode) {
+		let cfiBefore = this.startCFI;
 		switch (flowMode) {
 			case 'paginated':
 				for (let elem of [this._iframe, this._iframeDocument.body]) {
@@ -724,6 +725,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 				break;
 		}
 		this._flowMode = flowMode;
+		if (cfiBefore) {
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
+		}
 	}
 
 	setFontFamily(fontFamily: string) {
