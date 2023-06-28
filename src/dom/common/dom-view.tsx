@@ -198,7 +198,7 @@ abstract class DOMView<State extends DOMViewState> {
 		}
 	}
 
-	protected _tryUseToolDebounced = debounce(this._tryUseTool.bind(this), 500) as typeof this._tryUseTool;
+	protected _tryUseToolDebounced = debounce(this._tryUseTool.bind(this), 500);
 
 	protected _handleViewUpdate() {
 		this._updateViewState();
