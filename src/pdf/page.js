@@ -457,7 +457,10 @@ export default class Page {
 			}
 		}
 
-		if (action?.type === 'updateAnnotationRange') {
+		if (action?.type === 'updateAnnotationRange' && (
+			action.annotation.position.pageIndex === this.pageIndex
+			|| action.annotation.position.nextPageRects && action.annotation.position.pageIndex + 1 === this.pageIndex
+		)) {
 			if (action.annotation.type === 'highlight') {
 				this._renderHighlight(action.annotation);
 			}
