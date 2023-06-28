@@ -730,8 +730,10 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
-		this._gotPointerUp = false;
-		this._pointerMovedWhileDown = false;
+		if (event.button == 0) {
+			this._gotPointerUp = false;
+			this._pointerMovedWhileDown = false;
+		}
 
 		this._options.onSetOverlayPopup();
 
