@@ -208,7 +208,7 @@ class PDFView {
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
 		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this), { capture: true });
-		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
+		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this), true);
 		this._iframeWindow.addEventListener('input', this._handleInput.bind(this));
 
 		this._dragCanvas = this._iframeWindow.document.createElement('canvas');
@@ -2212,6 +2212,8 @@ class PDFView {
 	}
 
 	_handleCopy(event) {
+		event.preventDefault();
+		event.stopPropagation();
 		if (!event.clipboardData || this.textAnnotationFocused()) {
 			return;
 		}
@@ -2231,7 +2233,6 @@ class PDFView {
 			}
 			this._onSetDataTransferAnnotations(event.clipboardData, annotation, true);
 		}
-		event.preventDefault();
 	}
 
 	_handleInput(event) {
