@@ -121,19 +121,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this._sectionsContainer = this._iframeDocument.createElement('div');
 		this._sectionsContainer.classList.add('sections');
 		this._sectionsContainer.hidden = true;
-		this._handleTransitionStart = (event) => {
-			if (event.propertyName == 'left') {
-				this._animatingPageTurn = true;
-				let update = () => {
-					if (!this._animatingPageTurn) {
-						return;
-					}
-					this._handleViewUpdate();
-					window.requestAnimationFrame(update);
-				};
-				window.requestAnimationFrame(update);
-			}
-		};
 		this._sectionsContainer.addEventListener('transitionstart', this._handleTransitionStart);
 		this._sectionsContainer.addEventListener('transitionend', this._handleTransitionEnd);
 		this._iframeDocument.body.addEventListener('touchstart', this._handleTouchStart);
@@ -234,6 +221,18 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected override _getAnnotationOverlayParent() {
 		return this._iframeDocument?.body;
+	}
+
+	protected override _renderAnnotations() {
+		if (this._animatingPageTurn) {
+			let shown = this._showAnnotations;
+			this._showAnnotations = false;
+			super._renderAnnotations();
+			this._showAnnotations = shown;
+		}
+		else {
+			super._renderAnnotations();
+		}
 	}
 
 	getCFI(rangeOrNode: Range | Node): EpubCFI | null {
@@ -475,14 +474,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 		if (event.propertyName == 'left') {
 			this._animatingPageTurn = true;
-			let update = () => {
-				if (!this._animatingPageTurn) {
-					return;
-				}
-				this._handleViewUpdate();
-				window.requestAnimationFrame(update);
-			};
-			window.requestAnimationFrame(update);
+			this._handleViewUpdate();
 		}
 	};
 
