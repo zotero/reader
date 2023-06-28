@@ -603,8 +603,10 @@ abstract class DOMView<State extends DOMViewState> {
 	private _handleContextMenu(event: MouseEvent) {
 		// Prevent native context menu
 		event.preventDefault();
-		let br = this._iframe.getBoundingClientRect();
-		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+		if (!(event.target as Element).closest('#annotation-overlay')) {
+			let br = this._iframe.getBoundingClientRect();
+			this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+		}
 	}
 
 	private _handleSelectionChange() {
