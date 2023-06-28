@@ -724,6 +724,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 				}
 				break;
 		}
+
+		if (flowMode == this._flowMode) {
+			return;
+		}
 		this._flowMode = flowMode;
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
