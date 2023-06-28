@@ -517,10 +517,16 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 				}
 			}
 
-			if (!newRange.toString().length
+			if (newRange.collapsed
+				|| !newRange.toString().length
+				|| newRange.getClientRects().length == 0
 				// Make sure we stay within one section
 				|| doc?.querySelector('[data-section-index]')
 					&& !closestElement(newRange.commonAncestorContainer)?.closest('[data-section-index]')) {
+				return;
+			}
+			let boundingRect = newRange.getBoundingClientRect();
+			if (!boundingRect.width || !boundingRect.height) {
 				return;
 			}
 
