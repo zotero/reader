@@ -9,7 +9,7 @@ import {
 } from "../cfi";
 
 class PageMapping {
-	static readonly VERSION = 2;
+	static readonly VERSION = 3;
 
 	private readonly _tree = new BTree<Range, string>(
 		undefined,
@@ -177,7 +177,7 @@ type Matcher = {
 const MATCHERS: Matcher[] = [
 	{
 		selector: 'a[id*="page" i]:empty',
-		extract: el => el.id.match(/page[-_]?(.+)$/i)?.[1]
+		extract: el => el.id.replace(/page[-_]?/i, '').replace(/^(.*_)+/, '')
 	}
 ];
 
