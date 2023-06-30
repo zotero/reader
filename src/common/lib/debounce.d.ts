@@ -2,4 +2,12 @@ export function debounce<F extends CallableFunction>(func: F, wait?: number, opt
 	leading?: boolean;
 	maxWait?: number;
 	trailing?: boolean;
-}): F;
+}): F & DebounceResult;
+
+export interface DebounceResult {
+	cancel(): void;
+
+	flush(): void;
+
+	pending(): boolean;
+}

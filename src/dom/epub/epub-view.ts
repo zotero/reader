@@ -560,7 +560,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected override _handleScroll() {
 		super._handleScroll();
-		this._invalidateStartRangeAndCFI(true);
+		if (!this._invalidateStartRangeAndCFI.pending()) {
+			this._invalidateStartRangeAndCFI(true);
+		}
 	}
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
@@ -881,6 +883,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 		if ('nodeType' in target) {
 			target.scrollIntoView(options);
+			this._invalidateStartRangeAndCFI(false);
 			return;
 		}
 
