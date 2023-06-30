@@ -74,7 +74,9 @@ function Toolbar(props) {
 					<button
 						id="zoomAuto"
 						className="toolbarButton zoomAuto"
-						title="Zoom Auto"
+						title={intl.formatMessage({
+							id: props.type === 'pdf' ? 'pdfReader.zoomAuto' : 'pdfReader.zoomReset'
+						})}
 						tabIndex={-1}
 						disabled={!props.enableZoomReset}
 						onClick={props.onZoomReset}
