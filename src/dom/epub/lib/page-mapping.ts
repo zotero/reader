@@ -9,7 +9,7 @@ import {
 } from "../cfi";
 
 class PageMapping {
-	static readonly VERSION = 3;
+	static readonly VERSION = 4;
 
 	private readonly _tree = new BTree<Range, string>(
 		undefined,
@@ -136,6 +136,7 @@ class PageMapping {
 
 	save(view: EPUBView): string {
 		let version = PageMapping.VERSION;
+		let isPhysical = this._isPhysical;
 		let mappings = this._tree.toArray()
 			.map(([range, label]) => {
 				let cfi = view.getCFI(range);
@@ -145,7 +146,11 @@ class PageMapping {
 				return [shortenCFI(cfi.toString(true)), label];
 			})
 			.filter(Boolean);
-		return JSON.stringify({ version, mappings });
+		return JSON.stringify({
+			version,
+			isPhysical,
+			mappings,
+		});
 	}
 
 	load(saved: string, view: EPUBView): boolean {
@@ -157,6 +162,7 @@ class PageMapping {
 			console.warn(`Page mappings are old: ${obj.version} < ${PageMapping.VERSION}`);
 			return false;
 		}
+		this._isPhysical = obj.isPhysical;
 		let mappings = obj.mappings;
 		if (!Array.isArray(mappings)) {
 			console.error('Unable to load persisted page mapping', saved);
