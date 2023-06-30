@@ -47,7 +47,7 @@ export class FocusManager {
 
 	_handleMouseDown(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view')) {
+			if (!event.target.closest('input, textarea, button, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view')) {
 				event.preventDefault();
 			}
 			else if (event.target.closest('.annotation') && event.target.closest('.more, .page, .tags')) {
