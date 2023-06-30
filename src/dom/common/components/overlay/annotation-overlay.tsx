@@ -23,6 +23,7 @@ export type DisplayedAnnotation = {
 	sortIndex?: string;
 	text?: string;
 	comment?: string;
+	readOnly?: boolean;
 	key: string;
 	range: Range;
 };
@@ -276,7 +277,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					/>
 				</foreignObject>
 			))}
-			{(!pointerEventsSuppressed || isResizing) && selected && singleSelection && supportsCaretPositionFromPoint() && (
+			{(!pointerEventsSuppressed || isResizing) && selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...rects.values()]}

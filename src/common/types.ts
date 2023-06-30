@@ -36,6 +36,7 @@ export interface Annotation {
 	tags: string[];
 	dateCreated: string;
 	dateModified: string;
+	readOnly?: boolean;
 	authorName: string;
 	isAuthorNameAuthoritative: boolean;
 }

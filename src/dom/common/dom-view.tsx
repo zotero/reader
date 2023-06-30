@@ -258,6 +258,7 @@ abstract class DOMView<State extends DOMViewState> {
 				sortIndex: a.sortIndex,
 				text: a.text,
 				comment: a.comment,
+				readOnly: a.readOnly,
 				key: a.id,
 				range: this.toDisplayedRange(a.position),
 			})).filter(a => !!a.range) as DisplayedAnnotation[],
@@ -677,7 +678,7 @@ abstract class DOMView<State extends DOMViewState> {
 	private _handleAnnotationDragStart = (id: string, dataTransfer: DataTransfer) => {
 		let annotation = this._annotationsByID.get(id)!;
 		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
-		if (annotation.type === 'note') {
+		if (annotation.type === 'note' && !annotation.readOnly) {
 			this._draggingNoteAnnotation = annotation;
 		}
 		this._previewAnnotation = null;
