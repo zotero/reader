@@ -650,6 +650,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			pageIndex: pageIndex ?? undefined,
 			pageLabel: pageLabel ?? undefined,
 			pagesCount: this._pageMapping.length,
+			usePhysicalPageNumbers: this._pageMapping.isPhysical,
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
 			canZoomIn: this._scale === undefined || this._scale < 1.5,
 			canZoomOut: this._scale === undefined || this._scale > 0.8,

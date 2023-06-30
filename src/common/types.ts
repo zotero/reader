@@ -87,6 +87,7 @@ export type ViewStats = {
 	pageIndex?: number;
 	pageLabel?: string;
 	pagesCount?: number;
+	usePhysicalPageNumbers?: boolean;
 	canCopy: boolean;
 	canZoomOut: boolean;
 	canZoomIn: boolean;

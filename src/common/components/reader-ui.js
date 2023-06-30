@@ -107,6 +107,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					pageIndex={viewStats.pageIndex || 0}
 					pageLabel={viewStats.pageLabel || ''}
 					pagesCount={viewStats.pagesCount || 0}
+					usePhysicalPageNumbers={viewStats.usePhysicalPageNumbers}
 					percentage={viewStats.percentage || ''}
 					sidebarOpen={state.sidebarOpen}
 					enableZoomOut={viewStats.canZoomOut}

@@ -117,7 +117,11 @@ function Toolbar(props) {
 						type="input"
 						id="pageNumber"
 						className="toolbarField pageNumber"
-						title={props.type == 'pdf' ? "Page" : "Location"}
+						title={intl.formatMessage({
+							id: props.type === 'pdf' || props.usePhysicalPageNumbers
+								? 'pdfReader.page'
+								: 'pdfReader.location'
+						})}
 						defaultValue=""
 						size="4"
 						min="1"
