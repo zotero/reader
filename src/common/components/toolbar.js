@@ -57,7 +57,7 @@ function Toolbar(props) {
 					<button
 						id="zoomOut"
 						className="toolbarButton zoomOut"
-						title="Zoom Out"
+						title={intl.formatMessage({ id: 'pdfReader.zoomOut' })}
 						tabIndex={-1}
 						disabled={!props.enableZoomOut}
 						onClick={props.onZoomOut}
@@ -65,7 +65,7 @@ function Toolbar(props) {
 					<button
 						id="zoomIn"
 						className="toolbarButton zoomIn"
-						title="Zoom In"
+						title={intl.formatMessage({ id: 'pdfReader.zoomIn' })}
 						tabIndex={-1}
 						disabled={!props.enableZoomIn}
 						onClick={props.onZoomIn}
@@ -85,7 +85,7 @@ function Toolbar(props) {
 				<button
 					id="navigateBack"
 					className="toolbarButton navigateBack"
-					title="Back"
+					title={intl.formatMessage({ id: 'general.back' })}
 					tabIndex={-1}
 					disabled={!props.enableNavigateBack}
 					onClick={props.onNavigateBack}
@@ -94,7 +94,7 @@ function Toolbar(props) {
 					<div className="splitToolbarButton">
 						<button
 							className="toolbarButton pageUp"
-							title="Previous Page"
+							title={intl.formatMessage({ id: 'pdfReader.previousPage' })}
 							id="previous"
 							tabIndex={-1}
 							disabled={!props.enableNavigateToPreviousPage}
@@ -102,7 +102,7 @@ function Toolbar(props) {
 						/>
 						<button
 							className="toolbarButton pageDown"
-							title="Next Page"
+							title={intl.formatMessage({ id: 'pdfReader.nextPage' })}
 							id="next"
 							tabIndex={-1}
 							disabled={!props.enableNavigateToNextPage}
