@@ -8,7 +8,7 @@ function Toolbar(props) {
 
 	useEffect(() => {
 		if (['pdf', 'epub'].includes(props.type)) {
-			pageInputRef.current.value = props.pageLabel || (props.pageIndex + 1);
+			pageInputRef.current.value = props.pageLabel ?? (props.pageIndex + 1);
 		}
 	}, [props.pageLabel, props.pageIndex]);
 

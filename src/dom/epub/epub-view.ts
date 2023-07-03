@@ -645,7 +645,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		let canNavigateToNextPage = this.canNavigateToNextPage();
 		let viewStats: ViewStats = {
 			pageIndex: pageIndex ?? undefined,
-			pageLabel: pageLabel ?? undefined,
+			pageLabel: pageLabel ?? '',
 			pagesCount: this._pageMapping.length,
 			usePhysicalPageNumbers: this._pageMapping.isPhysical,
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
