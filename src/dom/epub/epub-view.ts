@@ -821,6 +821,10 @@ class EPUBView extends DOMView<EPUBViewState> {
 				range = this.getRange(location.pageNumber);
 			}
 			else {
+				if (this.startRange && this._pageMapping.getPageLabel(this.startRange) === location.pageNumber) {
+					console.log('Already on page', location.pageNumber);
+					return;
+				}
 				range = this._pageMapping.getRange(location.pageNumber);
 			}
 

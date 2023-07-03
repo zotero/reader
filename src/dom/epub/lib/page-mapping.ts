@@ -124,10 +124,10 @@ class PageMapping {
 		return this._tree.getPairOrNextLower(range)?.[1] ?? null;
 	}
 
-	getRange(pageNumber: string): Range | null {
+	getRange(pageLabel: string): Range | null {
 		// This is slow, but only needs to be called when manually navigating to a physical page number
 		for (let [key, value] of this._tree.entries()) {
-			if (value === pageNumber) {
+			if (value === pageLabel) {
 				return key;
 			}
 		}
