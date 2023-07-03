@@ -259,7 +259,7 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 	protected override _handleScroll() {
 		super._handleScroll();
-		this._updateViewStateDebounced();
+		this._updateViewState();
 	}
 
 	// ***

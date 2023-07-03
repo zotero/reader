@@ -142,8 +142,6 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected abstract _updateViewState(): void;
 
-	protected _updateViewStateDebounced = debounce(this._updateViewState, 8000, { maxWait: 16000 });
-
 	protected abstract _updateViewStats(): void;
 
 	protected abstract _isExternalLink(link: HTMLAnchorElement): boolean;

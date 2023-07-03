@@ -352,16 +352,11 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	private _invalidateStartRangeAndCFI = debounce(
-		(debounceViewState: boolean) => {
+		() => {
 			this._cachedStartRange = null;
 			this._cachedStartCFI = null;
 			this._updateBoundaries();
-			if (debounceViewState) {
-				this._updateViewStateDebounced();
-			}
-			else {
-				this._updateViewState();
-			}
+			this._updateViewState();
 			this._updateViewStats();
 		},
 		50
@@ -561,7 +556,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	protected override _handleScroll() {
 		super._handleScroll();
 		if (!this._invalidateStartRangeAndCFI.pending()) {
-			this._invalidateStartRangeAndCFI(true);
+			this._invalidateStartRangeAndCFI();
 		}
 	}
 
@@ -672,7 +667,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected override _handleViewUpdate() {
 		super._handleViewUpdate();
-		this._invalidateStartRangeAndCFI(false);
+		this._invalidateStartRangeAndCFI();
 		if (this._find) {
 			this._find.handleViewUpdate();
 		}
@@ -883,7 +878,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 		if ('nodeType' in target) {
 			target.scrollIntoView(options);
-			this._invalidateStartRangeAndCFI(false);
+			this._invalidateStartRangeAndCFI();
 			return;
 		}
 
@@ -898,7 +893,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			left: x,
 			top: y,
 		});
-		this._invalidateStartRangeAndCFI(false);
+		this._invalidateStartRangeAndCFI();
 	}
 
 	private _scrollIntoViewPaginated(target: Range | HTMLElement) {
