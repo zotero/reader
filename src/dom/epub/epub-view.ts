@@ -383,10 +383,17 @@ class EPUBView extends DOMView<EPUBViewState> {
 					true
 				);
 				if (startRange) {
-					startRange.collapse(true);
+					// Navigating to page N might put us on a line containing the boundary between page N-1 and page N
+					// somewhere in its middle. We want the page number field to show N in that case, not N-1.
+					// We collapse the range to its end so that, for the purpose of comparing with page
+					// number-delineating ranges, it looks like we're scrolled down a little further than we actually
+					// are - to the end of the uppermost element or text node.
+					// TODO: Make sure this doesn't break anything involving images / block elements / long text
+					startRange.collapse(false);
 					this._cachedStartRange = startRange;
 				}
 				if (startCFIRange) {
+					// But CFIs should be calculated based on the start of the range, so collapse to the start
 					startCFIRange.collapse(true);
 					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase);
 				}
