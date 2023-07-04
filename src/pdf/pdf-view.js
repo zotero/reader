@@ -121,7 +121,7 @@ class PDFView {
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 
 		let setOptions = () => {
-			if (!this._iframeWindow.PDFViewerApplicationOptions) {
+			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
 				return;
 			}
 			this._iframeWindow.PDFViewerApplicationOptions.set('isEvalSupported', false);

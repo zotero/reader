@@ -390,9 +390,7 @@ class Reader {
 						? 'enable-vertical-split-view'
 						: 'enable-horizontal-split-view'
 				);
-				if (!this._state.secondaryViewState) {
-					this._updateState({ secondaryViewState: { ...this._state.primaryViewState } });
-				}
+				this._updateState({ secondaryViewState: { ...this._state.primaryViewState } });
 				this._secondaryView = this._createView(false);
 			}
 			// Unsplit
