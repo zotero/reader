@@ -1,9 +1,6 @@
 
 :root {
 	--viewer-container-height: 0;
-	--pdfViewer-padding-bottom: 0;
-	--page-margin: 9px auto 0;
-	--spreadHorizontalWrapped-margin-LR: -3.5px;
 	--loading-icon-delay: 400ms;
 }
 
@@ -13,10 +10,7 @@ body {
 
 @media screen and (forced-colors: active) {
 	:root {
-		--pdfViewer-padding-bottom: 9px;
-		--page-margin: 9px auto 0;
 		--page-border: 1px solid CanvasText;
-		--spreadHorizontalWrapped-margin-LR: 3.5px;
 	}
 }
 
@@ -35,7 +29,11 @@ body {
 	   when scaling (see #15929). */
 	--scale-factor: 1;
 
-	padding-bottom: var(--pdfViewer-padding-bottom);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
+	padding: 18px;
 }
 
 #outerContainer {
@@ -81,40 +79,31 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	height: 0;
 }
 
-.pdfViewer.scrollHorizontal,
-.pdfViewer.scrollWrapped,
-.spread {
-	margin-left: 3.5px;
-	margin-right: 3.5px;
-	text-align: center;
+.pdfViewer.scrollHorizontal {
+	flex-direction: row;
 }
 
-.pdfViewer.scrollHorizontal,
-.spread {
-	white-space: nowrap;
+.pdfViewer.scrollWrapped {
+	flex-direction: row;
+	flex-wrap: wrap;
+	justify-content: center;
 }
 
-.pdfViewer.scrollHorizontal .spread,
-.pdfViewer.scrollWrapped .spread {
-	margin-left: 0;
-	margin-right: 0;
+.pdfViewer .spread {
+	display: flex;
+	gap: 10px;
 }
 
 .spread .page,
 .spread .dummyPage,
 .pdfViewer.scrollHorizontal .page,
-.pdfViewer.scrollWrapped .page,
-.pdfViewer.scrollHorizontal .spread,
-.pdfViewer.scrollWrapped .spread {
+.pdfViewer.scrollWrapped .page {
 	display: inline-block;
 	vertical-align: middle;
 }
 
-.spread .page,
-.pdfViewer.scrollHorizontal .page,
-.pdfViewer.scrollWrapped .page {
-	margin-left: var(--spreadHorizontalWrapped-margin-LR);
-	margin-right: var(--spreadHorizontalWrapped-margin-LR);
+.pdfViewer .page {
+	flex-shrink: 0;
 }
 
 .pdfViewer .page canvas {
@@ -161,18 +150,11 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	display: none;
 }
 
-.pdfViewer .canvasWrapper {
-	overflow: hidden;
-	width: 100%;
-	height: 100%;
-	z-index: 1;
-}
-
 .pdfViewer .page {
 	direction: ltr;
 	width: 816px;
 	height: 1056px;
-	margin: var(--page-margin);
+
 	position: relative;
 	overflow: hidden;
 	border: var(--page-border);
@@ -187,9 +169,12 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	height: var(--viewer-container-height);
 }
 
-.page:first-child {
-	 margin-top: 19px;
- }
+.pdfViewer .canvasWrapper {
+	overflow: hidden;
+	width: 100%;
+	height: 100%;
+	z-index: 1;
+}
 
 #sidebarContainer, .toolbar, .secondaryToolbar, .findbar, #overlayContainer, #fileInput {
 	display: none;
