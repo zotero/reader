@@ -52,17 +52,25 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (this._options.data.buf) {
 			let text = enc.decode(this._options.data.buf);
 			delete this._options.data.buf;
+			let doc = new DOMParser().parseFromString(text, 'text/html');
+
 			if (isSafari) {
-				let doc = new DOMParser().parseFromString(text, 'text/html');
 				doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
 					...DOMPURIFY_CONFIG,
 					RETURN_DOM: true,
 				}));
-				return new XMLSerializer().serializeToString(doc);
 			}
-			else {
-				return text;
+
+			for (let base of doc.querySelectorAll('base')) {
+				base.remove();
 			}
+			if (this._options.resourceBaseURI !== undefined) {
+				let base = doc.createElement('base');
+				base.href = this._options.resourceBaseURI;
+				doc.head.prepend(base);
+			}
+
+			return new XMLSerializer().serializeToString(doc);
 		}
 		else if (this._options.data.srcDoc) {
 			return this._options.data.srcDoc;

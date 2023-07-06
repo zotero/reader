@@ -39,6 +39,7 @@ async function createReader() {
 		showAnnotations: true,
 		platform: 'web',
 		// password: 'test',
+		resourceBaseURI: new URL('/', window.location).toString(),
 		onOpenContextMenu(params) {
 			reader.openContextMenu(params);
 		},

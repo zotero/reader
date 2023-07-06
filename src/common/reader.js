@@ -130,6 +130,7 @@ class Reader {
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
+			resourceBaseURI: options.resourceBaseURI,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: [],
@@ -764,10 +765,12 @@ class Reader {
 			view = new EPUBView({
 				...common,
 				fontFamily: this._state.fontFamily,
+				resourceBaseURI: this._state.resourceBaseURI,
 				onSetOutline,
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
+				resourceBaseURI: this._state.resourceBaseURI,
 				...common
 			});
 		}
