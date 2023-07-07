@@ -70,6 +70,8 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	private _cachedStartCFI: EpubCFI | null = null;
 
+	private _cachedStartCFIOffsetY: number | null = null;
+
 	private _cachedEndView: SectionView | null = null;
 
 	protected readonly _navStack = new NavStack<string>();
@@ -157,7 +159,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			// Perform the navigation on the next frame, because apparently the split view layout might not have
 			// settled yet
 			await new Promise(resolve => requestAnimationFrame(resolve));
-			this.navigate({ pageNumber: cfi }, { behavior: 'auto' });
+			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
 		}
 	}
 
@@ -332,6 +334,13 @@ class EPUBView extends DOMView<EPUBViewState> {
 		return this._cachedStartCFI;
 	}
 
+	get startCFIOffsetY(): number | null {
+		if (this._cachedStartCFIOffsetY === null) {
+			this._updateBoundaries();
+		}
+		return this._cachedStartCFIOffsetY;
+	}
+
 	get endView(): SectionView | null {
 		if (!this._cachedEndView) {
 			this._updateBoundaries();
@@ -354,6 +363,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 	private _invalidateStartRangeAndCFI = debounce(
 		() => {
 			this._cachedStartRange = null;
+			this._cachedStartCFIOffsetY = null;
 			this._cachedStartCFI = null;
 			this._updateBoundaries();
 			this._updateViewState();
@@ -396,6 +406,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 					// But CFIs should be calculated based on the start of the range, so collapse to the start
 					startCFIRange.collapse(true);
 					this._cachedStartCFI = new EpubCFI(startCFIRange, view.section.cfiBase);
+					this._cachedStartCFIOffsetY = startCFIRange.getBoundingClientRect().top;
 				}
 				if (startRange && startCFIRange) {
 					foundStart = true;
@@ -554,8 +565,16 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	protected override _handleResize() {
 		let beforeCFI = this.startCFI;
+		let beforeOffset = this.startCFIOffsetY;
 		if (beforeCFI) {
-			this.navigate({ pageNumber: beforeCFI.toString() }, { skipNavStack: true, behavior: 'auto' });
+			this.navigate(
+				{ pageNumber: beforeCFI.toString() },
+				{
+					skipNavStack: true,
+					behavior: 'auto',
+					offsetY: beforeOffset ?? undefined
+				}
+			);
 		}
 		this._handleViewUpdate();
 	}
@@ -637,6 +656,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		let viewState: EPUBViewState = {
 			scale: Math.round(this._scale * 1000) / 1000, // Three decimal places
 			cfi: shortenCFI(this.startCFI.toString(true)),
+			cfiElementOffset: this.startCFIOffsetY ?? undefined,
 			savedPageMapping: this._savedPageMapping,
 			flowMode: this._flowMode,
 		};
@@ -899,6 +919,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 			y += rect.height / 2;
 			y -= this._iframe.clientHeight / 2;
 		}
+		if (options && options.offsetY !== undefined) {
+			y -= options.offsetY;
+		}
 		this._iframeWindow.scrollBy({
 			...options,
 			left: x,
@@ -1045,6 +1068,7 @@ type FlowMode = 'paginated' | 'scrolled';
 
 export interface EPUBViewState extends DOMViewState {
 	cfi?: string;
+	cfiElementOffset?: number;
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
 }
