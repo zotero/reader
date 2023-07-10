@@ -136,8 +136,6 @@ abstract class DOMView<State extends DOMViewState> {
 	// Abstractions over document structure
 	// ***
 
-	protected abstract _getAnnotationOverlayParent(): ParentNode | null;
-
 	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
 
 	protected abstract _updateViewState(): void;
@@ -231,12 +229,7 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 
 	protected _renderAnnotations() {
-		let root = this._getAnnotationOverlayParent();
-		if (!root) {
-			return;
-		}
-		let doc = root.ownerDocument!;
-		let container = root.querySelector('#annotation-overlay');
+		let container = this._iframeDocument.body.querySelector(':scope > #annotation-overlay');
 		if (!this._showAnnotations) {
 			if (container) {
 				container.remove();
@@ -244,9 +237,9 @@ abstract class DOMView<State extends DOMViewState> {
 			return;
 		}
 		if (!container) {
-			container = doc.createElement('div');
+			container = this._iframeDocument.createElement('div');
 			container.id = 'annotation-overlay';
-			root.append(container);
+			this._iframeDocument.body.append(container);
 		}
 		let displayedAnnotations: DisplayedAnnotation[] = [
 			...this._annotations.map(a => ({

@@ -78,10 +78,6 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 		}
 	}
 
-	protected _getAnnotationOverlayParent() {
-		return this._iframeDocument?.body;
-	}
-
 	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		if (range.collapsed) {
 			return null;

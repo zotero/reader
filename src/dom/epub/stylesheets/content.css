@@ -69,23 +69,22 @@ body.paginated > .sections {
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
 	position: relative;
-	left: calc((-100% - 60px) * var(--page-index, 0));
 	top: 0;
 	columns: auto 2;
 	column-gap: 60px;
 	column-fill: auto;
-	overflow: visible;
+	overflow: hidden;
 	overscroll-behavior: none;
-}
-
-body.paginated > .sections:not(.disable-transition) {
-	transition: left ease-in-out 0.3s;
 }
 
 body.paginated > .sections > .section-container {
 	/* In an ideal world, this would be `break-after: column`. Unfortunately, most browsers don't actually support
 	   that rule. Fortunately, a huge margin-bottom works fine too. */
 	margin-bottom: 9999px;
+}
+
+body.paginated.animating-page-turn > #annotation-overlay {
+	display: none;
 }
 
 body.paginated replaced-body * {

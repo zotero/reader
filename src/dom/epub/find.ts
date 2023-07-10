@@ -31,7 +31,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		this._onSetFindState = options.onSetFindState;
 
 		// Process visible views first, and then the rest of the views if we haven't exceeded 999 results yet
-		this._processViews(this.view.visibleViews, options.startRange);
+		this._processViews(this.view.flow.visibleViews, options.startRange);
 		this._processViews(this.view.views, undefined, 999);
 	}
 
@@ -107,7 +107,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	}
 
 	handleViewUpdate() {
-		this._processViews(this.view.visibleViews);
+		this._processViews(this.view.flow.visibleViews);
 	}
 
 	private _processViews(views: SectionView[], startRange?: Range, maxResults?: number) {
