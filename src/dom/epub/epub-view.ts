@@ -116,7 +116,6 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 		let styleScoper = new StyleScoper(this._iframeDocument);
 		await Promise.all(this.book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
-		styleScoper.rewriteAll();
 
 		if (this._options.fontFamily) {
 			this._iframeDocument.documentElement.style.setProperty('--content-font-family', this._options.fontFamily);
@@ -647,7 +646,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 				return;
 			}
 			let target = hash && this._sectionViews[section.index].container
-				.querySelector('[id="' + hash.replace(/"/g, '"') + '"]');
+				.querySelector('[id="' + hash.replace(/"/g, '\\"') + '"]');
 			if (target) {
 				this.flow.scrollIntoView(target as HTMLElement, options);
 			}

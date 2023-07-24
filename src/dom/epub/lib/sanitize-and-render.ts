@@ -92,6 +92,8 @@ export class StyleScoper {
 		if (this._sheets.has(css)) {
 			return this._sheets.get(css)!.scopeClass;
 		}
+		let scopeClass = `__scope_${this._sheets.size}`;
+		this._sheets.set(css, { scopeClass });
 
 		let sheet;
 		let added = false;
@@ -116,11 +118,13 @@ export class StyleScoper {
 			}
 		}
 
-		if (!added && this._document.adoptedStyleSheets) {
+		this._visitStyleSheet(sheet, scopeClass);
+
+		if (!added) {
 			this._document.adoptedStyleSheets.push(sheet);
 		}
 
-		let scopeClass = `__scope_${this._sheets.size}`;
+		// Overwrite previous value now that the sheet is loaded
 		this._sheets.set(css, { sheet, scopeClass });
 		return scopeClass;
 	}
@@ -139,12 +143,6 @@ export class StyleScoper {
 			this._textCache.set(url, css);
 		}
 		return this.add(css);
-	}
-
-	rewriteAll() {
-		for (let { sheet, scopeClass } of this._sheets.values()) {
-			this._visitStyleSheet(sheet, scopeClass);
-		}
 	}
 
 	private _visitStyleSheet(sheet: CSSStyleSheet, scopeClass: string) {
@@ -198,6 +196,6 @@ export class StyleScoper {
 }
 
 type SheetMetadata = {
-	sheet: CSSStyleSheet;
+	sheet?: CSSStyleSheet;
 	scopeClass: string;
 };
