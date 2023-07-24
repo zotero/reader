@@ -1,6 +1,79 @@
+import { isSafari } from "../../../common/lib/utilities";
+import DOMPurify from "dompurify";
+import { DOMPURIFY_CONFIG } from "../../common/lib/nodes";
 import parser from "postcss-selector-parser";
 
-class StyleScoper {
+const REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
+
+export async function sanitizeAndRender(xhtml: string, options: {
+	container: Element,
+	styleScoper: StyleScoper,
+}): Promise<HTMLElement> {
+	let { container, styleScoper } = options;
+
+	let doc = container.ownerDocument;
+	let sectionDoc = new DOMParser().parseFromString(xhtml, 'application/xhtml+xml');
+	let walker = doc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
+	let toRemove = [];
+	let toAwait = [];
+
+	// Work around a WebKit bug - see DOMView constructor for details
+	if (isSafari) {
+		DOMPurify.sanitize(sectionDoc.documentElement, {
+			...DOMPURIFY_CONFIG,
+			IN_PLACE: true,
+		});
+	}
+
+	let elem: Element | null = null;
+	// eslint-disable-next-line no-unmodified-loop-condition
+	while ((elem = walker.nextNode() as Element)) {
+		if (REPLACE_TAGS.has(elem.tagName)) {
+			let newElem = doc.createElement('replaced-' + elem.tagName);
+			for (let attr of elem.getAttributeNames()) {
+				newElem.setAttribute(attr, elem.getAttribute(attr)!);
+			}
+			newElem.append(...elem.childNodes);
+			elem.replaceWith(newElem);
+			walker.currentNode = newElem;
+		}
+		else if (elem.tagName == 'style') {
+			container.classList.add(
+				await styleScoper.add(elem.innerHTML || '')
+			);
+			toRemove.push(elem);
+		}
+		else if (elem.tagName == 'link' && elem.getAttribute('rel') == 'stylesheet') {
+			let link = elem as HTMLLinkElement;
+			try {
+				container.classList.add(
+					await styleScoper.addByURL(link.href)
+				);
+			}
+			catch (e) {
+				console.error(e);
+			}
+			toRemove.push(elem);
+		}
+		else if (elem.tagName == 'img') {
+			// We'll wait for images to load (or error) before returning
+			toAwait.push((elem as HTMLImageElement).decode());
+		}
+		else if (elem.tagName == 'title') {
+			toRemove.push(elem);
+		}
+	}
+
+	for (let elem of toRemove) {
+		elem.remove();
+	}
+
+	container.append(...sectionDoc.childNodes);
+	await Promise.allSettled(toAwait).catch(e => console.error(e));
+	return container.querySelector('replaced-body') as HTMLElement;
+}
+
+export class StyleScoper {
 	private _document: Document;
 
 	private _sheets = new Map<string, SheetMetadata>();
@@ -91,7 +164,18 @@ class StyleScoper {
 							nodes: [
 								parser.className({ value: scopeClass }),
 								parser.combinator({ value: ' ' }),
-								selector
+								parser.selector({
+									...selector,
+									nodes: selector.nodes.map((node) => {
+										if (node.type === 'tag' && REPLACE_TAGS.has(node.value.toLowerCase())) {
+											return parser.tag({
+												...node,
+												value: 'replaced-' + node.value
+											});
+										}
+										return node;
+									})
+								})
 							],
 							spaces: selector.spaces
 						})
@@ -117,5 +201,3 @@ type SheetMetadata = {
 	sheet: CSSStyleSheet;
 	scopeClass: string;
 };
-
-export default StyleScoper;

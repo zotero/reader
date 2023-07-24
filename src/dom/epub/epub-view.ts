@@ -31,7 +31,7 @@ import DOMView, {
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
 import { closestElement } from "../common/lib/nodes";
-import StyleScoper from "./lib/style-scoper";
+import { StyleScoper } from "./lib/sanitize-and-render";
 import PageMapping from "./lib/page-mapping";
 import {
 	lengthenCFI,
@@ -160,8 +160,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			document: this._iframeDocument,
 			styleScoper,
 		});
-		let html = await section.render(this.book.archive.request.bind(this.book.archive));
-		await sectionView.initWithHTML(html);
+		await sectionView.render(this.book.archive.request.bind(this.book.archive));
 		this._sectionViews[section.index] = sectionView;
 	}
 
