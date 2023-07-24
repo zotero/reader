@@ -194,7 +194,12 @@ class PrintTask {
 					resolve();
 					return;
 				}
-				window._print();
+				if (typeof zoteroPrint !== 'undefined') {
+					zoteroPrint();
+				}
+				else {
+					window._print();
+				}
 				// Delay promise resolution in case print() was not synchronous.
 				setTimeout(resolve, 20); // Tidy-up.
 			}, 0);
