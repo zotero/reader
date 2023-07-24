@@ -9,7 +9,7 @@ import {
 } from "../cfi";
 
 class PageMapping {
-	static readonly VERSION = 4;
+	static readonly VERSION = 5;
 
 	private readonly _tree = new BTree<Range, string>(
 		undefined,
@@ -26,7 +26,7 @@ class PageMapping {
 		return this._isPhysical;
 	}
 
-	generate(views: Iterable<SectionView>) {
+	generate(views: SectionView[]) {
 		this._addPhysicalPages(views);
 		if (this._tree.length) {
 			return;
@@ -122,6 +122,10 @@ class PageMapping {
 
 	getPageLabel(range: Range): string | null {
 		return this._tree.getPairOrNextLower(range)?.[1] ?? null;
+	}
+
+	get firstRange(): Range | null {
+		return this._tree.minKey() ?? null;
 	}
 
 	getRange(pageLabel: string): Range | null {

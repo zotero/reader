@@ -178,7 +178,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		}
 
 		// Otherwise, extract physical page numbers and fall back to EPUB locations
-		this._pageMapping.generate(this._sectionViews.values());
+		this._pageMapping.generate([...this._sectionViews.values()]);
 		this._savedPageMapping = savedPageMapping = this._pageMapping.save(this);
 		if (window.dev) {
 			window.localStorage.setItem(localStorageKey, savedPageMapping);
