@@ -102,6 +102,11 @@ body.paginated replaced-body * {
 }
 
 replaced-body {
+	display: block;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+	background: transparent !important;
+	
 	font-family: var(--content-font-family, "Georgia"), serif;
 	font-size: calc(var(--content-scale) * 13pt) !important;
 	line-height: 1.4;
