@@ -504,6 +504,9 @@ abstract class DOMView<State extends DOMViewState> {
 		let focusableElements: HTMLElement[] = [];
 		let focusedElementIndex = -1;
 		let focusedElement: HTMLElement | null = this._iframeDocument.activeElement as HTMLElement | null;
+		if (focusedElement?.getAttribute('tabindex') != '-1') {
+			focusedElement = null;
+		}
 		for (let element of this._iframeDocument.querySelectorAll('[tabindex="-1"]')) {
 			focusableElements.push(element as HTMLElement);
 			if (element === focusedElement) {

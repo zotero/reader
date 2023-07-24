@@ -135,7 +135,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this.setFlowMode(viewState.flowMode);
 		}
 		else {
-			this.setFlowMode('paginated'); // TEMP
+			this.setFlowMode('scrolled');
 		}
 		if (viewState.cfi) {
 			let cfi = lengthenCFI(viewState.cfi);
