@@ -2,6 +2,7 @@ import SectionView from "./section-view";
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { CustomScrollIntoViewOptions } from "../common/dom-view";
+import PageMapping from "./lib/page-mapping";
 
 export interface Flow {
 	readonly startView: SectionView | null;
@@ -11,6 +12,8 @@ export interface Flow {
 	readonly startCFI: EpubCFI | null;
 
 	readonly startCFIOffsetY: number | null;
+
+	readonly startRangeIsBeforeFirstMapping: boolean;
 
 	readonly endView: SectionView | null;
 
@@ -50,6 +53,8 @@ abstract class AbstractFlow implements Flow {
 
 	protected _sectionViews: SectionView[];
 
+	protected _pageMapping: PageMapping;
+
 	protected _iframe: HTMLIFrameElement;
 
 	protected _iframeWindow: Window & typeof globalThis;
@@ -66,6 +71,7 @@ abstract class AbstractFlow implements Flow {
 
 	constructor(options: Options) {
 		this._sectionViews = options.sectionViews;
+		this._pageMapping = options.pageMapping;
 		this._iframe = options.iframe;
 		this._iframeWindow = options.iframe.contentWindow! as Window & typeof globalThis;
 		this._iframeDocument = options.iframe.contentDocument!;
@@ -101,6 +107,17 @@ abstract class AbstractFlow implements Flow {
 			this.update();
 		}
 		return this._cachedStartCFIOffsetY;
+	}
+
+	get startRangeIsBeforeFirstMapping() {
+		if (!this.startRange) {
+			return true;
+		}
+		let firstMappedRange = this._pageMapping.firstRange;
+		if (!firstMappedRange) {
+			return false;
+		}
+		return this.startRange.compareBoundaryPoints(Range.START_TO_START, firstMappedRange) < 0;
 	}
 
 	get endView(): SectionView | null {
@@ -159,6 +176,7 @@ abstract class AbstractFlow implements Flow {
 
 interface Options {
 	sectionViews: SectionView[]
+	pageMapping: PageMapping;
 	iframe: HTMLIFrameElement;
 	scale: number;
 	onUpdateViewState: () => void;

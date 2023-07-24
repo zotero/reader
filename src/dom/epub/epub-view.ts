@@ -138,11 +138,16 @@ class EPUBView extends DOMView<EPUBViewState> {
 			this.setFlowMode('scrolled');
 		}
 		if (viewState.cfi) {
-			let cfi = lengthenCFI(viewState.cfi);
-			// Perform the navigation on the next frame, because apparently the split view layout might not have
-			// settled yet
-			await new Promise(resolve => requestAnimationFrame(resolve));
-			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
+			if (viewState.cfi === '_start') {
+				this.navigateToFirstPage();
+			}
+			else {
+				let cfi = lengthenCFI(viewState.cfi);
+				// Perform the navigation on the next frame, because apparently the split view layout might not have
+				// settled yet
+				await new Promise(resolve => requestAnimationFrame(resolve));
+				this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
+			}
 		}
 		this._handleViewUpdate();
 	}
@@ -408,12 +413,16 @@ class EPUBView extends DOMView<EPUBViewState> {
 	}
 
 	protected override _updateViewState() {
-		if (!this.flow.startCFI) {
-			return;
+		let cfi;
+		if (this.flow.startCFI) {
+			cfi = shortenCFI(this.flow.startCFI.toString(true));
+		}
+		else if (this.flow.startRangeIsBeforeFirstMapping) {
+			cfi = '_start';
 		}
 		let viewState: EPUBViewState = {
 			scale: Math.round(this._scale * 1000) / 1000, // Three decimal places
-			cfi: shortenCFI(this.flow.startCFI.toString(true)),
+			cfi,
 			cfiElementOffset: this.flow.startCFIOffsetY ?? undefined,
 			savedPageMapping: this._savedPageMapping,
 			flowMode: this._flowMode,
@@ -524,6 +533,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 		this.flow = new (flowMode == 'paginated' ? PaginatedFlow : ScrolledFlow)({
 			iframe: this._iframe,
 			sectionViews: this._sectionViews,
+			pageMapping: this._pageMapping,
 			scale: this._scale,
 			onUpdateViewState: () => this._updateViewState(),
 			onUpdateViewStats: () => this._updateViewStats(),
