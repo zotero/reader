@@ -185,6 +185,8 @@ interface Options {
 }
 
 export class ScrolledFlow extends AbstractFlow {
+	static readonly SCROLL_PADDING_UNSCALED = 35;
+
 	scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void {
 		let rect = target.getBoundingClientRect();
 
@@ -221,19 +223,26 @@ export class ScrolledFlow extends AbstractFlow {
 		this.invalidate();
 	}
 
+	get scrollPadding() {
+		return ScrolledFlow.SCROLL_PADDING_UNSCALED * this._scale;
+	}
+
 	canNavigateToPreviousPage() {
-		return this._iframeWindow.scrollY >= this._iframe.clientHeight;
+		return this._iframeWindow.scrollY >= this._iframe.clientHeight
+			- this.scrollPadding;
 	}
 
 	canNavigateToNextPage() {
-		return this._iframeWindow.scrollY < this._iframeDocument.documentElement.scrollHeight - this._iframe.clientHeight;
+		return this._iframeWindow.scrollY <= this._iframeDocument.documentElement.scrollHeight
+			- this._iframe.clientHeight * 2
+			+ this.scrollPadding;
 	}
 
 	navigateToPreviousPage() {
 		if (!this.canNavigateToPreviousPage()) {
 			return;
 		}
-		this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + 35 * this._scale });
+		this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + this.scrollPadding });
 		this._onUpdateViewState();
 		this._onUpdateViewStats();
 	}
@@ -242,7 +251,7 @@ export class ScrolledFlow extends AbstractFlow {
 		if (!this.canNavigateToNextPage()) {
 			return;
 		}
-		this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - 35 * this._scale });
+		this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - this.scrollPadding });
 		this._onUpdateViewState();
 		this._onUpdateViewStats();
 	}
