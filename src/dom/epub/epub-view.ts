@@ -689,7 +689,7 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 
 	canNavigateToPreviousPage() {
-		return this.flow.canNavigateToNextPage();
+		return this.flow.canNavigateToPreviousPage();
 	}
 
 	canNavigateToNextPage() {
