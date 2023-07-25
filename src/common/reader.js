@@ -741,6 +741,7 @@ class Reader {
 			});
 
 			if (primary) {
+				view.initializedPromise.then(() => view.focus());
 				initPDFPrintService({
 					onProgress: (percent) => {
 						this._updateState({ printOverlay: { percent } });
@@ -1137,6 +1138,10 @@ class Reader {
 			this._updateState({ primaryViewSelectionPopup: null });
 			this._updateState({ primaryViewOverlayPopup: null });
 		}
+	}
+
+	focus() {
+		this._focusManager.restoreFocus();
 	}
 
 	freeze() {
