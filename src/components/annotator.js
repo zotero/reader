@@ -483,6 +483,7 @@ const Annotator = React.forwardRef((props, ref) => {
 	// the latest value and eliminate the complexity of rebinding custom events.
 	// useRefState state variables are used only for rendering
 
+	const [_showAnnotations, showAnnotationsRef, setShowAnnotations] = useRefState(props.showAnnotations);
 	const [_filter, filterRef, setFilter] = useRefState({ query: '', colors: [], tags: [], authors: [] });
 	const [_annotations, annotationsRef, setAnnotations] = useRefState([]);
 	const [_allAnnotations, allAnnotationsRef, setAllAnnotations] = useRefState([]);
@@ -540,6 +541,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		},
 		setColor,
 		setEnableAddToNote,
+		setShowAnnotations,
 		openPageLabelPopup,
 		editHighlightedText,
 		clearFilter: () => {
@@ -1253,7 +1255,7 @@ const Annotator = React.forwardRef((props, ref) => {
 		lastSelectedAnnotationIDRef.current = selectedIDs.slice(-1)[0];
 		let annotation = annotations.find(x => x.id === lastSelectedAnnotationIDRef.current);
 		if (annotation) {
-			scrollTo(annotation, scrollSidebar, scrollViewer);
+			scrollTo(annotation, scrollSidebar, scrollViewer && showAnnotationsRef.current);
 		}
 
 		if (selectInSidebar) {
@@ -1267,6 +1269,10 @@ const Annotator = React.forwardRef((props, ref) => {
 	}
 
 	const handleLayerAnnotationDragStart = useCallback((event) => {
+		if (!showAnnotationsRef.current) {
+			event.preventDefault();
+			return;
+		}
 		let annotations = annotationsRef.current.filter(x => selectedIDsRef.current.includes(x.id));
 		if (!annotations.length) {
 			event.preventDefault();
@@ -1373,7 +1379,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			}
 			let selected = selectAnnotation({ id, ctrl, shift, scrollSidebar: true, scrollViewer: true, selectInSidebar: true });
 			if (selected === 1) {
-				scrollTo(annotationsRef.current.find(x => x.id === id), true, true);
+				scrollTo(annotationsRef.current.find(x => x.id === id), true, showAnnotationsRef.current);
 				// if (section !== 'header') this.focusSidebarComment(id);
 			}
 		}
@@ -1511,7 +1517,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 		setIsPopupDisabled(false);
 
-		if (event.detail === 2) {
+		if (isLeft && event.detail === 2) {
 			setIsSelectingText(true);
 			setEnableSelection(true);
 			let selectionRanges = getWordSelectionRanges(position, position);
@@ -1519,7 +1525,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			selectionMode.current = 'words';
 			return;
 		}
-		else if (event.detail === 3) {
+		else if (isLeft && event.detail === 3) {
 			setIsSelectingText(true);
 			setEnableSelection(true);
 			let selectionRanges = getLineSelectionRanges(position, position);
@@ -1580,19 +1586,22 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
-		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
-		if ((isLeft || isRight)
-			&& selectID
-			&& (!isShift || selectedIDsRef.current.length)
-			&& (isCtrl || !intersectsWithSelectedAnnotations(position))) {
-			let selected = selectAnnotation({ id: selectID, ctrl: isCtrl, shift: isShift, scrollSidebar: true });
-			if (selected === 1) {
-				let annotation = annotationsRef.current.find(x => x.id === selectedIDsRef.current[0]);
-				if (!annotation.comment) {
-					focusComment(annotation.id);
+		let selectID;
+		if (showAnnotationsRef.current) {
+			selectID = getAnnotationToSelectID(position, isCtrl || isShift);
+			if ((isLeft || isRight)
+				&& selectID
+				&& (!isShift || selectedIDsRef.current.length)
+				&& (isCtrl || !intersectsWithSelectedAnnotations(position))) {
+				let selected = selectAnnotation({ id: selectID, ctrl: isCtrl, shift: isShift, scrollSidebar: true });
+				if (selected === 1) {
+					let annotation = annotationsRef.current.find(x => x.id === selectedIDsRef.current[0]);
+					if (!annotation.comment) {
+						focusComment(annotation.id);
+					}
 				}
+				setIsSelectedOnPointerDown(true);
 			}
-			setIsSelectedOnPointerDown(true);
 		}
 
 		if (!isCtrl && !selectID) {
@@ -1740,13 +1749,15 @@ const Annotator = React.forwardRef((props, ref) => {
 			return;
 		}
 
-		// This does annotation selection (or switches to the next overlapped annotation)
-		// when it can be done on pointer down because we don't know yet whether
-		// the current annotation or text selection will be dragged or just clicked
-		let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
-		if (isLeft && selectID) {
-			setSelectionRangesRef([]);
-			selectAnnotation({ id: selectID, ctrl: isCtrl, shift: isShift, scrollSidebar: true });
+		if (showAnnotationsRef.current) {
+			// This does annotation selection (or switches to the next overlapped annotation)
+			// when it can be done on pointer down because we don't know yet whether
+			// the current annotation or text selection will be dragged or just clicked
+			let selectID = getAnnotationToSelectID(position, isCtrl || isShift);
+			if (isLeft && selectID) {
+				setSelectionRangesRef([]);
+				selectAnnotation({ id: selectID, ctrl: isCtrl, shift: isShift, scrollSidebar: true });
+			}
 		}
 	}, []);
 
@@ -1758,7 +1769,7 @@ const Annotator = React.forwardRef((props, ref) => {
 			&& window.extractor.getPageLinks(position.pageIndex).find(x => intersectAnnotationWithPoint(x.position, position))
 		);
 
-		let overAnnotation = (
+		let overAnnotation = showAnnotationsRef.current && (
 			(!isShift || selectedIDsRef.current.length)
 			&& annotationsRef.current.find(x => intersectAnnotationWithPoint(x.position, position))
 		);
@@ -2074,7 +2085,7 @@ const Annotator = React.forwardRef((props, ref) => {
 
 	return (
 		<div>
-			{!props.readOnly && <Toolbar
+			{!props.readOnly && _showAnnotations && <Toolbar
 				toggled={_mode}
 				onMode={handleToolbarModeChange}
 				color={_color}
@@ -2102,10 +2113,11 @@ const Annotator = React.forwardRef((props, ref) => {
 			<Layer
 				selectionColor={_mode === 'highlight' ? _color : selectionColor}
 				selectionPositions={_selectionPositions}
-				enableSelectionPopup={!props.readOnly && !_isSelectingText && !_mode && !_isLastClickRight}
+				enableSelectionPopup={!props.readOnly && _showAnnotations && !_isSelectingText && !_mode && !_isLastClickRight}
 				enableAddToNote={_enableAddToNote}
 				popupAnnotation={
 					!_isPopupDisabled
+					&& _showAnnotations
 					&& !_isSelectingText
 					&& !_draggingAnnotationIDs.length
 					&& !_isSelectingArea
@@ -2114,7 +2126,7 @@ const Annotator = React.forwardRef((props, ref) => {
 					&& !_isSidebarOpen
 					&& _selectedIDs.length < 2
 					&& _selectedIDs.length && _annotations.find(x => _selectedIDs.includes(x.id))}
-				annotations={_annotations}
+				annotations={_showAnnotations ? _annotations : []}
 				color={_color}
 				selectedAnnotationIDs={_selectedIDs}
 				blink={_blink}

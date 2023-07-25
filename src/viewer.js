@@ -110,6 +110,7 @@ class Viewer {
 				<Annotator
 					readOnly={options.readOnly}
 					authorName={options.authorName}
+					showAnnotations={options.showAnnotations}
 					onAddAnnotation={this._annotationsStore.addAnnotation.bind(this._annotationsStore)}
 					onUpdateAnnotations={this._annotationsStore.updateAnnotations.bind(this._annotationsStore)}
 					onDeleteAnnotations={this._annotationsStore.deleteAnnotations.bind(this._annotationsStore)}
@@ -450,6 +451,10 @@ class Viewer {
 	setToolbarPlaceholderWidth(width) {
 		let root = document.documentElement;
 		root.style.setProperty('--toolbarPlaceholderWidth', width + 'px');
+	}
+
+	showAnnotations(show) {
+		this.annotatorRef.current.setShowAnnotations(show);
 	}
 
 	async reload(buf) {
