@@ -116,7 +116,8 @@ class ViewerInstance {
 			bottomPlaceholderHeight: 0,
 			localizedStrings: strings,
 			readOnly: options.readOnly,
-			authorName: options.authorName
+			authorName: options.authorName,
+			showAnnotations: true
 		});
 
 		this._viewer.setBottomPlaceholderHeight(0);
