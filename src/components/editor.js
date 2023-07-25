@@ -151,6 +151,16 @@ var actions = [
 		command: 'italic'
 	},
 	{
+		icon: '<u>U</u>',
+		title: 'Underline',
+		command: 'underline'
+	},
+	{
+		icon: '<s>S</s>',
+		title: 'Strike through',
+		command: 'strikeThrough'
+	},
+	{
 		icon: 'X<sub>2</sub>',
 		title: 'Subscript',
 		command: 'subscript'
