@@ -24,12 +24,11 @@ async function createReader() {
 		demo = snapshot;
 	}
 	let res = await fetch(demo.fileName);
-	let buf = new Uint8Array(await res.arrayBuffer());
 	let reader = new Reader({
 		type,
 		localizedStrings: strings,
 		readOnly: false,
-		buf,
+		buf: new Uint8Array(await res.arrayBuffer()),
 		// rtl: true,
 		annotations: demo.annotations,
 		state: demo.state,

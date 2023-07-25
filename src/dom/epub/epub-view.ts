@@ -58,7 +58,7 @@ import Path from "epubjs/src/utils/path";
 // - Update demo data in demo/epub and demo/snapshot directories:
 //   - Add demo annotations
 
-class EPUBView extends DOMView<EPUBViewState> {
+class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
 
 	readonly book: Book;
@@ -83,13 +83,28 @@ class EPUBView extends DOMView<EPUBViewState> {
 
 	private _savedPageMapping!: string;
 
-	constructor(options: DOMViewOptions<EPUBViewState>) {
+	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
 		super(options);
-		this.book = Epub(options.buf.buffer);
+		if (options.data.buf) {
+			this.book = Epub(options.data.buf.buffer);
+			delete this._options.data.buf;
+		}
+		else if (options.data.book) {
+			this.book = options.data.book;
+		}
+		else {
+			throw new Error('buf or book is required');
+		}
 	}
 
 	protected _getSrcDoc() {
 		return '<!DOCTYPE html><html><body></body></html>';
+	}
+
+	getData() {
+		return {
+			book: this.book
+		};
 	}
 
 	protected async _onInitialDisplay(viewState: Partial<Readonly<EPUBViewState>>) {
@@ -149,6 +164,9 @@ class EPUBView extends DOMView<EPUBViewState> {
 			}
 		}
 		this._handleViewUpdate();
+
+		// @ts-ignore
+		this.book.archive.zip = null;
 	}
 
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {
@@ -743,6 +761,10 @@ export interface EPUBViewState extends DOMViewState {
 	cfiElementOffset?: number;
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
+}
+
+export interface EPUBViewData {
+	book?: Book;
 }
 
 export default EPUBView;

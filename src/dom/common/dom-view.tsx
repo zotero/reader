@@ -37,7 +37,7 @@ import {
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 
-abstract class DOMView<State extends DOMViewState> {
+abstract class DOMView<State extends DOMViewState, Data> {
 	initializedPromise: Promise<void>;
 
 	protected readonly _container: Element;
@@ -68,7 +68,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected abstract _find: FindProcessor | null;
 
-	protected readonly _options: DOMViewOptions<State>;
+	protected readonly _options: DOMViewOptions<State, Data>;
 
 	protected _overlayPopupDelayer: PopupDelayer;
 
@@ -86,7 +86,7 @@ abstract class DOMView<State extends DOMViewState> {
 
 	protected _resizing = false;
 
-	protected constructor(options: DOMViewOptions<State>) {
+	protected constructor(options: DOMViewOptions<State, Data>) {
 		this._options = options;
 		this._container = options.container;
 
@@ -109,16 +109,30 @@ abstract class DOMView<State extends DOMViewState> {
 			this._iframe.sandbox.add('allow-scripts');
 		}
 		this._iframe.srcdoc = this._getSrcDoc();
-		this.initializedPromise = new Promise((resolve, reject) => {
-			this._iframe.addEventListener(
-				'load',
-				() => this._handleIFrameLoad().then(resolve, reject),
-				{ once: true });
-		});
+		this.initializedPromise = this._initialize();
 		options.container.append(this._iframe);
 	}
 
+	protected async _initialize(): Promise<void> {
+		return new Promise<void>((resolve, reject) => {
+			this._iframe.addEventListener(
+				'load',
+				async () => {
+					try {
+						await this._handleIFrameLoad();
+						resolve();
+					}
+					catch (e) {
+						reject(e);
+					}
+				},
+				{ once: true });
+		});
+	}
+
 	protected abstract _getSrcDoc(): string;
+
+	abstract getData(): Data;
 
 	protected abstract _onInitialDisplay(viewState: Partial<Readonly<State>>): MaybePromise<void>;
 
@@ -892,7 +906,7 @@ abstract class DOMView<State extends DOMViewState> {
 	}
 }
 
-export type DOMViewOptions<State extends DOMViewState> = {
+export type DOMViewOptions<State extends DOMViewState, Data> = {
 	portal?: boolean;
 	container: Element;
 	tool: Tool;
@@ -923,7 +937,9 @@ export type DOMViewOptions<State extends DOMViewState> = {
 	onTabOut: (isShiftTab?: boolean) => void;
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
-	buf: Uint8Array;
+	data: Data & {
+		buf?: Uint8Array
+	};
 };
 
 export interface DOMViewState {

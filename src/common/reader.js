@@ -687,10 +687,22 @@ class Reader {
 			this._keyboardManager.handleViewKeyUp(event);
 		};
 
+		let data;
+		if (this._type === 'pdf') {
+			data = { buf: this._buf };
+		}
+		else if (this._primaryView) {
+			data = this._primaryView.getData();
+		}
+		else {
+			data = { buf: this._buf };
+			delete this._buf;
+		}
+
 		let common = {
 			primary,
 			container,
-			buf: this._buf,
+			data,
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),
@@ -750,6 +762,7 @@ class Reader {
 				...common
 			});
 		}
+
 		return view;
 	}
 
@@ -787,7 +800,7 @@ class Reader {
 		view = new PDFView({
 			portal: true,
 			container,
-			buf: this._buf,
+			data: { buf: this._buf },
 			password: this._password,
 			pageLabels: {},
 			tool: { type: 'pointer' },

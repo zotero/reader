@@ -38,7 +38,7 @@ import {
 // @ts-ignore
 import contentCSS from '!!raw-loader!./stylesheets/content.css';
 
-class SnapshotView extends DOMView<SnapshotViewState> {
+class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	private readonly _navStack = new NavStack<[number, number]>();
 
 	protected _find: DefaultFindProcessor | null = null;
@@ -49,18 +49,33 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 	protected _getSrcDoc() {
 		let enc = new TextDecoder('utf-8');
-		let text = enc.decode(this._options.buf);
-		if (isSafari) {
-			let doc = new DOMParser().parseFromString(text, 'text/html');
-			doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
-				...DOMPURIFY_CONFIG,
-				RETURN_DOM: true,
-			}));
-			return new XMLSerializer().serializeToString(doc);
+		if (this._options.data.buf) {
+			let text = enc.decode(this._options.data.buf);
+			delete this._options.data.buf;
+			if (isSafari) {
+				let doc = new DOMParser().parseFromString(text, 'text/html');
+				doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
+					...DOMPURIFY_CONFIG,
+					RETURN_DOM: true,
+				}));
+				return new XMLSerializer().serializeToString(doc);
+			}
+			else {
+				return text;
+			}
+		}
+		else if (this._options.data.srcDoc) {
+			return this._options.data.srcDoc;
 		}
 		else {
-			return text;
+			throw new Error('buf or srcDoc is required');
 		}
+	}
+
+	getData() {
+		return {
+			srcDoc: this._iframe.srcdoc
+		};
 	}
 
 	protected _onInitialDisplay(viewState: Partial<Readonly<SnapshotViewState>>) {
@@ -388,6 +403,10 @@ class SnapshotView extends DOMView<SnapshotViewState> {
 
 export interface SnapshotViewState extends DOMViewState {
 	scrollYPercent?: number;
+}
+
+export interface SnapshotViewData {
+	srcDoc?: string;
 }
 
 export default SnapshotView;

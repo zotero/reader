@@ -86,11 +86,9 @@ async function main() {
 		demo = snapshot;
 	}
 	let res = await fetch(demo.fileName);
-	let buf = new Uint8Array(await res.arrayBuffer());
-
 	window.createView({
 		type,
-		buf,
+		buf: new Uint8Array(await res.arrayBuffer()),
 		annotations: demo.annotations,
 		// location: {
 		// 	annotationID: 123
