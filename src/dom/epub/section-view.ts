@@ -41,7 +41,8 @@ class SectionView {
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	async render(requestFn: Function): Promise<void> {
 		let xhtml = await this.section.render(requestFn);
-		await sanitizeAndRender(xhtml, { container: this.container, styleScoper: this._styleScoper });
+		this.body = await sanitizeAndRender(xhtml,
+			{ container: this.container, styleScoper: this._styleScoper });
 	}
 
 	/**
