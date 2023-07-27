@@ -238,7 +238,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	protected override _updateViewState() {
 		let scale = Math.round(this._scale * 1000) / 1000; // Three decimal places
-		let scrollYPercent = this._iframeWindow.scrollY / (this._iframeDocument.body.offsetHeight - this._iframeWindow.innerHeight);
+		let scrollYPercent = this._iframeWindow.scrollY
+			/ (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight);
+		// The calculation above shouldn't ever yield NaN, but just to be safe:
+		if (isNaN(scrollYPercent)) {
+			scrollYPercent = 0;
+		}
 		scrollYPercent = Math.round(scrollYPercent * 1000) / 1000; // Three decimal places
 		let viewState: SnapshotViewState = {
 			scale,
