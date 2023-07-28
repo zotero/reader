@@ -140,6 +140,7 @@ function Toolbar(props) {
 						tabIndex={-1}
 						className={cx('toolbarButton highlight', { toggled: props.tool.type === 'highlight' })}
 						title={intl.formatMessage({ id: 'pdfReader.highlightText' })}
+						disabled={props.readOnly}
 						onClick={() => handleToolClick('highlight')}>
 						<span className="button-background"/>
 					</button>
@@ -147,6 +148,7 @@ function Toolbar(props) {
 						tabIndex={-1}
 						className={cx('toolbarButton underline', { toggled: props.tool.type === 'underline' })}
 						title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
+						disabled={props.readOnly}
 						onClick={() => handleToolClick('underline')}>
 						<span className="button-background"/>
 					</button>
@@ -156,6 +158,7 @@ function Toolbar(props) {
 							toggled: props.tool.type === 'note'
 						})}
 						title={intl.formatMessage({ id: 'pdfReader.addNote' })}
+						disabled={props.readOnly}
 						onClick={() => handleToolClick('note')}
 					>
 						<span className="button-background"/>
@@ -165,6 +168,7 @@ function Toolbar(props) {
 							tabIndex={-1}
 							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
 							title={intl.formatMessage({ id: 'pdfReader.addText' })}
+							disabled={props.readOnly}
 							onClick={() => handleToolClick('text')}
 						>
 							<span className="button-background"/>
@@ -175,6 +179,7 @@ function Toolbar(props) {
 							tabIndex={-1}
 							className={cx('toolbarButton area', { toggled: props.tool.type === 'image' })}
 							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+							disabled={props.readOnly}
 							onClick={() => handleToolClick('image')}
 						>
 							<span className="button-background"/>
@@ -185,6 +190,7 @@ function Toolbar(props) {
 							tabIndex={-1}
 							className={cx('toolbarButton ink', { toggled: props.tool.type === 'ink' })}
 							title={intl.formatMessage({ id: 'pdfReader.draw' })}
+							disabled={props.readOnly}
 							onClick={() => handleToolClick('ink')}
 						>
 							<span className="button-background"/>
@@ -195,6 +201,7 @@ function Toolbar(props) {
 							tabIndex={-1}
 							className={cx('toolbarButton eraser', { toggled: props.tool.type === 'eraser' })}
 							title={intl.formatMessage({ id: 'pdfReader.erase' })}
+							disabled={props.readOnly}
 							onClick={() => handleToolClick('eraser')}
 						>
 							<span className="button-background"/>
@@ -204,7 +211,7 @@ function Toolbar(props) {
 						tabIndex={-1}
 						className="toolbarButton tool-color"
 						style={{ color: props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && '#676767' || 'transparent' }}
-						disabled={['pointer', 'hand'].includes(props.tool.type)}
+						disabled={props.readOnly || ['pointer', 'hand'].includes(props.tool.type)}
 						title={intl.formatMessage({ id: 'pdfReader.pickColor' })}
 						onClick={handleToolColorClick}
 					>

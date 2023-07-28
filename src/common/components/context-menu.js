@@ -77,7 +77,7 @@ function SliderRow({ item }) {
 
 
 	return (
-		<div className={cx('row slider', { checked: item.checked })} disabled={item.disabled}>
+		<div className={cx('row slider', { checked: item.checked })}>
 			<div>Size:</div>
 			<input
 				ref={inputRef}
@@ -88,6 +88,7 @@ function SliderRow({ item }) {
 				value={valueToSliderTransform(size)}
 				className="slider"
 				id="myRange"
+				disabled={item.disabled}
 				onChange={handleChange}
 			/>
 			<div className="number">{size.toFixed(1)}</div>

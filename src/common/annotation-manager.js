@@ -50,12 +50,12 @@ class AnnotationManager {
 		this._onChangeFilter(this._filter);
 	}
 
+	setReadOnly(readOnly) {
+		this._readOnly = readOnly;
+	}
+
 	// Called when changes come from the client side
 	async setAnnotations(annotations) {
-		if (this._readOnly) {
-			annotations.forEach(x => x.readOnly = true);
-		}
-
 		for (let annotation of annotations) {
 			this._annotations = this._annotations.filter(x => x.id !== annotation.id);
 			this._annotations.push(annotation);

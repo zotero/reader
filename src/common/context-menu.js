@@ -15,7 +15,7 @@ export function createColorContextMenu(reader, params) {
 					? []
 					: ANNOTATION_COLORS.map(([label, color]) => ({
 						label: reader._getString(label),
-						disabled: reader._readOnly,
+						disabled: reader._state.readOnly,
 						checked: color === reader._state.tool.color,
 						color: color,
 						onCommand: () => reader.setTool({ color })
@@ -118,7 +118,7 @@ export function createViewContextMenu(reader, params) {
 
 export function createAnnotationContextMenu(reader, params) {
 	let annotations = reader._state.annotations.filter(x => params.ids.includes(x.id));
-	let readOnly = annotations.some(x => x.readOnly);
+	let readOnly = reader._state.readOnly || annotations.some(x => x.readOnly);
 	let currentColor = annotations.length === 1 && annotations[0].color;
 	return {
 		internal: true,
@@ -150,6 +150,7 @@ export function createAnnotationContextMenu(reader, params) {
 					size: annotations[0].position.width,
 					label: reader._getString('general.copy'),
 					disabled: readOnly,
+					persistent: true,
 					onCommand: (width) => {
 						reader._annotationManager.updateAnnotations(annotations.map(({ id, sortIndex }) => ({ id, sortIndex, position: { width } })));
 					}
@@ -216,19 +217,22 @@ export function createThumbnailContextMenu(reader, params) {
 			[
 				{
 					label: reader._getString('pdfReader.rotateLeft'),
-					disabled: reader._readOnly,
+					disabled: reader._state.readOnly,
+					persistent: true,
 					onCommand: () => reader.rotatePages(params.pageIndexes, 270)
 				},
 				{
 					label: reader._getString('pdfReader.rotateRight'),
-					disabled: reader._readOnly,
+					disabled: reader._state.readOnly,
+					persistent: true,
 					onCommand: () => reader.rotatePages(params.pageIndexes, 90)
 				}
 			],
 			[
 				reader._platform === 'zotero' && {
 					label: reader._getString('general.delete'),
-					disabled: reader._readOnly,
+					disabled: reader._state.readOnly,
+					persistent: true,
 					onCommand: () => reader.deletePages(params.pageIndexes)
 				},
 			]

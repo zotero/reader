@@ -372,6 +372,8 @@ export default class Page {
 
 				let node = customAnnotations.find(x => x.getAttribute('data-id') === annotation.id);
 
+				let disabled = this.layer._readOnly || annotation.readOnly;
+
 				let top = this.originalPage.viewport.viewBox[3] - position.rects[0][3];
 				let left = position.rects[0][0];
 				let width = position.rects[0][2] - position.rects[0][0];
@@ -399,9 +401,10 @@ export default class Page {
 					node.setAttribute('data-id', annotation.id);
 					node.dir = 'auto';
 					node.className = 'textAnnotation';
+					node.disabled = disabled;
 					node.addEventListener('blur', (event) => {
 						node.classList.remove('focusable');
-						node.contentEditable = false;
+						// node.contentEditable = false;
 					});
 					customAnnotationLayer.append(node);
 				}
@@ -412,6 +415,9 @@ export default class Page {
 				if (node.getAttribute('data-comment') !== annotation.comment) {
 					node.value = annotation.comment;
 					node.setAttribute('data-comment', annotation.comment);
+				}
+				if (node.disabled != disabled) {
+					node.disabled = disabled;
 				}
 			}
 		}
@@ -574,68 +580,68 @@ export default class Page {
 				if (annotation.type !== 'image') {
 					[p1, p2, p3, p4, pml, pmr, pmt, pmb] = scaleShape([p1, p2, p3, p4], [p1, p2, p3, p4, pml, pmr, pmt, pmb], BOX_PADDING);
 				}
+				// Dashed lines
 				this.actualContext.beginPath();
 				this.actualContext.moveTo(...p1);
 				this.actualContext.lineTo(...p2);
 				this.actualContext.lineTo(...p3);
 				this.actualContext.lineTo(...p4);
 				this.actualContext.closePath();
-				this.actualContext.moveTo(...pmt);
-				if (annotation.type === 'text') {
+				if (!(this.layer._readOnly || annotation.readOnly) && annotation.type === 'text') {
+					this.actualContext.moveTo(...pmt);
 					this.actualContext.lineTo(...pr);
 				}
 				this.actualContext.stroke();
 				const radius = 4 * devicePixelRatio;
 				this.actualContext.fillStyle = '#81b3ff';
-				// Dashed lines
-				if (['image', 'text', 'ink'].includes(annotation.type)) {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...p1, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
 
-				if (['image', 'text', 'ink'].includes(annotation.type)) {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...p2, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
-
-				if (['image', 'text', 'ink'].includes(annotation.type)) {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...p4, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
-
-				if (['image', 'text', 'ink'].includes(annotation.type)) {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...p3, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
 				// Circles
-				if (['image', 'text'].includes(annotation.type)) {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...pmr, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
-				if (['image', 'text'].includes(annotation.type)) {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...pml, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
-				if (annotation.type === 'image') {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...pmt, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
-				if (annotation.type === 'image') {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...pmb, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
-				}
-				if (annotation.type === 'text') {
-					this.actualContext.beginPath();
-					this.actualContext.arc(...pr, radius, 0, 2 * Math.PI, false);
-					this.actualContext.fill();
+				if (!(this.layer._readOnly || annotation.readOnly)) {
+					if (['image', 'text', 'ink'].includes(annotation.type)) {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...p1, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (['image', 'text', 'ink'].includes(annotation.type)) {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...p2, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (['image', 'text', 'ink'].includes(annotation.type)) {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...p4, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (['image', 'text', 'ink'].includes(annotation.type)) {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...p3, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (['image', 'text'].includes(annotation.type)) {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...pmr, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (['image', 'text'].includes(annotation.type)) {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...pml, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (annotation.type === 'image') {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...pmt, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (annotation.type === 'image') {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...pmb, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
+					if (annotation.type === 'text') {
+						this.actualContext.beginPath();
+						this.actualContext.arc(...pr, radius, 0, 2 * Math.PI, false);
+						this.actualContext.fill();
+					}
 				}
 			}
 			this.actualContext.restore();
@@ -699,11 +705,11 @@ export default class Page {
 						|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
 					);
 				}
-				if (startRect) {
+				if (!(this.layer._readOnly || annotation.readOnly) && startRect) {
 					let rect = startRect;
 					this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
 				}
-				if (endRect) {
+				if (!(this.layer._readOnly || annotation.readOnly) && endRect) {
 					let rect = endRect;
 					this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
 				}

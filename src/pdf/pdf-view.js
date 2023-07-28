@@ -54,6 +54,7 @@ class PDFView {
 	constructor(options) {
 		this._options = options;
 		this._primary = options.primary;
+		this._readOnly = options.readOnly;
 		this._portal = options.portal;
 		this._container = options.container;
 		this._password = options.password;
@@ -483,6 +484,10 @@ class PDFView {
 		this._pageLabels = pageLabels;
 	}
 
+	setReadOnly(readOnly) {
+		this._readOnly = readOnly;
+	}
+
 	setTool(tool) {
 		if (tool.type === 'hand') {
 			this._iframeWindow.PDFViewerApplication.pdfCursorTools.switchTool(1);
@@ -850,6 +855,16 @@ class PDFView {
 			return null;
 		}
 
+		// TODO: Likely it needs to be fixed for inter-page annotations
+		if (this._readOnly || annotation.readOnly) {
+			if (intersectAnnotationWithPoint(annotation.position, position)) {
+				let r = position.rects[0];
+				let br = getPositionBoundingRect(annotation.position);
+				return { type: 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
+			}
+			return null;
+		}
+
 		// If the page isn't loaded
 		if (!this._iframeWindow.PDFViewerApplication.pdfViewer._pages[position.pageIndex].outputScale) {
 			return null;
@@ -1199,10 +1214,9 @@ class PDFView {
 			else {
 				selectAnnotations = [selectableAnnotation];
 				let annotation = selectableAnnotation;
-				if (['note', 'text', 'ink'].includes(annotation.type)) {
+				if (!(this._readOnly || annotation.readOnly) && ['note', 'text', 'ink'].includes(annotation.type)) {
 					let r = position.rects[0];
 					let br = getPositionBoundingRect(annotation.position);
-
 					action = { type: 'moveAndDrag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 				}
 				else {

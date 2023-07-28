@@ -14,7 +14,7 @@ export function PopupPreview(props) {
 	const intl = useIntl();
 
 	function handlePageLabelDoubleClick(event) {
-		if (props.type !== 'pdf' || props.annotation.readOnly) {
+		if (props.type !== 'pdf' || props.readOnly) {
 			return;
 		}
 		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
@@ -28,7 +28,7 @@ export function PopupPreview(props) {
 	}
 
 	function handleTagsClick(event) {
-		if (props.annotation.readOnly) {
+		if (props.readOnly) {
 			return;
 		}
 		let rect = event.target.closest('.tags').getBoundingClientRect();
@@ -49,7 +49,7 @@ export function PopupPreview(props) {
 	let { annotation, type } = props;
 	return (
 		<div
-			className={cx('preview', { 'read-only': annotation.readOnly })}
+			className={cx('preview', { 'read-only': props.readOnly })}
 		>
 			<header
 				title={intl.formatDate(new Date(annotation.dateModified))
@@ -84,10 +84,10 @@ export function PopupPreview(props) {
 						</div>
 					)}
 					<button
-						data-tabstop={!annotation.readOnly ? true : undefined}
+						data-tabstop={!props.readOnly ? true : undefined}
 						tabIndex={-1}
 						className="more"
-						disabled={annotation.readOnly}
+						disabled={props.readOnly}
 						onClick={handleClickMore}
 					/>
 				</div>
@@ -98,16 +98,16 @@ export function PopupPreview(props) {
 					<Editor
 						id={annotation.id}
 						text={annotation.comment}
-						placeholder={annotation.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
+						placeholder={props.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
 							: intl.formatMessage({ id: 'pdfReader.addComment' })}
-						readOnly={annotation.readOnly}
+						readOnly={props.readOnly}
 						enableRichText={annotation.type !== 'text'}
 						onChange={handleCommentChange}
 					/>
 				</div>
 			)}
 
-			{(!annotation.readOnly || !!annotation.tags.length) && (
+			{(!props.readOnly || !!annotation.tags.length) && (
 				<button
 					className="tags"
 					data-tabstop={1}
@@ -133,7 +133,7 @@ export function SidebarPreview(props) {
 	}
 
 	function handlePageLabelDoubleClick(event) {
-		if (props.type !== 'pdf' || props.annotation.readOnly) {
+		if (props.type !== 'pdf' || props.readOnly) {
 			return;
 		}
 		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
@@ -209,7 +209,7 @@ export function SidebarPreview(props) {
 			className="annotation-text"
 			onClick={e => handleSectionClick(e, 'annotation-text')}
 			onDoubleClick={handleTextDoubleClick}
-			draggable={state !== 3 || annotation.readOnly}
+			draggable={state !== 3 || props.readOnly}
 			onDragStart={handleDragStart}
 		>
 			<div className="blockquote-border" style={{ backgroundColor: annotation.color }}/>
@@ -217,7 +217,7 @@ export function SidebarPreview(props) {
 				id={annotation.id}
 				text={annotation.text}
 				placeholder={intl.formatMessage({ id: 'pdfReader.noExtractedText' })}
-				readOnly={annotation.readOnly || state !== 3}
+				readOnly={props.readOnly || state !== 3}
 				expanded={props.state >= 2}
 				enableRichText={annotation.type !== 'text'}
 				onChange={handleTextChange}
@@ -227,17 +227,17 @@ export function SidebarPreview(props) {
 
 	let comment = (state >= 1 || annotation.comment)
 		&& annotation.type !== 'ink'
-		&& !(annotation.readOnly && !annotation.comment)
+		&& !(props.readOnly && !annotation.comment)
 		&& <div
 			className="comment"
 			onClick={e => handleSectionClick(e, 'comment')}
-			draggable={state === 0 || annotation.readOnly}
+			draggable={state === 0 || props.readOnly}
 			onDragStart={handleDragStart}
 		>
 			<ExpandableEditor
 				id={annotation.id}
 				text={annotation.comment}
-				readOnly={annotation.readOnly || !(state === 1 || state === 2 || state === 3)}
+				readOnly={props.readOnly || !(state === 1 || state === 2 || state === 3)}
 				expanded={state >= 1}
 				placeholder={intl.formatMessage({ id: 'pdfReader.addComment' })}
 				enableRichText={annotation.type !== 'text'}
@@ -259,7 +259,7 @@ export function SidebarPreview(props) {
 		<div
 			onContextMenu={handleContextMenu}
 			className={cx('preview', {
-				'read-only': annotation.readOnly, ...expandedState
+				'read-only': props.readOnly, ...expandedState
 			})}
 		>
 			<header
@@ -302,10 +302,10 @@ export function SidebarPreview(props) {
 						</div>
 					)}
 					<button
-						data-tabstop={props.selected && !annotation.readOnly ? 1 : undefined}
-						tabIndex={props.selected && !annotation.readOnly ? -1 : undefined}
+						data-tabstop={props.selected && !props.readOnly ? 1 : undefined}
+						tabIndex={props.selected && !props.readOnly ? -1 : undefined}
 						className="more"
-						disabled={annotation.readOnly}
+						disabled={props.readOnly}
 						onClick={handleClickMore}
 						// Make sure 'more' button focusing never triggers annotation element focusing,
 						// which triggers annotation selection
@@ -324,11 +324,11 @@ export function SidebarPreview(props) {
 			)}
 			{text}
 			{comment}
-			{(state >= 1 && !annotation.readOnly || annotation.tags.length > 0)
+			{(state >= 1 && !props.readOnly || annotation.tags.length > 0)
 			&& (
 				<button
 					className="tags"
-					data-tabstop={props.selected && !annotation.readOnly ? 1 : undefined}
+					data-tabstop={props.selected && !props.readOnly ? 1 : undefined}
 					onClick={e => handleSectionClick(e, 'tags')}
 					draggable={true}
 					onDragStart={handleDragStart}

@@ -330,6 +330,12 @@ class Reader {
 			this._secondaryView?.setShowAnnotations(this._state.showAnnotations);
 		}
 
+		if (this._state.readOnly !== previousState.readOnly) {
+			this._annotationManager.setReadOnly(this._state.readOnly);
+			this._primaryView?.setReadOnly?.(this._state.readOnly);
+			this._secondaryView?.setReadOnly?.(this._state.readOnly);
+		}
+
 		if (this._state.pageLabels !== previousState.pageLabels) {
 			this._primaryView?.setPageLabels(this._state.pageLabels);
 			this._secondaryView?.setPageLabels(this._state.pageLabels);
@@ -475,6 +481,9 @@ class Reader {
 	}
 
 	setTool(params) {
+		if (this._state.readOnly && !['pointer', 'hand'].includes(params.type)) {
+			return;
+		}
 		let tool = this._state.tool;
 		if (params.type && tool.type !== params.type) {
 			tool = this._tools[params.type];
@@ -491,14 +500,10 @@ class Reader {
 
 	showAnnotations(enable) {
 		this._updateState({ showAnnotations: enable });
-		this._primaryView?.showAnnotations(enable);
-		this._secondaryView?.showAnnotations(enable);
 	}
 
 	setReadOnly(readOnly) {
 		this._updateState({ readOnly });
-		this._primaryView?.setReadOnly?.(readOnly);
-		this._secondaryView?.setReadOnly?.(readOnly);
 	}
 
 	toggleHandTool(enable) {
@@ -703,6 +708,7 @@ class Reader {
 			primary,
 			container,
 			data,
+			readOnly: this._state.readOnly,
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),
@@ -800,6 +806,7 @@ class Reader {
 
 		view = new PDFView({
 			portal: true,
+			readOnly: true,
 			container,
 			data: { buf: this._buf },
 			password: this._password,

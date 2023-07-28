@@ -124,6 +124,7 @@ const Annotation = React.memo((props) => {
 		>
 			<SidebarPreview
 				type={props.type}
+				readOnly={props.readOnly}
 				state={props.expansionState}
 				annotation={props.annotation}
 				selected={props.isSelected}
@@ -295,7 +296,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		let ctrl = event.ctrlKey || event.metaKey;
 		let shift = event.shiftKey;
 		let annotation = props.annotations.find(x => x.id === id);
-		if (section === 'tags' && !ctrl && !shift && !annotation.readOnly) {
+		if (section === 'tags' && !ctrl && !shift && !(props.readOnly || annotation.readOnly)) {
 			let rect = event.target.closest('.tags').getBoundingClientRect();
 			return props.onOpenTagsPopup(id, rect.left, rect.top);
 		}
@@ -463,6 +464,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 						<Annotation
 							type={props.type}
 							key={annotation.id}
+							readOnly={props.readOnly || annotation.readOnly}
 							isSelected={props.selectedIDs.includes(annotation.id)}
 							annotation={annotation}
 							expansionState={props.selectedIDs.includes(annotation.id) ? expansionState : 0}

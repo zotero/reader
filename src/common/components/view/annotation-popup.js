@@ -15,12 +15,13 @@ function AnnotationPopup(props) {
 		>
 			<PopupPreview
 				type={props.type}
+				readOnly={(props.readOnly || annotation.readOnly)}
 				annotation={annotation}
 				isExpandable={false}
 				enableText={false}
 				enableImage={false}
-				enableComment={!annotation.readOnly || annotation.comment}
-				enableTags={!annotation.readOnly || annotation.tags.length > 0}
+				enableComment={!(props.readOnly || annotation.readOnly) || annotation.comment}
+				enableTags={!(props.readOnly || annotation.readOnly) || annotation.tags.length > 0}
 				onUpdate={(comment) => {
 					props.onChange({ id: popupAnnotation.id, comment });
 				}}

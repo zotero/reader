@@ -50,7 +50,7 @@ function View(props) {
 					onFindPrevious={handleFindPrevious}
 				/>
 			}
-			{state[name + 'ViewSelectionPopup'] &&
+			{state[name + 'ViewSelectionPopup'] && !state.readOnly &&
 				<SelectionPopup
 					params={state[name + 'ViewSelectionPopup']}
 					onAddToNote={props.onAddToNote}
@@ -60,6 +60,7 @@ function View(props) {
 			{state[name + 'ViewAnnotationPopup'] && !state.sidebarOpen &&
 				<AnnotationPopup
 					type={props.type}
+					readOnly={state.readOnly}
 					params={state[name + 'ViewAnnotationPopup']}
 					annotation={state.annotations.find(x => x.id === state[name + 'ViewAnnotationPopup'].annotation.id)}
 					onChange={(annotation) => props.onUpdateAnnotations([annotation])}
@@ -118,6 +119,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					enableNavigateToNextPage={viewStats.canNavigateToNextPage}
 					findPopupOpen={findState.popupOpen}
 					tool={state.tool}
+					readOnly={state.readOnly}
 					onToggleSidebar={props.onToggleSidebar}
 					onZoomIn={props.onZoomIn}
 					onZoomOut={props.onZoomOut}
