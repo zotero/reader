@@ -190,6 +190,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 			{state.labelOverlay && <LabelOverlay params={state.labelOverlay} onUpdateAnnotations={props.onUpdateAnnotations} onClose={props.onCloseLabelOverlay}/>}
 			{state.passwordOverlay && <PasswordOverlay params={state.passwordOverlay} onEnterPassword={props.onEnterPassword}/>}
 			{state.printOverlay && <PrintOverlay params={state.printOverlay}/>}
+			{state.errorMessage && <div className="error-bar" tabIndex={-1}>{state.errorMessage}</div>}
 		</Fragment>
 	);
 });

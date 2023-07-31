@@ -47,7 +47,7 @@ export class FocusManager {
 
 	_handleMouseDown(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('input, textarea, button, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view')) {
+			if (!event.target.closest('input, textarea, button, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar')) {
 				event.preventDefault();
 			}
 			else if (event.target.closest('.annotation') && event.target.closest('.more, .page, .tags')) {
@@ -188,6 +188,9 @@ export class FocusManager {
 
 	// Allow copying annotations from sidebar
 	_handleCopy(event) {
+		if (document.activeElement?.closest('.error-bar')) {
+			return;
+		}
 		let ids = this._reader._state.selectedAnnotationIDs;
 		if (ids.length > 0) {
 			let annotation = this._reader._state.annotations.find(x => x.id === ids[0]);

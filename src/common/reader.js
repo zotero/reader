@@ -116,6 +116,7 @@ class Reader {
 			splitSize: '50%',
 			primary: true,
 			freeze: false,
+			errorMessage: '',
 			annotations: [],
 			selectedAnnotationIDs: [],
 			filter: {
@@ -876,6 +877,10 @@ class Reader {
 			//  level lower than in the current view, and reduce overlay popup dimensions
 			this._portalView._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(dest);
 		}
+	}
+
+	setErrorMessage(errorMessage) {
+		this._updateState({ errorMessage });
 	}
 
 	getUnsavedAnnotations() {
