@@ -33,7 +33,7 @@ class Reader {
 
 		this._type = options.type;
 		this._platform = options.platform;
-		this._buf = options.buf;
+		this._data = options.data;
 		this._password = options.password;
 
 		this._onSaveAnnotations = options.onSaveAnnotations;
@@ -130,7 +130,6 @@ class Reader {
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
-			resourceBaseURI: options.resourceBaseURI,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: [],
@@ -697,14 +696,14 @@ class Reader {
 
 		let data;
 		if (this._type === 'pdf') {
-			data = { buf: this._buf };
+			data = this._data;
 		}
 		else if (this._primaryView) {
 			data = this._primaryView.getData();
 		}
 		else {
-			data = { buf: this._buf };
-			delete this._buf;
+			data = this._data;
+			delete this._data;
 		}
 
 		let common = {
@@ -765,12 +764,10 @@ class Reader {
 			view = new EPUBView({
 				...common,
 				fontFamily: this._state.fontFamily,
-				resourceBaseURI: this._state.resourceBaseURI,
 				onSetOutline,
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
-				resourceBaseURI: this._state.resourceBaseURI,
 				...common
 			});
 		}
@@ -813,7 +810,7 @@ class Reader {
 			portal: true,
 			readOnly: true,
 			container,
-			data: { buf: this._buf },
+			data: this._data,
 			password: this._password,
 			pageLabels: {},
 			tool: { type: 'pointer' },
@@ -1185,8 +1182,8 @@ class Reader {
 		}
 	}
 
-	reload(buf) {
-		this._buf = buf;
+	reload(data) {
+		this._data = data;
 		this._primaryViewContainer.replaceChildren();
 		this._primaryView = this._createView(true);
 		if (this._state.splitType) {
@@ -1199,7 +1196,7 @@ class Reader {
 	enterPassword(password) {
 		this._updateState({ passwordOverlay: null });
 		this._password = password;
-		this.reload(this._buf);
+		this.reload(this._data);
 	}
 
 	_handleSetDataTransferAnnotations(dataTransfer, annotation, fromText) {

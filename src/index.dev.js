@@ -28,7 +28,10 @@ async function createReader() {
 		type,
 		localizedStrings: strings,
 		readOnly: false,
-		buf: new Uint8Array(await res.arrayBuffer()),
+		data: {
+			buf: new Uint8Array(await res.arrayBuffer()),
+			baseURI: new URL('/', window.location).toString()
+		},
 		// rtl: true,
 		annotations: demo.annotations,
 		state: demo.state,
@@ -39,7 +42,6 @@ async function createReader() {
 		showAnnotations: true,
 		platform: 'web',
 		// password: 'test',
-		resourceBaseURI: new URL('/', window.location).toString(),
 		onOpenContextMenu(params) {
 			reader.openContextMenu(params);
 		},

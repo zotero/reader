@@ -64,9 +64,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			for (let base of doc.querySelectorAll('base')) {
 				base.remove();
 			}
-			if (this._options.resourceBaseURI !== undefined) {
+			if (this._options.data.baseURI !== undefined) {
 				let base = doc.createElement('base');
-				base.href = this._options.resourceBaseURI;
+				base.href = this._options.data.baseURI;
 				doc.head.prepend(base);
 			}
 
@@ -82,7 +82,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	getData() {
 		return {
-			srcDoc: this._iframe.srcdoc
+			srcDoc: this._iframe.srcdoc,
+			baseURI: this._iframeDocument.head.querySelector('base')?.href
 		};
 	}
 

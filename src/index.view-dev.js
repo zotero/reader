@@ -8,7 +8,6 @@ window.createView = (options) => {
 	let view = new View({
 		...options,
 		container: document.getElementById('view'),
-		buf: options.buf,
 		onSaveAnnotations: (annotations) => {
 			// New annotation was created or existing was modified. Although, view, probably, won't need
 			// to modify existing annotations for now
@@ -88,7 +87,9 @@ async function main() {
 	let res = await fetch(demo.fileName);
 	window.createView({
 		type,
-		buf: new Uint8Array(await res.arrayBuffer()),
+		data: {
+			buf: new Uint8Array(await res.arrayBuffer()),
+		},
 		annotations: demo.annotations,
 		// location: {
 		// 	annotationID: 123

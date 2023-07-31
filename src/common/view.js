@@ -60,7 +60,7 @@ class View {
 			mobile: true,
 			showAnnotations: true,
 			container: this._options.container,
-			buf: this._options.buf,
+			data: this._options.data,
 			tool: this._options.tool || { type: 'pointer' },
 			selectedAnnotationIDs: this._options.selectedAnnotationIDs || [],
 			annotations: this._options.annotations || [],

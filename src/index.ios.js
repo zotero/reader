@@ -8,8 +8,10 @@ window.createView = (options) => {
 	window._view = new View({
 		...options,
 		container: document.getElementById('view'),
-		// TODO: Implement a more efficient way to transfer large files
-		buf: new Uint8Array(options.buf).buffer,
+		data: {
+			// TODO: Implement a more efficient way to transfer large files
+			buf: new Uint8Array(options.buf).buffer
+		},
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
 		},
