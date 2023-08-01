@@ -504,7 +504,8 @@ class Reader {
 	}
 
 	setReadOnly(readOnly) {
-		this._updateState({ readOnly });
+		// Also unset any active tool
+		this._updateState({ readOnly, tool: this._tools['pointer'] });
 	}
 
 	toggleHandTool(enable) {
