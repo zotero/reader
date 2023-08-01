@@ -236,10 +236,10 @@ class PDFView {
 		if (this._primary) {
 			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
 			this._onSetOutline(outline);
+			this._pdfRenderer.start();
 		}
 
 		this._init2 = null;
-
 
 		this._iframeWindow.PDFViewerApplication.eventBus.on('updateviewarea', this._handleViewAreaUpdate.bind(this));
 		this._updateViewStats();
