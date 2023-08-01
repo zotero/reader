@@ -850,6 +850,14 @@ class PDFView {
 	}
 
 	getSelectedAnnotationAction(annotation, position) {
+		// Prevent selected single-point ink annotation breaking all other actions in the page
+		if (annotation.type === 'ink') {
+			let br = getPositionBoundingRect(annotation.position);
+			if (br[0] === br[2] || br[1] === br[3]) {
+				return null;
+			}
+		}
+
 		if (!annotation.position.nextPageRects && annotation.position.pageIndex !== position.pageIndex
 			|| annotation.position.nextPageRects && !this._pdfPages[annotation.position.pageIndex + 1]) {
 			return null;
