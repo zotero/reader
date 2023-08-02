@@ -3,6 +3,7 @@ import { useIntl } from 'react-intl';
 import cx from 'classnames';
 import { IconColor } from './common/icons';
 import { debounce } from '../lib/debounce';
+import { isFirefox, isSafari } from "../lib/utilities";
 
 const VERTICAL_PADDING = 2;
 
@@ -77,7 +78,7 @@ function SliderRow({ item }) {
 
 
 	return (
-		<div className={cx('row slider', { checked: item.checked })}>
+		<div className={cx('row slider', { checked: item.checked }, { center: isFirefox || isSafari })}>
 			<div>Size:</div>
 			<input
 				ref={inputRef}

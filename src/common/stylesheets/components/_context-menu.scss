@@ -69,6 +69,10 @@
 			column-gap: 7px;
 			width: 160px;
 
+			&.center {
+				align-items: center;
+			}
+
 			input {
 				width: 0;
 				flex-grow: 1;
