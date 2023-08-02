@@ -83,10 +83,6 @@ body.paginated > .sections > .section-container {
 	margin-bottom: 9999px;
 }
 
-body.paginated.animating-page-turn > #annotation-overlay {
-	display: none;
-}
-
 body.paginated replaced-body * {
 	max-width: calc(50vw - 80px);
 }
@@ -130,4 +126,10 @@ replaced-body sup {
 	vertical-align: baseline !important;
 	position: relative !important;
 	top: -0.5em !important;
+}
+
+replaced-body, replaced-body * {
+    /* Work around a bug in the mapped_hyph crate that causes a segfault when viewing some EPUBs
+       (This is a shame! We want hyphens!) */
+    hyphens: none !important;
 }
