@@ -1166,11 +1166,13 @@ class Reader {
 	}
 
 	print() {
-		if (this._state.annotations.length) {
-			this._updateState({ printOverlay: {} });
-		}
-		else {
-			window.print();
+		if (this._type === 'pdf') {
+			if (this._state.annotations.length) {
+				this._updateState({ printOverlay: {} });
+			}
+			else {
+				window.print();
+			}
 		}
 	}
 
