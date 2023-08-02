@@ -18,6 +18,7 @@ import { isSafari } from "../../../../common/lib/utilities";
 
 export type DisplayedAnnotation = {
 	id?: string;
+	sourceID?: string;
 	type: AnnotationType;
 	color?: string;
 	sortIndex?: string;
@@ -316,6 +317,7 @@ type HighlightOrUnderlineProps = {
 const Note: React.FC<NoteProps> = (props) => {
 	let { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
 
+	let dragImageRef = useRef<SVGSVGElement>(null);
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
 	if (!doc || !doc.defaultView) {
 		return null;
@@ -325,6 +327,11 @@ const Note: React.FC<NoteProps> = (props) => {
 		if (!onDragStart || annotation.comment === undefined) {
 			return;
 		}
+		let elem = dragImageRef.current;
+		if (elem) {
+			let br = elem.getBoundingClientRect();
+			event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
+		}
 		onDragStart(annotation, event.dataTransfer);
 	};
 
@@ -333,19 +340,32 @@ const Note: React.FC<NoteProps> = (props) => {
 	rect.y += doc.defaultView.scrollY;
 	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction === 'rtl';
 	let staggerOffset = (staggerIndex || 0) * 15;
-	return (
-		<CommentIcon
-			annotation={annotation}
-			x={rect.left + (rtl ? -25 : rect.width + 25) + (rtl ? -1 : 1) * staggerOffset}
-			y={rect.top + staggerOffset}
-			color={annotation.color!}
-			opacity={annotation.id ? '100%' : '50%'}
-			selected={selected}
-			large={true}
-			onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
-			onDragStart={disablePointerEvents ? undefined : handleDragStart}
-		/>
-	);
+	let x = rect.left + (rtl ? -25 : rect.width + 25) + (rtl ? -1 : 1) * staggerOffset;
+	let y = rect.top + staggerOffset;
+	if (annotation.id || !annotation.sourceID) {
+		return (
+			<CommentIcon
+				ref={dragImageRef}
+				annotation={annotation}
+				x={x}
+				y={y}
+				color={annotation.color!}
+				opacity={annotation.id ? '100%' : '50%'}
+				selected={selected}
+				large={true}
+				onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
+				onDragStart={disablePointerEvents ? undefined : handleDragStart}
+			/>
+		);
+	}
+	else {
+		return (
+			<SelectionBorder
+				rect={new DOMRect(x - 12, y - 12, 24, 24)}
+				preview={true}
+			/>
+		);
+	}
 };
 Note.displayName = 'Note';
 type NoteProps = {
@@ -401,7 +421,7 @@ type StaggeredNotesProps = {
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
-	let { rect } = props;
+	let { rect, preview } = props;
 	return (
 		<rect
 			x={rect.left - 5}
@@ -409,7 +429,7 @@ const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
 			width={rect.width + 10}
 			height={rect.height + 10}
 			fill="none"
-			stroke="#6d95e0"
+			stroke={preview ? '#aaaaaa' : '#6d95e0'}
 			strokeDasharray="10 6"
 			strokeWidth={2}/>
 	);
@@ -417,6 +437,7 @@ const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
 SelectionBorder.displayName = 'SelectionBorder';
 type SelectionBorderProps = {
 	rect: DOMRect;
+	preview?: boolean;
 };
 
 const RangeSelectionBorder: React.FC<RangeSelectionBorderProps> = (props) => {

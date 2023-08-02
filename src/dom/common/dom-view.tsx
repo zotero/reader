@@ -282,6 +282,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			&& !(this._draggingNoteAnnotation
 				&& this._previewAnnotation.sortIndex == this._draggingNoteAnnotation.sortIndex)) {
 			displayedAnnotations.push({
+				sourceID: this._draggingNoteAnnotation?.id,
 				type: this._previewAnnotation.type,
 				color: this._previewAnnotation.color,
 				sortIndex: this._previewAnnotation.sortIndex,
