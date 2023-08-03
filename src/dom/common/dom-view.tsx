@@ -80,6 +80,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _gotPointerUp = false;
 
+	protected _handledPointerIDs = new Set<number>();
+
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
 
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
@@ -298,6 +300,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				annotations={displayedAnnotations}
 				selectedAnnotationIDs={this._selectedAnnotationIDs}
 				onPointerDown={this._handleAnnotationPointerDown}
+				onPointerUp={this._handleAnnotationPointerUp}
 				onDragStart={this._handleAnnotationDragStart}
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
@@ -486,7 +489,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			let node = pos ? pos.offsetNode : target;
 			// Expand to the closest block element
 			while (node.parentNode
-					&& (!isElement(node) || this._iframeWindow.getComputedStyle(node).display.includes('inline'))) {
+			&& (!isElement(node) || this._iframeWindow.getComputedStyle(node).display.includes('inline'))) {
 				node = node.parentNode;
 			}
 			range.selectNode(node);
@@ -639,20 +642,21 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
-		// Cycle selection on left click if clicked annotation is already selected
+		// pointerdown handles:
+		//  - Selecting annotations when cycling isn't possible (no overlap between pointer and selected annotations)
+		//  - Opening the annotation context menu
+
 		if (event.button == 0) {
 			if (this._selectedAnnotationIDs.length) {
-				let idsHere = this._iframeDocument.elementsFromPoint(event.clientX, event.clientY)
-					.map(target => target.getAttribute('data-annotation-id'))
-					.filter(Boolean) as string[];
-				if (!idsHere.length) {
+				let idsHere = this._getAnnotationsAtPoint(event.clientX, event.clientY);
+				// Annotation cycling happens on pointerup, so only set selected annotations now if the clicked position
+				// doesn't overlap with any of the currently selected annotations
+				if (!idsHere.length || this._selectedAnnotationIDs.some(id => idsHere.includes(id))) {
 					return;
 				}
-				let selectedID = this._selectedAnnotationIDs.find(id => idsHere.includes(id));
-				let nextID = idsHere[(selectedID ? idsHere.indexOf(selectedID) + 1 : 0) % idsHere.length];
-				this._options.onSelectAnnotations([nextID], event.nativeEvent);
+				this._options.onSelectAnnotations([idsHere[0]], event.nativeEvent);
 				if (this._selectedAnnotationIDs.length == 1) {
-					this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+					this._openAnnotationPopup(this._annotationsByID.get(idsHere[0])!);
 				}
 			}
 			else {
@@ -682,12 +686,42 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				});
 			}
 		}
+		this._handledPointerIDs.add(event.pointerId);
 	};
+
+	private _handleAnnotationPointerUp = (id: string, event: React.PointerEvent) => {
+		// If pointerdown already performed an action due to this pointer, don't do anything
+		if (this._handledPointerIDs.has(event.pointerId)) {
+			this._handledPointerIDs.delete(event.pointerId);
+			return;
+		}
+
+		if (event.button != 0 || !this._selectedAnnotationIDs.length) {
+			return;
+		}
+		// Cycle selection on left click if clicked annotation is already selected
+		let idsHere = this._getAnnotationsAtPoint(event.clientX, event.clientY);
+		let selectedID = this._selectedAnnotationIDs.find(id => idsHere.includes(id));
+		if (!selectedID) {
+			return;
+		}
+		let nextID = idsHere[(idsHere.indexOf(selectedID) + 1) % idsHere.length];
+		this._options.onSelectAnnotations([nextID], event.nativeEvent);
+		if (this._selectedAnnotationIDs.length == 1) {
+			this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+		}
+	};
+
+	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
+		return this._iframeDocument.elementsFromPoint(clientX, clientY)
+			.map(target => target.getAttribute('data-annotation-id'))
+			.filter(Boolean) as string[];
+	}
 
 	private _handleAnnotationDragStart = (id: string, dataTransfer: DataTransfer) => {
 		let annotation = this._annotationsByID.get(id)!;
 		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
-		if (annotation.type === 'note' && !annotation.readOnly) {
+		if (this._selectedAnnotationIDs.length == 1 && annotation.type === 'note' && !annotation.readOnly) {
 			this._draggingNoteAnnotation = annotation;
 		}
 		this._previewAnnotation = null;
@@ -923,7 +957,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;
-	onSetDataTransferAnnotations: (dataTransfer: DataTransfer, annotation: NewAnnotation<WADMAnnotation>, fromText?: boolean) => void;
+	onSetDataTransferAnnotations: (dataTransfer: DataTransfer, annotation: NewAnnotation<WADMAnnotation> | NewAnnotation<WADMAnnotation>[], fromText?: boolean) => void;
 	onAddAnnotation: (annotation: NewAnnotation<WADMAnnotation>, select?: boolean) => void;
 	onUpdateAnnotations: (annotations: Annotation[]) => void;
 	onOpenLink: (url: string) => void;

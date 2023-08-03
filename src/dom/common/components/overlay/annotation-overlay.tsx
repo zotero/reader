@@ -30,7 +30,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onDragStart, onResizeStart, onResizeEnd, disablePointerEvents } = props;
+	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onDragStart, onResizeStart, onResizeEnd, disablePointerEvents } = props;
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
@@ -65,6 +65,10 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let handlePointerDown = useCallback((annotation: DisplayedAnnotation, event: React.PointerEvent) => {
 		onPointerDown(annotation.id!, event);
 	}, [onPointerDown]);
+
+	let handlePointerUp = useCallback((annotation: DisplayedAnnotation, event: React.PointerEvent) => {
+		onPointerUp(annotation.id!, event);
+	}, [onPointerUp]);
 
 	let handleDragStart = useCallback((annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => {
 		onDragStart(annotation.id!, dataTransfer);
@@ -104,6 +108,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							selected={selectedAnnotationIDs.includes(annotation.id)}
 							singleSelection={selectedAnnotationIDs.length == 1}
 							onPointerDown={handlePointerDown}
+							onPointerUp={handlePointerUp}
 							onDragStart={handleDragStart}
 							onResizeStart={handleResizeStart}
 							onResizeEnd={handleResizeEnd}
@@ -142,6 +147,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				annotations={annotations.filter(a => a.type == 'note')}
 				selectedAnnotationIDs={selectedAnnotationIDs}
 				onPointerDown={handlePointerDown}
+				onPointerUp={handlePointerUp}
 				onDragStart={handleDragStart}
 				pointerEventsSuppressed={pointerEventsSuppressed}
 			/>
@@ -155,6 +161,7 @@ type AnnotationOverlayProps = {
 	annotations: DisplayedAnnotation[];
 	selectedAnnotationIDs: string[];
 	onPointerDown: (id: string, event: React.PointerEvent) => void;
+	onPointerUp: (id: string, event: React.PointerEvent) => void;
 	onDragStart: (id: string, dataTransfer: DataTransfer) => void;
 	onResizeStart: (id: string) => void;
 	onResizeEnd: (id: string, range: Range, cancelled: boolean) => void;
@@ -162,7 +169,7 @@ type AnnotationOverlayProps = {
 };
 
 const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
-	let { annotation, selected, singleSelection, onPointerDown, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
+	let { annotation, selected, singleSelection, onPointerDown, onPointerUp, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
 
@@ -273,6 +280,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 						}}
 						draggable={true}
 						onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
+						onPointerUp={onPointerUp && (event => onPointerUp!(annotation, event))}
 						onDragStart={handleDragStart}
 						data-annotation-id={annotation.id}
 					/>
@@ -307,6 +315,7 @@ type HighlightOrUnderlineProps = {
 	selected: boolean;
 	singleSelection: boolean;
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	onResizeStart?: (annotation: DisplayedAnnotation) => void;
 	onResizeEnd?: (annotation: DisplayedAnnotation, range: Range, cancelled: boolean) => void;
@@ -315,7 +324,7 @@ type HighlightOrUnderlineProps = {
 };
 
 const Note: React.FC<NoteProps> = (props) => {
-	let { annotation, staggerIndex, selected, onPointerDown, onDragStart, disablePointerEvents } = props;
+	let { annotation, staggerIndex, selected, onPointerDown, onPointerUp, onDragStart, disablePointerEvents } = props;
 
 	let dragImageRef = useRef<SVGSVGElement>(null);
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
@@ -354,6 +363,7 @@ const Note: React.FC<NoteProps> = (props) => {
 				selected={selected}
 				large={true}
 				onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
+				onPointerUp={disablePointerEvents || !onPointerUp ? undefined : (event => onPointerUp!(annotation, event))}
 				onDragStart={disablePointerEvents ? undefined : handleDragStart}
 			/>
 		);
@@ -373,12 +383,13 @@ type NoteProps = {
 	staggerIndex?: number,
 	selected: boolean;
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	disablePointerEvents: boolean;
 };
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onDragStart, pointerEventsSuppressed } = props;
+	let { annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onDragStart, pointerEventsSuppressed } = props;
 	let staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
@@ -392,6 +403,7 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 						key={annotation.key}
 						selected={selectedAnnotationIDs.includes(annotation.id)}
 						onPointerDown={onPointerDown}
+						onPointerUp={onPointerUp}
 						onDragStart={onDragStart}
 						disablePointerEvents={pointerEventsSuppressed}
 					/>
@@ -416,6 +428,7 @@ type StaggeredNotesProps = {
 	annotations: DisplayedAnnotation[];
 	selectedAnnotationIDs: string[];
 	onPointerDown: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onPointerUp: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onDragStart: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	pointerEventsSuppressed: boolean;
 };
@@ -617,7 +630,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 		{props.selected && (
 			<SelectionBorder rect={new DOMRect(x, y, size, size)}/>
 		)}
-		{(props.onPointerDown || props.onDragStart || props.onDragEnd) && (
+		{(props.onPointerDown || props.onPointerUp || props.onDragStart || props.onDragEnd) && (
 			<foreignObject
 				x={x}
 				y={y}
@@ -635,6 +648,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 					}}
 					draggable={true}
 					onPointerDown={props.onPointerDown}
+					onPointerUp={props.onPointerUp}
 					onDragStart={props.onDragStart}
 					onDragEnd={props.onDragEnd}
 					data-annotation-id={props.annotation?.id}
@@ -654,6 +668,7 @@ type CommentIconProps = {
 	selected?: boolean;
 	large?: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
+	onPointerUp?: (event: React.PointerEvent) => void;
 	onDragStart?: (event: React.DragEvent) => void;
 	onDragEnd?: (event: React.DragEvent) => void;
 };
