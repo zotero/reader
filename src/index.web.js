@@ -5,7 +5,12 @@ window.createReader = (options) => {
 		throw new Error('Reader is already initialized');
 	}
 	options.platform = 'web';
-	let reader = new Reader(options);
+	let reader = new Reader({
+		onOpenContextMenu: (params) => {
+			reader.openContextMenu(params);
+		},
+		...options,
+	});
 	window._reader = reader;
 	return reader;
 };
