@@ -32,7 +32,7 @@ export class FocusManager {
 				this._onDeselectAnnotations();
 			}
 			// Close find popup on blur if search query is empty
-			if (!event.target.closest('.find-popup')) {
+			if (!event.target.closest('.find-popup, #viewFind')) {
 				let state = this._reader._state.primaryViewFindState;
 				if (state && !state.query) {
 					this._reader._updateState({ primaryViewFindState: { ...state, popupOpen: false } });
