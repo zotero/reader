@@ -66,7 +66,7 @@
 	.splitToolbarButton {
 		display: flex;
 	}
-  
+
 	.toolbarButton, .toolbarField {
 		-moz-window-dragging: no-drag;
 	}
@@ -178,7 +178,7 @@
 	}
 
 	#numPages {
-		min-width: $num-pages-min-width;
+		//min-width: $num-pages-min-width;
 		color: $num-pages-color;
 		margin-left: 0;
 
