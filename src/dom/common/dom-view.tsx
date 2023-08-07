@@ -139,12 +139,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let imgSrc = (origin || '') + ' data: blob:';
 		// Allow styles from data: URIs, inline, and from that origin
 		let styleSrc = (origin || '') + " data: 'unsafe-inline'";
+		// Allow fonts from data: URIs and from that origin
+		let fontSrc = (origin || '') + ' data:';
 		// Don't allow any scripts
 		let scriptSrc = "'none'";
 		// Don't allow any child frames
 		let childSrc = "'none'";
-		return `default-src ${defaultSrc}; img-src ${imgSrc}; style-src ${styleSrc}; script-src ${scriptSrc}; `
-			+ `child-src ${childSrc}`;
+		// Don't allow form submissions
+		let formAction = "'none'";
+		return `default-src ${defaultSrc}; img-src ${imgSrc}; style-src ${styleSrc}; font-src ${fontSrc}; `
+			+ `script-src ${scriptSrc}; child-src ${childSrc}; form-action ${formAction}`;
 	}
 
 	protected abstract _getSrcDoc(): string;
