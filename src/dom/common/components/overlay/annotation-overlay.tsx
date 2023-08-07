@@ -130,6 +130,9 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 					);
 				}
 			})}
+			{annotations.filter(annotation => annotation.type == 'note' && !annotation.id).map(annotation => (
+				<NotePreview annotation={annotation} key={annotation.key} />
+			))}
 		</svg>
 		<svg
 			className="annotation-container"
@@ -144,7 +147,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			ref={widgetContainer}
 		>
 			<StaggeredNotes
-				annotations={annotations.filter(a => a.type == 'note')}
+				annotations={annotations.filter(a => a.type == 'note' && a.id)}
 				selectedAnnotationIDs={selectedAnnotationIDs}
 				onPointerDown={handlePointerDown}
 				onPointerUp={handlePointerUp}
@@ -351,31 +354,21 @@ const Note: React.FC<NoteProps> = (props) => {
 	let staggerOffset = (staggerIndex || 0) * 15;
 	let x = rect.left + (rtl ? -25 : rect.width + 25) + (rtl ? -1 : 1) * staggerOffset;
 	let y = rect.top + staggerOffset;
-	if (annotation.id || !annotation.sourceID) {
-		return (
-			<CommentIcon
-				ref={dragImageRef}
-				annotation={annotation}
-				x={x}
-				y={y}
-				color={annotation.color!}
-				opacity={annotation.id ? '100%' : '50%'}
-				selected={selected}
-				large={true}
-				onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
-				onPointerUp={disablePointerEvents || !onPointerUp ? undefined : (event => onPointerUp!(annotation, event))}
-				onDragStart={disablePointerEvents ? undefined : handleDragStart}
-			/>
-		);
-	}
-	else {
-		return (
-			<SelectionBorder
-				rect={new DOMRect(x - 12, y - 12, 24, 24)}
-				preview={true}
-			/>
-		);
-	}
+	return (
+		<CommentIcon
+			ref={dragImageRef}
+			annotation={annotation}
+			x={x}
+			y={y}
+			color={annotation.color!}
+			opacity={annotation.id ? '100%' : '50%'}
+			selected={selected}
+			large={true}
+			onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
+			onPointerUp={disablePointerEvents || !onPointerUp ? undefined : (event => onPointerUp!(annotation, event))}
+			onDragStart={disablePointerEvents ? undefined : handleDragStart}
+		/>
+	);
 };
 Note.displayName = 'Note';
 type NoteProps = {
@@ -386,6 +379,23 @@ type NoteProps = {
 	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	disablePointerEvents: boolean;
+};
+
+const NotePreview: React.FC<NotePreviewProps> = (props) => {
+	let { annotation } = props;
+	let doc = annotation.range.commonAncestorContainer.ownerDocument;
+	if (!doc || !doc.defaultView) {
+		return null;
+	}
+
+	let rect = annotation.range.getBoundingClientRect();
+	rect.x += doc.defaultView.scrollX;
+	rect.y += doc.defaultView.scrollY;
+	return <SelectionBorder rect={rect} preview={true} key={annotation.key} />;
+};
+NotePreview.displayName = 'NotePreview';
+type NotePreviewProps = {
+	annotation: DisplayedAnnotation;
 };
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {

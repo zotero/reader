@@ -304,10 +304,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: this.toDisplayedRange(this._highlightedPosition)!,
 			});
 		}
-		if (this._previewAnnotation
-			// Don't show preview if dragged note annotation hasn't moved
-			&& !(this._draggingNoteAnnotation
-				&& this._previewAnnotation.sortIndex == this._draggingNoteAnnotation.sortIndex)) {
+		if (this._previewAnnotation) {
 			displayedAnnotations.push({
 				sourceID: this._draggingNoteAnnotation?.id,
 				type: this._previewAnnotation.type,
