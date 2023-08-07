@@ -5,18 +5,18 @@ jobs:
     name: Build, Upload, Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           submodules: recursive
 
       - name: Install Node
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
-          node-version: 14
+          node-version: 18
 
       - name: Cache Node modules
         id: node-cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: node_modules
           key: node-modules-${{ hashFiles('package-lock.json') }}
@@ -24,9 +24,15 @@ jobs:
       - name: Install Node modules
         if: steps.node-cache.outputs.cache-hit != 'true'
         run: npm ci
+        # Currently necessary for Webpack
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Build pdf-reader
         run: npm run build
+        # Currently necessary for Webpack
+        env:
+          NODE_OPTIONS: --openssl-legacy-provider
 
       - name: Upload pre-build ZIP
         if: |
