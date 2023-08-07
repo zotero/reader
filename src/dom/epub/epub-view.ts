@@ -110,6 +110,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected async _onInitialDisplay(viewState: Partial<Readonly<EPUBViewState>>) {
 		await this.book.opened;
 
+		let cspMeta = this._iframeDocument.createElement('meta');
+		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
+		cspMeta.setAttribute('content', this._getCSP());
+		this._iframeDocument.head.prepend(cspMeta);
+
 		this._pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
 
 		let style = this._iframeDocument.createElement('style');

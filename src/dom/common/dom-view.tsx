@@ -110,26 +110,41 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (isSafari) {
 			this._iframe.sandbox.add('allow-scripts');
 		}
-		this._iframe.srcdoc = this._getSrcDoc();
 		this.initializedPromise = this._initialize();
+		this._iframe.srcdoc = this._getSrcDoc();
 		options.container.append(this._iframe);
 	}
 
 	protected async _initialize(): Promise<void> {
 		return new Promise<void>((resolve, reject) => {
-			this._iframe.addEventListener(
-				'load',
-				async () => {
-					try {
-						await this._handleIFrameLoad();
-						resolve();
-					}
-					catch (e) {
-						reject(e);
-					}
-				},
-				{ once: true });
+			this._iframe.addEventListener('load', () => {
+				this._handleIFrameLoad().then(resolve, reject);
+			}, { once: true });
 		});
+	}
+
+	protected _getCSP(): string {
+		let baseURI = this._options.data.baseURI ? new URL(this._options.data.baseURI) : null;
+		// When baseURI is http[s], use the origin
+		// In the client, though, baseURI will be a zotero: URI and its origin will be the string "null"
+		// for some reason. In that case, just allow the entire protocol. (In practice zotero:// URIs are always
+		// allowed because the protocol is marked as URI_IS_LOCAL_RESOURCE, which exempts it from CSP, but we want
+		// to be safe here.)
+		// https://bugzilla.mozilla.org/show_bug.cgi?id=1551253
+		let origin = baseURI && (baseURI.protocol.startsWith('http') ? baseURI.origin : baseURI.protocol);
+
+		// Allow resources from the same origin as the baseURI
+		let defaultSrc = origin || "'none'";
+		// Allow images from data: and blob: URIs and from that origin
+		let imgSrc = (origin || '') + ' data: blob:';
+		// Allow styles from data: URIs, inline, and from that origin
+		let styleSrc = (origin || '') + " data: 'unsafe-inline'";
+		// Don't allow any scripts
+		let scriptSrc = "'none'";
+		// Don't allow any child frames
+		let childSrc = "'none'";
+		return `default-src ${defaultSrc}; img-src ${imgSrc}; style-src ${styleSrc}; script-src ${scriptSrc}; `
+			+ `child-src ${childSrc}`;
 	}
 
 	protected abstract _getSrcDoc(): string;
