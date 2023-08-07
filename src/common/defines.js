@@ -11,7 +11,9 @@ export let ANNOTATION_COLORS = [
 ];
 
 // https://developer.mozilla.org/en-US/docs/Web/CSS/system-color
-export let SELECTION_COLOR = navigator.platform.includes('Mac') ? '#71ADFD' : 'Highlight';
+//export let SELECTION_COLOR = navigator.platform.includes('Mac') ? '#71ADFD' : 'Highlight';
+// TEMP: Use Mac color everywhere, since Highlight is too dark on Windows without opacity
+export let SELECTION_COLOR = '#71ADFD';
 
 export const PDF_NOTE_DIMENSIONS = 22; // pt
 export const DEFAULT_TEXT_ANNOTATION_FONT_SIZE = 14; // pt
