@@ -173,11 +173,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _updateViewStats(): void;
 
-	protected abstract _isExternalLink(link: HTMLAnchorElement): boolean;
-
 	// ***
 	// Utilities - called in appropriate event handlers
 	// ***
+
+	protected _isExternalLink(link: HTMLAnchorElement): boolean {
+		let href = link.getAttribute('href');
+		if (!href) {
+			return false;
+		}
+		return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:');
+	}
 
 	protected _getViewportBoundingRect(range: Range): DOMRect {
 		let rect = range.getBoundingClientRect();

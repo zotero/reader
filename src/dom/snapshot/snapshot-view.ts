@@ -213,10 +213,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	protected _isExternalLink(link: HTMLAnchorElement) {
-		return !link.getAttribute('href')?.startsWith('#');
-	}
-
 	private _getSearchContext() {
 		if (!this._searchContext) {
 			this._searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));

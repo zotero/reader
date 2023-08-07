@@ -359,14 +359,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected _isExternalLink(link: HTMLAnchorElement) {
-		let href = link.getAttribute('href');
-		if (!href) {
-			return false;
-		}
-		return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:');
-	}
-
 	// ***
 	// Event handlers
 	// ***
