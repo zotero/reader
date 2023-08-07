@@ -490,6 +490,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._draggingNoteAnnotation.pageLabel = this._previewAnnotation.pageLabel;
 		this._draggingNoteAnnotation.sortIndex = this._previewAnnotation.sortIndex;
 		this._draggingNoteAnnotation.text = this._previewAnnotation.text;
+		this._previewAnnotation = null;
 		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
 	}
 
