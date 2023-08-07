@@ -1,7 +1,6 @@
 [submodule "pdfjs/pdf.js"]
 	path = pdfjs/pdf.js
 	url = https://github.com/zotero/pdf.js.git
-	branch = reader2
 
 [submodule "epubjs/epub.js"]
 	path = epubjs/epub.js
