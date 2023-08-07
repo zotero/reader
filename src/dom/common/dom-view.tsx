@@ -456,8 +456,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (this._tool.type == 'note') {
 			let range = this._getNoteTargetRange(event);
-			this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
-			this._renderAnnotations();
+			if (range) {
+				this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+				this._renderAnnotations();
+			}
 		}
 	}
 
@@ -467,8 +469,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		event.preventDefault();
 		let range = this._getNoteTargetRange(event);
-		this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._draggingNoteAnnotation.color);
-		this._renderAnnotations();
+		if (range) {
+			this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._draggingNoteAnnotation.color);
+			this._renderAnnotations();
+		}
 	}
 
 	protected _handleDragOver(event: DragEvent) {
@@ -489,7 +493,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
 	}
 
-	protected _getNoteTargetRange(event: PointerEvent | DragEvent) {
+	protected _getNoteTargetRange(event: PointerEvent | DragEvent): Range | null {
 		let target = event.target as Element;
 		// Disable pointer events and rerender so we can get the cursor position in the text layer,
 		// not the annotation layer, even if the mouse is over the annotation layer
@@ -515,6 +519,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				node = node.parentNode;
 			}
 			range.selectNode(node);
+		}
+		let rect = range.getBoundingClientRect();
+		if (rect.right <= 0 || rect.left >= this._iframeWindow.innerWidth
+				|| rect.bottom <= 0 || rect.top >= this._iframeWindow.innerHeight) {
+			return null;
 		}
 		return range;
 	}
