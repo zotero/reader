@@ -1,14 +1,20 @@
-# Zotero PDF reader and annotator
+# Zotero PDF/EPUB/HTML reader and annotator
 
 ## Build
 
 Clone the repository:
 
 ```
-git clone https://github.com/zotero/pdf-reader --recursive
+git clone https://github.com/zotero/reader --recursive
 ```
 
-Run `npm run build` to produce `dev`, `web` and `zotero` builds in `build/` directory.
+With Node 18+, run the following:
+
+```
+NODE_OPTIONS=--openssl-legacy-provider npm run build
+```
+
+This will produce `dev`, `web` and `zotero` builds in the `build/` directory.
 
 ## Development
 
