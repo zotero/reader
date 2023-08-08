@@ -1,7 +1,8 @@
 @namespace epub url('http://www.idpf.org/2007/ops');
 
-/* Can't combine the following two or it would make the specificity higher than the body.paginated selector below. */
+/*** Layout styles applied in all flow modes: ***/
 
+/* Can't combine the following two or it would make the specificity higher than the body.paginated selector below. */
 html {
 	margin: 0 !important;
 	padding: 0 !important;
@@ -12,8 +13,11 @@ body {
 	padding: 0 !important;
 }
 
-body > .sections > .section-container ::selection {
-	background-color: var(--selection-color);
+
+/*** Layout styles applied in scrolled mode: ***/
+
+body.scrolled, body.scrolled > .sections {
+    overflow-x: hidden;
 }
 
 body.scrolled > .sections {
@@ -26,9 +30,17 @@ body.scrolled > .sections > .section-container {
 	max-width: 800px;
 }
 
-body.scrolled replaced-body * {
-	max-width: calc(min(100vw - 80px, 100%));
+body.scrolled replaced-body img, body.scrolled replaced-body svg,
+body.scrolled replaced-body audio, body.scrolled replaced-body video {
+    /* Size the media element's box so it fits within one page */
+	max-width: calc(min(100vw - 80px, 100%)) !important;
+	max-height: 100vh;
+    /* Contain the content within the box so its aspect ratio doesn't change */
+	object-fit: contain;
 }
+
+
+/*** Layout styles applied in paginated mode: ***/
 
 body.paginated {
 	margin: 40px !important;
@@ -36,8 +48,12 @@ body.paginated {
 	overscroll-behavior: none;
 }
 
-body:not(.paginated) :is(.swipe-indicator-left, .swipe-indicator-right) {
-	display: none;
+.swipe-indicator-left, .swipe-indicator-right {
+    display: none;
+}
+
+body.paginated .swipe-indicator-left, body.paginated .swipe-indicator-right {
+    display: block;
 }
 
 .swipe-indicator-left, .swipe-indicator-right {
@@ -83,8 +99,11 @@ body.paginated > .sections > .section-container {
 	margin-bottom: 9999px;
 }
 
-body.paginated replaced-body * {
-	max-width: calc(50vw - 80px);
+body.paginated replaced-body img, body.paginated replaced-body svg,
+body.paginated replaced-body audio, body.paginated replaced-body video {
+	max-width: calc(50vw - 80px) !important;
+    max-height: calc(100vh - 80px) !important;
+    object-fit: contain;
 }
 
 @media (max-width: 800px) {
@@ -95,6 +114,13 @@ body.paginated replaced-body * {
 	body.paginated replaced-body * {
 		max-width: 100vw;
 	}
+}
+
+
+/*** Content Styles ***/
+
+body > .sections > .section-container ::selection {
+    background-color: var(--selection-color);
 }
 
 replaced-body {
@@ -111,8 +137,11 @@ replaced-body {
 
 replaced-body p {
 	/* Really enforce some of our formatting choices on body paragraphs */
-	font-family: var(--content-font-family, "Georgia"), serif;
+	font-family: var(--content-font-family, "Georgia"), serif !important;
 	line-height: 1.4 !important;
+    
+    widows: 2;
+    orphans: 2;
 }
 
 replaced-body a {
