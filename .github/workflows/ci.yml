@@ -45,7 +45,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           mkdir build/build-zip
-          cd build/zotero
+          cd build
           zip -r ../build-zip/$GITHUB_SHA.zip *
           cd ..
           sudo gem install --no-document dpl dpl-s3
