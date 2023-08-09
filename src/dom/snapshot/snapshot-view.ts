@@ -51,10 +51,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			delete this._options.data.buf;
 			let doc = new DOMParser().parseFromString(text, 'text/html');
 
-			doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
-				...DOMPURIFY_CONFIG,
-				RETURN_DOM: true,
-			}));
+			//doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
+			//	...DOMPURIFY_CONFIG,
+			//	RETURN_DOM: true,
+			//}));
 
 			for (let base of doc.querySelectorAll('base')) {
 				base.remove();
