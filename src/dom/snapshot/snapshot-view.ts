@@ -21,9 +21,7 @@ import DOMView, {
 } from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import NavStack from "../common/lib/nav-stack";
-import DOMPurify from "dompurify";
 import {
-	DOMPURIFY_CONFIG,
 	getVisibleTextNodes
 } from "../common/lib/nodes";
 import DefaultFindProcessor from "../common/find";
@@ -51,11 +49,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			delete this._options.data.buf;
 			let doc = new DOMParser().parseFromString(text, 'text/html');
 
-			//doc.documentElement.replaceWith(DOMPurify.sanitize(doc.documentElement, {
-			//	...DOMPURIFY_CONFIG,
-			//	RETURN_DOM: true,
-			//}));
-
 			for (let base of doc.querySelectorAll('base')) {
 				base.remove();
 			}
@@ -65,6 +58,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				doc.head.prepend(base);
 			}
 
+			for (let cspMeta of Array.from(doc.querySelectorAll('meta[http-equiv="Content-Security-Policy" i]'))) {
+				cspMeta.remove();
+			}
 			let cspMeta = doc.createElement('meta');
 			cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
 			cspMeta.setAttribute('content', this._getCSP());
@@ -150,8 +146,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// commonAncestorContainer. Build a selector targeting that element,
 		// not the container.
 		if (range.startContainer === range.endContainer
-				&& range.startOffset == range.endOffset - 1
-				&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
+			&& range.startOffset == range.endOffset - 1
+			&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
 			targetElement = range.startContainer.childNodes[range.startOffset];
 		}
 		else {
@@ -304,10 +300,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 		else if (state.active) {
 			if (!previousState
-					|| previousState.query !== state.query
-					|| previousState.caseSensitive !== state.caseSensitive
-					|| previousState.entireWord !== state.entireWord
-					|| previousState.active !== state.active) {
+				|| previousState.query !== state.query
+				|| previousState.caseSensitive !== state.caseSensitive
+				|| previousState.entireWord !== state.entireWord
+				|| previousState.active !== state.active) {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
 					searchContext: this._getSearchContext(),

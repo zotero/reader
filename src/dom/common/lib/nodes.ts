@@ -1,5 +1,3 @@
-import DOMPurify from "dompurify";
-
 export function getAllTextNodes(root: Node): Text[] {
 	let nodeIterator = root.ownerDocument!.createNodeIterator(root, NodeFilter.SHOW_TEXT);
 	let nodes = [];
@@ -30,10 +28,3 @@ export function closestElement(node: Node): Element | null {
 	}
 	return currentNode;
 }
-
-export const DOMPURIFY_CONFIG: DOMPurify.Config = {
-	ADD_TAGS: ['html', 'head', 'body', 'link', 'style'],
-	// https://github.com/cure53/DOMPurify/blob/c420ec0f4034908a4aea9caf512fb8c1acdec270/src/regexp.js#L10
-	// with blob: added
-	ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|cid|xmpp|blob):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
-};

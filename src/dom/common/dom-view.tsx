@@ -104,12 +104,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin');
 		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
-		// unless the allow-scripts permission is added to the frame's sandbox. That means that we have to allow scripts
-		// and very carefully sanitize.
+		// unless the allow-scripts permission is added to the frame's sandbox. We prevent scripts in the frame from
+		// running via the CSP.
 		// https://bugs.webkit.org/show_bug.cgi?id=218086
 		if (isSafari) {
 			this._iframe.sandbox.add('allow-scripts');
 		}
+		// Set the CSP directly on the iframe; we also add it as a <meta> tag in the srcdoc for browsers that don't
+		// support the csp attribute (currently all browsers besides Chrome derivatives)
+		this._iframe.setAttribute('csp', this._getCSP());
 		this.initializedPromise = this._initialize();
 		this._iframe.srcdoc = this._getSrcDoc();
 		options.container.append(this._iframe);

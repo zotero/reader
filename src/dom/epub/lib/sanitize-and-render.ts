@@ -1,6 +1,3 @@
-import { isSafari } from "../../../common/lib/utilities";
-import DOMPurify from "dompurify";
-import { DOMPURIFY_CONFIG } from "../../common/lib/nodes";
 import parser from "postcss-selector-parser";
 
 const REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
@@ -16,14 +13,6 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	let walker = doc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 	let toRemove = [];
 	let toAwait = [];
-
-	// Work around a WebKit bug - see DOMView constructor for details
-	if (isSafari) {
-		DOMPurify.sanitize(sectionDoc.documentElement, {
-			...DOMPURIFY_CONFIG,
-			IN_PLACE: true,
-		});
-	}
 
 	let elem: Element | null = null;
 	// eslint-disable-next-line no-unmodified-loop-condition
