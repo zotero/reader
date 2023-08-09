@@ -26,7 +26,9 @@ import {
 	getScaleTransform,
 	calculateScale,
 	getAxialAlignedBoundingBox,
-	distanceBetweenRects, getTransformFromRects
+	distanceBetweenRects,
+	getTransformFromRects,
+	debounceUntilScrollFinishes
 } from './lib/utilities';
 import {
 	getAffectedAnnotations,
@@ -49,6 +51,7 @@ import {
 	applyTransformationMatrixToInkPosition,
 	eraseInk
 } from './lib/path';
+import { History } from './lib/history';
 
 class PDFView {
 	constructor(options) {
@@ -97,6 +100,11 @@ class PDFView {
 		this._lastFocusedObject = null;
 
 		this._findState = options.findState;
+
+		this._history = new History({
+			onUpdate: () => this._updateViewStats(),
+			onNavigate: location => this.navigate(location, true)
+		});
 
 		if (this._primary) {
 			this._pdfRenderer = new PDFRenderer({ pdfView: this });
@@ -639,7 +647,17 @@ class PDFView {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.currentScaleValue = 'auto';
 	}
 
-	navigate(location) {
+	async _pushHistoryPoint() {
+		this._suspendHistorySaving = true;
+		let container = this._iframeWindow.document.getElementById('viewerContainer');
+		await debounceUntilScrollFinishes(container, 100);
+		this._suspendHistorySaving = false;
+		let { pageNumber, top, left } = this._iframeWindow.PDFViewerApplication.pdfViewer._location;
+		let pageIndex = pageNumber - 1;
+		this._history.save({ dest: [pageIndex, { name: 'XYZ' }, left, top, null] });
+	}
+
+	navigate(location, skipHistory) {
 		if (location.annotationID) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
 			if (annotation) {
@@ -679,14 +697,17 @@ class PDFView {
 				});
 			}
 		}
+		if (!skipHistory) {
+			this._pushHistoryPoint();
+		}
 	}
 
 	navigateBack() {
-		this._iframeWindow.history.back();
+		this._history.navigateBack();
 	}
 
 	navigateForward() {
-		this._iframeWindow.history.forward();
+		this._history.navigateForward();
 	}
 
 	navigateToNextPage() {
@@ -1074,7 +1095,6 @@ class PDFView {
 				return { type: ['note', 'text', 'ink'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 			}
 		}
-
 
 
 		if (intersectAnnotationWithPoint(annotation.position, position)) {
@@ -2009,39 +2029,23 @@ class PDFView {
 	}
 
 	_handleViewAreaUpdate = (event) => {
+		let { scale, top, left } = event.location;
+		let pageIndex = event.location.pageNumber - 1;
 		this._onChangeViewState({
-			pageIndex: event.location.pageNumber - 1,
-			scale: event.location.scale,
-			top: event.location.top,
-			left: event.location.left,
+			pageIndex,
+			scale,
+			top,
+			left,
 			scrollMode: this._iframeWindow.PDFViewerApplication.pdfViewer.scrollMode,
 			spreadMode: this._iframeWindow.PDFViewerApplication.pdfViewer.spreadMode
 		});
+		if (!this._suspendHistorySaving) {
+			this._history.save({ dest: [pageIndex, { name: 'XYZ' }, left, top, null] }, true);
+		}
 		this._updateViewStats();
 	};
 
 	_updateViewStats() {
-		let canNavigateBack = true;
-		let canNavigateForward = true;
-		try {
-			let { uid } = this._iframeWindow.history.state;
-			if (uid == 0) {
-				canNavigateBack = false;
-			}
-		}
-		catch (e) {
-		}
-
-		try {
-			let { uid } = this._iframeWindow.history.state;
-			let length = this._iframeWindow.history.length;
-			if (uid == length - 1) {
-				canNavigateForward = false;
-			}
-		}
-		catch (e) {
-		}
-
 		let {
 			currentPageNumber,
 			currentScaleValue,
@@ -2059,8 +2063,8 @@ class PDFView {
 			canZoomOut: true,
 			canZoomIn: true,
 			canZoomReset: currentScaleValue !== 'page-width',
-			canNavigateBack,
-			canNavigateForward,
+			canNavigateBack: this._history.canNavigateBack,
+			canNavigateForward: this._history.canNavigateForward,
 			canNavigateToFirstPage: currentPageNumber > 1,
 			canNavigateToLastPage: currentPageNumber < pagesCount,
 			canNavigateToPreviousPage: currentPageNumber > 1,

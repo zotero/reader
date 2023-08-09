@@ -470,3 +470,27 @@ export function getTransformFromRects(rect1, rect2) {
 
 	return matrix;
 }
+
+/**
+ * Wait until scroll is no longer being triggered
+ * @param container Scrollable container
+ * @param debounceTime For how long the scroll shouldn't be triggered
+ * @returns {Promise<unknown>}
+ */
+export function debounceUntilScrollFinishes(container, debounceTime = 100) {
+	return new Promise((resolve) => {
+		let debounceTimeout;
+		let resolveAndCleanup = () => {
+			container.removeEventListener('scroll', scrollListener);
+			clearTimeout(debounceTimeout);
+			resolve();
+		};
+		let scrollListener = () => {
+			clearTimeout(debounceTimeout);
+			debounceTimeout = setTimeout(resolveAndCleanup, debounceTime);
+		};
+		container.addEventListener('scroll', scrollListener);
+		// Start the debounce timeout immediately
+		debounceTimeout = setTimeout(resolveAndCleanup, debounceTime);
+	});
+}
