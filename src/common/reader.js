@@ -1008,6 +1008,12 @@ class Reader {
 		if (!ids.length && triggeredFromView && (shift || mod)) {
 			return;
 		}
+
+		// TODO: This is temporary, until annotation selection and focus management is reworked
+		if (!shift && mod && !this._keyboardManager.pointerDown) {
+			return;
+		}
+
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = triggeredFromView;
 		let selectedLength = this._state.selectedAnnotationIDs.length;

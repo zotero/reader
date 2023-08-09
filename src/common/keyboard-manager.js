@@ -6,6 +6,9 @@ export class KeyboardManager {
 		this._reader = options.reader;
 		window.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		window.addEventListener('keyup', this._handleKeyUp.bind(this), true);
+		// TODO: Possibly the current file should be renamed to input-manager if also watching pointer state
+		window.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
+		window.addEventListener('pointerup', this._handlePointerUp.bind(this), true);
 	}
 
 	_handleKeyUp(event, view) {
@@ -34,15 +37,17 @@ export class KeyboardManager {
 			return;
 		}
 
-		if (view) {
-			if ((cmd || ctrl && isLinux()) && key === '['
-				|| (alt && !isMac() || cmd) && key === 'ArrowLeft') {
-				this._reader.navigateBack();
-			}
-			else if ((cmd || ctrl && isLinux()) && key === ']'
-				|| (alt && !isMac() || cmd) && key === 'ArrowRight') {
-				this._reader.navigateForward();
-			}
+		if ((cmd || ctrl && isLinux()) && key === '['
+			|| (alt && !isMac() || cmd) && key === 'ArrowLeft') {
+			this._reader.navigateBack();
+			event.preventDefault();
+			return;
+		}
+		else if ((cmd || ctrl && isLinux()) && key === ']'
+			|| (alt && !isMac() || cmd) && key === 'ArrowRight') {
+			this._reader.navigateForward();
+			event.preventDefault();
+			return;
 		}
 
 		// Escape must be pressed alone. We basically want to prevent
@@ -152,6 +157,14 @@ export class KeyboardManager {
 				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
 			}
 		}
+	}
+
+	_handlePointerDown(event) {
+		this.pointerDown = true;
+	}
+
+	_handlePointerUp(event) {
+		this.pointerDown = false;
 	}
 
 	handleViewKeyDown(event) {
