@@ -12,9 +12,7 @@ import Epub, {
 	EpubCFI,
 	NavItem,
 } from "epubjs";
-import {
-	moveRangeEndsIntoTextNodes
-} from "../common/lib/range";
+import { moveRangeEndsIntoTextNodes } from "../common/lib/range";
 import {
 	FragmentSelector,
 	FragmentSelectorConformsTo,
@@ -25,8 +23,8 @@ import { EPUBFindProcessor } from "./find";
 import NavStack from "../common/lib/nav-stack";
 import DOMView, {
 	DOMViewOptions,
-	NavigateOptions,
-	DOMViewState
+	DOMViewState,
+	NavigateOptions
 } from "../common/dom-view";
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
@@ -50,14 +48,6 @@ import contentCSS from '!!raw-loader!./stylesheets/content.css';
 // @ts-ignore
 import Path from "epubjs/src/utils/path";
 
-// - All views use iframe to render and isolate the view from the parent window
-// - If need to add additional build steps, a submodule or additional files see pdfjs/
-//   directory in the project root and "scripts" part in packages.json
-// - If view needs styling, it should provide and load its own CSS file like pdfjs/viewer.css,
-//   because SCSS in src/common/stylesheets is only for the main window
-// - Update demo data in demo/epub and demo/snapshot directories:
-//   - Add demo annotations
-
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
 
@@ -65,19 +55,19 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	flow!: Flow;
 
+	readonly pageMapping = new PageMapping();
+
+	scale = 1;
+
 	private _sectionsContainer!: HTMLElement;
 
 	private readonly _sectionViews: SectionView[] = [];
 
 	private readonly _navStack = new NavStack<string>();
 
-	private readonly _pageMapping = new PageMapping();
-
 	private readonly _rangeCache = new Map<string, Range>();
 
 	private _pageProgressionRTL!: boolean;
-
-	private _scale = 1;
 
 	private _flowMode!: FlowMode;
 
@@ -156,17 +146,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		else {
 			this.setFlowMode('scrolled');
 		}
-		if (viewState.cfi) {
-			if (viewState.cfi === '_start') {
-				this.navigateToFirstPage();
-			}
-			else {
-				let cfi = lengthenCFI(viewState.cfi);
-				// Perform the navigation on the next frame, because apparently the split view layout might not have
-				// settled yet
-				await new Promise(resolve => requestAnimationFrame(resolve));
-				this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
-			}
+		if (!viewState.cfi || viewState.cfi === '_start') {
+			this.navigateToFirstPage();
+		}
+		else {
+			let cfi = lengthenCFI(viewState.cfi);
+			// Perform the navigation on the next frame, because apparently the split view layout might not have
+			// settled yet
+			await new Promise(resolve => requestAnimationFrame(resolve));
+			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
 		}
 		this._handleViewUpdate();
 
@@ -175,14 +163,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {
-		let container = this._iframeDocument.createElement('div');
-		container.id = 'section-' + section.index;
-		container.classList.add('section-container', 'cfi-stop');
-		container.setAttribute('data-section-index', String(section.index));
-		this._sectionsContainer.append(container);
 		let sectionView = new SectionView({
 			section,
-			container,
+			sectionsContainer: this._sectionsContainer,
 			window: this._iframeWindow,
 			document: this._iframeDocument,
 			styleScoper,
@@ -199,14 +182,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 
 		// Use persisted page mappings if present
-		if (savedPageMapping && this._pageMapping.load(savedPageMapping, this)) {
+		if (savedPageMapping && this.pageMapping.load(savedPageMapping, this)) {
 			this._savedPageMapping = savedPageMapping;
 			return;
 		}
 
 		// Otherwise, extract physical page numbers and fall back to EPUB locations
-		this._pageMapping.generate([...this._sectionViews.values()]);
-		this._savedPageMapping = savedPageMapping = this._pageMapping.save(this);
+		this.pageMapping.generate([...this._sectionViews.values()]);
+		this._savedPageMapping = savedPageMapping = this.pageMapping.save(this);
 		if (window.dev) {
 			window.localStorage.setItem(localStorageKey, savedPageMapping);
 		}
@@ -244,7 +227,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return new EpubCFI(rangeOrNode, section.cfiBase);
 	}
 
-	getRange(cfi: EpubCFI | string): Range | null {
+	getRange(cfi: EpubCFI | string, mount = false): Range | null {
 		if (!this._sectionViews.length) {
 			// The book isn't loaded yet -- don't spam the console
 			return null;
@@ -261,7 +244,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			console.error('Unable to find view for CFI', cfiString);
 			return null;
 		}
-		let range = cfi.toRange(this._iframeDocument, undefined, view.container);
+		if (!view.mounted && mount) {
+			view.mount();
+		}
+		let range = cfi.toRange(view.container.ownerDocument, undefined, view.container);
 		if (!range) {
 			console.error('Unable to get range for CFI', cfiString);
 			return null;
@@ -336,7 +322,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			return null;
 		}
 
-		let pageLabel = this._pageMapping.isPhysical && this._pageMapping.getPageLabel(range) || '';
+		let pageLabel = this.pageMapping.isPhysical && this.pageMapping.getPageLabel(range) || '';
 
 		// Use the number of characters between the start of the section and the start of the selection range
 		// to disambiguate the sortIndex
@@ -364,6 +350,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	// ***
 
 	protected override _handleResize() {
+		if (!this.flow) return;
 		let beforeCFI = this.flow.startCFI;
 		let beforeOffset = this.flow.startCFIOffsetY;
 		if (beforeCFI) {
@@ -377,13 +364,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			);
 		}
 		this._handleViewUpdate();
-	}
-
-	protected override _handleScroll() {
-		super._handleScroll();
-		if (!this.flow.invalidate.pending()) {
-			this.flow.invalidate();
-		}
 	}
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
@@ -435,7 +415,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			cfi = '_start';
 		}
 		let viewState: EPUBViewState = {
-			scale: Math.round(this._scale * 1000) / 1000, // Three decimal places
+			scale: Math.round(this.scale * 1000) / 1000, // Three decimal places
 			cfi,
 			cfiElementOffset: this.flow.startCFIOffsetY ?? undefined,
 			savedPageMapping: this._savedPageMapping,
@@ -447,19 +427,19 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	// View stats provide information about the view
 	protected override _updateViewStats() {
 		let startRange = this.flow.startRange;
-		let pageIndex = startRange && this._pageMapping.getPageIndex(startRange);
-		let pageLabel = startRange && this._pageMapping.getPageLabel(startRange);
+		let pageIndex = startRange && this.pageMapping.getPageIndex(startRange);
+		let pageLabel = startRange && this.pageMapping.getPageLabel(startRange);
 		let canNavigateToPreviousPage = this.flow.canNavigateToPreviousPage();
 		let canNavigateToNextPage = this.flow.canNavigateToNextPage();
 		let viewStats: ViewStats = {
 			pageIndex: pageIndex ?? undefined,
 			pageLabel: pageLabel ?? '',
-			pagesCount: this._pageMapping.length,
-			usePhysicalPageNumbers: this._pageMapping.isPhysical,
+			pagesCount: this.pageMapping.length,
+			usePhysicalPageNumbers: this.pageMapping.isPhysical,
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
-			canZoomIn: this._scale === undefined || this._scale < 1.5,
-			canZoomOut: this._scale === undefined || this._scale > 0.8,
-			canZoomReset: this._scale !== undefined && this._scale !== 1,
+			canZoomIn: this.scale === undefined || this.scale < 1.5,
+			canZoomOut: this.scale === undefined || this.scale > 0.8,
+			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._navStack.canPopBack(),
 			canNavigateForward: this._navStack.canPopForward(),
 			canNavigateToFirstPage: canNavigateToPreviousPage,
@@ -545,10 +525,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		this._flowMode = flowMode;
 		this.flow = new (flowMode == 'paginated' ? PaginatedFlow : ScrolledFlow)({
+			view: this,
 			iframe: this._iframe,
-			sectionViews: this._sectionViews,
-			pageMapping: this._pageMapping,
-			scale: this._scale,
 			onUpdateViewState: () => this._updateViewState(),
 			onUpdateViewStats: () => this._updateViewStats(),
 			onViewUpdate: () => this._handleViewUpdate(),
@@ -593,7 +571,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	zoomIn() {
-		let scale = this._scale;
+		let scale = this.scale;
 		if (scale === undefined) scale = 1;
 		scale += 0.1;
 		this._setScale(scale);
@@ -601,7 +579,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	zoomOut() {
-		let scale = this._scale;
+		let scale = this.scale;
 		if (scale === undefined) scale = 1;
 		scale -= 0.1;
 		this._setScale(scale);
@@ -615,7 +593,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private _setScale(scale: number) {
 		let cfiBefore = this.flow?.startCFI;
-		this._scale = scale;
+		this.scale = scale;
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this.flow?.setScale(scale);
 		if (cfiBefore) {
@@ -635,14 +613,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 			let range;
 			if (location.pageNumber.startsWith('epubcfi(')) {
-				range = this.getRange(location.pageNumber);
+				range = this.getRange(location.pageNumber, true);
 			}
 			else {
-				if (this.flow.startRange && this._pageMapping.getPageLabel(this.flow.startRange) === location.pageNumber) {
+				if (this.flow.startRange && this.pageMapping.getPageLabel(this.flow.startRange) === location.pageNumber) {
 					console.log('Already on page', location.pageNumber);
 					return;
 				}
-				range = this._pageMapping.getRange(location.pageNumber);
+				range = this.pageMapping.getRange(location.pageNumber);
 			}
 
 			if (!range) {
@@ -702,7 +680,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.flow.navigateToLastPage();
 	}
 
-
 	canNavigateToPreviousPage() {
 		return this.flow.canNavigateToPreviousPage();
 	}
@@ -748,6 +725,39 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	setSidebarOpen(_sidebarOpen: boolean) {
 		window.dispatchEvent(new Event('resize'));
+	}
+
+	static getContainingSectionIndex(rangeOrNode: Range | Node): number | null {
+		let elem;
+		if ('nodeType' in rangeOrNode) {
+			elem = closestElement(rangeOrNode);
+		}
+		else {
+			elem = closestElement(rangeOrNode.startContainer.childNodes[rangeOrNode.startOffset] || rangeOrNode.startContainer);
+		}
+		elem = elem?.closest('[data-section-index]');
+		if (!elem) {
+			return null;
+		}
+		return parseInt(elem.getAttribute('data-section-index')!);
+	}
+
+	static compareBoundaryPoints(how: number, a: Range, b: Range): number {
+		if (a.startContainer.getRootNode() !== b.startContainer.getRootNode()) {
+			let aSectionIndex = this.getContainingSectionIndex(a);
+			if (aSectionIndex === null) {
+				throw new Error('a is not inside a section');
+			}
+			let bSectionIndex = this.getContainingSectionIndex(b);
+			if (bSectionIndex === null) {
+				throw new Error('b is not inside a section');
+			}
+			if (aSectionIndex === bSectionIndex) {
+				return -1;
+			}
+			return aSectionIndex - bSectionIndex;
+		}
+		return a.compareBoundaryPoints(how, b);
 	}
 }
 

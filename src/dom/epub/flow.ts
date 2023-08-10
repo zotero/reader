@@ -2,7 +2,9 @@ import SectionView from "./section-view";
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { CustomScrollIntoViewOptions } from "../common/dom-view";
-import PageMapping from "./lib/page-mapping";
+import { closestElement } from "../common/lib/nodes";
+import EPUBView from "./epub-view";
+import { PersistentRange } from "../common/lib/range";
 
 export interface Flow {
 	readonly startView: SectionView | null;
@@ -41,19 +43,17 @@ export interface Flow {
 }
 
 abstract class AbstractFlow implements Flow {
+	protected _view: EPUBView;
+
 	protected _cachedStartView: SectionView | null = null;
 
-	protected _cachedStartRange: Range | null = null;
+	protected _cachedStartRange: PersistentRange | null = null;
 
 	protected _cachedStartCFI: EpubCFI | null = null;
 
 	protected _cachedStartCFIOffsetY: number | null = null;
 
 	protected _cachedEndView: SectionView | null = null;
-
-	protected _sectionViews: SectionView[];
-
-	protected _pageMapping: PageMapping;
 
 	protected _iframe: HTMLIFrameElement;
 
@@ -70,15 +70,25 @@ abstract class AbstractFlow implements Flow {
 	protected _onViewUpdate: () => void;
 
 	constructor(options: Options) {
-		this._sectionViews = options.sectionViews;
-		this._pageMapping = options.pageMapping;
+		this._view = options.view;
 		this._iframe = options.iframe;
 		this._iframeWindow = options.iframe.contentWindow! as Window & typeof globalThis;
 		this._iframeDocument = options.iframe.contentDocument!;
-		this._scale = options.scale;
+		this._scale = options.view.scale;
 		this._onUpdateViewState = options.onUpdateViewState;
 		this._onUpdateViewStats = options.onUpdateViewStats;
 		this._onViewUpdate = options.onViewUpdate;
+
+		let intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
+			root: this._iframe.contentDocument!.body,
+			threshold: [0, 1]
+		});
+		for (let range of this._view.pageMapping.tree.keys()) {
+			let elem = closestElement(range.startContainer);
+			if (elem) {
+				intersectionObserver.observe(elem);
+			}
+		}
 	}
 
 	get startView(): SectionView | null {
@@ -92,7 +102,7 @@ abstract class AbstractFlow implements Flow {
 		if (!this._cachedStartRange) {
 			this.update();
 		}
-		return this._cachedStartRange;
+		return this._cachedStartRange?.toRange() ?? null;
 	}
 
 	get startCFI(): EpubCFI | null {
@@ -113,11 +123,11 @@ abstract class AbstractFlow implements Flow {
 		if (!this.startRange) {
 			return true;
 		}
-		let firstMappedRange = this._pageMapping.firstRange;
+		let firstMappedRange = this._view.pageMapping.firstRange;
 		if (!firstMappedRange) {
 			return false;
 		}
-		return this.startRange.compareBoundaryPoints(Range.START_TO_START, firstMappedRange) < 0;
+		return EPUBView.compareBoundaryPoints(Range.START_TO_START, this.startRange, firstMappedRange) < 0;
 	}
 
 	get endView(): SectionView | null {
@@ -134,9 +144,9 @@ abstract class AbstractFlow implements Flow {
 		if (!this._cachedStartView || !this._cachedEndView) {
 			return [];
 		}
-		let startIdx = this._sectionViews.indexOf(this._cachedStartView);
-		let endIdx = this._sectionViews.indexOf(this._cachedEndView);
-		return this._sectionViews.slice(startIdx, endIdx + 1);
+		let startIdx = this._view.views.indexOf(this._cachedStartView);
+		let endIdx = this._view.views.indexOf(this._cachedEndView);
+		return this._view.views.slice(startIdx, endIdx + 1);
 	}
 
 	abstract scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void;
@@ -162,7 +172,7 @@ abstract class AbstractFlow implements Flow {
 			this._onUpdateViewState();
 			this._onUpdateViewStats();
 		},
-		50
+		200
 	);
 
 	protected abstract update(): void;
@@ -175,10 +185,8 @@ abstract class AbstractFlow implements Flow {
 }
 
 interface Options {
-	sectionViews: SectionView[]
-	pageMapping: PageMapping;
+	view: EPUBView;
 	iframe: HTMLIFrameElement;
-	scale: number;
 	onUpdateViewState: () => void;
 	onUpdateViewStats: () => void;
 	onViewUpdate: () => void;
@@ -186,6 +194,13 @@ interface Options {
 
 export class ScrolledFlow extends AbstractFlow {
 	static readonly SCROLL_PADDING_UNSCALED = 35;
+
+	constructor(options: Options) {
+		super(options);
+		for (let view of this._view.views) {
+			view.mount();
+		}
+	}
 
 	scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void {
 		let rect = target.getBoundingClientRect();
@@ -196,7 +211,7 @@ export class ScrolledFlow extends AbstractFlow {
 
 		// Disable smooth scrolling when target is too far away
 		if (options?.behavior == 'smooth'
-			&& Math.abs(rect.top + rect.bottom / 2) > this._iframe.clientHeight * 2) {
+				&& Math.abs(rect.top + rect.bottom / 2) > this._iframe.clientHeight * 2) {
 			options.behavior = 'auto';
 		}
 
@@ -243,8 +258,7 @@ export class ScrolledFlow extends AbstractFlow {
 			return;
 		}
 		this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + this.scrollPadding });
-		this._onUpdateViewState();
-		this._onUpdateViewStats();
+		this._onViewUpdate();
 	}
 
 	navigateToNextPage() {
@@ -252,23 +266,28 @@ export class ScrolledFlow extends AbstractFlow {
 			return;
 		}
 		this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - this.scrollPadding });
-		this._onUpdateViewState();
-		this._onUpdateViewStats();
+		this._onViewUpdate();
 	}
 
 	navigateToFirstPage(): void {
 		this._iframeWindow.scrollTo({ top: 0 });
+		this._onViewUpdate();
 	}
 
 	navigateToLastPage(): void {
 		this._iframeWindow.scrollTo({ top: this._iframeDocument.documentElement.scrollHeight });
+		this._onViewUpdate();
 	}
 
 	update() {
 		let foundStart = false;
-		for (let view of this._sectionViews.values()) {
-			let rect = view.container.getBoundingClientRect();
-			let visible = rect.top <= this._iframe.clientHeight && rect.bottom >= 0;
+		for (let view of this._view.views) {
+			if (!view.mounted) {
+				continue;
+			}
+			// Avoid calling getBoundingClientRect() because that would force a layout, which is expensive
+			let visible = view.container.offsetTop < this._iframeWindow.scrollY + this._iframe.clientHeight
+				&& view.container.offsetTop + view.container.offsetHeight >= this._iframeWindow.scrollY;
 			if (!foundStart) {
 				if (!visible) {
 					continue;
@@ -290,7 +309,7 @@ export class ScrolledFlow extends AbstractFlow {
 					// are - to the end of the uppermost element or text node.
 					// TODO: Make sure this doesn't break anything involving images / block elements / long text
 					startRange.collapse(false);
-					this._cachedStartRange = startRange;
+					this._cachedStartRange = new PersistentRange(startRange);
 				}
 				if (startCFIRange) {
 					// But CFIs should be calculated based on the start of the range, so collapse to the start
@@ -321,6 +340,8 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _touchStartX = 0;
 
+	private _currentSectionIndex!: number;
+
 	constructor(options: Options) {
 		super(options);
 		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections')! as HTMLElement;
@@ -330,23 +351,95 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
 	}
 
+	get currentSectionIndex(): number {
+		return this._currentSectionIndex;
+	}
+
+	set currentSectionIndex(index: number) {
+		if (index === this._currentSectionIndex) {
+			return;
+		}
+		let oldIndex = this._currentSectionIndex;
+		this._currentSectionIndex = index;
+		this._sectionsContainer.scrollTo({ left: 0, top: 0 });
+		if (oldIndex === undefined) {
+			for (let view of this._view.views) {
+				view.unmount();
+			}
+		}
+		else {
+			this._view.views[oldIndex].unmount();
+		}
+		this._view.views[index].mount();
+		this._onViewUpdate();
+	}
+
 	scrollIntoView(target: Range | HTMLElement): void {
+		let index = EPUBView.getContainingSectionIndex(target);
+		if (index === null) {
+			return;
+		}
+		this.currentSectionIndex = index;
+		if ('nodeType' in target && target.hasAttribute('data-section-index')) {
+			// If we just need to scroll the section itself into view, we're done
+			return;
+		}
+		// Otherwise, center the target horizontally
 		let rect = target.getBoundingClientRect();
 		let x = rect.x + rect.width / 2 + this._sectionsContainer.scrollLeft;
 		let spreadWidth = this._sectionsContainer.offsetWidth + 60;
-		this._sectionsContainer.scrollTo({ left: Math.floor(x / spreadWidth) * spreadWidth });
+		this._sectionsContainer.scrollTo({ left: Math.floor(x / spreadWidth) * spreadWidth, top: 0 });
 		this._onViewUpdate();
 	}
 
 	canNavigateToPreviousPage(): boolean {
+		if (this.canNavigateToPreviousSection()) {
+			return true;
+		}
 		return this._sectionsContainer.scrollLeft > 0;
 	}
 
 	canNavigateToNextPage(): boolean {
+		if (this.canNavigateToNextSection()) {
+			return true;
+		}
 		return this._sectionsContainer.scrollLeft < this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth;
 	}
 
+	atStartOfSection(): boolean {
+		return this._sectionsContainer.scrollLeft == 0;
+	}
+
+	atEndOfSection(): boolean {
+		return this._sectionsContainer.scrollLeft == this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth;
+	}
+
+	canNavigateToPreviousSection(): boolean {
+		return this.currentSectionIndex > 0;
+	}
+
+	canNavigateToNextSection(): boolean {
+		return this.currentSectionIndex < this._view.views.length - 1;
+	}
+
+	navigateToPreviousSection(): void {
+		if (this.canNavigateToPreviousSection()) {
+			this.currentSectionIndex--;
+		}
+	}
+
+	navigateToNextSection(): void {
+		if (this.canNavigateToNextSection()) {
+			this.currentSectionIndex++;
+		}
+	}
+
 	navigateToPreviousPage(): void {
+		if (this.atStartOfSection()) {
+			this.navigateToPreviousSection();
+			this._sectionsContainer.scrollTo({ left: this._sectionsContainer.scrollWidth, top: 0 });
+			return;
+		}
 		this._sectionsContainer.scrollBy({
 			left: -this._sectionsContainer.offsetWidth - 60,
 			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
@@ -355,6 +448,10 @@ export class PaginatedFlow extends AbstractFlow {
 	}
 
 	navigateToNextPage(): void {
+		if (this.atEndOfSection()) {
+			this.navigateToNextSection();
+			return;
+		}
 		this._sectionsContainer.scrollBy({
 			left: this._sectionsContainer.offsetWidth + 60,
 			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
@@ -363,12 +460,14 @@ export class PaginatedFlow extends AbstractFlow {
 	}
 
 	navigateToFirstPage(): void {
-		this._sectionsContainer.scrollTo({ left: 0 });
+		this.currentSectionIndex = this._view.views[0].section.index;
+		this._sectionsContainer.scrollTo({ left: 0, top: 0 });
 		this._onViewUpdate();
 	}
 
 	navigateToLastPage(): void {
-		this._sectionsContainer.scrollTo({ left: this._sectionsContainer.scrollWidth });
+		this.currentSectionIndex = this._view.views[this._view.views.length - 1].section.index;
+		this._sectionsContainer.scrollTo({ left: this._sectionsContainer.scrollWidth, top: 0 });
 		this._onViewUpdate();
 	}
 
@@ -449,9 +548,13 @@ export class PaginatedFlow extends AbstractFlow {
 
 	update() {
 		let foundStart = false;
-		for (let view of this._sectionViews.values()) {
-			let rect = view.container.getBoundingClientRect();
-			let visible = rect.left <= this._iframe.clientWidth && rect.right >= 0;
+		for (let view of this._view.views.values()) {
+			if (!view.mounted) {
+				continue;
+			}
+			// Avoid calling getBoundingClientRect() because that would force a layout, which is expensive
+			let visible = view.container.offsetLeft < this._iframeWindow.scrollX + this._iframe.clientWidth
+				&& view.container.offsetLeft + view.container.offsetWidth >= this._iframeWindow.scrollX;
 			if (!foundStart) {
 				if (!visible) {
 					continue;
@@ -467,7 +570,7 @@ export class PaginatedFlow extends AbstractFlow {
 				);
 				if (startRange) {
 					startRange.collapse(true);
-					this._cachedStartRange = startRange;
+					this._cachedStartRange = new PersistentRange(startRange);
 				}
 				if (startCFIRange) {
 					startCFIRange.collapse(true);

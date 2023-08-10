@@ -12,7 +12,6 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	let sectionDoc = new DOMParser().parseFromString(xhtml, 'application/xhtml+xml');
 	let walker = doc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 	let toRemove = [];
-	let toAwait = [];
 
 	let elem: Element | null = null;
 	// eslint-disable-next-line no-unmodified-loop-condition
@@ -44,10 +43,6 @@ export async function sanitizeAndRender(xhtml: string, options: {
 			}
 			toRemove.push(elem);
 		}
-		else if (elem.tagName == 'img') {
-			// We'll wait for images to load (or error) before returning
-			toAwait.push((elem as HTMLImageElement).decode());
-		}
 		else if (elem.tagName == 'title') {
 			toRemove.push(elem);
 		}
@@ -58,7 +53,6 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	}
 
 	container.append(...sectionDoc.childNodes);
-	await Promise.allSettled(toAwait).catch(e => console.error(e));
 	return container.querySelector('replaced-body') as HTMLElement;
 }
 

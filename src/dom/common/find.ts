@@ -54,7 +54,7 @@ class DefaultFindProcessor implements FindProcessor {
 					type: 'highlight',
 					color: 'rgba(180, 0, 170, 1)',
 					text: '',
-					key: 'findResult_' + (this._annotationKeyPrefix || '') + this._buf.length,
+					key: 'findResult_' + (this._annotationKeyPrefix || '') + '_' + this._buf.length,
 					range,
 				}
 			};
@@ -167,8 +167,8 @@ class DefaultFindProcessor implements FindProcessor {
 		return this._buf.map(({ range }) => {
 			range = range.cloneRange();
 			let snippet = range.toString();
-			if (range.startOffset > 0) {
-				let textBeforeRange = range.startContainer.nodeValue!.substring(0, range.startOffset);
+			if (range.startContainer.nodeValue && range.startOffset > 0) {
+				let textBeforeRange = range.startContainer.nodeValue.substring(0, range.startOffset);
 				let beforeContext = textBeforeRange.match(/\b([\w\W]){1,20}$/);
 				if (beforeContext) {
 					snippet = beforeContext[0].trimStart() + snippet;
@@ -177,8 +177,8 @@ class DefaultFindProcessor implements FindProcessor {
 					}
 				}
 			}
-			if (range.endOffset < range.startContainer.nodeValue!.length) {
-				let textAfterRange = range.startContainer.nodeValue!.substring(range.endOffset);
+			if (range.endContainer.nodeValue && range.endOffset < range.endContainer.nodeValue.length) {
+				let textAfterRange = range.endContainer.nodeValue.substring(range.endOffset);
 				let afterContext = textAfterRange.match(/^([\w\W]){1,20}\b/);
 				if (afterContext) {
 					snippet += afterContext[0].trimEnd();

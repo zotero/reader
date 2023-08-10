@@ -17,7 +17,7 @@ body {
 /*** Layout styles applied in scrolled mode: ***/
 
 body.scrolled, body.scrolled > .sections {
-    overflow-x: hidden;
+    overflow-x: visible;
 }
 
 body.scrolled > .sections {
@@ -28,6 +28,12 @@ body.scrolled > .sections > .section-container {
 	margin-inline: auto;
 	margin-bottom: 100px;
 	max-width: 800px;
+	contain: layout paint style inline-size;
+}
+
+body.scrolled > .sections > .section-container.hidden {
+	visibility: hidden;
+	pointer-events: none;
 }
 
 body.scrolled replaced-body img, body.scrolled replaced-body svg,
@@ -79,24 +85,21 @@ body.paginated .swipe-indicator-left, body.paginated .swipe-indicator-right {
 }
 
 body.paginated > .sections {
-	/* https://github.com/readium/readium-css/blob/5830114/docs/ua-reference/readium1.css#L65 */
-	width: calc(100vw - 80px);
-	height: calc(100vh - 80px);
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
-	position: relative;
-	top: 0;
-	columns: auto 2;
-	column-gap: 60px;
+	column-width: calc(50vw - 80px);
 	column-fill: auto;
+	column-gap: 60px;
 	overflow: hidden;
 	overscroll-behavior: none;
 }
 
 body.paginated > .sections > .section-container {
-	/* In an ideal world, this would be `break-after: column`. Unfortunately, most browsers don't actually support
-	   that rule. Fortunately, a huge margin-bottom works fine too. */
-	margin-bottom: 9999px;
+	contain: layout paint style;
+}
+
+body.paginated > .sections > .section-container.hidden {
+	display: none;
 }
 
 body.paginated replaced-body img, body.paginated replaced-body svg,
@@ -121,6 +124,10 @@ body.paginated replaced-body audio, body.paginated replaced-body video {
 
 body > .sections > .section-container ::selection {
     background-color: var(--selection-color);
+}
+
+replaced-html {
+	display: block;
 }
 
 replaced-body {

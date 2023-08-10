@@ -96,8 +96,8 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	getAnnotations(): DisplayedAnnotation[] {
 		let highlights = [];
-		for (let processor of this._processors.values()) {
-			if (!processor) continue;
+		for (let [i, processor] of this._processors.entries()) {
+			if (!processor || !this.view.views[i]?.mounted) continue;
 			processor.findState.highlightAll = this.findState.highlightAll;
 			for (let highlight of processor.getAnnotations()) {
 				highlights.push(highlight);

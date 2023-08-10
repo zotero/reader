@@ -1,4 +1,37 @@
 /**
+ * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
+ * (Range objects automatically normalize their start/end points when the DOM changes, which is not what we want -
+ * even if the start or end is removed from the DOM temporarily, we want to keep our ranges unchanged.)
+ */
+export class PersistentRange {
+	startContainer: Node;
+
+	startOffset: number;
+
+	endContainer: Node;
+
+	endOffset: number;
+
+	constructor(range: Range) {
+		this.startContainer = range.startContainer;
+		this.startOffset = range.startOffset;
+		this.endContainer = range.endContainer;
+		this.endOffset = range.endOffset;
+	}
+
+	toRange(): Range {
+		let range = new Range();
+		range.setStart(this.startContainer, this.startOffset);
+		range.setEnd(this.endContainer, this.endOffset);
+		return range;
+	}
+
+	toString(): string {
+		return `${this.startContainer}:${this.startOffset}-${this.endContainer}:${this.endOffset}`;
+	}
+}
+
+/**
  * Return a clone of the provided range. If the start and/or end points are text node children of non-text nodes,
  * move them inside the text nodes, trimming leading/trailing newlines. This works around bugs in epub.js's CFI
  * generation.

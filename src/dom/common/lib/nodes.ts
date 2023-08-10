@@ -17,6 +17,16 @@ export function getVisibleTextNodes(root: Node): Text[] {
 	});
 }
 
+export function getPotentiallyVisibleTextNodes(root: Node): Text[] {
+	return getAllTextNodes(root).filter((node) => {
+		let elem = closestElement(node);
+		if (!elem) {
+			return false;
+		}
+		return !elem.closest('style, script');
+	});
+}
+
 export function isElement(node: Node): node is Element {
 	return node.nodeType === Node.ELEMENT_NODE;
 }
