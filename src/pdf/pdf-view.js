@@ -1204,7 +1204,10 @@ class PDFView {
 		if (event.shiftKey) {
 			return { action: { type: 'selectText' }, selectAnnotations: [] };
 		}
-		if (this._tool.type === 'eraser') {
+		if (this._tool.type === 'ink') {
+			return { action: { type: 'ink' }, selectAnnotations: [] };
+		}
+		else if (this._tool.type === 'eraser') {
 			return { action: { type: 'erase', annotations: new Map() }, selectAnnotations: [] };
 		}
 		if (this._selectionRanges.length && ![2, 3].includes(event.detail)) {
@@ -1277,9 +1280,6 @@ class PDFView {
 			}
 			else if (this._tool.type === 'text') {
 				action = { type: 'text' };
-			}
-			else if (this._tool.type === 'ink') {
-				action = { type: 'ink' };
 			}
 			else {
 				action = { type: 'selectText' };
