@@ -32,7 +32,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 			);
 			toRemove.push(elem);
 		}
-		else if (elem.tagName == 'link' && elem.getAttribute('rel') == 'stylesheet') {
+		else if (elem.tagName == 'link' && elem.getAttribute('rel')?.toLowerCase() == 'stylesheet') {
 			let link = elem as HTMLLinkElement;
 			try {
 				container.classList.add(
