@@ -651,7 +651,7 @@ export default class Page {
 
 		if (annotation && ['highlight', 'underline'].includes(annotation.type)) {
 			let annotation2 = annotation;
-			if (action?.annotation) {
+			if (action?.type === 'updateAnnotationRange' && action.annotation) {
 				annotation2 = action.annotation;
 			}
 			if (this.layer._pdfPages[this.pageIndex]
