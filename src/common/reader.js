@@ -636,6 +636,10 @@ class Reader {
 			this._annotationManager.updateAnnotations(annotations);
 		};
 
+		let onDeleteAnnotations = (ids) => {
+			this._annotationManager.deleteAnnotations(ids);
+		};
+
 		let onOpenLink = (url) => {
 			this._onOpenLink(url);
 		};
@@ -745,7 +749,8 @@ class Reader {
 				onRequestPassword,
 				onSetThumbnails,
 				onSetOutline,
-				onSetPageLabels
+				onSetPageLabels,
+				onDeleteAnnotations // For complete ink erase
 			});
 
 			if (primary) {

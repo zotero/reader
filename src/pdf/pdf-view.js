@@ -70,6 +70,7 @@ class PDFView {
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onAddAnnotation = options.onAddAnnotation;
 		this._onUpdateAnnotations = options.onUpdateAnnotations;
+		this._onDeleteAnnotations = options.onDeleteAnnotations;
 		this._onOpenLink = options.onOpenLink;
 		this._onSelectAnnotations = options.onSelectAnnotations;
 		this._onSetSelectionPopup = options.onSetSelectionPopup;
@@ -1967,7 +1968,14 @@ class PDFView {
 					}
 					else if (action.type === 'erase' && action.triggered) {
 						let annotations = [...action.annotations.values()];
-						this._onUpdateAnnotations(annotations);
+						let updated = annotations.filter( x => x.position.paths.length);
+						let deleted = annotations.filter( x => !x.position.paths.length);
+						if (updated.length) {
+							this._onUpdateAnnotations(updated);
+						}
+						if (deleted.length) {
+							this._onDeleteAnnotations(deleted.map(x => x.id));
+						}
 					}
 				}
 				else if (!this.action.alreadySelectedAnnotations && this._tool.type !== 'eraser') {
