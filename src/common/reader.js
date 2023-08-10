@@ -1005,6 +1005,7 @@ class Reader {
 		// Prevent accidental annotation deselection if modifier is pressed
 		let shift = triggeringEvent ? triggeringEvent.shiftKey : this._keyboardManager.shift;
 		let mod = triggeringEvent ? (triggeringEvent.ctrlKey || triggeringEvent.metaKey && isMac()) : this._keyboardManager.mod;
+		// TODO: This prevents annotation deselection when holding shift and trying to select text under the annotation
 		if (!ids.length && triggeredFromView && (shift || mod)) {
 			return;
 		}

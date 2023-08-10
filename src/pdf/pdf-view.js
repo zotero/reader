@@ -1198,6 +1198,12 @@ class PDFView {
 			let action = { type: 'none' };
 			return { action, selectAnnotations: [] };
 		}
+		// If holding shift, only allow text selection, to select text under annotations
+		// TODO: If an annotation is already selected, this might be interfering with
+		//  annotation range selection with shift in reader.setSelectedAnnotations
+		if (event.shiftKey) {
+			return { action: { type: 'selectText' }, selectAnnotations: [] };
+		}
 		if (this._tool.type === 'eraser') {
 			return { action: { type: 'erase', annotations: new Map() }, selectAnnotations: [] };
 		}
@@ -1432,6 +1438,10 @@ class PDFView {
 			this._openAnnotationPopup();
 		}
 
+		if (selectAnnotations && !selectAnnotations.length) {
+			this._onSelectAnnotations([], event);
+		}
+
 		if (action.type === 'note') {
 			let rect = position.rects[0];
 			let newPosition = {
@@ -1522,6 +1532,7 @@ class PDFView {
 				this._selectionRanges = getLineSelectionRanges(this._pdfPages, position, position);
 				this.action.mode = 'lines';
 			}
+			action.triggered = true;
 		}
 
 		if (action.selection) {
@@ -2016,6 +2027,11 @@ class PDFView {
 		else {
 			this.updateCursor();
 		}
+		// Clear collapsed selection range on pointer up. Otherwise, holding shift
+		// key for another selection anchor will start unexpected offset
+		if (this._selectionRanges.length === 1 && this._selectionRanges[0].collapsed) {
+			this._selectionRanges = [];
+		}
 		this._render();
 		this._updateViewStats();
 	}
@@ -2082,6 +2098,8 @@ class PDFView {
 	}
 
 	_handleKeyDown(event) {
+		// TODO: Cursor should be updated on key down/up as well. I.e. for shift and text selection
+		// TODO: Arrows keys should modify selection range when holding shift
 		if (this.textAnnotationFocused()) {
 			return;
 		}
