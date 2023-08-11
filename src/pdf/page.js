@@ -720,15 +720,29 @@ export default class Page {
 
 		this.actualContext.save();
 		this.actualContext.globalCompositeOperation = 'multiply';
-		for (let selectionRange of selectionRanges) {
-			let { position } = selectionRange;
-			if (position.pageIndex !== this.pageIndex) {
-				continue;
+		if (selectionRanges.length && !selectionRanges[0].collapsed && ['highlight', 'underline'].includes(this.layer._tool.type)) {
+			let annotation = this.layer._getAnnotationFromSelectionRanges(selectionRanges, this.layer._tool.type, this.layer._tool.color);
+			if (annotation.position.pageIndex === this.pageIndex
+				|| annotation.position.nextPageRects && annotation.position.pageIndex + 1 === this.pageIndex) {
+				if (annotation.type === 'highlight') {
+					this._renderHighlight(annotation);
+				}
+				else {
+					this._renderUnderline(annotation);
+				}
 			}
-			position = this.p2v(position);
-			this.actualContext.fillStyle = SELECTION_COLOR;
-			for (let rect of position.rects) {
-				this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+		}
+		else {
+			for (let selectionRange of selectionRanges) {
+				let { position } = selectionRange;
+				if (position.pageIndex !== this.pageIndex) {
+					continue;
+				}
+				position = this.p2v(position);
+				this.actualContext.fillStyle = SELECTION_COLOR;
+				for (let rect of position.rects) {
+					this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				}
 			}
 		}
 		this.actualContext.restore();
@@ -764,18 +778,6 @@ export default class Page {
 					this.actualContext.lineTo(...p4);
 					this.actualContext.closePath();
 					this.actualContext.stroke();
-				}
-			}
-			else if (action.type === 'highlight' && action.annotation) {
-				if (action.annotation.position.pageIndex === this.pageIndex
-					|| action.annotation.position.nextPageRects && action.annotation.position.pageIndex + 1 === this.pageIndex) {
-					this._renderHighlight(action.annotation);
-				}
-			}
-			else if (action.type === 'underline' && action.annotation) {
-				if (action.annotation.position.pageIndex === this.pageIndex
-					|| action.annotation.position.nextPageRects && action.annotation.position.pageIndex + 1 === this.pageIndex) {
-					this._renderUnderline(action.annotation);
 				}
 			}
 			else if (action.type === 'image' && action.annotation) {

@@ -1266,14 +1266,7 @@ class PDFView {
 		}
 		else {
 			selectAnnotations = [];
-
-			if (this._tool.type === 'highlight') {
-				action = { type: 'highlight' };
-			}
-			else if (this._tool.type === 'underline') {
-				action = { type: 'underline' };
-			}
-			else if (this._tool.type === 'note') {
+			if (this._tool.type === 'note') {
 				action = { type: 'note' };
 			}
 			else if (this._tool.type === 'image') {
@@ -1333,9 +1326,6 @@ class PDFView {
 			}
 			else if (action.type === 'rotate') {
 				cursor = 'move';
-			}
-			else if (['highlight', 'underline'].includes(action.type)) {
-				cursor = 'text';
 			}
 			else if (action.type === 'ink') {
 				cursor = 'crosshair';
@@ -1831,16 +1821,6 @@ class PDFView {
 			};
 			action.triggered = true;
 		}
-		else if (action.type === 'highlight') {
-			let selectionRanges = getSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
-			action.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight', this._tool.color);
-			action.triggered = true;
-		}
-		else if (action.type === 'underline') {
-			let selectionRanges = getSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
-			action.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'underline', this._tool.color);
-			action.triggered = true;
-		}
 		else if (action.type === 'ink') {
 			let point = position.rects[0].slice(0, 2);
 			point = addPointToPath(action.annotation.position.paths[0], point);
@@ -1930,14 +1910,6 @@ class PDFView {
 						let sortIndex = getSortIndex(this._pdfPages, action.position);
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
-					else if (action.type === 'highlight' && action.annotation) {
-						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
-						this._onAddAnnotation(action.annotation);
-					}
-					else if (action.type === 'underline' && action.annotation) {
-						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
-						this._onAddAnnotation(action.annotation);
-					}
 					else if (action.type === 'image' && action.annotation) {
 						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 						this._onAddAnnotation(action.annotation);
@@ -2014,13 +1986,24 @@ class PDFView {
 					}
 				}
 				if (action.type === 'selectText') {
-					let selectionRange = this._selectionRanges[0];
-					if (selectionRange && !selectionRange.collapsed) {
-						let rect = this.getClientRectForPopup(selectionRange.position);
-						let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
-						annotation.pageLabel = this._getPageLabel(annotation.position.pageIndex);
-						this._onSetSelectionPopup({ rect, annotation });
-						setTextLayerSelection(this._iframeWindow, this._selectionRanges);
+					// TODO: Handle triple click as well. Likely there should be a delay when action.mode is 'word'
+					if (['highlight', 'underline'].includes(this._tool.type)) {
+						if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
+							let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, this._tool.type, this._tool.color);
+							annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+							this._onAddAnnotation(annotation);
+							this._setSelectionRanges();
+						}
+					}
+					else {
+						let selectionRange = this._selectionRanges[0];
+						if (selectionRange && !selectionRange.collapsed) {
+							let rect = this.getClientRectForPopup(selectionRange.position);
+							let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+							annotation.pageLabel = this._getPageLabel(annotation.position.pageIndex);
+							this._onSetSelectionPopup({ rect, annotation });
+							setTextLayerSelection(this._iframeWindow, this._selectionRanges);
+						}
 					}
 				}
 			}
