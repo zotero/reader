@@ -1016,7 +1016,7 @@ class Reader {
 		}
 
 		// TODO: This is temporary, until annotation selection and focus management is reworked
-		if (!shift && mod && !this._keyboardManager.pointerDown) {
+		if (!triggeringEvent && !shift && mod && !this._keyboardManager.pointerDown) {
 			return;
 		}
 
