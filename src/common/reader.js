@@ -495,6 +495,16 @@ class Reader {
 		this._updateState({ tool });
 	}
 
+	toggleTool(type) {
+		let tool = this._state.tool;
+		if (tool.type === type) {
+			this._updateState({ tool: this._tools.pointer });
+		}
+		else {
+			this._updateState({ tool: this._tools[type] });
+		}
+	}
+
 	setFilter(filter) {
 		this._annotationManager.setFilter(filter);
 	}
