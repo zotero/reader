@@ -1588,7 +1588,9 @@ class PDFView {
 			return;
 		}
 		let action = this.action;
-
+		if (!action) {
+			return;
+		}
 		let originalPagePosition = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
 		let position = this.pointerEventToPosition(event);
 		let page = position && this.getPageByIndex(position.pageIndex);
@@ -2129,6 +2131,11 @@ class PDFView {
 
 		if (key === 'Escape') {
 			this.action = null;
+			if (this._selectionRanges.length) {
+				this._setSelectionRanges();
+				this._render();
+				return;
+			}
 			this.pointerDownPosition = null;
 			if (this._selectedAnnotationIDs.length) {
 				this._onSelectAnnotations([], event);
