@@ -112,10 +112,6 @@ class AnnotationManager {
 				rect => rect.map(value => parseFloat(value.toFixed(3)))
 			);
 		}
-		// Temporary disable inter-page annotations
-		if (annotation?.position?.nextPageRects) {
-			delete annotation.position.nextPageRects;
-		}
 		this._save(annotation);
 		this.render();
 		return annotation;
@@ -136,10 +132,6 @@ class AnnotationManager {
 			}
 		}
 		for (let annotation of annotations) {
-			// Temporary disable inter-page annotations
-			if (annotation?.position?.nextPageRects) {
-				delete annotation.position.nextPageRects;
-			}
 			let existingAnnotation = this._getAnnotationByID(annotation.id);
 			if (!annotation.onlyTextOrComment) {
 				delete existingAnnotation.onlyTextOrComment;
