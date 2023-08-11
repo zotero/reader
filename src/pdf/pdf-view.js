@@ -686,12 +686,13 @@ class PDFView {
 
 		}
 		else if (location.pageNumber) {
-			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
-			if (pageIndex === -1) {
-				if (parseInt(location.pageNumber) == location.pageNumber) {
-					pageIndex = parseInt(location.pageNumber) - 1;
-				}
-			}
+			// let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
+			// if (pageIndex === -1) {
+			// 	if (parseInt(location.pageNumber) == location.pageNumber) {
+			// 		pageIndex = parseInt(location.pageNumber) - 1;
+			// 	}
+			// }
+			let pageIndex = parseInt(location.pageNumber) - 1;
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({
 					pageNumber: pageIndex + 1
