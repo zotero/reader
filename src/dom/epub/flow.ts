@@ -69,7 +69,7 @@ abstract class AbstractFlow implements Flow {
 
 	protected _onViewUpdate: () => void;
 
-	constructor(options: Options) {
+	protected constructor(options: Options) {
 		this._view = options.view;
 		this._iframe = options.iframe;
 		this._iframeWindow = options.iframe.contentWindow! as Window & typeof globalThis;
@@ -342,6 +342,8 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _currentSectionIndex!: number;
 
+	private _resizeObserver: ResizeObserver;
+
 	constructor(options: Options) {
 		super(options);
 		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections')! as HTMLElement;
@@ -349,6 +351,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.addEventListener('touchstart', this._handleTouchStart);
 		this._iframeDocument.body.addEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
+		this._resizeObserver = new ResizeObserver(this._handleTableResize);
 	}
 
 	get currentSectionIndex(): number {
@@ -370,25 +373,35 @@ export class PaginatedFlow extends AbstractFlow {
 		else {
 			this._view.views[oldIndex].unmount();
 		}
-		this._view.views[index].mount();
+
+		let view = this._view.views[index];
+		view.mount();
+
+		this._resizeObserver.disconnect();
+		for (let table of view.body.querySelectorAll('table')) {
+			this._resizeObserver.observe(table);
+		}
+
 		this._onViewUpdate();
 	}
 
-	scrollIntoView(target: Range | HTMLElement): void {
+	scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void {
 		let index = EPUBView.getContainingSectionIndex(target);
 		if (index === null) {
 			return;
 		}
 		this.currentSectionIndex = index;
-		if ('nodeType' in target && target.hasAttribute('data-section-index')) {
-			// If we just need to scroll the section itself into view, we're done
-			return;
-		}
 		// Otherwise, center the target horizontally
 		let rect = target.getBoundingClientRect();
-		let x = rect.x + rect.width / 2 + this._sectionsContainer.scrollLeft;
+		let x = rect.x + this._sectionsContainer.scrollLeft;
+		if (options?.block === 'center') {
+			x += rect.width / 2;
+		}
 		let spreadWidth = this._sectionsContainer.offsetWidth + 60;
-		this._sectionsContainer.scrollTo({ left: Math.floor(x / spreadWidth) * spreadWidth, top: 0 });
+		this._sectionsContainer.scrollTo({
+			left: Math.floor(x / spreadWidth) * spreadWidth,
+			top: 0
+		});
 		this._onViewUpdate();
 	}
 
@@ -546,6 +559,14 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 	};
 
+	private _handleTableResize = (entries: ResizeObserverEntry[]) => {
+		for (let entry of entries) {
+			let couldOverflowX = entry.contentBoxSize.some(size => size.inlineSize >= 0.25 * this._iframe.clientWidth);
+			let couldOverflowY = entry.contentBoxSize.some(size => size.blockSize >= 0.5 * this._iframe.clientHeight);
+			entry.target.parentElement?.classList.toggle('table-child-could-overflow', couldOverflowX || couldOverflowY);
+		}
+	};
+
 	update() {
 		let foundStart = false;
 		for (let view of this._view.views.values()) {
@@ -592,5 +613,6 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.removeEventListener('touchstart', this._handleTouchStart);
 		this._iframeDocument.body.removeEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.removeEventListener('touchend', this._handleTouchEnd);
+		this._resizeObserver.disconnect();
 	}
 }

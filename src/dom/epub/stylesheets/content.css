@@ -109,6 +109,11 @@ body.paginated replaced-body audio, body.paginated replaced-body video {
     object-fit: contain;
 }
 
+body.paginated replaced-body .table-child-could-overflow {
+	overflow: auto;
+	max-height: calc(100vh - 80px);
+}
+
 @media (max-width: 800px) {
 	body.paginated > .sections {
 		columns: auto 1;
