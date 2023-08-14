@@ -144,7 +144,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.setFlowMode(viewState.flowMode);
 		}
 		else {
-			this.setFlowMode('paginated');
+			this.setFlowMode('scrolled');
 		}
 		if (!viewState.cfi || viewState.cfi === '_start') {
 			this.navigateToFirstPage();
