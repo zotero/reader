@@ -13,6 +13,7 @@ import {
 	ViewStats,
 	NavLocation,
 	MaybePromise,
+	Platform,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import ReactDOM from "react-dom";
@@ -657,6 +658,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	private _handleContextMenu(event: MouseEvent) {
+		if (this._options.platform === 'web') {
+			return;
+		}
 		// Prevent native context menu
 		event.preventDefault();
 		if (!(event.target as Element).closest('#annotation-overlay')) {
@@ -980,6 +984,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	portal?: boolean;
 	container: Element;
 	tool: Tool;
+	platform: Platform;
 	selectedAnnotationIDs: string[];
 	annotations: WADMAnnotation[];
 	showAnnotations: boolean;

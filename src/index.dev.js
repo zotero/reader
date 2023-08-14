@@ -40,7 +40,7 @@ async function createReader() {
 		toolbarPlaceholderWidth: 0,
 		authorName: 'John',
 		showAnnotations: true,
-		platform: 'web',
+		// platform: 'web',
 		// password: 'test',
 		onOpenContextMenu(params) {
 			reader.openContextMenu(params);

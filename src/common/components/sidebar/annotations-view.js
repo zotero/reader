@@ -1,4 +1,4 @@
-import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { forwardRef, memo, useCallback, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
@@ -6,6 +6,7 @@ import { SidebarPreview } from '../common/preview';
 import { IconColor, IconUser } from "../common/icons";
 import { ANNOTATION_COLORS } from "../../defines";
 import { pressedNextKey, pressedPreviousKey, setCaretToEnd } from '../../lib/utilities';
+import { ReaderContext } from '../../reader';
 
 function AnnotationsViewSearch({ query, onInput, onClear }) {
 	const intl = useIntl();
@@ -149,6 +150,8 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	const pointerDownRef = useRef(false);
 	const selectionTimeRef = useRef(0);
 
+	const { platform } = useContext(ReaderContext);
+
 	function scrollAnnotationIntoView(id) {
 		setTimeout(() => {
 			let node = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
@@ -280,6 +283,9 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	}
 
 	function handleSelectorContextMenu(event) {
+		if (platform === 'web') {
+			return;
+		}
 		event.preventDefault();
 		// if (!event.target.classList.contains('colors')
 		// 	&& !event.target.classList.contains('tags')) {

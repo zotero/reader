@@ -15,6 +15,8 @@ export type Tool = {
 	color?: string;
 }
 
+export type Platform = 'web' | 'zotero' | 'ios' | 'android';
+
 export type AnnotationType =
 	| 'highlight'
 	| 'underline'
