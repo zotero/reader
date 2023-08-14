@@ -144,7 +144,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.setFlowMode(viewState.flowMode);
 		}
 		else {
-			this.setFlowMode('scrolled');
+			this.setFlowMode('paginated');
 		}
 		if (!viewState.cfi || viewState.cfi === '_start') {
 			this.navigateToFirstPage();
@@ -278,7 +278,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				if (selector.refinedBy) {
 					throw new Error('Refinement of FragmentSelectors is not supported');
 				}
-				return this.getRange(selector.value);
+				let range = this.getRange(selector.value);
+				if (!range) {
+					return null;
+				}
+				let sectionIndex = EPUBView.getContainingSectionIndex(range);
+				if (sectionIndex === null || !this.views[sectionIndex].mounted) {
+					return null;
+				}
+				return range;
 			}
 			default:
 				// No other selector types supported on EPUBs
