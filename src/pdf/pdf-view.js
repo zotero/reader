@@ -1378,7 +1378,7 @@ class PDFView {
 		let shift = event.shiftKey;
 		let position = this.pointerEventToPosition(event);
 
-		if (event.button === 2) {
+		if (this._options.platform !== 'web' && event.button === 2) {
 			let br = this._iframe.getBoundingClientRect();
 			let selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
 			let selectedAnnotations = this.getSelectedAnnotations();
@@ -2088,7 +2088,9 @@ class PDFView {
 	}
 
 	_handleContextMenu(event) {
-		event.preventDefault();
+		if (this._options.platform !== 'web') {
+			event.preventDefault();
+		}
 	}
 
 	_handleKeyDown(event) {

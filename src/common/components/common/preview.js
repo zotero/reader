@@ -1,10 +1,11 @@
-import React, { useRef, useState } from 'react';
+import React, { useContext } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
 import { IconHighlight, IconUnderline, IconNote, IconArea, IconInk, IconText } from './icons';
 import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
+import { ReaderContext } from '../../reader';
 
 // TODO: Don't allow to select UI text in popup header and footer
 
@@ -127,6 +128,7 @@ export function PopupPreview(props) {
 
 export function SidebarPreview(props) {
 	const intl = useIntl();
+	const { platform } = useContext(ReaderContext);
 
 	function handlePageLabelClick(event) {
 		event.stopPropagation();
@@ -194,7 +196,7 @@ export function SidebarPreview(props) {
 
 	function handleContextMenu(event) {
 		let editorNode = event.target.closest('div[contenteditable="true"]');
-		if (event.button === 2 && (!editorNode || document.activeElement !== editorNode)) {
+		if (platform !== 'web' && event.button === 2 && (!editorNode || document.activeElement !== editorNode)) {
 			event.stopPropagation();
 			event.preventDefault();
 			props.onOpenContextMenu({ ids: [props.annotation.id], currentID: props.annotation.id, x: event.clientX, y: event.clientY });
