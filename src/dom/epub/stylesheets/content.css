@@ -125,7 +125,8 @@ body.flow-mode-paginated replaced-body audio, body.flow-mode-paginated replaced-
     object-fit: contain;
 }
 
-body.flow-mode-paginated replaced-body .table-child-could-overflow {
+body.flow-mode-paginated replaced-body table, body.flow-mode-paginated replaced-body .table-like {
+	display: block;
 	overflow: auto;
 	max-height: calc(100vh - 80px);
 }

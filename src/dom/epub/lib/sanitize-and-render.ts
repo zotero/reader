@@ -59,6 +59,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 		try {
 			for (let table of container.querySelectorAll(selector)) {
 				table.classList.add('table-like');
+				table.role = 'table';
 			}
 		}
 		catch (e) {

@@ -353,8 +353,6 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _currentSectionIndex!: number;
 
-	private _resizeObserver: ResizeObserver;
-
 	constructor(options: Options) {
 		super(options);
 		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections')! as HTMLElement;
@@ -363,7 +361,6 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.addEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
 		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: false });
-		this._resizeObserver = new ResizeObserver(this._handleTableResize);
 		this._iframe.classList.add('flow-mode-paginated');
 		this._iframeDocument.body.classList.add('flow-mode-paginated');
 	}
@@ -390,12 +387,6 @@ export class PaginatedFlow extends AbstractFlow {
 
 		let view = this._view.views[index];
 		view.mount();
-
-		this._resizeObserver.disconnect();
-		for (let table of view.body.querySelectorAll('table, .table-like')) {
-			this._resizeObserver.observe(table);
-		}
-
 		this._onViewUpdate();
 	}
 
@@ -577,7 +568,7 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handleWheel = debounce((event: WheelEvent) => {
-		let tableParent = (event.target as Element).closest('.table-child-could-overflow');
+		let tableParent = (event.target as Element).closest('table, .table-like');
 		if (tableParent && tableParent.clientHeight < tableParent.scrollHeight) {
 			return;
 		}
@@ -590,14 +581,6 @@ export class PaginatedFlow extends AbstractFlow {
 			event.preventDefault();
 		}
 	}, 100);
-
-	private _handleTableResize = (entries: ResizeObserverEntry[]) => {
-		for (let entry of entries) {
-			let couldOverflowX = entry.contentBoxSize.some(size => size.inlineSize >= 0.25 * this._iframe.clientWidth);
-			let couldOverflowY = entry.contentBoxSize.some(size => size.blockSize >= 0.5 * this._iframe.clientHeight);
-			entry.target.parentElement?.classList.toggle('table-child-could-overflow', couldOverflowX || couldOverflowY);
-		}
-	};
 
 	update() {
 		let foundStart = false;
@@ -650,7 +633,6 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.removeEventListener('touchstart', this._handleTouchStart);
 		this._iframeDocument.body.removeEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.removeEventListener('touchend', this._handleTouchEnd);
-		this._resizeObserver.disconnect();
 		this._iframe.classList.remove('flow-mode-paginated');
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
