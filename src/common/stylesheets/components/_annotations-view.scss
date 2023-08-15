@@ -125,7 +125,6 @@
 			}
 
 			.tag {
-				cursor: default;
 				overflow: hidden;
 				text-overflow: ellipsis;
 				white-space: pre;
@@ -135,6 +134,10 @@
 
 				border-radius: 6px;
 				border: 1px solid transparent;
+
+				@if $platform != 'web' {
+					cursor: default;
+				}
 
 				&.color {
 					font-weight: bold;
