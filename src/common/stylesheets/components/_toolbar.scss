@@ -99,7 +99,7 @@
 		}
 	}
 
-	@if $platform == "darwin" {
+	@if $platform == "darwin" or $platform =="web" {
 		#zoomOut,
 		#previous {
 			margin-inline-end: 1px;

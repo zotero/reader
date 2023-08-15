@@ -204,7 +204,7 @@
 				}
 			}
 
-			@if $platform == "darwin" {
+			@if $platform == "darwin" or $platform =="web" {
 				@include split-button(
 						$height: 24px,
 						$button: "menubutton",

@@ -11,7 +11,10 @@ function generateReaderConfig(build) {
 		mode: build === 'dev' ? 'development' : 'production',
 		devtool: build === 'zotero' ? false : 'source-map',
 		entry: {
-			reader: ['./src/index.' + build + '.js', './src/common/stylesheets/main.scss']
+			reader: [
+				'./src/index.' + build + '.js',
+				(build === 'web' ? './src/common/stylesheets/web.scss' : './src/common/stylesheets/main.scss')
+			]
 		},
 		output: {
 			path: path.resolve(__dirname, './build/' + build),

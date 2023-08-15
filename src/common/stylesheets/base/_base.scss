@@ -58,8 +58,10 @@ textarea {
 	display: none !important;
 }
 
-button:hover {
-	cursor: default;
+@if $platform != "web" {
+	button:hover {
+		cursor: default;
+	}
 }
 
 

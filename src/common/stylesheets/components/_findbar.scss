@@ -88,7 +88,7 @@
 		}
 	}
 
-	@if $platform == "darwin" {
+	@if $platform == "darwin" or $platform == "web" {
 		#findPrevious {
 			padding-left: 4px;
 			padding-right: 5px;

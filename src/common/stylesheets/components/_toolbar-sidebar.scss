@@ -29,7 +29,7 @@
 		flex: 1 0 auto;
 		margin: $toolbar-sidebar-btn-margin;
 
-		@if $platform == "darwin" {
+		@if $platform == "darwin" or $platform =="web" {
 			@include split-button(
 					$height: $split-toolbar-btn-height,
 					$button: "sidebarbutton",
