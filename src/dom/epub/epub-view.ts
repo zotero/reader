@@ -12,7 +12,10 @@ import Epub, {
 	EpubCFI,
 	NavItem,
 } from "epubjs";
-import { moveRangeEndsIntoTextNodes } from "../common/lib/range";
+import {
+	moveRangeEndsIntoTextNodes,
+	PersistentRange
+} from "../common/lib/range";
 import {
 	FragmentSelector,
 	FragmentSelectorConformsTo,
@@ -67,7 +70,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private readonly _navStack = new NavStack<string>();
 
-	private readonly _rangeCache = new Map<string, Range>();
+	private readonly _rangeCache = new Map<string, PersistentRange>();
 
 	private _pageProgressionRTL!: boolean;
 
@@ -241,9 +244,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			return null;
 		}
 		let cfiString = cfi.toString();
-		if (this._rangeCache.has(cfiString)) {
-			return this._rangeCache.get(cfiString)!.cloneRange();
-		}
 		if (typeof cfi === 'string') {
 			cfi = new EpubCFI(cfi);
 		}
@@ -255,12 +255,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (!view.mounted && mount) {
 			view.mount();
 		}
+		if (this._rangeCache.has(cfiString)) {
+			return this._rangeCache.get(cfiString)!.toRange();
+		}
 		let range = cfi.toRange(view.container.ownerDocument, undefined, view.container);
 		if (!range) {
 			console.error('Unable to get range for CFI', cfiString);
 			return null;
 		}
-		this._rangeCache.set(cfiString, range.cloneRange());
+		this._rangeCache.set(cfiString, new PersistentRange(range));
 		return range;
 	}
 
