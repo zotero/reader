@@ -2,7 +2,7 @@
 
 /*** Layout styles applied in all flow modes: ***/
 
-/* Can't combine the following two or it would make the specificity higher than the body.paginated selector below. */
+/* Can't combine the following two or it would make the specificity higher than the body.flow-mode-paginated selector below. */
 html {
 	margin: 0 !important;
 	padding: 0 !important;
@@ -16,28 +16,28 @@ body {
 
 /*** Layout styles applied in scrolled mode: ***/
 
-body.scrolled, body.scrolled > .sections {
+body.flow-mode-scrolled, body.flow-mode-scrolled > .sections {
     overflow-x: visible;
 }
 
-body.scrolled > .sections {
+body.flow-mode-scrolled > .sections {
 	margin-inline: 40px;
 }
 
-body.scrolled > .sections > .section-container {
+body.flow-mode-scrolled > .sections > .section-container {
 	margin-inline: auto;
 	margin-bottom: 100px;
 	max-width: 800px;
 	contain: layout paint style inline-size;
 }
 
-body.scrolled > .sections > .section-container.hidden {
+body.flow-mode-scrolled > .sections > .section-container.hidden {
 	visibility: hidden;
 	pointer-events: none;
 }
 
-body.scrolled replaced-body img, body.scrolled replaced-body svg,
-body.scrolled replaced-body audio, body.scrolled replaced-body video {
+body.flow-mode-scrolled replaced-body img, body.flow-mode-scrolled replaced-body svg,
+body.flow-mode-scrolled replaced-body audio, body.flow-mode-scrolled replaced-body video {
     /* Size the media element's box so it fits within one page */
 	max-width: calc(min(100vw - 80px, 100%)) !important;
 	max-height: 100vh;
@@ -48,7 +48,7 @@ body.scrolled replaced-body audio, body.scrolled replaced-body video {
 
 /*** Layout styles applied in paginated mode: ***/
 
-body.paginated {
+body.flow-mode-paginated {
 	margin: 40px !important;
 	overflow: hidden;
 	overscroll-behavior: none;
@@ -58,7 +58,7 @@ body.paginated {
     display: none;
 }
 
-body.paginated .swipe-indicator-left, body.paginated .swipe-indicator-right {
+body.flow-mode-paginated .swipe-indicator-left, body.flow-mode-paginated .swipe-indicator-right {
     display: block;
 }
 
@@ -84,42 +84,54 @@ body.paginated .swipe-indicator-left, body.paginated .swipe-indicator-right {
 	border-radius: 80px 0 0 80px;
 }
 
-body.paginated > .sections {
+body.flow-mode-paginated > .sections {
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
-	column-width: calc(50vw - 80px);
+	margin-inline: auto;
 	column-fill: auto;
 	column-gap: 60px;
 	overflow: hidden;
 	overscroll-behavior: none;
 }
 
-body.paginated > .sections > .section-container {
+body.flow-mode-paginated > .sections.spread-mode-none {
+	max-width: 800px;
+	column-count: 1;
+}
+
+body.flow-mode-paginated > .sections.spread-mode-odd {
+	max-width: 1600px;
+	column-count: 2;
+}
+
+@media (max-width: 800px) {
+	body.flow-mode-paginated > .sections {
+		column-count: 1;
+	}
+}
+
+body.flow-mode-paginated > .sections > .section-container {
 	contain: layout paint style;
 }
 
-body.paginated > .sections > .section-container.hidden {
+body.flow-mode-paginated > .sections > .section-container.hidden {
 	display: none;
 }
 
-body.paginated replaced-body img, body.paginated replaced-body svg,
-body.paginated replaced-body audio, body.paginated replaced-body video {
+body.flow-mode-paginated replaced-body img, body.flow-mode-paginated replaced-body svg,
+body.flow-mode-paginated replaced-body audio, body.flow-mode-paginated replaced-body video {
 	max-width: calc(50vw - 80px) !important;
     max-height: calc(100vh - 80px) !important;
     object-fit: contain;
 }
 
-body.paginated replaced-body .table-child-could-overflow {
+body.flow-mode-paginated replaced-body .table-child-could-overflow {
 	overflow: auto;
 	max-height: calc(100vh - 80px);
 }
 
 @media (max-width: 800px) {
-	body.paginated > .sections {
-		columns: auto 1;
-	}
-
-	body.paginated replaced-body * {
+	body.flow-mode-paginated replaced-body * {
 		max-width: 100vw;
 	}
 }

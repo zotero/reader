@@ -3,7 +3,7 @@ import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { CustomScrollIntoViewOptions } from "../common/dom-view";
 import { closestElement } from "../common/lib/nodes";
-import EPUBView from "./epub-view";
+import EPUBView, { SpreadMode } from "./epub-view";
 import { PersistentRange } from "../common/lib/range";
 
 export interface Flow {
@@ -38,6 +38,8 @@ export interface Flow {
 	invalidate: ReturnType<typeof debounce<() => void>>;
 
 	setScale(scale: number): void;
+
+	setSpreadMode(spreadMode: SpreadMode): void;
 
 	destroy(): void;
 }
@@ -181,6 +183,8 @@ abstract class AbstractFlow implements Flow {
 		this._scale = scale;
 	}
 
+	abstract setSpreadMode(spreadMode: SpreadMode): void;
+
 	abstract destroy(): void;
 }
 
@@ -197,6 +201,8 @@ export class ScrolledFlow extends AbstractFlow {
 
 	constructor(options: Options) {
 		super(options);
+		this._iframe.classList.add('flow-mode-scrolled');
+		this._iframeDocument.body.classList.add('flow-mode-scrolled');
 		for (let view of this._view.views) {
 			view.mount();
 		}
@@ -328,8 +334,13 @@ export class ScrolledFlow extends AbstractFlow {
 		}
 	}
 
+	setSpreadMode() {
+		// No-op
+	}
+
 	destroy(): void {
-		// Nothing to do
+		this._iframe.classList.remove('flow-mode-scrolled');
+		this._iframeDocument.body.classList.remove('flow-mode-scrolled');
 	}
 }
 
@@ -352,6 +363,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.addEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
 		this._resizeObserver = new ResizeObserver(this._handleTableResize);
+		this._iframe.classList.add('flow-mode-paginated');
+		this._iframeDocument.body.classList.add('flow-mode-paginated');
 	}
 
 	get currentSectionIndex(): number {
@@ -609,10 +622,17 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 	}
 
+	setSpreadMode(spreadMode: SpreadMode) {
+		this._sectionsContainer.classList.toggle('spread-mode-none', spreadMode === SpreadMode.None);
+		this._sectionsContainer.classList.toggle('spread-mode-odd', spreadMode === SpreadMode.Odd);
+	}
+
 	destroy(): void {
 		this._iframeDocument.body.removeEventListener('touchstart', this._handleTouchStart);
 		this._iframeDocument.body.removeEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.removeEventListener('touchend', this._handleTouchEnd);
 		this._resizeObserver.disconnect();
+		this._iframe.classList.remove('flow-mode-paginated');
+		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
 }

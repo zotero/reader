@@ -1370,12 +1370,12 @@ class Reader {
 	}
 
 	get spreadMode() {
-		this._ensureType('pdf');
+		this._ensureType('pdf', 'epub');
 		return (this._state.primary ? this._state.primaryViewStats : this._state.secondaryViewStats).spreadMode;
 	}
 
 	set spreadMode(value) {
-		this._ensureType('pdf');
+		this._ensureType('pdf', 'epub');
 		this._lastView.setSpreadMode(value);
 	}
 

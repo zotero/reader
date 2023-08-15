@@ -55,6 +55,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	flow!: Flow;
 
+	spreadMode!: SpreadMode.None | SpreadMode.Odd;
+
 	readonly pageMapping = new PageMapping();
 
 	scale = 1;
@@ -145,6 +147,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		else {
 			this.setFlowMode('scrolled');
+		}
+		if (viewState.spreadMode) {
+			this.setSpreadMode(viewState.spreadMode);
+		}
+		else {
+			this.setSpreadMode(SpreadMode.None);
 		}
 		if (!viewState.cfi || viewState.cfi === '_start') {
 			this.navigateToFirstPage();
@@ -428,6 +436,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			cfiElementOffset: this.flow.startCFIOffsetY ?? undefined,
 			savedPageMapping: this._savedPageMapping,
 			flowMode: this._flowMode,
+			spreadMode: this.spreadMode,
 		};
 		this._options.onChangeViewState(viewState);
 	}
@@ -457,6 +466,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			canNavigateToPreviousSection: this.canNavigateToPreviousSection(),
 			canNavigateToNextSection: this.canNavigateToNextSection(),
 			flowMode: this._flowMode,
+			spreadMode: this.spreadMode,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -508,26 +518,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	setFlowMode(flowMode: FlowMode) {
-		let cfiBefore = this.flow?.startCFI;
-		switch (flowMode) {
-			case 'paginated':
-				for (let elem of [this._iframe, this._iframeDocument.body]) {
-					elem.classList.add('paginated');
-					elem.classList.remove('scrolled');
-				}
-				break;
-			case 'scrolled':
-				for (let elem of [this._iframe, this._iframeDocument.body]) {
-					elem.classList.add('scrolled');
-					elem.classList.remove('paginated');
-				}
-				break;
-		}
-
 		if (flowMode == this._flowMode) {
 			return;
 		}
 
+		let cfiBefore = this.flow?.startCFI;
 		if (this.flow) {
 			this.flow.destroy();
 		}
@@ -540,6 +535,23 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			onViewUpdate: () => this._handleViewUpdate(),
 		});
 
+		if (cfiBefore) {
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
+		}
+	}
+
+	setSpreadMode(spreadMode: SpreadMode) {
+		if (spreadMode !== SpreadMode.None && spreadMode !== SpreadMode.Odd) {
+			throw new Error('Unsupported spread mode');
+		}
+
+		if (spreadMode == this.spreadMode) {
+			return;
+		}
+
+		let cfiBefore = this.flow?.startCFI;
+		this.spreadMode = spreadMode;
+		this.flow?.setSpreadMode(spreadMode);
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
@@ -771,11 +783,19 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 type FlowMode = 'paginated' | 'scrolled';
 
+export const enum SpreadMode {
+	Unknown = -1,
+	None = 0,
+	Odd = 1,
+	Even = 2
+}
+
 export interface EPUBViewState extends DOMViewState {
 	cfi?: string;
 	cfiElementOffset?: number;
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
+	spreadMode?: SpreadMode;
 }
 
 export interface EPUBViewData {
