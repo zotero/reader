@@ -97,10 +97,10 @@ body.flow-mode-paginated > .sections {
 body.flow-mode-paginated > .sections.spread-mode-none {
 	max-width: 800px;
 	column-count: 1;
+	column-gap: 100vw;
 }
 
 body.flow-mode-paginated > .sections.spread-mode-odd {
-	max-width: 1600px;
 	column-count: 2;
 }
 
