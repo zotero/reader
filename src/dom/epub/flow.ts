@@ -633,6 +633,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.removeEventListener('touchstart', this._handleTouchStart);
 		this._iframeDocument.body.removeEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.removeEventListener('touchend', this._handleTouchEnd);
+		this._iframeDocument.removeEventListener('wheel', this._handleWheel);
 		this._iframe.classList.remove('flow-mode-paginated');
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
