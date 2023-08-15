@@ -362,7 +362,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.addEventListener('touchstart', this._handleTouchStart);
 		this._iframeDocument.body.addEventListener('touchmove', this._handleTouchMove);
 		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
-		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: true });
+		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: false });
 		this._resizeObserver = new ResizeObserver(this._handleTableResize);
 		this._iframe.classList.add('flow-mode-paginated');
 		this._iframeDocument.body.classList.add('flow-mode-paginated');
@@ -577,6 +577,10 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handleWheel = debounce((event: WheelEvent) => {
+		let tableParent = (event.target as Element).closest('.table-child-could-overflow');
+		if (tableParent && tableParent.clientHeight < tableParent.scrollHeight) {
+			return;
+		}
 		if (event.deltaY < 0) {
 			this.navigateToPreviousPage();
 			event.preventDefault();
