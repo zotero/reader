@@ -392,7 +392,7 @@ export class PaginatedFlow extends AbstractFlow {
 		view.mount();
 
 		this._resizeObserver.disconnect();
-		for (let table of view.body.querySelectorAll('table')) {
+		for (let table of view.body.querySelectorAll('table, .table-like')) {
 			this._resizeObserver.observe(table);
 		}
 

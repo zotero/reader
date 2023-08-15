@@ -53,10 +53,25 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	}
 
 	container.append(...sectionDoc.childNodes);
+
+	// Add table-like class to elements matching selectors that set display: table or display: inline-table
+	for (let selector of styleScoper.tableSelectors) {
+		try {
+			for (let table of container.querySelectorAll(selector)) {
+				table.classList.add('table-like');
+			}
+		}
+		catch (e) {
+			// Ignore
+		}
+	}
+
 	return container.querySelector('replaced-body') as HTMLElement;
 }
 
 export class StyleScoper {
+	tableSelectors = new Set<string>();
+
 	private _document: Document;
 
 	private _sheets = new Map<string, SheetMetadata>();
@@ -163,6 +178,12 @@ export class StyleScoper {
 					);
 				});
 			}).processSync(styleRule.selectorText);
+
+			// Keep track of selectors that set display: table, because we want to add a class to those elements
+			// in sanitizeAndRender()
+			if (styleRule.style.display === 'table' || styleRule.style.display === 'inline-table') {
+				this.tableSelectors.add(styleRule.selectorText);
+			}
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
 			let importRule = rule as CSSImportRule;
