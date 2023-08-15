@@ -152,6 +152,12 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 	const { platform } = useContext(ReaderContext);
 
+	// Store the current state of selectedIDs and expansion state to avoid re-creating some functions below
+	const expansionStateRef = useRef();
+	const selectedIDsRef = useRef();
+	expansionStateRef.current = expansionState;
+	selectedIDsRef.current = props.selectedIDs;
+
 	function scrollAnnotationIntoView(id) {
 		setTimeout(() => {
 			let node = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
@@ -215,10 +221,10 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	let handleAnnotationFocus = useCallback((id) => {
 		// Note: Mousedown and canceled dragstart will focus the annotation element but won't select the actual annotation,
 		// because, wiht mouse, selection is only triggered by click event in handleSidebarAnnotationSectionClick
-		if (!pointerDownRef.current && !(props.selectedIDs.length === 1 && props.selectedIDs[0] === id)) {
+		if (!pointerDownRef.current && !(selectedIDsRef.current.length === 1 && selectedIDsRef.current[0] === id)) {
 			props.onSelectAnnotations([id]);
 		}
-	}, [props.selectedIDs]);
+	}, []);
 
 	// Allow navigating to next/previous annotation if inner annotation element like
 	// more button, empty comment or tags are focused
@@ -306,21 +312,21 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 			let rect = event.target.closest('.tags').getBoundingClientRect();
 			return props.onOpenTagsPopup(id, rect.left, rect.top);
 		}
-		if (section === 'highlight' && props.selectedIDs.length === 1
-			&& props.selectedIDs[0] === id) {
-			if (expansionState >= 1 && expansionState <= 2) {
+		if (section === 'highlight' && selectedIDsRef.current.length === 1
+			&& selectedIDsRef.current[0] === id) {
+			if (expansionStateRef.current >= 1 && expansionStateRef.current <= 2) {
 				setExpansionState(2);
 			}
 		}
 		else {
-			if (section === 'comment' && expansionState === 3) {
+			if (section === 'comment' && expansionStateRef.current === 3) {
 				setExpansionState(2);
 			}
-			if (!(props.selectedIDs.length === 1 && props.selectedIDs[0] === id)) {
+			if (!(selectedIDsRef.current.length === 1 && selectedIDsRef.current[0] === id)) {
 				props.onSelectAnnotations([id], false, event);
 			}
 		}
-	}, [expansionState, props.selectedIDs]);
+	}, []);
 
 	function focusSidebarAnnotationText(annotationID) {
 		setTimeout(function () {
@@ -332,44 +338,27 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	}
 
 	let handleSidebarAnnotationDoubleClick = useCallback((id) => {
-		if (props.selectedIDs.length === 1
-			&& props.selectedIDs[0] === id
+		if (selectedIDsRef.current.length === 1
+			&& selectedIDsRef.current[0] === id
 			&& Date.now() - selectionTimeRef.current > 500) {
-			if (expansionState >= 1 && expansionState <= 2) {
+			if (expansionStateRef.current >= 1 && expansionStateRef.current <= 2) {
 				setExpansionState(3);
 				focusSidebarAnnotationText(id);
 			}
 		}
-	}, [expansionState, props.selectedIDs]);
-
+	}, []);
 
 	let handleContextMenuOpen = useCallback((params) => {
-		if (!params.button && props.selectedIDs.includes(params.ids[0])) {
-			params.ids = props.selectedIDs.slice();
+		if (!params.button && selectedIDsRef.current.includes(params.ids[0])) {
+			params.ids = selectedIDsRef.current.slice();
 		}
 		props.onOpenAnnotationContextMenu(params);
-	}, [props.selectedIDs]);
-
-
-
-
+	}, []);
 
 	let filteredAnnotations = props.annotations.filter(x => !x._hidden);
 	if (props.filter.query.length) {
 		filteredAnnotations.sort((a, b) => b._score - a._score);
 	}
-
-
-
-
-
-
-
-
-
-
-
-
 
 	let tags = {};
 	let colors = {};
