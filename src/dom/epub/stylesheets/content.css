@@ -63,7 +63,7 @@ body.paginated .swipe-indicator-left, body.paginated .swipe-indicator-right {
 }
 
 .swipe-indicator-left, .swipe-indicator-right {
-	position: absolute;
+	position: fixed;
 	top: calc(50% - 50px);
 	width: 80px;
 	height: 100px;
