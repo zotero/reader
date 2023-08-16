@@ -769,6 +769,10 @@ function getNodeOffset(container, offset) {
 				}
 				charIndex++;
 			}
+			// Check for the last character
+			if (offset === charIndex2) {
+				return { node, offset: charIndex };
+			}
 		}
 		else {
 			let i = node.childNodes.length;
