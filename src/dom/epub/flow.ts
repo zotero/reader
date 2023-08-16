@@ -494,7 +494,7 @@ export class PaginatedFlow extends AbstractFlow {
 	}
 
 	private _handleKeyDown = (event: KeyboardEvent) => {
-		let { key } = event;
+		let { key, shiftKey } = event;
 		if (key == 'PageUp') {
 			this.navigateToPreviousPage();
 			event.preventDefault();
@@ -512,6 +512,16 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		if (key == 'End') {
 			this.navigateToLastPage();
+			event.preventDefault();
+			return;
+		}
+		if (key == ' ') {
+			if (shiftKey) {
+				this.navigateToPreviousPage();
+			}
+			else {
+				this.navigateToNextPage();
+			}
 			event.preventDefault();
 		}
 	};
