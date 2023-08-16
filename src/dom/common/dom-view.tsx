@@ -948,6 +948,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// ***
 
 	focus() {
+		// The iframe sometimes won't correctly get focus unless we focus the outer window first
+		window.focus();
 		this._iframe.focus();
 	}
 
