@@ -248,6 +248,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (isNaN(scrollYPercent)) {
 			scrollYPercent = 0;
 		}
+		// Keep it within [0, 100]
+		scrollYPercent = Math.max(0, Math.min(100, scrollYPercent));
 		scrollYPercent = Math.round(scrollYPercent * 10) / 10; // One decimal place
 		let viewState: SnapshotViewState = {
 			scale,
