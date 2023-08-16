@@ -109,7 +109,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Create a flat outline array from the headings on the page
 		for (let heading of this._iframeDocument.body.querySelectorAll('h1, h2, h3, h4, h5, h6') as NodeListOf<HTMLElement>) {
 			// If the site uses semantic HTML, we can try to skip probably-irrelevant headings
-			if (heading.closest('aside, nav, header, footer, template, [hidden]')) {
+			if (heading.closest('aside, nav, footer, template, [hidden]')) {
 				continue;
 			}
 			if (!heading.innerText.trim()) {
