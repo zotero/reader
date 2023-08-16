@@ -4,7 +4,8 @@ import {
 	FindState,
 	NavLocation,
 	NewAnnotation,
-	ViewStats
+	ViewStats,
+	OutlineItem
 } from "../../common/types";
 import {
 	getStartElement
@@ -98,6 +99,50 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					* (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight)
 			});
 		}
+
+		this._initOutline();
+	}
+
+	private _initOutline() {
+		let flatOutline: (OutlineItem & { level: number })[] = [];
+		// Create a flat outline array from the headings on the page
+		for (let heading of this._iframeDocument.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
+			// If the site uses semantic HTML, we can try to skip probably-irrelevant headings
+			if (heading.closest('aside, nav, header, footer, template, [hidden]')) {
+				continue;
+			}
+
+			let level = parseInt(heading.tagName[1]);
+			let range = this._iframeDocument.createRange();
+			range.selectNode(heading);
+			let selector = this.toSelector(range);
+			if (!selector) {
+				continue;
+			}
+			flatOutline.push({
+				title: heading.textContent || '',
+				location: { position: selector },
+				items: [],
+				expanded: true,
+				level
+			});
+		}
+		// For each heading, move subsequent headings with deeper levels into its items array
+		let outline = [];
+		let stack: (OutlineItem & { level: number })[] = [];
+		for (let item of flatOutline) {
+			while (stack.length && stack[stack.length - 1].level >= item.level) {
+				stack.pop();
+			}
+			if (stack.length) {
+				stack[stack.length - 1].items!.push(item);
+			}
+			else {
+				outline.push(item);
+			}
+			stack.push(item);
+		}
+		this._options.onSetOutline(outline);
 	}
 
 	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {

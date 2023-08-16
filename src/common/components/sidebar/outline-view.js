@@ -73,7 +73,7 @@ function OutlineView({ outline, onNavigate, onUpdate}) {
 						onNavigate={onNavigate}
 						onUpdate={handleUpdate}
 					>
-						{item.expanded && item.items && <ul>{renderItems(item.items)}</ul>}
+						{item.expanded && item.items && renderItems(item.items)}
 					</Item>
 				);
 			})}</ul>

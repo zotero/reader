@@ -754,6 +754,7 @@ class Reader {
 			onSetAnnotationPopup,
 			onSetOverlayPopup,
 			onSetFindState,
+			onSetOutline,
 			onSelectAnnotations,
 			onTabOut,
 			onKeyDown,
@@ -767,7 +768,6 @@ class Reader {
 				pageLabels: this._state.pageLabels,
 				onRequestPassword,
 				onSetThumbnails,
-				onSetOutline,
 				onSetPageLabels,
 				onDeleteAnnotations // For complete ink erase
 			});
@@ -786,8 +786,7 @@ class Reader {
 		} else if (this._type === 'epub') {
 			view = new EPUBView({
 				...common,
-				fontFamily: this._state.fontFamily,
-				onSetOutline,
+				fontFamily: this._state.fontFamily
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({

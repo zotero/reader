@@ -81,14 +81,14 @@ class View {
 			onOpenAnnotationContextMenu: nop,
 			onOpenViewContextMenu: nop,
 			onSetOverlayPopup: nop,
+			onSetOutline: this._options.onSetOutline,
 			onTabOut: nop,
 			onKeyDown: nop
 		};
 
 		if (this._type === 'epub') {
 			return new EPUBView({
-				...common,
-				onSetOutline: this._options.onSetOutline,
+				...common
 			});
 		} else if (this._type === 'snapshot') {
 			return new SnapshotView({
