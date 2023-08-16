@@ -110,7 +110,7 @@ export default class Page {
 				};
 				// For text annotations
 				if (position.fontSize) {
-					position2.fontSize = applyTransform([position.fontSize, 0], transform)[0];
+					position2.fontSize = Math.abs(applyTransform([position.fontSize, 0], transform)[0] - applyTransform([0, 0], transform)[0]);
 				}
 				if (position.rotation) {
 					position2.rotation = position.rotation;
@@ -121,7 +121,8 @@ export default class Page {
 		else if (position.paths) {
 			return {
 				pageIndex: position.pageIndex,
-				width: applyTransform([position.width, 0], transform)[0],
+				// For PDF pages with crop box it's necessary to subtract the zero point
+				width: Math.abs(applyTransform([position.width, 0], transform)[0] - applyTransform([0, 0], transform)[0]),
 				paths: position.paths.map((path) => {
 					let vpath = [];
 					for (let i = 0; i < path.length - 1; i += 2) {
@@ -227,7 +228,7 @@ export default class Page {
 
 		for (let note of notes) {
 			this.actualContext.save();
-			let scale = this.getViewPoint([1 / (24 / width), 0])[0];
+			let scale = Math.abs(this.getViewPoint([1 / (24 / width), 0])[0] - this.getViewPoint([0, 0])[0]);
 			let rect = this.getViewRect(note.rect);
 			this.actualContext.transform(scale, 0, 0, scale, rect[0], rect[1]);
 			this.drawNote(this.actualContext, note.annotation.color);
