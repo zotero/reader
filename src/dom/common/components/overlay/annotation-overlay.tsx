@@ -30,11 +30,11 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onDragStart, onResizeStart, onResizeEnd, disablePointerEvents } = props;
+	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onDragStart, onResizeStart, onResizeEnd } = props;
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
-	let pointerEventsSuppressed = disablePointerEvents || isResizing || isPointerDownOutside;
+	let pointerEventsSuppressed = isResizing || isPointerDownOutside;
 
 	useEffect(() => {
 		let win = iframe.contentWindow;
@@ -168,7 +168,6 @@ type AnnotationOverlayProps = {
 	onDragStart: (id: string, dataTransfer: DataTransfer) => void;
 	onResizeStart: (id: string) => void;
 	onResizeEnd: (id: string, range: Range, cancelled: boolean) => void;
-	disablePointerEvents: boolean;
 };
 
 const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
@@ -531,7 +530,17 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	}, [win, handleKeyDown]);
 
 	let handlePointerMove = (event: React.PointerEvent, isStart: boolean) => {
-		let pos = caretPositionFromPoint(event.view.document, event.clientX, event.clientY);
+		let clientX = event.clientX;
+		if (isSafari) {
+			let targetRect = (event.target as Element).getBoundingClientRect();
+			if (clientX >= targetRect.left && clientX <= targetRect.right) {
+				// In Safari, caretPositionFromPoint() doesn't work if the mouse is directly over the target element
+				// (returns the last element in the body instead), so we have to offset the X position by 1 pixel.
+				// This makes resizing a bit jerkier, but it's better than the alternative.
+				clientX = isStart ? targetRect.left - 1 : targetRect.right + 1;
+			}
+		}
+		let pos = caretPositionFromPoint(event.view.document, clientX, event.clientY);
 		if (pos) {
 			// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
 			if (pos.offsetNode.nodeType == Node.ELEMENT_NODE && (pos.offsetNode as Element).closest('svg')) {

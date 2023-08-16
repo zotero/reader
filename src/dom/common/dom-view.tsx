@@ -73,8 +73,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _overlayPopupDelayer: PopupDelayer;
 
-	protected _disableAnnotationPointerEvents = false;
-
 	protected _highlightedPosition: Selector | null = null;
 
 	protected _pointerMovedWhileDown = false;
@@ -330,7 +328,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				onDragStart={this._handleAnnotationDragStart}
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
-				disablePointerEvents={this._disableAnnotationPointerEvents}
 			/>
 		), container);
 	}
@@ -770,10 +767,21 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _handleAnnotationResizeStart = (_id: string) => {
 		this._resizing = true;
 		this._options.onSetAnnotationPopup(null);
+		if (isSafari) {
+			// Capturing the pointer doesn't stop text selection in Safari. We could set user-select: none
+			// (-webkit-user-select: none, actually), but that breaks caretPositionFromPoint (only in Safari).
+			// So we make the selection invisible instead.
+			this._iframeDocument.documentElement.style.setProperty('--selection-color', 'transparent');
+		}
 	};
 
 	private _handleAnnotationResizeEnd = (id: string, range: Range, cancelled: boolean) => {
 		this._resizing = false;
+		if (isSafari) {
+			// See above - this resets the highlight color and clears the selection
+			this.setTool(this._tool);
+			this._iframeDocument.getSelection()?.removeAllRanges();
+		}
 		if (cancelled) {
 			return;
 		}
