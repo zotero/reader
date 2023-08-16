@@ -457,6 +457,7 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this.atStartOfSection()) {
 			this.navigateToPreviousSection();
 			this._sectionsContainer.scrollTo({ left: this._sectionsContainer.scrollWidth, top: 0 });
+			this._onViewUpdate();
 			return;
 		}
 		let gap = parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
