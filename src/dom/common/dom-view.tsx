@@ -977,8 +977,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._renderAnnotations();
 
 			setTimeout(() => {
-				this._highlightedPosition = null;
-				this._renderAnnotations();
+				if (this._highlightedPosition === selector) {
+					this._highlightedPosition = null;
+					this._renderAnnotations();
+				}
 			}, 2000);
 		}
 	}
