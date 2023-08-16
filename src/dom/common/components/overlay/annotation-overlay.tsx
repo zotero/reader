@@ -75,13 +75,13 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	}, [onDragStart]);
 
 	let handleResizeStart = useCallback((annotation: DisplayedAnnotation) => {
-		onResizeStart(annotation.id!);
 		setResizing(true);
+		onResizeStart(annotation.id!);
 	}, [onResizeStart]);
 
 	let handleResizeEnd = useCallback((annotation: DisplayedAnnotation, range: Range, cancelled: boolean) => {
-		onResizeEnd(annotation.id!, range, cancelled);
 		setResizing(false);
+		onResizeEnd(annotation.id!, range, cancelled);
 	}, [onResizeEnd]);
 
 	let widgetContainer = useRef<SVGSVGElement>(null);
@@ -563,11 +563,11 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			}
 
 			if (newRange.collapsed
-				|| !newRange.toString().length
-				|| newRange.getClientRects().length == 0
-				// Make sure we stay within one section
-				|| doc?.querySelector('[data-section-index]')
-					&& !closestElement(newRange.commonAncestorContainer)?.closest('[data-section-index]')) {
+					|| !newRange.toString().trim().length
+					|| newRange.getClientRects().length == 0
+					// Make sure we stay within one section
+					|| doc?.querySelector('[data-section-index]')
+						&& !closestElement(newRange.commonAncestorContainer)?.closest('[data-section-index]')) {
 				return;
 			}
 			let boundingRect = newRange.getBoundingClientRect();
