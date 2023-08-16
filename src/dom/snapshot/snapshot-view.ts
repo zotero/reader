@@ -104,23 +104,31 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	private _initOutline() {
+		let bodyFontSize = parseFloat(getComputedStyle(this._iframeDocument.body).fontSize);
 		let flatOutline: (OutlineItem & { level: number })[] = [];
 		// Create a flat outline array from the headings on the page
-		for (let heading of this._iframeDocument.querySelectorAll('h1, h2, h3, h4, h5, h6')) {
+		for (let heading of this._iframeDocument.body.querySelectorAll('h1, h2, h3, h4, h5, h6') as NodeListOf<HTMLElement>) {
 			// If the site uses semantic HTML, we can try to skip probably-irrelevant headings
 			if (heading.closest('aside, nav, header, footer, template, [hidden]')) {
 				continue;
 			}
+			if (!heading.innerText.trim()) {
+				continue;
+			}
+			let headingFontSize = parseFloat(getComputedStyle(heading).fontSize);
+			if (headingFontSize / bodyFontSize <= 1) {
+				continue;
+			}
 
-			let level = parseInt(heading.tagName[1]);
 			let range = this._iframeDocument.createRange();
 			range.selectNode(heading);
 			let selector = this.toSelector(range);
 			if (!selector) {
 				continue;
 			}
+			let level = parseInt(heading.tagName[1]);
 			flatOutline.push({
-				title: heading.textContent || '',
+				title: heading.innerText.trim(),
 				location: { position: selector },
 				items: [],
 				expanded: true,
