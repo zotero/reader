@@ -144,7 +144,13 @@ export class KeyboardManager {
 			else {
 				idx++;
 			}
-			this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] })
+			this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
+		}
+		else if (!alt && !mod && code.slice(0, 5) === 'Digit' && this._reader._state.tool.color) {
+			let idx = parseInt(code.slice(5)) - 1;
+			if (ANNOTATION_COLORS[idx]) {
+				this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
+			}
 		}
 		else if (['Delete', 'Backspace'].includes(key)) {
 			if (isTextBox(event.target) && event.target.closest('#findbar') || event.target.closest('.label-overlay')) {
