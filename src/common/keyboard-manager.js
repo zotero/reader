@@ -85,7 +85,8 @@ export class KeyboardManager {
 				if (this._reader._state.sidebarOpen
 					&& this._reader._state.sidebarView === 'annotations'
 					&& (view || event.target.closest('#annotationsView'))) {
-					this._reader.setSelectedAnnotations(this._reader._state.annotations.filter(x => !x._hidden).map(x => x.id));
+					let selectedAnnotationIDs = this._reader._state.annotations.filter(x => !x._hidden).map(x => x.id);
+					this._reader._updateState({ selectedAnnotationIDs });
 				}
 			}
 		}
