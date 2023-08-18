@@ -37,6 +37,10 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 	}, [uniqueRef]);
 
 	function updatePopupPosition() {
+		if (!containerRef.current) {
+			return;
+		}
+
 		let width = containerRef.current.offsetWidth;
 		let height = containerRef.current.offsetHeight;
 
