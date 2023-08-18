@@ -276,7 +276,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 						xmlns="http://www.w3.org/1999/xhtml"
 						style={{
 							pointerEvents: 'auto',
-							cursor: 'pointer',
+							cursor: 'default',
 							width: '100%',
 							height: '100%',
 						}}
@@ -661,7 +661,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 					xmlns="http://www.w3.org/1999/xhtml"
 					style={{
 						pointerEvents: 'auto',
-						cursor: 'pointer',
+						cursor: 'default',
 						width: '100%',
 						height: '100%',
 					}}
