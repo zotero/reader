@@ -215,7 +215,9 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	};
 
 	let rects = new Map<string, DOMRect>();
+	let interactiveElementRects = new Set<DOMRect>();
 	for (let range of ranges) {
+		let closestInteractiveElement = range.startContainer.parentElement?.closest('a, area');
 		for (let rect of range.getClientRects()) {
 			if (rect.width == 0 || rect.height == 0) {
 				continue;
@@ -225,6 +227,9 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			let key = JSON.stringify(rect);
 			if (!rects.has(key)) {
 				rects.set(key, rect);
+				if (closestInteractiveElement) {
+					interactiveElementRects.add(rect);
+				}
 			}
 		}
 	}
@@ -275,7 +280,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 						// @ts-ignore
 						xmlns="http://www.w3.org/1999/xhtml"
 						style={{
-							pointerEvents: 'auto',
+							pointerEvents: interactiveElementRects.has(rect) ? 'none' : 'auto',
 							cursor: 'default',
 							width: '100%',
 							height: '100%',
