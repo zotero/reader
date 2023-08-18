@@ -494,3 +494,16 @@ export function debounceUntilScrollFinishes(container, debounceTime = 100) {
 		debounceTimeout = setTimeout(resolveAndCleanup, debounceTime);
 	});
 }
+
+export function normalizeDegrees(degrees) {
+	return ((degrees % 360) + 360) % 360;
+}
+
+export function getRotationDegrees(m) {
+	let [a, b] = m;
+	// Calculate the rotation in radians
+	let theta = -Math.atan2(b, a);
+	// Convert to degrees
+	let degrees = theta * (180 / Math.PI);
+	return normalizeDegrees(degrees);
+}

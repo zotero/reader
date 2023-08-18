@@ -4,7 +4,9 @@ import {
 	getPositionBoundingRect,
 	getRotationTransform,
 	transform,
-	scaleShape
+	scaleShape,
+	getRotationDegrees,
+	normalizeDegrees
 } from './lib/utilities';
 import { SELECTION_COLOR } from '../common/defines';
 import { getRectRotationOnText } from './selection';
@@ -56,6 +58,12 @@ export default class Page {
 		return transform(scaleTransform, this.originalPage.viewport.transform);
 	}
 
+	get scale() {
+		// We only care about x scale, because y is always the same
+		let [a, b] = this.transform;
+		return Math.hypot(a, b);
+	}
+
 	getViewPoint(p, transform = this.transform) {
 		return applyTransform(p, transform);
 	}
@@ -77,7 +85,8 @@ export default class Page {
 		];
 	}
 
-	p2v(position, transform = this.transform) {
+	p2v(position) {
+		let transform = this.transform;
 		if (position.rects) {
 			if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
 				return {
@@ -110,7 +119,7 @@ export default class Page {
 				};
 				// For text annotations
 				if (position.fontSize) {
-					position2.fontSize = Math.abs(applyTransform([position.fontSize, 0], transform)[0] - applyTransform([0, 0], transform)[0]);
+					position2.fontSize = position.fontSize * this.scale;
 				}
 				if (position.rotation) {
 					position2.rotation = position.rotation;
@@ -122,7 +131,7 @@ export default class Page {
 			return {
 				pageIndex: position.pageIndex,
 				// For PDF pages with crop box it's necessary to subtract the zero point
-				width: Math.abs(applyTransform([position.width, 0], transform)[0] - applyTransform([0, 0], transform)[0]),
+				width: position.width * this.scale,
 				paths: position.paths.map((path) => {
 					let vpath = [];
 					for (let i = 0; i < path.length - 1; i += 2) {
@@ -275,12 +284,14 @@ export default class Page {
 			rects = position.rects;
 			pdfRect = annotation.position.rects[0];
 		}
-		let viewRect = rects[0];
 		let width = 1;
-		width *= (viewRect[2] - viewRect[0]) / (pdfRect[2] - pdfRect[0]);
+		width *= this.scale;
 		for (let rect of rects) {
-			// Get the actual line rect taking into account text rotation
-			let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+			// Get the underline line rect taking into account text rotation
+			let rotation = getRectRotationOnText(structuredText, pdfRect);
+			// Add page rotation to text rotation
+			rotation += getRotationDegrees(this.transform);
+			rotation = normalizeDegrees(rotation);
 			let [x1, y1, x2, y2] = rect;
 			let rect2 = (
 				rotation === 0 && [x1, y2 - width, x2, y2]
@@ -296,9 +307,8 @@ export default class Page {
 	_renderNote(annotation) {
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
-		let pdfRect = annotation.position.rects[0];
 		let viewRect = position.rects[0];
-		let scale = (viewRect[2] - viewRect[0]) / (pdfRect[2] - pdfRect[0]) * (22 / 24);
+		let scale = this.scale * (22 / 24);
 		this.actualContext.transform(scale, 0, 0, scale, viewRect[0], viewRect[1]);
 		this.drawNote(this.actualContext, annotation.color);
 		this.actualContext.restore();
@@ -669,6 +679,9 @@ export default class Page {
 					if (position.pageIndex + 1 === this.pageIndex) {
 						let structuredText = this.layer._pdfPages[this.pageIndex + 1].structuredText;
 						let rotation = getRectRotationOnText(structuredText, annotation2.position.nextPageRects.at(-1));
+						// Add page rotation to text rotation
+						rotation += getRotationDegrees(this.transform);
+						rotation = normalizeDegrees(rotation);
 						let [x1, y1, x2, y2] = position.nextPageRects.at(-1);
 						endRect = (
 							rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
@@ -680,6 +693,9 @@ export default class Page {
 					else {
 						let rotation = getRectRotationOnText(structuredText, annotation2.position.rects[0]);
 						let [x1, y1, x2, y2] = position.rects[0];
+						// Add page rotation to text rotation
+						rotation += getRotationDegrees(this.transform);
+						rotation = normalizeDegrees(rotation);
 						startRect = (
 							rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
 							|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
@@ -690,6 +706,9 @@ export default class Page {
 				}
 				else {
 					let rotation = getRectRotationOnText(structuredText, annotation2.position.rects[0]);
+					// Add page rotation to text rotation
+					rotation += getRotationDegrees(this.transform);
+					rotation = normalizeDegrees(rotation);
 					let [x1, y1, x2, y2] = position.rects[0];
 					startRect = (
 						rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
@@ -698,6 +717,9 @@ export default class Page {
 						|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
 					);
 					rotation = getRectRotationOnText(structuredText, annotation2.position.rects.at(-1));
+					// Add page rotation to text rotation
+					rotation += getRotationDegrees(this.transform);
+					rotation = normalizeDegrees(rotation);
 					[x1, y1, x2, y2] = position.rects.at(-1);
 					endRect = (
 						rotation === 0 && [x2 - padding, y1, x2 + padding, y2]

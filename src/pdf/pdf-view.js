@@ -28,7 +28,9 @@ import {
 	getAxialAlignedBoundingBox,
 	distanceBetweenRects,
 	getTransformFromRects,
-	debounceUntilScrollFinishes
+	debounceUntilScrollFinishes,
+	getRotationDegrees,
+	normalizeDegrees
 } from './lib/utilities';
 import {
 	getAffectedAnnotations,
@@ -775,6 +777,11 @@ class PDFView {
 		];
 	}
 
+	getViewportRotation(pageIndex) {
+		let originalPage = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+		return getRotationDegrees(originalPage.viewport.transform);
+	}
+
 	getPositionBoundingViewRect(position) {
 		let { pageIndex } = position;
 		let rect = getPositionBoundingRect(position, pageIndex);
@@ -920,6 +927,9 @@ class PDFView {
 					if (annotation.position.pageIndex + 1 === position.pageIndex) {
 						let structuredText = this._pdfPages[annotation.position.pageIndex + 1].structuredText;
 						let rotation = getRectRotationOnText(structuredText, annotation.position.nextPageRects.at(-1));
+						// Add page rotation to text rotation
+						rotation += this.getViewportRotation(annotation.position.pageIndex + 1);
+						rotation = normalizeDegrees(rotation);
 						let rect = this.getViewRect(annotation.position.nextPageRects.at(-1), annotation.position.pageIndex + 1);
 						let [x1, y1, x2, y2] = rect;
 						rect = (
@@ -932,6 +942,9 @@ class PDFView {
 					}
 					else {
 						let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+						// Add page rotation to text rotation
+						rotation += this.getViewportRotation(annotation.position.pageIndex);
+						rotation = normalizeDegrees(rotation);
 						let rect = this.getViewRect(annotation.position.rects[0], annotation.position.pageIndex);
 						let [x1, y1, x2, y2] = rect;
 						rect = (
@@ -945,6 +958,9 @@ class PDFView {
 				}
 				else {
 					let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+					// Add page rotation to text rotation
+					rotation += this.getViewportRotation(annotation.position.pageIndex);
+					rotation = normalizeDegrees(rotation);
 					let rect = this.getViewRect(annotation.position.rects[0], annotation.position.pageIndex);
 					let [x1, y1, x2, y2] = rect;
 					rect = (
@@ -955,6 +971,9 @@ class PDFView {
 					);
 					startHandle = { rect, vertical: [90, 270].includes(rotation) };
 					rotation = getRectRotationOnText(structuredText, annotation.position.rects.at(-1));
+					// Add page rotation to text rotation
+					rotation += this.getViewportRotation(annotation.position.pageIndex);
+					rotation = normalizeDegrees(rotation);
 					rect = this.getViewRect(annotation.position.rects.at(-1), annotation.position.pageIndex);
 					[x1, y1, x2, y2] = rect;
 					rect = (
@@ -1332,9 +1351,10 @@ class PDFView {
 				cursor = 'crosshair';
 			}
 			else if (action.type === 'erase') {
-				let size = this._tool.size;
-				let viewport = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[0].viewport;
-				[size] = viewport.convertToViewportPoint(size, 0);
+				let transform = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[0].viewport.transform;
+				let [a, b] = transform;
+				let scale = Math.hypot(a, b);
+				let size = this._tool.size * scale;
 				let adjustedSize = size * window.devicePixelRatio;
 				let adjustedStrokeWidth = 1 * window.devicePixelRatio;
 				let svgDataUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${adjustedSize} ${adjustedSize}"><circle cx="${adjustedSize / 2}" cy="${adjustedSize / 2}" r="${(adjustedSize - adjustedStrokeWidth) / 2}" stroke="black" stroke-width="${adjustedStrokeWidth}" fill="none" /></svg>`;
@@ -1749,7 +1769,7 @@ class PDFView {
 			// Note: Add +180 if handle is moved from top to bottom
 			let angle = action.annotation.position.rotation + angleDegrees;
 			// Normalize angle
-			angle = ((angle % 360) + 360) % 360;
+			angle = normalizeDegrees(angle);
 			const stickyAngles = [0, 90, 180, 270, 360];
 			const threshold = 7;
 			for (const rightAngle of stickyAngles) {
