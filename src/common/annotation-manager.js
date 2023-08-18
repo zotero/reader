@@ -61,16 +61,7 @@ class AnnotationManager {
 			this._annotations.push(annotation);
 		}
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
-
 		this.render();
-
-		for (let annotation of annotations) {
-			if (['image', 'ink'].includes(annotation.type) && !annotation.image) {
-				annotation.image = await this.getAnnotationImage(annotation.id);
-				this._save(annotation, true);
-				this.render();
-			}
-		}
 	}
 
 	// Called when deletions come from the client side
