@@ -32,6 +32,8 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 
 	useLayoutEffect(() => {
 		updatePopupPosition();
+		// Editor needs more time to get its final dimensions
+		setTimeout(updatePopupPosition, 0);
 	}, [uniqueRef]);
 
 	function updatePopupPosition() {
@@ -40,9 +42,7 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 
 		let parent = containerRef.current.parentNode;
 		let viewRect = parent.getBoundingClientRect();
-		viewRect = [viewRect.left, viewRect.top, viewRect.right, viewRect.bottom];
-
-
+		viewRect = [0, 0, viewRect.width, viewRect.height];
 
 		let annotationCenterLeft = rect[0] + (rect[2] - rect[0]) / 2;
 
@@ -63,12 +63,7 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 			isTop = false;
 		}
 
-
 		xrect.current = rect;
-
-
-
-
 
 		pos.current = { top, left, isTop };
 
