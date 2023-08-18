@@ -537,6 +537,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			onUpdateViewStats: () => this._updateViewStats(),
 			onViewUpdate: () => this._handleViewUpdate(),
 		});
+		this.flow.setSpreadMode(this.spreadMode);
 
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
