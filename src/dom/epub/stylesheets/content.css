@@ -28,6 +28,11 @@ body.flow-mode-scrolled > .sections > .section-container {
 	margin-inline: auto;
 	margin-bottom: 100px;
 	max-width: 800px;
+	/* Try some different permutations of the 'contain' values that we want, because Firefox, at least, seems to throw
+	   away the whole property when it sees an unknown value. */
+	contain: layout paint;
+	contain: layout paint style;
+	contain: layout paint inline-size;
 	contain: layout paint style inline-size;
 }
 
@@ -111,6 +116,8 @@ body.flow-mode-paginated > .sections.spread-mode-odd {
 }
 
 body.flow-mode-paginated > .sections > .section-container {
+	/* See above: Firefox throws away 'contain' properties with unknown values, so we need to set a fallback. */
+	contain: layout paint;
 	contain: layout paint style;
 }
 
@@ -153,7 +160,7 @@ replaced-body {
 	margin-left: 0 !important;
 	margin-right: 0 !important;
 	background: transparent !important;
-	
+
 	font-family: var(--content-font-family, "Georgia"), serif;
 	font-size: calc(var(--content-scale) * 13pt) !important;
 	line-height: 1.4;
@@ -164,7 +171,7 @@ replaced-body p {
 	/* Really enforce some of our formatting choices on body paragraphs */
 	font-family: var(--content-font-family, "Georgia"), serif !important;
 	line-height: 1.4 !important;
-    
+
     widows: 2;
     orphans: 2;
 }
