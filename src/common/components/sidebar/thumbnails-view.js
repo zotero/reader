@@ -1,7 +1,8 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
+import React, { Fragment, useState, useCallback, useContext, useEffect, useRef, useImperativeHandle } from 'react';
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
 import { pressedNextKey, pressedPreviousKey } from '../../lib/utilities';
+import { ReaderContext } from '../../reader';
 
 function Thumbnail({ thumbnail, selected, pageLabel, onContextMenu }) {
 	return (
@@ -25,6 +26,7 @@ function ThumbnailsView(props) {
 	const intl = useIntl();
 	const [selected, setSelected] = useState([0]);
 	const containerRef = useRef();
+	const { platform } = useContext(ReaderContext);
 
 	useEffect(() => {
 		if (selected.length <= 1) {
@@ -171,6 +173,9 @@ function ThumbnailsView(props) {
 	}
 
 	function handleContextMenu(event) {
+		if (platform === 'web') {
+			return;
+		}
 		event.preventDefault();
 		props.onOpenThumbnailContextMenu({
 			x: event.clientX,
