@@ -43,6 +43,7 @@ import {
 	PaginatedFlow,
 	ScrolledFlow
 } from "./flow";
+import { RTL_SCRIPTS } from "./defines";
 
 // @ts-ignore
 import contentCSS from '!!raw-loader!./stylesheets/content.css';
@@ -111,6 +112,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._iframeDocument.head.prepend(cspMeta);
 
 		this._pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
+		if (!this._pageProgressionRTL) {
+			try {
+				let locale = new Intl.Locale(this.book.packaging.metadata.language).maximize();
+				this._pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
+				if (this._pageProgressionRTL) {
+					console.log('Guessed RTL page progression from maximized locale: ' + locale);
+				}
+			}
+			catch (e) {
+				// Ignore
+			}
+		}
 
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = contentCSS;
