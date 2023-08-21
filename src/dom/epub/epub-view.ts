@@ -307,7 +307,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					return null;
 				}
 				let sectionIndex = EPUBView.getContainingSectionIndex(range);
-				if (sectionIndex === null || !this.views[sectionIndex].mounted) {
+				if (sectionIndex === null || !this._sectionViews[sectionIndex].mounted) {
 					return null;
 				}
 				return range;
