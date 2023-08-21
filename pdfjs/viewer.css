@@ -281,7 +281,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	-webkit-user-select: auto;
 }
 
-.textLayer > span {
+.textLayer :is(span, br) {
 	color: transparent;
 	position: absolute;
 	white-space: pre;
@@ -289,11 +289,20 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	transform-origin: 0% 0%;
 }
 
+.textLayer span.markedContent {
+  top: 0;
+  height: 0;
+}
+
 .textLayer .highlight {
 	margin: -1px;
 	padding: 1px;
 	background-color: rgba(180, 0, 170, 1);
 	border-radius: 4px;
+}
+
+.textLayer .highlight.appended {
+	position: initial;
 }
 
 .textLayer .highlight.begin {
