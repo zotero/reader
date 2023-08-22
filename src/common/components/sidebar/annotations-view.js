@@ -132,7 +132,7 @@ const Annotation = React.memo((props) => {
 				onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
 				onClickSection={props.onClickAnnotationSection}
 				onDoubleClickText={props.onDoubleClickText}
-				onDoubleClickPageLabel={props.onDoubleClickPageLabel}
+				onOpenPageLabelPopup={props.onOpenPageLabelPopup}
 				onOpenContextMenu={props.onOpenContextMenu}
 				onChange={props.onChange}
 			/>
@@ -173,18 +173,9 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		}, 50);
 	}
 
-	function openPageLabelPopup(id) {
-		let node = document.querySelector(`[data-sidebar-annotation-id="${id}"] .page`);
-		var clickEvent = document.createEvent('MouseEvents');
-		clickEvent.initEvent('dblclick', true, true);
-		node.dispatchEvent(clickEvent);
-		node.focus();
-	}
-
 	useImperativeHandle(ref, () => ({
 		scrollAnnotationIntoView,
-		editAnnotationText,
-		openPageLabelPopup
+		editAnnotationText
 	}));
 
 	useEffect(() => {
@@ -467,7 +458,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 							onChange={props.onChange}
 							onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 							onDoubleClickText={handleSidebarAnnotationDoubleClick}
-							onDoubleClickPageLabel={props.onOpenPageLabelPopup}
+							onOpenPageLabelPopup={props.onOpenPageLabelPopup}
 							onOpenContextMenu={handleContextMenuOpen}
 							onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
 						/>

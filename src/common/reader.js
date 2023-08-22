@@ -265,10 +265,6 @@ class Reader {
 						onToggleFindPopup={this.toggleFindPopup.bind(this)}
 
 						onSetPortal={this._setPortal.bind(this)}
-
-						onDoubleClickPageLabel={options.onDoubleClickPageLabel}
-						onFocusSplitButton={options.onFocusSplitButton}
-						onFocusContextPane={options.onFocusContextPane}
 						ref={this._readerRef}
 					/>
 				</ReaderContext.Provider>
@@ -599,10 +595,6 @@ class Reader {
 
 	_sidebarEditAnnotationText(id) {
 		this._readerRef.current.sidebarEditAnnotationText(id);
-	}
-
-	_sidebarOpenPageLabelPopup(id) {
-		this._readerRef.current.sidebarOpenPageLabelPopup(id);
 	}
 
 	_getString(name) {
@@ -1288,13 +1280,17 @@ class Reader {
 		this._onSetDataTransferAnnotations(dataTransfer, annotations, fromText);
 	}
 
-	_handleOpenPageLabelPopup(id, rect) {
+	_handleOpenPageLabelPopup(id) {
 		this._ensureType('pdf');
 		let pageLabels = this._state.pageLabels;
 		let selectedIDs = this._state.selectedAnnotationIDs;
 		let currentAnnotation = this._annotationManager._getAnnotationByID(id);
 		let selectedAnnotations = this._annotationManager._annotations.filter(x => selectedIDs.includes(x.id));
 		let allAnnotations = this._annotationManager._annotations;
+		// Get target rect from preview component in the sidebar or a view popup
+		let labelNode = document.querySelector(`[data-sidebar-annotation-id="${id}"] header .label, .view-popup header .label`);
+		let { left, top, right, bottom } = labelNode.getBoundingClientRect();
+		let rect = [left, top, right, bottom];
 		this._updateState({ labelOverlay: { currentAnnotation, selectedAnnotations, allAnnotations, rect, selectedIDs, pageLabels } });
 	}
 

@@ -18,14 +18,7 @@ export function PopupPreview(props) {
 		if (props.type !== 'pdf' || props.readOnly) {
 			return;
 		}
-		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
-		rect = [
-			rect.left,
-			rect.top,
-			rect.right,
-			rect.bottom
-		];
-		props.onDoubleClickPageLabel(props.annotation.id, rect);
+		props.onOpenPageLabelPopup(props.annotation.id);
 	}
 
 	function handleTagsClick(event) {
@@ -138,14 +131,7 @@ export function SidebarPreview(props) {
 		if (props.type !== 'pdf' || props.readOnly) {
 			return;
 		}
-		let rect = event.currentTarget.querySelector('.label').getBoundingClientRect();
-		rect = [
-			rect.left,
-			rect.top,
-			rect.right,
-			rect.bottom
-		];
-		props.onDoubleClickPageLabel(props.annotation.id, rect);
+		props.onOpenPageLabelPopup(props.annotation.id);
 	}
 
 	function handleSectionClick(event, section) {

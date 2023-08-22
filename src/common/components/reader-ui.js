@@ -91,7 +91,6 @@ const ReaderUI = React.forwardRef((props, ref) => {
 		setState,
 		sidebarScrollAnnotationIntoView: (id) => annotationsViewRef.current?.scrollAnnotationIntoView(id),
 		sidebarEditAnnotationText: (id) => annotationsViewRef.current?.editAnnotationText(id),
-		sidebarOpenPageLabelPopup: (id) => annotationsViewRef.current?.openPageLabelPopup(id)
 	}));
 
 	let findState = state.primary ? state.primaryViewFindState : state.secondaryViewFindState;
