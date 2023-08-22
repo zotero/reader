@@ -53,6 +53,7 @@ function View(props) {
 			{state[name + 'ViewSelectionPopup'] && !state.readOnly &&
 				<SelectionPopup
 					params={state[name + 'ViewSelectionPopup']}
+					enableAddToNote={state.enableAddToNote}
 					onAddToNote={props.onAddToNote}
 					onAddAnnotation={props.onAddAnnotation}
 				/>

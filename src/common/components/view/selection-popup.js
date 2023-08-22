@@ -10,6 +10,10 @@ function SelectionPopup(props) {
 		props.onAddAnnotation({ ...props.params.annotation, color });
 	}
 
+	function handleAddToNote() {
+		props.onAddToNote([props.params.annotation]);
+	}
+
 	return (
 		<ViewPopup
 			className="selection-popup"
@@ -28,7 +32,7 @@ function SelectionPopup(props) {
 				/>))}
 			</div>
 			{props.enableAddToNote &&
-				<div className="wide-button" data-tabstop={true} onClick={props.onAddToNote}>
+				<div className="wide-button" data-tabstop={true} onClick={handleAddToNote}>
 					<FormattedMessage id="pdfReader.addToNote"/>
 				</div>}
 		</ViewPopup>

@@ -252,7 +252,7 @@ class Reader {
 						onCloseContextMenu={this.closeContextMenu.bind(this)}
 						onCloseLabelOverlay={this._handleLabelOverlayClose.bind(this)}
 						onEnterPassword={this.enterPassword.bind(this)}
-						onAddToNote={this._onAddToNote}
+						onAddToNote={(annotations) => { this._onAddToNote(annotations); this.setSelectedAnnotations([]); }}
 						onNavigate={this.navigate.bind(this)}
 						onUpdateOutline={outline => this._updateState({ outline })}
 						onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
@@ -1016,6 +1016,7 @@ class Reader {
 		this._lastView.navigateToNextSection();
 	}
 
+	// Note: It's a bit weird, but this function is also used to deselect text in views, if an empty ids array is provided
 	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
 		let deleteIDs = [];
 		for (let annotation of this._state.annotations) {
