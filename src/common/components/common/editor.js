@@ -186,13 +186,33 @@ function Toolbar({ onCommand }) {
 	}, []);
 
 	useEffect(() => {
+		document.addEventListener('keydown', handleKeyDown);
 		document.addEventListener('selectionchange', handleSelectionChange);
 		document.addEventListener('scroll', handleScroll, true);
 		return () => {
+			document.removeEventListener('keydown', handleKeyDown);
 			document.removeEventListener('selectionchange', handleSelectionChange);
 			document.removeEventListener('scroll', handleScroll, true);
 		};
 	});
+
+	function handleKeyDown(event) {
+		let { key } = event;
+		let ctrl = event.ctrlKey;
+		let cmd = event.metaKey;
+		let shift = event.shiftKey;
+		let alt = event.altKey;
+		let mod = ctrl || cmd;
+		if (!shift && !alt && mod) {
+			if (key === 'b') {
+				onCommand('bold');
+			}
+			else if (key === 'i') {
+				onCommand('italic');
+			}
+			event.preventDefault();
+		}
+	}
 
 	function handleSelectionChange() {
 		update();
