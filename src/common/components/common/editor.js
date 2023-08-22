@@ -179,7 +179,7 @@ function ToolbarButton({ action, onCommand }) {
 }
 
 function Toolbar({ onCommand }) {
-	let editorRef = useRef();
+	let toolbarRef = useRef();
 
 	useLayoutEffect(() => {
 		update();
@@ -206,24 +206,28 @@ function Toolbar({ onCommand }) {
 	function update() {
 		let selection = window.getSelection();
 		if (!selection || selection.isCollapsed) {
-			editorRef.current.style.display = 'none';
+			toolbarRef.current.style.display = 'none';
 			return;
 		}
 		let range = selection.getRangeAt(0);
 		let selectionRect = range.getBoundingClientRect();
 		let editorNode = range.startContainer.parentNode.closest('.editor');
-		if (!editorNode.parentNode.contains(editorRef.current)) {
-			editorRef.current.style.display = 'none';
+		if (!editorNode.parentNode.contains(toolbarRef.current)) {
+			toolbarRef.current.style.display = 'none';
 			return;
 		}
 		let editorRect = editorNode.getBoundingClientRect();
 		let top = selectionRect.y - editorRect.y;
-		editorRef.current.style.display = 'flex';
-		editorRef.current.style.top = top + 'px';
+		if (top < -15) {
+			toolbarRef.current.style.display = 'none';
+			return;
+		}
+		toolbarRef.current.style.display = 'flex';
+		toolbarRef.current.style.top = top + 'px';
 	}
 
 	return (
-		<div ref={editorRef} className="editor-toolbar">
+		<div ref={toolbarRef} className="editor-toolbar">
 			{actions.map((action, idx) => (
 				<ToolbarButton key={idx} action={action} onCommand={onCommand}/>
 			))}

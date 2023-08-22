@@ -47,12 +47,13 @@
 		position: absolute;
 		background-color: #FFF;
 		border: 1px solid lightgrey;
+		z-index: 1;
 
 		// 5 (buttons) x 20px / 2 = 50px
 		left: calc(50% - 50px);
 		display: flex;
 
-		margin-top: -15px;
+		margin-top: -20px;
 		height: 20px;
 		border-radius: 5px;
 
