@@ -194,7 +194,7 @@ export class FocusManager {
 		let ids = this._reader._state.selectedAnnotationIDs;
 		if (ids.length > 0) {
 			let annotation = this._reader._state.annotations.find(x => x.id === ids[0]);
-			if (!document.activeElement?.closest('.comment')
+			if (!document.activeElement?.closest('.text, .comment')
 				|| (!annotation.comment && this._reader._annotationSelectionTriggeredFromView)) {
 				this._reader._handleSetDataTransferAnnotations(event.clipboardData, annotation);
 				event.preventDefault();

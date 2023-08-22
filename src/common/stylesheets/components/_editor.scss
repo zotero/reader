@@ -72,11 +72,13 @@
 	}
 }
 
-.annotation-text {
-	.editor {
-		.content {
-			&:empty::before {
-				color: inherit;
+.preview {
+	.text {
+		.editor {
+			.content {
+				&:empty::before {
+					color: inherit;
+				}
 			}
 		}
 	}

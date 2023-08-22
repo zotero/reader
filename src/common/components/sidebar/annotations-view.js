@@ -330,7 +330,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 	function focusSidebarAnnotationText(annotationID) {
 		setTimeout(function () {
-			let content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .annotation-text .content`);
+			let content = document.querySelector(`[data-sidebar-annotation-id="${annotationID}"] .text .content`);
 			if (content) {
 				setCaretToEnd(content);
 			}

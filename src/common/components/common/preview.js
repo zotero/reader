@@ -208,8 +208,8 @@ export function SidebarPreview(props) {
 
 	let text = ['highlight', 'underline'].includes(annotation.type) && (
 		<div
-			className="annotation-text"
-			onClick={e => handleSectionClick(e, 'annotation-text')}
+			className="text"
+			onClick={e => handleSectionClick(e, 'text')}
 			onDoubleClick={handleTextDoubleClick}
 			draggable={state !== 3 || props.readOnly}
 			onDragStart={handleDragStart}

@@ -167,7 +167,7 @@ export class KeyboardManager {
 				let annotation = this._reader._state.annotations.find(x => x.id === selectedIDs[0]);
 				if (event.target.closest('.content')
 					&& (
-						event.target.closest('.annotation-text')
+						event.target.closest('.text')
 						|| annotation.comment
 						|| !this._reader._enableAnnotationDeletionFromComment
 					)
