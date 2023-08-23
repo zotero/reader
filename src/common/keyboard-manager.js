@@ -94,6 +94,21 @@ export class KeyboardManager {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
 		}
+		else if (shift && mod && key.toLowerCase() === 'g') {
+			event.preventDefault();
+			this._reader.findPrevious();
+		}
+		else if (mod && key.toLowerCase() === 'g') {
+			event.preventDefault();
+			this._reader.findNext();
+		}
+		// Focus page number input. Check for KeyG because alt/option key gives a different key
+		else if (mod && alt && code === 'KeyG') {
+			event.preventDefault();
+			let pageNumberInput = document.getElementById('pageNumber');
+			pageNumberInput.focus();
+			pageNumberInput.select();
+		}
 		else if (mod && key === 'p') {
 			event.preventDefault();
 			event.stopPropagation();
