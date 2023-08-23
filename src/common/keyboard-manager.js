@@ -126,47 +126,6 @@ export class KeyboardManager {
 			event.preventDefault();
 			this._reader.zoomReset();
 		}
-		else if (alt && code === 'Digit1') {
-			this._reader.toggleTool('highlight');
-		}
-		else if (alt && code === 'Digit2') {
-			this._reader.toggleTool('underline');
-		}
-		else if (alt && code === 'Digit3') {
-			this._reader.toggleTool('note');
-		}
-		else if (alt && this._reader._type === 'pdf' && code === 'Digit4') {
-			this._reader.toggleTool('text');
-		}
-		else if (alt && this._reader._type === 'pdf' && code === 'Digit5') {
-			this._reader.toggleTool('image');
-		}
-		else if (alt && this._reader._type === 'pdf' && code === 'Digit6') {
-			this._reader.toggleTool('ink');
-		}
-		else if (alt && this._reader._type === 'pdf' && code === 'Digit7') {
-			this._reader.toggleTool('eraser');
-		}
-		else if (alt
-			&& (
-				this._reader._type === 'pdf' && code === 'Digit8'
-				|| ['epub', 'snapshot'].includes(this._reader._type) && code === 'Digit4'
-			) && this._reader._state.tool.color) {
-			let idx = ANNOTATION_COLORS.findIndex(x => x[1] === this._reader._state.tool.color);
-			if (idx === ANNOTATION_COLORS.length - 1) {
-				idx = 0;
-			}
-			else {
-				idx++;
-			}
-			this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
-		}
-		else if (!alt && !mod && code.slice(0, 5) === 'Digit' && this._reader._state.tool.color) {
-			let idx = parseInt(code.slice(5)) - 1;
-			if (ANNOTATION_COLORS[idx]) {
-				this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
-			}
-		}
 		else if (['Delete', 'Backspace'].includes(key)) {
 			if (isTextBox(event.target) && event.target.closest('#findbar') || event.target.closest('.label-overlay')) {
 				return;
@@ -212,6 +171,50 @@ export class KeyboardManager {
 			}
 			else {
 				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
+			}
+		}
+
+		if (!isTextBox(event.target)) {
+			if (alt && code === 'Digit1') {
+				this._reader.toggleTool('highlight');
+			}
+			else if (alt && code === 'Digit2') {
+				this._reader.toggleTool('underline');
+			}
+			else if (alt && code === 'Digit3') {
+				this._reader.toggleTool('note');
+			}
+			else if (alt && this._reader._type === 'pdf' && code === 'Digit4') {
+				this._reader.toggleTool('text');
+			}
+			else if (alt && this._reader._type === 'pdf' && code === 'Digit5') {
+				this._reader.toggleTool('image');
+			}
+			else if (alt && this._reader._type === 'pdf' && code === 'Digit6') {
+				this._reader.toggleTool('ink');
+			}
+			else if (alt && this._reader._type === 'pdf' && code === 'Digit7') {
+				this._reader.toggleTool('eraser');
+			}
+			else if (alt
+				&& (
+					this._reader._type === 'pdf' && code === 'Digit8'
+					|| ['epub', 'snapshot'].includes(this._reader._type) && code === 'Digit4'
+				) && this._reader._state.tool.color) {
+				let idx = ANNOTATION_COLORS.findIndex(x => x[1] === this._reader._state.tool.color);
+				if (idx === ANNOTATION_COLORS.length - 1) {
+					idx = 0;
+				}
+				else {
+					idx++;
+				}
+				this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
+			}
+			else if (!alt && !mod && code.slice(0, 5) === 'Digit' && this._reader._state.tool.color) {
+				let idx = parseInt(code.slice(5)) - 1;
+				if (ANNOTATION_COLORS[idx]) {
+					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
+				}
 			}
 		}
 	}
