@@ -1844,7 +1844,7 @@ class PDFView {
 			action.triggered = true;
 		}
 		else if (action.type === 'ink') {
-			let point = position.rects[0].slice(0, 2);
+			let point = originalPagePosition.rects[0].slice(0, 2);
 			point = addPointToPath(action.annotation.position.paths[0], point);
 			point = point.map(value => parseFloat(value.toFixed(3)));
 			action.annotation.position.paths[0] = point;
@@ -1858,7 +1858,7 @@ class PDFView {
 				}
 			}
 			annotations.push(...action.annotations.values());
-			let [x, y] = position.rects[0];
+			let [x, y] = originalPagePosition.rects[0];
 			let updatedAnnotations = eraseInk(x, y, this._tool.size, annotations);
 			for (let annotation of updatedAnnotations) {
 				action.annotations.set(annotation.id, annotation);
