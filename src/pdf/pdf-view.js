@@ -2149,7 +2149,10 @@ class PDFView {
 		else if (mod && alt && key === 'p') {
 			event.stopPropagation();
 		}
-
+		// Prevent PDF.js page view rotation
+		else if (key.toLowerCase() === 'r') {
+			event.stopPropagation();
+		}
 
 		if (key === 'Escape') {
 			this.action = null;
