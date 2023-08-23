@@ -43,7 +43,7 @@ import {
 } from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
-import { DEFAULT_TEXT_ANNOTATION_FONT_SIZE, PDF_NOTE_DIMENSIONS } from '../common/defines';
+import { DEFAULT_TEXT_ANNOTATION_FONT_SIZE, MIN_IMAGE_ANNOTATION_SIZE, PDF_NOTE_DIMENSIONS } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
@@ -1661,19 +1661,18 @@ class PDFView {
 			else if (action.annotation.type === 'image') {
 				let rect = action.annotation.position.rects[0].slice();
 				let [x, y] = originalPagePosition.rects[0];
-				let MIN_SIZE = 20;
 				let viewBox = page.originalPage.viewport.viewBox;
 				if (action.dir.includes('l')) {
-					x = x > rect[2] - MIN_SIZE && rect[2] - MIN_SIZE || x > viewBox[0] && x || viewBox[0];
+					x = x > rect[2] - MIN_IMAGE_ANNOTATION_SIZE && rect[2] - MIN_IMAGE_ANNOTATION_SIZE || x > viewBox[0] && x || viewBox[0];
 				}
 				else if (action.dir.includes('r')) {
-					x = x < rect[0] + MIN_SIZE && rect[0] + MIN_SIZE || x < viewBox[2] && x || viewBox[2];
+					x = x < rect[0] + MIN_IMAGE_ANNOTATION_SIZE && rect[0] + MIN_IMAGE_ANNOTATION_SIZE || x < viewBox[2] && x || viewBox[2];
 				}
 				if (action.dir.includes('b')) {
-					y = y > rect[3] - MIN_SIZE && rect[3] - MIN_SIZE || y > viewBox[1] && y || viewBox[1];
+					y = y > rect[3] - MIN_IMAGE_ANNOTATION_SIZE && rect[3] - MIN_IMAGE_ANNOTATION_SIZE || y > viewBox[1] && y || viewBox[1];
 				}
 				else if (action.dir.includes('t')) {
-					y = y < rect[1] + MIN_SIZE && rect[1] + MIN_SIZE || y < viewBox[3] && y || viewBox[3];
+					y = y < rect[1] + MIN_IMAGE_ANNOTATION_SIZE && rect[1] + MIN_IMAGE_ANNOTATION_SIZE || y < viewBox[3] && y || viewBox[3];
 				}
 
 				if (action.dir.includes('l')) {
@@ -1934,8 +1933,13 @@ class PDFView {
 						this._onUpdateAnnotations([{ id: action.annotation.id, position: action.position, sortIndex }]);
 					}
 					else if (action.type === 'image' && action.annotation) {
-						action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
-						this._onAddAnnotation(action.annotation);
+						let rect = action.annotation.position.rects[0];
+						let width = rect[2] - rect[0];
+						let height = rect[3] - rect[1];
+						if (width >= MIN_IMAGE_ANNOTATION_SIZE && height >= MIN_IMAGE_ANNOTATION_SIZE) {
+							action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
+							this._onAddAnnotation(action.annotation);
+						}
 					}
 					else if (action.type === 'ink' && action.annotation) {
 						let lastInkAnnotation = this._annotations.find(x => x.id === this._lastAddedInkAnnotationID);

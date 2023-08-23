@@ -8,7 +8,7 @@ import {
 	getRotationDegrees,
 	normalizeDegrees
 } from './lib/utilities';
-import { SELECTION_COLOR } from '../common/defines';
+import { MIN_IMAGE_ANNOTATION_SIZE, SELECTION_COLOR } from '../common/defines';
 import { getRectRotationOnText } from './selection';
 
 export default class Page {
@@ -320,6 +320,13 @@ export default class Page {
 		this.actualContext.strokeStyle = annotation.color;
 		this.actualContext.lineWidth = 3 * devicePixelRatio;
 		let rect = position.rects[0];
+		// Make image annotation more opaque if it's still too small
+		let pdfRect = annotation.position.rects[0];
+		let width = pdfRect[2] - pdfRect[0];
+		let height = pdfRect[3] - pdfRect[1];
+		if (width < MIN_IMAGE_ANNOTATION_SIZE || height < MIN_IMAGE_ANNOTATION_SIZE) {
+			this.actualContext.globalAlpha = 0.2;
+		}
 		this.actualContext.strokeRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
 		this.actualContext.restore();
 	}
