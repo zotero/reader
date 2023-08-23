@@ -2153,6 +2153,9 @@ class PDFView {
 		else if (key.toLowerCase() === 'r') {
 			event.stopPropagation();
 		}
+		else if (['n', 'j', 'p', 'k'].includes(key.toLowerCase())) {
+			event.stopPropagation();
+		}
 
 		if (key === 'Escape') {
 			this.action = null;
