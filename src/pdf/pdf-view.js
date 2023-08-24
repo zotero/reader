@@ -1828,6 +1828,7 @@ class PDFView {
 		else if (action.type === 'image') {
 			let r1 = this.pointerDownPosition.rects[0];
 			let r2 = originalPagePosition.rects[0];
+			let [left, bottom, right, top] = page.originalPage.viewport.viewBox;
 			action.annotation = {
 				type: 'image',
 				color: this._tool.color,
@@ -1835,10 +1836,10 @@ class PDFView {
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
 					rects: [[
-						Math.min(r1[0], r2[0]),
-						Math.min(r1[1], r2[1]),
-						Math.max(r1[0], r2[0]),
-						Math.max(r1[1], r2[1])
+						Math.max(Math.min(r1[0], r2[0]), left),
+						Math.max(Math.min(r1[1], r2[1]), bottom),
+						Math.min(Math.max(r1[0], r2[0]), right),
+						Math.min(Math.max(r1[1], r2[1]), top)
 					]]
 				}
 			};
@@ -1978,7 +1979,7 @@ class PDFView {
 						}
 					}
 				}
-				else if (!this.action.alreadySelectedAnnotations && this._tool.type !== 'eraser') {
+				else if (position && !this.action.alreadySelectedAnnotations && this._tool.type !== 'eraser') {
 					let selectableAnnotations = this.getSelectableAnnotations(position);
 					let lastSelectedAnnotationID = this._selectedAnnotationIDs.slice(-1)[0];
 					let annotation = selectableAnnotations.find(annotation => annotation.id === lastSelectedAnnotationID);
