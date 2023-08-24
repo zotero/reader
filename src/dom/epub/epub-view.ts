@@ -196,6 +196,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			styleScoper,
 		});
 		await sectionView.render(this.book.archive.request.bind(this.book.archive));
+		sectionView.body.lang = this.book.packaging.metadata.language;
 		this._sectionViews[section.index] = sectionView;
 	}
 
