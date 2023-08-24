@@ -206,11 +206,12 @@ function Toolbar({ onCommand }) {
 		if (!shift && !alt && mod) {
 			if (key === 'b') {
 				onCommand('bold');
+				event.preventDefault();
 			}
 			else if (key === 'i') {
 				onCommand('italic');
+				event.preventDefault();
 			}
-			event.preventDefault();
 		}
 	}
 
