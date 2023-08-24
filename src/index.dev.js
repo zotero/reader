@@ -57,8 +57,8 @@ async function createReader() {
 		onChangeViewState: function (state, primary) {
 			console.log('Set state', state, primary);
 		},
-		onClickTags(annotationID, event) {
-			alert('Opening Zotero tagbox popup');
+		onOpenTagsPopup(annotationID, left, top) {
+			alert(`Opening Zotero tagbox popup for id: ${annotationID}, left: ${left}, top: ${top}`);
 		},
 		onClosePopup(data) {
 			console.log('onClosePopup', data);

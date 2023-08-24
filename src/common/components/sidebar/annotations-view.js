@@ -155,8 +155,10 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	// Store the current state of selectedIDs and expansion state to avoid re-creating some functions below
 	const expansionStateRef = useRef();
 	const selectedIDsRef = useRef();
+	const annotationsRef = useRef();
 	expansionStateRef.current = expansionState;
 	selectedIDsRef.current = props.selectedIDs;
+	annotationsRef.current = props.annotations;
 
 	function scrollAnnotationIntoView(id) {
 		setTimeout(() => {
@@ -298,7 +300,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	let handleSidebarAnnotationSectionClick = useCallback((id, section, event) => {
 		let ctrl = event.ctrlKey || event.metaKey;
 		let shift = event.shiftKey;
-		let annotation = props.annotations.find(x => x.id === id);
+		let annotation = annotationsRef.current.find(x => x.id === id);
 		if (section === 'tags' && !ctrl && !shift && !(props.readOnly || annotation.readOnly)) {
 			let rect = event.target.closest('.tags').getBoundingClientRect();
 			return props.onOpenTagsPopup(id, rect.left, rect.top);
