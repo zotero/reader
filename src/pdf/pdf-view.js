@@ -1613,15 +1613,16 @@ class PDFView {
 		}
 		let originalPagePosition = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
 		let position = this.pointerEventToPosition(event);
-		let page = position && this.getPageByIndex(position.pageIndex);
-		if (!position) {
-			if (action.type === 'moveAndDrag') {
-				action.position = null;
-				action.triggered = false;
-			}
+		if (!position && action.type === 'moveAndDrag') {
+			action.position = null;
+			action.triggered = false;
 			this._render();
 			return;
 		}
+		if (!position) {
+			position = originalPagePosition;
+		}
+		let page = position && this.getPageByIndex(position.pageIndex);
 		if (action.type === 'updateAnnotationRange') {
 			action.selectionRanges = getModifiedSelectionRanges(this._pdfPages, action.selectionRanges, position);
 			let { sortIndex, position: _position, text } = this._getAnnotationFromSelectionRanges(action.selectionRanges);
