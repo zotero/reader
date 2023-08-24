@@ -156,6 +156,11 @@ replaced-html {
 }
 
 replaced-body {
+    /* https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height */
+    /* https://github.com/readium/readium-css/blob/583011453612e6f695056ab6c086a2c4f4cac9c0/css/src/modules/ReadiumCSS-base.css#L65 */
+    --content-line-height-compensation: 1;
+    --content-line-height: calc((1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667)) * var(--content-line-height-compensation));
+
 	display: block;
 	margin-left: 0 !important;
 	margin-right: 0 !important;
@@ -163,14 +168,40 @@ replaced-body {
 
 	font-family: var(--content-font-family, "Georgia"), serif;
 	font-size: calc(var(--content-scale) * 13pt) !important;
-	line-height: 1.4;
+	line-height: var(--content-line-height);
 	text-align: justify;
+    text-rendering: optimizeLegibility;
+}
+
+replaced-body:lang(bn),
+replaced-body:lang(km),
+replaced-body:lang(ml),
+replaced-body:lang(ta),
+replaced-body:lang(th) {
+    --content-line-height-compensation: 1.067;
+}
+
+replaced-body:lang(he),
+replaced-body:lang(hi),
+replaced-body:lang(kn),
+replaced-body:lang(pa) {
+    --content-line-height-compensation: 1.1;
+}
+
+replaced-body:lang(am),
+replaced-body:lang(chr),
+replaced-body:lang(gu),
+replaced-body:lang(ja),
+replaced-body:lang(ko),
+replaced-body:lang(or),
+replaced-body:lang(si),
+replaced-body:lang(zh) {
+    --content-line-height-compensation: 1.167;
 }
 
 replaced-body p {
 	/* Really enforce some of our formatting choices on body paragraphs */
 	font-family: var(--content-font-family, "Georgia"), serif !important;
-	line-height: 1.4 !important;
 
     widows: 2;
     orphans: 2;
