@@ -34,7 +34,8 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
-	let pointerEventsSuppressed = isResizing || isPointerDownOutside;
+	let [isAltDown, setAltDown] = useState(false);
+	let pointerEventsSuppressed = isResizing || isPointerDownOutside || isAltDown;
 
 	useEffect(() => {
 		let win = iframe.contentWindow;
@@ -43,22 +44,44 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		}
 
 		let handleWindowPointerDown = (event: PointerEvent) => {
+			setAltDown(event.altKey);
 			if (event.button == 0 && !(event.target as Element).closest('.annotation-container')) {
 				setPointerDownOutside(true);
 			}
 		};
 
 		let handleWindowPointerUp = (event: PointerEvent) => {
+			setAltDown(event.altKey);
 			if (event.button == 0) {
 				setPointerDownOutside(false);
 			}
 		};
 
-		win.addEventListener('pointerdown', handleWindowPointerDown);
-		win.addEventListener('pointerup', handleWindowPointerUp);
+		let handleWindowKeyDownCapture = (event: KeyboardEvent) => {
+			if (event.key == 'Alt') {
+				setAltDown(true);
+			}
+		};
+
+		let handleWindowKeyUpCapture = (event: KeyboardEvent) => {
+			if (event.key == 'Alt') {
+				setAltDown(false);
+			}
+		};
+
+		win.addEventListener('pointerdown', handleWindowPointerDown, { passive: true });
+		win.addEventListener('pointerup', handleWindowPointerUp, { passive: true });
+		// Listen for Alt on the iframe window and the root window, because the iframe window doesn't get the event
+		// when an annotation text field is focused
+		win.addEventListener('keydown', handleWindowKeyDownCapture, { capture: true, passive: true });
+		win.addEventListener('keyup', handleWindowKeyUpCapture, { capture: true, passive: true });
+		window.addEventListener('keydown', handleWindowKeyDownCapture, { capture: true, passive: true });
+		window.addEventListener('keyup', handleWindowKeyUpCapture, { capture: true, passive: true });
 		return () => {
 			win!.removeEventListener('pointerdown', handleWindowPointerDown);
 			win!.removeEventListener('pointerup', handleWindowPointerUp);
+			win!.removeEventListener('keydown', handleWindowKeyDownCapture, { capture: true });
+			win!.removeEventListener('keyup', handleWindowKeyUpCapture, { capture: true });
 		};
 	}, [iframe.contentWindow]);
 
@@ -293,13 +316,14 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					/>
 				</foreignObject>
 			))}
-			{(!pointerEventsSuppressed || isResizing) && selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint() && (
+			{selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint() && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...rects.values()]}
 					onResizeStart={handleResizeStart}
 					onResizeEnd={handleResizeEnd}
 					onResize={handleResize}
+					pointerEventsSuppressed={pointerEventsSuppressed}
 				/>
 			)}
 		</g>
@@ -482,7 +506,7 @@ type RangeSelectionBorderProps = {
 const Resizer: React.FC<ResizerProps> = (props) => {
 	let WIDTH = 3;
 
-	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart } = props;
+	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart, pointerEventsSuppressed } = props;
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	let [pointerCapture, setPointerCapture] = useState<{ elem: Element, pointerId: number } | null>(null);
 
@@ -607,7 +631,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			width={WIDTH}
 			height={topLeftRect.height}
 			fill={annotation.color}
-			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
+			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, true)}
 			onPointerUp={event => handlePointerUp(event)}
 			onPointerMove={resizingSide == 'start' ? (event => handlePointerMove(event, !rtl)) : undefined}
@@ -618,7 +642,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			width={WIDTH}
 			height={bottomRightRect.height}
 			fill={annotation.color}
-			style={{ pointerEvents: 'all', cursor: 'col-resize' }}
+			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'all', cursor: 'col-resize' }}
 			onPointerDown={event => handlePointerDown(event, false)}
 			onPointerUp={event => handlePointerUp(event)}
 			onPointerMove={resizingSide == 'end' ? (event => handlePointerMove(event, rtl)) : undefined}
@@ -632,6 +656,7 @@ type ResizerProps = {
 	onResizeStart: (annotation: DisplayedAnnotation) => void;
 	onResizeEnd: (annotation: DisplayedAnnotation, cancelled: boolean) => void;
 	onResize: (annotation: DisplayedAnnotation, range: Range) => void;
+	pointerEventsSuppressed: boolean;
 };
 
 let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref) => {
