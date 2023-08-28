@@ -55,7 +55,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	container.append(...sectionDoc.childNodes);
 
 	// Add table-like class to elements matching selectors that set display: table or display: inline-table
-	for (let selector of styleScoper.tableSelectors) {
+	for (let selector of [...styleScoper.tableSelectors, 'table', 'mtable']) {
 		try {
 			for (let table of container.querySelectorAll(selector)) {
 				table.classList.add('table-like');
