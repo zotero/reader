@@ -10,7 +10,7 @@ import {
 import { PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
-	static readonly VERSION = 5;
+	static readonly VERSION = 6;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
@@ -192,6 +192,11 @@ const MATCHERS: Matcher[] = [
 	{
 		selector: 'a[id*="page" i]:empty',
 		extract: el => el.id.replace(/page[-_]?/i, '').replace(/^(.*_)+/, '')
+	},
+
+	{
+		selector: '[*|type="pagebreak"]',
+		extract: el => el.getAttribute('title') ?? undefined
 	}
 ];
 
