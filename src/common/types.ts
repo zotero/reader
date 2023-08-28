@@ -124,7 +124,9 @@ export type SelectionPopupParams<A extends Annotation = Annotation> = {
 
 export type OverlayPopupParams = {
 	type: string;
-	url: string;
+	url?: string;
+	css?: string;
+	content?: string;
 	rect: ArrayRect;
 	ref: Node;
 };

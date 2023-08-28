@@ -444,10 +444,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handlePointerOver(event: PointerEvent) {
 		let target = event.target as Element;
 		const link = target.closest('a');
-		if (link && this._isExternalLink(link)) {
-			this._overlayPopupDelayer.open(link, () => {
-				this._openExternalLinkOverlayPopup(link);
-			});
+		if (link) {
+			if (this._isExternalLink(link)) {
+				this._overlayPopupDelayer.open(link, () => {
+					this._openExternalLinkOverlayPopup(link);
+				});
+			}
+			else {
+				this._handlePointerOverInternalLink(link);
+			}
 		}
 		else {
 			this._overlayPopupDelayer.close(() => {
@@ -462,6 +467,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._renderAnnotations();
 			}
 		}
+	}
+
+	protected _handlePointerOverInternalLink(link: HTMLAnchorElement) {
+		// Do nothing by default
 	}
 
 	protected _handleDragEnter(event: DragEvent) {

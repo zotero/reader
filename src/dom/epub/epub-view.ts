@@ -1,9 +1,11 @@
 import {
 	AnnotationType,
+	ArrayRect,
 	FindState,
 	NavLocation,
 	NewAnnotation,
 	OutlineItem,
+	OverlayPopupParams,
 	ViewStats,
 	WADMAnnotation
 } from "../../common/types";
@@ -31,7 +33,10 @@ import DOMView, {
 } from "../common/dom-view";
 import SectionView from "./section-view";
 import Section from "epubjs/types/section";
-import { closestElement } from "../common/lib/nodes";
+import {
+	closestElement,
+	getContainingBlock
+} from "../common/lib/nodes";
 import { StyleScoper } from "./lib/sanitize-and-render";
 import PageMapping from "./lib/page-mapping";
 import {
@@ -400,17 +405,48 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._handleViewUpdate();
 	}
 
-	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
+	protected _getInternalLinkHref(link: HTMLAnchorElement) {
+		if (this._isExternalLink(link)) {
+			return null;
+		}
 		let href = link.getAttribute('href')!;
 		let section = this._sectionViews.find(view => view.container.contains(link))?.section;
 		if (!section) {
-			return;
+			return null;
 		}
 		// This is a hack - we're using the URL constructor to resolve the relative path based on the section's
 		// canonical URL, but it'll error without a host. So give it one!
 		let url = new URL(href, new URL(section.canonical, 'https://www.example.com/'));
-		href = url.pathname + url.hash;
-		this.navigate({ href: this.book.path.relative(href) });
+		return this.book.path.relative(url.pathname + url.hash);
+	}
+
+	protected override _handlePointerOverInternalLink(link: HTMLAnchorElement) {
+		let element = this._getFootnoteTargetElement(link);
+		if (element) {
+			this._overlayPopupDelayer.open(link, () => {
+				this._openFootnoteOverlayPopup(link, element!);
+			});
+		}
+		else {
+			this._overlayPopupDelayer.close(() => {
+				this._options.onSetOverlayPopup();
+			});
+		}
+	}
+
+	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
+		// If link goes to footnote wrapped in an <aside>, open it in a popup instead of navigating
+		let element = this._getFootnoteTargetElement(link);
+		if (element && element.closest('aside')) {
+			this._openFootnoteOverlayPopup(link, element!);
+			return;
+		}
+
+		let href = this._getInternalLinkHref(link);
+		if (!href) {
+			return;
+		}
+		this.navigate({ href });
 	}
 
 	protected override _handleKeyDown(event: KeyboardEvent) {
@@ -495,6 +531,152 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (this._find) {
 			this._find.handleViewUpdate();
 		}
+	}
+
+	protected _openFootnoteOverlayPopup(link: HTMLAnchorElement, element: Element) {
+		let doc = document.implementation.createHTMLDocument();
+		let cspMeta = this._iframeDocument.createElement('meta');
+		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
+		cspMeta.setAttribute('content', this._getCSP());
+		doc.head.prepend(cspMeta);
+
+		let container = document.createElement('div');
+
+		let current = element;
+		let currentClone = current.cloneNode(true) as HTMLElement;
+		while (!current.classList.contains('section-container')) {
+			let parent = current.parentElement;
+			if (!parent) {
+				break;
+			}
+			let parentClone = parent.cloneNode(false) as HTMLElement;
+			parentClone.appendChild(currentClone);
+			currentClone = parentClone;
+			current = parent;
+		}
+		container.appendChild(currentClone);
+
+		container.querySelectorAll('a').forEach((link) => {
+			link.removeAttribute('href');
+		});
+
+		doc.body.append(container);
+		let content = new XMLSerializer().serializeToString(doc);
+
+		let range = link.ownerDocument.createRange();
+		range.selectNode(link);
+		let domRect = range.getBoundingClientRect();
+		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
+		let css = '';
+		for (let sheet of [...this._iframeDocument.styleSheets, ...this._iframeDocument.adoptedStyleSheets]) {
+			for (let rule of sheet.cssRules) {
+				css += rule.cssText + '\n\n';
+			}
+		}
+		css += `
+			:root {
+				--content-scale: ${this.scale};
+				--content-font-family: ${this._iframeDocument.documentElement.style.getPropertyValue('--content-font-family')};
+			}
+		`;
+		let overlayPopup = {
+			type: 'footnote',
+			content,
+			css,
+			rect,
+			ref: link
+		} satisfies OverlayPopupParams;
+		this._options.onSetOverlayPopup(overlayPopup);
+	}
+
+	protected _isFootnoteLink(link: HTMLAnchorElement, target: Element): boolean {
+		// Modeled on Calibre's heuristic
+		// https://github.com/kovidgoyal/calibre/blob/87f4c08c16b07058dd25733eb5c30022246a66f2/src/pyj/read_book/footnotes.pyj#L32
+
+		if (link.getAttributeNS('http://www.idpf.org/2007/ops', 'type') === 'noteref') {
+			return true;
+		}
+		let roles = link.role?.split(' ') ?? [];
+		if (roles.includes('doc-noteref') || roles.includes('doc-biblioref') || roles.includes('doc-glossref')) {
+			return true;
+		}
+		if (roles.includes('doc-link')) {
+			return false;
+		}
+
+		// Check if element has super/subscript alignment
+		let elem: HTMLElement | null = link;
+		let remainingDepth = 3;
+		while (elem && remainingDepth > 0) {
+			let style = getComputedStyle(elem);
+			if (!['inline', 'inline-block'].includes(style.display)) {
+				break;
+			}
+			if (['sub', 'super', 'top', 'bottom'].includes(style.verticalAlign)) {
+				return true;
+			}
+
+			elem = elem.parentElement;
+			remainingDepth--;
+		}
+
+		// Check if it has a single child with super/subscript alignment
+		if (link.innerText.trim() && link.children.length === 1) {
+			let style = getComputedStyle(link.children[0]);
+			if (['inline', 'inline-block'].includes(style.display)
+					&& ['sub', 'super', 'top', 'bottom'].includes(style.verticalAlign)) {
+				return true;
+			}
+		}
+
+		// Check if it has a link back to the original link
+		let sectionIndex = link.closest('[data-section-index]')?.getAttribute('data-section-index');
+		let section = sectionIndex && this.book.spine.get(sectionIndex);
+		if (!section) {
+			return false;
+		}
+		for (let linkInTarget of target.querySelectorAll('a')) {
+			let linkInTargetHref = this._getInternalLinkHref(linkInTarget);
+			if (!linkInTargetHref) {
+				continue;
+			}
+			let [pathname, hash] = linkInTargetHref.split('#');
+			if (pathname === section.href && hash === link.id) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	protected _getFootnoteTargetElement(link: HTMLAnchorElement) {
+		let href = this._getInternalLinkHref(link);
+		if (!href) {
+			return null;
+		}
+		let [pathname, hash] = href.split('#');
+		if (!pathname || !hash) {
+			return null;
+		}
+		let section = this.book.spine.get(pathname);
+		if (!section) {
+			return null;
+		}
+		let target = this._sectionViews[section.index].container
+			.querySelector('[id="' + CSS.escape(hash) + '"]');
+		if (!target) {
+			return null;
+		}
+
+		let epubType = target.getAttributeNS('http://www.idpf.org/2007/ops', 'type');
+		if (!epubType || !['footnote', 'rearnote', 'note'].includes(epubType)) {
+			target = getContainingBlock(target) || target;
+		}
+
+		if (!this._isFootnoteLink(link, target)) {
+			return null;
+		}
+		return target;
 	}
 
 	// ***
@@ -678,7 +860,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				return;
 			}
 			let target = hash && this._sectionViews[section.index].container
-				.querySelector('[id="' + hash.replace(/"/g, '\\"') + '"]');
+				.querySelector('[id="' + CSS.escape(hash) + '"]');
 			if (target) {
 				this.flow.scrollIntoView(target as HTMLElement, options);
 			}

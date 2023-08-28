@@ -77,5 +77,15 @@
 	padding: $selection-popup-padding;
 }
 
+.footnote-popup {
+	&.loading {
+		visibility: hidden;
+	}
+
+	iframe {
+		max-height: 300px;
+	}
+}
+
 
 

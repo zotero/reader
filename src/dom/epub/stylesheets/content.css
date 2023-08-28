@@ -220,6 +220,20 @@ replaced-body sup {
 	top: -0.5em !important;
 }
 
+body:not(.footnote-popup-content) replaced-body aside[epub|type="footnote"],
+body:not(.footnote-popup-content) replaced-body aside[epub|type="rearnote"],
+body:not(.footnote-popup-content) replaced-body aside[epub|type="note"] {
+    display: none;
+}
+
+body.footnote-popup-content * {
+    list-style-type: none !important;
+}
+
+body.footnote-popup-content .section-container {
+    padding: 16px;
+}
+
 replaced-body, replaced-body * {
     /* Work around a bug in the mapped_hyph crate that causes a segfault when viewing some EPUBs
        (This is a shame! We want hyphens!) */
