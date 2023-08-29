@@ -82,7 +82,6 @@ abstract class AbstractFlow implements Flow {
 		this._onViewUpdate = options.onViewUpdate;
 
 		let intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
-			root: this._iframe.contentDocument!.body,
 			threshold: [0, 1]
 		});
 		for (let range of this._view.pageMapping.tree.keys()) {
