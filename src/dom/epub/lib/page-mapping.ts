@@ -10,7 +10,7 @@ import {
 import { PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
-	static readonly VERSION = 6;
+	static readonly VERSION = 7;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
@@ -42,9 +42,7 @@ class PageMapping {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
-		let consecutiveSectionsWithoutMatches = 0;
 		for (let view of views) {
-			let matchesFound = false;
 			for (let matcher of MATCHERS) {
 				let elems = view.container.querySelectorAll(matcher.selector);
 				let successes = 0;
@@ -60,16 +58,8 @@ class PageMapping {
 					successes++;
 				}
 				if (successes) {
-					matchesFound = true;
 					console.log(`Found ${successes} physical page numbers using selector '${matcher.selector}'`);
 				}
-			}
-			if (matchesFound) {
-				consecutiveSectionsWithoutMatches = 0;
-			}
-			else if (++consecutiveSectionsWithoutMatches >= 3) {
-				console.log('Aborting physical page mapping generation after 3 sections without matches');
-				break;
 			}
 		}
 		console.log(`Added ${this.tree.length} physical page mappings in ${
