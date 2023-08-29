@@ -10,7 +10,7 @@ import {
 import { PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
-	static readonly VERSION = 7;
+	static readonly VERSION = 8;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
@@ -180,7 +180,7 @@ type Matcher = {
 
 const MATCHERS: Matcher[] = [
 	{
-		selector: 'a[id*="page" i]:empty',
+		selector: '[id*="page" i]:empty',
 		extract: el => el.id.replace(/page[-_]?/i, '').replace(/^(.*_)+/, '')
 	},
 
