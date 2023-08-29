@@ -38,6 +38,7 @@
 				.toggle {
 					height: 1.25rem;
 					width: 9px;
+					flex-shrink: 0;
 					color: rgba(255,255,255,.5);
 					display: flex;
 					align-items: center;
