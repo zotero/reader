@@ -172,7 +172,7 @@
 			border: $overlay-btn-hover-border;
 		}
 
-		&:active:not(:disabled) {
+		&:active:not(:disabled), &.active:not(:disabled) {
 			background: $gradient-btn-active-bg;
 			border: $overlay-btn-active-border;
 		}

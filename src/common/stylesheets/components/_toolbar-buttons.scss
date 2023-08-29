@@ -43,8 +43,7 @@
 		border-color: $toolbar-btn-border-hover-color;
 	}
 
-	&:active,
-	&.active {
+	&:active, &.active {
 		background: $toolbar-btn-active-bg;
 		border-color: $toolbar-btn-border-active-color;
 	}

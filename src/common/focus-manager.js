@@ -1,11 +1,11 @@
-import { pressedNextKey, pressedPreviousKey } from './lib/utilities';
+import { isFirefox, pressedNextKey, pressedPreviousKey } from './lib/utilities';
 
 export class FocusManager {
 	constructor(options) {
 		this._reader = options.reader;
 		this._onDeselectAnnotations = options.onDeselectAnnotations;
 		window.addEventListener('focusin', this._handleFocus.bind(this));
-		window.addEventListener('mousedown', this._handleMouseDown.bind(this));
+		window.addEventListener('pointerdown', this._handlePointerDown.bind(this));
 		window.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		window.addEventListener('copy', this._handleCopy.bind(this), true);
 
@@ -16,6 +16,10 @@ export class FocusManager {
 				this._lastActiveElement = document.activeElement;
 			}
 		}, 100);
+
+		if (isFirefox) {
+			this._initFirefoxActivePseudoClassFix();
+		}
 	}
 
 	restoreFocus() {
@@ -24,6 +28,24 @@ export class FocusManager {
 		if (selectedAnnotationIDs.length > 1) {
 			this._reader._updateState({ selectedAnnotationIDs });
 		}
+	}
+
+	_initFirefoxActivePseudoClassFix() {
+		// Work around :active pseudo class being prevented by event.preventDefault() on Firefox.
+		window.addEventListener('pointerdown', (event) => {
+			let button = event.target.closest('button');
+			if (button) {
+				button.classList.add('active');
+			}
+		});
+		window.addEventListener('pointerup', () => {
+			document.querySelectorAll('button.active').forEach(x => x.classList.remove('active'));
+		});
+		window.addEventListener('pointerout', (event) => {
+			if (event.buttons === 0) {
+				document.querySelectorAll('button.active').forEach(x => x.classList.remove('active'));
+			}
+		});
 	}
 
 	_handleFocus(event) {
@@ -45,9 +67,10 @@ export class FocusManager {
 		}
 	}
 
-	_handleMouseDown(event) {
+	_handlePointerDown(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('input, textarea, button, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar')) {
+			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar')) {
+				// Note: Doing event.preventDefault() also prevents :active class on Firefox
 				event.preventDefault();
 			}
 			else if (event.target.closest('.annotation') && event.target.closest('.more, .page, .tags')) {

@@ -47,8 +47,7 @@
 				background: $toolbar-sidebar-btn-hover-bg;
 			}
 
-			&:active,
-			&.toggled {
+			&:active, &.active, &.toggled {
 				background: $toolbar-sidebar-btn-active-bg;
 			}
 

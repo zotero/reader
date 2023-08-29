@@ -153,7 +153,7 @@
 					border: 1px solid rgb(109, 149, 224);
 				}
 
-				&:active {
+				&:active, &.active {
 					color: white;
 					background: rgb(89, 139, 236);
 				}
@@ -200,7 +200,7 @@
 					border: 1px solid rgb(109, 149, 224);
 				}
 
-				&:active {
+				&:active, &.active {
 					color: white;
 					background: rgb(89, 139, 236);
 				}

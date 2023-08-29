@@ -75,7 +75,7 @@
 			background: image-url("darwin/#{$button}-end@2x.png") no-repeat right top / auto $height;
 		}
 
-		&:active {
+		&:active, &.active {
 			background: image-url("darwin/#{$button}-end-pressed.png") no-repeat right top;
 
 			@include retina {
@@ -105,7 +105,7 @@
 					background: image-url("darwin/#{$button}-end-active@2x.png") no-repeat right top / auto $height;
 				}
 
-				@include state(".toolbarButton:active") {
+				@include state(".toolbarButton:active", ".toolbarButton.active") {
 					background: image-url("darwin/#{$button}-end-active-pressed.png") no-repeat right top;
 
 					@include retina {
@@ -172,7 +172,7 @@
 
 		// Active
 
-		@include state(".toolbarButton:active") {
+		@include state(".toolbarButton:active", ".toolbarButton.active") {
 			background: image-url("darwin/#{$button}-start-pressed.png") no-repeat center top;
 
 			@include retina {
@@ -189,7 +189,7 @@
 				background: image-url("darwin/#{$button}-start-active@2x.png") no-repeat center top / auto $height;
 			}
 
-			@include state(".toolbarButton:active") {
+			@include state(".toolbarButton:active", ".toolbarButton.active") {
 				background: image-url("darwin/#{$button}-start-active-pressed.png") no-repeat center top;
 
 				@include retina {
@@ -200,7 +200,7 @@
 
 		// Default after toggled
 
-		@include state(".toolbarButton.toggled + .toolbarButton:not(:active)") {
+		@include state(".toolbarButton.toggled + .toolbarButton:not(:active)", ".toolbarButton.toggled + .toolbarButton:not(.active)") {
 			background: image-url("darwin/#{$button}-start.png") no-repeat center top;
 
 			@include retina {
@@ -237,7 +237,7 @@
 				background: image-url("darwin/#{$button}-start@2x.png") no-repeat left top / auto $height;
 			}
 
-			@include state(".toolbarButton:active") {
+			@include state(".toolbarButton:active", ".toolbarButton.active") {
 				background: image-url("darwin/#{$button}-start-pressed.png") no-repeat left top;
 
 				@include retina {
@@ -252,7 +252,7 @@
 					background: image-url("darwin/#{$button}-start-active@2x.png") no-repeat left top / auto $height;
 				}
 
-				@include state(".toolbarButton:active") {
+				@include state(".toolbarButton:active", ".toolbarButton.active") {
 					background: image-url("darwin/#{$button}-start-active-pressed.png") no-repeat left top;
 
 					@include retina {

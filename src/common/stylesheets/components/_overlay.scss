@@ -178,7 +178,7 @@
 				border: $overlay-btn-hover-border;
 			}
 
-			&:active:not(:disabled) {
+			&:active:not(:disabled), &.active:not(:disabled) {
 				background: $overlay-btn-active-bg;
 				border: $overlay-btn-active-border;
 			}
@@ -194,7 +194,7 @@
 			background: $submit-btn-bg;
 		}
 
-		button.submit:active {
+		button.submit:active, button.submit.active {
 			background: $gradient-btn-active-bg;
 			border: $overlay-btn-active-border;
 		}
@@ -350,7 +350,7 @@
 				border: $overlay-btn-hover-border;
 			}
 
-			&:active:not(:disabled) {
+			&:active:not(:disabled), &.active:not(:disabled) {
 				background: $gradient-btn-active-bg;
 				border: $overlay-btn-active-border;
 			}

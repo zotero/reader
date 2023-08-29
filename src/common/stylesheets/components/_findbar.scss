@@ -83,7 +83,7 @@
 		padding: $findbar-btn-padding;
 		background: $findbar-btn-bg;
 
-		&:active {
+		&:active, &.active,  {
 			background: $findbar-btn-active-bg;
 		}
 	}
@@ -140,7 +140,7 @@
 				background-color: $findbar-close-btn-hover-bg;
 			}
 
-			&:active {
+			&:active, &.active {
 				background-color: $findbar-close-btn-active-bg;
 			}
 		}
