@@ -221,10 +221,20 @@ export class KeyboardManager {
 
 	_handlePointerDown(event) {
 		this.pointerDown = true;
+
+		let ctrl = event.ctrlKey;
+		let cmd = event.metaKey && isMac();
+		this.mod = ctrl || cmd;
+		this.shift = event.shiftKey;
 	}
 
 	_handlePointerUp(event) {
 		this.pointerDown = false;
+
+		let ctrl = event.ctrlKey;
+		let cmd = event.metaKey && isMac();
+		this.mod = ctrl || cmd;
+		this.shift = event.shiftKey;
 	}
 
 	handleViewKeyDown(event) {
