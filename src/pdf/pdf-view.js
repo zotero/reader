@@ -1954,7 +1954,9 @@ class PDFView {
 							dist = distanceBetweenRects(r1, r2);
 						}
 
-						if (lastInkAnnotation && Date.now() - Date.parse(lastInkAnnotation.dateModified) < 10 * 1000 && dist < 50) {
+						if (lastInkAnnotation
+							&& lastInkAnnotation.position.pageIndex === action.annotation.position.pageIndex
+							&& Date.now() - Date.parse(lastInkAnnotation.dateModified) < 10 * 1000 && dist < 50) {
 							let { id, position } = lastInkAnnotation;
 							let paths = lastInkAnnotation.position.paths.slice();
 							paths.push(action.annotation.position.paths[0]);
