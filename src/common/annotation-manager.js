@@ -28,7 +28,7 @@ class AnnotationManager {
 			}
 			// Image is sent in instant mode only
 			let annotations = this._unsavedAnnotations.map(x => ({ ...x, image: undefined }));
-			this._onSave(annotations);
+			this._onSave(annotations.map(x => JSON.parse(JSON.stringify(x))));
 
 			for (let annotation of this._unsavedAnnotations) {
 				delete annotation.onlyTextOrComment;
@@ -209,7 +209,7 @@ class AnnotationManager {
 		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => x.id !== annotation.id);
 
 		if (instant) {
-			this._onSave([annotation]);
+			this._onSave([JSON.parse(JSON.stringify(annotation))]);
 		}
 		else {
 			this._unsavedAnnotations.push(annotation);
