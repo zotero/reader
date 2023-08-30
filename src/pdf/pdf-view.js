@@ -49,9 +49,9 @@ import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
 import { measureTextAnnotationDimensions } from './lib/text-annotation';
 import {
-	addPointToPath,
 	applyTransformationMatrixToInkPosition,
-	eraseInk
+	eraseInk,
+	smoothPath
 } from './lib/path';
 import { History } from './lib/history';
 
@@ -1847,9 +1847,7 @@ class PDFView {
 		}
 		else if (action.type === 'ink') {
 			let point = originalPagePosition.rects[0].slice(0, 2);
-			point = addPointToPath(action.annotation.position.paths[0], point);
-			point = point.map(value => parseFloat(value.toFixed(3)));
-			action.annotation.position.paths[0] = point;
+			action.annotation.position.paths[0].push(...point);
 			// Already triggered on pointerdown
 		}
 		else if (action.type === 'erase') {
@@ -1945,7 +1943,10 @@ class PDFView {
 					}
 					else if (action.type === 'ink' && action.annotation) {
 						let lastInkAnnotation = this._annotations.find(x => x.id === this._lastAddedInkAnnotationID);
-
+						let path = action.annotation.position.paths[0];
+						path = smoothPath(path);
+						path = path.map(value => parseFloat(value.toFixed(3)));
+						action.annotation.position.paths[0] = path;
 						let dist;
 						if (lastInkAnnotation) {
 							let r1 = getPositionBoundingRect(lastInkAnnotation.position);

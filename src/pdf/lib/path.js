@@ -1,4 +1,3 @@
-
 // Calculates the Euclidean distance between two points.
 function euclideanDistance(p1, p2) {
 	const dx = p1[0] - p2[0];
@@ -6,19 +5,9 @@ function euclideanDistance(p1, p2) {
 	return Math.sqrt(dx * dx + dy * dy);
 }
 
-// Returns a point between two given points with a specified ratio.
-// Rounds the coordinates to a maximum of 3 decimal places.
-function interpolatePoint(p1, p2, ratio) {
-	return [
-		parseFloat((p1[0] + (p2[0] - p1[0]) * ratio).toFixed(3)),
-		parseFloat((p1[1] + (p2[1] - p1[1]) * ratio).toFixed(3))
-	];
-}
-
 // Filters out points that are too close.
-export function filterClosePoints(points, minThreshold) {
+function filterClosePoints(points, minThreshold) {
 	const filteredPoints = [points[0], points[1]];
-
 	for (let i = 2; i < points.length; i += 2) {
 		const prevPoint = [filteredPoints[filteredPoints.length - 2], filteredPoints[filteredPoints.length - 1]];
 		const currentPoint = [points[i], points[i + 1]];
@@ -28,87 +17,35 @@ export function filterClosePoints(points, minThreshold) {
 			filteredPoints.push(currentPoint[0], currentPoint[1]);
 		}
 	}
-
 	return filteredPoints;
 }
 
-// Inserts additional points if the distance between two consecutive points
-// is larger than the maxThreshold value.
-export function insertMissingPoints(points, maxThreshold) {
-	const processedPoints = [points[0], points[1]];
-
-	for (let i = 2; i < points.length; i += 2) {
-		const prevPoint = [processedPoints[processedPoints.length - 2], processedPoints[processedPoints.length - 1]];
-		const currentPoint = [points[i], points[i + 1]];
-		const distance = euclideanDistance(prevPoint, currentPoint);
-
-		if (distance > maxThreshold) {
-			const numPointsToInsert = Math.ceil(distance / maxThreshold) - 1;
-			for (let j = 0; j < numPointsToInsert; j++) {
-				const ratio = (j + 1) / (numPointsToInsert + 1);
-				const interpolatedPoint = interpolatePoint(prevPoint, currentPoint, ratio);
-				processedPoints.push(interpolatedPoint[0], interpolatedPoint[1]);
-			}
-		}
-		processedPoints.push(currentPoint[0], currentPoint[1]);
+function chaikinSmoothing(points) {
+	if (points.length < 4) return points; // Not enough points to smooth
+	const smoothedPoints = [points[0], points[1]]; // Keep the first point
+	for (let i = 0; i < points.length - 2; i += 2) {
+		const x1 = points[i];
+		const y1 = points[i + 1];
+		const x2 = points[i + 2];
+		const y2 = points[i + 3];
+		// Calculate 1/4 and 3/4 points
+		const Q = [0.75 * x1 + 0.25 * x2, 0.75 * y1 + 0.25 * y2];
+		const R = [0.25 * x1 + 0.75 * x2, 0.25 * y1 + 0.75 * y2];
+		// Push the points to the new array
+		smoothedPoints.push(Q[0], Q[1], R[0], R[1]);
 	}
-
-	return processedPoints;
-}
-
-// Smoothens path edges using the Catmull-Rom Spline technique.
-export function catmullRomSpline(points, segments) {
-	function calculatePoint(p0, p1, p2, p3, t) {
-		const t2 = t * t;
-		const t3 = t2 * t;
-
-		const x = 0.5 * ((2 * p1[0]) +
-			(-p0[0] + p2[0]) * t +
-			(2 * p0[0] - 5 * p1[0] + 4 * p2[0] - p3[0]) * t2 +
-			(-p0[0] + 3 * p1[0] - 3 * p2[0] + p3[0]) * t3);
-		const y = 0.5 * ((2 * p1[1]) +
-			(-p0[1] + p2[1]) * t +
-			(2 * p0[1] - 5 * p1[1] + 4 * p2[1] - p3[1]) * t2 +
-			(-p0[1] + 3 * p1[1] - 3 * p2[1] + p3[1]) * t3);
-
-		return [x, y];
-	}
-
-	const smoothedPoints = [];
-	const numPoints = points.length / 2;
-
-	for (let i = 0; i < numPoints - 1; i++) {
-		const p0 = (i === 0) ? [points[0], points[1]] : [points[(i - 1) * 2], points[(i - 1) * 2 + 1]];
-		const p1 = [points[i * 2], points[i * 2 + 1]];
-		const p2 = [points[(i + 1) * 2], points[(i + 1) * 2 + 1]];
-		const p3 = (i === numPoints - 2) ? [points[numPoints * 2 - 2], points[numPoints * 2 - 1]] : [points[(i + 2) * 2], points[(i + 2) * 2 + 1]];
-
-		for (let j = 0; j < segments; j++) {
-			const t = j / segments;
-			const point = calculatePoint(p0, p1, p2, p3, t);
-			smoothedPoints.push(point[0], point[1]);
-		}
-	}
-
-	// Add the last point
-	smoothedPoints.push(points[numPoints * 2 - 2], points[numPoints * 2 - 1]);
-
+	// Keep the last point
+	smoothedPoints.push(points[points.length - 2], points[points.length - 1]);
 	return smoothedPoints;
 }
 
-export function addPointToPath(path, newPoint) {
-	const minThreshold = 5;
-	const maxThreshold = 20;
-	const segments = 10;
-	// Insert missing points
-	const interpolatedPath = insertMissingPoints(path, maxThreshold);
-	// Smooth the path using Catmull-Rom Spline
-	const smoothedPath = catmullRomSpline(interpolatedPath, segments);
-	// Filter close points
-	const filteredPath = filterClosePoints(smoothedPath, minThreshold);
-	// Add the new point to the path
-	filteredPath.push(newPoint[0], newPoint[1]);
-	return filteredPath;
+export function smoothPath(points) {
+	let iterations = 2;
+	for (let i = 0; i < iterations; i++) {
+		points = chaikinSmoothing(points);
+	}
+	points = filterClosePoints(points, 1);
+	return points;
 }
 
 export function applyTransformationMatrixToInkPosition(matrix, position) {
