@@ -86,7 +86,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 .pdfViewer.scrollWrapped {
 	flex-direction: row;
 	flex-wrap: wrap;
-	justify-content: center;
+	justify-content: safe center;
 }
 
 .pdfViewer .spread {
