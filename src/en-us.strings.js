@@ -145,5 +145,7 @@ export default {
 	'pdfReader.enterPassword': 'Enter the password to open this PDF file.',
 	'pdfReader.includeAnnotations': 'Include annotations',
 	'pdfReader.preparingDocumentForPrinting': 'Preparing document for printing…',
-	'pdfReader.phraseNotFound': 'Phrase not found'
+	'pdfReader.phraseNotFound': 'Phrase not found',
+	'pdfReader.selectedPages': '{count, plural, one {# page} other {# pages}} selected',
+	'pdfReader.pageOptions': 'Page Options'
 };

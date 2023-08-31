@@ -1,10 +1,10 @@
-import React, { Fragment, useState, useCallback, useContext, useEffect, useRef, useImperativeHandle } from 'react';
-import { useIntl } from 'react-intl';
+import React, { Fragment, useState, useCallback, useContext, useEffect, useRef, useImperativeHandle, memo } from 'react';
+import { useIntl, FormattedMessage } from 'react-intl';
 import cx from 'classnames';
 import { pressedNextKey, pressedPreviousKey } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 
-function Thumbnail({ thumbnail, selected, pageLabel, onContextMenu }) {
+const Thumbnail = memo(({ thumbnail, selected, pageLabel, onContextMenu }) => {
 	return (
 		<div
 			className={cx('thumbnail', { selected })}
@@ -13,19 +13,24 @@ function Thumbnail({ thumbnail, selected, pageLabel, onContextMenu }) {
 		>
 			<div className="image">
 				{thumbnail.image
-					? <img width={thumbnail.width} height={thumbnail.height} src={thumbnail.image} draggable={false}/>
-					: <div className="placeholder" style={{ width: thumbnail.width + 'px', height: thumbnail.height + 'px' }}/>
+					? <img width={thumbnail.width} height={thumbnail.height} src={thumbnail.image} draggable={false} />
+					: <div className="placeholder" style={{ width: thumbnail.width + 'px', height: thumbnail.height + 'px' }} />
 				}
 			</div>
 			<div className="label">{pageLabel}</div>
 		</div>
 	);
-}
+});
+
+Thumbnail.displayName = 'Thumbnail';
+
+
 
 function ThumbnailsView(props) {
 	const intl = useIntl();
 	const [selected, setSelected] = useState([0]);
 	const containerRef = useRef();
+	const { onOpenThumbnailContextMenu } = props;
 	const { platform } = useContext(ReaderContext);
 
 	useEffect(() => {
@@ -42,7 +47,7 @@ function ThumbnailsView(props) {
 
 	useEffect (() => {
 		let options = {
-			root: containerRef.current.parentNode,
+			root: containerRef.current,
 			rootMargin: "200px",
 			threshold: 1.0
 		};
@@ -172,39 +177,63 @@ function ThumbnailsView(props) {
 		}
 	}
 
-	function handleContextMenu(event) {
+	const handleContextMenu = useCallback((event) => {
 		if (platform === 'web') {
 			return;
 		}
 		event.preventDefault();
-		props.onOpenThumbnailContextMenu({
+		onOpenThumbnailContextMenu({
 			x: event.clientX,
 			y: event.clientY,
 			pageIndexes: selected
 		});
-	}
+	}, [onOpenThumbnailContextMenu, platform, selected]);
+
+	const handleMoreClick = useCallback((event) => {
+		event.preventDefault();
+		const { x, bottom: y } = event.target.getBoundingClientRect();
+		onOpenThumbnailContextMenu({
+			x, y,
+			pageIndexes: selected,
+		});
+	}, [onOpenThumbnailContextMenu, selected]);
 
 	return (
-		<div
-			ref={containerRef}
-			className="thumbnails-view"
-			tabIndex={-1}
-			data-tabstop={1}
-			onMouseDown={handleMouseDown}
-			onKeyDown={handleKeyDown}
-		>
-			{props.thumbnails.map((thumbnail, index) => {
-				let pageLabel = props.pageLabels[index] || (index + 1).toString();
-				return (
-					<Thumbnail
-						key={index}
-						thumbnail={thumbnail}
-						selected={selected.includes(index)}
-						pageLabel={pageLabel}
-						onContextMenu={handleContextMenu}
+		<div className="thumbnails-view">
+			{platform === 'web' && (
+				<div className="thumbnails-header">
+					<FormattedMessage id="pdfReader.selectedPages" values={ { count: selected.length }} />
+					<button
+						tabIndex={-1}
+						data-tabstop={1}
+						className="toolbarButton"
+						title={intl.formatMessage({ id: 'pdfReader.pageOptions' })}
+						onClick={handleMoreClick}
 					/>
-				);
-			})}
+				</div>
+			)}
+			<div
+				className="thumbnails"
+				data-tabstop={1}
+				onKeyDown={handleKeyDown}
+				onMouseDown={handleMouseDown}
+				ref={containerRef}
+				tabIndex={-1}
+			>
+				{props.thumbnails.map((thumbnail, index) => {
+					let pageLabel = props.pageLabels[index] || (index + 1).toString();
+					return (
+						<Thumbnail
+							key={index}
+							thumbnail={thumbnail}
+							selected={selected.includes(index)}
+							pageLabel={pageLabel}
+							contextMenu={props.contextMenu}
+							onContextMenu={handleContextMenu}
+						/>
+					);
+				})}
+			</div>
 		</div>
 	);
 }
