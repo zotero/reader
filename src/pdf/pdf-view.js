@@ -385,8 +385,23 @@ class PDFView {
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
 	}
 
-	_getPageLabel(pageIndex) {
-		return this._pageLabels[pageIndex] || (pageIndex + 1).toString()/* || '-'*/;
+	_getPageLabel(pageIndex, usePrevAnnotation) {
+		let pageLabel = this._pageLabels[pageIndex] || (pageIndex + 1).toString()/* || '-'*/;
+		if (usePrevAnnotation) {
+			let annotations = this._annotations.slice().reverse();
+			for (let annotation of annotations) {
+				// Ignore read-only annotation because user can't fix its page label
+				if (!annotation.readOnly
+					&& annotation.pageLabel !== '-'
+					&& annotation.position.pageIndex <= pageIndex) {
+					if (parseInt(annotation.pageLabel) == annotation.pageLabel || (/[0-9]+[-\u2013][0-9]+/).test(annotation.pageLabel)) {
+						pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
+					}
+					break;
+				}
+			}
+		}
+		return pageLabel;
 	}
 
 	_clearFocus() {
@@ -1468,7 +1483,7 @@ class PDFView {
 			this._onAddAnnotation({
 				type: 'note',
 				color: this._tool.color,
-				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex, true),
 				sortIndex: getSortIndex(this._pdfPages, newPosition),
 				position: newPosition
 			}, true);
@@ -1489,7 +1504,7 @@ class PDFView {
 			this._onAddAnnotation({
 				type: 'text',
 				color: this._tool.color,
-				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex, true),
 				sortIndex: getSortIndex(this._pdfPages, newPosition),
 				position: newPosition
 			}, true);
@@ -1499,7 +1514,7 @@ class PDFView {
 			action.annotation = {
 				type: 'ink',
 				color: this._tool.color,
-				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex, true),
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
 					width: this._tool.size,
@@ -1832,7 +1847,7 @@ class PDFView {
 			action.annotation = {
 				type: 'image',
 				color: this._tool.color,
-				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex),
+				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex, true),
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
 					rects: [[
@@ -1888,7 +1903,7 @@ class PDFView {
 			type,
 			color,
 			sortIndex: selectionRange.sortIndex,
-			pageLabel: this._getPageLabel(selectionRange.position.pageIndex),
+			pageLabel: this._getPageLabel(selectionRange.position.pageIndex, true),
 			position: selectionRange.position,
 			text: selectionRange.text
 		};
@@ -2032,7 +2047,7 @@ class PDFView {
 						if (selectionRange && !selectionRange.collapsed) {
 							let rect = this.getClientRectForPopup(selectionRange.position);
 							let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
-							annotation.pageLabel = this._getPageLabel(annotation.position.pageIndex);
+							annotation.pageLabel = this._getPageLabel(annotation.position.pageIndex, true);
 							this._onSetSelectionPopup({ rect, annotation });
 							setTextLayerSelection(this._iframeWindow, this._selectionRanges);
 						}
