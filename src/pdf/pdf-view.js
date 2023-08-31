@@ -138,9 +138,6 @@ class PDFView {
 			}
 			this._iframeWindow.PDFViewerApplicationOptions.set('isEvalSupported', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('defaultUrl', '');
-			this._iframeWindow.PDFViewerApplicationOptions.set('cMapUrl', 'cmaps/');
-			this._iframeWindow.PDFViewerApplicationOptions.set('cMapPacked', true);
-			// this._iframeWindow.PDFViewerApplicationOptions.set('workerSrc', './pdf.worker.js');
 			this._iframeWindow.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('textLayerMode', 1);
 			this._iframeWindow.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
