@@ -11,6 +11,7 @@ git clone https://github.com/zotero/reader --recursive
 With Node 18+, run the following:
 
 ```
+NODE_OPTIONS=--openssl-legacy-provider npm i
 NODE_OPTIONS=--openssl-legacy-provider npm run build
 ```
 
