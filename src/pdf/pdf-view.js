@@ -2177,6 +2177,17 @@ class PDFView {
 		else if (['n', 'j', 'p', 'k'].includes(key.toLowerCase())) {
 			event.stopPropagation();
 		}
+		// This is necessary when a page is zoomed in and left/right arrow keys can't change page
+		else if (alt && key === 'ArrowUp') {
+			this.navigateToPreviousPage();
+			event.stopPropagation();
+			event.preventDefault();
+		}
+		else if (alt && key === 'ArrowDown') {
+			this.navigateToNextPage();
+			event.stopPropagation();
+			event.preventDefault();
+		}
 
 		if (key === 'Escape') {
 			this.action = null;
