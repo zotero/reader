@@ -243,6 +243,8 @@ function getRange(structuredText, anchorOffset, headOffset) {
 				}
 			}
 		}
+		// Especially important when a single line is incorrectly recognized as a paragraph
+		text.push(' ');
 	}
 	text = text.join('');
 	// Get rects
