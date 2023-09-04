@@ -1234,7 +1234,7 @@ class PDFView {
 		// If holding shift, only allow text selection, to select text under annotations
 		// TODO: If an annotation is already selected, this might be interfering with
 		//  annotation range selection with shift in reader.setSelectedAnnotations
-		if (event.shiftKey) {
+		if (event.altKey) {
 			return { action: { type: 'selectText' }, selectAnnotations: [] };
 		}
 		if (this._tool.type === 'ink') {
