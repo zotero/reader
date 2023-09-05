@@ -141,8 +141,9 @@ class AnnotationManager {
 			if (annotation.position) {
 				annotation.image = undefined;
 			}
-			// All parameters in the existing annotation position are preserved except nextPageRects
-			let deleteNextPageRects = !annotation.position?.nextPageRects;
+			// All properties in the existing annotation position are preserved except nextPageRects,
+			// which isn't preserved only when a new rects property is given
+			let deleteNextPageRects = annotation.rects && !annotation.position?.nextPageRects;
 			annotation = {
 				...existingAnnotation,
 				...annotation,
