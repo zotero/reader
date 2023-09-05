@@ -409,6 +409,7 @@ class Reader {
 				this._secondaryView = null;
 				this._secondaryViewContainer.replaceChildren();
 				this._lastViewPrimary = true;
+				this._onChangeViewState(null, false);
 			}
 			// Change existing split type
 			else {
