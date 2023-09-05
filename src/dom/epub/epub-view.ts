@@ -452,25 +452,27 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected override _handleKeyDown(event: KeyboardEvent) {
 		let { key } = event;
 
-		if (key == 'ArrowLeft') {
-			if (this._pageProgressionRTL) {
-				this.flow.navigateToNextPage();
+		if (!event.shiftKey) {
+			if (key == 'ArrowLeft') {
+				if (this._pageProgressionRTL) {
+					this.flow.navigateToNextPage();
+				}
+				else {
+					this.flow.navigateToPreviousPage();
+				}
+				event.preventDefault();
+				return;
 			}
-			else {
-				this.flow.navigateToPreviousPage();
+			if (key == 'ArrowRight') {
+				if (this._pageProgressionRTL) {
+					this.flow.navigateToPreviousPage();
+				}
+				else {
+					this.flow.navigateToNextPage();
+				}
+				event.preventDefault();
+				return;
 			}
-			event.preventDefault();
-			return;
-		}
-		if (key == 'ArrowRight') {
-			if (this._pageProgressionRTL) {
-				this.flow.navigateToPreviousPage();
-			}
-			else {
-				this.flow.navigateToNextPage();
-			}
-			event.preventDefault();
-			return;
 		}
 
 		super._handleKeyDown(event);
