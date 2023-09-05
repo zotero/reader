@@ -508,7 +508,7 @@ export class PaginatedFlow extends AbstractFlow {
 	private _handleKeyDown = (event: KeyboardEvent) => {
 		let { key, shiftKey } = event;
 		// Left/right arrows are handled in EPUBView
-		if (!event.shiftKey) {
+		if (!shiftKey) {
 			if (key == 'ArrowUp') {
 				this.navigateToPreviousPage();
 				event.preventDefault();
