@@ -35,13 +35,6 @@
 		align-items: center;
 	}
 
-	.start,
-	.end {
-		@media all and (min-width: $toolbar-middle-viewer-bp) {
-			flex: 1 1 0; // Center middle viewer on large screens
-		}
-	}
-
 	.end {
 		justify-content: flex-end;
 		padding-inline-end: var(--toolbar-placeholder-width);
