@@ -211,6 +211,7 @@ class PDFView {
 		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
 		// Touch events are passive by default
 		this._iframeWindow.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
+		this._iframeWindow.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
@@ -1602,6 +1603,14 @@ class PDFView {
 		if (this._tool.type !== 'pointer') {
 			event.preventDefault();
 		}
+	}
+
+	_handleTouchEnd(event) {
+		// Prevent emulated mouse event firing (i.e. mousedown, which messes up things).
+		// Although on chrome we get an error when trying to scroll:
+		// "[Intervention] Ignored attempt to cancel a touchend event with cancelable=false,
+		// for example because scrolling is in progress and cannot be interrupted"
+		event.preventDefault();
 	}
 
 	_handlePointerMove = throttle((event) => {
