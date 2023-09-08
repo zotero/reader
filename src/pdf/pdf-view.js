@@ -209,7 +209,8 @@ class PDFView {
 		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		// mousedown event is necessary to get event.detail, but for touch pointerdown is necessary
 		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
-		this._iframeWindow.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+		// Touch events are passive by default
+		this._iframeWindow.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
@@ -1227,9 +1228,14 @@ class PDFView {
 	// - Don't allow to select anything under the currently selected element
 	// - Move text selection into getSingleSelectedObjectAction
 	getActionAtPosition(position, event) {
+		// Mouse events don't have pointerType
+		let mouse = !event.pointerType || event.pointerType === 'mouse';
+		// If using a mouse and not the main button is pressed
+		if (mouse && event.button >= 1) {
+			return { action: { type: 'none' }, selectAnnotations: [] };
+		}
 		if (this._portal) {
-			let action = { type: 'none' };
-			return { action, selectAnnotations: [] };
+			return { action: { type: 'none' }, selectAnnotations: [] };
 		}
 		// If holding shift, only allow text selection, to select text under annotations
 		// TODO: If an annotation is already selected, this might be interfering with
@@ -1308,7 +1314,14 @@ class PDFView {
 				action = { type: 'text' };
 			}
 			else {
-				action = { type: 'selectText' };
+				// Enable text selection if using mouse or using touch/pen with highlight/underline tool
+				if (mouse || ['highlight', 'underline'].includes(this._tool.type)) {
+					action = { type: 'selectText' };
+				}
+				// Otherwise don't trigger any action for touch/pen because it'll be scrolling
+				else {
+					return { action: { type: 'none' }, selectAnnotations: [] };
+				}
 			}
 		}
 
@@ -1582,6 +1595,13 @@ class PDFView {
 		this._autoScroll.enable();
 
 		this._render();
+	}
+
+	_handleTouchMove(event) {
+		// Prevent default touch action (which is scroll) if any tool is enabled
+		if (this._tool.type !== 'pointer') {
+			event.preventDefault();
+		}
 	}
 
 	_handlePointerMove = throttle((event) => {
