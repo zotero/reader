@@ -34,7 +34,7 @@ async function createReader() {
 		},
 		// rtl: true,
 		annotations: demo.annotations,
-		state: demo.state,
+		primaryViewState: demo.state,
 		sidebarWidth: 240,
 		bottomPlaceholderHeight: 0,
 		toolbarPlaceholderWidth: 0,
