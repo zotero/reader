@@ -950,7 +950,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		window.dispatchEvent(new Event('resize'));
 	}
 
-	static getContainingSectionIndex(rangeOrNode: Range | Node): number | null {
+	static getContainingSectionIndex(rangeOrNode: Range | PersistentRange | Node): number | null {
 		let elem;
 		if ('nodeType' in rangeOrNode) {
 			elem = closestElement(rangeOrNode);

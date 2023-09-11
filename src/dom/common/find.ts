@@ -4,9 +4,11 @@ import {
 	SearchContext
 } from "./lib/dom-text-search";
 import { FindState } from "../../common/types";
+import { PersistentRange } from "./lib/range";
+import EPUBView from "../epub/epub-view";
 
 export interface FindProcessor {
-	getAnnotations(): DisplayedAnnotation[];
+	getAnnotations(): FindAnnotation[];
 
 	prev(): FindResult | null;
 
@@ -47,7 +49,8 @@ class DefaultFindProcessor implements FindProcessor {
 				entireWord: this.findState.entireWord
 			}
 		);
-		for (let range of ranges) {
+		for (let originalRange of ranges) {
+			let range = new PersistentRange(originalRange);
 			let findResult: FindResult = {
 				range,
 				highlight: {
@@ -59,7 +62,7 @@ class DefaultFindProcessor implements FindProcessor {
 				}
 			};
 			if (this._initialPos === null && options.startRange) {
-				if (range.compareBoundaryPoints(Range.START_TO_START, options.startRange) >= 0) {
+				if (EPUBView.compareBoundaryPoints(Range.START_TO_START, originalRange, options.startRange) >= 0) {
 					this._initialPos = this._buf.length;
 				}
 			}
@@ -135,12 +138,12 @@ class DefaultFindProcessor implements FindProcessor {
 		return this._buf;
 	}
 
-	getAnnotations(): DisplayedAnnotation[] {
+	getAnnotations(): FindAnnotation[] {
 		let selected
 			= (this._pos !== null && this._pos >= 0 && this._pos < this._buf.length)
 				? this._buf[this._pos]
 				: null;
-		let highlights: DisplayedAnnotation[] = [];
+		let highlights: FindAnnotation[] = [];
 		if (this.findState.highlightAll) {
 			for (let result of this._buf) {
 				if (selected === result) {
@@ -165,7 +168,6 @@ class DefaultFindProcessor implements FindProcessor {
 
 	getSnippets(): string[] {
 		return this._buf.map(({ range }) => {
-			range = range.cloneRange();
 			let snippet = range.toString();
 			if (range.startContainer.nodeValue && range.startOffset > 0) {
 				let textBeforeRange = range.startContainer.nodeValue.substring(0, range.startOffset);
@@ -205,9 +207,11 @@ class DefaultFindProcessor implements FindProcessor {
 	}
 }
 
+export type FindAnnotation = Omit<DisplayedAnnotation, 'range'> & { range: PersistentRange };
+
 export type FindResult = {
-	range: Range;
-	highlight: DisplayedAnnotation;
+	range: PersistentRange;
+	highlight: FindAnnotation;
 }
 
 export default DefaultFindProcessor;

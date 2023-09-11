@@ -299,8 +299,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				key: a.id,
 				range: this.toDisplayedRange(a.position),
 			})).filter(a => !!a.range) as DisplayedAnnotation[],
-			...this._find?.getAnnotations() ?? []
 		];
+		let findAnnotations = this._find?.getAnnotations();
+		if (findAnnotations) {
+			displayedAnnotations.push(...findAnnotations.map(a => ({
+				...a,
+				range: a.range.toRange(),
+			})));
+		}
 		if (this._highlightedPosition) {
 			displayedAnnotations.push({
 				type: 'highlight',

@@ -1,8 +1,8 @@
 import DefaultFindProcessor, {
+	FindAnnotation,
 	FindProcessor,
 	FindResult
 } from "../common/find";
-import { DisplayedAnnotation } from "../common/components/overlay/annotation-overlay";
 import EPUBView from "./epub-view";
 import SectionView from "./section-view";
 import { FindState } from "../../common/types";
@@ -94,7 +94,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		return null;
 	}
 
-	getAnnotations(): DisplayedAnnotation[] {
+	getAnnotations(): FindAnnotation[] {
 		let highlights = [];
 		for (let [i, processor] of this._processors.entries()) {
 			if (!processor || !this.view.views[i]?.mounted) continue;

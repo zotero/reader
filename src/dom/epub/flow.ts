@@ -21,7 +21,7 @@ export interface Flow {
 
 	readonly visibleViews: SectionView[];
 
-	scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void;
+	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void;
 
 	canNavigateToPreviousPage(): boolean;
 
@@ -150,7 +150,7 @@ abstract class AbstractFlow implements Flow {
 		return this._view.views.slice(startIdx, endIdx + 1);
 	}
 
-	abstract scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void;
+	abstract scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void;
 
 	abstract canNavigateToNextPage(): boolean;
 
@@ -214,8 +214,8 @@ export class ScrolledFlow extends AbstractFlow {
 		this._iframeDocument.body.classList.remove('flow-mode-scrolled');
 	}
 
-	scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void {
-		let rect = target.getBoundingClientRect();
+	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void {
+		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
 
 		if (options?.ifNeeded && (rect.top >= 0 && rect.bottom < this._iframe.clientHeight)) {
 			return;
@@ -402,14 +402,14 @@ export class PaginatedFlow extends AbstractFlow {
 		this._onViewUpdate();
 	}
 
-	scrollIntoView(target: Range | HTMLElement, options?: CustomScrollIntoViewOptions): void {
+	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void {
 		let index = EPUBView.getContainingSectionIndex(target);
 		if (index === null) {
 			return;
 		}
 		this.currentSectionIndex = index;
 		// Otherwise, center the target horizontally
-		let rect = target.getBoundingClientRect();
+		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
 		let x = rect.x + this._sectionsContainer.scrollLeft;
 		if (options?.block === 'center') {
 			x += rect.width / 2;
