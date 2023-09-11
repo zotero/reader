@@ -272,6 +272,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _renderAnnotations() {
+		if (!this._iframeDocument) {
+			return;
+		}
 		let container = this._iframeDocument.body.querySelector(':scope > #annotation-overlay');
 		if (!this._showAnnotations) {
 			if (container) {
