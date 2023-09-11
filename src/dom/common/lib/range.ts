@@ -27,7 +27,7 @@ export class PersistentRange {
 	}
 
 	toString(): string {
-		return `${this.startContainer}:${this.startOffset}-${this.endContainer}:${this.endOffset}`;
+		return this.toRange().toString();
 	}
 }
 
