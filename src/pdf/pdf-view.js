@@ -1915,7 +1915,7 @@ class PDFView {
 			this._onSetSelectionPopup();
 		}
 		this._render();
-	}, 50);
+	}, () => ['ink', 'eraser'].includes(this._tool.type) ? 0 : 50);
 
 	_getAnnotationFromSelectionRanges(selectionRanges, type, color) {
 		if (selectionRanges[0].collapsed) {

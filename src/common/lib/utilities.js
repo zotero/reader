@@ -47,24 +47,32 @@ export function setCaretToEnd(target) {
 // as much as it can, without ever going more than once per `wait` duration;
 // but if you'd like to disable the execution on the leading edge, pass
 // `{leading: false}`. To disable execution on the trailing edge, ditto.
+// Note: The function is modified to support dynamic wait by accept a function as wait argument
 export function throttle(func, wait, options) {
 	var context, args, result;
 	var timeout = null;
 	var previous = 0;
 	if (!options) options = {};
+
+	// Helper function to get the wait time dynamically
+	var getWaitTime = function() {
+		return typeof wait === 'function' ? wait() : wait;
+	};
+
 	var later = function () {
 		previous = options.leading === false ? 0 : Date.now();
 		timeout = null;
 		result = func.apply(context, args);
 		if (!timeout) context = args = null;
 	};
+
 	return function () {
 		var now = Date.now();
 		if (!previous && options.leading === false) previous = now;
-		var remaining = wait - (now - previous);
+		var remaining = getWaitTime() - (now - previous); // Use the helper function
 		context = this;
 		args = arguments;
-		if (remaining <= 0 || remaining > wait) {
+		if (remaining <= 0 || remaining > getWaitTime()) { // Use the helper function
 			if (timeout) {
 				clearTimeout(timeout);
 				timeout = null;
