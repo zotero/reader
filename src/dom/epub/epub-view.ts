@@ -16,7 +16,8 @@ import Epub, {
 } from "epubjs";
 import {
 	moveRangeEndsIntoTextNodes,
-	PersistentRange
+	PersistentRange,
+	splitRangeToTextNodes
 } from "../common/lib/range";
 import {
 	FragmentSelector,
@@ -350,10 +351,32 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (range.collapsed) {
 			return null;
 		}
-		let text = type == 'highlight' || type == 'underline' ? range.toString().trim() : undefined;
-		// If this annotation type wants text, but we didn't get any, abort
-		if (text === '') {
-			return null;
+		let text;
+		if (type == 'highlight' || type == 'underline') {
+			text = '';
+			let lastSplitRange;
+			for (let splitRange of splitRangeToTextNodes(range)) {
+				if (lastSplitRange) {
+					let lastSplitRangeContainer = closestElement(lastSplitRange.commonAncestorContainer);
+					let lastSplitRangeBlock = lastSplitRangeContainer && getContainingBlock(lastSplitRangeContainer);
+					let splitRangeContainer = closestElement(splitRange.commonAncestorContainer);
+					let splitRangeBlock = splitRangeContainer && getContainingBlock(splitRangeContainer);
+					if (lastSplitRangeBlock !== splitRangeBlock) {
+						text += '\n\n';
+					}
+				}
+				text += splitRange.toString().replace(/\s+/g, ' ');
+				lastSplitRange = splitRange;
+			}
+			text = text.trim();
+
+			// If this annotation type wants text, but we didn't get any, abort
+			if (!text) {
+				return null;
+			}
+		}
+		else {
+			text = undefined;
 		}
 
 		let selector = this.toSelector(range);
