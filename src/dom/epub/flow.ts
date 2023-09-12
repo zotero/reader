@@ -359,9 +359,9 @@ export class PaginatedFlow extends AbstractFlow {
 		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections')! as HTMLElement;
 
 		this._iframeDocument.addEventListener('keydown', this._handleKeyDown, { capture: true });
-		this._iframeDocument.body.addEventListener('touchstart', this._handleTouchStart);
-		this._iframeDocument.body.addEventListener('touchmove', this._handleTouchMove);
-		this._iframeDocument.body.addEventListener('touchend', this._handleTouchEnd);
+		this._iframeDocument.addEventListener('pointerdown', this._handlePointerDown);
+		this._iframeDocument.addEventListener('pointermove', this._handlePointerMove);
+		this._iframeDocument.addEventListener('pointerup', this._handlePointerUp);
 		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: false });
 		this._iframe.classList.add('flow-mode-paginated');
 		this._iframeDocument.body.classList.add('flow-mode-paginated');
@@ -369,9 +369,9 @@ export class PaginatedFlow extends AbstractFlow {
 
 	destroy(): void {
 		this._iframeDocument.removeEventListener('keydown', this._handleKeyDown, { capture: true });
-		this._iframeDocument.body.removeEventListener('touchstart', this._handleTouchStart);
-		this._iframeDocument.body.removeEventListener('touchmove', this._handleTouchMove);
-		this._iframeDocument.body.removeEventListener('touchend', this._handleTouchEnd);
+		this._iframeDocument.removeEventListener('pointerdown', this._handlePointerDown);
+		this._iframeDocument.removeEventListener('pointermove', this._handlePointerMove);
+		this._iframeDocument.removeEventListener('pointerup', this._handlePointerUp);
 		this._iframeDocument.removeEventListener('wheel', this._handleWheel);
 		this._iframe.classList.remove('flow-mode-paginated');
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
@@ -551,24 +551,19 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 	};
 
-	private _handleTouchStart = (event: TouchEvent) => {
-		if (this._touchStartID !== null) {
+	private _handlePointerDown = (event: PointerEvent) => {
+		if (this._touchStartID !== null || event.pointerType !== 'touch') {
 			return;
 		}
-		this._touchStartID = event.changedTouches[0].identifier;
-		this._touchStartX = event.changedTouches[0].clientX;
+		this._touchStartID = event.pointerId;
+		this._touchStartX = event.clientX;
 	};
 
-	private _handleTouchMove = (event: TouchEvent) => {
-		if (this._touchStartID === null) {
+	private _handlePointerMove = (event: PointerEvent) => {
+		if (this._touchStartID === null || event.pointerId !== this._touchStartID) {
 			return;
 		}
-		let touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
-		if (!touch) {
-			return;
-		}
-		event.preventDefault();
-		let swipeAmount = (touch.clientX - this._touchStartX) / 100;
+		let swipeAmount = (event.clientX - this._touchStartX) / 100;
 		// If on the first/last page, clamp the CSS variable so the indicator doesn't expand all the way
 		if (swipeAmount < 0 && !this.canNavigateToNextPage()) {
 			swipeAmount = Math.max(swipeAmount, -0.6);
@@ -580,12 +575,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.documentElement.style.setProperty('--swipe-amount', swipeAmount.toString());
 	};
 
-	private _handleTouchEnd = (event: TouchEvent) => {
-		if (this._touchStartID === null) {
-			return;
-		}
-		let touch = Array.from(event.changedTouches).find(touch => touch.identifier === this._touchStartID);
-		if (!touch) {
+	private _handlePointerUp = (event: PointerEvent) => {
+		if (this._touchStartID === null || event.pointerId !== this._touchStartID) {
 			return;
 		}
 		event.preventDefault();
@@ -594,7 +585,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._touchStartID = null;
 
 		// Switch pages after swiping 100px
-		let swipeAmount = (touch.clientX - this._touchStartX) / 100;
+		let swipeAmount = (event.clientX - this._touchStartX) / 100;
 		if (swipeAmount <= -1) {
 			this.navigateToNextPage();
 		}

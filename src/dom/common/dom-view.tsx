@@ -3,17 +3,17 @@ import {
 	AnnotationPopupParams,
 	AnnotationType,
 	ArrayRect,
-	WADMAnnotation,
 	FindState,
+	MaybePromise,
+	NavLocation,
 	NewAnnotation,
 	OutlineItem,
 	OverlayPopupParams,
+	Platform,
 	SelectionPopupParams,
 	Tool,
 	ViewStats,
-	NavLocation,
-	MaybePromise,
-	Platform,
+	WADMAnnotation,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import ReactDOM from "react-dom";
@@ -33,9 +33,7 @@ import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
 import { isSafari } from "../../common/lib/utilities";
-import {
-	isElement
-} from "./lib/nodes";
+import { isElement } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 
 abstract class DOMView<State extends DOMViewState, Data> {
@@ -82,6 +80,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handledPointerIDs = new Set<number>();
 
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
+
+	protected _touchAnnotationStartPosition: CaretPosition | null = null;
 
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
@@ -225,7 +225,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (this._tool.type == 'highlight' || this._tool.type == 'underline') {
 			if (this._gotPointerUp) {
-				let annotation = this._getAnnotationFromTextSelection(this._tool.type, this._tool.color);
+				let annotation = this._touchAnnotationStartPosition
+					? this._previewAnnotation
+					: this._getAnnotationFromTextSelection(this._tool.type, this._tool.color);
 				if (annotation && annotation.text) {
 					this._options.onAddAnnotation(annotation);
 				}
@@ -424,10 +426,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('keyup', this._options.onKeyUp);
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
-		this._iframeWindow.addEventListener('pointerover', this._handlePointerOver.bind(this));
-		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
-		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
-		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
+		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
+		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
+		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
+		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
@@ -844,6 +846,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (event.button == 0) {
 			this._gotPointerUp = false;
 			this._pointerMovedWhileDown = false;
+
+			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
+					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+				event.stopPropagation();
+			}
 		}
 
 		this._options.onSetOverlayPopup();
@@ -893,11 +901,29 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		else {
 			this._tryUseTool();
 		}
+		this._touchAnnotationStartPosition = null;
 	}
 
 	protected _handlePointerMove(event: PointerEvent) {
 		if (event.buttons % 1 == 0) {
 			this._pointerMovedWhileDown = true;
+
+			if (this._touchAnnotationStartPosition
+					&& (event.pointerType === 'touch' || event.pointerType === 'pen')
+					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+				let endPos = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+				if (endPos) {
+					let range = this._iframeDocument.createRange();
+					range.setStart(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
+					range.setEnd(endPos.offsetNode, endPos.offset);
+					let annotation = this._getAnnotationFromRange(range, this._tool.type, this._tool.color);
+					if (annotation) {
+						this._previewAnnotation = annotation;
+						this._renderAnnotations();
+					}
+				}
+				event.stopPropagation();
+			}
 		}
 	}
 
@@ -919,12 +945,19 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	setTool(tool: Tool) {
 		this._tool = tool;
+
+		// When highlighting or underlining, we draw a preview annotation during selection, so set the browser's
+		// selection highlight color to transparent. Otherwise, use the default selection color.
 		let selectionColor = tool.type == 'highlight' || tool.type == 'underline' ? 'transparent' : SELECTION_COLOR;
 		if (selectionColor.startsWith('#')) {
 			// 50% opacity, like annotations -- not needed if we're using a system color
 			selectionColor += '80';
 		}
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
+
+		// When using any tool besides pointer, touches should annotate but pinch-zoom should still be allowed
+		this._iframeDocument.documentElement.style.touchAction = tool.type != 'pointer' ? 'pinch-zoom' : 'auto';
+
 		if (this._previewAnnotation && tool.type !== 'note') {
 			this._previewAnnotation = null;
 		}
