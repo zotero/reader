@@ -1,6 +1,7 @@
 import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
+import CustomSections from './common/custom-sections';
 
 function Toolbar(props) {
 	const intl = useIntl();
@@ -221,6 +222,7 @@ function Toolbar(props) {
 				</div>
 			</div>
 			<div className="end">
+				<CustomSections type="Toolbar"/>
 				<button
 					id="viewFind"
 					className={cx('toolbarButton', { active: props.findPopupOpen })}

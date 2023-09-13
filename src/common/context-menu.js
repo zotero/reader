@@ -1,5 +1,20 @@
 import { ANNOTATION_COLORS } from './defines';
 
+function appendCustomItemGroups(name, reader, params) {
+	let itemGroups = [];
+	let finished = false;
+	let append = (...items) => {
+		if (finished) {
+			throw new Error('Append must be called directly and synchronously in the event');
+		}
+		itemGroups.push(items);
+	};
+	let event = new CustomEvent(`customEvent`, { detail: { type: name, reader, append, params } });
+	window.dispatchEvent(event);
+	finished = true;
+	return itemGroups;
+}
+
 function createItemGroup(itemGroups) {
 	return itemGroups.map(items => items.filter(x => x).filter(item => !item.disabled || item.persistent)).filter(items => items.length);
 }
@@ -34,7 +49,8 @@ export function createColorContextMenu(reader, params) {
 					label: reader._getString('general.copy'),
 					onCommand: (size) => reader.setTool({ size })
 				}
-			]
+			],
+			...appendCustomItemGroups('createColorContextMenu', reader, params)
 		])
 	};
 }
@@ -111,7 +127,8 @@ export function createViewContextMenu(reader, params) {
 					persistent: true,
 					onCommand: () => reader.navigateToPreviousPage()
 				}
-			]
+			],
+			...appendCustomItemGroups('createViewContextMenu', reader, params)
 		])
 	};
 }
@@ -204,7 +221,8 @@ export function createAnnotationContextMenu(reader, params) {
 					persistent: true,
 					onCommand: () => reader.deleteAnnotations(params.ids)
 				},
-			]
+			],
+			...appendCustomItemGroups('createAnnotationContextMenu', reader, params)
 		])
 	};
 }
@@ -235,7 +253,8 @@ export function createThumbnailContextMenu(reader, params) {
 					persistent: true,
 					onCommand: () => reader.deletePages(params.pageIndexes)
 				},
-			]
+			],
+			...appendCustomItemGroups('createThumbnailContextMenu', reader, params)
 		])
 	};
 }
@@ -253,6 +272,7 @@ export function createSelectorContextMenu(reader, params) {
 					onCommand: () => reader.setFilter({ colors: [], tags: [], authors: [] })
 				}
 			],
+			...appendCustomItemGroups('createSelectorContextMenu', reader, params)
 		])
 	};
 }

@@ -41,6 +41,12 @@
 
 	}
 
+	.custom-sections {
+		display: flex;
+		padding: 0 3px;
+		gap: 3px;
+	}
+
 	.toolbarButton {
 		.is-blurred & {
 			background: $toolbar-btn-blurred-bg;

@@ -2,6 +2,7 @@ import React from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { ANNOTATION_COLORS } from '../../defines';
 import ViewPopup from './view-popup';
+import CustomSections from '../common/custom-sections';
 
 function SelectionPopup(props) {
 	const intl = useIntl();
@@ -35,6 +36,7 @@ function SelectionPopup(props) {
 				<div className="wide-button" data-tabstop={true} onClick={handleAddToNote}>
 					<FormattedMessage id="pdfReader.addToNote"/>
 				</div>}
+			<CustomSections type="TextSelectionPopup" annotation={props.params.annotation}/>
 		</ViewPopup>
 	);
 }

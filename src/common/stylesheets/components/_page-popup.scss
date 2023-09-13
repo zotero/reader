@@ -9,6 +9,7 @@
 	box-shadow: $page-popup-box-shadow;
 	@include popover-pointer($width: 16px, $height: 8px);
 	z-index: 1;
+	max-width: 175px;
 
 
 	padding: $selection-popup-padding;
@@ -16,6 +17,7 @@
 	.colors {
 		display: flex;
 		align-items: center;
+		justify-content: center;
 	}
 
 	.toolbarButton {
@@ -53,6 +55,15 @@
 
 		&:hover {
 			background: $selection-popup-btn-hover-bg;
+		}
+	}
+
+	.custom-sections {
+		padding-top: 5px;
+
+		.section {
+			padding: 5px 0;
+			border-top: 1px solid #d7dad7;
 		}
 	}
 }

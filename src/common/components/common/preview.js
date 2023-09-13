@@ -6,6 +6,7 @@ import ExpandableEditor from './expandable-editor';
 import { IconHighlight, IconUnderline, IconNote, IconArea, IconInk, IconText } from './icons';
 import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
+import CustomSections from './custom-sections';
 
 // TODO: Don't allow to select UI text in popup header and footer
 
@@ -289,6 +290,7 @@ export function SidebarPreview(props) {
 							{annotation.authorName}
 						</div>
 					)}
+					<CustomSections type="SidebarAnnotationHeader" annotation={annotation}/>
 					<button
 						data-tabstop={props.selected && !props.readOnly ? 1 : undefined}
 						tabIndex={props.selected && !props.readOnly ? -1 : undefined}
