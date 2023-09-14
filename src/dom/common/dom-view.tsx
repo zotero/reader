@@ -916,6 +916,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					let range = this._iframeDocument.createRange();
 					range.setStart(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
 					range.setEnd(endPos.offsetNode, endPos.offset);
+					if (range.collapsed) {
+						range.setStart(endPos.offsetNode, endPos.offset);
+						range.setEnd(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
+					}
 					let annotation = this._getAnnotationFromRange(range, this._tool.type, this._tool.color);
 					if (annotation) {
 						this._previewAnnotation = annotation;
