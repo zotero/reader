@@ -150,7 +150,12 @@ class PDFView {
 			this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 			this._iframeWindow.onDetachPage = this._detachPage.bind(this);
 			this._init();
-			this._iframeWindow.PDFViewerApplication.open({ data: options.data.buf, password: this._password });
+			if (options.data.buf) {
+				this._iframeWindow.PDFViewerApplication.open({ data: options.data.buf, password: this._password });
+			}
+			else {
+				this._iframeWindow.PDFViewerApplication.open({ url: options.data.baseURI, password: this._password });
+			}
 			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 			window.if = this._iframeWindow;
 			this._resolveInitializedPromise();
