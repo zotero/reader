@@ -450,6 +450,19 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		style.innerHTML = annotationOverlayCSS;
 		this._iframeDocument.head.append(style);
 
+		this._touchDebug = this._iframeDocument.createElement('div');
+		this._touchDebug.style.position = 'fixed';
+		this._touchDebug.style.top = '0';
+		this._touchDebug.style.left = '0';
+		this._touchDebug.style.backgroundColor = 'red';
+		this._touchDebug.style.color = 'white';
+		this._touchDebug.style.zIndex = '100000';
+		this._touchDebug.append(this._iframeDocument.createElement('span'));
+		this._touchDebug.firstElementChild!.append('No touch events yet');
+		this._touchDebug.append(this._iframeDocument.createElement('br'));
+		this._touchDebug.append(this._iframeDocument.createElement('span'));
+		this._iframeDocument.body.append(this._touchDebug);
+
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);
 		this.setTool(this._options.tool);
@@ -458,16 +471,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		setTimeout(() => {
 			this._handleViewUpdate();
 		});
-
-		this._touchDebug = this._iframeDocument.createElement('div');
-		this._touchDebug.style.position = 'fixed';
-		this._touchDebug.style.top = '0';
-		this._touchDebug.style.left = '0';
-		this._touchDebug.style.backgroundColor = 'red';
-		this._touchDebug.style.color = 'white';
-		this._touchDebug.style.zIndex = '100000';
-		this._touchDebug.textContent = 'No touch events yet';
-		this._iframeDocument.body.append(this._touchDebug);
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
@@ -868,7 +871,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
 				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-				this._touchDebug.textContent = 'Touch start';
+				this._touchDebug.firstElementChild!.textContent = 'Touch start';
 				event.stopPropagation();
 			}
 		}
@@ -921,7 +924,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._tryUseTool();
 		}
 		if (this._touchAnnotationStartPosition) {
-			this._touchDebug.textContent = 'Touch end';
+			this._touchDebug.firstElementChild!.textContent = 'Touch end';
 		}
 		this._touchAnnotationStartPosition = null;
 	}
@@ -946,7 +949,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					if (annotation) {
 						this._previewAnnotation = annotation;
 						this._renderAnnotations();
-						this._touchDebug.textContent = 'Touch move';
+						this._touchDebug.firstElementChild!.textContent = 'Touch move';
 					}
 				}
 				event.stopPropagation();
@@ -989,6 +992,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._previewAnnotation = null;
 		}
 		this._renderAnnotations();
+
+		this._touchDebug.lastElementChild!.textContent = 'Tool: ' + tool.type;
 	}
 
 	setAnnotations(annotations: WADMAnnotation[]) {
