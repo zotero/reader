@@ -91,11 +91,16 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.book = Epub(options.data.buf.buffer);
 			delete this._options.data.buf;
 		}
+		else if (options.data.baseURI) {
+			this.book = Epub(options.data.baseURI, {
+				openAs: 'epub'
+			});
+		}
 		else if (options.data.book) {
 			this.book = options.data.book;
 		}
 		else {
-			throw new Error('buf or book is required');
+			throw new Error('buf, baseURI, or book is required');
 		}
 	}
 

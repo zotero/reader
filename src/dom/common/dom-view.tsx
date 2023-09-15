@@ -113,11 +113,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// support the csp attribute (currently all browsers besides Chrome derivatives)
 		this._iframe.setAttribute('csp', this._getCSP());
 		this.initializedPromise = this._initialize();
-		this._iframe.srcdoc = this._getSrcDoc();
 		options.container.append(this._iframe);
 	}
 
 	protected async _initialize(): Promise<void> {
+		this._iframe.srcdoc = await this._getSrcDoc();
 		return new Promise<void>((resolve, reject) => {
 			this._iframe.addEventListener('load', () => {
 				this._handleIFrameLoad().then(resolve, reject);
@@ -153,7 +153,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			+ `script-src ${scriptSrc}; child-src ${childSrc}; form-action ${formAction}`;
 	}
 
-	protected abstract _getSrcDoc(): string;
+	protected abstract _getSrcDoc(): MaybePromise<string>;
 
 	abstract getData(): Data;
 

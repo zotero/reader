@@ -43,10 +43,19 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	private _scale!: number;
 
-	protected _getSrcDoc() {
-		let enc = new TextDecoder('utf-8');
-		if (this._options.data.buf) {
-			let text = enc.decode(this._options.data.buf);
+	protected async _getSrcDoc() {
+		if (this._options.data.srcDoc) {
+			return this._options.data.srcDoc;
+		}
+		else if (this._options.data.buf || this._options.data.baseURI !== undefined) {
+			let buf;
+			if (this._options.data.buf) {
+				buf = this._options.data.buf;
+			}
+			else {
+				buf = await fetch(this._options.data.baseURI!).then(r => r.arrayBuffer());
+			}
+			let text = new TextDecoder('utf-8').decode(buf);
 			delete this._options.data.buf;
 			let doc = new DOMParser().parseFromString(text, 'text/html');
 
@@ -69,11 +78,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 			return new XMLSerializer().serializeToString(doc);
 		}
-		else if (this._options.data.srcDoc) {
-			return this._options.data.srcDoc;
-		}
 		else {
-			throw new Error('buf or srcDoc is required');
+			throw new Error('buf, baseURI, or srcDoc is required');
 		}
 	}
 
