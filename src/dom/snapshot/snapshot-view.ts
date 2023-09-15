@@ -47,13 +47,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (this._options.data.srcDoc) {
 			return this._options.data.srcDoc;
 		}
-		else if (this._options.data.buf || this._options.data.baseURI !== undefined) {
+		else if (this._options.data.buf || this._options.data.url !== undefined) {
 			let buf;
 			if (this._options.data.buf) {
 				buf = this._options.data.buf;
 			}
 			else {
-				buf = await fetch(this._options.data.baseURI!).then(r => r.arrayBuffer());
+				buf = await fetch(this._options.data.url!).then(r => r.arrayBuffer());
 			}
 			let text = new TextDecoder('utf-8').decode(buf);
 			delete this._options.data.buf;
@@ -62,9 +62,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			for (let base of doc.querySelectorAll('base')) {
 				base.remove();
 			}
-			if (this._options.data.baseURI !== undefined) {
+			if (this._options.data.url !== undefined) {
 				let base = doc.createElement('base');
-				base.href = this._options.data.baseURI;
+				base.href = this._options.data.url;
 				doc.head.prepend(base);
 			}
 
@@ -79,14 +79,14 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return new XMLSerializer().serializeToString(doc);
 		}
 		else {
-			throw new Error('buf, baseURI, or srcDoc is required');
+			throw new Error('buf, url, or srcDoc is required');
 		}
 	}
 
 	getData() {
 		return {
 			srcDoc: this._iframe.srcdoc,
-			baseURI: this._iframeDocument.head.querySelector('base')?.href
+			url: this._iframeDocument.head.querySelector('base')?.href
 		};
 	}
 

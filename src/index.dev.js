@@ -30,7 +30,7 @@ async function createReader() {
 		readOnly: false,
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
-			baseURI: new URL('/', window.location).toString()
+			url: new URL('/', window.location).toString()
 		},
 		// rtl: true,
 		annotations: demo.annotations,

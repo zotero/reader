@@ -126,16 +126,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _getCSP(): string {
-		let baseURI = this._options.data.baseURI ? new URL(this._options.data.baseURI) : null;
-		// When baseURI is http[s], use the origin
-		// In the client, though, baseURI will be a zotero: URI and its origin will be the string "null"
+		let url = this._options.data.url ? new URL(this._options.data.url) : null;
+		// When url is http[s], use the origin
+		// In the client, though, url will be a zotero: URI and its origin will be the string "null"
 		// for some reason. In that case, just allow the entire protocol. (In practice zotero:// URIs are always
 		// allowed because the protocol is marked as URI_IS_LOCAL_RESOURCE, which exempts it from CSP, but we want
 		// to be safe here.)
 		// https://bugzilla.mozilla.org/show_bug.cgi?id=1551253
-		let origin = baseURI && (baseURI.protocol.startsWith('http') ? baseURI.origin : baseURI.protocol);
+		let origin = url && (url.protocol.startsWith('http') ? url.origin : url.protocol);
 
-		// Allow resources from the same origin as the baseURI
+		// Allow resources from the same origin as the URL
 		let defaultSrc = origin || "'none'";
 		// Allow images from data: and blob: URIs and from that origin
 		let imgSrc = (origin || '') + ' data: blob:';
@@ -1078,7 +1078,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyDown: (event: KeyboardEvent) => void;
 	data: Data & {
 		buf?: Uint8Array,
-		baseURI?: string
+		url?: string
 	};
 };
 

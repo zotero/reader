@@ -154,7 +154,7 @@ class PDFView {
 				this._iframeWindow.PDFViewerApplication.open({ data: options.data.buf, password: this._password });
 			}
 			else {
-				this._iframeWindow.PDFViewerApplication.open({ url: options.data.baseURI, password: this._password });
+				this._iframeWindow.PDFViewerApplication.open({ url: options.data.url, password: this._password });
 			}
 			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 			window.if = this._iframeWindow;
