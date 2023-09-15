@@ -96,27 +96,6 @@ textarea {
 	}
 }
 
-#portal-view {
-	position: absolute;
-	display: flex;
-	z-index: 99999;
-//z-index: -1;
-	width: 700px;
-	height: 200px;
-	left: 0;
-	top: 0;
-
-	&.disabled {
-		transform: translateX(-99999px) !important;
-	}
-
-	iframe {
-		display: flex;
-		width: 100%;
-		border: 0;
-	}
-}
-
 body.sidebar-open {
 	#split-view, .split-view {
 		inset-inline-start: var(--sidebar-width);

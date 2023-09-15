@@ -1046,7 +1046,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 }
 
 export type DOMViewOptions<State extends DOMViewState, Data> = {
-	portal?: boolean;
 	container: Element;
 	tool: Tool;
 	platform: Platform;

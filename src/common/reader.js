@@ -70,9 +70,6 @@ class Reader {
 		this._splitViewContainer = document.getElementById('split-view');
 		this._primaryViewContainer = document.getElementById('primary-view');
 		this._secondaryViewContainer = document.getElementById('secondary-view');
-		this._portalViewContainer = document.getElementById('portal-view');
-
-		this._lastPortalRect = [0, 0, 0, 0];
 
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = false;
@@ -264,7 +261,6 @@ class Reader {
 						onFindPrevious={this.findPrevious.bind(this)}
 						onToggleFindPopup={this.toggleFindPopup.bind(this)}
 
-						onSetPortal={this._setPortal.bind(this)}
 						ref={this._readerRef}
 					/>
 				</ReaderContext.Provider>
@@ -274,12 +270,6 @@ class Reader {
 				this._resolveUIInitializedPromise();
 			}
 		);
-
-		if (this._type === 'pdf') {
-			setTimeout(() => {
-				this._portalView = this._createPortalView();
-			}, 2000);
-		}
 
 		this._updateState(this._state, true);
 
@@ -684,9 +674,6 @@ class Reader {
 
 		let onSetOverlayPopup = (overlayPopup) => {
 			this._updateState({ [primary ? 'primaryViewOverlayPopup' : 'secondaryViewOverlayPopup']: overlayPopup });
-			if (!overlayPopup) {
-				this._setPortal(null);
-			}
 		};
 
 		let onSetFindState = (params) => {
@@ -792,111 +779,6 @@ class Reader {
 		}
 
 		return view;
-	}
-
-	_createPortalView() {
-		// Portal view is just a floating PDF view that is positioned on top of another popup
-
-		let view;
-
-		let container = this._portalViewContainer;
-
-		let onSetDataTransferAnnotations = (dataTransfer, annotations) => {
-		};
-
-		let onOpenLink = (url) => {
-			this._onOpenLink(url);
-		};
-
-		let onFocus = () => {
-		};
-
-		let onTabOut = (reverse) => {
-			this._focusManager.tabToGroup(reverse);
-		};
-
-		let onKeyDown = (event) => {
-			this._keyboardManager.handleViewKeyDown(event);
-		};
-
-		let onKeyUp = (event) => {
-			this._keyboardManager.handleViewKeyUp(event);
-		};
-
-		let nop = () => undefined;
-
-		view = new PDFView({
-			portal: true,
-			readOnly: true,
-			container,
-			data: this._data,
-			password: this._password,
-			pageLabels: {},
-			tool: { type: 'pointer' },
-			selectedAnnotationIDs: [],
-			annotations: this._state.annotations,
-			showAnnotations: this._state.showAnnotations,
-			findState: {},
-			viewState: {},
-			location: null,
-			onChangeViewState: nop,
-			onChangeViewStats: nop,
-			onSetDataTransferAnnotations,
-			onAddAnnotation: nop,
-			onUpdateAnnotations: nop,
-			onOpenLink,
-			onFocus,
-			onRequestPassword: nop,
-			onOpenAnnotationContextMenu: nop,
-			onOpenViewContextMenu: nop,
-			onSetSelectionPopup: nop,
-			onSetAnnotationPopup: nop,
-			onSetOverlayPopup: nop,
-			onSetFindState: nop,
-			onSelectAnnotations: nop,
-			onSetThumbnails: nop,
-			onSetOutline: nop,
-			onSetPageLabels: nop,
-			onTabOut,
-			onKeyDown,
-			onKeyUp
-		});
-		return view;
-	}
-
-	_setPortal(params) {
-		if (!params) {
-			this._portalViewContainer.classList.add('disabled');
-			// TODO: Destroy portal when switching to another tab or a delay
-		}
-		else {
-			this._portalViewContainer.classList.remove('disabled');
-			let { rect, dest } = params;
-			let w1 = this._lastPortalRect[2] - this._lastPortalRect[0];
-			let h1 = this._lastPortalRect[3] - this._lastPortalRect[1];
-			let w2 = rect[2] - rect[0];
-			let h2 = rect[3] - rect[1];
-			// Update width/height if needed, which also causes reflow
-			if (w1 !== w2 || h1 !== h2) {
-				this._portalViewContainer.style.width = w2 + 'px';
-				this._portalViewContainer.style.height = h2 + 'px';
-			}
-			let x1 = this._lastPortalRect[0];
-			let y1 = this._lastPortalRect[1];
-			let x2 = rect[0];
-			let y2 = rect[1];
-			// Update only x, y position, which is fast
-			if (x1 !== x2 || y1 !== y2) {
-				this._portalViewContainer.style.transform = `translate(${x2}px, ${y2}px)`;
-			}
-			this._lastPortalRect = rect.slice();
-
-			this._portalView._iframeWindow.PDFViewerApplication.pdfViewer.currentScale = 1;
-
-			// TODO: Detect and zoom to paragraph width while ignoring margins, but preserve zoom
-			//  level lower than in the current view, and reduce overlay popup dimensions
-			this._portalView._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(dest);
-		}
 	}
 
 	setErrorMessage(errorMessage) {
@@ -1217,7 +1099,6 @@ class Reader {
 			this._secondaryViewContainer.replaceChildren();
 			this._secondaryView = this._createView(false);
 		}
-		// TODO: Reload portal view as well
 	}
 
 	enterPassword(password) {

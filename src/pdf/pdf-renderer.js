@@ -126,6 +126,63 @@ class PDFRenderer {
 		return image;
 	}
 
+	async _renderPosition(position) {
+		let SCALE = window.devicePixelRatio;
+		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
+
+		// Create a new position that just contains single rect that is a bounding
+		// box of image or ink annotations
+		let expandedPosition = { pageIndex: position.pageIndex };
+
+		// Image annotations have only one rect
+		expandedPosition.rects = position.rects;
+
+		let rect = expandedPosition.rects[0];
+		let maxScale = Math.sqrt(
+			this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.maxCanvasPixels
+			/ ((rect[2] - rect[0]) * (rect[3] - rect[1]))
+		);
+		let scale = Math.min(SCALE, maxScale);
+
+		expandedPosition = p2v(expandedPosition, page.getViewport({ scale }));
+		rect = expandedPosition.rects[0];
+
+		let viewport = page.getViewport({ scale, offsetX: -rect[0], offsetY: -rect[1] });
+		position = p2v(position, viewport);
+
+		let canvasWidth = (rect[2] - rect[0]);
+		let canvasHeight = (rect[3] - rect[1]);
+
+		let canvas = this._pdfView._iframeWindow.document.createElement('canvas');
+		let ctx = canvas.getContext('2d', { alpha: false });
+
+		if (!canvasWidth || !canvasHeight) {
+			return '';
+		}
+
+		canvas.width = canvasWidth;
+		canvas.height = canvasHeight;
+		canvas.style.width = canvasWidth + 'px';
+		canvas.style.height = canvasHeight + 'px';
+
+		let renderContext = {
+			canvasContext: ctx,
+			viewport: viewport
+		};
+
+		await page.render(renderContext).promise;
+
+
+		let image = canvas.toDataURL('image/png', 1);
+
+		// Zeroing the width and height causes Firefox to release graphics
+		// resources immediately, which can greatly reduce memory consumption. (PDF.js)
+		canvas.width = 0;
+		canvas.height = 0;
+
+		return image;
+	}
+
 	start() {
 		this._renderNext();
 	}

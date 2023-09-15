@@ -60,7 +60,6 @@ class PDFView {
 		this._options = options;
 		this._primary = options.primary;
 		this._readOnly = options.readOnly;
-		this._portal = options.portal;
 		this._container = options.container;
 		this._password = options.password;
 		this._onRequestPassword = options.onRequestPassword;
@@ -123,11 +122,7 @@ class PDFView {
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.src = 'pdf/web/viewer.html';
-		//
-		// if (!this._portal) {
-		// 	this._iframe.setAttribute('data-tabstop', true);
-		// 	this._iframe.tabIndex = -1;
-		// }
+
 		this._iframeWindow = null;
 
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
@@ -159,10 +154,6 @@ class PDFView {
 			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 			window.if = this._iframeWindow;
 			this._resolveInitializedPromise();
-
-			if (this._portal) {
-				this._iframeWindow.document.body.classList.add('portal');
-			}
 
 			this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
 				let x = event.target.scrollLeft;
@@ -356,7 +347,7 @@ class PDFView {
 
 	async _attachPage(originalPage) {
 		this._init2 && this._init2();
-		if (this._primary && !this._portal && !this._pdfThumbnails) {
+		if (this._primary && !this._pdfThumbnails) {
 			this._initThumbnails();
 		}
 
@@ -1235,9 +1226,6 @@ class PDFView {
 		if (mouse && event.button >= 1) {
 			return { action: { type: 'none' }, selectAnnotations: [] };
 		}
-		if (this._portal) {
-			return { action: { type: 'none' }, selectAnnotations: [] };
-		}
 		// If holding shift, only allow text selection, to select text under annotations
 		// TODO: If an annotation is already selected, this might be interfering with
 		//  annotation range selection with shift in reader.setSelectedAnnotations
@@ -1624,10 +1612,29 @@ class PDFView {
 				this.updateCursor(action);
 				if (action.type === 'overlay') {
 					if (this._selectedOverlay !== action.overlay) {
-						this._overlayPopupDelayer.open(action.overlay, () => {
+						this._overlayPopupDelayer.open(action.overlay, async () => {
 							this._selectedOverlay = action.overlay;
 							let rect = this.getClientRect(action.overlay.position.rects[0], action.overlay.position.pageIndex);
-							let overlayPopup = { ...action.overlay, rect, width: 400, height: 200, scale: 1 };
+							let overlayPopup = { ...action.overlay, rect };
+							if (overlayPopup.type === 'internal-link') {
+								// Temporary implementation of internal link preview
+								let { x, y, pageIndex } = await this._getPositionFromDestination(action.overlay.dest);
+								let [left, bottom, right, top] = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex].viewport.viewBox;
+								let r = [x, y - 300, x + 300, y];
+								r = [
+									Math.max(r[0], left),
+									Math.max(r[1], bottom),
+									Math.min(r[2], right),
+									Math.min(r[3], top)
+								];
+								overlayPopup.width = (r[2] - r[0]) * 1.3;
+								overlayPopup.height = (r[3] - r[1]) * 1.3;
+								let position = {
+									pageIndex,
+									rects: [r]
+								};
+								overlayPopup.image = await this._pdfRenderer._renderPosition(position);
+							}
 							this._onSetOverlayPopup(overlayPopup);
 						});
 					}
@@ -2452,6 +2459,70 @@ class PDFView {
 
 	setSpreadMode(mode) {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchspreadmode', { mode });
+	}
+
+	async _getPositionFromDestination(dest) {
+		const pdfDocument = this._iframeWindow.PDFViewerApplication.pdfDocument;
+		if (!pdfDocument || !dest) {
+			throw new Error("No PDF document available or invalid destination provided.");
+		}
+
+		let destArray;
+
+		// If the destination is a string, it's a named destination.
+		// We'll need to resolve it to get the actual destination array.
+		if (typeof dest === 'string') {
+			destArray = await pdfDocument.getDestination(dest);
+			if (!destArray) {
+				throw new Error(`Unable to resolve named destination: "${dest}"`);
+			}
+		} else {
+			destArray = dest;
+		}
+
+		const ref = destArray[0];
+		const pageNumber = await pdfDocument.getPageIndex(ref) + 1;
+
+		const pageView = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(pageNumber - 1);
+		if (!pageView) {
+			throw new Error(`"${pageNumber}" is not a valid pageNumber.`);
+		}
+
+		let x = 0, y = 0;
+		const changeOrientation = pageView.rotation % 180 !== 0;
+		const PixelsPerInch = { PDF_TO_CSS_UNITS: 96 / 72 }; // Assuming default values here
+		const pageHeight = (changeOrientation ? pageView.width : pageView.height) / pageView.scale / PixelsPerInch.PDF_TO_CSS_UNITS;
+
+		switch (destArray[1].name) {
+			case "XYZ":
+				x = destArray[2] !== null ? destArray[2] : 0;
+				y = destArray[3] !== null ? destArray[3] : pageHeight;
+				break;
+			case "Fit":
+			case "FitB":
+				break;
+			case "FitH":
+			case "FitBH":
+				y = destArray[2] !== null ? destArray[2] : pageHeight;
+				break;
+			case "FitV":
+			case "FitBV":
+				x = destArray[2] !== null ? destArray[2] : 0;
+				break;
+			case "FitR":
+				x = destArray[2];
+				y = destArray[5];
+				break;
+			default:
+				console.error(`"${destArray[1].name}" is not a valid destination type.`);
+				return;
+		}
+
+		return {
+			pageIndex: pageNumber - 1,
+			x,
+			y,
+		};
 	}
 }
 
