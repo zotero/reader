@@ -76,6 +76,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			cspMeta.setAttribute('content', this._getCSP());
 			doc.head.prepend(cspMeta);
 
+			// Fix Twitter snapshots breaking because of <noscript> styles
+			for (let noscript of Array.from(doc.querySelectorAll('noscript'))) {
+				noscript.remove();
+			}
+
 			return new XMLSerializer().serializeToString(doc);
 		}
 		else {
