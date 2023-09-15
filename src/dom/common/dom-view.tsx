@@ -89,6 +89,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizing = false;
 
+	_touchDebug!: HTMLElement;
+
 	protected constructor(options: DOMViewOptions<State, Data>) {
 		this._options = options;
 		this._container = options.container;
@@ -456,6 +458,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		setTimeout(() => {
 			this._handleViewUpdate();
 		});
+
+		this._touchDebug = this._iframeDocument.createElement('div');
+		this._touchDebug.style.position = 'fixed';
+		this._touchDebug.style.top = '0';
+		this._touchDebug.style.left = '0';
+		this._touchDebug.style.backgroundColor = 'red';
+		this._touchDebug.style.color = 'white';
+		this._touchDebug.style.zIndex = '100000';
+		this._touchDebug.textContent = 'No touch events yet';
+		this._iframeDocument.body.append(this._touchDebug);
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
@@ -856,6 +868,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
 				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+				this._touchDebug.textContent = 'Touch start';
 				event.stopPropagation();
 			}
 		}
@@ -907,6 +920,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		else {
 			this._tryUseTool();
 		}
+		if (this._touchAnnotationStartPosition) {
+			this._touchDebug.textContent = 'Touch end';
+		}
 		this._touchAnnotationStartPosition = null;
 	}
 
@@ -930,6 +946,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					if (annotation) {
 						this._previewAnnotation = annotation;
 						this._renderAnnotations();
+						this._touchDebug.textContent = 'Touch move';
 					}
 				}
 				event.stopPropagation();
