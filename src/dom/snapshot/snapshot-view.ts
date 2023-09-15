@@ -81,7 +81,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				noscript.remove();
 			}
 
-			return new XMLSerializer().serializeToString(doc);
+			let doctype = doc.doctype ? new XMLSerializer().serializeToString(doc.doctype) : '';
+			let html = doc.documentElement.outerHTML;
+			return doctype + html;
 		}
 		else {
 			throw new Error('buf, url, or srcDoc is required');
