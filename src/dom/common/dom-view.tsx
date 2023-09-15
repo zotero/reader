@@ -35,6 +35,8 @@ import { SELECTION_COLOR } from "../../common/defines";
 import { isSafari } from "../../common/lib/utilities";
 import { isElement } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
+// @ts-ignore
+import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	initializedPromise: Promise<void>;
@@ -441,6 +443,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
 		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
+
+		let style = this._iframeDocument.createElement('style');
+		style.innerHTML = annotationOverlayCSS;
+		this._iframeDocument.head.append(style);
 
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);

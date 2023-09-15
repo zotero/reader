@@ -110,18 +110,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let widgetContainer = useRef<SVGSVGElement>(null);
 
 	return <>
-		<svg
-			className="annotation-container"
-			style={{
-				mixBlendMode: 'multiply',
-				zIndex: '9999',
-				pointerEvents: 'none',
-				position: 'absolute',
-				left: '0',
-				top: '0',
-				overflow: 'visible'
-			}}
-		>
+		<svg className="annotation-container blended">
 			{annotations.filter(annotation => annotation.type == 'highlight' || annotation.type == 'underline').map((annotation) => {
 				if (annotation.id) {
 					return (
@@ -159,14 +148,6 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		</svg>
 		<svg
 			className="annotation-container"
-			style={{
-				zIndex: '9999',
-				pointerEvents: 'none',
-				position: 'absolute',
-				left: '0',
-				top: '0',
-				overflow: 'visible'
-			}}
 			ref={widgetContainer}
 		>
 			<StaggeredNotes
@@ -515,14 +496,12 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	highlightRects = Array.from(highlightRects)
 		.sort((a, b) => (a.bottom - b.bottom) || (a.left - b.left));
 
-	let handlePointerDown = (event: React.PointerEvent, isStart: boolean) => {
+	let handlePointerDown = (event: React.PointerEvent) => {
 		if (event.button !== 0) {
 			return;
 		}
+		event.preventDefault();
 		(event.target as Element).setPointerCapture(event.pointerId);
-		setResizingSide(isStart ? 'start' : 'end');
-		setPointerCapture({ elem: event.target as Element, pointerId: event.pointerId });
-		onResizeStart(annotation);
 	};
 
 	let handlePointerUp = (event: React.PointerEvent) => {
@@ -532,9 +511,20 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			return;
 		}
 		(event.target as Element).releasePointerCapture(event.pointerId);
+	};
+
+	let handleGotPointerCapture = (event: React.PointerEvent, side: 'start' | 'end') => {
+		setResizingSide(side);
+		setPointerCapture({ elem: event.target as Element, pointerId: event.pointerId });
+		onResizeStart(annotation);
+	};
+
+	let handleLostPointerCapture = () => {
 		setResizingSide(false);
-		setPointerCapture(null);
-		onResizeEnd(annotation, false);
+		if (pointerCapture) {
+			setPointerCapture(null);
+			onResizeEnd(annotation, false);
+		}
 	};
 
 	let handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -631,10 +621,14 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			width={WIDTH}
 			height={topLeftRect.height}
 			fill={annotation.color}
-			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'all', cursor: 'col-resize' }}
-			onPointerDown={event => handlePointerDown(event, true)}
-			onPointerUp={event => handlePointerUp(event)}
+			className="resizer"
+			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'auto' }}
+			onPointerDown={handlePointerDown}
+			onPointerUp={handlePointerUp}
+			onPointerCancel={handlePointerUp}
 			onPointerMove={resizingSide == 'start' ? (event => handlePointerMove(event, !rtl)) : undefined}
+			onGotPointerCapture={event => handleGotPointerCapture(event, 'start')}
+			onLostPointerCapture={handleLostPointerCapture}
 		/>
 		<rect
 			x={bottomRightRect.right}
@@ -642,10 +636,14 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			width={WIDTH}
 			height={bottomRightRect.height}
 			fill={annotation.color}
-			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'all', cursor: 'col-resize' }}
-			onPointerDown={event => handlePointerDown(event, false)}
-			onPointerUp={event => handlePointerUp(event)}
+			className="resizer"
+			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'auto' }}
+			onPointerDown={handlePointerDown}
+			onPointerUp={handlePointerUp}
+			onPointerCancel={handlePointerUp}
 			onPointerMove={resizingSide == 'end' ? (event => handlePointerMove(event, rtl)) : undefined}
+			onGotPointerCapture={event => handleGotPointerCapture(event, 'end')}
+			onLostPointerCapture={handleLostPointerCapture}
 		/>
 	</>;
 };
