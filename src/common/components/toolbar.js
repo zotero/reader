@@ -175,17 +175,15 @@ function Toolbar(props) {
 							<span className="button-background"/>
 						</button>
 					)}
-					{props.type === 'pdf' && (
-						<button
-							tabIndex={-1}
-							className={cx('toolbarButton area', { toggled: props.tool.type === 'image' })}
-							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
-							disabled={props.readOnly}
-							onClick={() => handleToolClick('image')}
-						>
-							<span className="button-background"/>
-						</button>
-					)}
+					<button
+						tabIndex={-1}
+						className={cx('toolbarButton area', { toggled: props.tool.type === 'image' })}
+						title={intl.formatMessage({ id: props.type == 'pdf' ? 'pdfReader.selectArea' : 'pdfReader.selectImage' })}
+						disabled={props.readOnly}
+						onClick={() => handleToolClick('image')}
+					>
+						<span className="button-background"/>
+					</button>
 					{props.type === 'pdf' && (
 						<button
 							tabIndex={-1}

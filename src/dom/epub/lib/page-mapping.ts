@@ -113,8 +113,18 @@ class PageMapping {
 		return this.tree.keysArray().indexOf(pageStartRange);
 	}
 
-	getPageLabel(range: Range): string | null {
-		return this.tree.getPairOrNextLower(new PersistentRange(range))?.[1] ?? null;
+	getPageLabel(rangeOrNode: Range | Node): string | null {
+		if ('nodeType' in rangeOrNode) {
+			return this.tree.getPairOrNextLower(new PersistentRange({
+				startContainer: rangeOrNode,
+				startOffset: 0,
+				endContainer: rangeOrNode,
+				endOffset: 0,
+			}))?.[1] ?? null;
+		}
+		else {
+			return this.tree.getPairOrNextLower(new PersistentRange(rangeOrNode))?.[1] ?? null;
+		}
 	}
 
 	get firstRange(): Range | null {
