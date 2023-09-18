@@ -7,6 +7,7 @@ import React, {
 import {
 	caretPositionFromPoint,
 	collapseToOneCharacterAtStart,
+	findImageInRange,
 	splitRangeToTextNodes,
 	supportsCaretPositionFromPoint
 } from "../../lib/range";
@@ -14,7 +15,11 @@ import { AnnotationType } from "../../../../common/types";
 import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement } from "../../lib/nodes";
-import { isSafari } from "../../../../common/lib/utilities";
+import {
+	isFirefox,
+	isSafari
+} from "../../../../common/lib/utilities";
+import { Selector } from "../../lib/selector";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -26,6 +31,7 @@ export type DisplayedAnnotation = {
 	comment?: string;
 	readOnly?: boolean;
 	key: string;
+	position: Selector | null;
 	range: Range;
 };
 
@@ -164,6 +170,31 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				onDragStart={handleDragStart}
 				pointerEventsSuppressed={pointerEventsSuppressed}
 			/>
+			{annotations.filter(annotation => annotation.type == 'image').map((annotation) => {
+				if (annotation.id) {
+					return (
+						<Image
+							annotation={annotation}
+							key={annotation.key}
+							selected={selectedAnnotationIDs.includes(annotation.id)}
+							onPointerDown={handlePointerDown}
+							onPointerUp={handlePointerUp}
+							onDragStart={handleDragStart}
+							pointerEventsSuppressed={pointerEventsSuppressed}
+						/>
+					);
+				}
+				else {
+					return (
+						<Image
+							annotation={annotation}
+							key={annotation.key}
+							selected={false}
+							pointerEventsSuppressed={true}
+						/>
+					);
+				}
+			})}
 		</svg>
 	</>;
 };
@@ -423,8 +454,9 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 	let staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
-			let stagger = staggerMap.has(annotation.sortIndex) ? staggerMap.get(annotation.sortIndex)! : 0;
-			staggerMap.set(annotation.sortIndex, stagger + 1);
+			let key = JSON.stringify(annotation.position);
+			let stagger = staggerMap.has(key) ? staggerMap.get(key)! : 0;
+			staggerMap.set(key, stagger + 1);
 			if (annotation.id) {
 				return (
 					<Note
@@ -466,7 +498,7 @@ type StaggeredNotesProps = {
 };
 
 const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
-	let { rect, preview } = props;
+	let { rect, preview, strokeWidth = 2 } = props;
 	return (
 		<rect
 			x={rect.left - 5}
@@ -476,13 +508,14 @@ const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
 			fill="none"
 			stroke={preview ? '#aaaaaa' : '#6d95e0'}
 			strokeDasharray="10 6"
-			strokeWidth={2}/>
+			strokeWidth={strokeWidth}/>
 	);
 }, (prev, next) => JSON.stringify(prev.rect) === JSON.stringify(next.rect));
 SelectionBorder.displayName = 'SelectionBorder';
 type SelectionBorderProps = {
 	rect: DOMRect;
 	preview?: boolean;
+	strokeWidth?: number;
 };
 
 const RangeSelectionBorder: React.FC<RangeSelectionBorderProps> = (props) => {
@@ -734,3 +767,83 @@ type CommentIconProps = {
 	onDragStart?: (event: React.DragEvent) => void;
 	onDragEnd?: (event: React.DragEvent) => void;
 };
+
+const Image: React.FC<ImageProps> = (props) => {
+	let { annotation, selected, pointerEventsSuppressed, onPointerDown, onPointerUp, onDragStart } = props;
+	let doc = annotation.range.commonAncestorContainer.ownerDocument;
+	if (!doc || !doc.defaultView) {
+		return null;
+	}
+
+	let handleDragStart = (event: React.DragEvent) => {
+		if (!event.dataTransfer) return;
+		let image = findImageInRange(annotation.range);
+		if (image) {
+			let br = image.getBoundingClientRect();
+			if (isFirefox) {
+				// The spec says that if an HTMLImageElement is passed to setDragImage(), the drag image should be the
+				// element's underlying image data at full width/height. Most browsers choose to ignore the spec and
+				// draw the image at its displayed width/height, which is actually what we want here. Firefox follows
+				// the spec, so we have to scale using a canvas.
+				let canvas = doc!.createElement('canvas');
+				canvas.width = image.width;
+				canvas.height = image.height;
+				let ctx = canvas.getContext('2d')!;
+				ctx.drawImage(image, 0, 0, image.width, image.height);
+				event.dataTransfer.setDragImage(canvas, event.clientX - br.left, event.clientY - br.top);
+			}
+			else {
+				event.dataTransfer.setDragImage(image, event.clientX - br.left, event.clientY - br.top);
+			}
+		}
+		onDragStart?.(annotation, event.dataTransfer);
+	};
+
+	let rect = annotation.range.getBoundingClientRect();
+	rect.x += doc.defaultView.scrollX;
+	rect.y += doc.defaultView.scrollY;
+	return <>
+		{!pointerEventsSuppressed && (
+			<foreignObject x={rect.x} y={rect.y} width={rect.width} height={rect.height}>
+				<div
+					// @ts-ignore
+					xmlns="http://www.w3.org/1999/xhtml"
+					style={{
+						pointerEvents: 'auto',
+						cursor: 'default',
+						width: '100%',
+						height: '100%',
+					}}
+					draggable={true}
+					onPointerDown={onPointerDown ? (event => onPointerDown!(annotation, event)) : undefined}
+					onPointerUp={onPointerUp ? (event => onPointerUp!(annotation, event)) : undefined}
+					onDragStart={handleDragStart}
+					data-annotation-id={props.annotation?.id}
+				/>
+			</foreignObject>
+		)}
+		{selected || !annotation.id
+			? <SelectionBorder rect={rect} strokeWidth={3} preview={!annotation.id}/>
+			: <rect
+				x={rect.x - 5}
+				y={rect.y - 5}
+				width={rect.width + 10}
+				height={rect.height + 10}
+				stroke={annotation.color}
+				strokeWidth={3}
+				fill="none"
+			/>}
+		{annotation.comment && (
+			<CommentIcon x={rect.x - 5} y={rect.y - 5} color={annotation.color!}/>
+		)}
+	</>;
+};
+
+type ImageProps = {
+	annotation: DisplayedAnnotation;
+	selected: boolean;
+	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
+	pointerEventsSuppressed: boolean;
+}

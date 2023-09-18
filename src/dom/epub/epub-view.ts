@@ -22,9 +22,10 @@ import Epub, {
 	NavItem,
 } from "epubjs";
 import {
+	getAnnotationImage,
+	getAnnotationText,
 	moveRangeEndsIntoTextNodes,
-	PersistentRange,
-	splitRangeToTextNodes
+	PersistentRange
 } from "../common/lib/range";
 import {
 	FragmentSelector,
@@ -56,6 +57,7 @@ import {
 	ScrolledFlow
 } from "./flow";
 import { RTL_SCRIPTS } from "./defines";
+import { getImageDataURL } from "../../common/lib/utilities";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -287,6 +289,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				console.error('Unable to get range for CFI', cfiString);
 				return null;
 			}
+			if (range.startContainer === range.endContainer && range.startContainer.nodeType === Node.ELEMENT_NODE
+					&& (range.startContainer as Element).tagName === 'IMG') {
+				// Fix toRange() returning a collapsed range *inside* the <img> tag
+				range.selectNode(range.startContainer);
+			}
 			this._rangeCache.set(cfiString, new PersistentRange(range));
 			return range;
 		}
@@ -296,9 +303,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	override toSelector(range: Range): FragmentSelector | null {
-		range = moveRangeEndsIntoTextNodes(range);
-		let cfi = this.getCFI(range);
+	override toSelector(rangeOrNode: Range | Node): FragmentSelector | null {
+		let cfi = this.getCFI(rangeOrNode);
 		if (!cfi) {
 			return null;
 		}
@@ -353,29 +359,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
-		range = moveRangeEndsIntoTextNodes(range);
+		if (type != 'image') {
+			range = moveRangeEndsIntoTextNodes(range);
+		}
 		if (range.collapsed) {
 			return null;
 		}
 		let text;
 		if (type == 'highlight' || type == 'underline') {
-			text = '';
-			let lastSplitRange;
-			for (let splitRange of splitRangeToTextNodes(range)) {
-				if (lastSplitRange) {
-					let lastSplitRangeContainer = closestElement(lastSplitRange.commonAncestorContainer);
-					let lastSplitRangeBlock = lastSplitRangeContainer && getContainingBlock(lastSplitRangeContainer);
-					let splitRangeContainer = closestElement(splitRange.commonAncestorContainer);
-					let splitRangeBlock = splitRangeContainer && getContainingBlock(splitRangeContainer);
-					if (lastSplitRangeBlock !== splitRangeBlock) {
-						text += '\n\n';
-					}
-				}
-				text += splitRange.toString().replace(/\s+/g, ' ');
-				lastSplitRange = splitRange;
-			}
-			text = text.trim();
-
+			text = getAnnotationText(range);
 			// If this annotation type wants text, but we didn't get any, abort
 			if (!text) {
 				return null;
@@ -384,6 +376,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		else {
 			text = undefined;
 		}
+		let image = type == 'image' && getAnnotationImage(range) || undefined;
 
 		let selector = this.toSelector(range);
 		if (!selector) {
@@ -409,7 +402,51 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			sortIndex,
 			pageLabel,
 			position: selector,
-			text
+			text,
+			image
+		};
+	}
+
+	protected _getAnnotationFromElement(elem: Element, type: AnnotationType, color: string | undefined): NewAnnotation<WADMAnnotation> | null {
+		let text;
+		if (type == 'highlight' || type == 'underline') {
+			text = elem instanceof this._iframeWindow.HTMLElement ? elem.innerText : elem.textContent;
+			// If this annotation type wants text, but we didn't get any, abort
+			if (!text) {
+				return null;
+			}
+		}
+		else {
+			text = undefined;
+		}
+		let image = type == 'image' && elem.tagName === 'IMG' && getImageDataURL(elem) || undefined;
+
+		let selector = this.toSelector(elem);
+		if (!selector) {
+			return null;
+		}
+
+		let pageLabel = this.pageMapping.isPhysical && this.pageMapping.getPageLabel(elem) || '';
+
+		// Use the number of characters between the start of the section and the start of the selection range
+		// to disambiguate the sortIndex
+		let sectionContainer = elem.closest('[data-section-index]');
+		if (!sectionContainer) {
+			return null;
+		}
+		let sectionIndex = parseInt(sectionContainer.getAttribute('data-section-index')!);
+		let offsetRange = this._iframeDocument.createRange();
+		offsetRange.setStart(sectionContainer, 0);
+		offsetRange.setEndBefore(elem);
+		let sortIndex = String(sectionIndex).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
+		return {
+			type,
+			color,
+			sortIndex,
+			pageLabel,
+			position: selector,
+			text,
+			image
 		};
 	}
 

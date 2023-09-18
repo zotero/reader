@@ -194,15 +194,13 @@ function Toolbar(props) {
 						onClick={() => handleToolClick('text')}
 					><IconText/></button>
 				)}
-				{props.type === 'pdf' && (
-					<button
-						tabIndex={-1}
-						className={cx('toolbar-button area', { active: props.tool.type === 'image' })}
-						title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
-						disabled={props.readOnly}
-						onClick={() => handleToolClick('image')}
-					><IconImage/></button>
-				)}
+				<button
+					tabIndex={-1}
+					className={cx('toolbar-button area', { active: props.tool.type === 'image' })}
+					title={intl.formatMessage({ id: props.type == 'pdf' ? 'pdfReader.selectArea' : 'pdfReader.selectImage' })}
+					disabled={props.readOnly}
+					onClick={() => handleToolClick('image')}
+				><IconImage/></button>
 				{props.type === 'pdf' && (
 					<button
 						tabIndex={-1}

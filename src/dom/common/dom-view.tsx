@@ -192,7 +192,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// Utilities for annotations - abstractions over the specific types of selectors used by the two views
 	// ***
 
-	abstract toSelector(range: Range): Selector | null;
+	abstract toSelector(rangeOrNode: Range | Node): Selector | null;
 
 	abstract toDisplayedRange(selector: Selector): Range | null;
 
@@ -205,6 +205,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected abstract _getHistoryLocation(): NavLocation | null;
 
 	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
+
+	protected abstract _getAnnotationFromElement(elem: Element, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
 
 	protected abstract _updateViewState(): void;
 
@@ -357,6 +359,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				type: 'highlight',
 				color: SELECTION_COLOR,
 				key: '_highlightedPosition',
+				position: this._highlightedPosition,
 				range: this.toDisplayedRange(this._highlightedPosition)!,
 			});
 		}
@@ -369,6 +372,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				text: this._previewAnnotation.text,
 				comment: this._previewAnnotation.comment,
 				key: '_previewAnnotation',
+				position: this._previewAnnotation.position,
 				range: this.toDisplayedRange(this._previewAnnotation.position)!,
 			});
 		}
@@ -524,9 +528,24 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._tool.type == 'note') {
 			let range = this._getNoteTargetRange(event);
 			if (range) {
-				this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+				this._previewAnnotation = this._getAnnotationFromRange(range, this._tool.type, this._tool.color);
 				this._renderAnnotations();
 			}
+		}
+		else if (this._tool.type == 'image') {
+			let target = event.target as Element;
+			if (target.tagName == 'IMG') {
+				this._previewAnnotation = this._getAnnotationFromElement(target, this._tool.type, this._tool.color);
+				// Don't allow duplicate image annotations
+				if (this._annotations.find(a => a.type == 'image' && a.position == this._previewAnnotation!.position)) {
+					this._previewAnnotation = null;
+				}
+			}
+			else {
+				// Note tool keeps previous preview if there isn't a new valid target, image tool doesn't
+				this._previewAnnotation = null;
+			}
+			this._renderAnnotations();
 		}
 	}
 
@@ -567,19 +586,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent): Range | null {
 		let target = event.target as Element;
-		// Disable pointer events and rerender so we can get the cursor position in the text layer,
-		// not the annotation layer, even if the mouse is over the annotation layer
 		let range = this._iframeDocument.createRange();
 		if (target.tagName === 'IMG') { // Allow targeting images directly
 			range.selectNode(target);
-		}
-		else if (target.closest('[data-annotation-id]')) {
-			let annotation = this._annotationsByID.get(
-				target.closest('[data-annotation-id]')!.getAttribute('data-annotation-id')!
-			)!;
-			let annotationRange = this.toDisplayedRange(annotation.position)!;
-			range.setStart(annotationRange.startContainer, annotationRange.startOffset);
-			range.setEnd(annotationRange.endContainer, annotationRange.endOffset);
 		}
 		else {
 			let pos = supportsCaretPositionFromPoint()
@@ -960,10 +969,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
-		if (event.button == 0 && this._tool.type == 'note' && this._previewAnnotation) {
-			this._options.onAddAnnotation(this._previewAnnotation, true);
-			event.preventDefault();
+		if (event.button == 0 && (this._tool.type == 'note' || this._tool.type == 'image') && this._previewAnnotation) {
+			this._options.onAddAnnotation(this._previewAnnotation, this._tool.type == 'note');
+			this._previewAnnotation = null;
+			this._renderAnnotations();
 
+			event.preventDefault();
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
 			// if the note is added to a link. "Fix" this by eating all click events in the next half second.
 			// Very silly.
@@ -1081,7 +1092,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// When using any tool besides pointer, touches should annotate but pinch-zoom should still be allowed
 		this._iframeDocument.documentElement.style.touchAction = tool.type != 'pointer' ? 'none' : 'auto';
 
-		if (this._previewAnnotation && tool.type !== 'note') {
+		if (this._previewAnnotation && tool.type !== this._previewAnnotation.type) {
 			this._previewAnnotation = null;
 		}
 		this._renderAnnotations();
