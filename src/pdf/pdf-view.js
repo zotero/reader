@@ -1853,8 +1853,14 @@ class PDFView {
 		// Only note and image annotations are supported
 		else if (action.type === 'moveAndDrag' && dragging) {
 			let rect = getPositionBoundingRect(action.annotation.position);
-			let p = [originalPagePosition.rects[0][0], originalPagePosition.rects[0][1]];
-			let dp = [p[0] - rect[0] - action.x, p[1] - rect[1] - action.y];
+			let x = originalPagePosition.rects[0][0];
+			let y = originalPagePosition.rects[0][1];
+
+			let viewBox = page.originalPage.viewport.viewBox;
+			x = x > viewBox[2] && viewBox[2] || x < viewBox[0] && viewBox[0] || x;
+			y = y > viewBox[3] && viewBox[3] || y < viewBox[1] && viewBox[1] || y;
+
+			let dp = [x - rect[0] - action.x, y - rect[1] - action.y];
 
 			if (action.annotation.type === 'ink') {
 				let mm = [1, 0, 0, 1, dp[0], dp[1]];
