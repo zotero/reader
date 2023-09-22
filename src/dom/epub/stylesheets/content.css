@@ -94,6 +94,7 @@ body.flow-mode-paginated > .sections {
 	max-height: calc(100vh - 80px);
 	margin-inline: auto;
 	column-fill: auto;
+    -webkit-column-fill: auto;
 	column-gap: 60px;
 	overflow: hidden;
 	overscroll-behavior: none;
@@ -101,17 +102,19 @@ body.flow-mode-paginated > .sections {
 
 body.flow-mode-paginated > .sections.spread-mode-none {
 	max-width: 800px;
-	column-count: 1;
+    column-width: 800px;
 	column-gap: 100vw;
 }
 
 body.flow-mode-paginated > .sections.spread-mode-odd {
-	column-count: 2;
+	column-width: calc(50vw - 80px);
 }
 
 @media (max-width: 800px) {
 	body.flow-mode-paginated > .sections {
-		column-count: 1;
+        max-width: 800px;
+        column-width: 800px;
+        column-gap: 100vw;
 	}
 }
 
