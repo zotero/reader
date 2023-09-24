@@ -1154,6 +1154,7 @@ class Reader {
 				};
 			}
 		);
+		window._draggingAnnotationIDs = annotations.map(x => x.id);
 		// Clear image data set on some untested type (when drag is initiated on img),
 		// which also prevents word processors from using `text/plain`, and
 		// results to dumped base64 content (LibreOffice) or image (Google Docs)

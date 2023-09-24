@@ -202,6 +202,10 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		selectionTimeRef.current = Date.now();
 	}, [props.selectedIDs]);
 
+	let handleAnnotationChange = useCallback((annotation) => {
+		props.onUpdateAnnotations([annotation]);
+	}, []);
+
 	function handlePointerDown() {
 		pointerDownRef.current = true;
 	}
@@ -280,6 +284,35 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		}
 		props.onChangeFilter({ ...props.filter, authors });
 	}
+
+	const handleSelectorChange = useCallback((remove, tag, color) => {
+		let selectedAnnotations = annotationsRef.current.filter(x => window._draggingAnnotationIDs.includes(x.id));
+		selectedAnnotations = selectedAnnotations.filter(x => !x.readOnly);
+		let annotations = [];
+		for (let annotation of selectedAnnotations) {
+			if (tag) {
+				if (remove) {
+					if (annotation.tags.find(x => x.name === tag.name)) {
+						annotation.tags = annotation.tags.filter(x => x.name !== tag.name);
+						annotations.push(annotation);
+					}
+				}
+				else {
+					if (!annotation.tags.find(x => x.name === tag.name)) {
+						annotation.tags.push(tag);
+						annotations.push(annotation);
+					}
+				}
+			}
+			else if (color) {
+				if (annotation.color !== color) {
+					annotation.color = color;
+					annotations.push(annotation);
+				}
+			}
+		}
+		props.onUpdateAnnotations(annotations);
+	}, []);
 
 	function handleSelectorContextMenu(event) {
 		if (platform === 'web') {
@@ -457,7 +490,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 							annotation={annotation}
 							expansionState={props.selectedIDs.includes(annotation.id) ? expansionState : 0}
 							onFocus={handleAnnotationFocus}
-							onChange={props.onChange}
+							onChange={handleAnnotationChange}
 							onClickAnnotationSection={handleSidebarAnnotationSectionClick}
 							onDoubleClickText={handleSidebarAnnotationDoubleClick}
 							onOpenPageLabelPopup={props.onOpenPageLabelPopup}
@@ -476,8 +509,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 					onClickTag={handleTagClick}
 					onClickColor={handleColorClick}
 					onClickAuthor={handleAuthorClick}
-					onChange={() => {
-					}} // TODO: Should just change filter instead
+					onChange={handleSelectorChange}
 				/>
 			)}
 		</React.Fragment>);

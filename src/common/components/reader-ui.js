@@ -95,10 +95,6 @@ const ReaderUI = React.forwardRef((props, ref) => {
 	let findState = state.primary ? state.primaryViewFindState : state.secondaryViewFindState;
 	let viewStats = state.primary ? state.primaryViewStats : state.secondaryViewStats;
 
-	let onChangeAnnotation = useCallback((annotation) => {
-		props.onUpdateAnnotations([annotation]);
-	}, []);
-
 	return (
 		<Fragment>
 			<div>
@@ -158,7 +154,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 									selectedIDs={state.selectedAnnotationIDs}
 									authorName="test"
 									onSelectAnnotations={props.onSelectAnnotations}
-									onChange={onChangeAnnotation}
+									onUpdateAnnotations={props.onUpdateAnnotations}
 									onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
 									onOpenTagsPopup={props.onOpenTagsPopup}
 									onOpenPageLabelPopup={props.onOpenPageLabelPopup}
