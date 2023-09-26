@@ -459,13 +459,17 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	navigateBack() {
-		this._iframeWindow.scrollTo(...this._navStack.popBack());
-		this._handleViewUpdate();
+		if (this._navStack.canPopBack()) {
+			this._iframeWindow.scrollTo(...this._navStack.popBack());
+			this._handleViewUpdate();
+		}
 	}
 
 	navigateForward() {
-		this._iframeWindow.scrollTo(...this._navStack.popForward());
-		this._handleViewUpdate();
+		if (this._navStack.canPopForward()) {
+			this._iframeWindow.scrollTo(...this._navStack.popForward());
+			this._handleViewUpdate();
+		}
 	}
 
 	// Still need to figure out how this is going to work

@@ -910,17 +910,21 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	// This is like back/forward navigation in browsers. Try Cmd-ArrowLeft and Cmd-ArrowRight in PDF view
 	navigateBack() {
-		this.navigate({ pageNumber: this._navStack.popBack() }, {
-			skipNavStack: true,
-			behavior: 'auto',
-		});
+		if (this._navStack.canPopBack()) {
+			this.navigate({ pageNumber: this._navStack.popBack() }, {
+				skipNavStack: true,
+				behavior: 'auto',
+			});
+		}
 	}
 
 	navigateForward() {
-		this.navigate({ pageNumber: this._navStack.popForward() }, {
-			skipNavStack: true,
-			behavior: 'auto',
-		});
+		if (this._navStack.canPopForward()) {
+			this.navigate({ pageNumber: this._navStack.popForward() }, {
+				skipNavStack: true,
+				behavior: 'auto',
+			});
+		}
 	}
 
 	navigateToFirstPage() {
