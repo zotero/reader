@@ -180,6 +180,7 @@ function ToolbarButton({ action, onCommand }) {
 
 function Toolbar({ onCommand }) {
 	let toolbarRef = useRef();
+	let activeRef = useRef(false);
 
 	useLayoutEffect(() => {
 		update();
@@ -197,6 +198,9 @@ function Toolbar({ onCommand }) {
 	});
 
 	function handleKeyDown(event) {
+		if (!activeRef.current) {
+			return;
+		}
 		let { key } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey;
@@ -228,6 +232,7 @@ function Toolbar({ onCommand }) {
 		let selection = window.getSelection();
 		if (!selection || selection.isCollapsed) {
 			toolbarRef.current.style.display = 'none';
+			activeRef.current = false;
 			return;
 		}
 		let range = selection.getRangeAt(0);
@@ -235,6 +240,7 @@ function Toolbar({ onCommand }) {
 		let editorNode = range.startContainer.parentNode.closest('.editor');
 		if (!editorNode.parentNode.contains(toolbarRef.current)) {
 			toolbarRef.current.style.display = 'none';
+			activeRef.current = false;
 			return;
 		}
 		let editorRect = editorNode.getBoundingClientRect();
@@ -245,6 +251,7 @@ function Toolbar({ onCommand }) {
 		}
 		toolbarRef.current.style.display = 'flex';
 		toolbarRef.current.style.top = top + 'px';
+		activeRef.current = true;
 	}
 
 	return (
