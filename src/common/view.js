@@ -13,6 +13,7 @@ class View {
 		this._view = this._createView();
 		this._annotationManager = new AnnotationManager({
 			readOnly: options.readOnly,
+			authorName: options.authorName,
 			annotations: options.annotations,
 			onSave: options.onSaveAnnotations,
 			onDelete: nop,
