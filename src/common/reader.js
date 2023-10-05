@@ -923,7 +923,7 @@ class Reader {
 			if (annotation) {
 				if (shift && this._state.selectedAnnotationIDs.length) {
 					let selectedIDs = this._state.selectedAnnotationIDs.slice();
-					let annotations = this._state.annotations;
+					let annotations = this._state.annotations.filter(x => !x._hidden);
 
 					let annotationIndex = annotations.findIndex(x => x.id === id);
 					let lastSelectedIndex = annotations.findIndex(x => x.id === selectedIDs.slice(-1)[0]);
