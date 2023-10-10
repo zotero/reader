@@ -498,6 +498,7 @@ class Reader {
 		else {
 			this._updateState({ tool: this._tools[type] });
 		}
+		this.setSelectedAnnotations([]);
 	}
 
 	setFilter(filter) {
