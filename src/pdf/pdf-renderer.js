@@ -9,19 +9,27 @@ class PDFRenderer {
 	constructor(options) {
 		this._pdfView = options.pdfView;
 		this._processing = false;
+		this._lastRendered = new Map();
 	}
 
-	async _renderNext(previousAnnotationID) {
+	async _renderNext() {
+		if (this._processing) {
+			return;
+		}
 		this._processing = true;
 		let annotation = this._pdfView._annotations.find(x => ['image', 'ink'].includes(x.type) && !x.image);
-		// If for some reason trying to process the same annotation, stop to avoid infinite loop
-		if (annotation && previousAnnotationID !== annotation.id) {
-			let image = await this._renderAnnotationImage(annotation);
-			setTimeout(() => this._renderNext(annotation.id));
-			if (image) {
-				this._pdfView._onUpdateAnnotations([{ id: annotation.id, image }]);
+		if (annotation) {
+			let lastRendered = this._lastRendered.get(annotation.id);
+			if (!lastRendered || lastRendered < annotation.dateModified) {
+				this._lastRendered.set(annotation.id, annotation.dateModified);
+				let image = await this._renderAnnotationImage(annotation);
+				if (image) {
+					this._pdfView._onUpdateAnnotations([{ id: annotation.id, image }]);
+				}
+				setTimeout(() => this._renderNext());
 			}
 		}
+		this._processing = false;
 	}
 
 	async _renderAnnotationImage(annotation) {
