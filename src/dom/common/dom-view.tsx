@@ -108,9 +108,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// unless the allow-scripts permission is added to the frame's sandbox. We prevent scripts in the frame from
 		// running via the CSP.
 		// https://bugs.webkit.org/show_bug.cgi?id=218086
-		if (isSafari) {
-			this._iframe.sandbox.add('allow-scripts');
-		}
+
+		// TEMP: Add allow-scripts on all browsers until we can reliably detect Safari on all platforms
+		// if (isSafari) {
+		this._iframe.sandbox.add('allow-scripts');
+		// }
+
 		// Set the CSP directly on the iframe; we also add it as a <meta> tag in the srcdoc for browsers that don't
 		// support the csp attribute (currently all browsers besides Chrome derivatives)
 		this._iframe.setAttribute('csp', this._getCSP());
