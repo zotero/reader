@@ -338,7 +338,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 			let rect = event.target.closest('.tags').getBoundingClientRect();
 			return props.onOpenTagsPopup(id, rect.left, rect.top);
 		}
-		if (section === 'highlight' && selectedIDsRef.current.length === 1
+		if (section === 'text' && selectedIDsRef.current.length === 1
 			&& selectedIDsRef.current[0] === id) {
 			if (expansionStateRef.current >= 1 && expansionStateRef.current <= 2) {
 				setExpansionState(2);
