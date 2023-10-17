@@ -454,7 +454,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	tags = Object.values(tags);
 	let collator = new Intl.Collator();
 	tags.sort(function (a, b) {
-		return collator.compare(a.tag, b.tag);
+		return collator.compare(a.name, b.name);
 	});
 	tags = [...coloredTags, ...tags];
 
