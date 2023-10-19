@@ -204,9 +204,8 @@ class AnnotationManager {
 		}
 		else {
 			this._annotations.push(annotation);
-			this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 		}
-
+		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => x.id !== annotation.id);
 
 		if (instant) {
