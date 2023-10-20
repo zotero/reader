@@ -65,12 +65,10 @@ export function PopupPreview(props) {
 							|| annotation.type === 'text' && <IconText/>
 						}
 					</div>
-					{annotation.pageLabel && (
-						<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
-							<div><FormattedMessage id="pdfReader.page"/></div>
-							<div className="label">{annotation.pageLabel}</div>
-						</div>
-					)}
+					<div className="page" onDoubleClick={handlePageLabelDoubleClick}>
+						<div><FormattedMessage id="pdfReader.page"/></div>
+						<div className="label">{annotation.pageLabel || '-'}</div>
+					</div>
 				</div>
 				<div className="right">
 					{annotation.authorName && (
@@ -273,16 +271,14 @@ export function SidebarPreview(props) {
 							|| annotation.type === 'text' && <IconText/>
 						}
 					</div>
-					{annotation.pageLabel && (
-						<div
-							className="page"
-							onClick={handlePageLabelClick}
-							onDoubleClick={handlePageLabelDoubleClick}
-						>
-							<div><FormattedMessage id="pdfReader.page"/></div>
-							<div className="label">{annotation.pageLabel}</div>
-						</div>
-					)}
+					<div
+						className="page"
+						onClick={handlePageLabelClick}
+						onDoubleClick={handlePageLabelDoubleClick}
+					>
+						<div><FormattedMessage id="pdfReader.page"/></div>
+						<div className="label">{annotation.pageLabel || '-'}</div>
+					</div>
 				</div>
 				<div className="right">
 					{annotation.authorName && (
