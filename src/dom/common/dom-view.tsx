@@ -720,13 +720,19 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					return;
 				}
 				this._options.onSelectAnnotations([idsHere[0]], event.nativeEvent);
-				if (this._selectedAnnotationIDs.length == 1) {
+				// In view mode (mobile), we assume that there's no special processing inside
+				// onSelectAnnotations() for e.g. the Shift key that might result in multiple annotations
+				// being selected, annotations being deselected, and so on. On desktop, there might be,
+				// but we can also count on onSelectAnnotations() being handled synchronously.
+				// Revisit if either assumption no longer holds true.
+				if (this._options.mobile || this._selectedAnnotationIDs.length == 1) {
 					this._openAnnotationPopup(this._annotationsByID.get(idsHere[0])!);
 				}
 			}
 			else {
 				this._options.onSelectAnnotations([id], event.nativeEvent);
-				if (this._selectedAnnotationIDs.length == 1) {
+				// See above
+				if (this._options.mobile || this._selectedAnnotationIDs.length == 1) {
 					this._openAnnotationPopup(this._annotationsByID.get(id)!);
 				}
 			}
@@ -1055,6 +1061,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 }
 
 export type DOMViewOptions<State extends DOMViewState, Data> = {
+	primary?: boolean;
+	mobile?: boolean;
 	container: Element;
 	tool: Tool;
 	platform: Platform;
