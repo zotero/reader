@@ -134,7 +134,7 @@ async function main() {
 	// ]);
 
 	// Remove annotation from the view
-	// window._view.unsetAnnotation(['FZMV3CF6']);
+	// window._view.unsetAnnotations(['FZMV3CF6']);
 }
 
 main();
