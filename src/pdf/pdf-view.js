@@ -1249,7 +1249,7 @@ class PDFView {
 				let r = position.rects[0];
 				let br = getPositionBoundingRect(annotation.position);
 				let action = { type: 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1], selection: true };
-				return { action, selectAnnotations: [] };
+				return { action, selectAnnotations: null };
 			}
 		}
 
@@ -2075,6 +2075,10 @@ class PDFView {
 						this._onSelectAnnotations([nextID], event);
 						this._openAnnotationPopup();
 					}
+				}
+				// This is necessary to clear text selection if the drag action hasn't been triggered
+				if (action.selection && action.type === 'drag' && !action.triggered) {
+					this._onSelectAnnotations([], event);
 				}
 				if (action.type === 'selectText') {
 					// TODO: Handle triple click as well. Likely there should be a delay when action.mode is 'word'
