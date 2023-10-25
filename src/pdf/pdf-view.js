@@ -2015,6 +2015,8 @@ class PDFView {
 
 						if (lastInkAnnotation
 							&& lastInkAnnotation.position.pageIndex === action.annotation.position.pageIndex
+							&& lastInkAnnotation.position.width === action.annotation.position.width
+							&& lastInkAnnotation.color === action.annotation.color
 							&& Date.now() - Date.parse(lastInkAnnotation.dateModified) < 10 * 1000 && dist < 50) {
 							let { id, position } = lastInkAnnotation;
 							let paths = lastInkAnnotation.position.paths.slice();
