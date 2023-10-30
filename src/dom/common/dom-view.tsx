@@ -975,7 +975,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
 
 		// When using any tool besides pointer, touches should annotate but pinch-zoom should still be allowed
-		this._iframeDocument.documentElement.style.touchAction = tool.type != 'pointer' ? 'pinch-zoom' : 'auto';
+		this._iframeDocument.documentElement.style.touchAction = tool.type != 'pointer' ? 'none' : 'auto';
 
 		if (this._previewAnnotation && tool.type !== 'note') {
 			this._previewAnnotation = null;
