@@ -5,7 +5,7 @@ import { IconTreeItemCollapsed, IconTreeItemExpanded } from '../common/icons';
 
 
 
-function Item({ item, children, onNavigate, onUpdate }) {
+function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 	function handleExpandToggleClick(event) {
 		item.expanded = !item.expanded;
 		onUpdate();
@@ -13,21 +13,39 @@ function Item({ item, children, onNavigate, onUpdate }) {
 
 	function handleKeyDown(event) {
 		event.preventDefault();
-		if (event.key === 'Enter') {
-			handleExpandToggleClick();
+		if (event.key === 'Enter' && item.url) {
+			onOpenLink(item.url);
 		}
-		else if (!window.rtl && event.key === 'ArrowLeft' || window.rtl && event.key === 'ArrowRight') {
-			item.expanded = false;
-			onUpdate();
-		}
-		else if (!window.rtl && event.key === 'ArrowRight' || window.rtl && event.key === 'ArrowLeft') {
-			item.expanded = true;
-			onUpdate();
+		if (item?.items.length) {
+			if (event.key === 'Enter') {
+				handleExpandToggleClick();
+			}
+			else if (!window.rtl && event.key === 'ArrowLeft' || window.rtl && event.key === 'ArrowRight') {
+				item.expanded = false;
+				onUpdate();
+			}
+			else if (!window.rtl && event.key === 'ArrowRight' || window.rtl && event.key === 'ArrowLeft') {
+				item.expanded = true;
+				onUpdate();
+			}
 		}
 	}
 
 	function handleFocus(event) {
-		onNavigate(item.location);
+		if (item.location) {
+			onNavigate(item.location);
+		}
+	}
+
+	function handleClick() {
+		if (item.items?.length) {
+			handleExpandToggleClick();
+		}
+	}
+
+	function handleURLClick(event) {
+		event.preventDefault();
+		onOpenLink(item.url);
 	}
 
 	let toggle;
@@ -49,14 +67,15 @@ function Item({ item, children, onNavigate, onUpdate }) {
 					tabIndex={-1}
 					onFocus={handleFocus}
 					onKeyDown={handleKeyDown}
-				>{item.title}</div>
+					onClick={handleClick}
+				>{item.title}{item.url && (<> [<a href={item.url} onClick={handleURLClick}>URL</a>]</>)}</div>
 			</div>
 			{children && <div className="children">{children}</div>}
 		</li>
 	);
 }
 
-function OutlineView({ outline, onNavigate, onUpdate}) {
+function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 	const intl = useIntl();
 
 	function handleUpdate() {
@@ -71,6 +90,7 @@ function OutlineView({ outline, onNavigate, onUpdate}) {
 						key={index}
 						item={item}
 						onNavigate={onNavigate}
+						onOpenLink={onOpenLink}
 						onUpdate={handleUpdate}
 					>
 						{item.expanded && item.items && renderItems(item.items)}
