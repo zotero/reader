@@ -53,7 +53,7 @@ export default class Page {
 
 	// PDF to Canvas transform
 	get transform() {
-		let scale = parseFloat(this.originalCanvas.width) / this.originalPage.viewport.width;
+		let scale = this.originalPage.currentCanvasWidth / this.originalPage.viewport.width;
 		let scaleTransform = [scale, 0, 0, scale, 0, 0];
 		return transform(scaleTransform, this.originalPage.viewport.transform);
 	}
