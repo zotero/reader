@@ -488,6 +488,9 @@ class Reader {
 			tool[key] = params[key];
 		}
 		this._updateState({ tool });
+		if (!['pointer', 'hand'].includes(tool.type)) {
+			this.setSelectedAnnotations([]);
+		}
 	}
 
 	toggleTool(type) {
