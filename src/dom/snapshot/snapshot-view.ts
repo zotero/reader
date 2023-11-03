@@ -129,7 +129,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				continue;
 			}
 			let headingFontSize = parseFloat(getComputedStyle(heading).fontSize);
-			if (headingFontSize / bodyFontSize <= 1) {
+			if (headingFontSize <= bodyFontSize) {
 				continue;
 			}
 
