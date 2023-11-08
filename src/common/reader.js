@@ -897,6 +897,10 @@ class Reader {
 
 	// Note: It's a bit weird, but this function is also used to deselect text in views, if an empty ids array is provided
 	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
+		// Switch to annotations view
+		if (triggeredFromView && ids.length === 1 && this._state.sidebarOpen && this._state.sidebarView !== 'annotations') {
+			this.setSidebarView('annotations');
+		}
 		let deleteIDs = [];
 		for (let annotation of this._state.annotations) {
 			if (annotation.type === 'text' && !annotation.comment && !ids.includes(annotation.id)) {
@@ -923,7 +927,6 @@ class Reader {
 
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = triggeredFromView;
-		let selectedLength = this._state.selectedAnnotationIDs.length;
 		if (ids.length === 1) {
 			let id = ids[0];
 			let annotation = this._annotationManager._annotations.find(x => x.id === id);
@@ -1003,11 +1006,14 @@ class Reader {
 					}
 				}
 			}
-			let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-			if (sidebarItem && this._state.selectedAnnotationIDs.length > selectedLength) {
-				this.setSidebarView('annotations');
+			// Smoothly scroll to the annotation, if only one was selected
+			if (this._state.selectedAnnotationIDs.length === 1) {
+				// Wait a bit to make sure the annotation view is rendered
 				setTimeout(() => {
-					sidebarItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+					let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+					if (sidebarItem) {
+						sidebarItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+					}
 				}, 50);
 			}
 		}
