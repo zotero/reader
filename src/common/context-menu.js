@@ -65,7 +65,11 @@ export function createViewContextMenu(reader, params) {
 					label: reader._getString('general.copy'),
 					disabled: !reader.canCopy,
 					onCommand: () => reader.copy()
-				}
+				},
+				reader._type === 'snapshot' && {
+					label: reader._getString('pdfReader.hideElement'),
+					onCommand: () => reader.toggleHideElementPopup({ open: true })
+				},
 			],
 			[
 				{

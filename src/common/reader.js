@@ -56,6 +56,7 @@ class Reader {
 		this._onDeletePages = options.onDeletePages;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
+		this._onUpdateSnapshotHTML = options.onUpdateSnapshotHTML;
 
 		this._localizedStrings = options.localizedStrings;
 
@@ -159,6 +160,7 @@ class Reader {
 				entireWord: false,
 				result: null,
 			},
+			primaryViewHideElementPopup: null,
 			secondaryViewState: null,
 			secondaryViewStats: {},
 			secondaryViewAnnotationPopup: null,
@@ -172,7 +174,8 @@ class Reader {
 				caseSensitive: false,
 				entireWord: false,
 				result: null
-			}
+			},
+			secondaryViewHideElementPopup: null,
 		};
 
 		if (options.secondaryViewState) {
@@ -260,6 +263,9 @@ class Reader {
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
 						onToggleFindPopup={this.toggleFindPopup.bind(this)}
+
+						onToggleHideElementPopup={this.toggleHideElementPopup.bind(this)}
+						onHideElement={this._handleHideElement.bind(this)}
 
 						ref={this._readerRef}
 					/>
@@ -362,6 +368,15 @@ class Reader {
 		}
 		if (this._state.secondaryViewFindState !== previousState.secondaryViewFindState) {
 			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
+		}
+
+		if (this._type === 'snapshot') {
+			if (this._state.primaryViewHideElementPopup !== previousState.primaryViewHideElementPopup) {
+				this._primaryView?.setHideElementPopup(this._state.primaryViewHideElementPopup);
+			}
+			if (this._state.secondaryViewHideElementPopup !== previousState.secondaryViewHideElementPopup) {
+				this._secondaryView?.setHideElementPopup(this._state.secondaryViewHideElementPopup);
+			}
 		}
 
 		if (this._type === 'epub' && this._state.fontFamily !== previousState.fontFamily) {
@@ -584,6 +599,28 @@ class Reader {
 		this._updateState({ [key]: findState });
 	}
 
+	toggleHideElementPopup({ primary, open } = {}) {
+		this._ensureType('snapshot');
+		if (primary === undefined) {
+			primary = this._lastViewPrimary;
+		}
+		let key = primary ? 'primaryViewHideElementPopup' : 'secondaryViewHideElementPopup';
+		if (open === undefined) {
+			open = !this._state[key];
+		}
+		if (open) {
+			this._updateState({ [key]: {} });
+		}
+		else {
+			this._updateState({ [key]: null });
+		}
+	}
+
+	_handleHideElement(primary, element) {
+		this._updateState({ [primary ? 'primaryViewHideElementPopup' : 'secondaryViewHideElementPopup']: null });
+		(primary ? this._primaryView : this._secondaryView).hideElement(element);
+	}
+
 	_sidebarScrollAnnotationIntoViev(id) {
 		this._readerRef.current.sidebarScrollAnnotationIntoView(id);
 	}
@@ -773,8 +810,21 @@ class Reader {
 				fontFamily: this._state.fontFamily
 			});
 		} else if (this._type === 'snapshot') {
+			let onSetHideElementPopup = (hideElementPopup) => {
+				this._updateState({ [primary ? 'primaryViewHideElementPopup' : 'secondaryViewHideElementPopup']: hideElementPopup });
+			};
+
+			let onUpdateSnapshotHTML = async (html) => {
+				let data = await this._onUpdateSnapshotHTML(html);
+				if (data) {
+					this.reload(data);
+				}
+			};
+
 			view = new SnapshotView({
-				...common
+				...common,
+				onSetHideElementPopup,
+				onUpdateSnapshotHTML
 			});
 		}
 
@@ -1101,6 +1151,7 @@ class Reader {
 	reload(data) {
 		this._data = data;
 		this._primaryViewContainer.replaceChildren();
+		this._primaryView = null; // Prevent reusing data from old _primaryView
 		this._primaryView = this._createView(true);
 		if (this._state.splitType) {
 			this._secondaryViewContainer.replaceChildren();

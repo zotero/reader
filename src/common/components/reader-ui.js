@@ -15,6 +15,7 @@ import ContextMenu from './context-menu';
 import LabelOverlay from './overlay/label-overlay';
 import PasswordOverlay from './overlay/password-overlay';
 import PrintOverlay from './overlay/print-overlay';
+import HideElementPopup from "./view/hide-element-popup";
 
 
 function View(props) {
@@ -24,6 +25,14 @@ function View(props) {
 
 	function handleFindStateChange(params) {
 		props.onChangeFindState(primary, params);
+	}
+
+	function handleHideElementClose() {
+		props.onToggleHideElementPopup({ primary, open: false });
+	}
+
+	function handleHideElementCommit(element) {
+		props.onHideElement(primary, element);
 	}
 
 	function handleFindNext() {
@@ -75,6 +84,13 @@ function View(props) {
 				<OverlayPopup
 					params={state[name + 'ViewOverlayPopup']}
 					onOpenLink={props.onOpenLink}
+				/>
+			}
+			{state[name + 'ViewHideElementPopup'] && !state.readOnly &&
+				<HideElementPopup
+					params={state[name + 'ViewHideElementPopup']}
+					onClose={handleHideElementClose}
+					onCommit={handleHideElementCommit}
 				/>
 			}
 		</div>
