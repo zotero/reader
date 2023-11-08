@@ -37,7 +37,7 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 		}
 	}
 
-	function handleClick() {
+	function handleDoubleClick() {
 		if (item.items?.length) {
 			handleExpandToggleClick();
 		}
@@ -67,7 +67,7 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 					tabIndex={-1}
 					onFocus={handleFocus}
 					onKeyDown={handleKeyDown}
-					onClick={handleClick}
+					onDoubleClick={handleDoubleClick}
 				>{item.title}{item.url && (<> [<a href={item.url} onClick={handleURLClick}>URL</a>]</>)}</div>
 			</div>
 			{children && <div className="children">{children}</div>}
