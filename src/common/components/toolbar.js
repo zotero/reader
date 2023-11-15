@@ -40,7 +40,9 @@ function Toolbar(props) {
 	}
 
 	function handlePageNumberBlur(event) {
-		props.onChangePageNumber(event.target.value);
+		if (event.target.value != (props.pageLabel ?? (props.pageIndex + 1))) {
+			props.onChangePageNumber(event.target.value);
+		}
 	}
 
 	return (
