@@ -670,24 +670,26 @@ class PDFView {
 		this._history.save({ dest: [pageIndex, { name: 'XYZ' }, left, top, null] });
 	}
 
+	_highlightPosition(position) {
+		this._highlightedPosition = position;
+		this._render();
+		setTimeout(() => {
+			this._highlightedPosition = null;
+			this._render();
+		}, 2000);
+	}
+
 	navigate(location, skipHistory) {
-		if (location.annotationID) {
+		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
-			if (annotation) {
-				this.navigateToPosition(annotation.position);
-			}
+			this.navigateToPosition(annotation.position);
 		}
 		else if (location.dest) {
 			this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
 		}
 		else if (location.position) {
 			this.navigateToPosition(location.position);
-			this._highlightedPosition = location.position;
-			this._render();
-			setTimeout(() => {
-				this._highlightedPosition = null;
-				this._render();
-			}, 2000);
+			this._highlightPosition(location.position);
 		}
 		else if (Number.isInteger(location.pageIndex)) {
 			this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({
