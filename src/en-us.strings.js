@@ -89,6 +89,7 @@ export default {
 	'general.magenta': 'Magenta',
 	'general.orange': 'Orange',
 	'general.gray': 'Gray',
+	'general.black': 'Black',
 	'general.showInLibrary': 'Show in Library',
 	'general.clearSelection': 'Clear Selection',
 	'general.update': 'Update',

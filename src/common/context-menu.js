@@ -1,4 +1,4 @@
-import { ANNOTATION_COLORS } from './defines';
+import { ANNOTATION_COLORS, EXTRA_INK_AND_TEXT_COLORS } from './defines';
 
 function appendCustomItemGroups(name, reader, params) {
 	let itemGroups = [];
@@ -20,6 +20,10 @@ function createItemGroup(itemGroups) {
 }
 
 export function createColorContextMenu(reader, params) {
+	let colors = ANNOTATION_COLORS.slice();
+	if (['text', 'ink'].includes(reader._state.tool.type)) {
+		colors.push(...EXTRA_INK_AND_TEXT_COLORS);
+	}
 	return {
 		internal: true,
 		x: params.x,
@@ -28,7 +32,7 @@ export function createColorContextMenu(reader, params) {
 			...[
 				reader._state.tool.type === 'eraser'
 					? []
-					: ANNOTATION_COLORS.map(([label, color]) => ({
+					: colors.map(([label, color]) => ({
 						label: reader._getString(label),
 						disabled: reader._state.readOnly,
 						checked: color === reader._state.tool.color,
@@ -137,6 +141,10 @@ export function createAnnotationContextMenu(reader, params) {
 	let annotations = reader._state.annotations.filter(x => params.ids.includes(x.id));
 	let readOnly = reader._state.readOnly || annotations.some(x => x.readOnly);
 	let currentColor = annotations.length === 1 && annotations[0].color;
+	let colors = ANNOTATION_COLORS.slice();
+	if (annotations.every(x => ['text', 'ink'].includes(x.type))) {
+		colors.push(...EXTRA_INK_AND_TEXT_COLORS);
+	}
 	return {
 		internal: true,
 		x: params.x,
@@ -150,7 +158,7 @@ export function createAnnotationContextMenu(reader, params) {
 					onCommand: () => reader._onAddToNote(annotations)
 				}
 			],
-			ANNOTATION_COLORS.map(([label, color]) => ({
+			colors.map(([label, color]) => ({
 				label: reader._getString(label),
 				disabled: readOnly,
 				persistent: true,
