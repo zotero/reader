@@ -507,3 +507,25 @@ export function getRotationDegrees(m) {
 	let degrees = theta * (180 / Math.PI);
 	return normalizeDegrees(degrees);
 }
+
+export function hexToRgb(hex) {
+	let r = parseInt(hex.slice(1, 3), 16),
+		g = parseInt(hex.slice(3, 5), 16),
+		b = parseInt(hex.slice(5, 7), 16);
+	return `rgb(${r}, ${g}, ${b})`;
+}
+
+export function rgbToHex(r, g, b) {
+	return "#" + [r, g, b].map(x => {
+		let hex = x.toString(16);
+		return hex.length === 1 ? "0" + hex : hex;
+	}).join('');
+}
+
+export function darkenHex(hex, percent) {
+	let [r, g, b] = hexToRgb(hex).match(/\d+/g).map(Number);
+	r = Math.max(0, r * (1 - percent / 100));
+	g = Math.max(0, g * (1 - percent / 100));
+	b = Math.max(0, b * (1 - percent / 100));
+	return rgbToHex(Math.round(r), Math.round(g), Math.round(b));
+}

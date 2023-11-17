@@ -1,5 +1,6 @@
-import { fitRectIntoRect, getPositionBoundingRect } from './lib/utilities';
+import { darkenHex, fitRectIntoRect, getPositionBoundingRect } from './lib/utilities';
 import { p2v } from './lib/coordinates';
+import { DARKEN_INK_AND_TEXT_COLOR } from '../common/defines';
 
 const SCALE = 4;
 const PATH_BOX_PADDING = 10; // pt
@@ -109,7 +110,7 @@ class PDFRenderer {
 			ctx.lineJoin = 'round';
 			ctx.lineWidth = position.width;
 			ctx.beginPath();
-			ctx.strokeStyle = color;
+			ctx.strokeStyle = darkenHex(color, DARKEN_INK_AND_TEXT_COLOR);
 			for (let path of position.paths) {
 				for (let i = 0; i < path.length - 1; i += 2) {
 					let x = path[i];

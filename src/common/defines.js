@@ -14,6 +14,8 @@ export let EXTRA_INK_AND_TEXT_COLORS = [
 	['general.black', '#000000']
 ];
 
+export const DARKEN_INK_AND_TEXT_COLOR = 5; // percent
+
 // https://developer.mozilla.org/en-US/docs/Web/CSS/system-color
 //export let SELECTION_COLOR = navigator.platform.includes('Mac') ? '#71ADFD' : 'Highlight';
 // TEMP: Use Mac color everywhere, since Highlight is too dark on Windows without opacity

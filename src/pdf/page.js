@@ -8,8 +8,9 @@ import {
 	getRotationDegrees,
 	normalizeDegrees
 } from './lib/utilities';
-import { MIN_IMAGE_ANNOTATION_SIZE, SELECTION_COLOR } from '../common/defines';
+import { DARKEN_INK_AND_TEXT_COLOR, MIN_IMAGE_ANNOTATION_SIZE, SELECTION_COLOR } from '../common/defines';
 import { getRectRotationOnText } from './selection';
+import { darkenHex } from './lib/utilities';
 
 export default class Page {
 	constructor(layer, originalPage) {
@@ -335,7 +336,7 @@ export default class Page {
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
 		this.actualContext.beginPath();
-		this.actualContext.strokeStyle = annotation.color;
+		this.actualContext.strokeStyle = darkenHex(annotation.color, DARKEN_INK_AND_TEXT_COLOR);
 		this.actualContext.lineWidth = position.width;
 		this.actualContext.lineCap = 'round';
 		this.actualContext.lineJoin = 'round';
@@ -404,7 +405,7 @@ export default class Page {
 					`min-height: calc(${position.fontSize}px * var(--scale-factor))`,
 					`width: calc(${width}px * var(--scale-factor))`,
 					`height: calc(${height}px * var(--scale-factor))`,
-					`color: ${annotation.color}`,
+					`color: ${darkenHex(annotation.color, DARKEN_INK_AND_TEXT_COLOR)}`,
 					`font-size: calc(${position.fontSize}px * var(--scale-factor))`,
 					`font-family: ${window.computedFontFamily}`
 				];
