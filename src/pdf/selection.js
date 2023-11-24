@@ -470,6 +470,11 @@ export function extractRangeByRects({ structuredText, pageIndex, rects }) {
 	return range;
 }
 
+function getTopMostRectFromPosition(position) {
+	// Sort the rectangles based on their y2 value in descending order and return the first one
+	return position?.rects.sort((a, b) => b[2] - a[2])[0];
+}
+
 export function getSortIndex(pdfPages, position) {
 	let { pageIndex } = position;
 	let offset = 0;
@@ -477,7 +482,7 @@ export function getSortIndex(pdfPages, position) {
 	if (pdfPages[position.pageIndex]) {
 		let chars = getFlattenedCharsByIndex(pdfPages, position.pageIndex);
 		let viewBox = pdfPages[position.pageIndex].viewBox;
-		let rect = getPositionBoundingRect(position);
+		let rect = getTopMostRectFromPosition(position) || getPositionBoundingRect(position);
 		offset = chars.length && getClosestOffset(chars, rect) || 0;
 		let pageHeight = viewBox[3] - viewBox[1];
 		top = pageHeight - rect[3];
