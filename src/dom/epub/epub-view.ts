@@ -769,6 +769,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
+		this._handleViewUpdate();
 	}
 
 	setSpreadMode(spreadMode: SpreadMode) {
@@ -786,6 +787,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (cfiBefore) {
 			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
 		}
+		this._handleViewUpdate();
 	}
 
 	setFontFamily(fontFamily: string) {
