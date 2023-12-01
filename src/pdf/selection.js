@@ -472,7 +472,7 @@ export function extractRangeByRects({ structuredText, pageIndex, rects }) {
 
 function getTopMostRectFromPosition(position) {
 	// Sort the rectangles based on their y2 value in descending order and return the first one
-	return position?.rects.sort((a, b) => b[2] - a[2])[0];
+	return position?.rects.slice().sort((a, b) => b[2] - a[2])[0];
 }
 
 export function getSortIndex(pdfPages, position) {
