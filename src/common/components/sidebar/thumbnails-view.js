@@ -110,7 +110,6 @@ function ThumbnailsView(props) {
 	}
 
 	function handleKeyDown(e) {
-		e.preventDefault();
 		if (pressedPreviousKey(e)) {
 			let pageIndex = selected[selected.length - 1];
 			if (pageIndex === undefined) {

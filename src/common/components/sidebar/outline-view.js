@@ -12,7 +12,6 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 	}
 
 	function handleKeyDown(event) {
-		event.preventDefault();
 		if (event.key === 'Enter' && item.url) {
 			onOpenLink(item.url);
 		}
