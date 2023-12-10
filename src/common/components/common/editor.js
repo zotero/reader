@@ -238,7 +238,7 @@ function Toolbar({ onCommand }) {
 		let range = selection.getRangeAt(0);
 		let selectionRect = range.getBoundingClientRect();
 		let editorNode = range.startContainer.parentNode.closest('.editor');
-		if (!editorNode.parentNode.contains(toolbarRef.current)) {
+		if (!editorNode || !editorNode.parentNode.contains(toolbarRef.current)) {
 			toolbarRef.current.style.display = 'none';
 			activeRef.current = false;
 			return;
