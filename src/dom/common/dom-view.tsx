@@ -37,6 +37,10 @@ import { isElement } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 // @ts-ignore
 import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
+import {
+	getBoundingRect,
+	rectContains
+} from "./lib/rect";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	initializedPromise: Promise<void>;
@@ -341,6 +345,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				selectedAnnotationIDs={this._selectedAnnotationIDs}
 				onPointerDown={this._handleAnnotationPointerDown}
 				onPointerUp={this._handleAnnotationPointerUp}
+				onContextMenu={this._handleAnnotationContextMenu}
 				onDragStart={this._handleAnnotationDragStart}
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
@@ -689,11 +694,41 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		// Prevent native context menu
 		event.preventDefault();
-		if (!(event.target as Element).closest('#annotation-overlay')) {
-			let br = this._iframe.getBoundingClientRect();
-			this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
-		}
+		let br = this._iframe.getBoundingClientRect();
+		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
 	}
+
+	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
+		let selection = this._iframeDocument.getSelection();
+		let selectionBoundingRect = selection && getBoundingRect(
+			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
+		);
+		if (selectionBoundingRect && rectContains(selectionBoundingRect, event.clientX, event.clientY)) {
+			return;
+		}
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		let br = this._iframe.getBoundingClientRect();
+		if (this._selectedAnnotationIDs.includes(id)) {
+			this._options.onOpenAnnotationContextMenu({
+				ids: this._selectedAnnotationIDs,
+				x: br.x + event.clientX,
+				y: br.y + event.clientY,
+				view: true,
+			});
+		}
+		else {
+			this._options.onSelectAnnotations([id], event.nativeEvent);
+			this._options.onOpenAnnotationContextMenu({
+				ids: [id],
+				x: br.x + event.clientX,
+				y: br.y + event.clientY,
+				view: true,
+			});
+		}
+	};
 
 	private _handleSelectionChange() {
 		let selection = this._iframeDocument.getSelection();
@@ -735,26 +770,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				if (this._options.mobile || this._selectedAnnotationIDs.length == 1) {
 					this._openAnnotationPopup(this._annotationsByID.get(id)!);
 				}
-			}
-		}
-		else if (event.button == 2) {
-			let br = this._iframe.getBoundingClientRect();
-			if (this._selectedAnnotationIDs.includes(id)) {
-				this._options.onOpenAnnotationContextMenu({
-					ids: this._selectedAnnotationIDs,
-					x: br.x + event.clientX,
-					y: br.y + event.clientY,
-					view: true,
-				});
-			}
-			else {
-				this._options.onSelectAnnotations([id], event.nativeEvent);
-				this._options.onOpenAnnotationContextMenu({
-					ids: [id],
-					x: br.x + event.clientX,
-					y: br.y + event.clientY,
-					view: true,
-				});
 			}
 		}
 		this._handledPointerIDs.add(event.pointerId);

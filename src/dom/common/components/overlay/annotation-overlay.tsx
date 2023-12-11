@@ -30,7 +30,7 @@ export type DisplayedAnnotation = {
 };
 
 export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
-	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onDragStart, onResizeStart, onResizeEnd } = props;
+	let { iframe, annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onContextMenu, onDragStart, onResizeStart, onResizeEnd } = props;
 
 	let [isResizing, setResizing] = useState(false);
 	let [isPointerDownOutside, setPointerDownOutside] = useState(false);
@@ -93,6 +93,10 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		onPointerUp(annotation.id!, event);
 	}, [onPointerUp]);
 
+	let handleContextMenu = useCallback((annotation: DisplayedAnnotation, event: React.MouseEvent) => {
+		onContextMenu(annotation.id!, event);
+	}, [onContextMenu]);
+
 	let handleDragStart = useCallback((annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => {
 		onDragStart(annotation.id!, dataTransfer);
 	}, [onDragStart]);
@@ -121,6 +125,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							singleSelection={selectedAnnotationIDs.length == 1}
 							onPointerDown={handlePointerDown}
 							onPointerUp={handlePointerUp}
+							onContextMenu={handleContextMenu}
 							onDragStart={handleDragStart}
 							onResizeStart={handleResizeStart}
 							onResizeEnd={handleResizeEnd}
@@ -155,6 +160,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				selectedAnnotationIDs={selectedAnnotationIDs}
 				onPointerDown={handlePointerDown}
 				onPointerUp={handlePointerUp}
+				onContextMenu={handleContextMenu}
 				onDragStart={handleDragStart}
 				pointerEventsSuppressed={pointerEventsSuppressed}
 			/>
@@ -169,13 +175,14 @@ type AnnotationOverlayProps = {
 	selectedAnnotationIDs: string[];
 	onPointerDown: (id: string, event: React.PointerEvent) => void;
 	onPointerUp: (id: string, event: React.PointerEvent) => void;
+	onContextMenu: (id: string, event: React.MouseEvent) => void;
 	onDragStart: (id: string, dataTransfer: DataTransfer) => void;
 	onResizeStart: (id: string) => void;
 	onResizeEnd: (id: string, range: Range, cancelled: boolean) => void;
 };
 
 const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
-	let { annotation, selected, singleSelection, onPointerDown, onPointerUp, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
+	let { annotation, selected, singleSelection, onPointerDown, onPointerUp, onContextMenu, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
 
@@ -292,6 +299,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 						draggable={true}
 						onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
 						onPointerUp={onPointerUp && (event => onPointerUp!(annotation, event))}
+						onContextMenu={onPointerUp && (event => onContextMenu!(annotation, event))}
 						onDragStart={handleDragStart}
 						data-annotation-id={annotation.id}
 					/>
@@ -328,6 +336,7 @@ type HighlightOrUnderlineProps = {
 	singleSelection: boolean;
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onContextMenu?: (annotation: DisplayedAnnotation, event: React.MouseEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	onResizeStart?: (annotation: DisplayedAnnotation) => void;
 	onResizeEnd?: (annotation: DisplayedAnnotation, range: Range, cancelled: boolean) => void;
@@ -336,7 +345,7 @@ type HighlightOrUnderlineProps = {
 };
 
 const Note: React.FC<NoteProps> = (props) => {
-	let { annotation, staggerIndex, selected, onPointerDown, onPointerUp, onDragStart, disablePointerEvents } = props;
+	let { annotation, staggerIndex, selected, onPointerDown, onPointerUp, onContextMenu, onDragStart, disablePointerEvents } = props;
 
 	let dragImageRef = useRef<SVGSVGElement>(null);
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
@@ -375,6 +384,7 @@ const Note: React.FC<NoteProps> = (props) => {
 			large={true}
 			onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
 			onPointerUp={disablePointerEvents || !onPointerUp ? undefined : (event => onPointerUp!(annotation, event))}
+			onContextMenu={disablePointerEvents || !onContextMenu ? undefined : (event => onContextMenu!(annotation, event))}
 			onDragStart={disablePointerEvents ? undefined : handleDragStart}
 		/>
 	);
@@ -386,6 +396,7 @@ type NoteProps = {
 	selected: boolean;
 	onPointerDown?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onContextMenu?: (annotation: DisplayedAnnotation, event: React.MouseEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	disablePointerEvents: boolean;
 };
@@ -408,7 +419,7 @@ type NotePreviewProps = {
 };
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onDragStart, pointerEventsSuppressed } = props;
+	let { annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onContextMenu, onDragStart, pointerEventsSuppressed } = props;
 	let staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
@@ -423,6 +434,7 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 						selected={selectedAnnotationIDs.includes(annotation.id)}
 						onPointerDown={onPointerDown}
 						onPointerUp={onPointerUp}
+						onContextMenu={onContextMenu}
 						onDragStart={onDragStart}
 						disablePointerEvents={pointerEventsSuppressed}
 					/>
@@ -448,6 +460,7 @@ type StaggeredNotesProps = {
 	selectedAnnotationIDs: string[];
 	onPointerDown: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onPointerUp: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
+	onContextMenu: (annotation: DisplayedAnnotation, event: React.MouseEvent) => void;
 	onDragStart: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	pointerEventsSuppressed: boolean;
 };
@@ -696,6 +709,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 					draggable={true}
 					onPointerDown={props.onPointerDown}
 					onPointerUp={props.onPointerUp}
+					onContextMenu={props.onContextMenu}
 					onDragStart={props.onDragStart}
 					onDragEnd={props.onDragEnd}
 					data-annotation-id={props.annotation?.id}
@@ -716,6 +730,7 @@ type CommentIconProps = {
 	large?: boolean;
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onPointerUp?: (event: React.PointerEvent) => void;
+	onContextMenu?: (event: React.MouseEvent) => void;
 	onDragStart?: (event: React.DragEvent) => void;
 	onDragEnd?: (event: React.DragEvent) => void;
 };
