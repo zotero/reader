@@ -33,7 +33,10 @@ import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
 import { isSafari } from "../../common/lib/utilities";
-import { isElement } from "./lib/nodes";
+import {
+	closestElement,
+	isElement
+} from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 // @ts-ignore
 import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
@@ -699,11 +702,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
-		let selection = this._iframeDocument.getSelection();
-		let selectionBoundingRect = selection && getBoundingRect(
-			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
-		);
-		if (selectionBoundingRect && rectContains(selectionBoundingRect, event.clientX, event.clientY)) {
+		if (this._selectionContainsPoint(event.clientX, event.clientY)) {
 			return;
 		}
 
@@ -765,6 +764,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 			}
 			else {
+				// If there's a selection and the pointer is inside it, abort
+				if (this._selectionContainsPoint(event.clientX, event.clientY)) {
+					return;
+				}
+
 				this._options.onSelectAnnotations([id], event.nativeEvent);
 				// See above
 				if (this._options.mobile || this._selectedAnnotationIDs.length == 1) {
@@ -805,6 +809,40 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	private _handleAnnotationDragStart = (id: string, dataTransfer: DataTransfer) => {
+		let sel = this._iframeWindow.getSelection();
+		// If there's a selection at this point, that means the pointer was inside the selection in our pointerdown
+		// handler, preventing it from being cleared. We should synthesize a drag from the selection instead of the
+		// annotation.
+		if (sel && !sel.isCollapsed) {
+			// Normally the browser does the work of generating the drag image for a text drag. We can't use that
+			// here, so instead we'll do something silly with a canvas to make a passable drag image (probably not
+			// a great one).
+
+			let text = sel.toString();
+			if (text.length > 100) {
+				text = text.slice(0, 100) + '…';
+			}
+
+			let computedStyle = getComputedStyle(closestElement(sel.anchorNode!)!);
+			let fontSize = computedStyle.fontSize;
+			let fontFamily = computedStyle.fontFamily;
+			let font = fontSize + ' ' + fontFamily;
+
+			let canvas = document.createElement('canvas');
+			let ctx = canvas.getContext('2d')!;
+			ctx.font = font;
+			let metrics = ctx.measureText(text);
+
+			canvas.width = metrics.width;
+			canvas.height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
+			ctx.font = font;
+			ctx.textBaseline = 'top';
+			ctx.fillText(text, 0, 0);
+
+			dataTransfer.setDragImage(canvas, 0, 0);
+			return;
+		}
+
 		let annotation = this._annotationsByID.get(id)!;
 		this._options.onSetDataTransferAnnotations(dataTransfer, annotation);
 		if (this._selectedAnnotationIDs.length == 1 && annotation.type === 'note' && !annotation.readOnly) {
@@ -971,6 +1009,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	private _handleFocus() {
 		this._options.onFocus();
+	}
+
+	private _selectionContainsPoint(x: number, y: number): boolean {
+		let selection = this._iframeDocument.getSelection();
+		if (!selection) return false;
+		let selectionBoundingRect = getBoundingRect(
+			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
+		);
+		return rectContains(selectionBoundingRect, x, y);
 	}
 
 	// ***
