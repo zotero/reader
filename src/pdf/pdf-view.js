@@ -516,6 +516,8 @@ class PDFView {
 		else {
 			this._iframeWindow.PDFViewerApplication.pdfCursorTools.switchTool(0);
 		}
+
+		this._iframeWindow.document.getElementById('viewerContainer').style.touchAction = tool.type !== 'pointer' ? 'none' : 'auto';
 		this._tool = tool;
 	}
 
