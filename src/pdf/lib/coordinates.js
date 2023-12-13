@@ -16,7 +16,7 @@ export function p2v(position, viewport) {
 
 		// For text annotations
 		if (position.fontSize) {
-			position2.fontSize = viewport.convertToViewportPoint(position.fontSize, 0)[0];
+			position2.fontSize = position.fontSize * viewport.scale;
 		}
 		if (position.rotation) {
 			position2.rotation = position.rotation;

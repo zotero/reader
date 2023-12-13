@@ -6,7 +6,8 @@ import {
 	transform,
 	scaleShape,
 	getRotationDegrees,
-	normalizeDegrees
+	normalizeDegrees,
+	inverseTransform
 } from './lib/utilities';
 import { DARKEN_INK_AND_TEXT_COLOR, MIN_IMAGE_ANNOTATION_SIZE, SELECTION_COLOR } from '../common/defines';
 import { getRectRotationOnText } from './selection';
@@ -382,21 +383,26 @@ export default class Page {
 
 		for (let annotation of annotations) {
 			if (annotation.type === 'text' && annotation.position.pageIndex === this.pageIndex) {
-
 				let position = annotation.position;
-
-				if (action && ['resize', 'rotate'].includes(action.type) && action.annotation.id === annotation.id) {
+				let rect = position.rects[0];
+				if (action && action.position && ['resize', 'rotate'].includes(action.type) && action.annotation.id === annotation.id) {
 					position = action.position;
 				}
 
 				let node = customAnnotations.find(x => x.getAttribute('data-id') === annotation.id);
-
 				let disabled = this.layer._readOnly || annotation.readOnly;
+				let viewport = this.originalPage.viewport;
+				let centerX = (rect[0] + rect[2]) / 2;
+				let centerY = (rect[1] + rect[3]) / 2;
+				// Exclude scale from viewport transform
+				let m = transform(inverseTransform([viewport.scale, 0, 0, viewport.scale, 0, 0]), viewport.transform);
+				let [x, y] = applyTransform([centerX, centerY], m);
+				let width = rect[2] - rect[0];
+				let height = rect[3] - rect[1];
+				let top = y - height / 2;
+				let left = x - width / 2;
 
-				let top = this.originalPage.viewport.viewBox[3] - position.rects[0][3];
-				let left = position.rects[0][0];
-				let width = position.rects[0][2] - position.rects[0][0];
-				let height = position.rects[0][3] - position.rects[0][1];
+				let rotation = viewport.rotation - (position.rotation || 0);
 
 				let style = [
 					`left: calc(${left}px * var(--scale-factor))`,
@@ -407,11 +413,9 @@ export default class Page {
 					`height: calc(${height}px * var(--scale-factor))`,
 					`color: ${darkenHex(annotation.color, DARKEN_INK_AND_TEXT_COLOR)}`,
 					`font-size: calc(${position.fontSize}px * var(--scale-factor))`,
-					`font-family: ${window.computedFontFamily}`
+					`font-family: ${window.computedFontFamily}`,
+					`transform: rotate(${rotation}deg)`
 				];
-				if (position.rotation) {
-					style.push(`transform: rotate(${-position.rotation}deg)`);
-				}
 
 				style = style.join(';');
 

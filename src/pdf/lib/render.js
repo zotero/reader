@@ -1,5 +1,9 @@
 import { p2v } from './coordinates';
-import { getRotationTransform } from './utilities';
+import {
+	applyInverseTransform,
+	applyTransform,
+	transform
+} from './utilities';
 
 function calculateLines(context, text, maxWidth) {
 	let words = text.split(' ');
@@ -111,20 +115,56 @@ export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 			ctx.stroke();
 		}
 		else if (annotation.type === 'text') {
-			let fontSize = position.fontSize;
-			let lineHeight = fontSize * 1.2; // 1.2 is a common line height for many fonts
+			let position = annotation.position;
 			let rect = position.rects[0];
-			let x = rect[0];
-			let y = rect[3] - lineHeight;
-			let width = rect[2] - rect[0] + 10;
+			let width = rect[2] - rect[0];
+			let lineHeight = position.fontSize * 1.2; // 1.2 is a common line height for many fonts
 			ctx.fillStyle = annotation.color;
-			ctx.font = fontSize + 'px ' + window.computedFontFamily;
+			ctx.font = position.fontSize + 'px ' + window.computedFontFamily;
+
+			// Translation matrix where the drawing starts
+			let x = rect[0];
+			let y = rect[1];
+			let translatedViewportMatrix = transform(viewport.transform, [1, 0, 0, 1, x, y]);
+
+			// Rotation matrix
+			let degrees = -position.rotation * Math.PI / 180;
+			let cosValue = Math.cos(degrees);
+			let sinValue = Math.sin(degrees);
+			let rotationMatrix = [cosValue, sinValue, -sinValue, cosValue, 0, 0];
+
+			// Flip matrix because text gets inverted otherwise
+			let flipMatrix = [1, 0, 0, -1, 0, 0];
+			// Combine flip and rotation matrices
+			let flipAndRotationMatrix = transform(flipMatrix, rotationMatrix);
+
+			// Annotation center without x and y coordinates because we translate the viewport
+			let centerX = (rect[2] - rect[0]) / 2;
+			let centerY = (rect[3] - rect[1]) / 2;
+
+			// Calculate center in the viewport matrix
+			let [x1, y1] = applyTransform([centerX, centerY], translatedViewportMatrix);
+			let [x2, y2] = applyTransform([centerX, centerY], transform(translatedViewportMatrix, flipAndRotationMatrix));
+
+			// Annotation center drift after applying flip and rotation matrix
+			let deltaX = x1 - x2;
+			let deltaY = y1 - y2;
+
+			// Adjust delta x and y scale and sign
+			let viewportWithoutTranslationMatrix = viewport.transform.slice();
+			viewportWithoutTranslationMatrix[4] = viewportWithoutTranslationMatrix[5] = 0;
+			[deltaX, deltaY] = applyInverseTransform([deltaX, deltaY], viewportWithoutTranslationMatrix);
+			// Correct flipAndRotationMatrix to have rotation and flip around the annotation center
+			flipAndRotationMatrix[4] = deltaX;
+			flipAndRotationMatrix[5] = deltaY;
+
+			let finalMatrix = transform(translatedViewportMatrix, flipAndRotationMatrix);
+			ctx.transform(...finalMatrix);
+			let lineIndex = 0;
 			let lines = calculateLines(ctx, annotation.comment, width);
-			let tm = getRotationTransform(rect, -position.rotation);
-			ctx.transform(...tm);
 			for (let line of lines) {
-				ctx.fillText(line, x, y);
-				y += lineHeight;
+				ctx.fillText(line, 0, lineIndex * lineHeight + lineHeight);
+				lineIndex++;
 			}
 		}
 		ctx.restore();
