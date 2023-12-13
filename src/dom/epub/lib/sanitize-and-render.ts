@@ -187,6 +187,11 @@ export class StyleScoper {
 			if (styleRule.style.display === 'table' || styleRule.style.display === 'inline-table') {
 				this.tableSelectors.add(styleRule.selectorText);
 			}
+
+			// If this rule sets a monospace font, make it !important so that it overrides the default content font
+			if (styleRule.style.fontFamily && /\bmono(space)?\b/i.test(styleRule.style.fontFamily)) {
+				styleRule.style.setProperty('font-family', styleRule.style.fontFamily, 'important');
+			}
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
 			let importRule = rule as CSSImportRule;
