@@ -279,6 +279,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	line-height: 1;
 	user-select: auto;
 	-webkit-user-select: auto;
+	transform-origin: 0 0;
 }
 
 .textLayer :is(span, br) {
