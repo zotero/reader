@@ -1,11 +1,13 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
+import React, { useEffect, useRef, useContext } from 'react';
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
 import CustomSections from './common/custom-sections';
+import { ReaderContext } from '../reader';
 
 function Toolbar(props) {
 	const intl = useIntl();
 	const pageInputRef = useRef();
+	const { platform } = useContext(ReaderContext);
 
 	useEffect(() => {
 		if (['pdf', 'epub'].includes(props.type)) {
@@ -147,14 +149,16 @@ function Toolbar(props) {
 						onClick={() => handleToolClick('highlight')}>
 						<span className="button-background"/>
 					</button>
-					<button
-						tabIndex={-1}
-						className={cx('toolbarButton underline', { toggled: props.tool.type === 'underline' })}
-						title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
-						disabled={props.readOnly}
-						onClick={() => handleToolClick('underline')}>
-						<span className="button-background"/>
-					</button>
+					{ (platform !== 'web' || ['epub', 'snapshot'].includes(props.type)) && (
+						<button
+							tabIndex={-1}
+							className={cx('toolbarButton underline', { toggled: props.tool.type === 'underline' })}
+							title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
+							disabled={props.readOnly}
+							onClick={() => handleToolClick('underline')}>
+							<span className="button-background"/>
+						</button>
+					)}
 					<button
 						tabIndex={-1}
 						className={cx('toolbarButton note', {
@@ -166,7 +170,7 @@ function Toolbar(props) {
 					>
 						<span className="button-background"/>
 					</button>
-					{props.type === 'pdf' && (
+					{props.type === 'pdf' && platform !== 'web' && (
 						<button
 							tabIndex={-1}
 							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
