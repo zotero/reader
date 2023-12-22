@@ -1,4 +1,4 @@
-.annotation-container {
+#annotation-overlay .annotation-container {
     z-index: 9999;
     pointer-events: none;
     position: absolute;
@@ -7,17 +7,17 @@
     overflow: visible;
 }
 
-.annotation-container.blended {
+#annotation-overlay .annotation-container.blended {
     mix-blend-mode: multiply;
 }
 
-.resizer {
+#annotation-overlay .resizer {
     cursor: col-resize;
     touch-action: none;
 }
 
 @media (any-pointer: coarse) {
-    .resizer {
+    #annotation-overlay .resizer {
         stroke: transparent;
         stroke-width: 20px;
         margin: -10px;
