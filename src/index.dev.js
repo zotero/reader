@@ -83,6 +83,13 @@ async function createReader() {
 		},
 		onDeletePages(pageIndexes, degrees) {
 			console.log('Deleting pages', pageIndexes, degrees);
+		},
+		onUpdateSnapshotHTML(html) {
+			console.log('Updating snapshot HTML', html);
+			return {
+				buf: new TextEncoder().encode(html),
+				url: new URL('/', window.location).toString()
+			};
 		}
 	});
 	reader.enableAddToNote(true);

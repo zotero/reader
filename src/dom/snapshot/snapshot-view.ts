@@ -17,6 +17,7 @@ import {
 	textPositionToRange
 } from "../common/lib/selector";
 import DOMView, {
+	DOMViewOptions,
 	DOMViewState,
 	NavigateOptions
 } from "../common/dom-view";
@@ -35,6 +36,8 @@ import {
 import contentCSS from '!!raw-loader!./stylesheets/content.css';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
+	protected override readonly _options: SnapshotViewOptions;
+
 	private readonly _navStack = new NavStack<[number, number]>();
 
 	protected _find: DefaultFindProcessor | null = null;
@@ -42,6 +45,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	private _searchContext: SearchContext | null = null;
 
 	private _scale!: number;
+
+	private _hideElementPopup?: HideElementPopupParams;
+
+	constructor(options: SnapshotViewOptions) {
+		super(options);
+		this._options = options; // Make the compiler happy
+	}
 
 	protected async _getSrcDoc() {
 		if (this._options.data.srcDoc) {
@@ -81,13 +91,17 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				noscript.remove();
 			}
 
-			let doctype = doc.doctype ? new XMLSerializer().serializeToString(doc.doctype) : '';
-			let html = doc.documentElement.outerHTML;
-			return doctype + html;
+			return this._getDocumentHTML(doc);
 		}
 		else {
 			throw new Error('buf, url, or srcDoc is required');
 		}
+	}
+
+	_getDocumentHTML(doc: Document) {
+		let doctype = doc.doctype ? new XMLSerializer().serializeToString(doc.doctype) : '';
+		let html = doc.documentElement.outerHTML;
+		return doctype + html;
 	}
 
 	getData() {
@@ -275,6 +289,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
+	protected override get _shouldRenderAnnotations() {
+		return !this._hideElementPopup && super._shouldRenderAnnotations;
+	}
+
 	private _getSearchContext() {
 		if (!this._searchContext) {
 			this._searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -350,6 +368,28 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._updateViewState();
 	}
 
+	protected override _handlePointerOver(event: PointerEvent) {
+		if (this._hideElementPopup && !this._hideElementPopup.clicked) {
+			this._options.onSetHideElementPopup({ selectedElement: event.target as Element });
+			return;
+		}
+
+		super._handlePointerOver(event);
+	}
+
+	protected override _handlePointerDown(event: PointerEvent) {
+		if (this._hideElementPopup && this._hideElementPopup.selectedElement && !this._hideElementPopup.clicked) {
+			event.preventDefault();
+			this._options.onSetHideElementPopup({
+				...this._hideElementPopup,
+				clicked: true
+			});
+			return;
+		}
+
+		super._handlePointerDown(event);
+	}
+
 	// ***
 	// Setters that get called once there are changes in reader._state
 	// ***
@@ -385,6 +425,23 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				this._renderAnnotations();
 			}
 		}
+	}
+
+	setHideElementPopup(params?: HideElementPopupParams) {
+		if (this._hideElementPopup?.selectedElement) {
+			this._hideElementPopup.selectedElement.classList.remove('hide-element-current-target');
+		}
+		if (params?.selectedElement) {
+			params.selectedElement.classList.add('hide-element-current-target');
+		}
+		this._hideElementPopup = params;
+		this._renderAnnotations();
+	}
+
+	hideElement(element: Element) {
+		this._options.onSetHideElementPopup();
+		element.classList.add('hide-element-was-hidden');
+		this._options.onUpdateSnapshotHTML(this._getDocumentHTML(this._iframeDocument));
 	}
 
 	// ***
@@ -480,6 +537,16 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	setSidebarOpen(_sidebarOpen: boolean) {
 		// Ignore
 	}
+}
+
+export interface HideElementPopupParams {
+	selectedElement?: Element;
+	clicked?: boolean;
+}
+
+export interface SnapshotViewOptions extends DOMViewOptions<SnapshotViewState, SnapshotViewData> {
+	onSetHideElementPopup: (params?: HideElementPopupParams) => void;
+	onUpdateSnapshotHTML: (html: string) => void;
 }
 
 export interface SnapshotViewState extends DOMViewState {
