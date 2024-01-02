@@ -453,6 +453,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
 		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
+		this._iframeDocument.addEventListener('scroll', this._handleScrollCapture.bind(this), { passive: true, capture: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
 		let style = this._iframeDocument.createElement('style');
@@ -1005,6 +1006,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handleScroll() {
 		this._repositionPopups();
+	}
+
+	protected _handleScrollCapture(event: Event) {
+		// The annotation layer is positioned at the top-left of the document, so it moves along with the content when
+		// the document is scrolled. But scrollable sub-frames (e.g. elements with overflow: auto) don't have their own
+		// annotation layers. When one of them is scrolled, trigger a rerender so annotations get repositioned.
+		if (event.target !== this._iframeDocument) {
+			this._renderAnnotations();
+		}
 	}
 
 	private _handleFocus() {
