@@ -10,7 +10,7 @@ import {
 import { PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
-	static readonly VERSION = 8;
+	static readonly VERSION = 9;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
