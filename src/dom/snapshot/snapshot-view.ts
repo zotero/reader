@@ -260,7 +260,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					range.selectNodeContents(root);
 				}
 				if (!range.getClientRects().length) {
-					range.selectNode(range.commonAncestorContainer);
+					try {
+						range.selectNode(range.commonAncestorContainer);
+					}
+					catch (e) {
+						return null;
+					}
 				}
 				return range;
 			}
