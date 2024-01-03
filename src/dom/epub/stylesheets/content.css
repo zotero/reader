@@ -17,7 +17,7 @@ body {
 /*** Layout styles applied in scrolled mode: ***/
 
 body.flow-mode-scrolled, body.flow-mode-scrolled > .sections {
-    overflow-x: visible;
+	overflow-x: visible;
 }
 
 body.flow-mode-scrolled > .sections {
@@ -43,10 +43,10 @@ body.flow-mode-scrolled > .sections > .section-container.hidden {
 
 body.flow-mode-scrolled replaced-body img, body.flow-mode-scrolled replaced-body svg,
 body.flow-mode-scrolled replaced-body audio, body.flow-mode-scrolled replaced-body video {
-    /* Size the media element's box so it fits within one page */
+	/* Size the media element's box so it fits within one page */
 	max-width: calc(min(100vw - 80px, 100%)) !important;
 	max-height: 100vh;
-    /* Contain the content within the box so its aspect ratio doesn't change */
+	/* Contain the content within the box so its aspect ratio doesn't change */
 	object-fit: contain;
 }
 
@@ -60,11 +60,11 @@ body.flow-mode-paginated {
 }
 
 .swipe-indicator-left, .swipe-indicator-right {
-    display: none;
+	display: none;
 }
 
 body.flow-mode-paginated .swipe-indicator-left, body.flow-mode-paginated .swipe-indicator-right {
-    display: block;
+	display: block;
 }
 
 .swipe-indicator-left, .swipe-indicator-right {
@@ -94,31 +94,31 @@ body.flow-mode-paginated > .sections {
 	max-height: calc(100vh - 80px);
 	margin-inline: auto;
 	column-fill: auto;
-    -webkit-column-fill: auto;
+	-webkit-column-fill: auto;
 	column-gap: 60px;
 	overflow: hidden;
 	overscroll-behavior: none;
 }
 
 body.flow-mode-paginated > .sections.spread-mode-none {
-    --column-width: calc(min(800px, 100vw - 80px));
-    column-width: 800px;
+	--column-width: calc(min(800px, 100vw - 80px));
+	column-width: 800px;
 	column-gap: 100vw;
-    max-width: 800px;
+	max-width: 800px;
 }
 
 body.flow-mode-paginated > .sections.spread-mode-odd {
-    --column-width: calc(50vw - 80px);
+	--column-width: calc(50vw - 80px);
 	column-width: calc(50vw - 80px);
 }
 
 @media (max-width: 800px) {
 	body.flow-mode-paginated > .sections {
-        --column-width: calc(min(800px, 100vw - 80px));
-        column-width: 800px;
-        column-gap: 100vw;
-        max-width: 800px;
-    }
+		--column-width: calc(min(800px, 100vw - 80px));
+		column-width: 800px;
+		column-gap: 100vw;
+		max-width: 800px;
+	}
 }
 
 body.flow-mode-paginated > .sections > .section-container {
@@ -134,8 +134,8 @@ body.flow-mode-paginated > .sections > .section-container.hidden {
 body.flow-mode-paginated replaced-body img, body.flow-mode-paginated replaced-body svg,
 body.flow-mode-paginated replaced-body audio, body.flow-mode-paginated replaced-body video {
 	max-width: var(--column-width) !important;
-    max-height: calc(100vh - 80px) !important;
-    object-fit: contain;
+	max-height: calc(100vh - 80px) !important;
+	object-fit: contain;
 }
 
 body.flow-mode-paginated replaced-body .table-like {
@@ -154,7 +154,7 @@ body.flow-mode-paginated replaced-body .table-like {
 /*** Content Styles ***/
 
 body > .sections > .section-container ::selection {
-    background-color: var(--selection-color);
+	background-color: var(--selection-color);
 }
 
 replaced-html {
@@ -162,10 +162,10 @@ replaced-html {
 }
 
 replaced-body {
-    /* https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height */
-    /* https://github.com/readium/readium-css/blob/583011453612e6f695056ab6c086a2c4f4cac9c0/css/src/modules/ReadiumCSS-base.css#L65 */
-    --content-line-height-compensation: 1;
-    --content-line-height: calc((1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667)) * var(--content-line-height-compensation));
+	/* https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height */
+	/* https://github.com/readium/readium-css/blob/583011453612e6f695056ab6c086a2c4f4cac9c0/css/src/modules/ReadiumCSS-base.css#L65 */
+	--content-line-height-compensation: 1;
+	--content-line-height: calc((1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667)) * var(--content-line-height-compensation));
 
 	display: block;
 	margin-left: 0 !important;
@@ -176,7 +176,7 @@ replaced-body {
 	font-size: calc(var(--content-scale) * 13pt) !important;
 	line-height: var(--content-line-height);
 	text-align: justify;
-    text-rendering: optimizeLegibility;
+	text-rendering: optimizeLegibility;
 }
 
 replaced-body:lang(bn),
@@ -184,14 +184,14 @@ replaced-body:lang(km),
 replaced-body:lang(ml),
 replaced-body:lang(ta),
 replaced-body:lang(th) {
-    --content-line-height-compensation: 1.067;
+	--content-line-height-compensation: 1.067;
 }
 
 replaced-body:lang(he),
 replaced-body:lang(hi),
 replaced-body:lang(kn),
 replaced-body:lang(pa) {
-    --content-line-height-compensation: 1.1;
+	--content-line-height-compensation: 1.1;
 }
 
 replaced-body:lang(am),
@@ -202,15 +202,15 @@ replaced-body:lang(ko),
 replaced-body:lang(or),
 replaced-body:lang(si),
 replaced-body:lang(zh) {
-    --content-line-height-compensation: 1.167;
+	--content-line-height-compensation: 1.167;
 }
 
 replaced-body p {
 	/* Really enforce some of our formatting choices on body paragraphs */
 	font-family: var(--content-font-family, "Georgia"), serif !important;
 
-    widows: 2;
-    orphans: 2;
+	widows: 2;
+	orphans: 2;
 	hyphens: auto;
 }
 
@@ -230,13 +230,13 @@ replaced-body sup {
 body:not(.footnote-popup-content) replaced-body aside[epub|type="footnote"],
 body:not(.footnote-popup-content) replaced-body aside[epub|type="rearnote"],
 body:not(.footnote-popup-content) replaced-body aside[epub|type="note"] {
-    display: none;
+	display: none;
 }
 
 body.footnote-popup-content * {
-    list-style-type: none !important;
+	list-style-type: none !important;
 }
 
 body.footnote-popup-content .section-container {
-    padding: 16px;
+	padding: 16px;
 }
