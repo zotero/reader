@@ -76,7 +76,7 @@ export function IconColor20({ color }) {
 	return (
 		<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
 			<rect x="2" y="2" width="16" height="16" rx="2" fill={color}/>
-			<rect x="2.5" y="2.5" width="15" height="15" rx="1.5" stroke="black" strokeOpacity="0.1"/>
+			<rect x="2.5" y="2.5" width="15" height="15" rx="1.5" stroke="currentColor" strokeOpacity="0.1"/>
 		</svg>
 	);
 }

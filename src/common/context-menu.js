@@ -21,7 +21,7 @@ function createItemGroup(itemGroups) {
 
 export function createColorContextMenu(reader, params) {
 	let colors = ANNOTATION_COLORS.slice();
-	if (['text', 'ink'].includes(reader._state.tool.type)) {
+	if (['text', 'ink', 'eraser'].includes(reader._state.tool.type)) {
 		colors.push(...EXTRA_INK_AND_TEXT_COLORS);
 	}
 	return {
@@ -31,7 +31,13 @@ export function createColorContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			...[
 				reader._state.tool.type === 'eraser'
-					? []
+					? colors.map(([label, color]) => ({
+						label: reader._getString(label),
+						disabled: reader._state.readOnly,
+						checked: color === reader._state.tool.color,
+						color: color,
+						onCommand: () => reader.setTool({ type: 'ink', color })
+					}))
 					: colors.map(([label, color]) => ({
 						label: reader._getString(label),
 						disabled: reader._state.readOnly,
@@ -39,6 +45,15 @@ export function createColorContextMenu(reader, params) {
 						color: color,
 						onCommand: () => reader.setTool({ color })
 					}))
+			],
+			[
+				['ink', 'eraser'].includes(reader._state.tool.type) && {
+					eraser: true,
+					label: reader._getString('pdfReader.eraser'),
+					disabled: reader._state.readOnly,
+					checked: reader._state.tool.type === 'eraser',
+					onCommand: () => reader._state.tool.type === 'ink' ? reader.setTool({ type: 'eraser' }) : reader.setTool({ type: 'ink' })
+				}
 			],
 			[
 				reader._state.tool.type === 'ink' && {

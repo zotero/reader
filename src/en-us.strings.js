@@ -107,7 +107,7 @@ export default {
 	'pdfReader.selectArea': 'Select Area',
 	'pdfReader.addText': 'Add Text',
 	'pdfReader.draw': 'Draw',
-	'pdfReader.erase': 'Erase',
+	'pdfReader.eraser': 'Eraser',
 	'pdfReader.pickColor': 'Pick a Color',
 	'pdfReader.addToNote': 'Add to Note',
 	'pdfReader.zoomIn': 'Zoom In',

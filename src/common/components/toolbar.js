@@ -52,6 +52,9 @@ function Toolbar(props) {
 		if (props.tool.type === type) {
 			type = 'pointer';
 		}
+		if (type === 'ink' && ['ink', 'eraser'].includes(props.tool.type)) {
+			type = 'pointer';
+		}
 		props.onChangeTool({ type });
 	}
 
@@ -204,20 +207,11 @@ function Toolbar(props) {
 				{props.type === 'pdf' && (
 					<button
 						tabIndex={-1}
-						className={cx('toolbar-button ink', { active: props.tool.type === 'ink' })}
+						className={cx('toolbar-button ink', { active: ['ink', 'eraser'].includes(props.tool.type) })}
 						title={intl.formatMessage({ id: 'pdfReader.draw' })}
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('ink')}
 					><IconInk/></button>
-				)}
-				{props.type === 'pdf' && (
-					<button
-						tabIndex={-1}
-						className={cx('toolbar-button eraser', { active: props.tool.type === 'eraser' })}
-						title={intl.formatMessage({ id: 'pdfReader.erase' })}
-						disabled={props.readOnly}
-						onClick={() => handleToolClick('eraser')}
-					><IconEraser/></button>
 				)}
 				<div className="divider"/>
 				<button
@@ -227,7 +221,11 @@ function Toolbar(props) {
 					title={intl.formatMessage({ id: 'pdfReader.pickColor' })}
 					onClick={handleToolColorClick}
 				>
-					<IconColor20 color={props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && 'transparent'}/>
+					{
+						props.tool.type === 'eraser'
+						? <IconEraser/>
+						: <IconColor20 color={props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && 'transparent'}/>
+					}
 					<IconChevronDown8/>
 				</button>
 			</div>

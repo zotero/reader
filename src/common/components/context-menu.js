@@ -5,6 +5,8 @@ import { IconColor16 } from './common/icons';
 import { debounce } from '../lib/debounce';
 import { isFirefox, isSafari } from "../lib/utilities";
 
+import IconEraser from '../../../res/icons/16/annotate-eraser.svg';
+
 const VERTICAL_PADDING = 2;
 
 function BasicRow({ item, onClose }) {
@@ -21,7 +23,11 @@ function BasicRow({ item, onClose }) {
 			className={cx('row basic', { checked: item.checked })}
 			onClick={(event) => handleClick(event, item)}
 			disabled={item.disabled}
-		>{item.color && <div className="icon"><IconColor16 color={item.color}/></div>}{item.label}</button>
+		>
+			{item.color && <div className="icon"><IconColor16 color={item.color}/></div>}
+			{item.eraser && <div className="icon"><IconEraser/></div>}
+			{item.label}
+		</button>
 	);
 }
 

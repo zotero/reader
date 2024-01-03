@@ -24,9 +24,8 @@
 		background-color: var(--fill-quarternary);
 	}
 
-	&[disabled]:not(.toolbar-dropdown-button) {
+	&[disabled] {
 		pointer-events: none;
-		opacity: $btn-disabled-opacity;
 	}
 }
 
