@@ -3,6 +3,8 @@ import { useIntl } from 'react-intl';
 import cx from 'classnames';
 import { IconTreeItemCollapsed, IconTreeItemExpanded } from '../common/icons';
 
+import IconChevronDown8 from '../../../../res/icons/8/chevron-8.svg';
+
 
 
 function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
@@ -49,7 +51,7 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 
 	let toggle;
 	if (item.items?.length) {
-		toggle = <div className="toggle" onClick={handleExpandToggleClick}></div>;
+		toggle = <div className="toggle" onClick={handleExpandToggleClick}><IconChevronDown8/></div>;
 	}
 	else {
 		toggle = <div className="toggle"></div>;

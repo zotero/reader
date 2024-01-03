@@ -26,17 +26,12 @@
 
 		&::before {
 			top: (-$border-y - 1px);
-			border-bottom-color: rgba(0, 0, 0, 0.2);
-
-			@include retina {
-				border-bottom-color: rgba(0, 0, 0, 0.15);
-				filter: blur(0.5px);
-			}
+			border-bottom-color: var(--color-panedivider);
 		}
 
 		&::after {
 			top: -$border-y;
-			border-bottom-color: #fff;
+			border-bottom-color: var(--color-background);
 		}
 	}
 
@@ -48,17 +43,12 @@
 
 		&::before {
 			bottom: (-$border-y - 1px);
-			border-top-color: rgba(0, 0, 0, 0.2);
-
-			@include retina {
-				border-top-color: rgba(0, 0, 0, 0.15);
-				filter: blur(0.5px);
-			}
+			border-top-color: var(--color-panedivider);
 		}
 
 		&::after {
 			bottom: -$border-y;
-			border-top-color: #fff;
+			border-top-color: var(--color-background);
 		}
 	}
 

@@ -3,41 +3,57 @@ import ReactDOM from 'react-dom';
 import cx from 'classnames';
 import AnnotationsView from './annotations-view';
 // import { cleanFilter, filterAnnotations } from '../../../src/lib/search';
+import { useIntl } from 'react-intl';
+
+
+import IconThumbnails from '../../../../res/icons/20/thumbnail.svg';
+import IconAnnotations from '../../../../res/icons/20/annotation.svg';
+import IconOutline from '../../../../res/icons/20/outline.svg';
+import SearchBox from './search-box';
 
 function Sidebar(props) {
+	const intl = useIntl();
+
+	function handleSearchInput(query) {
+		props.onChangeFilter({ ...props.filter, query });
+	}
+
 	return (
 		<div id="sidebarContainer" className="sidebarOpen">
-			<div id="toolbarSidebar">
-				<div className="splitToolbarButton toggled" data-tabstop={1}>
+			<div className="sidebar-toolbar">
+				<div className="start" data-tabstop={1}>
 					{props.type === 'pdf' &&
 						<button
 							id="viewThumbnail"
-							className={cx('toolbarButton', { toggled: props.view === 'thumbnails' })}
+							className={cx('toolbar-button', { active: props.view === 'thumbnails' })}
 							title="Show Thumbnails" tabIndex={-1}
 							onClick={() => props.onChangeView('thumbnails')}
-						>
-							<span></span>
-						</button>
+						><IconThumbnails/></button>
 					}
 					<button
 						id="viewAnnotations"
-						className={cx('toolbarButton', { toggled: props.view === 'annotations' })}
+						className={cx('toolbar-button', { active: props.view === 'annotations' })}
 						title="Show Annotations"
 						tabIndex={-1}
 						onClick={() => props.onChangeView('annotations')}
-					>
-						<span></span>
-					</button>
+					><IconAnnotations/></button>
 					<button
 						id="viewOutline"
-						className={cx('toolbarButton', { toggled: props.view === 'outline' })}
+						className={cx('toolbar-button', { active: props.view === 'outline' })}
 						title="Show Document Outline (double-click to expand/collapse all items)"
 						tabIndex={-1}
 						disabled={!props.enableOutlineView}
 						onClick={() => props.onChangeView('outline')}
-					>
-						<span></span>
-					</button>
+					><IconOutline/></button>
+				</div>
+				<div className="end">
+					{props.view === 'annotations' &&
+						<SearchBox
+							query={props.filter.query}
+							onInput={handleSearchInput}
+							placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
+						/>
+					}
 				</div>
 			</div>
 			<div id="sidebarContent" className="sidebar-content">

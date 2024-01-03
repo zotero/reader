@@ -4,6 +4,26 @@ import cx from 'classnames';
 import CustomSections from './common/custom-sections';
 import { ReaderContext } from '../reader';
 
+import { IconColor20 } from './common/icons';
+
+import IconSidebar from '../../../res/icons/20/sidebar.svg';
+import IconZoomIn from '../../../res/icons/20/zoom-in.svg';
+import IconZoomOut from '../../../res/icons/20/zoom-out.svg';
+import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
+import IconChevronLeft from '../../../res/icons/20/chevron-left.svg';
+import IconChevronUp from '../../../res/icons/20/chevron-up.svg';
+import IconChevronDown from '../../../res/icons/20/chevron-down.svg';
+import IconHighlight from '../../../res/icons/20/annotate-highlight.svg';
+import IconUnderline from '../../../res/icons/20/annotate-underline.svg';
+import IconNote from '../../../res/icons/20/annotate-note.svg';
+import IconText from '../../../res/icons/20/annotate-text.svg';
+import IconImage from '../../../res/icons/20/annotate-area.svg';
+import IconInk from '../../../res/icons/20/annotate-ink.svg';
+import IconEraser from '../../../res/icons/20/annotate-eraser.svg';
+import IconFind from '../../../res/icons/20/magnifier.svg';
+import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
+
+
 function Toolbar(props) {
 	const intl = useIntl();
 	const pageInputRef = useRef();
@@ -52,76 +72,74 @@ function Toolbar(props) {
 			<div className="start">
 				<button
 					id="sidebarToggle"
-					className="toolbarButton"
+					className="toolbar-button"
 					title="Toggle Sidebar"
 					tabIndex={-1}
 					onClick={handleSidebarButtonClick}
-				/>
-				<div className="toolbarButtonSpacer"></div>
-				<div className="splitToolbarButton">
-					<button
-						id="zoomOut"
-						className="toolbarButton zoomOut"
-						title={intl.formatMessage({ id: 'pdfReader.zoomOut' })}
-						tabIndex={-1}
-						disabled={!props.enableZoomOut}
-						onClick={props.onZoomOut}
-					/>
-					<button
-						id="zoomIn"
-						className="toolbarButton zoomIn"
-						title={intl.formatMessage({ id: 'pdfReader.zoomIn' })}
-						tabIndex={-1}
-						disabled={!props.enableZoomIn}
-						onClick={props.onZoomIn}
-
-					/>
-					<button
-						id="zoomAuto"
-						className="toolbarButton zoomAuto"
-						title={intl.formatMessage({
-							id: props.type === 'pdf' ? 'pdfReader.zoomAuto' : 'pdfReader.zoomReset'
-						})}
-						tabIndex={-1}
-						disabled={!props.enableZoomReset}
-						onClick={props.onZoomReset}
-					/>
-				</div>
+				><IconSidebar/></button>
+				<div className="divider"/>
+				<button
+					id="zoomOut"
+					className="toolbar-button zoomOut"
+					title={intl.formatMessage({ id: 'pdfReader.zoomOut' })}
+					tabIndex={-1}
+					disabled={!props.enableZoomOut}
+					onClick={props.onZoomOut}
+				><IconZoomOut/></button>
+				<button
+					id="zoomIn"
+					className="toolbar-button zoomIn"
+					title={intl.formatMessage({ id: 'pdfReader.zoomIn' })}
+					tabIndex={-1}
+					disabled={!props.enableZoomIn}
+					onClick={props.onZoomIn}
+				><IconZoomIn/></button>
+				<button
+					id="zoomAuto"
+					className="toolbar-button zoomAuto"
+					title={intl.formatMessage({
+						id: props.type === 'pdf' ? 'pdfReader.zoomAuto' : 'pdfReader.zoomReset'
+					})}
+					tabIndex={-1}
+					disabled={!props.enableZoomReset}
+					onClick={props.onZoomReset}
+				><IconAutoWidth/></button>
+				<div className="divider"/>
 				<button
 					id="navigateBack"
-					className="toolbarButton navigateBack"
+					className="toolbar-button navigateBack"
 					title={intl.formatMessage({ id: 'general.back' })}
 					tabIndex={-1}
 					disabled={!props.enableNavigateBack}
 					onClick={props.onNavigateBack}
-				/>
+				><IconChevronLeft/></button>
+				<div className="divider"/>
 				{['pdf', 'epub'].includes(props.type) && (
-					<div className="splitToolbarButton">
+					<React.Fragment>
 						<button
-							className="toolbarButton pageUp"
+							className="toolbar-button pageUp"
 							title={intl.formatMessage({ id: 'pdfReader.previousPage' })}
 							id="previous"
 							tabIndex={-1}
 							disabled={!props.enableNavigateToPreviousPage}
 							onClick={props.onNavigateToPreviousPage}
-						/>
+						><IconChevronUp/></button>
 						<button
-							className="toolbarButton pageDown"
+							className="toolbar-button pageDown"
 							title={intl.formatMessage({ id: 'pdfReader.nextPage' })}
 							id="next"
 							tabIndex={-1}
 							disabled={!props.enableNavigateToNextPage}
 							onClick={props.onNavigateToNextPage}
-
-						/>
-					</div>
+						><IconChevronDown/></button>
+					</React.Fragment>
 				)}
 				{['pdf', 'epub'].includes(props.type) && (
 					<input
 						ref={pageInputRef}
 						type="input"
 						id="pageNumber"
-						className="toolbarField pageNumber"
+						className="toolbar-text-input"
 						title={intl.formatMessage({
 							id: props.type === 'pdf' || props.usePhysicalPageNumbers
 								? 'pdfReader.page'
@@ -136,106 +154,91 @@ function Toolbar(props) {
 						onBlur={handlePageNumberBlur}
 					/>)}
 				{props.pageLabel && (
-					<span id="numPages" className="toolbarLabel">{props.pageIndex + 1}/{props.pagesCount}</span>
+					<span id="numPages">{props.pageIndex + 1}/{props.pagesCount}</span>
 				)}
 			</div>
-			<div className="center">
-				<div className="tool-group annotation-tools">
+			<div className="center tools">
+				<button
+					tabIndex={-1}
+					className={cx('toolbar-button highlight', { active: props.tool.type === 'highlight' })}
+					title={intl.formatMessage({ id: 'pdfReader.highlightText' })}
+					disabled={props.readOnly}
+					onClick={() => handleToolClick('highlight')}
+				><IconHighlight/></button>
+				{ (platform !== 'web' || ['epub', 'snapshot'].includes(props.type)) && (
 					<button
 						tabIndex={-1}
-						className={cx('toolbarButton highlight', { toggled: props.tool.type === 'highlight' })}
-						title={intl.formatMessage({ id: 'pdfReader.highlightText' })}
+						className={cx('toolbar-button underline', { active: props.tool.type === 'underline' })}
+						title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
 						disabled={props.readOnly}
-						onClick={() => handleToolClick('highlight')}>
-						<span className="button-background"/>
-					</button>
-					{ (platform !== 'web' || ['epub', 'snapshot'].includes(props.type)) && (
-						<button
-							tabIndex={-1}
-							className={cx('toolbarButton underline', { toggled: props.tool.type === 'underline' })}
-							title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
-							disabled={props.readOnly}
-							onClick={() => handleToolClick('underline')}>
-							<span className="button-background"/>
-						</button>
-					)}
+						onClick={() => handleToolClick('underline')}
+					><IconUnderline/></button>
+				)}
+				<button
+					tabIndex={-1}
+					className={cx('toolbar-button note', {
+						active: props.tool.type === 'note'
+					})}
+					title={intl.formatMessage({ id: 'pdfReader.addNote' })}
+					disabled={props.readOnly}
+					onClick={() => handleToolClick('note')}
+				><IconNote/></button>
+				{props.type === 'pdf' && platform !== 'web' && (
 					<button
 						tabIndex={-1}
-						className={cx('toolbarButton note', {
-							toggled: props.tool.type === 'note'
-						})}
-						title={intl.formatMessage({ id: 'pdfReader.addNote' })}
+						className={cx('toolbar-button text', { active: props.tool.type === 'text' })}
+						title={intl.formatMessage({ id: 'pdfReader.addText' })}
 						disabled={props.readOnly}
-						onClick={() => handleToolClick('note')}
-					>
-						<span className="button-background"/>
-					</button>
-					{props.type === 'pdf' && platform !== 'web' && (
-						<button
-							tabIndex={-1}
-							className={cx('toolbarButton text', { toggled: props.tool.type === 'text' })}
-							title={intl.formatMessage({ id: 'pdfReader.addText' })}
-							disabled={props.readOnly}
-							onClick={() => handleToolClick('text')}
-						>
-							<span className="button-background"/>
-						</button>
-					)}
-					{props.type === 'pdf' && (
-						<button
-							tabIndex={-1}
-							className={cx('toolbarButton area', { toggled: props.tool.type === 'image' })}
-							title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
-							disabled={props.readOnly}
-							onClick={() => handleToolClick('image')}
-						>
-							<span className="button-background"/>
-						</button>
-					)}
-					{props.type === 'pdf' && (
-						<button
-							tabIndex={-1}
-							className={cx('toolbarButton ink', { toggled: props.tool.type === 'ink' })}
-							title={intl.formatMessage({ id: 'pdfReader.draw' })}
-							disabled={props.readOnly}
-							onClick={() => handleToolClick('ink')}
-						>
-							<span className="button-background"/>
-						</button>
-					)}
-					{props.type === 'pdf' && (
-						<button
-							tabIndex={-1}
-							className={cx('toolbarButton eraser', { toggled: props.tool.type === 'eraser' })}
-							title={intl.formatMessage({ id: 'pdfReader.erase' })}
-							disabled={props.readOnly}
-							onClick={() => handleToolClick('eraser')}
-						>
-							<span className="button-background"/>
-						</button>
-					)}
+						onClick={() => handleToolClick('text')}
+					><IconText/></button>
+				)}
+				{props.type === 'pdf' && (
 					<button
 						tabIndex={-1}
-						className="toolbarButton tool-color"
-						style={{ color: props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && '#676767' || 'transparent' }}
-						disabled={props.readOnly || ['pointer', 'hand'].includes(props.tool.type)}
-						title={intl.formatMessage({ id: 'pdfReader.pickColor' })}
-						onClick={handleToolColorClick}
-					>
-						<span className="button-background"/>
-						<span className="dropmarker"/>
-					</button>
-				</div>
+						className={cx('toolbar-button area', { active: props.tool.type === 'image' })}
+						title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
+						disabled={props.readOnly}
+						onClick={() => handleToolClick('image')}
+					><IconImage/></button>
+				)}
+				{props.type === 'pdf' && (
+					<button
+						tabIndex={-1}
+						className={cx('toolbar-button ink', { active: props.tool.type === 'ink' })}
+						title={intl.formatMessage({ id: 'pdfReader.draw' })}
+						disabled={props.readOnly}
+						onClick={() => handleToolClick('ink')}
+					><IconInk/></button>
+				)}
+				{props.type === 'pdf' && (
+					<button
+						tabIndex={-1}
+						className={cx('toolbar-button eraser', { active: props.tool.type === 'eraser' })}
+						title={intl.formatMessage({ id: 'pdfReader.erase' })}
+						disabled={props.readOnly}
+						onClick={() => handleToolClick('eraser')}
+					><IconEraser/></button>
+				)}
+				<div className="divider"/>
+				<button
+					tabIndex={-1}
+					className="toolbar-button toolbar-dropdown-button"
+					disabled={props.readOnly || ['pointer', 'hand'].includes(props.tool.type)}
+					title={intl.formatMessage({ id: 'pdfReader.pickColor' })}
+					onClick={handleToolColorClick}
+				>
+					<IconColor20 color={props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && 'transparent'}/>
+					<IconChevronDown8/>
+				</button>
 			</div>
 			<div className="end">
 				<CustomSections type="Toolbar"/>
 				<button
-					id="viewFind"
-					className={cx('toolbarButton', { active: props.findPopupOpen })}
+					className={cx('toolbar-button find', { active: props.findPopupOpen })}
 					title="Find in Document"
 					tabIndex={-1}
 					onClick={handleFindClick}
-				/>
+				><IconFind/></button>
 			</div>
 		</div>
 	);

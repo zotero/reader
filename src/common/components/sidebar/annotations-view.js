@@ -3,50 +3,11 @@ import ReactDOM from 'react-dom';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import { SidebarPreview } from '../common/preview';
-import { IconColor, IconUser } from "../common/icons";
+import { IconColor16, IconTagCircle, IconUser } from "../common/icons";
 import { ANNOTATION_COLORS } from "../../defines";
 import { pressedNextKey, pressedPreviousKey, setCaretToEnd } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 
-function AnnotationsViewSearch({ query, onInput, onClear }) {
-	const intl = useIntl();
-
-	function handleInput(event) {
-		onInput(event.target.value);
-	}
-
-	function handleClear() {
-		onClear();
-	}
-
-	function handleKeyDown(event) {
-		if (event.key === 'Escape') {
-			if (event.target.value) {
-				handleClear();
-				event.stopPropagation();
-			}
-		}
-	}
-
-	return (
-		<div className="search">
-			<div className="icon icon-search"/>
-			<div className="input-group">
-				<input
-					id="searchInput"
-					type="text"
-					placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
-					value={query}
-					autoComplete="off"
-					data-tabstop={1}
-					onChange={handleInput}
-					onKeyDown={handleKeyDown}
-				/>
-			</div>
-			{query.length !== 0 && <button className="clear" onClick={handleClear}/>}
-		</div>
-	);
-}
 
 function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickColor, onClickAuthor, onChange }) {
 	const intl = useIntl();
@@ -81,7 +42,7 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={(event) => handleDrop(event, null, color.color)}
-					><IconColor color={color.color}/></button>
+					><IconColor16 color={color.color}/></button>
 				))}
 			</div>}
 			{!!tags.length && <div className="tags">
@@ -90,12 +51,11 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 						key={index}
 						tabIndex={-1}
 						className={cx('tag', { color: !!tag.color, selected: tag.selected, inactive: tag.inactive })}
-						style={{ color: tag.color }}
 						onClick={() => onClickTag(tag.name)}
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={(event) => handleDrop(event, { name: tag.name, color: tag.color })}
-					>{tag.name}</button>
+					>{!!tag.color && <span className="icon"><IconTagCircle color={tag.color}/></span>}{tag.name}</button>
 				))}
 			</div>}
 			{authors.length > 1 && <div className="authors">
@@ -242,14 +202,6 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 				event.preventDefault();
 			}
 		}
-	}
-
-	function handleSearchInput(query) {
-		props.onChangeFilter({ ...props.filter, query });
-	}
-
-	function handleSearchClear() {
-		props.onChangeFilter({ ...props.filter, query: '' });
 	}
 
 	function handleColorClick(color) {
@@ -474,11 +426,6 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 	return (
 		<React.Fragment>
-			<AnnotationsViewSearch
-				query={props.filter.query}
-				onInput={handleSearchInput}
-				onClear={handleSearchClear}
-			/>
 			<div id="annotations" className="annotations" data-tabstop={1} onKeyDownCapture={handleKeyDown}>
 				{props.annotations.length
 					? filteredAnnotations.map(annotation => (

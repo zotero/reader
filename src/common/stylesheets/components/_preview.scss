@@ -1,7 +1,3 @@
-//
-// Preview
-//
-
 @use "sass:math";
 
 .preview {
@@ -11,23 +7,15 @@
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
-		height: $preview-header-height;
-		padding: 0 8px;
-		border-bottom: $preview-border;
+		padding: 4px 8px;
+		border-bottom: 1px solid var(--fill-quinary);
 		line-height: rem(12);
 		white-space: nowrap;
 		user-select: none;
 
-		.selected & {
-			border-bottom: $preview-selected-border;
-		}
-
-		// Allow left side to grow because in some cases
-		// page label can be long i.e. 10002 or S44P12
-
-		.left,
+		.start,
 		.center,
-		.right {
+		.end {
 			flex: 1 1 0;
 			display: flex;
 			align-items: center;
@@ -40,7 +28,7 @@
 			max-width: 50%;
 		}
 
-		.right {
+		.end {
 			justify-content: flex-end;
 		}
 
@@ -57,17 +45,12 @@
 			> div:first-child {
 				margin-right: math.div(4em, 11);
 			}
-
-			.editable-control {
-				width: 50px;
-				line-height: rem(12);
-				padding: $page-label-editable-padding;
-				margin: $page-label-editable-margin;
-			}
 		}
 
 		.author {
-			@include text-truncate;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 			color: #606060;
 			margin-inline-end: 4px;
 
@@ -84,7 +67,7 @@
 	}
 
 	.text {
-		color: #555;
+		color: var(--fill-secondary, rgba(255, 255, 255, 0.55));
 		position: relative;
 
 		&:last-child {
@@ -110,11 +93,7 @@
 	}
 
 	.comment {
-		border-bottom: $preview-border;
-
-		.selected & {
-			border-bottom: $preview-selected-border;
-		}
+		border-bottom: 1px solid var(--fill-quinary);
 
 		&:last-child {
 			border-bottom: 0;
@@ -145,7 +124,7 @@
 		.tag {
 			&::after {
 				content: ", ";
-				color: $text-color;
+				color: #000; /* replaced $text-color */
 			}
 
 			&:last-child {
@@ -157,7 +136,7 @@
 
 		&:empty::before {
 			content: attr(placeholder);
-			color: $tags-placeholder-color;
+			color: #6d95e0; /* replaced $tags-placeholder-color */
 
 			.annotation-popup & {
 				color: #707070;
@@ -165,4 +144,3 @@
 		}
 	}
 }
-

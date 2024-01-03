@@ -1,4 +1,3 @@
-
 @use "sass:math";
 
 .overlay {
@@ -6,18 +5,17 @@
 	position: absolute;
 	width: 100%;
 	height: 100%;
-	z-index: $z-index-overlay;
+	z-index: 999999999; // Replaced $z-index-overlay
 	overflow: hidden;
 	top: 0;
 
 	.popup {
-
-		background-color: #fff;
-		border-radius: $page-popup-border-radius;
-		box-shadow: $page-popup-box-shadow;
+		background: var(--material-background);
+		border: var(--material-panedivider);
+		border-radius: 5px;
+		box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 	}
 }
-
 
 .basic-overlay {
 	justify-content: center;
@@ -26,223 +24,18 @@
 
 	.popup {
 		min-width: 200px;
-
-		.row {
-			padding: $dialog-padding;
-
-			&:not(:first-child) {
-				padding-top: math.div($dialog-padding, 2);
-			}
-
-			&:not(:last-child) {
-				padding-bottom: math.div($dialog-padding, 2);
-			}
-		}
-
-		input[type=text] {
-			width: 100%;
-			height: $toolbar-field-height;
-			padding: $toolbar-field-padding;
-			margin: 0;
-			border: $toolbar-field-border;
-			color: $toolbar-field-color;
-			font-family: inherit;
-			font-size: $toolbar-field-font-size;
-			background: $toolbar-field-bg;
-			border-radius: $toolbar-field-border-radius;
-			box-shadow: $toolbar-field-box-shadow;
-
-			@include retina {
-				box-shadow: $toolbar-field-box-shadow-2x;
-			}
-		}
-
-		input[type=radio]:disabled + label {
-			color: #999;
-		}
-
-		progress {
-			width: 100%;
-		}
-
-		.row.checkbox {
-			display: flex;
-			input {
-				margin-inline-end: 10px;
-			}
-		}
-
-		.row.label {
-			display: flex;
-
-			.column {
-				display: flex;
-				align-items: center;
-
-				&.first {
-					input {
-						width: 100px;
-					}
-
-					input:disabled {
-						background-color: $gray-lightest;
-					}
-				}
-
-				&.second {
-					margin-inline-start: 10px;
-					user-select: none;
-
-					label {
-						padding-inline-start: 5px;
-					}
-				}
-			}
-		}
-
-		fieldset {
-			border: 0;
-			margin-top: 8px;
-
-			legend {
-				font-size: $toolbar-field-font-size;
-				font-weight: bold;
-				padding-bottom: 4px;
-			}
-		}
-
-		.row.radio {
-			user-select: none;
-
-			.choice {
-				&:not(:last-child) {
-					padding-bottom: 5px;
-				}
-
-				display: flex;
-				align-items: center;
-
-				input:focus-visible {
-					box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
-				}
-
-				input:-moz-focusring {
-					box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
-				}
-
-				label {
-					padding-left: 5px;
-				}
-			}
-		}
-
-		.row.buttons {
-			display: flex;
-			justify-content: flex-end;
-		}
-
-		button {
-			width: auto;
-			min-width: $overlay-btn-min-width;
-			height: $overlay-btn-height;
-			color: black;
-			//background: $submit-btn-bg;
-			border: $overlay-btn-border;
-			border-radius: $overlay-btn-border-radius;
-			box-shadow: $overlay-btn-box-shadow;
-
-			@include retina {
-				box-shadow: $overlay-btn-box-shadow-2x;
-			}
-
-			&:not(:first-child) {
-				margin-left: $overlay-btn-margin-x;
-			}
-
-			&:not(:last-child) {
-				margin-right: $overlay-btn-margin-x;
-			}
-
-			&:-moz-focusring {
-				border: $overlay-btn-focus-border;
-				box-shadow: $overlay-btn-focus-box-shadow;
-			}
-
-			&:focus-visible {
-				border: $overlay-btn-focus-border;
-				box-shadow: $overlay-btn-focus-box-shadow;
-			}
-
-			&:hover {
-				background: $overlay-btn-hover-bg;
-				border: $overlay-btn-hover-border;
-			}
-
-			&:active:not(:disabled), &.active:not(:disabled) {
-				background: $overlay-btn-active-bg;
-				border: $overlay-btn-active-border;
-			}
-
-			&:disabled {
-				opacity: 0.7;
-			}
-		}
-
-		//
-		button.submit:not(:disabled) {
-			color: $gradient-btn-color;
-			background: $submit-btn-bg;
-		}
-
-		button.submit:active, button.submit.active {
-			background: $gradient-btn-active-bg;
-			border: $overlay-btn-active-border;
-		}
-
 	}
 }
-
-
 
 .label-overlay {
 	.popup {
 		position: absolute;
 		@include popover-pointer($width: 16px, $height: 8px);
 		left: -1000px;
-
-		.row {
-			padding: $dialog-padding;
-
-			&:not(:first-child) {
-				padding-top: math.div($dialog-padding, 2);
-			}
-
-			&:not(:last-child) {
-				padding-bottom: math.div($dialog-padding, 2);
-			}
-		}
-
-		input[type=text] {
-			width: 100%;
-			height: $toolbar-field-height;
-			padding: $toolbar-field-padding;
-			margin: 0;
-			border: $toolbar-field-border;
-			color: $toolbar-field-color;
-			font-family: inherit;
-			font-size: $toolbar-field-font-size;
-			background: $toolbar-field-bg;
-			border-radius: $toolbar-field-border-radius;
-			box-shadow: $toolbar-field-box-shadow;
-
-			@include retina {
-				box-shadow: $toolbar-field-box-shadow-2x;
-			}
-		}
-
-		input[type=radio]:disabled + label {
-			color: #999;
-		}
+		background: var(--material-background);
+		border: var(--material-panedivider);
+		border-radius: 5px;
+		box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
 		.row.label {
 			display: flex;
@@ -254,10 +47,6 @@
 				&.first {
 					input {
 						width: 100px;
-					}
-
-					input:disabled {
-						background-color: $gray-lightest;
 					}
 				}
 
@@ -272,19 +61,45 @@
 			}
 		}
 
-		fieldset {
+	}
+}
+
+.dialog {
+	.row {
+		padding: 16px;
+
+		&:not(:first-child) {
+			padding-top: math.div(16px, 2);
+		}
+
+		&:not(:last-child) {
+			padding-bottom: math.div(16px, 2);
+		}
+
+		&.checkbox {
+			display: flex;
+
+			input {
+				margin-inline-end: 10px;
+			}
+		}
+
+		&.buttons {
+			display: flex;
+			justify-content: flex-end;
+			gap: 8px;
+		}
+
+		&.radio {
+			user-select: none;
 			border: 0;
 			margin-top: 8px;
 
 			legend {
-				font-size: $toolbar-field-font-size;
+				font-size: rem(11); // Replaced $toolbar-field-font-size
 				font-weight: bold;
 				padding-bottom: 4px;
 			}
-		}
-
-		.row.radio {
-			user-select: none;
 
 			.choice {
 				&:not(:last-child) {
@@ -295,11 +110,11 @@
 				align-items: center;
 
 				input:focus-visible {
-					box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+					box-shadow: 0 0 0 2px rgba(#0a6cf5, 0.5), 0 0 0 1px #a5afc1; // Replaced rgba($accent-color, 0.5), $search-box-shadow
 				}
 
 				input:-moz-focusring {
-					box-shadow: 0 0 0 2px rgba($accent-color, 0.5), $search-box-shadow;
+					box-shadow: 0 0 0 2px rgba(#0a6cf5, 0.5), 0 0 0 1px #a5afc1; // Replaced rgba($accent-color, 0.5), $search-box-shadow
 				}
 
 				label {
@@ -307,69 +122,65 @@
 				}
 			}
 		}
+	}
 
-		.row.buttons {
-			display: flex;
-			justify-content: flex-end;
+	progress {
+		width: 100%;
+	}
+
+	input[type=radio]:disabled + label {
+		color: var(--fill-secondary);
+	}
+
+	input[type=text] {
+		padding: 0 7px;
+		background: var(--material-background);
+		border-radius: 5px;
+		border: var(--material-border-quinary);
+		height: 22px;
+
+		&:disabled {
+			color: var(--fill-quinary);
+		}
+	}
+
+	button {
+		height: 22px;
+		padding: 0 7px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		border-radius: 5px;
+		background: var(--material-button);
+		box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
+
+		&.primary {
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.00) 100%), var(--accent-blue);
+			color: var(--accent-white);
 		}
 
-		button {
-			width: auto;
-			min-width: $overlay-btn-min-width;
-			height: $overlay-btn-height;
-			color: $gradient-btn-color;
-			background: $submit-btn-bg;
-			border: $overlay-btn-border;
-			border-radius: $overlay-btn-border-radius;
-			box-shadow: $overlay-btn-box-shadow;
-
-			@include retina {
-				box-shadow: $overlay-btn-box-shadow-2x;
-			}
-
-			&:not(:first-child) {
-				margin-left: $overlay-btn-margin-x;
-			}
-
-			&:not(:last-child) {
-				margin-right: $overlay-btn-margin-x;
-			}
-
-			&:-moz-focusring {
-				border: $overlay-btn-focus-border;
-				box-shadow: $overlay-btn-focus-box-shadow;
-			}
-
-			&:focus-visible {
-				border: $overlay-btn-focus-border;
-				box-shadow: $overlay-btn-focus-box-shadow;
-			}
-
-			&:hover {
-				background: $overlay-btn-hover-bg;
-				border: $overlay-btn-hover-border;
-			}
-
-			&:active:not(:disabled), &.active:not(:disabled) {
-				background: $gradient-btn-active-bg;
-				border: $overlay-btn-active-border;
-			}
-
-			&:disabled {
-				opacity: 0.7;
-			}
+		&:-moz-focusring {
+			box-shadow: 0 0 0 4px rgba(#0a6cf5, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12); // Replaced $overlay-btn-focus-box-shadow
 		}
 
-		//
-		//button.submit:not(:disabled) {
-		//	color: $gradient-btn-color;
-		//	background: $submit-btn-bg;
-		//}
+		&:focus-visible {
+			box-shadow: 0 0 0 4px rgba(#0a6cf5, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12); // Replaced $overlay-btn-focus-box-shadow
+		}
 
-		//button.submit:active {
-		//	background: $overlay-btn-active-bg;
-		//	border: $overlay-btn-active-border;
-		//}
+		&:active:not(:disabled), &.active:not(:disabled) {
+			background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), darken(#0a6cf5, 6%); // Replaced $gradient-btn-active-bg
+		}
 
+		&:disabled {
+			opacity: 0.7;
+		}
+
+		@media (-moz-platform: macos) {
+			&:-moz-window-inactive {
+				background: var(--material-button);
+				box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
+			}
+		}
 	}
 }

@@ -10,7 +10,7 @@ function PasswordOverlay({ params, onEnterPassword }) {
 	}
 
 	return (
-		<BasicOverlay className="password-overlay">
+		<BasicOverlay className="password-overlay dialog">
 			<form onSubmit={handleSubmit}>
 				<div className="row description"><FormattedMessage id="pdfReader.enterPassword"/></div>
 				<div className="row"><input type="password" ref={inputRef}/></div>

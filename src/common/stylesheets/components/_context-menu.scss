@@ -1,4 +1,3 @@
-
 .context-menu-overlay {
 	pointer-events: all;
 	position: absolute;
@@ -6,22 +5,22 @@
 	left: 0;
 	width: 100%;
 	height: 100%;
-	z-index: $z-index-overlay;
+	z-index: 999999999;
 	overflow: hidden;
 }
 
 .context-menu {
 	position: absolute;
-	background-color: #ffffff;
-	border-radius: $page-popup-border-radius;
-	box-shadow: $page-popup-box-shadow;
+	background: var(--material-toolbar);
+	border: var(--material-panedivider);
+	border-radius: 5px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 	/*! rtl:begin:ignore */
 	left: -9999px;
 	/*! rtl:end:ignore */
 	min-width: 120px;
 
 	padding: 5px 0;
-	color: #404040;
 
 	.group {
 		display: flex;
@@ -29,7 +28,6 @@
 
 		button.row {
 			user-select: none;
-			background: #FFFFFF;
 			cursor: default;
 			display: flex;
 			align-items: center;
@@ -37,7 +35,6 @@
 			white-space: nowrap;
 			padding: 5px 18px;
 			width: 100%;
-
 
 			&.checked:before {
 				content: '✓';
@@ -52,7 +49,7 @@
 			&:hover, &:focus {
 				outline: none;
 				box-shadow: none;
-				background: #F0F0F0;
+				background: var(--fill-quinary);
 			}
 
 			.icon {
@@ -78,11 +75,7 @@
 				flex-grow: 1;
 
 				&:focus-visible {
-					box-shadow: $page-number-focus-box-shadow;
-
-					@include retina {
-						box-shadow: $page-number-focus-box-shadow-2x;
-					}
+					box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
 				}
 			}
 
@@ -100,6 +93,5 @@
 		&:not(:first-child) {
 			padding-top: 6px;
 		}
-
 	}
 }

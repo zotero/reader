@@ -33,9 +33,63 @@ html {
 }
 
 body {
-	background-color: $body-bg;
+	$font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	$font-size-base: rem(11);
+	//$note-font-size: rem(12);
+	//--sidebar-width: 240px;
+	// TODO: Remove --note-font-size, as it's probably not necessary to change font size for highlights and comments
+	--note-font-size: 12 / 16 * 1rem;
+	--bottomPlaceholderHeight: 0;
+
+	//background-color: $body-bg;
 	font-family: $font-family-base;
 	font-size: $font-size-base;
+}
+
+
+
+:root {
+	color-scheme: light dark;
+	background-color: Window;
+	font-family: var(--font-family);
+	font-size: var(--font-size);
+	font-style: normal;
+	//@media (-moz-platform: windows) {
+	// Window or web
+		--color-accent: var(--accent-blue);
+		@include light-dark(--color-focus-border, #000, #fff);
+		--width-focus-border: 2px;
+	//}
+	@media (-moz-platform: macos) {
+		--color-accent: SelectedItem;
+		--color-focus-border: color-mix(in srgb, var(--color-accent) 70%, transparent);
+		--width-focus-border: 3px;
+	}
+	@media (-moz-platform: linux) {
+		--color-accent: SelectedItem;
+		--color-focus-border: var(--color-accent);
+		--width-focus-border: 2px;
+	}
+	--color-focus-search: color-mix(in srgb, var(--color-accent) 70%, transparent);
+}
+
+button {
+	all: unset;
+	outline: revert;
+	display: block;
+	box-sizing: border-box;
+
+	&:focus-visible {
+		outline: none;
+		border-color: rgba(0,0,0,0);
+		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
+	}
+
+	&:-moz-focusring {
+		outline: none;
+		border-color: rgba(0,0,0,0);
+		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
+	}
 }
 
 input:not([type="checkbox"]),
@@ -58,19 +112,27 @@ textarea {
 	display: none !important;
 }
 
-@if $platform != "web" {
-	button:hover {
-		cursor: default;
+button {
+	background: none;
+	color: inherit;
+	border: none;
+	padding: 0;
+	font: inherit;
+	outline: inherit;
+	display: block;
+
+	@if $platform == "web" {
+		&:not([disabled]) {
+			cursor: pointer;
+		}
 	}
 }
-
-
 
 #split-view, .split-view {
 	position: absolute;
 	inset-inline-start: 0;
 	inset-inline-end: 0;
-	top: 32px;
+	top: 41px;
 	bottom: var(--bottom-placeholder-height);
 	display: flex;
 	background-color: white;
@@ -228,4 +290,11 @@ body.freeze {
 
 .custom-sections:empty {
 	display: none;
+}
+
+.icon {
+	svg {
+		display: block;
+		color: currentColor;
+	}
 }

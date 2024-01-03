@@ -1,10 +1,6 @@
-//
-// Editor
-//
-
 .editor {
-	font-size: $note-font-size;
-	line-height: $note-line-height;
+	font-size: rem(12);
+	line-height: calc(4 / 3); // Force browsers to use exact value to avoid rounding glitches
 	position: relative;
 
 	.content {
@@ -14,12 +10,12 @@
 		&:focus {
 			outline: 0;
 			cursor: text;
-			background: #fff;
+			background: var(--material-background);
 		}
 
 		&:empty::before {
 			content: attr(placeholder);
-			color: $annotation-placeholder-color;
+			color: #6d95e0;
 
 			@include state(".content:focus", ".annotation-popup .editor") {
 				color: #707070;
@@ -45,8 +41,8 @@
 	.editor-toolbar {
 		font-size: 12px;
 		position: absolute;
-		background-color: #FFF;
-		border: 1px solid lightgrey;
+		background: var(--material-toolbar);
+		border: var(--material-panedivider);
 		z-index: 1;
 
 		// 5 (buttons) x 20px / 2 = 50px
@@ -65,9 +61,10 @@
 			cursor: pointer;
 			outline: 0;
 			vertical-align: middle;
+			text-align: center;
 
 			&:hover {
-				background-color: lightgrey;
+				background-color: var(--fill-quinary);
 			}
 		}
 	}
@@ -81,6 +78,25 @@
 					color: inherit;
 				}
 			}
+		}
+	}
+}
+
+.expandable-editor {
+	.selected & {
+		pointer-events: all;
+	}
+
+	.content {
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+
+	&.expanded {
+		.content {
+			display: block;
 		}
 	}
 }

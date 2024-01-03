@@ -1,4 +1,42 @@
-$mode: "production";
+$platform: "darwin" !default;
+$mode: "production" !default;
 
-@import "darwin";
-//@import "generic";
+//
+// Abstracts
+//
+
+@import "abstracts/mixins";
+@import "abstracts/functions";
+@import "abstracts/variables";
+
+//
+// Themes
+//
+
+@import "themes/light";
+@import "themes/dark";
+
+//
+// Base
+//
+
+@import "base/base";
+
+//
+// Components
+//
+@import "components/editor";
+@import "components/preview";
+@import "components/view-popup";
+@import "components/window-popup";
+@import "components/context-menu";
+@import "components/annotations-view";
+@import "components/toolbar-buttons";
+@import "components/toolbar";
+@import "components/sidebar";
+@import "components/sidebar-resizer";
+@import "components/split-view-resizer";
+@import "components/split-view";
+@import "components/overlay";
+@import "components/outline-view";
+@import "components/thumbnails-view";

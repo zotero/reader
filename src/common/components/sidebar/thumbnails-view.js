@@ -3,6 +3,7 @@ import { useIntl, FormattedMessage } from 'react-intl';
 import cx from 'classnames';
 import { pressedNextKey, pressedPreviousKey } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
+import IconOptions from '../../../../res/icons/16/options.svg';
 
 const Thumbnail = memo(({ thumbnail, selected, pageLabel, onContextMenu }) => {
 	return (
@@ -205,10 +206,10 @@ function ThumbnailsView(props) {
 					<button
 						tabIndex={-1}
 						data-tabstop={1}
-						className="toolbarButton"
+						className="toolbar-button"
 						title={intl.formatMessage({ id: 'pdfReader.pageOptions' })}
 						onClick={handleMoreClick}
-					/>
+					><IconOptions/></button>
 				</div>
 			)}
 			<div

@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useCallback, useEffect, useLayoutEffect, useRef, useImperativeHandle } from 'react';
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
-import { IconColor } from './common/icons';
+import { IconColor16 } from './common/icons';
 import { debounce } from '../lib/debounce';
 import { isFirefox, isSafari } from "../lib/utilities";
 
@@ -21,7 +21,7 @@ function BasicRow({ item, onClose }) {
 			className={cx('row basic', { checked: item.checked })}
 			onClick={(event) => handleClick(event, item)}
 			disabled={item.disabled}
-		>{item.color && <div className="icon"><IconColor color={item.color}/></div>}{item.label}</button>
+		>{item.color && <div className="icon"><IconColor16 color={item.color}/></div>}{item.label}</button>
 	);
 }
 

@@ -4,6 +4,8 @@ import { ANNOTATION_COLORS } from '../../defines';
 import ViewPopup from './view-popup';
 import CustomSections from '../common/custom-sections';
 
+import { IconColor16 } from '../common/icons';
+
 function SelectionPopup(props) {
 	const intl = useIntl();
 
@@ -26,16 +28,15 @@ function SelectionPopup(props) {
 				{ANNOTATION_COLORS.map((color, index) => (<button
 					key={index}
 					tabIndex={-1}
-					className="toolbarButton tool-color"
-					style={{ color: color[1] }}
+					className="toolbar-button color-button"
 					title={intl.formatMessage({ id: color[0] })}
 					onClick={() => handleColorPick(color[1])}
-				/>))}
+				><IconColor16 color={color[1]}/></button>))}
 			</div>
 			{props.enableAddToNote &&
-				<div className="wide-button" data-tabstop={true} onClick={handleAddToNote}>
+				<button className="toolbar-button wide-button" data-tabstop={true} onClick={handleAddToNote}>
 					<FormattedMessage id="pdfReader.addToNote"/>
-				</div>}
+				</button>}
 			<CustomSections type="TextSelectionPopup" annotation={props.params.annotation}/>
 		</ViewPopup>
 	);

@@ -3,6 +3,9 @@ import { FormattedMessage } from 'react-intl';
 import { debounce } from '../../lib/debounce';
 import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
 
+import IconChevronUp from '../../../../res/icons/20/chevron-up.svg';
+import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
+import IconClose from '../../../../res/icons/20/x.svg';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	const inputRef = useRef();
@@ -64,14 +67,13 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	}
 
 	return (
-		<div className="find-popup findbar" id="findbar">
-			<div id="findbarInputContainer">
+		<div className="find-popup">
+			<div className="row input">
 				<input
 					ref={inputRef}
 					type="text"
-					id="findInput"
-					className="toolbarField"
 					title="Find"
+					className="toolbar-text-input"
 					placeholder="Find in document…"
 					value={query !== null ? query : params.query}
 					tabIndex="-1"
@@ -80,43 +82,70 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 					onChange={handleInputChange}
 					onKeyDown={handleInputKeyDown}
 				/>
-				<div className="splitToolbarButton" data-tabstop={1}>
+				<div className="group" data-tabstop={1}>
 					<button
-						id="findPrevious"
-						className="toolbarButton findPrevious"
+						className="previous toolbar-button"
 						title="Find the previous occurrence of the phrase"
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindPrevious}
-					/>
-					<div className="splitToolbarButtonSeparator"></div>
+					><IconChevronUp/></button>
 					<button
-						id="findNext"
-						className="toolbarButton findNext"
+						className="next toolbar-button"
 						title="Find the next occurrence of the phrase"
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindNext}
-					/>
+					><IconChevronDown/></button>
+					<button
+						className="close toolbar-button"
+						title="Close"
+						tabIndex="-1"
+						onClick={handleCloseClick}
+					><IconClose/></button>
 				</div>
 			</div>
-
-			<div id="findOptions" data-tabstop={1}>
-				<input type="checkbox" id="findHighlightAll" className="toolbarField" tabIndex="-1" checked={params.highlightAll} onChange={handleHighlightAllChange}/>
-				<label htmlFor="findHighlightAll" className="toolbarLabel" data-l10n-id="find_highlight">Highlight all</label>
-				<input type="checkbox" id="findMatchCase" className="toolbarField" tabIndex="-1" checked={params.caseSensitive} onChange={handleMatchCaseChange}/>
-				<label htmlFor="findMatchCase" className="toolbarLabel" data-l10n-id="find_match_case_label">Match case</label>
-				<input type="checkbox" id="findEntireWord" className="toolbarField" tabIndex="-1" checked={params.entireWord} onChange={handleWholeWordsChange}/>
-				<label htmlFor="findEntireWord" className="toolbarLabel">Whole words</label>
+			<div className="row options" data-tabstop={1}>
+				<div className="option">
+					<input
+						id="highlight-all"
+						type="checkbox"
+						tabIndex="-1"
+						checked={params.highlightAll}
+						onChange={handleHighlightAllChange}
+					/>
+					<label htmlFor="highlight-all">Highlight all</label>
+				</div>
+				<div className="option">
+					<input
+						id="case-sensitive"
+						type="checkbox"
+						tabIndex="-1"
+						checked={params.caseSensitive}
+						onChange={handleMatchCaseChange}
+					/>
+					<label htmlFor="case-sensitive">Match case</label>
+				</div>
+				<div className="option">
+					<input
+						id="entire-word"
+						type="checkbox"
+						tabIndex="-1"
+						checked={params.entireWord}
+						onChange={handleWholeWordsChange}
+					/>
+					<label htmlFor="entire-word">Whole words</label>
+				</div>
 			</div>
-			<div id="findbarMessageContainer">
-				{params.result && <span id="findResultsCount" className="toolbarLabel">{
-					params.result.total > 0 ? (params.result.index + 1 + ' / ' + params.result.total) : (<FormattedMessage id="pdfReader.phraseNotFound"/>)}</span>}
-				<span id="findMsg" className="toolbarLabel"></span>
-			</div>
-			<div id="findbarCloseContainer">
-				<button className="findClose" onClick={handleCloseClick}/>
-			</div>
+			{params.result &&
+				<div className="row result">
+					{
+						params.result.total > 0
+							? (params.result.index + 1 + ' / ' + params.result.total)
+							: (<FormattedMessage id="pdfReader.phraseNotFound"/>)
+					}
+				</div>
+			}
 		</div>
 	);
 }

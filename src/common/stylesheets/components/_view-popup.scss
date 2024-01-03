@@ -1,0 +1,77 @@
+.selection-popup {
+	max-width: 175px;
+	padding: 4px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+
+	.colors {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.color-button {
+		width: 20px;
+		height: 20px;
+	}
+
+	.wide-button {
+		text-align: center;
+		border: 1px solid gray;
+		width: 100%;
+	}
+
+	.custom-sections {
+		padding-top: 5px;
+
+		.section {
+			padding: 5px 0;
+			border-top: 1px solid #d7dad7;
+		}
+	}
+}
+
+.view-popup {
+	/*! rtl:begin:ignore */
+	left: 0;
+	/*! rtl:end:ignore */
+	position: absolute;
+	@include popover-pointer($width: 16px, $height: 8px);
+	z-index: 1;
+	background: var(--material-background);
+	border: var(--material-panedivider);
+	border-radius: 5px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
+}
+
+.preview-popup {
+	padding: 5px;
+}
+
+.link-popup {
+	padding: 4px;
+}
+
+.annotation-popup {
+	width: 240px;
+
+	.content {
+		min-height: calc(
+			2 * #{nem(4)}
+			+ 3 * var(--note-font-size) * calc(4 / 3)
+		);
+		max-height: 10 * 16px + 8px;
+		overflow-y: auto;
+	}
+}
+
+.footnote-popup {
+	&.loading {
+		visibility: hidden;
+	}
+
+	iframe {
+		max-height: 300px;
+	}
+}

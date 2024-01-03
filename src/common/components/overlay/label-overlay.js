@@ -218,7 +218,7 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 	}
 
 	return (
-		<TooltipOverlay className="label-overlay" rect={params.rect} onClose={onClose}>
+		<TooltipOverlay className="label-overlay dialog" rect={params.rect} onClose={onClose}>
 			<div className="row label">
 				<div className="column first">
 					<input
@@ -320,7 +320,7 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 				<button
 					tabIndex={-1}
 					data-tabstop={1}
-					className="overlayButton submit"
+					className="primary"
 					disabled={disabled}
 					onClick={handleUpdateClick}
 				><FormattedMessage id="general.update"/></button>

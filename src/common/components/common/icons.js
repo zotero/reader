@@ -72,20 +72,20 @@ export function IconNoteLarge() {
 	);
 }
 
-export function IconColor({ color }) {
+export function IconColor20({ color }) {
 	return (
-		<svg width="16" height="16" viewBox="0 0 16 16">
-			<rect
-				shapeRendering="geometricPrecision"
-				fill={color}
-				strokeWidth="1"
-				x="2"
-				y="2"
-				stroke="rgba(0, 0, 0, 0.08)"
-				width="12"
-				height="12"
-				rx="3"
-			/>
+		<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none">
+			<rect x="2" y="2" width="16" height="16" rx="2" fill={color}/>
+			<rect x="2.5" y="2.5" width="15" height="15" rx="1.5" stroke="black" strokeOpacity="0.1"/>
+		</svg>
+	);
+}
+
+export function IconColor16({ color }) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+			<path d="M1 3C1 1.89543 1.89543 1 3 1H13C14.1046 1 15 1.89543 15 3V13C15 14.1046 14.1046 15 13 15H3C1.89543 15 1 14.1046 1 13V3Z" fill={color}/>
+			<path d="M1.5 3C1.5 2.17157 2.17157 1.5 3 1.5H13C13.8284 1.5 14.5 2.17157 14.5 3V13C14.5 13.8284 13.8284 14.5 13 14.5H3C2.17157 14.5 1.5 13.8284 1.5 13V3Z" stroke="black" strokeOpacity="0.1"/>
 		</svg>
 	);
 }
@@ -94,7 +94,8 @@ export function IconColor({ color }) {
 export function IconUser() {
 	return (
 		<svg width="8" viewBox="0 0 448 512">
-			<path fill="currentColor" d="M224 256c70.7 0 128-57.31 128-128s-57.3-128-128-128C153.3 0 96 57.31 96 128S153.3 256 224 256zM274.7 304H173.3C77.61 304 0 381.6 0 477.3c0 19.14 15.52 34.67 34.66 34.67h378.7C432.5 512 448 496.5 448 477.3C448 381.6 370.4 304 274.7 304z"/>
+			<path fill="currentColor"
+				  d="M224 256c70.7 0 128-57.31 128-128s-57.3-128-128-128C153.3 0 96 57.31 96 128S153.3 256 224 256zM274.7 304H173.3C77.61 304 0 381.6 0 477.3c0 19.14 15.52 34.67 34.66 34.67h378.7C432.5 512 448 496.5 448 477.3C448 381.6 370.4 304 274.7 304z"/>
 		</svg>
 	);
 }
@@ -111,6 +112,14 @@ export function IconTreeItemExpanded() {
 	return (
 		<svg width="16" height="16">
 			<path fill="currentColor" d="M10 13l4-7H6z"/>
+		</svg>
+	);
+}
+
+export function IconTagCircle({ color }) {
+	return (
+		<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 8 8" fill="none">
+			<circle cx="4" cy="4" r="4" fill={color}/>
 		</svg>
 	);
 }

@@ -1,8 +1,6 @@
-
-
 .sidebar-resizer {
 	display: block;
-	top: $toolbar-height;
+	top: 41px;
 	bottom: 0;
 	inset-inline-start: var(--sidebar-width);
 	cursor: ew-resize;

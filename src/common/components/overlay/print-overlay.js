@@ -18,7 +18,7 @@ function PrintOverlay({ params }) {
 	}
 
 	return (
-		<BasicOverlay className="print-overlay">
+		<BasicOverlay className="print-overlay dialog">
 			{params.percent === undefined && (
 				<Fragment>
 					<div className="row checkbox">
@@ -41,7 +41,7 @@ function PrintOverlay({ params }) {
 						<button
 							tabIndex={-1}
 							data-default-focus={true}
-							className="submit"
+							className="primary"
 							onClick={handlePrint}
 						><FormattedMessage id="general.print"/></button>
 					</div>

@@ -3,10 +3,19 @@ import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
-import { IconHighlight, IconUnderline, IconNote, IconArea, IconInk, IconText } from './icons';
 import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import CustomSections from './custom-sections';
+
+import IconHighlight from '../../../../res/icons/16/annotate-highlight.svg';
+import IconUnderline from '../../../../res/icons/16/annotate-underline.svg';
+import IconNote from '../../../../res/icons/16/annotate-note.svg';
+import IconArea from '../../../../res/icons/16/annotate-area.svg';
+import IconInk from '../../../../res/icons/16/annotate-ink.svg';
+import IconText from '../../../../res/icons/16/annotate-text.svg';
+import IconOptions from '../../../../res/icons/16/options.svg';
+import IconLock from '../../../../res/icons/16/lock.svg';
+
 
 // TODO: Don't allow to select UI text in popup header and footer
 
@@ -51,7 +60,7 @@ export function PopupPreview(props) {
 					+ ' ' + intl.formatTime(new Date(annotation.dateModified))
 					+ (annotation.lastModifiedByUser ? ' (' + annotation.lastModifiedByUser + ')' : '')}
 			>
-				<div className="left">
+				<div className="start">
 					<div
 						className={cx('icon', 'icon-' + annotation.type)}
 						style={{ color: annotation.color }}
@@ -72,7 +81,7 @@ export function PopupPreview(props) {
 						</div>
 					)}
 				</div>
-				<div className="right">
+				<div className="end">
 					{annotation.authorName && (
 						<div className={cx('author', { 'non-authoritative': !annotation.isAuthorNameAuthoritative })}>
 							{annotation.authorName}
@@ -84,7 +93,7 @@ export function PopupPreview(props) {
 						className="more"
 						disabled={props.readOnly}
 						onClick={handleClickMore}
-					/>
+					>{props.readOnly ? <IconLock/> : <IconOptions/>}</button>
 				</div>
 			</header>
 
@@ -259,7 +268,7 @@ export function SidebarPreview(props) {
 				draggable={true}
 				onDragStart={handleDragStart}
 			>
-				<div className="left">
+				<div className="start">
 					<div
 						className={cx('icon', 'icon-' + annotation.type)}
 						style={{ color: annotation.color }}
@@ -284,7 +293,7 @@ export function SidebarPreview(props) {
 						</div>
 					)}
 				</div>
-				<div className="right">
+				<div className="end">
 					{annotation.authorName && (
 						<div className={cx('author', { 'non-authoritative': !annotation.isAuthorNameAuthoritative })}>
 							{annotation.authorName}
@@ -300,7 +309,7 @@ export function SidebarPreview(props) {
 						// Make sure 'more' button focusing never triggers annotation element focusing,
 						// which triggers annotation selection
 						onFocus={e => e.stopPropagation()}
-					/>
+					>{props.readOnly ? <IconLock/> : <IconOptions/>}</button>
 				</div>
 			</header>
 			{annotation.image && (

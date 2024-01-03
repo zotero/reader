@@ -66,12 +66,10 @@ function generateReaderConfig(build) {
 					],
 				},
 				{
-					test: /\.(svg|png)$/,
-					type: 'asset/resource',
-					generator: {
-						filename: 'assets/icons/[name].[hash:8][ext]',
-					},
-				}
+					test: /\.svg$/i,
+					issuer: /\.[jt]sx?$/,
+					use: ['@svgr/webpack'],
+				},
 			],
 		},
 		resolve: {

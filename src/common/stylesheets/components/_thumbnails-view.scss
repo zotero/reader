@@ -9,13 +9,9 @@
 	.thumbnails-header {
 		display: flex;
 		position: relative;
-		margin: $thumbnail-header-padding;
+		margin: 6px 13px;
 		justify-content: space-between;
 		align-items: center;
-
-		.toolbarButton {
-			@include icon("more-horizontal", 12px);
-		}
 	}
 
 	.thumbnails {
@@ -31,9 +27,12 @@
 	}
 
 	.thumbnail {
+		display: flex;
+		flex-direction: column;
+		gap: $space-xs;
+
 		.image {
-			border-radius: 6px;
-			padding: 7px;
+			border-radius: 5px;
 
 			img {
 				border-radius: 3px;
@@ -43,27 +42,8 @@
 			}
 
 			.placeholder {
-				border: 1px dashed rgba(255, 255, 255, 0.5);
-			}
-		}
-
-		@if $platform =="web" {
-			position: relative;
-			.more {
-				@include icon("more", 12px);
-				position: absolute;
-				top: 12px;
-				right: 12px;
-				display: none;
-				cursor: pointer;
-
-				@include state(".thumbnail:hover") {
-					display: block;
-				}
-
-				&.active {
-					display: block;
-				}
+				background-color: var(--fill-quarternary);
+				border-radius: 5px;
 			}
 		}
 
@@ -74,14 +54,8 @@
 
 		&.selected {
 			.image {
-				background-color: $thumbnail-selection-ring-selected-bg;
+				outline: 3px solid var(--accent-blue50);
 			}
 		}
-
-		//&:selected {
-		//	.image {
-		//		background-color: $thumbnail-selection-ring-focus-bg;
-		//	}
-		//}
 	}
 }

@@ -2,9 +2,43 @@
 // Mixins
 //
 
+
+
+// An implementation of Firefox light-dark() CSS mixin, which is not supported in 102
+@mixin light-dark($prop, $light-color, $dark-color) {
+	@media (prefers-color-scheme: light) {
+		#{$prop}: $light-color;
+	}
+	@media (prefers-color-scheme: dark) {
+		#{$prop}: $dark-color;
+	}
+}
+
+@mixin color-scheme {
+	@media (prefers-color-scheme: light) {
+		@content("light");
+	}
+
+	@media (prefers-color-scheme: dark) {
+		@content("dark");
+	}
+}
+
+
 @import "mixins/media-queries";
-@import "mixins/icon";
-@import "mixins/text-truncate";
 @import "mixins/selectors";
 @import "mixins/popover-pointer";
-@import "mixins/split-button";
+
+
+@mixin macOS-inactive-opacity {
+	$selector: &;
+	@at-root {
+		@media (-moz-platform: macos) {
+			#{$selector} {
+				&:-moz-window-inactive {
+					opacity: 0.6;
+				}
+			}
+		}
+	}
+}

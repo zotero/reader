@@ -35,15 +35,15 @@ export class FocusManager {
 		window.addEventListener('pointerdown', (event) => {
 			let button = event.target.closest('button');
 			if (button) {
-				button.classList.add('active');
+				button.classList.add('active-pseudo-class-fix');
 			}
 		});
 		window.addEventListener('pointerup', () => {
-			document.querySelectorAll('button.active').forEach(x => x.classList.remove('active'));
+			document.querySelectorAll('button.active-pseudo-class-fix').forEach(x => x.classList.remove('active-pseudo-class-fix'));
 		});
 		window.addEventListener('pointerout', (event) => {
 			if (event.buttons === 0) {
-				document.querySelectorAll('button.active').forEach(x => x.classList.remove('active'));
+				document.querySelectorAll('button.active-pseudo-class-fix').forEach(x => x.classList.remove('active-pseudo-class-fix'));
 			}
 		});
 	}
