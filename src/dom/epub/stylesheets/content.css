@@ -101,21 +101,24 @@ body.flow-mode-paginated > .sections {
 }
 
 body.flow-mode-paginated > .sections.spread-mode-none {
-	max-width: 800px;
+    --column-width: calc(min(800px, 100vw - 80px));
     column-width: 800px;
 	column-gap: 100vw;
+    max-width: 800px;
 }
 
 body.flow-mode-paginated > .sections.spread-mode-odd {
+    --column-width: calc(50vw - 80px);
 	column-width: calc(50vw - 80px);
 }
 
 @media (max-width: 800px) {
 	body.flow-mode-paginated > .sections {
-        max-width: 800px;
+        --column-width: calc(min(800px, 100vw - 80px));
         column-width: 800px;
         column-gap: 100vw;
-	}
+        max-width: 800px;
+    }
 }
 
 body.flow-mode-paginated > .sections > .section-container {
@@ -130,7 +133,7 @@ body.flow-mode-paginated > .sections > .section-container.hidden {
 
 body.flow-mode-paginated replaced-body img, body.flow-mode-paginated replaced-body svg,
 body.flow-mode-paginated replaced-body audio, body.flow-mode-paginated replaced-body video {
-	max-width: calc(50vw - 80px) !important;
+	max-width: var(--column-width) !important;
     max-height: calc(100vh - 80px) !important;
     object-fit: contain;
 }
