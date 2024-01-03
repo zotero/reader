@@ -74,6 +74,11 @@ class SectionView {
 		if (this.body) {
 			throw new Error('Already rendered');
 		}
+		if (!this.section.url) {
+			console.error('Section has no URL', this.section);
+			this.body = this._document.createElement('div');
+			return;
+		}
 		let xhtml = await this.section.render(requestFn);
 		this.body = await sanitizeAndRender(xhtml,
 			{ container: this.container, styleScoper: this._styleScoper });
