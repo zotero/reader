@@ -11,6 +11,12 @@
     mix-blend-mode: multiply;
 }
 
+@media (prefers-color-scheme: dark) {
+	.annotation-container.blended {
+		mix-blend-mode: screen;
+	}
+}
+
 #annotation-overlay .resizer {
     cursor: col-resize;
     touch-action: none;
