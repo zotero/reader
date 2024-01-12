@@ -8,7 +8,7 @@ body.enable-vertical-split-view .split-view-resizer {
 	inset-inline-end: var(--split-view-size);
 	cursor: ew-resize;
 	position: absolute;
-	background-color: #bdbdbd;
+	background-color: var(--color-panedivider);
 	z-index: 999999999;
 
 	&:before {
@@ -35,7 +35,7 @@ body.enable-horizontal-split-view .split-view-resizer {
 	bottom: var(--split-view-size);
 	cursor: ns-resize;
 	position: absolute;
-	background-color: #bdbdbd;
+	background-color: var(--color-panedivider);
 	z-index: 999999999;
 
 	&:before {

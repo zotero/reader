@@ -7,9 +7,8 @@
 	width: var(--sidebar-width);
 	z-index: 100;
 	left: calc(-1 * var(--sidebar-width));
-	border-right: 1px solid #bdbdbd;
+	border-right: var(--material-panedivider);
 	background-color: var(--material-sidepane);
-
 
 	body.sidebar-open & {
 		visibility: visible;
