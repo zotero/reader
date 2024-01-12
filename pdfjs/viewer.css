@@ -374,3 +374,19 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 .textAnnotation.focusable {
 	pointer-events: unset;
 }
+
+@media (prefers-color-scheme: dark) {
+	#viewerContainer {
+		background-color: #272727; /* --color-toolbar */
+	}
+
+	canvas {
+		filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
+	}
+}
+
+@media (prefers-color-scheme: light) {
+	#viewerContainer {
+		background-color: #f2f2f2; /* --color-toolbar */
+	}
+}
