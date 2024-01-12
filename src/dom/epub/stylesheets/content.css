@@ -301,3 +301,9 @@ body.footnote-popup-content * {
 body.footnote-popup-content .section-container {
 	padding: 16px;
 }
+
+@media (prefers-color-scheme: dark) {
+    .annotation-container.blended {
+        mix-blend-mode: screen;
+    }
+}
