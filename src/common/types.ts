@@ -34,6 +34,7 @@ export interface Annotation {
 	pageLabel?: string;
 	position: Position;
 	text?: string;
+	image?: string;
 	comment?: string;
 	tags: string[];
 	dateCreated: string;
