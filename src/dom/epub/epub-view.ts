@@ -284,13 +284,19 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (this._rangeCache.has(cfiString)) {
 			return this._rangeCache.get(cfiString)!.toRange();
 		}
-		let range = cfi.toRange(view.container.ownerDocument, undefined, view.container);
-		if (!range) {
-			console.error('Unable to get range for CFI', cfiString);
+		try {
+			let range = cfi.toRange(view.container.ownerDocument, undefined, view.container);
+			if (!range) {
+				console.error('Unable to get range for CFI', cfiString);
+				return null;
+			}
+			this._rangeCache.set(cfiString, new PersistentRange(range));
+			return range;
+		}
+		catch (e) {
+			console.error('Unable to get range for CFI', cfiString, e);
 			return null;
 		}
-		this._rangeCache.set(cfiString, new PersistentRange(range));
-		return range;
 	}
 
 	override toSelector(range: Range): FragmentSelector | null {
