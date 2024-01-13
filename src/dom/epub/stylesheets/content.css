@@ -194,8 +194,8 @@ body.flow-mode-paginated replaced-body .table-like {
     --link-color: #0000ee;
     --visited-link-color: #551a8b;
 
-    background-color: var(--background-color);
-    color: var(--text-color);
+    background-color: var(--background-color) !important;
+    color: var(--text-color) !important;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -224,6 +224,7 @@ replaced-body {
 	margin-left: 0 !important;
 	margin-right: 0 !important;
 	background: transparent !important;
+    color: inherit !important;
 
 	font-family: var(--content-font-family, "Georgia"), serif;
 	font-size: calc(var(--content-scale) * 13pt) !important;
@@ -261,6 +262,8 @@ replaced-body:lang(zh) {
 replaced-body p {
 	/* Really enforce some of our formatting choices on body paragraphs */
 	font-family: var(--content-font-family, "Georgia"), serif !important;
+	background: transparent !important;
+	color: inherit !important;
 
 	widows: 2;
 	orphans: 2;
@@ -272,11 +275,11 @@ replaced-body a {
 }
 
 replaced-body :link {
-    color: var(--link-color);
+    color: var(--link-color) !important;
 }
 
 replaced-body :visited {
-    color: var(--visited-link-color);
+    color: var(--visited-link-color) !important;
 }
 
 replaced-body sup {
