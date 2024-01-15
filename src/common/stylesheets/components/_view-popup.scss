@@ -47,6 +47,10 @@
 
 .preview-popup {
 	padding: 5px;
+
+	img {
+		@include pdf-page-image-dark-light;
+	}
 }
 
 .link-popup {

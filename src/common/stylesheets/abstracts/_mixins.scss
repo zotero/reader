@@ -2,7 +2,9 @@
 // Mixins
 //
 
-
+@import "mixins/media-queries";
+@import "mixins/selectors";
+@import "mixins/popover-pointer";
 
 // An implementation of Firefox light-dark() CSS mixin, which is not supported in 102
 @mixin light-dark($prop, $light-color, $dark-color) {
@@ -14,22 +16,6 @@
 	}
 }
 
-@mixin color-scheme {
-	@media (prefers-color-scheme: light) {
-		@content("light");
-	}
-
-	@media (prefers-color-scheme: dark) {
-		@content("dark");
-	}
-}
-
-
-@import "mixins/media-queries";
-@import "mixins/selectors";
-@import "mixins/popover-pointer";
-
-
 @mixin macOS-inactive-opacity {
 	$selector: &;
 	@at-root {
@@ -38,6 +24,17 @@
 				&:-moz-window-inactive {
 					opacity: 0.6;
 				}
+			}
+		}
+	}
+}
+
+@mixin pdf-page-image-dark-light {
+	$selector: &;
+	@at-root {
+		@media (prefers-color-scheme: dark) {
+			#{$selector} {
+				filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
 			}
 		}
 	}
