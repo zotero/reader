@@ -159,7 +159,6 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	overflow: hidden;
 	border: var(--page-border);
 	background-clip: content-box;
-	background-color: rgba(255, 255, 255, 1);
 	box-shadow: 0 0 2px 0 rgba(0,0,0,.14),0 2px 2px 0 rgba(0,0,0,.12),0 1px 3px 0 rgba(0,0,0,.12);
 }
 
@@ -375,18 +374,26 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	pointer-events: unset;
 }
 
+@media (prefers-color-scheme: light) {
+	body, #viewerContainer {
+		background-color: #f2f2f2; /* --color-toolbar */
+	}
+
+	.pdfViewer .page {
+		background-color: #FFFFFF;
+	}
+}
+
 @media (prefers-color-scheme: dark) {
-	#viewerContainer {
+	body, #viewerContainer {
 		background-color: #272727; /* --color-toolbar */
 	}
 
 	canvas {
 		filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
 	}
-}
 
-@media (prefers-color-scheme: light) {
-	#viewerContainer {
-		background-color: #f2f2f2; /* --color-toolbar */
+	.pdfViewer .page {
+		background-color: #000000;
 	}
 }
