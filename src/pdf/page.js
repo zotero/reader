@@ -248,11 +248,19 @@ export default class Page {
 	}
 
 	_renderHighlight(annotation) {
+		let color = annotation.color;
+		let alpha = 0.4;
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			if (annotation.color === '#ffd400') {
+				color = darkenHex(annotation.color, 20);
+			}
+			alpha = 0.6;
+		}
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
-		this.actualContext.globalAlpha = 0.4;
+		this.actualContext.globalAlpha = alpha;
 		this.actualContext.globalCompositeOperation = 'multiply';
-		this.actualContext.fillStyle = annotation.color;
+		this.actualContext.fillStyle = color;
 
 		let rects = position.rects;
 		if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
@@ -266,6 +274,12 @@ export default class Page {
 	}
 
 	_renderUnderline(annotation) {
+		let color = annotation.color;
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+			if (annotation.color === '#ffd400') {
+				color = darkenHex(annotation.color, 20);
+			}
+		}
 		let pageData = this.layer._pdfPages[this.pageIndex];
 		if (!pageData) {
 			return;
@@ -275,7 +289,7 @@ export default class Page {
 		this.actualContext.save();
 		// this.actualContext.globalAlpha = 0;
 		this.actualContext.globalCompositeOperation = 'multiply';
-		this.actualContext.fillStyle = annotation.color;
+		this.actualContext.fillStyle = color;
 		let rects;
 		let pdfRect;
 		if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
