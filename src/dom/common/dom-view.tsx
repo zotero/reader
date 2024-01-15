@@ -110,6 +110,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
 		this._iframe = document.createElement('iframe');
+		this._iframe.addEventListener('load', () => this._iframe.classList.add('loaded'));
 		this._iframe.sandbox.add('allow-same-origin');
 		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
 		// unless the allow-scripts permission is added to the frame's sandbox. We prevent scripts in the frame from

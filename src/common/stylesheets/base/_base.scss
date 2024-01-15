@@ -135,7 +135,6 @@ button {
 	top: 41px;
 	bottom: var(--bottom-placeholder-height);
 	display: flex;
-	background-color: white;
 
 	.primary, .secondary {
 		display: flex;
@@ -146,6 +145,11 @@ button {
 			display: flex;
 			width: 100%;
 			border: 0;
+			visibility: hidden; // Prevent iframe flashing while loading
+
+			&.loaded {
+				visibility: visible;
+			}
 		}
 	}
 

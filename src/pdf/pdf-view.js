@@ -121,6 +121,7 @@ class PDFView {
 		this._selectionRanges = [];
 
 		this._iframe = document.createElement('iframe');
+		this._iframe.addEventListener('load', () => this._iframe.classList.add('loaded'));
 		this._iframe.src = 'pdf/web/viewer.html';
 
 		this._iframeWindow = null;
