@@ -51,11 +51,11 @@
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
-			color: #606060;
+			color: var(--fill-secondary);
 			margin-inline-end: 4px;
 
 			&.non-authoritative {
-				color: #c0c0c0;
+				color: var(--fill-tertiary);
 			}
 		}
 
