@@ -1,7 +1,7 @@
 import React from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { ANNOTATION_COLORS } from '../../defines';
-import ViewPopup from './view-popup';
+import ViewPopup from './common/view-popup';
 import CustomSections from '../common/custom-sections';
 
 import { IconColor16 } from '../common/icons';

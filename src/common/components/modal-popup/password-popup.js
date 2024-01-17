@@ -1,8 +1,8 @@
-import BasicOverlay from './common/basic-overlay';
+import DialogPopup from './common/dialog-popup';
 import { FormattedMessage } from 'react-intl';
 import React, { useRef } from 'react';
 
-function PasswordOverlay({ params, onEnterPassword }) {
+function PasswordPopup({ params, onEnterPassword }) {
 	let inputRef = useRef();
 	function handleSubmit(event) {
 		event.preventDefault();
@@ -10,13 +10,13 @@ function PasswordOverlay({ params, onEnterPassword }) {
 	}
 
 	return (
-		<BasicOverlay className="password-overlay dialog">
+		<DialogPopup className="password-overlay dialog">
 			<form onSubmit={handleSubmit}>
 				<div className="row description"><FormattedMessage id="pdfReader.enterPassword"/></div>
 				<div className="row"><input type="password" ref={inputRef}/></div>
 			</form>
-		</BasicOverlay>
+		</DialogPopup>
 	);
 }
 
-export default PasswordOverlay;
+export default PasswordPopup;

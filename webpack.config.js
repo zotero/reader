@@ -13,7 +13,7 @@ function generateReaderConfig(build) {
 		entry: {
 			reader: [
 				'./src/index.' + build + '.js',
-				(build === 'web' ? './src/common/stylesheets/web.scss' : './src/common/stylesheets/main.scss')
+				'./src/common/stylesheets/main.scss'
 			]
 		},
 		output: {
@@ -62,6 +62,9 @@ function generateReaderConfig(build) {
 						},
 						{
 							loader: 'sass-loader',
+							options: {
+								additionalData: `$platform: '${build}';`
+							}
 						},
 					],
 				},

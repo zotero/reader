@@ -389,7 +389,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 		background-color: #272727; /* --color-toolbar */
 	}
 
-	canvas {
+	canvas, .textAnnotation {
 		filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
 	}
 

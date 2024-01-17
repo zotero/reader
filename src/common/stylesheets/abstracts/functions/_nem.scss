@@ -1,9 +1,0 @@
-//
-// Nem ('note em') helper
-//
-
-@use "sass:math";
-
-@function nem($length) {
-	@return calc(#{math.div($length, 12)} * #{var(--note-font-size)});
-}

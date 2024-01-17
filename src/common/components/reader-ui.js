@@ -2,19 +2,19 @@ import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativ
 import cx from 'classnames';
 import Toolbar from './toolbar';
 import Sidebar from './sidebar/sidebar';
-import SelectionPopup from './view/selection-popup';
-import FindPopup from './view/find-popup';
-import AnnotationPopup from './view/annotation-popup';
+import SelectionPopup from './view-popup/selection-popup';
+import FindPopup from './view-popup/find-popup';
+import AnnotationPopup from './view-popup/annotation-popup';
 import AnnotationsView from './sidebar/annotations-view';
 import SidebarResizer from './sidebar/sidebar-resizer';
 import SplitViewResizer from './split-view-resizer';
 import ThumbnailsView from './sidebar/thumbnails-view';
 import OutlineView from './sidebar/outline-view';
-import OverlayPopup from './view/overlay-popup';
+import OverlayPopup from './view-popup/overlay-popup';
 import ContextMenu from './context-menu';
-import LabelOverlay from './overlay/label-overlay';
-import PasswordOverlay from './overlay/password-overlay';
-import PrintOverlay from './overlay/print-overlay';
+import LabelPopup from './modal-popup/label-popup';
+import PasswordPopup from './modal-popup/password-popup';
+import PrintPopup from './modal-popup/print-popup';
 
 
 function View(props) {
@@ -185,9 +185,9 @@ const ReaderUI = React.forwardRef((props, ref) => {
 				{state.splitType && <View {...props} primary={false} state={state} />}
 			</div>
 			{state.contextMenu && <ContextMenu params={state.contextMenu} onClose={props.onCloseContextMenu}/>}
-			{state.labelOverlay && <LabelOverlay params={state.labelOverlay} onUpdateAnnotations={props.onUpdateAnnotations} onClose={props.onCloseLabelOverlay}/>}
-			{state.passwordOverlay && <PasswordOverlay params={state.passwordOverlay} onEnterPassword={props.onEnterPassword}/>}
-			{state.printOverlay && <PrintOverlay params={state.printOverlay}/>}
+			{state.labelOverlay && <LabelPopup params={state.labelOverlay} onUpdateAnnotations={props.onUpdateAnnotations} onClose={props.onCloseLabelOverlay}/>}
+			{state.passwordOverlay && <PasswordPopup params={state.passwordOverlay} onEnterPassword={props.onEnterPassword}/>}
+			{state.printOverlay && <PrintPopup params={state.printOverlay}/>}
 			{state.errorMessage && <div className="error-bar" tabIndex={-1}>{state.errorMessage}</div>}
 		</Fragment>
 	);

@@ -1,15 +1,15 @@
 @use "sass:math";
 
-.overlay {
+.dialog-popup-overlay, .tooltip-popup-overlay {
 	pointer-events: all;
 	position: absolute;
 	width: 100%;
 	height: 100%;
-	z-index: 999999999; // Replaced $z-index-overlay
+	z-index: $z-index-overlay;
 	overflow: hidden;
 	top: 0;
 
-	.popup {
+	.modal-popup {
 		background: var(--material-background);
 		border: var(--material-panedivider);
 		border-radius: 5px;
@@ -17,65 +17,58 @@
 	}
 }
 
-.basic-overlay {
+.dialog-popup-overlay {
 	justify-content: center;
 	align-items: center;
 	display: flex;
 
-	.popup {
+	.modal-popup {
 		min-width: 200px;
 	}
 }
 
-.label-overlay {
-	.popup {
-		position: absolute;
-		@include popover-pointer($width: 16px, $height: 8px);
-		left: -1000px;
-		background: var(--material-background);
-		border: var(--material-panedivider);
-		border-radius: 5px;
-		box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
+.label-popup {
+	position: absolute;
+	@include popover-pointer($width: 16px, $height: 8px);
+	left: -1000px;
+	background: var(--material-background);
+	border: var(--material-panedivider);
+	border-radius: 5px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
 
-		.row.label {
+	.row.label {
+		display: flex;
+
+		.column {
 			display: flex;
+			align-items: center;
 
-			.column {
-				display: flex;
-				align-items: center;
-
-				&.first {
-					input {
-						width: 100px;
-					}
+			&.first {
+				input {
+					width: 100px;
 				}
+			}
 
-				&.second {
-					margin-inline-start: 10px;
-					user-select: none;
+			&.second {
+				margin-inline-start: 10px;
+				user-select: none;
 
-					label {
-						padding-inline-start: 5px;
-					}
+				label {
+					padding-inline-start: 5px;
 				}
 			}
 		}
-
 	}
 }
 
-.dialog {
+// Modal popup elements
+.modal-popup {
+	padding: 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+
 	.row {
-		padding: 16px;
-
-		&:not(:first-child) {
-			padding-top: math.div(16px, 2);
-		}
-
-		&:not(:last-child) {
-			padding-bottom: math.div(16px, 2);
-		}
-
 		&.checkbox {
 			display: flex;
 

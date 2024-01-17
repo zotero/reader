@@ -1,8 +1,8 @@
-import BasicOverlay from './common/basic-overlay';
+import DialogPopup from './common/dialog-popup';
 import { FormattedMessage } from 'react-intl';
 import React, { Fragment, useRef, useState } from 'react';
 
-function PrintOverlay({ params }) {
+function PrintPopup({ params }) {
 	let [includeAnnotations, setIncludeAnnotations] = useState(true);
 
 	function handleIncludeAnnotationsCheckboxChange(event) {
@@ -18,7 +18,7 @@ function PrintOverlay({ params }) {
 	}
 
 	return (
-		<BasicOverlay className="print-overlay dialog">
+		<DialogPopup className="print-popup">
 			{params.percent === undefined && (
 				<Fragment>
 					<div className="row checkbox">
@@ -63,8 +63,8 @@ function PrintOverlay({ params }) {
 					</div>
 				</Fragment>
 			)}
-		</BasicOverlay>
+		</DialogPopup>
 	);
 }
 
-export default PrintOverlay;
+export default PrintPopup;

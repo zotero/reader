@@ -1381,7 +1381,24 @@ class PDFView {
 				let size = this._tool.size * scale;
 				let adjustedSize = size * window.devicePixelRatio;
 				let adjustedStrokeWidth = 1 * window.devicePixelRatio;
-				let svgDataUrl = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${adjustedSize} ${adjustedSize}"><circle cx="${adjustedSize / 2}" cy="${adjustedSize / 2}" r="${(adjustedSize - adjustedStrokeWidth) / 2}" stroke="black" stroke-width="${adjustedStrokeWidth}" fill="none" /></svg>`;
+				let svgDataUrl = [
+					'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"',
+					`     width="${size}"`,
+					`     height="${size}"`,
+					`     viewBox="0 0 ${adjustedSize} ${adjustedSize}">`,
+					'    <style>',
+					'        @media (prefers-color-scheme: dark) {',
+					'            :root {filter: invert()}',
+					'        }',
+					'    </style>',
+					`    <circle cx="${adjustedSize / 2}"`,
+					`            cy="${adjustedSize / 2}"`,
+					`            r="${(adjustedSize - adjustedStrokeWidth) / 2}"`,
+					'            stroke="black"',
+					`            stroke-width="${adjustedStrokeWidth}"`,
+					'            fill="none" />',
+					'</svg>'
+				].join('');
 				cursor = `url('${svgDataUrl}') ${size / 2} ${size / 2}, auto`;
 			}
 			else if (['selectText'].includes(action.type)) {

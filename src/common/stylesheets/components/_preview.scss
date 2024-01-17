@@ -55,7 +55,7 @@
 			margin-inline-end: 4px;
 
 			&.non-authoritative {
-				color: var(--fill-tertiary);
+				opacity: 0.4;
 			}
 		}
 
@@ -67,7 +67,7 @@
 	}
 
 	.text {
-		color: var(--fill-secondary, rgba(255, 255, 255, 0.55));
+		color: var(--fill-secondary);
 		position: relative;
 
 		&:last-child {
@@ -84,7 +84,7 @@
 			top: nem(4);
 			bottom: nem(5);
 			width: 2px;
-			z-index: 999;
+			z-index: 1;
 		}
 
 		.content {

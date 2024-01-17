@@ -1,11 +1,72 @@
+.find-popup {
+	position: absolute;
+	inset-inline-end: 15px;
+	top: 15px;
+	z-index: $z-index-find-popup;
+	padding: 8px;
+	background: var(--material-background);
+	border: var(--material-panedivider);
+	border-radius: 5px;
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
+	gap: 12px;
+	display: flex;
+	flex-direction: column;
+
+	.row {
+		display: flex;
+	}
+
+	.row.input {
+		gap: 8px;
+
+		.group {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+		}
+	}
+
+	.row.options {
+		height: 16px;
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+
+		.option {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+	}
+
+	.row.result {
+		height: 16px;
+		display: flex;
+		align-items: center;
+		margin-top: -6px;
+	}
+
+	.result {
+		white-space: nowrap;
+		user-select: none;
+	}
+
+	.group {
+		display: flex;
+		align-items: center;
+	}
+
+}
+
 .selection-popup {
-	max-width: 175px;
+	max-width: 198px;
 	padding: 4px;
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 
 	.colors {
+		gap: 4px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -17,9 +78,12 @@
 	}
 
 	.wide-button {
+		background: var(--material-button);
 		text-align: center;
-		border: 1px solid gray;
+		box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
 		width: 100%;
+		color: var(--fill-primary);
+		height: 22px;
 	}
 
 	.custom-sections {

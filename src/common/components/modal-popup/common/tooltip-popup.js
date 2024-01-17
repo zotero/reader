@@ -5,10 +5,11 @@ import cx from 'classnames';
 const LEFT_OR_RIGHT_TOOLTIP_CENTER = 20;
 const VERTICAL_PADDING = 10;
 
-function TooltipOverlay({ rect, className, children, onClose }) {
+function TooltipPopup({ rect, className, children, onClose }) {
 	const [position, setPosition] = useState({ style: {}, classes: {} });
 	const [update, setUpdate] = useState();
-	const containerRef = useRef();
+	const overlayRef = useRef();
+	const popupRef = useRef();
 
 	useEffect(() => {
 		setUpdate({});
@@ -21,7 +22,7 @@ function TooltipOverlay({ rect, className, children, onClose }) {
 	}, [update]);
 
 	function handlePointerDown(event) {
-		if (event.target.classList.contains('overlay')) {
+		if (event.target === overlayRef.current) {
 			onClose();
 		}
 	}
@@ -30,8 +31,8 @@ function TooltipOverlay({ rect, className, children, onClose }) {
 		let horizontal = 'center';
 		let vertical = 'bottom';
 
-		let popupWidth = containerRef.current.offsetWidth;
-		let popupHeight = containerRef.current.offsetHeight;
+		let popupWidth = popupRef.current.offsetWidth;
+		let popupHeight = popupRef.current.offsetHeight;
 
 		let top = rect[3] + VERTICAL_PADDING;
 		let left = rect[0] + (rect[2] - rect[0]) / 2 - popupWidth / 2;
@@ -73,10 +74,10 @@ function TooltipOverlay({ rect, className, children, onClose }) {
 	}
 
 	return (
-		<div className={cx('overlay tooltip-overlay', className)} onPointerDown={handlePointerDown}>
+		<div ref={overlayRef} className={cx('tooltip-popup-overlay')} onPointerDown={handlePointerDown}>
 			<div
-				ref={containerRef}
-				className={cx('popup', position.classes)}
+				ref={popupRef}
+				className={cx('modal-popup', className, position.classes)}
 				style={position.style}
 			>
 				{children}
@@ -84,5 +85,4 @@ function TooltipOverlay({ rect, className, children, onClose }) {
 		</div>
 	);
 }
-
-export default TooltipOverlay;
+export default TooltipPopup;

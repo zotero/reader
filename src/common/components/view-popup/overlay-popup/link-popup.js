@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
-import ViewPopup from '../view-popup';
+import ViewPopup from '../common/view-popup';
 
 function LinkPopup(props) {
 	const intl = useIntl();

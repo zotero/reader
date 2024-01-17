@@ -1,7 +1,7 @@
 import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
 import { ANNOTATION_COLORS } from '../../defines';
 import { FormattedMessage } from 'react-intl';
-import ViewPopup from './view-popup';
+import ViewPopup from './common/view-popup';
 import { PopupPreview } from '../common/preview';
 
 function AnnotationPopup(props) {

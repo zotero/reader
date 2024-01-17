@@ -1,9 +1,0 @@
-//
-// Rem helper
-//
-
-@use "sass:math";
-
-@function rem($length) {
-	@return math.div($length, 16) * 1rem;
-}

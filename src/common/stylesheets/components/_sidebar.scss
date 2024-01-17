@@ -1,3 +1,9 @@
+body.sidebar-open {
+	#split-view, .split-view {
+		inset-inline-start: var(--sidebar-width);
+	}
+}
+
 #sidebarContainer {
 	display: flex;
 	flex-direction: column;
@@ -5,7 +11,7 @@
 	top: 41px;
 	bottom: 0;
 	width: var(--sidebar-width);
-	z-index: 100;
+	z-index: $z-index-sidebar;
 	left: calc(-1 * var(--sidebar-width));
 	border-right: var(--material-panedivider);
 	background-color: var(--material-sidepane);
@@ -42,7 +48,7 @@
 	top: 0;
 	bottom: 0;
 	width: 6px;
-	z-index: 200;
-	cursor: col-resize; /* Value of $sidebar-resizer-cursor */
+	z-index: $z-index-sidebar-resizer;
+	cursor: col-resize;
 	right: -4px;
 }

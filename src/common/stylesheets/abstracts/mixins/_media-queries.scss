@@ -1,9 +1,0 @@
-//
-// Media queries
-//
-
-@mixin retina {
-	@media screen and (min-resolution: 1.1dppx) {
-		@content;
-	}
-}

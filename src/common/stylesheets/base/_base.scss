@@ -22,31 +22,13 @@
 	border: 0;
 }
 
-html,
 body {
-	width: 100%;
-	height: 100%;
-}
-
-html {
-	/* Font size is needed to make the activity bar the correct size. */
-}
-
-body {
-	$font-family-base: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
-	$font-size-base: rem(11);
-	//$note-font-size: rem(12);
-	//--sidebar-width: 240px;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+	font-size: 12px;
 	// TODO: Remove --note-font-size, as it's probably not necessary to change font size for highlights and comments
 	--note-font-size: 12 / 16 * 1rem;
 	--bottomPlaceholderHeight: 0;
-
-	//background-color: $body-bg;
-	font-family: $font-family-base;
-	font-size: $font-size-base;
 }
-
-
 
 :root {
 	color-scheme: light dark;
@@ -54,30 +36,46 @@ body {
 	font-family: var(--font-family);
 	font-size: var(--font-size);
 	font-style: normal;
-	//@media (-moz-platform: windows) {
-	// Window or web
-		--color-accent: var(--accent-blue);
-		@include light-dark(--color-focus-border, #000, #fff);
-		--width-focus-border: 2px;
-	//}
-	@media (-moz-platform: macos) {
+	@if $platform == 'zotero' {
+		@media (-moz-platform: windows) {
+			--color-accent: var(--accent-blue);
+			@include light-dark(--color-focus-border, #000, #fff);
+			--width-focus-border: 2px;
+		}
+		@media (-moz-platform: macos) {
+			--color-accent: SelectedItem;
+			--color-focus-border: color-mix(in srgb, var(--color-accent) 70%, transparent);
+			--width-focus-border: 3px;
+		}
+		@media (-moz-platform: linux) {
+			--color-accent: SelectedItem;
+			--color-focus-border: var(--color-accent);
+			--width-focus-border: 2px;
+		}
+	} @else if $platform == 'web' {
+		--color-accent: SelectedItem;
+		--color-focus-border: color-mix(in srgb, var(--color-accent) 70%, transparent);
+		--width-focus-border: 3px;
+	} @else if $platform == 'dev' {
 		--color-accent: SelectedItem;
 		--color-focus-border: color-mix(in srgb, var(--color-accent) 70%, transparent);
 		--width-focus-border: 3px;
 	}
-	@media (-moz-platform: linux) {
-		--color-accent: SelectedItem;
-		--color-focus-border: var(--color-accent);
-		--width-focus-border: 2px;
-	}
 	--color-focus-search: color-mix(in srgb, var(--color-accent) 70%, transparent);
 }
 
+// Remove default button styling
 button {
 	all: unset;
 	outline: revert;
 	display: block;
 	box-sizing: border-box;
+	background: none;
+	color: inherit;
+	border: none;
+	padding: 0;
+	font: inherit;
+	outline: inherit;
 
 	&:focus-visible {
 		outline: none;
@@ -90,6 +88,16 @@ button {
 		border-color: rgba(0,0,0,0);
 		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
 	}
+
+	@if $platform == "web" {
+		&:not([disabled]) {
+			cursor: pointer;
+		}
+	}
+
+	&:disabled {
+		opacity: $btn-disabled-opacity;
+	}
 }
 
 input:not([type="checkbox"]),
@@ -100,111 +108,8 @@ select {
 	outline: none;
 }
 
-textarea {
-	outline: none;
-}
-
-.hidden {
-	display: none !important;
-}
-
-[hidden] {
-	display: none !important;
-}
-
-button {
-	background: none;
-	color: inherit;
-	border: none;
-	padding: 0;
-	font: inherit;
-	outline: inherit;
-	display: block;
-
-	@if $platform == "web" {
-		&:not([disabled]) {
-			cursor: pointer;
-		}
-	}
-}
-
-#split-view, .split-view {
-	position: absolute;
-	inset-inline-start: 0;
-	inset-inline-end: 0;
-	top: 41px;
-	bottom: var(--bottom-placeholder-height);
-	display: flex;
-
-	.primary, .secondary {
-		display: flex;
-		position: relative;
-		overflow: hidden;
-
-		iframe {
-			display: flex;
-			width: 100%;
-			border: 0;
-			visibility: hidden; // Prevent iframe flashing while loading
-
-			&.loaded {
-				visibility: visible;
-			}
-		}
-	}
-
-	.primary {
-		flex-grow: 1;
-	}
-
-	.secondary {
-		display: none;
-	}
-}
-
-body.sidebar-open {
-	#split-view, .split-view {
-		inset-inline-start: var(--sidebar-width);
-	}
-}
-
-body.enable-vertical-split-view {
-	.primary {
-		width: 0;
-	}
-
-	.secondary {
-		display: flex !important;
-		width: var(--split-view-size);
-	}
-}
-
-body.enable-horizontal-split-view {
-	.primary {
-		height: 0;
-	}
-
-	#split-view, .split-view {
-		flex-direction: column;
-
-		.secondary {
-			display: flex !important;
-			height: var(--split-view-size);
-		}
-	}
-}
-
-.error-bar {
-	position: absolute;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	height: 25px;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	background-color: #ff7474;
-	z-index: 1000;
+input {
+	color: var(--fill-primary);
 }
 
 @page {
@@ -276,19 +181,8 @@ body.freeze {
 		top: 0;
 		right: 0;
 		bottom: 0;
-		z-index: 999999999;
+		z-index: $z-index-freeze-cover;
 		background-color: rgba(1, 1, 1, 0.1);
-	}
-}
-
-#drag-multi {
-	position: absolute;
-	top: -3000px;
-	left: -1000px;
-
-	&::before {
-		font-size: 30px;
-		content: '⧉';
 	}
 }
 

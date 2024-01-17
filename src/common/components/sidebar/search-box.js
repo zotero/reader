@@ -44,7 +44,7 @@ function SearchBox({ query, placeholder, onInput }) {
 	}
 
 	return (
-		<div ref={inputRef2} className={`search ${expanded ? 'expanded' : ''}`}>
+		<div ref={inputRef2} className={`search-box ${expanded ? 'expanded' : ''}`}>
 			<div className="btn magnifier" onClick={handleMagnifierClick}>{expanded ? <IconMagnifier16/> : <IconMagnifier20/>}</div>
 			<input
 				ref={inputRef}

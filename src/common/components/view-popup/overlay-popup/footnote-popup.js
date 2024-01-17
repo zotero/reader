@@ -1,5 +1,5 @@
 import React from 'react';
-import ViewPopup from '../view-popup';
+import ViewPopup from '../common/view-popup';
 import cx from 'classnames';
 
 function LinkPopup(props) {

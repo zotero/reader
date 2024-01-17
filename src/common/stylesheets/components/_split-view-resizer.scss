@@ -9,7 +9,7 @@ body.enable-vertical-split-view .split-view-resizer {
 	cursor: ew-resize;
 	position: absolute;
 	background-color: var(--color-panedivider);
-	z-index: 999999999;
+	z-index: $z-index-split-view-resizer;
 
 	&:before {
 		content: "";
@@ -36,7 +36,7 @@ body.enable-horizontal-split-view .split-view-resizer {
 	cursor: ns-resize;
 	position: absolute;
 	background-color: var(--color-panedivider);
-	z-index: 999999999;
+	z-index: $z-index-split-view-resizer;
 
 	&:before {
 		content: "";

@@ -1,6 +1,3 @@
-$platform: "darwin" !default;
-$mode: "production" !default;
-
 //
 // Abstracts
 //
@@ -25,18 +22,18 @@ $mode: "production" !default;
 //
 // Components
 //
+
 @import "components/editor";
 @import "components/preview";
 @import "components/view-popup";
-@import "components/window-popup";
+@import "components/modal-popup";
 @import "components/context-menu";
 @import "components/annotations-view";
-@import "components/toolbar-buttons";
+@import "components/search-box";
 @import "components/toolbar";
 @import "components/sidebar";
 @import "components/sidebar-resizer";
 @import "components/split-view-resizer";
 @import "components/split-view";
-@import "components/overlay";
 @import "components/outline-view";
 @import "components/thumbnails-view";

@@ -5,7 +5,7 @@
 	inset-inline-start: var(--sidebar-width);
 	cursor: ew-resize;
 	position: absolute;
-	z-index: 999999999;
+	z-index: $z-index-sidebar-resizer;
 
 	&:before {
 		content: "";

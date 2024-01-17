@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { FormattedMessage } from 'react-intl';
-import TooltipOverlay from './common/tooltip-overlay';
+import TooltipPopup from './common/tooltip-popup';
 
 
 function getData(params) {
@@ -67,7 +67,7 @@ function getData(params) {
 	};
 }
 
-function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
+function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 	let data = getData(params);
 	let [label, setLabel] = useState(data.pageLabel);
 	let [checked, setChecked] = useState(data.checked);
@@ -218,7 +218,7 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 	}
 
 	return (
-		<TooltipOverlay className="label-overlay dialog" rect={params.rect} onClose={onClose}>
+		<TooltipPopup className="label-popup" rect={params.rect} onClose={onClose}>
 			<div className="row label">
 				<div className="column first">
 					<input
@@ -325,10 +325,10 @@ function LabelOverlay({ params, onUpdateAnnotations, onClose }) {
 					onClick={handleUpdateClick}
 				><FormattedMessage id="general.update"/></button>
 			</div>
-		</TooltipOverlay>
+		</TooltipPopup>
 	);
 }
 
-export default LabelOverlay;
+export default LabelPopup;
 
 

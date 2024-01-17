@@ -1,0 +1,23 @@
+.error-bar {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 25px;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	background-color: #ff7474;
+	z-index: $z-index-error-bar;
+}
+
+#drag-multi {
+	position: absolute;
+	top: -3000px;
+	left: -1000px;
+
+	&::before {
+		font-size: 30px;
+		content: '⧉';
+	}
+}
