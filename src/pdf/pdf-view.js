@@ -1381,20 +1381,17 @@ class PDFView {
 				let size = this._tool.size * scale;
 				let adjustedSize = size * window.devicePixelRatio;
 				let adjustedStrokeWidth = 1 * window.devicePixelRatio;
+				// For some reason just using media query in the SVG style doesn't work on Zotero, but works on fx102
+				let color = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'white' : 'black';
 				let svgDataUrl = [
 					'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"',
 					`     width="${size}"`,
 					`     height="${size}"`,
 					`     viewBox="0 0 ${adjustedSize} ${adjustedSize}">`,
-					'    <style>',
-					'        @media (prefers-color-scheme: dark) {',
-					'            :root {filter: invert()}',
-					'        }',
-					'    </style>',
 					`    <circle cx="${adjustedSize / 2}"`,
 					`            cy="${adjustedSize / 2}"`,
 					`            r="${(adjustedSize - adjustedStrokeWidth) / 2}"`,
-					'            stroke="black"',
+					`            stroke="${color}"`,
 					`            stroke-width="${adjustedStrokeWidth}"`,
 					'            fill="none" />',
 					'</svg>'
