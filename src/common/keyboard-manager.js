@@ -127,7 +127,7 @@ export class KeyboardManager {
 			this._reader.zoomReset();
 		}
 		else if (['Delete', 'Backspace'].includes(key)) {
-			if (isTextBox(event.target) && event.target.closest('#findbar') || event.target.closest('.label-overlay')) {
+			if (isTextBox(event.target) && event.target.closest('#findbar') || event.target.closest('.label-popup')) {
 				return;
 			}
 			let selectedIDs = this._reader._state.selectedAnnotationIDs;
