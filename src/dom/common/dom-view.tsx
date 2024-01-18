@@ -66,6 +66,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _showAnnotations: boolean;
 
+	protected _useDarkMode: boolean;
+
 	protected _annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 
 	protected _selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
@@ -103,6 +105,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._selectedAnnotationIDs = options.selectedAnnotationIDs;
 		// Don't show annotations if this is false
 		this._showAnnotations = options.showAnnotations;
+		this._useDarkMode = options.useDarkMode;
 		this._annotationPopup = options.annotationPopup;
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
@@ -1070,6 +1073,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations();
 	}
 
+	setUseDarkMode(use: boolean) {
+		this._useDarkMode = use;
+	}
+
 	setSelectedAnnotationIDs(ids: string[]) {
 		this._selectedAnnotationIDs = ids;
 		// Close annotation popup each time when any annotation is selected, because the click is what opens the popup
@@ -1142,6 +1149,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	selectedAnnotationIDs: string[];
 	annotations: WADMAnnotation[];
 	showAnnotations: boolean;
+	useDarkMode: boolean;
 	annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 	selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
 	overlayPopup: OverlayPopupParams | null;

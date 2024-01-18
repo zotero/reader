@@ -374,26 +374,24 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	pointer-events: unset;
 }
 
-@media (prefers-color-scheme: light) {
-	body, #viewerContainer {
-		background-color: #f2f2f2; /* --color-toolbar */
-	}
+body, #viewerContainer {
+	background-color: #f2f2f2; /* --color-toolbar */
+}
 
-	.pdfViewer .page {
-		background-color: #FFFFFF;
-	}
+.pdfViewer .page {
+	background-color: #FFFFFF;
 }
 
 @media (prefers-color-scheme: dark) {
-	body, #viewerContainer {
+	body:not(.disableDarkMode), body:not(.disableDarkMode) #viewerContainer {
 		background-color: #272727; /* --color-toolbar */
 	}
 
-	canvas, .textAnnotation {
+	body:not(.disableDarkMode) canvas, body:not(.disableDarkMode) .textAnnotation {
 		filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
 	}
 
-	.pdfViewer .page {
+	body:not(.disableDarkMode) .pdfViewer .page {
 		background-color: #000000;
 	}
 }

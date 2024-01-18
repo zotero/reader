@@ -96,8 +96,10 @@
 	$selector: &;
 	@at-root {
 		@media (prefers-color-scheme: dark) {
-			#{$selector} {
-				filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
+			body.use-dark-mode-for-content {
+				#{$selector} {
+					filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
+				}
 			}
 		}
 	}

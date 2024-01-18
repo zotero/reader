@@ -131,6 +131,7 @@ class Reader {
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
+			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: [],
@@ -325,6 +326,19 @@ class Reader {
 			this._secondaryView?.setShowAnnotations(this._state.showAnnotations);
 		}
 
+		if (init || this._state.useDarkModeForContent !== previousState.useDarkModeForContent) {
+			if (this._state.useDarkModeForContent) {
+				document.body.classList.add('use-dark-mode-for-content');
+			}
+			else {
+				document.body.classList.remove('use-dark-mode-for-content');
+			}
+			if (!init) {
+				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
+				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
+			}
+		}
+
 		if (this._state.readOnly !== previousState.readOnly) {
 			this._annotationManager.setReadOnly(this._state.readOnly);
 			this._primaryView?.setReadOnly?.(this._state.readOnly);
@@ -510,6 +524,10 @@ class Reader {
 
 	showAnnotations(enable) {
 		this._updateState({ showAnnotations: enable });
+	}
+
+	useDarkModeForContent(use) {
+		this._updateState({ useDarkModeForContent: use });
 	}
 
 	setReadOnly(readOnly) {
@@ -722,6 +740,7 @@ class Reader {
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),
 			showAnnotations: this._state.showAnnotations,
+			useDarkMode: this._state.useDarkModeForContent,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,

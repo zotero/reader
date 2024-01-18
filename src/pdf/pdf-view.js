@@ -62,6 +62,7 @@ class PDFView {
 		this._readOnly = options.readOnly;
 		this._container = options.container;
 		this._password = options.password;
+		this._useDarkMode = options.useDarkMode;
 		this._onRequestPassword = options.onRequestPassword;
 		this._onSetThumbnails = options.onSetThumbnails;
 		this._onSetOutline = options.onSetOutline;
@@ -148,6 +149,9 @@ class PDFView {
 		});
 
 		this._iframe.addEventListener('load', () => {
+			if (!this._useDarkMode) {
+				this._iframeWindow.document.body.classList.add('disableDarkMode');
+			}
 			this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 			this._iframeWindow.onDetachPage = this._detachPage.bind(this);
 			this._init();
@@ -532,6 +536,16 @@ class PDFView {
 		if (this._primary) {
 			this._pdfThumbnails.render(pageIndexes, true);
 			this._pdfRenderer.start();
+		}
+	}
+
+	setUseDarkMode(use) {
+		this._useDarkMode = use;
+		if (use) {
+			this._iframeWindow.document.body.classList.remove('disableDarkMode');
+		}
+		else {
+			this._iframeWindow.document.body.classList.add('disableDarkMode');
 		}
 	}
 
@@ -1382,7 +1396,8 @@ class PDFView {
 				let adjustedSize = size * window.devicePixelRatio;
 				let adjustedStrokeWidth = 1 * window.devicePixelRatio;
 				// For some reason just using media query in the SVG style doesn't work on Zotero, but works on fx102
-				let color = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'white' : 'black';
+				let color = window.matchMedia('(prefers-color-scheme: dark)').matches
+					&& this._useDarkMode ? 'white' : 'black';
 				let svgDataUrl = [
 					'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"',
 					`     width="${size}"`,

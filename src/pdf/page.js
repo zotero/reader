@@ -250,7 +250,8 @@ export default class Page {
 	_renderHighlight(annotation) {
 		let color = annotation.color;
 		let alpha = 0.4;
-		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+			&& this.layer._useDarkMode) {
 			if (annotation.color === '#ffd400') {
 				color = darkenHex(annotation.color, 20);
 			}
@@ -275,7 +276,8 @@ export default class Page {
 
 	_renderUnderline(annotation) {
 		let color = annotation.color;
-		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+			&& this.layer._useDarkMode) {
 			if (annotation.color === '#ffd400') {
 				color = darkenHex(annotation.color, 20);
 			}
