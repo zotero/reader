@@ -185,9 +185,9 @@ const ReaderUI = React.forwardRef((props, ref) => {
 				{state.splitType && <View {...props} primary={false} state={state} />}
 			</div>
 			{state.contextMenu && <ContextMenu params={state.contextMenu} onClose={props.onCloseContextMenu}/>}
-			{state.labelOverlay && <LabelPopup params={state.labelOverlay} onUpdateAnnotations={props.onUpdateAnnotations} onClose={props.onCloseLabelOverlay}/>}
-			{state.passwordOverlay && <PasswordPopup params={state.passwordOverlay} onEnterPassword={props.onEnterPassword}/>}
-			{state.printOverlay && <PrintPopup params={state.printOverlay}/>}
+			{state.labelPopup && <LabelPopup params={state.labelPopup} onUpdateAnnotations={props.onUpdateAnnotations} onClose={props.onCloseLabelPopup}/>}
+			{state.passwordPopup && <PasswordPopup params={state.passwordPopup} onEnterPassword={props.onEnterPassword}/>}
+			{state.printPopup && <PrintPopup params={state.printPopup}/>}
 			{state.errorMessage && <div className="error-bar" tabIndex={-1}>{state.errorMessage}</div>}
 		</Fragment>
 	);

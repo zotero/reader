@@ -57,7 +57,7 @@ export class KeyboardManager {
 			this._reader.abortPrint();
 			this._reader._updateState({
 				selectedAnnotationIDs: [],
-				labelOverlay: null,
+				labelPopup: null,
 				contextMenu: null,
 				tool: this._reader._tools['pointer'],
 				primaryViewFindState: {

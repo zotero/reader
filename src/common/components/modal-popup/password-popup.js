@@ -10,7 +10,7 @@ function PasswordPopup({ params, onEnterPassword }) {
 	}
 
 	return (
-		<DialogPopup className="password-overlay dialog">
+		<DialogPopup className="password-popup">
 			<form onSubmit={handleSubmit}>
 				<div className="row description"><FormattedMessage id="pdfReader.enterPassword"/></div>
 				<div className="row"><input type="password" ref={inputRef}/></div>

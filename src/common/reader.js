@@ -141,9 +141,9 @@ class Reader {
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight || 0,
 			toolbarPlaceholderWidth: options.toolbarPlaceholderWidth || 0,
 			enableAddToNote: false,
-			labelOverlay: null,
-			passwordOverlay: null,
-			printOverlay: null,
+			labelPopup: null,
+			passwordPopup: null,
+			printPopup: null,
 			contextMenu: null,
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
@@ -247,7 +247,7 @@ class Reader {
 						onOpenSelectorContextMenu={params => this._onOpenContextMenu(createSelectorContextMenu(this, params))}
 						onOpenThumbnailContextMenu={params => this._onOpenContextMenu(createThumbnailContextMenu(this, params))}
 						onCloseContextMenu={this.closeContextMenu.bind(this)}
-						onCloseLabelOverlay={this._handleLabelOverlayClose.bind(this)}
+						onCloseLabelPopup={this._handleLabelPopupClose.bind(this)}
 						onEnterPassword={this.enterPassword.bind(this)}
 						onAddToNote={(annotations) => { this._onAddToNote(annotations); this.setSelectedAnnotations([]); }}
 						onNavigate={this.navigate.bind(this)}
@@ -655,7 +655,7 @@ class Reader {
 
 		let onRequestPassword = () => {
 			if (primary) {
-				this._updateState({ passwordOverlay: {} });
+				this._updateState({ passwordPopup: {} });
 			}
 		};
 
@@ -759,10 +759,10 @@ class Reader {
 			if (primary) {
 				initPDFPrintService({
 					onProgress: (percent) => {
-						this._updateState({ printOverlay: { percent } });
+						this._updateState({ printPopup: { percent } });
 					},
 					onFinish: () => {
-						this._updateState({ printOverlay: null });
+						this._updateState({ printPopup: null });
 					},
 					pdfView: view
 				});
@@ -1090,7 +1090,7 @@ class Reader {
 	print() {
 		if (this._type === 'pdf') {
 			if (this._state.annotations.length) {
-				this._updateState({ printOverlay: {} });
+				this._updateState({ printPopup: {} });
 			}
 			else {
 				window.print();
@@ -1115,7 +1115,7 @@ class Reader {
 	}
 
 	enterPassword(password) {
-		this._updateState({ passwordOverlay: null });
+		this._updateState({ passwordPopup: null });
 		this._password = password;
 		this.reload(this._data);
 	}
@@ -1187,11 +1187,11 @@ class Reader {
 		let labelNode = document.querySelector(`[data-sidebar-annotation-id="${id}"] header .label, .view-popup header .label`);
 		let { left, top, right, bottom } = labelNode.getBoundingClientRect();
 		let rect = [left, top, right, bottom];
-		this._updateState({ labelOverlay: { currentAnnotation, selectedAnnotations, allAnnotations, rect, selectedIDs, pageLabels } });
+		this._updateState({ labelPopup: { currentAnnotation, selectedAnnotations, allAnnotations, rect, selectedIDs, pageLabels } });
 	}
 
-	_handleLabelOverlayClose() {
-		this._updateState({ labelOverlay: null });
+	_handleLabelPopupClose() {
+		this._updateState({ labelPopup: null });
 	}
 
 	_handleDeleteAnnotations = (ids) => {
