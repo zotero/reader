@@ -122,7 +122,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		// TEMP: Add allow-scripts on all browsers until we can reliably detect Safari on all platforms
 		// if (isSafari) {
-		this._iframe.sandbox.add('allow-scripts');
+		if (options.platform !== 'zotero') {
+			this._iframe.sandbox.add('allow-scripts');
+		}
 		// }
 
 		// Set the CSP directly on the iframe; we also add it as a <meta> tag in the srcdoc for browsers that don't
