@@ -1,0 +1,86 @@
+& {
+	margin: 40px !important;
+	overflow: hidden;
+	overscroll-behavior: none;
+}
+
+.swipe-indicator-left, .swipe-indicator-right {
+	display: block;
+	position: fixed;
+	top: calc(50% - 50px);
+	width: 80px;
+	height: 100px;
+	background-color: #bdbdbd;
+	z-index: 9999;
+	pointer-events: none;
+}
+
+.swipe-indicator-left {
+	left: calc((min(var(--swipe-amount, 0), 1) - 1) * 80px);
+	opacity: calc(min(var(--swipe-amount, 0), 1) * 0.8);
+	border-radius: 0 80px 80px 0;
+}
+
+.swipe-indicator-right {
+	left: calc(100vw + (max(var(--swipe-amount, 0), -1) * 80px));
+	opacity: calc(max(var(--swipe-amount, 0), -1) * -0.8);
+	border-radius: 80px 0 0 80px;
+}
+
+> .sections {
+	min-height: calc(100vh - 80px);
+	max-height: calc(100vh - 80px);
+	margin-inline: auto;
+	column-fill: auto;
+	-webkit-column-fill: auto;
+	column-gap: 60px;
+	overflow: hidden;
+	overscroll-behavior: none;
+
+	&.spread-mode-none {
+		max-width: 800px;
+		column-width: 800px;
+		column-gap: 100vw;
+	}
+
+	&.spread-mode-odd {
+		column-width: calc(50vw - 80px);
+	}
+
+	@media (max-width: 800px) {
+		max-width: 800px;
+		column-width: 800px;
+		column-gap: 100vw;
+	}
+
+	> .section-container {
+		// See _scrolled.scss: Firefox throws away 'contain' properties with
+		// unknown values, so we need to set a fallback.
+		contain: layout paint;
+		contain: layout paint style;
+
+		&.hidden {
+			display: none;
+		}
+	}
+}
+
+replaced-body {
+	img, svg, audio, video {
+		max-width: calc(50vw - 80px) !important;
+		max-height: calc(100vh - 80px) !important;
+		object-fit: contain;
+	}
+
+	.table-like {
+		display: block;
+		overflow: auto;
+		max-height: calc(100vh - 80px);
+	}
+
+	@media (max-width: 800px) {
+		* {
+			max-width: 100vw;
+		}
+	}
+}

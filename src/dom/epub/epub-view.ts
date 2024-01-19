@@ -51,8 +51,8 @@ import {
 } from "./flow";
 import { RTL_SCRIPTS } from "./defines";
 
-// @ts-ignore
-import contentCSS from '!!raw-loader!./stylesheets/content.css';
+// @ts-expect-error
+import injectCSS from './stylesheets/inject.scss';
 
 // The module resolver is incapable of understanding this
 // @ts-ignore
@@ -137,7 +137,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 
 		let style = this._iframeDocument.createElement('style');
-		style.innerHTML = contentCSS;
+		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
 
 		let swipeIndicatorLeft = this._iframeDocument.createElement('div');

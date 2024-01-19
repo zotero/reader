@@ -52,6 +52,7 @@ function generateReaderConfig(build) {
 				},
 				{
 					test: /\.s?css$/,
+					exclude: path.resolve(__dirname, './src/dom'),
 					use: [
 						MiniCssExtractPlugin.loader,
 						{
@@ -67,6 +68,21 @@ function generateReaderConfig(build) {
 							}
 						},
 					],
+				},
+				{
+					test: /\.scss$/,
+					include: path.resolve(__dirname, './src/dom'),
+					use: [
+						{
+							loader: 'raw-loader',
+						},
+						{
+							loader: 'sass-loader',
+							options: {
+								additionalData: `$platform: '${build}';`
+							}
+						}
+					]
 				},
 				{
 					test: /\.svg$/i,

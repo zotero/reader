@@ -1,0 +1,161 @@
+/*
+    Many of these styles are from or inspired by Readium CSS:
+    https://github.com/readium/readium-css
+
+    BSD 3-Clause License
+
+    Copyright (c) 2017, Readium
+    All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice, this
+      list of conditions and the following disclaimer.
+
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+
+    * Neither the name of the copyright holder nor the names of its
+      contributors may be used to endorse or promote products derived from
+      this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
+@namespace epub url('http://www.idpf.org/2007/ops');
+
+:root {
+	--background-color: #ffffff;
+	--text-color: #121212;
+	--link-color: #0000ee;
+	--visited-link-color: #551a8b;
+
+	@media (prefers-color-scheme: dark) {
+		--background-color: #121212;
+		--text-color: #fefefe;
+		--link-color: #63caff;
+		--visited-link-color: #0099e5;
+	}
+
+	background-color: var(--background-color) !important;
+	color: var(--text-color) !important;
+}
+
+body > .sections > .section-container ::selection {
+	background-color: var(--selection-color);
+}
+
+replaced-html {
+	display: block;
+}
+
+replaced-body {
+	// https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height
+	--content-line-height-compensation: 1;
+	--content-line-height: calc((1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667)) * var(--content-line-height-compensation));
+
+	display: block;
+	margin-left: 0 !important;
+	margin-right: 0 !important;
+	background: transparent !important;
+	color: inherit !important;
+
+	font-family: var(--content-font-family, "Georgia"), serif;
+	font-size: calc(var(--content-scale) * 13pt) !important;
+	line-height: var(--content-line-height);
+	text-align: justify;
+	text-rendering: optimizeLegibility;
+
+	&:lang(bn),
+	&:lang(km),
+	&:lang(ml),
+	&:lang(ta),
+	&:lang(th) {
+		--content-line-height-compensation: 1.067;
+	}
+
+	&:lang(he),
+	&:lang(hi),
+	&:lang(kn),
+	&:lang(pa) {
+		--content-line-height-compensation: 1.1;
+	}
+
+	&:lang(am),
+	&:lang(chr),
+	&:lang(gu),
+	&:lang(ja),
+	&:lang(ko),
+	&:lang(or),
+	&:lang(si),
+	&:lang(zh) {
+		--content-line-height-compensation: 1.167;
+	}
+
+	p {
+		// Really enforce some of our formatting choices on body paragraphs
+		font-family: var(--content-font-family, "Georgia"), serif !important;
+		background: transparent !important;
+		color: inherit !important;
+
+		widows: 2;
+		orphans: 2;
+		hyphens: auto;
+	}
+
+	a {
+		text-decoration: none;
+	}
+
+	:link {
+		color: var(--link-color) !important;
+	}
+
+	:visited {
+		color: var(--visited-link-color) !important;
+	}
+
+	sup {
+		// Prevent footnote superscripts from affecting the line-height
+		line-height: 1 !important;
+		font-size: 0.8em !important;
+		vertical-align: baseline !important;
+		position: relative !important;
+		top: -0.5em !important;
+	}
+
+	body:not(.footnote-popup-content) & {
+		aside[epub|type="footnote"],
+		aside[epub|type="rearnote"],
+		aside[epub|type="note"] {
+			display: none;
+		}
+	}
+}
+
+body.footnote-popup-content {
+	* {
+		list-style-type: none !important;
+	}
+
+	.section-container {
+		padding: 16px;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	.annotation-container.blended {
+		mix-blend-mode: screen;
+	}
+}

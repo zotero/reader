@@ -1,0 +1,35 @@
+&, > .sections {
+	overflow-x: visible;
+}
+
+> .sections {
+	margin-inline: 40px;
+
+	> .section-container {
+		margin-inline: auto;
+		margin-bottom: 100px;
+		max-width: 800px;
+		// Try some different permutations of the 'contain' values that we want,
+		// because Firefox, at least, seems to throw away the whole property
+		// when it sees an unknown value.
+		contain: layout paint;
+		contain: layout paint style;
+		contain: layout paint inline-size;
+		contain: layout paint style inline-size;
+
+		&.hidden {
+			visibility: hidden;
+			pointer-events: none;
+		}
+	}
+}
+
+replaced-body {
+	img, svg, audio, video {
+		// Size the media element's box so it fits within one page
+		max-width: calc(min(100vw - 80px, 100%)) !important;
+		max-height: 100vh;
+		// Contain the content within the box so its aspect ratio doesn't change
+		object-fit: contain;
+	}
+}

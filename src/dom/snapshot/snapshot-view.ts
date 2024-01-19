@@ -31,8 +31,8 @@ import {
 	SearchContext
 } from "../common/lib/dom-text-search";
 
-// @ts-ignore
-import contentCSS from '!!raw-loader!./stylesheets/content.css';
+// @ts-expect-error
+import injectCSS from './stylesheets/inject.scss';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	private readonly _navStack = new NavStack<[number, number]>();
@@ -99,7 +99,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	protected _onInitialDisplay(viewState: Partial<Readonly<SnapshotViewState>>) {
 		let style = this._iframeDocument.createElement('style');
-		style.innerHTML = contentCSS;
+		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
 
 		// Validate viewState and its properties
