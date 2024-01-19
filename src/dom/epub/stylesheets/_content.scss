@@ -42,12 +42,20 @@
 	--visited-link-color: #551a8b;
 
 	@media (prefers-color-scheme: dark) {
-		--background-color: #121212;
-		--text-color: #fefefe;
-		--link-color: #63caff;
-		--visited-link-color: #0099e5;
-	}
+		&:not(.disable-dark-mode) {
+			--background-color: #121212;
+			--text-color: #fefefe;
+			--link-color: #63caff;
+			--visited-link-color: #0099e5;
 
+			.annotation-container.blended {
+				mix-blend-mode: screen;
+			}
+		}
+	}
+}
+
+:root {
 	background-color: var(--background-color) !important;
 	color: var(--text-color) !important;
 }
@@ -151,11 +159,5 @@ body.footnote-popup-content {
 
 	.section-container {
 		padding: 16px;
-	}
-}
-
-@media (prefers-color-scheme: dark) {
-	.annotation-container.blended {
-		mix-blend-mode: screen;
 	}
 }

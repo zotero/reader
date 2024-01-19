@@ -469,6 +469,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);
 		this.setTool(this._options.tool);
+		this.setUseDarkMode(this._options.useDarkMode);
 
 		await this._onInitialDisplay(this._options.viewState || {});
 		setTimeout(() => {
@@ -1077,6 +1078,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	setUseDarkMode(use: boolean) {
 		this._useDarkMode = use;
+		this._iframeDocument.documentElement.classList.toggle('disable-dark-mode', !use);
 	}
 
 	setSelectedAnnotationIDs(ids: string[]) {
