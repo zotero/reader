@@ -140,6 +140,9 @@
 	}
 
 	iframe {
+		display: flex;
+		width: 100%;
+		border: 0;
 		max-height: 300px;
 	}
 }

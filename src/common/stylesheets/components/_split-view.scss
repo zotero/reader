@@ -12,7 +12,8 @@
 		position: relative;
 		overflow: hidden;
 
-		iframe {
+		// Don't affect iframes inside popups
+		& > iframe {
 			display: flex;
 			width: 100%;
 			border: 0;
