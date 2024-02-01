@@ -242,6 +242,7 @@ export default class Page {
 			let scale = Math.abs(this.getViewPoint([1 / (24 / width), 0])[0] - this.getViewPoint([0, 0])[0]);
 			let rect = this.getViewRect(note.rect);
 			this.actualContext.transform(scale, 0, 0, scale, rect[0], rect[1]);
+			this.actualContext.globalAlpha = 0.5;
 			this.drawNote(this.actualContext, note.annotation.color);
 			this.actualContext.restore();
 		}
