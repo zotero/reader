@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useContext } from 'react';
+import React, { useEffect, useRef, useContext, Fragment } from 'react';
 import { useIntl } from 'react-intl';
 import cx from 'classnames';
 import CustomSections from './common/custom-sections';
@@ -7,6 +7,7 @@ import { ReaderContext } from '../reader';
 import { IconColor20 } from './common/icons';
 
 import IconSidebar from '../../../res/icons/20/sidebar.svg';
+import IconSidebarBottom from '../../../res/icons/20/sidebar-bottom.svg';
 import IconZoomIn from '../../../res/icons/20/zoom-in.svg';
 import IconZoomOut from '../../../res/icons/20/zoom-out.svg';
 import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
@@ -75,7 +76,7 @@ function Toolbar(props) {
 			<div className="start">
 				<button
 					id="sidebarToggle"
-					className="toolbar-button"
+					className="toolbar-button sidebar-toggle"
 					title="Toggle Sidebar"
 					tabIndex={-1}
 					onClick={handleSidebarButtonClick}
@@ -237,6 +238,17 @@ function Toolbar(props) {
 					tabIndex={-1}
 					onClick={handleFindClick}
 				><IconFind/></button>
+				{platform === 'zotero' && (
+					<Fragment>
+						<div className="divider"/>
+						<button
+							className="toolbar-button context-pane-toggle"
+							title="Toggle Context Pane"
+							tabIndex={-1}
+							onClick={props.onToggleContextPane}
+						>{props.stackedView ? <IconSidebarBottom/> : <IconSidebar className="standard-view"/>}</button>
+					</Fragment>
+				)}
 			</div>
 		</div>
 	);

@@ -115,6 +115,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					findPopupOpen={findState.popupOpen}
 					tool={state.tool}
 					readOnly={state.readOnly}
+					stackedView={state.bottomPlaceholderHeight !== null}
 					onToggleSidebar={props.onToggleSidebar}
 					onZoomIn={props.onZoomIn}
 					onZoomOut={props.onZoomOut}
@@ -126,6 +127,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onChangeTool={props.onChangeTool}
 					onOpenColorContextMenu={props.onOpenColorContextMenu}
 					onToggleFind={props.onToggleFind}
+					onToggleContextPane={props.onToggleContextPane}
 				/>
 				<div>
 					{state.sidebarOpen === true &&

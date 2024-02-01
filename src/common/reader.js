@@ -54,6 +54,7 @@ class Reader {
 		this._onConfirm = options.onConfirm;
 		this._onRotatePages = options.onRotatePages;
 		this._onDeletePages = options.onDeletePages;
+		this._onToggleContextPane = options.onToggleContextPane;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 
@@ -139,7 +140,7 @@ class Reader {
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
 			sidebarView: 'annotations',
-			bottomPlaceholderHeight: options.bottomPlaceholderHeight || 0,
+			bottomPlaceholderHeight: options.bottomPlaceholderHeight || null,
 			toolbarPlaceholderWidth: options.toolbarPlaceholderWidth || 0,
 			enableAddToNote: false,
 			labelPopup: null,
@@ -256,12 +257,11 @@ class Reader {
 						onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 						onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 						onOpenLink={this._onOpenLink}
-
 						onChangeFindState={this._handleFindStateChange.bind(this)}
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
 						onToggleFindPopup={this.toggleFindPopup.bind(this)}
-
+						onToggleContextPane={this._onToggleContextPane}
 						ref={this._readerRef}
 					/>
 				</ReaderContext.Provider>
@@ -435,7 +435,7 @@ class Reader {
 
 		if (init || this._state.bottomPlaceholderHeight !== previousState.bottomPlaceholderHeight) {
 			let root = document.documentElement;
-			root.style.setProperty('--bottom-placeholder-height', this._state.bottomPlaceholderHeight + 'px');
+			root.style.setProperty('--bottom-placeholder-height', (this._state.bottomPlaceholderHeight || 0) + 'px');
 		}
 
 		if (init || this._state.toolbarPlaceholderWidth !== previousState.toolbarPlaceholderWidth) {

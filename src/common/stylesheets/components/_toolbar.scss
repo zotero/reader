@@ -55,6 +55,18 @@
 	@include macOS-inactive-opacity;
 }
 
+[dir=rtl] .toolbar {
+	.sidebar-toggle {
+		transform: scaleX(-1);
+	}
+}
+
+[dir=ltr] .toolbar {
+	.context-pane-toggle .standard-view {
+		transform: scaleX(-1);
+	}
+}
+
 .divider {
 	width: 1px;
 	height: 20px;

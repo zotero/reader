@@ -36,7 +36,7 @@ async function createReader() {
 		annotations: demo.annotations,
 		primaryViewState: demo.state,
 		sidebarWidth: 240,
-		bottomPlaceholderHeight: 0,
+		bottomPlaceholderHeight: null,
 		toolbarPlaceholderWidth: 0,
 		authorName: 'John',
 		showAnnotations: true,
@@ -83,6 +83,9 @@ async function createReader() {
 		},
 		onDeletePages(pageIndexes, degrees) {
 			console.log('Deleting pages', pageIndexes, degrees);
+		},
+		onToggleContextPane() {
+			console.log('Toggle context pane');
 		}
 	});
 	reader.enableAddToNote(true);
