@@ -600,6 +600,13 @@ class Reader {
 		}
 		findState = { ...findState, popupOpen: open, active: false, result: null };
 		this._updateState({ [key]: findState });
+		if (open) {
+			setTimeout(() => {
+				let selector = (primary ? '.primary' : '.secondary') + ' .find-popup input';
+				document.querySelector(selector)?.select();
+				document.querySelector(selector)?.focus();
+			}, 100);
+		}
 	}
 
 	_sidebarScrollAnnotationIntoViev(id) {
