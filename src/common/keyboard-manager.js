@@ -62,10 +62,12 @@ export class KeyboardManager {
 				tool: this._reader._tools['pointer'],
 				primaryViewFindState: {
 					...this._reader._state.primaryViewFindState,
-					popupOpen: false
+					active: false,
+					popupOpen: false,
 				},
 				secondaryViewFindState: {
 					...this._reader._state.secondaryViewFindState,
+					active: false,
 					popupOpen: false
 				}
 			});
