@@ -395,3 +395,17 @@ body, #viewerContainer {
 		background-color: #000000;
 	}
 }
+
+@media (prefers-color-scheme: dark) {
+	.textLayer {
+		opacity: 0.5;
+	}
+
+	.textLayer .highlight.selected {
+		background-color: #00FF00;
+	}
+
+	.textLayer .highlight {
+		background-color: #FF00F1;
+	}
+}
