@@ -76,12 +76,30 @@ class SectionView {
 		}
 		if (!this.section.url) {
 			console.error('Section has no URL', this.section);
-			this.body = this._document.createElement('div');
+			this._displayError('Missing content');
 			return;
 		}
 		let xhtml = await this.section.render(requestFn);
-		this.body = await sanitizeAndRender(xhtml,
-			{ container: this.container, styleScoper: this._styleScoper });
+
+		try {
+			this.body = await sanitizeAndRender(xhtml,
+				{ container: this.container, styleScoper: this._styleScoper });
+		}
+		catch (e) {
+			console.error('Error rendering section ' + this.section.index + ' (' + this.section.href + ')', e);
+			this._displayError('Invalid content');
+		}
+	}
+
+	private _displayError(message: string) {
+		let errorDiv = this._document.createElement('div');
+		errorDiv.style.color = 'red';
+		errorDiv.style.fontSize = '1.5em';
+		errorDiv.style.fontWeight = 'bold';
+		errorDiv.style.textAlign = 'center';
+		errorDiv.append(`[Section ${this.section.index}: ${message}]`);
+		this.container.replaceChildren(errorDiv);
+		this.body = errorDiv;
 	}
 
 	/**

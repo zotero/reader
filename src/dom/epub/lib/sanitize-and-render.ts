@@ -10,6 +10,11 @@ export async function sanitizeAndRender(xhtml: string, options: {
 
 	let doc = container.ownerDocument;
 	let sectionDoc = new DOMParser().parseFromString(xhtml, 'application/xhtml+xml');
+
+	if (sectionDoc.getElementsByTagName('parsererror').length) {
+		throw new Error('Invalid XHTML');
+	}
+
 	let walker = doc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 	let toRemove = [];
 
