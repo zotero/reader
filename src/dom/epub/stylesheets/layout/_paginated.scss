@@ -41,16 +41,19 @@
 		max-width: 800px;
 		column-width: 800px;
 		column-gap: 100vw;
+		--media-max-width: calc(100vw - 80px);
 	}
 
 	&.spread-mode-odd {
 		column-width: calc(50vw - 80px);
+		--media-max-width: calc(50vw - 80px);
 	}
 
 	@media (max-width: 800px) {
 		max-width: 800px;
 		column-width: 800px;
 		column-gap: 100vw;
+		--media-max-width: calc(100vw - 80px);
 	}
 
 	> .section-container {
@@ -67,9 +70,16 @@
 
 replaced-body {
 	img, svg, audio, video {
-		max-width: calc(50vw - 80px) !important;
+		max-width: var(--media-max-width) !important;
 		max-height: calc(100vh - 80px) !important;
 		object-fit: contain;
+		position: static !important;
+		width: auto;
+		height: auto;
+	}
+
+	div {
+		max-width: var(--media-max-width);
 	}
 
 	.table-like {
