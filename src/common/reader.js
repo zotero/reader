@@ -55,6 +55,8 @@ class Reader {
 		this._onRotatePages = options.onRotatePages;
 		this._onDeletePages = options.onDeletePages;
 		this._onToggleContextPane = options.onToggleContextPane;
+		this._onToolbarShiftTab = options.onToolbarShiftTab;
+		this._onIframeTab = options.onIframeTab;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 
@@ -190,6 +192,12 @@ class Reader {
 			reader: this,
 			onDeselectAnnotations: () => {
 				this.setSelectedAnnotations([]);
+			},
+			onToolbarShiftTab: () => {
+				this._onToolbarShiftTab();
+			},
+			onIframeTab: () => {
+				this._onIframeTab();
 			}
 		});
 
@@ -1103,6 +1111,10 @@ class Reader {
 
 	focus() {
 		this._focusManager.restoreFocus();
+	}
+
+	focusToolbar() {
+		this._focusManager.focusToolbar();
 	}
 
 	freeze() {

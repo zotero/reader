@@ -4,6 +4,9 @@ export class FocusManager {
 	constructor(options) {
 		this._reader = options.reader;
 		this._onDeselectAnnotations = options.onDeselectAnnotations;
+		// Methods to move focus to elements outside of the reader
+		this._onToolbarShiftTab = options.onToolbarShiftTab;
+		this._onIframeTab = options.onIframeTab;
 		window.addEventListener('focusin', this._handleFocus.bind(this));
 		window.addEventListener('pointerdown', this._handlePointerDown.bind(this));
 		window.addEventListener('keydown', this._handleKeyDown.bind(this), true);
@@ -28,6 +31,11 @@ export class FocusManager {
 		if (selectedAnnotationIDs.length > 1) {
 			this._reader._updateState({ selectedAnnotationIDs });
 		}
+	}
+
+	// Focus the first button from the toolbar
+	focusToolbar() {
+		document.querySelector(".toolbar .start .toolbar-button").focus();
 	}
 
 	_initFirefoxActivePseudoClassFix() {
@@ -135,7 +143,19 @@ export class FocusManager {
 
 		let groupIndex = groups.findIndex(x => x === group);
 
-		if (groupIndex === -1 || groupIndex === groups.length - 1) {
+		if (groupIndex === groups.length - 1) {
+			if (reverse) {
+				// Shift-tab from the first group (toolbar)
+				this._onToolbarShiftTab();
+			}
+			else {
+				// Tab from the last group (reader iframe)
+				this._onIframeTab();
+			}
+			return;
+		}
+
+		if (groupIndex === -1) {
 			groupIndex = 0;
 		}
 		else {
