@@ -40,6 +40,15 @@ function SearchBox({ query, placeholder, onInput }) {
 	}
 
 	function handleMagnifierClick() {
+		// If reader window isn't focused, then focusing search input
+		// doesn't trigger the focus event for this input.
+		// This is partially caused by .preventDefault() in focus manager
+		// which is necessary to keep the reader view focused while pressing
+		// buttons in the UI, but it seems the downside of this is that reader
+		// window can't be focused as well (when the focus was in items list,
+		// note editor, context pane, etc.)
+		// The problem only exists on Windows and Linux, not macOS
+		window.focus();
 		inputRef.current.focus();
 	}
 
