@@ -1902,16 +1902,20 @@ class PDFView {
 				action.position = position2;
 			}
 			else {
-				rect = action.annotation.position.rects[0];
-				action.position = {
-					pageIndex: originalPagePosition.pageIndex,
-					rects: [[
-						rect[0] + dp[0],
-						rect[1] + dp[1],
-						rect[2] + dp[0],
-						rect[3] + dp[1],
-					]]
+				// note annotation, use pointer position
+				rect = position.rects[0];
+				let newPosition = {
+					pageIndex: position.pageIndex,
+					rects: [
+						[
+							rect[0] - PDF_NOTE_DIMENSIONS / 2,
+							rect[1] - PDF_NOTE_DIMENSIONS / 2,
+							rect[2] + PDF_NOTE_DIMENSIONS / 2,
+							rect[3] + PDF_NOTE_DIMENSIONS / 2,
+						],
+					],
 				};
+				action.position = newPosition;
 			}
 			action.triggered = true;
 		}
