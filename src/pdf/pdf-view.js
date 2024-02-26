@@ -1891,8 +1891,9 @@ class PDFView {
 			let y = originalPagePosition.rects[0][1];
 
 			let viewBox = page.originalPage.viewport.viewBox;
-			x = x > viewBox[2] && viewBox[2] || x < viewBox[0] && viewBox[0] || x;
-			y = y > viewBox[3] && viewBox[3] || y < viewBox[1] && viewBox[1] || y;
+			const PADDING = 5;
+			x = x > (viewBox[2] - PADDING) && (viewBox[2] - PADDING) || x < (viewBox[0] + PADDING) && (viewBox[0] + PADDING) || x;
+			y = y > (viewBox[3] - PADDING) && (viewBox[3] - PADDING) || y < (viewBox[1] + PADDING) && (viewBox[1] + PADDING) || y;
 
 			let dp = [x - rect[0] - action.x, y - rect[1] - action.y];
 
