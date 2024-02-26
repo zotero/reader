@@ -50,6 +50,11 @@
 	#numPages {
 		color: var(--fill-secondary);
 		margin-left: 0;
+		display: flex;
+
+		div {
+			position: absolute;
+		}
 	}
 
 	@include macOS-inactive-opacity;
