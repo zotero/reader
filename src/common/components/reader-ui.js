@@ -116,6 +116,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					tool={state.tool}
 					readOnly={state.readOnly}
 					stackedView={state.bottomPlaceholderHeight !== null}
+					showContextPaneToggle={state.showContextPaneToggle}
 					onToggleSidebar={props.onToggleSidebar}
 					onZoomIn={props.onZoomIn}
 					onZoomOut={props.onZoomOut}

@@ -238,7 +238,7 @@ function Toolbar(props) {
 					tabIndex={-1}
 					onClick={handleFindClick}
 				><IconFind/></button>
-				{platform === 'zotero' && (
+				{platform === 'zotero' && props.showContextPaneToggle && (
 					<Fragment>
 						<div className="divider"/>
 						<button

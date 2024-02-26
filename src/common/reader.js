@@ -144,6 +144,7 @@ class Reader {
 			sidebarView: 'annotations',
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight || null,
 			toolbarPlaceholderWidth: options.toolbarPlaceholderWidth || 0,
+			showContextPaneToggle: options.showContextPaneToggle,
 			enableAddToNote: false,
 			labelPopup: null,
 			passwordPopup: null,
