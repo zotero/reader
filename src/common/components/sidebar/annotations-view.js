@@ -370,6 +370,27 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		}
 	}
 
+	// If filter has tags, colors or authors that no longer exist in any annotation,
+	// add them directly from filter to selector to avoid state when selector doesn't show
+	// anything and annotations list is empty
+	for (let tag of props.filter.tags) {
+		if (!tags[tag]) {
+			tags[tag] = { name: tag, selected: true, inactive: false };
+		}
+	}
+
+	for (let color of props.filter.colors) {
+		if (!colors[color]) {
+			colors[color] = { color, selected: true, inactive: false, name: null };
+		}
+	}
+
+	for (let author of props.filter.authors) {
+		if (!authors[author]) {
+			authors[author] = { author, selected: true, inactive: false, current: author === props.authorName };
+		}
+	}
+
 	for (let annotation of filteredAnnotations) {
 		for (let tag of annotation.tags) {
 			tags[tag.name].inactive = false;
