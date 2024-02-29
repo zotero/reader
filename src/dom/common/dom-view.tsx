@@ -1,3 +1,6 @@
+// @ts-ignore
+import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
+
 import {
 	Annotation,
 	AnnotationPopupParams,
@@ -32,18 +35,17 @@ import {
 import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
-import { isSafari } from "../../common/lib/utilities";
+import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
 import {
 	closestElement,
 	isElement
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
-// @ts-ignore
-import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
 import {
 	getBoundingRect,
 	rectContains
 } from "./lib/rect";
+import { History } from "../../common/lib/history";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	initializedPromise: Promise<void>;
@@ -82,6 +84,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _overlayPopupDelayer: PopupDelayer;
 
+	protected readonly _history: History;
+
+	protected _suspendHistorySaving = false;
+
 	protected _highlightedPosition: Selector | null = null;
 
 	protected _pointerMovedWhileDown = false;
@@ -111,6 +117,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._overlayPopup = options.overlayPopup;
 		this._findState = options.findState;
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
+		this._history = new History({
+			onUpdate: () => this._updateViewStats(),
+			onNavigate: location => this.navigate(location, { skipHistory: true, behavior: 'auto' }),
+		});
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin');
@@ -192,6 +202,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// Abstractions over document structure
 	// ***
 
+	protected abstract _getHistoryLocation(): NavLocation | null;
+
 	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
 
 	protected abstract _updateViewState(): void;
@@ -201,6 +213,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// ***
 	// Utilities - called in appropriate event handlers
 	// ***
+
+	protected async _pushHistoryPoint(transient = false) {
+		if (!transient) {
+			this._suspendHistorySaving = true;
+			await debounceUntilScrollFinishes(this._iframeDocument, 100);
+			this._suspendHistorySaving = false;
+		}
+
+		let loc = this._getHistoryLocation();
+		if (!loc) return;
+		this._history.save(loc, transient);
+	}
 
 	protected _isExternalLink(link: HTMLAnchorElement): boolean {
 		let href = link.getAttribute('href');
@@ -1143,6 +1167,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}, 2000);
 		}
 	}
+
+	navigateBack() {
+		this._history.navigateBack();
+	}
+
+	navigateForward() {
+		this._history.navigateForward();
+	}
 }
 
 export type DOMViewOptions<State extends DOMViewState, Data> = {
@@ -1196,7 +1228,7 @@ export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions,
 }
 
 export interface NavigateOptions extends CustomScrollIntoViewOptions {
-	skipNavStack?: boolean;
+	skipHistory?: boolean;
 }
 
 export default DOMView;

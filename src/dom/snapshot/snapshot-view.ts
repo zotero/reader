@@ -21,7 +21,6 @@ import DOMView, {
 	NavigateOptions
 } from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
-import NavStack from "../common/lib/nav-stack";
 import {
 	getVisibleTextNodes
 } from "../common/lib/nodes";
@@ -35,8 +34,6 @@ import {
 import injectCSS from './stylesheets/inject.scss';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
-	private readonly _navStack = new NavStack<[number, number]>();
-
 	protected _find: DefaultFindProcessor | null = null;
 
 	private _searchContext: SearchContext | null = null;
@@ -280,6 +277,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
+	protected _getHistoryLocation(): NavLocation | null {
+		return { scrollCoords: [this._iframeWindow.scrollX, this._iframeWindow.scrollY] };
+	}
+
 	private _getSearchContext() {
 		if (!this._searchContext) {
 			this._searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -294,11 +295,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	// - Popup has to be updated (reopened) each time when the view is scrolled or resized.
 	// - annotation, selection and overlay popups are closed by calling this._onSetSomePopup()
 	//   with no arguments
-
-	_pushCurrentLocationToNavStack() {
-		this._navStack.push([this._iframeWindow.scrollX, this._iframeWindow.scrollY]);
-		this._updateViewStats();
-	}
 
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
@@ -335,8 +331,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canZoomIn: this._scale === undefined || this._scale < 1.5,
 			canZoomOut: this._scale === undefined || this._scale > 0.6,
 			canZoomReset: this._scale !== undefined && this._scale !== 1,
-			canNavigateBack: this._navStack.canPopBack(),
-			canNavigateForward: this._navStack.canPopForward(),
+			canNavigateBack: this._history.canNavigateBack,
+			canNavigateForward: this._history.canNavigateForward,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -353,6 +349,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected override _handleScroll() {
 		super._handleScroll();
 		this._updateViewState();
+		this._pushHistoryPoint(true);
 	}
 
 	// ***
@@ -456,24 +453,17 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {
 		console.log('Navigating to', location);
-		if (!options.skipNavStack) {
-			this._pushCurrentLocationToNavStack();
-		}
 		options.behavior ||= 'smooth';
-		super.navigate(location, options);
-	}
 
-	navigateBack() {
-		if (this._navStack.canPopBack()) {
-			this._iframeWindow.scrollTo(...this._navStack.popBack());
-			this._handleViewUpdate();
+		if (location.scrollCoords) {
+			this._iframeWindow.scrollTo(...location.scrollCoords);
 		}
-	}
+		else {
+			super.navigate(location, options);
+		}
 
-	navigateForward() {
-		if (this._navStack.canPopForward()) {
-			this._iframeWindow.scrollTo(...this._navStack.popForward());
-			this._handleViewUpdate();
+		if (!options.skipHistory) {
+			this._pushHistoryPoint();
 		}
 	}
 

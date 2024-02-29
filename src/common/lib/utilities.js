@@ -212,6 +212,30 @@ export function getAffectedAnnotations(oldAnnotations, newAnnotations, viewOnly)
 	return { created, updated, deleted };
 }
 
+/**
+ * Wait until scroll is no longer being triggered
+ * @param {Document | Element} container Scrollable container
+ * @param {number} debounceTime For how long the scroll shouldn't be triggered
+ * @returns {Promise<unknown>}
+ */
+export function debounceUntilScrollFinishes(container, debounceTime = 100) {
+	return new Promise((resolve) => {
+		let debounceTimeout;
+		let resolveAndCleanup = () => {
+			container.removeEventListener('scroll', scrollListener);
+			clearTimeout(debounceTimeout);
+			resolve();
+		};
+		let scrollListener = () => {
+			clearTimeout(debounceTimeout);
+			debounceTimeout = setTimeout(resolveAndCleanup, debounceTime);
+		};
+		container.addEventListener('scroll', scrollListener);
+		// Start the debounce timeout immediately
+		debounceTimeout = setTimeout(resolveAndCleanup, debounceTime);
+	});
+}
+
 // findLastIndex polyfill
 if (!Array.prototype.findLastIndex) {
 	Array.prototype.findLastIndex = function (callback, thisArg) {

@@ -1,3 +1,10 @@
+// @ts-expect-error
+import injectCSS from './stylesheets/inject.scss';
+
+// The module resolver is incapable of understanding this
+// @ts-ignore
+import Path from "epubjs/src/utils/path";
+
 import {
 	AnnotationType,
 	ArrayRect,
@@ -26,7 +33,6 @@ import {
 	Selector
 } from "../common/lib/selector";
 import { EPUBFindProcessor } from "./find";
-import NavStack from "../common/lib/nav-stack";
 import DOMView, {
 	DOMViewOptions,
 	DOMViewState,
@@ -51,13 +57,6 @@ import {
 } from "./flow";
 import { RTL_SCRIPTS } from "./defines";
 
-// @ts-expect-error
-import injectCSS from './stylesheets/inject.scss';
-
-// The module resolver is incapable of understanding this
-// @ts-ignore
-import Path from "epubjs/src/utils/path";
-
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
 
@@ -74,8 +73,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	private _sectionsContainer!: HTMLElement;
 
 	private readonly _sectionViews: SectionView[] = [];
-
-	private readonly _navStack = new NavStack<string>();
 
 	private readonly _rangeCache = new Map<string, PersistentRange>();
 
@@ -337,16 +334,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	get views(): SectionView[] {
-		return this._sectionViews;
+	protected override _getHistoryLocation(): NavLocation | null {
+		let cfi = this.flow.startCFI?.toString();
+		if (!cfi) return null;
+		return { pageNumber: cfi };
 	}
 
-	private _pushCurrentLocationToNavStack() {
-		let cfi = this.flow.startCFI?.toString();
-		if (cfi) {
-			this._navStack.push(cfi);
-			this._updateViewStats();
-		}
+	get views(): SectionView[] {
+		return this._sectionViews;
 	}
 
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
@@ -430,7 +425,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.navigate(
 				{ pageNumber: beforeCFI.toString() },
 				{
-					skipNavStack: true,
+					skipHistory: true,
 					behavior: 'auto',
 					offsetY: beforeOffset ?? undefined
 				}
@@ -547,8 +542,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			canZoomIn: this.scale === undefined || this.scale < 1.5,
 			canZoomOut: this.scale === undefined || this.scale > 0.8,
 			canZoomReset: this.scale !== undefined && this.scale !== 1,
-			canNavigateBack: this._navStack.canPopBack(),
-			canNavigateForward: this._navStack.canPopForward(),
+			canNavigateBack: this._history.canNavigateBack,
+			canNavigateForward: this._history.canNavigateForward,
 			canNavigateToFirstPage: canNavigateToPreviousPage,
 			canNavigateToLastPage: canNavigateToNextPage,
 			canNavigateToPreviousPage,
@@ -769,11 +764,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			onUpdateViewState: () => this._updateViewState(),
 			onUpdateViewStats: () => this._updateViewStats(),
 			onViewUpdate: () => this._handleViewUpdate(),
+			onPushHistoryPoint: () => this._pushHistoryPoint(true),
 		});
 		this.flow.setSpreadMode(this.spreadMode);
 
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipHistory: true, behavior: 'auto' });
 		}
 		this._handleViewUpdate();
 	}
@@ -791,7 +787,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.spreadMode = spreadMode;
 		this.flow?.setSpreadMode(spreadMode);
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipHistory: true, behavior: 'auto' });
 		}
 		this._handleViewUpdate();
 	}
@@ -856,15 +852,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
 		this.flow?.setScale(scale);
 		if (cfiBefore) {
-			this.navigate({ pageNumber: cfiBefore.toString() }, { skipNavStack: true, behavior: 'auto' });
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipHistory: true, behavior: 'auto' });
 		}
 	}
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {
 		console.log('Navigating to', location);
-		if (!options.skipNavStack) {
-			this._pushCurrentLocationToNavStack();
-		}
 		options.behavior ||= 'smooth';
 
 		if (location.pageNumber) {
@@ -914,24 +907,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		else {
 			super.navigate(location, options);
 		}
-	}
 
-	// This is like back/forward navigation in browsers. Try Cmd-ArrowLeft and Cmd-ArrowRight in PDF view
-	navigateBack() {
-		if (this._navStack.canPopBack()) {
-			this.navigate({ pageNumber: this._navStack.popBack() }, {
-				skipNavStack: true,
-				behavior: 'auto',
-			});
-		}
-	}
-
-	navigateForward() {
-		if (this._navStack.canPopForward()) {
-			this.navigate({ pageNumber: this._navStack.popForward() }, {
-				skipNavStack: true,
-				behavior: 'auto',
-			});
+		if (!options.skipHistory) {
+			this._pushHistoryPoint();
 		}
 	}
 

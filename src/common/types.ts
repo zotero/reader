@@ -56,6 +56,7 @@ export type NavLocation = {
 	annotationID?: string;
 	position?: Position;
 	href?: string;
+	scrollCoords?: [number, number];
 };
 
 export type Position = PDFPosition | Selector;

@@ -28,10 +28,10 @@ import {
 	getAxialAlignedBoundingBox,
 	distanceBetweenRects,
 	getTransformFromRects,
-	debounceUntilScrollFinishes,
 	getRotationDegrees,
 	normalizeDegrees
 } from './lib/utilities';
+import { debounceUntilScrollFinishes } from '../common/lib/utilities';
 import {
 	getAffectedAnnotations,
 	isFirefox,
@@ -53,7 +53,7 @@ import {
 	eraseInk,
 	smoothPath
 } from './lib/path';
-import { History } from './lib/history';
+import { History } from '../common/lib/history';
 
 class PDFView {
 	constructor(options) {

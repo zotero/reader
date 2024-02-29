@@ -71,6 +71,8 @@ abstract class AbstractFlow implements Flow {
 
 	protected _onViewUpdate: () => void;
 
+	protected _onPushHistoryPoint: () => void;
+
 	protected constructor(options: Options) {
 		this._view = options.view;
 		this._iframe = options.iframe;
@@ -80,6 +82,9 @@ abstract class AbstractFlow implements Flow {
 		this._onUpdateViewState = options.onUpdateViewState;
 		this._onUpdateViewStats = options.onUpdateViewStats;
 		this._onViewUpdate = options.onViewUpdate;
+		this._onPushHistoryPoint = options.onPushHistoryPoint;
+
+		this._iframeWindow.addEventListener('scroll', this._onPushHistoryPoint);
 
 		let intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
 			threshold: [0, 1]
@@ -184,7 +189,9 @@ abstract class AbstractFlow implements Flow {
 
 	abstract setSpreadMode(spreadMode: SpreadMode): void;
 
-	abstract destroy(): void;
+	destroy(): void {
+		this._iframeWindow.removeEventListener('scroll', this._onPushHistoryPoint);
+	}
 }
 
 interface Options {
@@ -193,6 +200,7 @@ interface Options {
 	onUpdateViewState: () => void;
 	onUpdateViewStats: () => void;
 	onViewUpdate: () => void;
+	onPushHistoryPoint: () => void;
 }
 
 export class ScrolledFlow extends AbstractFlow {
@@ -209,7 +217,8 @@ export class ScrolledFlow extends AbstractFlow {
 		}
 	}
 
-	destroy(): void {
+	override destroy(): void {
+		super.destroy();
 		this._iframe.classList.remove('flow-mode-scrolled');
 		this._iframeDocument.body.classList.remove('flow-mode-scrolled');
 	}
@@ -367,7 +376,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.classList.add('flow-mode-paginated');
 	}
 
-	destroy(): void {
+	override destroy(): void {
+		super.destroy();
 		this._iframeDocument.removeEventListener('keydown', this._handleKeyDown, { capture: true });
 		this._iframeDocument.removeEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.removeEventListener('pointermove', this._handlePointerMove);

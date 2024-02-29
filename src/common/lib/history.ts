@@ -1,7 +1,23 @@
+import { NavLocation } from "../types";
+
 const MIN_TIME_BETWEEN_POINTS = 2000;
 
 export class History {
-	constructor(props) {
+	private readonly _onUpdate: () => void;
+
+	private readonly _onNavigate: (location: NavLocation) => void;
+
+	private _backStack: NavLocation[];
+
+	private _forwardStack: NavLocation[];
+
+	private _currentLocation: NavLocation | null;
+
+	private _lastPushIsTransient: boolean;
+
+	private _lastSaveTime: number;
+
+	constructor(props: { onUpdate: () => void, onNavigate: (location: NavLocation) => void }) {
 		this._onUpdate = props.onUpdate;
 		this._onNavigate = props.onNavigate;
 		this._backStack = [];
@@ -26,7 +42,7 @@ export class History {
 	 * @param transient Whether the location is temporary and not important enough
 	 * 					to be saved as a standalone point in history
 	 */
-	save(location, transient) {
+	save(location: NavLocation, transient = false) {
 		// Check
 		if (JSON.stringify(location) === JSON.stringify(this._currentLocation)) {
 			return;
@@ -58,8 +74,10 @@ export class History {
 
 	navigateBack() {
 		if (this.canNavigateBack) {
-			this._forwardStack.push(this._currentLocation);
-			this._currentLocation = this._backStack.pop();
+			if (this._currentLocation) {
+				this._forwardStack.push(this._currentLocation);
+			}
+			this._currentLocation = this._backStack.pop()!;
 			this._onNavigate(this._currentLocation);
 			this._onUpdate();
 		}
@@ -67,8 +85,10 @@ export class History {
 
 	navigateForward() {
 		if (this.canNavigateForward) {
-			this._backStack.push(this._currentLocation);
-			this._currentLocation = this._forwardStack.pop();
+			if (this._currentLocation) {
+				this._backStack.push(this._currentLocation);
+			}
+			this._currentLocation = this._forwardStack.pop()!;
 			this._onNavigate(this._currentLocation);
 			this._onUpdate();
 		}
