@@ -23,7 +23,7 @@ export class KeyboardManager {
 	}
 
 	_handleKeyDown(event, view) {
-		let { key, code } = event;
+		let { code } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
 		let mod = ctrl || cmd;
@@ -37,22 +37,20 @@ export class KeyboardManager {
 			return;
 		}
 
-		if ((cmd || ctrl && isLinux()) && key === '['
-			|| (alt && !isMac() || cmd) && key === 'ArrowLeft') {
+		if ((cmd || ctrl && isLinux()) && code === 'BracketLeft'
+			|| (alt && !isMac() || cmd) && code === 'ArrowLeft') {
 			this._reader.navigateBack();
 			event.preventDefault();
 			return;
 		}
-		else if ((cmd || ctrl && isLinux()) && key === ']'
-			|| (alt && !isMac() || cmd) && key === 'ArrowRight') {
+		else if ((cmd || ctrl && isLinux()) && code === 'BracketRight'
+			|| (alt && !isMac() || cmd) && code === 'ArrowRight') {
 			this._reader.navigateForward();
 			event.preventDefault();
 			return;
 		}
 
-		// Escape must be pressed alone. We basically want to prevent
-		// Option-Escape (speak text on macOS) deselecting text
-		if (key === 'Escape' && !(mod || alt || shift)) {
+		if (code === 'Escape' && !(mod || alt || shift)) {
 			this._reader._lastView.focus();
 			this._reader.abortPrint();
 			this._reader._updateState({
@@ -79,7 +77,7 @@ export class KeyboardManager {
 			});
 		}
 
-		if (mod && key === 'a') {
+		if (mod && code === 'KeyA') {
 			// Prevent text selection if not inside a text box
 			if (!isTextBox(event.target)) {
 				event.preventDefault();
@@ -92,43 +90,42 @@ export class KeyboardManager {
 				}
 			}
 		}
-		else if (mod && key === 'f') {
+		else if (mod && code === 'KeyF') {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
 		}
-		else if (shift && mod && key.toLowerCase() === 'g') {
+		else if (shift && mod && code === 'KeyG') {
 			event.preventDefault();
 			this._reader.findPrevious();
 		}
-		else if (mod && key.toLowerCase() === 'g') {
+		else if (mod && code === 'KeyG') {
 			event.preventDefault();
 			this._reader.findNext();
 		}
-		// Focus page number input. Check for KeyG because alt/option key gives a different key
 		else if (mod && alt && code === 'KeyG') {
 			event.preventDefault();
 			let pageNumberInput = document.getElementById('pageNumber');
 			pageNumberInput.focus();
 			pageNumberInput.select();
 		}
-		else if (mod && key === 'p') {
+		else if (mod && code === 'KeyP') {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.print();
 		}
-		else if (mod && key === '=') {
+		else if (mod && code === 'Equal') {
 			event.preventDefault();
 			this._reader.zoomIn();
 		}
-		else if (mod && key === '-') {
+		else if (mod && code === 'Minus') {
 			event.preventDefault();
 			this._reader.zoomOut();
 		}
-		else if (mod && key === '0') {
+		else if (mod && code === 'Digit0') {
 			event.preventDefault();
 			this._reader.zoomReset();
 		}
-		else if (['Delete', 'Backspace'].includes(key)) {
+		else if (code === 'Delete' || code === 'Backspace') {
 			// Prevent the deletion of annotations when they are selected and the focus is within
 			// an input or label popup. Normally, the focus should not be inside an input unless
 			// it is within a label popup, which needs to indicate the annotations being modified
@@ -215,7 +212,7 @@ export class KeyboardManager {
 				}
 				this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 			}
-			else if (!alt && !mod && code.slice(0, 5) === 'Digit' && this._reader._state.tool.color) {
+			else if (!alt && !mod && code.startsWith('Digit') && this._reader._state.tool.color) {
 				let idx = parseInt(code.slice(5)) - 1;
 				if (ANNOTATION_COLORS[idx]) {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });

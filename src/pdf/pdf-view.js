@@ -2228,7 +2228,7 @@ class PDFView {
 		if (this.textAnnotationFocused()) {
 			return;
 		}
-		let { key } = event;
+		let { code } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
 		let mod = ctrl || cmd;
@@ -2246,38 +2246,37 @@ class PDFView {
 			}
 		}
 
-
 		// Prevent "open file", "download file" PDF.js keyboard shortcuts
 		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
-
-		if (mod && ['o', 's'].includes(key)) {
+		if (mod && ['KeyO', 'KeyS'].includes(code)) {
 			event.stopPropagation();
 			event.preventDefault();
 		}
 		// Prevent full screen
-		else if (mod && alt && key === 'p') {
+		else if (mod && alt && code === 'KeyP') {
 			event.stopPropagation();
 		}
 		// Prevent PDF.js page view rotation
-		else if (key.toLowerCase() === 'r') {
+		else if (code === 'KeyR') {
 			event.stopPropagation();
 		}
-		else if (['n', 'j', 'p', 'k'].includes(key.toLowerCase())) {
+		// Prevent PDF.js page navigation with n, j, p, k keys
+		else if (['KeyN', 'KeyJ', 'KeyP', 'KeyK'].includes(code)) {
 			event.stopPropagation();
 		}
 		// This is necessary when a page is zoomed in and left/right arrow keys can't change page
-		else if (alt && key === 'ArrowUp') {
+		else if (alt && code === 'ArrowUp') {
 			this.navigateToPreviousPage();
 			event.stopPropagation();
 			event.preventDefault();
 		}
-		else if (alt && key === 'ArrowDown') {
+		else if (alt && code === 'ArrowDown') {
 			this.navigateToNextPage();
 			event.stopPropagation();
 			event.preventDefault();
 		}
 
-		if (key === 'Escape') {
+		if (code === 'Escape') {
 			this.action = null;
 			if (this._selectionRanges.length) {
 				this._setSelectionRanges();
@@ -2297,8 +2296,7 @@ class PDFView {
 			}
 		}
 
-
-		if (shift && key === 'Tab') {
+		if (shift && code === 'Tab') {
 			if (this._focusedObject) {
 				this._clearFocus();
 			}
@@ -2307,7 +2305,7 @@ class PDFView {
 			}
 			event.preventDefault();
 		}
-		else if (key === 'Tab') {
+		else if (code === 'Tab') {
 			if (!this._focusedObject && this._isSelectionCollapsed() && !this._selectedAnnotationIDs.length) {
 				if (!this._focusNext()) {
 					this._onTabOut();
@@ -2329,7 +2327,7 @@ class PDFView {
 				this._focusNext(true);
 				event.preventDefault();
 			}
-			else if (['Enter', 'Space'].includes(key)) {
+			else if (['Enter', 'NumpadEnter', 'Space'].includes(code)) {
 				if (this._focusedObject.type) {
 					this._onSelectAnnotations([this._focusedObject.id], event);
 					this._openAnnotationPopup();

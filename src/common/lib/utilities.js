@@ -21,13 +21,13 @@ export function isTextBox(node) {
 }
 
 export function pressedNextKey(event) {
-	let { key } = event;
-	return !window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown';
+	let { code } = event;
+	return !window.rtl && code === 'ArrowRight' || window.rtl && code === 'ArrowLeft' || code === 'ArrowDown';
 }
 
 export function pressedPreviousKey(event) {
-	let { key } = event;
-	return !window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp';
+	let { code } = event;
+	return !window.rtl && code === 'ArrowLeft' || window.rtl && code === 'ArrowRight' || code === 'ArrowUp';
 }
 
 export function setCaretToEnd(target) {
