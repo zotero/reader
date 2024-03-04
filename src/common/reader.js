@@ -685,6 +685,8 @@ class Reader {
 
 		let onFocus = () => {
 			this.focusView(primary);
+			// A workaround for Firefox/Zotero because iframe focusing doesn't trigger 'focusin' event
+			this._focusManager._closeFindPopupIfEmpty();
 		};
 
 		let onRequestPassword = () => {

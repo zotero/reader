@@ -56,6 +56,17 @@ export class FocusManager {
 		});
 	}
 
+	_closeFindPopupIfEmpty() {
+		let state = this._reader._state.primaryViewFindState;
+		if (state && !state.query) {
+			this._reader._updateState({ primaryViewFindState: { ...state, popupOpen: false } });
+		}
+		state = this._reader._state.secondaryViewState;
+		if (state && !state.query) {
+			this._reader._updateState({ secondaryViewState: { ...state, popupOpen: false } });
+		}
+	}
+
 	_handleFocus(event) {
 		if ('closest' in event.target) {
 			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .label-popup, .context-menu, iframe')) {
@@ -63,14 +74,7 @@ export class FocusManager {
 			}
 			// Close find popup on blur if search query is empty
 			if (!event.target.closest('.find-popup')) {
-				let state = this._reader._state.primaryViewFindState;
-				if (state && !state.query) {
-					this._reader._updateState({ primaryViewFindState: { ...state, popupOpen: false } });
-				}
-				state = this._reader._state.secondaryViewState;
-				if (state && !state.query) {
-					this._reader._updateState({ secondaryViewState: { ...state, popupOpen: false } });
-				}
+				this._closeFindPopupIfEmpty();
 			}
 		}
 	}
