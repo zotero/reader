@@ -58,11 +58,11 @@ export class FocusManager {
 
 	_handleFocus(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .find-popup, .label-popup, .context-menu, iframe')) {
+			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .label-popup, .context-menu, iframe')) {
 				this._onDeselectAnnotations();
 			}
 			// Close find popup on blur if search query is empty
-			if (!event.target.closest('.find-popup, #viewFind')) {
+			if (!event.target.closest('.find-popup')) {
 				let state = this._reader._state.primaryViewFindState;
 				if (state && !state.query) {
 					this._reader._updateState({ primaryViewFindState: { ...state, popupOpen: false } });

@@ -129,7 +129,10 @@ export class KeyboardManager {
 			this._reader.zoomReset();
 		}
 		else if (['Delete', 'Backspace'].includes(key)) {
-			if (isTextBox(event.target) && event.target.closest('#findbar') || event.target.closest('.label-popup')) {
+			// Prevent the deletion of annotations when they are selected and the focus is within
+			// an input or label popup. Normally, the focus should not be inside an input unless
+			// it is within a label popup, which needs to indicate the annotations being modified
+			if (event.target.closest('input, .label-popup')) {
 				return;
 			}
 			let selectedIDs = this._reader._state.selectedAnnotationIDs;
