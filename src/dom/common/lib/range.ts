@@ -1,3 +1,5 @@
+import { isFirefox, isWin } from "../../../common/lib/utilities";
+
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
  * (Range objects automatically normalize their start/end points when the DOM changes, which is not what we want -
@@ -88,6 +90,17 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 			range.setEnd(endNode, offset);
 		}
 	}
+
+	// Firefox on Windows adds an extra space at the end of a word selection,
+	// so remove it if it's simple to do so. (This won't work if the space is
+	// in the text node before the endContainer, but that's unlikely.)
+	if (isFirefox && isWin()
+			&& range.endContainer.nodeType === Node.TEXT_NODE
+			&& range.endOffset > 0
+			&& /\s/.test(range.endContainer.nodeValue!.charAt(range.endOffset - 1))) {
+		range.setEnd(range.endContainer, range.endOffset - 1);
+	}
+
 	return range;
 }
 
