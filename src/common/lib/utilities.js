@@ -21,13 +21,38 @@ export function isTextBox(node) {
 }
 
 export function pressedNextKey(event) {
-	let { code } = event;
-	return !window.rtl && code === 'ArrowRight' || window.rtl && code === 'ArrowLeft' || code === 'ArrowDown';
+	let { key } = event;
+	return !window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown';
 }
 
 export function pressedPreviousKey(event) {
-	let { code } = event;
-	return !window.rtl && code === 'ArrowLeft' || window.rtl && code === 'ArrowRight' || code === 'ArrowUp';
+	let { key } = event;
+	return !window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp';
+}
+
+/**
+ * Return a-z if 'key' is A-Z or 'code' is KeyA-KeyZ, and the 'key' wasn't already a-z.
+ *
+ * For keyboard layouts that have a-z characters (QWERTY, AZERTY, etc.) it returns
+ * 'key', while for other layouts like Hebrew or Arabic it converts physical 'code' KeyA-KeyZ
+ * to a-z character. On macOS Firefox does this by itself, while on Window it doesn't.
+ *
+ * It also lowercases A-Z because it's not always consistent
+ *
+ * @param key
+ * @param code
+ * @returns {string}
+ */
+export function normalizeKey(key, code) {
+	if (key.length === 1) {
+		if ('A' <= key && key <= 'Z') {
+			key = key.toLowerCase();
+		}
+		if ((key < 'a' || key > 'z') && code.length === 4 && code[3] >= 'A' && code[3] <= 'Z') {
+			key = code[3].toLowerCase();
+		}
+	}
+	return key;
 }
 
 export function setCaretToEnd(target) {

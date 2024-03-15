@@ -31,7 +31,7 @@ import {
 	getRotationDegrees,
 	normalizeDegrees
 } from './lib/utilities';
-import { debounceUntilScrollFinishes } from '../common/lib/utilities';
+import { debounceUntilScrollFinishes, normalizeKey } from '../common/lib/utilities';
 import {
 	getAffectedAnnotations,
 	isFirefox,
@@ -2228,12 +2228,15 @@ class PDFView {
 		if (this.textAnnotationFocused()) {
 			return;
 		}
-		let { code } = event;
+		let { key, code } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
 		let mod = ctrl || cmd;
 		let alt = event.altKey;
 		let shift = event.shiftKey;
+
+		key = normalizeKey(key, code);
+
 		if (event.target.classList.contains('textAnnotation')) {
 			return;
 		}
@@ -2248,35 +2251,35 @@ class PDFView {
 
 		// Prevent "open file", "download file" PDF.js keyboard shortcuts
 		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
-		if (mod && ['KeyO', 'KeyS'].includes(code)) {
+
+		if (mod && ['o', 's'].includes(key)) {
 			event.stopPropagation();
 			event.preventDefault();
 		}
 		// Prevent full screen
-		else if (mod && alt && code === 'KeyP') {
+		else if (mod && alt && key === 'p') {
 			event.stopPropagation();
 		}
 		// Prevent PDF.js page view rotation
-		else if (code === 'KeyR') {
+		else if (key.toLowerCase() === 'r') {
 			event.stopPropagation();
 		}
-		// Prevent PDF.js page navigation with n, j, p, k keys
-		else if (['KeyN', 'KeyJ', 'KeyP', 'KeyK'].includes(code)) {
+		else if (['n', 'j', 'p', 'k'].includes(key.toLowerCase())) {
 			event.stopPropagation();
 		}
 		// This is necessary when a page is zoomed in and left/right arrow keys can't change page
-		else if (alt && code === 'ArrowUp') {
+		else if (alt && key === 'ArrowUp') {
 			this.navigateToPreviousPage();
 			event.stopPropagation();
 			event.preventDefault();
 		}
-		else if (alt && code === 'ArrowDown') {
+		else if (alt && key === 'ArrowDown') {
 			this.navigateToNextPage();
 			event.stopPropagation();
 			event.preventDefault();
 		}
 
-		if (code === 'Escape') {
+		if (key === 'Escape') {
 			this.action = null;
 			if (this._selectionRanges.length) {
 				this._setSelectionRanges();
@@ -2296,7 +2299,7 @@ class PDFView {
 			}
 		}
 
-		if (shift && code === 'Tab') {
+		if (shift && key === 'Tab') {
 			if (this._focusedObject) {
 				this._clearFocus();
 			}
@@ -2305,7 +2308,7 @@ class PDFView {
 			}
 			event.preventDefault();
 		}
-		else if (code === 'Tab') {
+		else if (key === 'Tab') {
 			if (!this._focusedObject && this._isSelectionCollapsed() && !this._selectedAnnotationIDs.length) {
 				if (!this._focusNext()) {
 					this._onTabOut();
@@ -2327,7 +2330,7 @@ class PDFView {
 				this._focusNext(true);
 				event.preventDefault();
 			}
-			else if (['Enter', 'NumpadEnter', 'Space'].includes(code)) {
+			else if (['Enter', 'Space'].includes(key)) {
 				if (this._focusedObject.type) {
 					this._onSelectAnnotations([this._focusedObject.id], event);
 					this._openAnnotationPopup();

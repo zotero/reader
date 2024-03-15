@@ -1,4 +1,4 @@
-import { isTextBox, isLinux, isMac } from './lib/utilities';
+import { isTextBox, isLinux, isMac, normalizeKey } from './lib/utilities';
 import { ANNOTATION_COLORS } from './defines';
 
 export class KeyboardManager {
@@ -23,12 +23,14 @@ export class KeyboardManager {
 	}
 
 	_handleKeyDown(event, view) {
-		let { code } = event;
+		let { key, code } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
 		let mod = ctrl || cmd;
 		let alt = event.altKey;
 		let shift = event.shiftKey;
+
+		key = normalizeKey(key, code);
 
 		this.shift = shift;
 		this.mod = mod;
@@ -37,20 +39,22 @@ export class KeyboardManager {
 			return;
 		}
 
-		if ((cmd || ctrl && isLinux()) && code === 'BracketLeft'
-			|| (alt && !isMac() || cmd) && code === 'ArrowLeft') {
+		if ((cmd || ctrl && isLinux()) && key === '['
+			|| (alt && !isMac() || cmd) && key === 'ArrowLeft') {
 			this._reader.navigateBack();
 			event.preventDefault();
 			return;
 		}
-		else if ((cmd || ctrl && isLinux()) && code === 'BracketRight'
-			|| (alt && !isMac() || cmd) && code === 'ArrowRight') {
+		else if ((cmd || ctrl && isLinux()) && key === ']'
+			|| (alt && !isMac() || cmd) && key === 'ArrowRight') {
 			this._reader.navigateForward();
 			event.preventDefault();
 			return;
 		}
 
-		if (code === 'Escape' && !(mod || alt || shift)) {
+		// Escape must be pressed alone. We basically want to prevent
+		// Option-Escape (speak text on macOS) deselecting text
+		if (key === 'Escape' && !(mod || alt || shift)) {
 			this._reader._lastView.focus();
 			this._reader.abortPrint();
 			this._reader._updateState({
@@ -77,7 +81,7 @@ export class KeyboardManager {
 			});
 		}
 
-		if (mod && code === 'KeyA') {
+		if (mod && key === 'a') {
 			// Prevent text selection if not inside a text box
 			if (!isTextBox(event.target)) {
 				event.preventDefault();
@@ -90,42 +94,42 @@ export class KeyboardManager {
 				}
 			}
 		}
-		else if (mod && code === 'KeyF') {
+		else if (mod && key === 'f') {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
 		}
-		else if (shift && mod && code === 'KeyG') {
+		else if (shift && mod && key === 'g') {
 			event.preventDefault();
 			this._reader.findPrevious();
 		}
-		else if (mod && code === 'KeyG') {
+		else if (mod && key === 'g') {
 			event.preventDefault();
 			this._reader.findNext();
 		}
-		else if (mod && alt && code === 'KeyG') {
+		else if (mod && alt && key === 'g') {
 			event.preventDefault();
 			let pageNumberInput = document.getElementById('pageNumber');
 			pageNumberInput.focus();
 			pageNumberInput.select();
 		}
-		else if (mod && code === 'KeyP') {
+		else if (mod && key === 'p') {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.print();
 		}
-		else if (mod && code === 'Equal') {
+		else if (mod && key === '=') {
 			event.preventDefault();
 			this._reader.zoomIn();
 		}
-		else if (mod && code === 'Minus') {
+		else if (mod && key === '-') {
 			event.preventDefault();
 			this._reader.zoomOut();
 		}
-		else if (mod && code === 'Digit0') {
+		else if (mod && key === '0') {
 			event.preventDefault();
 			this._reader.zoomReset();
 		}
-		else if (code === 'Delete' || code === 'Backspace') {
+		else if (['Delete', 'Backspace'].includes(key)) {
 			// Prevent the deletion of annotations when they are selected and the focus is within
 			// an input or label popup. Normally, the focus should not be inside an input unless
 			// it is within a label popup, which needs to indicate the annotations being modified
