@@ -149,6 +149,7 @@ class PDFView {
 		});
 
 		this._iframe.addEventListener('load', () => {
+			setOptions();
 			if (!this._useDarkMode) {
 				this._iframeWindow.document.body.classList.add('disableDarkMode');
 			}
