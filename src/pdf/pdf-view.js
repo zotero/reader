@@ -149,6 +149,10 @@ class PDFView {
 		});
 
 		this._iframe.addEventListener('load', () => {
+			// Delete existing local history data
+			// TODO: This can be removed in future
+			try { localStorage.removeItem('pdfjs.history'); } catch (e) {}
+			try { this._iframeWindow.localStorage.removeItem('pdfjs.history'); } catch (e) {}
 			setOptions();
 			if (!this._useDarkMode) {
 				this._iframeWindow.document.body.classList.add('disableDarkMode');
