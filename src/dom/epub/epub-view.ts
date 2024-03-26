@@ -885,6 +885,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			options.block ||= 'start';
 
 			let [pathname, hash] = location.href.split('#');
+			try {
+				pathname = decodeURIComponent(pathname);
+			}
+			catch (e) {
+				console.warn('Unable to decode pathname', pathname);
+			}
+			try {
+				hash = decodeURIComponent(hash);
+			}
+			catch (e) {
+				console.warn('Unable to decode hash', hash);
+			}
 			let section = this.book.spine.get(pathname);
 			if (!section) {
 				console.error('Unable to find section for pathname', pathname);
