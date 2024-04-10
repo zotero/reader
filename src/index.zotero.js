@@ -16,6 +16,15 @@ window.createReader = (options) => {
 		onOpenContextMenu(params);
 	};
 
+	let { onSaveAnnotations } = options;
+	// Reader iframe doesn't have permissions to wait for onSaveAnnotations
+	// promise, therefore using callback to inform when saving finishes
+	options.onSaveAnnotations = async (annotations) => {
+		return new Promise((resolve) => {
+			onSaveAnnotations(annotations, resolve);
+		});
+	};
+
 	let reader = new Reader(options);
 	window._reader = reader;
 	return reader;

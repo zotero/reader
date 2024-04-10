@@ -48,7 +48,7 @@ async function createReader() {
 		onAddToNote() {
 			alert('Add annotations to the current note');
 		},
-		onSaveAnnotations: function (annotations) {
+		onSaveAnnotations: async function (annotations) {
 			console.log('Save annotations', annotations);
 		},
 		onDeleteAnnotations: function (ids) {

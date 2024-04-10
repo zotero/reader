@@ -1,6 +1,8 @@
-import { debounce } from './lib/debounce';
 import { approximateMatch } from './lib/approximate-match';
 import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
+
+const DEBOUNCE_TIME = 1000; // 1s
+const DEBOUNCE_MAX_TIME = 10000; // 10s
 
 class AnnotationManager {
 	constructor(options) {
@@ -20,28 +22,9 @@ class AnnotationManager {
 			options.onRender([...this._annotations]);
 		};
 
-		this._unsavedAnnotations = [];
-		// Debounce for 1 second but no more than 10 second
-		this._debounceSave = debounce(() => {
-			if (!this._unsavedAnnotations.length) {
-				return;
-			}
-			// Image is sent in instant mode only
-			let annotations = this._unsavedAnnotations.map(x => ({ ...x, image: undefined }));
-			this._onSave(annotations.map(x => JSON.parse(JSON.stringify(x))));
-
-			for (let annotation of this._unsavedAnnotations) {
-				delete annotation.onlyTextOrComment;
-			}
-
-			this._unsavedAnnotations = [];
-		}, 1000, { maxWait: 10000 });
-
-		// window.PDFViewerApplication.eventBus.on('pagerendered', (e) => {
-		// 	setTimeout(() => {
-		// 		this._renderMissingImages();
-		// 	}, 2000);
-		// });
+		this._unsavedAnnotations = new Map();
+		this._lastChangeTime = 0;
+		this._lastSaveTime = 0;
 
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 
@@ -103,7 +86,7 @@ class AnnotationManager {
 				rect => rect.map(value => parseFloat(value.toFixed(3)))
 			);
 		}
-		this._save(annotation);
+		this._save(annotation, !!annotation?.image);
 		this.render();
 		return annotation;
 	}
@@ -127,16 +110,12 @@ class AnnotationManager {
 			if (!annotation.onlyTextOrComment) {
 				delete existingAnnotation.onlyTextOrComment;
 			}
-			if (annotation.image) {
+			let includeImage = !!annotation.image;
+			// If only updating an image skip the code below together with dateModified updating
+			if (annotation.image && Object.keys(annotation).length === 1) {
 				let { image } = annotation;
-				delete annotation.image;
-				// Instantly save annotation image to avoid batching them and accumulating in memory,
-				// and then doing large transfers between iframe and main Zotero code
-				this._save({ ...existingAnnotation, image }, true);
-				// If only updating an image skip the code below together with dateModified updating
-				if (Object.keys(annotation).length === 1) {
-					continue;
-				}
+				this._save({ ...existingAnnotation, image }, includeImage);
+				continue;
 			}
 			if (annotation.position) {
 				annotation.image = undefined;
@@ -164,7 +143,7 @@ class AnnotationManager {
 					rect => rect.map(value => parseFloat(value.toFixed(3)))
 				);
 			}
-			this._save(annotation);
+			this._save(annotation, includeImage);
 		}
 		this.render();
 	}
@@ -178,7 +157,9 @@ class AnnotationManager {
 			return;
 		}
 		this._annotations = this._annotations.filter(annotation => !ids.includes(annotation.id));
-		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => !ids.includes(x.id));
+		for (let id of ids) {
+			this._unsavedAnnotations.delete(id);
+		}
 		this._onDelete(ids);
 		this.render();
 	}
@@ -196,7 +177,8 @@ class AnnotationManager {
 		return randomstring;
 	}
 
-	_save(annotation, instant) {
+	_save(annotation, includeImage) {
+		this._lastChangeTime = Date.now();
 		let oldIndex = this._annotations.findIndex(x => x.id === annotation.id);
 		if (oldIndex !== -1) {
 			annotation = { ...annotation };
@@ -206,15 +188,37 @@ class AnnotationManager {
 			this._annotations.push(annotation);
 		}
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
-		this._unsavedAnnotations = this._unsavedAnnotations.filter(x => x.id !== annotation.id);
+		annotation = { ...annotation };
 
-		if (instant) {
-			this._onSave([JSON.parse(JSON.stringify(annotation))]);
+		let existingUnsavedAnnotation = this._unsavedAnnotations.get(annotation.id);
+		if (existingUnsavedAnnotation?.image) {
+			includeImage = true;
 		}
-		else {
-			this._unsavedAnnotations.push(annotation);
-			this._debounceSave();
+		if (!includeImage) {
+			delete annotation.image;
 		}
+		this._unsavedAnnotations.set(annotation.id, annotation);
+		this._triggerSaving();
+	}
+
+	async _triggerSaving() {
+		if (!this._unsavedAnnotations.size || this._savingInProgress) {
+			return;
+		}
+		if ((Date.now() - this._lastChangeTime < DEBOUNCE_TIME)
+			&& (Date.now() - this._lastSaveTime < DEBOUNCE_MAX_TIME)) {
+			setTimeout(this._triggerSaving.bind(this), 1000);
+			return;
+		}
+		this._lastSaveTime = Date.now();
+		this._savingInProgress = true;
+		let annotations = Array.from(this._unsavedAnnotations.values());
+		this._unsavedAnnotations.clear();
+		let clonedAnnotations = annotations.map(x => JSON.parse(JSON.stringify(x)));
+		annotations.forEach(x => delete x.onlyTextOrComment);
+		await this._onSave(clonedAnnotations);
+		this._savingInProgress = false;
+		this._triggerSaving();
 	}
 
 	_getAnnotationByID(id) {
