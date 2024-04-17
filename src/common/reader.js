@@ -59,6 +59,7 @@ class Reader {
 		this._onIframeTab = options.onIframeTab;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
+		this._onSetZoom = options.onSetZoom;
 
 		this._localizedStrings = options.localizedStrings;
 
@@ -736,6 +737,10 @@ class Reader {
 			this._keyboardManager.handleViewKeyUp(event);
 		};
 
+		let onSetZoom = (iframe, zoom) => {
+			this._onSetZoom(iframe, zoom);
+		};
+
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -811,7 +816,8 @@ class Reader {
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
-				...common
+				...common,
+				onSetZoom
 			});
 		}
 
