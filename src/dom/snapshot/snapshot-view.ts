@@ -438,17 +438,23 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	private _setScale(scale: number) {
 		this._scale = scale;
-		if (scale == 1) {
-			this._iframeDocument.documentElement.style.fontSize = '';
-			return;
-		}
 
-		// Calculate the default root font size, then multiply by scale.
-		// Can't just set font-size to an em value -- the page itself might set a font-size on <html>, and we need to
-		// scale relative to that.
-		this._iframeDocument.documentElement.style.fontSize = '';
-		let defaultSize = parseFloat(getComputedStyle(this._iframeDocument.documentElement).fontSize);
-		this._iframeDocument.documentElement.style.fontSize = (defaultSize * scale) + 'px';
+		if (this._options.onSetZoom) {
+			this._options.onSetZoom(this._iframe, scale);
+		}
+		else {
+			if (scale == 1) {
+				this._iframeDocument.documentElement.style.fontSize = '';
+				return;
+			}
+
+			// Calculate the default root font size, then multiply by scale.
+			// Can't just set font-size to an em value -- the page itself might set a font-size on <html>, and we need to
+			// scale relative to that.
+			this._iframeDocument.documentElement.style.fontSize = '';
+			let defaultSize = parseFloat(getComputedStyle(this._iframeDocument.documentElement).fontSize);
+			this._iframeDocument.documentElement.style.fontSize = (defaultSize * scale) + 'px';
+		}
 	}
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {

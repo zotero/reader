@@ -1205,6 +1205,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
+	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
 	onOpenViewContextMenu: (params: { x: number, y: number }) => void;
 	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
 	onFocus: () => void;
