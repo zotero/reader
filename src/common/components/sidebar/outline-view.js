@@ -87,7 +87,7 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		return (
 			<ul>{items.map((item, index) => {
 				return (
-					((item.matched != false) || (item.childMatched != false)) &&
+					((item.matched !== false) || (item.childMatched !== false)) &&
 					<Item
 						key={index}
 						item={item}
