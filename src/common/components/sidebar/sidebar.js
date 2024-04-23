@@ -18,6 +18,31 @@ function Sidebar(props) {
 		props.onChangeFilter({ ...props.filter, query });
 	}
 
+	function handleOutlineSearchInput(query) {
+		function recursiveSearch(items, queryString) {
+			const is_match = (sourceString) => { 
+				sourceString = sourceString.toLowerCase();
+				queryString = queryString.toLowerCase();
+				return sourceString.includes(queryString);
+			}
+			items.forEach((item) => {
+				item.matched = is_match(item.title);
+				item.childMatched = false;
+				if (item.items?.length) {	
+					item.items = recursiveSearch(item.items, query);
+					item.items.forEach((iitem) => {
+						if ((iitem.matched === true) || (iitem.childMatched === true)) {
+							item.childMatched = true;
+						}
+					})
+				}
+			})
+			return items;
+		}
+		props.onUpdateOutlineQuery(query);
+    	props.onUpdateOutline([...recursiveSearch(props.outline, query)]);
+	}
+
 	return (
 		<div id="sidebarContainer" className="sidebarOpen">
 			<div className="sidebar-toolbar">
@@ -52,6 +77,13 @@ function Sidebar(props) {
 							query={props.filter.query}
 							onInput={handleSearchInput}
 							placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
+						/>
+					}
+					{props.view === 'outline' &&
+						<SearchBox
+							query={props.outlineQuery}
+							onInput={handleOutlineSearchInput}
+							placeholder={intl.formatMessage({ id: 'pdfReader.searchOutline' })}
 						/>
 					}
 				</div>

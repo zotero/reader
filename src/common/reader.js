@@ -139,6 +139,7 @@ class Reader {
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: [],
+			outlineQuery: '',
 			pageLabels: {},
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
@@ -264,6 +265,7 @@ class Reader {
 						onAddToNote={(annotations) => { this._onAddToNote(annotations); this.setSelectedAnnotations([]); }}
 						onNavigate={this.navigate.bind(this)}
 						onUpdateOutline={outline => this._updateState({ outline })}
+						onUpdateOutlineQuery={outlineQuery => this._updateState({ outlineQuery })}
 						onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 						onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 						onOpenLink={this._onOpenLink}

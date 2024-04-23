@@ -50,7 +50,7 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 	}
 
 	let toggle;
-	if (item.items?.length) {
+	if (item.items?.length && item.childMatched !== false) {
 		toggle = <div className="toggle" onClick={handleExpandToggleClick}><IconChevronDown8/></div>;
 	}
 	else {
@@ -87,6 +87,7 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		return (
 			<ul>{items.map((item, index) => {
 				return (
+					((item.matched != false) || (item.childMatched != false)) &&
 					<Item
 						key={index}
 						item={item}
