@@ -56,6 +56,7 @@
 }
 
 :root {
+	font-size: calc(var(--content-scale) * 13pt) !important;
 	background-color: var(--background-color) !important;
 	color: var(--text-color) !important;
 }
@@ -80,7 +81,7 @@ replaced-body {
 	color: inherit !important;
 
 	font-family: var(--content-font-family, "Georgia"), serif;
-	font-size: calc(var(--content-scale) * 13pt) !important;
+	font-size: inherit !important;
 	line-height: var(--content-line-height);
 	text-align: justify;
 	text-rendering: optimizeLegibility;
