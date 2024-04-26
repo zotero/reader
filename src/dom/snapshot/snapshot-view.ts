@@ -127,9 +127,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		let singleFileComment = this._iframeDocument.documentElement.firstChild;
 		if (singleFileComment?.nodeType === Node.COMMENT_NODE
 				&& singleFileComment.nodeValue!.trim().startsWith('Page saved with SingleFile')) {
-			let matches = singleFileComment.nodeValue!.match(/^\s*url: (https?:\/\/.+)$/m);
+			let matches = singleFileComment.nodeValue!.match(/^\s*url: (https?:\/\/\S+)/m);
 			if (matches) {
-				return matches[0].trim();
+				return matches[1];
 			}
 		}
 		return null;
