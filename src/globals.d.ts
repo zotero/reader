@@ -1,7 +1,9 @@
 declare interface Window {
 	rtl?: boolean;
-	
+
 	dev?: boolean;
+
+	DarkReader: typeof import('darkreader');
 }
 
 declare interface Document {

@@ -1,5 +1,5 @@
 // @ts-ignore
-import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
+import annotationOverlayCSS from './stylesheets/annotation-overlay.scss';
 
 import {
 	Annotation,
@@ -173,7 +173,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Allow fonts from data: URIs and from that origin
 		let fontSrc = (origin || '') + ' data:';
 		// Don't allow any scripts
-		let scriptSrc = "'none'";
+		let scriptSrc = "'unsafe-eval'";
 		// Don't allow any child frames
 		let childSrc = "'none'";
 		// Don't allow form submissions

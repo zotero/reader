@@ -32,6 +32,8 @@ import {
 
 // @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';
+// @ts-expect-error
+import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -110,7 +112,27 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			});
 		}
 
+		let url = this._getSnapshotLocation() || 'about:blank';
+		// Dark Reader gets the page location by accessing the global property 'location'
+		// Horrifying, but it works
+		this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
+		if (this._useDarkMode) {
+			this._iframeWindow.DarkReader.auto({});
+		}
+
 		this._initOutline();
+	}
+
+	private _getSnapshotLocation() {
+		let singleFileComment = this._iframeDocument.documentElement.firstChild;
+		if (singleFileComment?.nodeType === Node.COMMENT_NODE
+				&& singleFileComment.nodeValue!.trim().startsWith('Page saved with SingleFile')) {
+			let matches = singleFileComment.nodeValue!.match(/^\s*url: (https?:\/\/.+)$/m);
+			if (matches) {
+				return matches[0].trim();
+			}
+		}
+		return null;
 	}
 
 	private _initOutline() {
@@ -385,6 +407,19 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {
 				this._find!.findState.highlightAll = state.highlightAll;
 				this._renderAnnotations();
+			}
+		}
+	}
+
+	override setUseDarkMode(use: boolean) {
+		super.setUseDarkMode(use);
+		// Run Dark Reader now if it's been loaded
+		if (this._iframeWindow.DarkReader) {
+			if (use) {
+				this._iframeWindow.DarkReader.auto({});
+			}
+			else {
+				this._iframeWindow.DarkReader.auto(false);
 			}
 		}
 	}
