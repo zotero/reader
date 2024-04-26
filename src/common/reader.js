@@ -737,9 +737,9 @@ class Reader {
 			this._keyboardManager.handleViewKeyUp(event);
 		};
 
-		let onSetZoom = (iframe, zoom) => {
+		let onSetZoom = this._onSetZoom && ((iframe, zoom) => {
 			this._onSetZoom(iframe, zoom);
-		};
+		});
 
 		let data;
 		if (this._type === 'pdf') {
