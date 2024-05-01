@@ -1212,6 +1212,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onTabOut: (isShiftTab?: boolean) => void;
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
+	onEPUBEncrypted: () => void;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string

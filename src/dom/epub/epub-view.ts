@@ -154,6 +154,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let styleScoper = new StyleScoper(this._iframeDocument);
 		await Promise.all(this.book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
 
+		if (this._sectionViews.some(view => view.error) && await this._isEncrypted()) {
+			this._options.onEPUBEncrypted();
+			this._sectionsContainer.remove();
+			return;
+		}
+
 		if (this._options.fontFamily) {
 			this._iframeDocument.documentElement.style.setProperty('--content-font-family', this._options.fontFamily);
 		}
@@ -193,6 +199,16 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		// @ts-ignore
 		this.book.archive.zip = null;
+	}
+
+	private async _isEncrypted() {
+		try {
+			let xml = await this.book.archive.request('/META-INF/encryption.xml', 'text') as string;
+			return xml.includes('<EncryptedData');
+		}
+		catch (e) {
+			return false;
+		}
 	}
 
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {

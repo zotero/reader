@@ -741,6 +741,10 @@ class Reader {
 			this._onSetZoom(iframe, zoom);
 		});
 
+		let onEPUBEncrypted = () => {
+			this.setErrorMessage(this._getString('pdfReader.epubEncrypted'));
+		};
+
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -812,7 +816,8 @@ class Reader {
 		} else if (this._type === 'epub') {
 			view = new EPUBView({
 				...common,
-				fontFamily: this._state.fontFamily
+				fontFamily: this._state.fontFamily,
+				onEPUBEncrypted,
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
