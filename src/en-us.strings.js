@@ -148,5 +148,6 @@ export default {
 	'pdfReader.preparingDocumentForPrinting': 'Preparing document for printing…',
 	'pdfReader.phraseNotFound': 'Phrase not found',
 	'pdfReader.selectedPages': '{count, plural, one {# page} other {# pages}} selected',
-	'pdfReader.pageOptions': 'Page Options'
+	'pdfReader.pageOptions': 'Page Options',
+	'pdfReader.epubEncrypted': 'This ebook appears to be encrypted and cannot be opened.'
 };
