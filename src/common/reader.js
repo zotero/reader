@@ -136,6 +136,7 @@ class Reader {
 			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
+			colorScheme: options.colorScheme,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: [],
@@ -349,6 +350,15 @@ class Reader {
 			}
 		}
 
+		if (init || this._state.colorScheme !== previousState.colorScheme) {
+			if (this._state.colorScheme) {
+				document.documentElement.dataset.colorScheme = this._state.colorScheme;
+			}
+			else {
+				delete document.documentElement.dataset.colorScheme;
+			}
+		}
+
 		if (this._state.readOnly !== previousState.readOnly) {
 			this._annotationManager.setReadOnly(this._state.readOnly);
 			this._primaryView?.setReadOnly?.(this._state.readOnly);
@@ -538,6 +548,10 @@ class Reader {
 
 	useDarkModeForContent(use) {
 		this._updateState({ useDarkModeForContent: use });
+	}
+
+	setColorScheme(colorScheme) {
+		this._updateState({ colorScheme });
 	}
 
 	setReadOnly(readOnly) {
