@@ -24,10 +24,18 @@
 	}
 }
 
+@mixin -dark-rules() {
+	#annotation-overlay .annotation-container.blended {
+		mix-blend-mode: screen;
+	}
+}
+
 @media (prefers-color-scheme: dark) {
 	:root:not(.disable-dark-mode) {
-		#annotation-overlay .annotation-container.blended {
-			mix-blend-mode: screen;
-		}
+		@include -dark-rules();
 	}
+}
+
+:root[data-color-scheme=dark]:not(.disable-dark-mode) {
+	@include -dark-rules();
 }

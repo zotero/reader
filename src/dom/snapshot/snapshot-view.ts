@@ -117,7 +117,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Horrifying, but it works
 		this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
 		if (this._useDarkMode) {
-			this._iframeWindow.DarkReader.auto({});
+			const mode = this._colorScheme === 'dark' ? 'enable' : 'auto';
+			this._iframeWindow.DarkReader[mode]({});
 		}
 
 		this._initOutline();
@@ -416,7 +417,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Run Dark Reader now if it's been loaded
 		if (this._iframeWindow.DarkReader) {
 			if (use) {
-				this._iframeWindow.DarkReader.auto({});
+				const mode = this._colorScheme === 'dark' ? 'enable' : 'auto';
+				this._iframeWindow.DarkReader[mode]({});
 			}
 			else {
 				this._iframeWindow.DarkReader.auto(false);

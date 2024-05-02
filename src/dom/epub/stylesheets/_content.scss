@@ -49,6 +49,13 @@
 			--visited-link-color: #0099e5;
 		}
 	}
+
+	&[data-color-scheme=dark]:not(.disable-dark-mode) {
+		--background-color: #121212;
+		--text-color: #fefefe;
+		--link-color: #63caff;
+		--visited-link-color: #0099e5;
+	}
 }
 
 :root {

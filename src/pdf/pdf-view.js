@@ -63,6 +63,7 @@ class PDFView {
 		this._container = options.container;
 		this._password = options.password;
 		this._useDarkMode = options.useDarkMode;
+		this._colorScheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
 		this._onSetThumbnails = options.onSetThumbnails;
 		this._onSetOutline = options.onSetOutline;
@@ -156,6 +157,9 @@ class PDFView {
 			setOptions();
 			if (!this._useDarkMode) {
 				this._iframeWindow.document.body.classList.add('disableDarkMode');
+			}
+			if (this._colorScheme) {
+				this._iframeWindow.document.documentElement.dataset.colorScheme = this._colorScheme;
 			}
 			this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 			this._iframeWindow.onDetachPage = this._detachPage.bind(this);
@@ -551,6 +555,15 @@ class PDFView {
 		}
 		else {
 			this._iframeWindow.document.body.classList.add('disableDarkMode');
+		}
+	}
+
+	setColorScheme(colorScheme) {
+		if (colorScheme) {
+			this._iframeWindow.document.documentElement.dataset.colorScheme = colorScheme;
+		}
+		else {
+			delete this._iframeWindow.document.documentElement.dataset.colorScheme;
 		}
 	}
 

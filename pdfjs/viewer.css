@@ -395,9 +395,7 @@ body, #viewerContainer {
 	body:not(.disableDarkMode) .pdfViewer .page {
 		background-color: #000000;
 	}
-}
 
-@media (prefers-color-scheme: dark) {
 	.textLayer {
 		opacity: 0.5;
 	}
@@ -409,4 +407,31 @@ body, #viewerContainer {
 	.textLayer .highlight {
 		background-color: #FF00F1;
 	}
+}
+
+:root[data-color-scheme=dark] body:not(.disableDarkMode),
+:root[data-color-scheme=dark] body:not(.disableDarkMode) #viewerContainer {
+	background-color: #272727;
+	/* --color-toolbar */
+}
+
+:root[data-color-scheme=dark] body:not(.disableDarkMode) canvas,
+:root[data-color-scheme=dark] body:not(.disableDarkMode) .textAnnotation {
+	filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
+}
+
+:root[data-color-scheme=dark] body:not(.disableDarkMode) .pdfViewer .page {
+	background-color: #000000;
+}
+
+:root[data-color-scheme=dark] .textLayer {
+	opacity: 0.5;
+}
+
+:root[data-color-scheme=dark] .textLayer .highlight.selected {
+	background-color: #00FF00;
+}
+
+:root[data-color-scheme=dark] .textLayer .highlight {
+	background-color: #FF00F1;
 }

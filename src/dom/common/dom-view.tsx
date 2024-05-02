@@ -70,6 +70,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _useDarkMode: boolean;
 
+	protected _colorScheme: string | null;
+
 	protected _annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 
 	protected _selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
@@ -112,6 +114,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Don't show annotations if this is false
 		this._showAnnotations = options.showAnnotations;
 		this._useDarkMode = options.useDarkMode;
+		this._colorScheme = options.colorScheme;
 		this._annotationPopup = options.annotationPopup;
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
@@ -495,6 +498,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this.setAnnotations(this._options.annotations);
 		this.setTool(this._options.tool);
 		this.setUseDarkMode(this._options.useDarkMode);
+		this.setColorScheme(this._options.colorScheme);
 
 		await this._onInitialDisplay(this._options.viewState || {});
 		setTimeout(() => {
@@ -1106,6 +1110,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.documentElement.classList.toggle('disable-dark-mode', !use);
 	}
 
+	setColorScheme(colorScheme: string | null) {
+		this._colorScheme = colorScheme;
+		if (colorScheme) {
+			this._iframeDocument.documentElement.dataset.colorScheme = colorScheme;
+		}
+		else {
+			delete this._iframeDocument.documentElement.dataset.colorScheme;
+		}
+	}
+
 	setSelectedAnnotationIDs(ids: string[]) {
 		this._selectedAnnotationIDs = ids;
 		// Close annotation popup each time when any annotation is selected, because the click is what opens the popup
@@ -1187,6 +1201,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	annotations: WADMAnnotation[];
 	showAnnotations: boolean;
 	useDarkMode: boolean;
+	colorScheme: string | null;
 	annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 	selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
 	overlayPopup: OverlayPopupParams | null;

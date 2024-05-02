@@ -338,12 +338,11 @@ class Reader {
 		}
 
 		if (init || this._state.useDarkModeForContent !== previousState.useDarkModeForContent) {
-			if (this._state.useDarkModeForContent) {
-				document.body.classList.add('use-dark-mode-for-content');
-			}
-			else {
-				document.body.classList.remove('use-dark-mode-for-content');
-			}
+			document.body.classList.toggle(
+				'use-dark-mode-for-content',
+				this._state.useDarkModeForContent
+			);
+
 			if (!init) {
 				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
 				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
@@ -356,6 +355,13 @@ class Reader {
 			}
 			else {
 				delete document.documentElement.dataset.colorScheme;
+			}
+			if (!init) {
+				this._primaryView?.setColorScheme(this._state.colorScheme);
+				this._secondaryView?.setColorScheme(this._state.colorScheme);
+				// also update useDarkModeForContent as it depends on colorScheme
+				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
+				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
 			}
 		}
 
@@ -782,6 +788,7 @@ class Reader {
 			annotations: this._state.annotations.filter(x => !x._hidden),
 			showAnnotations: this._state.showAnnotations,
 			useDarkMode: this._state.useDarkModeForContent,
+			colorScheme: this._state.colorScheme,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
