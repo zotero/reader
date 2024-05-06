@@ -34,6 +34,7 @@ import {
 import injectCSS from './stylesheets/inject.scss';
 // @ts-expect-error
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
+import { DynamicThemeFix } from "darkreader";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -116,10 +117,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Dark Reader gets the page location by accessing the global property 'location'
 		// Horrifying, but it works
 		this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
-		if (this._useDarkMode) {
-			const mode = this._colorScheme === 'dark' ? 'enable' : 'auto';
-			this._iframeWindow.DarkReader[mode]({});
-		}
+		this.setUseDarkMode(this._useDarkMode);
 
 		this._initOutline();
 	}
@@ -418,7 +416,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (this._iframeWindow.DarkReader) {
 			if (use) {
 				const mode = this._colorScheme === 'dark' ? 'enable' : 'auto';
-				this._iframeWindow.DarkReader[mode]({});
+				this._iframeWindow.DarkReader[mode]({}, {
+					invert: [
+						// Invert Mediawiki equations
+						'.mw-invert'
+					]
+				} as DynamicThemeFix);
 			}
 			else {
 				this._iframeWindow.DarkReader.auto(false);
