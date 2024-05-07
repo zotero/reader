@@ -20,13 +20,13 @@ function Sidebar(props) {
 
 	function handleOutlineSearchInput(query) {
 		function recursiveSearch(items, queryString) {
-			const is_match = (sourceString) => { 
+			const isMatch = (sourceString) => { 
 				sourceString = sourceString.toLowerCase();
 				queryString = queryString.toLowerCase();
 				return sourceString.includes(queryString);
 			}
 			items.forEach((item) => {
-				item.matched = is_match(item.title);
+				item.matched = isMatch(item.title);
 				item.childMatched = false;
 				if (item.items?.length) {	
 					item.items = recursiveSearch(item.items, query);
