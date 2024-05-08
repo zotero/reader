@@ -14,6 +14,35 @@ import SearchBox from './search-box';
 function Sidebar(props) {
 	const intl = useIntl();
 
+	function handleOutlineDoubleClick() {
+		if (props.view !== 'outline' || props.outlineQuery !== '') {
+			// Do nothing when in other views or under searching
+			return;
+		}
+
+		function checkCollapsed(items) {
+			var haveCollapsed = false;
+			items.forEach((item) => {
+				if (item.items?.length) {	
+					if (item.expanded === false || checkCollapsed(item.items)){
+						haveCollapsed = true;
+					}
+				}
+			});
+			return haveCollapsed;
+		}
+		function toggleCollapsed(items, value) {
+			items.forEach((item) => {
+				if (item.items?.length) {
+					item.expanded = value;
+					toggleCollapsed(item.items, value);
+				}
+			});
+		}
+		toggleCollapsed(props.outline, checkCollapsed(props.outline));
+		props.onUpdateOutline([...props.outline]);
+	}
+	
 	function handleSearchInput(query) {
 		props.onChangeFilter({ ...props.filter, query });
 	}
@@ -69,6 +98,7 @@ function Sidebar(props) {
 						tabIndex={-1}
 						disabled={!props.enableOutlineView}
 						onClick={() => props.onChangeView('outline')}
+						onDoubleClick={handleOutlineDoubleClick}
 					><IconOutline/></button>
 				</div>
 				<div className="end">
