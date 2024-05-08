@@ -60,7 +60,7 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 	return (
 		<li>
 			<div
-				className={cx('item', { expandable: !!item.items?.length, expanded: item.expanded })}
+				className={cx('item', { expandable: !!item.items?.length, expanded: item.expanded, unmatched: item.matched === false})}
 			>
 				{toggle}
 				<div

@@ -39,6 +39,10 @@
 					margin-inline-start: 3px;
 				}
 
+				&.unmatched {
+					color: var(--fill-secondary);
+				}
+				
 				&.expandable.expanded .toggle {
 				}
 

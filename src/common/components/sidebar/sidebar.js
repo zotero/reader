@@ -55,17 +55,30 @@ function Sidebar(props) {
 				return sourceString.includes(queryString);
 			}
 			items.forEach((item) => {
-				item.matched = isMatch(item.title);
-				item.childMatched = false;
-				if (item.items?.length) {	
-					item.items = recursiveSearch(item.items, query);
-					item.items.forEach((iitem) => {
-						if ((iitem.matched === true) || (iitem.childMatched === true)) {
-							item.childMatched = true;
-						}
-					})
+				if (queryString == '') {
+					item.matched = undefined;
+					item.childMatched = undefined;
+					item.expanded = (item.expandedBak !== undefined) ? item.expandedBak : item.expanded;
+					item.expandedBak = undefined;
+					if (item.items?.length) {	
+						recursiveSearch(item.items, query);
+					}
 				}
-			})
+				else {
+					item.matched = isMatch(item.title);
+					item.childMatched = false;
+					item.expandedBak = (item.expandedBak !== undefined) ? item.expandedBak : item.expanded;
+					if (item.items?.length) {	
+						recursiveSearch(item.items, query);
+						item.items.forEach((iitem) => {
+							if ((iitem.matched === true) || (iitem.childMatched === true)) {
+								item.childMatched = true;
+								item.expanded = true;
+							}
+						});
+					}
+				}
+			});
 			return items;
 		}
 		props.onUpdateOutlineQuery(query);
