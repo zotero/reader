@@ -2235,6 +2235,10 @@ class PDFView {
 	}
 
 	_handleContextMenu(event) {
+		// Open context menu on long press of touchscreen
+		if (event.mozInputSource === 5) {
+			this._handlePointerDown(event);
+		}
 		if (this._options.platform !== 'web') {
 			event.preventDefault();
 		}
