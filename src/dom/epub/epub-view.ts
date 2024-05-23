@@ -112,6 +112,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	protected async _onInitialDisplay(viewState: Partial<Readonly<EPUBViewState>>) {
+		// Safari <= 15 calls this before constructor finishes! As a workaround,
+		// we delay calling this function until this.book is set
+		if (!this.book || !this.book.opened) {
+			setTimeout(() => {
+				this._onInitialDisplay(viewState);
+			}, 500);
+			return;
+		}
+
 		await this.book.opened;
 
 		let cspMeta = this._iframeDocument.createElement('meta');

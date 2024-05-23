@@ -3,7 +3,9 @@ import React, { memo, useEffect, useRef } from 'react';
 let CustomSections = memo(({ type, ...props }) => {
 	let sectionRef = useRef();
 	useEffect(() => {
-		sectionRef.current.replaceChildren();
+		while (sectionRef.lastElementChild) {
+			sectionRef.removeChild(sectionRef.lastElementChild);
+		}
 		let finished = false;
 		let append = (...args) => {
 			if (finished) {

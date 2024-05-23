@@ -100,7 +100,10 @@ class SectionView {
 		errorDiv.style.fontWeight = 'bold';
 		errorDiv.style.textAlign = 'center';
 		errorDiv.append(`[Section ${this.section.index}: ${message}]`);
-		this.container.replaceChildren(errorDiv);
+		while (this.container.lastElementChild) {
+			this.container.removeChild(this.container.lastElementChild);
+		}
+		this.container.append(errorDiv);
 		this.body = errorDiv;
 		this.error = true;
 	}

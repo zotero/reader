@@ -437,7 +437,9 @@ class Reader {
 			// Unsplit
 			else if ((previousState.splitType || init) && !this._state.splitType) {
 				this._secondaryView = null;
-				this._secondaryViewContainer.replaceChildren();
+				while (this._secondaryViewContainer.lastElementChild) {
+					this._secondaryViewContainer.removeChild(this._secondaryViewContainer.lastElementChild);
+				}
 				this._lastViewPrimary = true;
 				this._onChangeViewState(null, false);
 			}
@@ -1179,10 +1181,14 @@ class Reader {
 
 	reload(data) {
 		this._data = data;
-		this._primaryViewContainer.replaceChildren();
+		while (this._primaryViewContainer.lastElementChild) {
+			this._primaryViewContainer.removeChild(this._primaryViewContainer.lastElementChild);
+		}
 		this._primaryView = this._createView(true);
 		if (this._state.splitType) {
-			this._secondaryViewContainer.replaceChildren();
+			while (this._secondaryViewContainer.lastElementChild) {
+				this._secondaryViewContainer.removeChild(this._secondaryViewContainer.lastElementChild);
+			}
 			this._secondaryView = this._createView(false);
 		}
 	}

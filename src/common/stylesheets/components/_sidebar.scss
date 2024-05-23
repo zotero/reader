@@ -4,6 +4,26 @@ body.sidebar-open {
 	}
 }
 
+
+// NOTE: this cannot be nested above because comment must be preserved in CSS in order to opt-out from postcss-rtlcss
+/*!rtl:begin:ignore*/
+@supports not (inset-inline-end: 0px) {
+	// width: calc(100% - var(--sidebar-width));
+
+	[dir=ltr] body.sidebar-open #split-view,
+	[dir=ltr] body.sidebar-open .split-view {
+		left: var(--sidebar-width);
+		right: 0;
+	}
+
+	[dir=rtl] body.sidebar-open #split-view,
+	[dir=rtl] body.sidebar-open .split-view{
+		right: var(--sidebar-width);
+		left: 0;
+	}
+}
+/*!rtl:end:ignore*/
+
 #sidebarContainer {
 	display: flex;
 	flex-direction: column;

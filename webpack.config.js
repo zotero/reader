@@ -39,9 +39,8 @@ function generateReaderConfig(build) {
 					use: {
 						loader: 'babel-loader',
 						options: {
-							presets: [
-								['@babel/preset-env', { useBuiltIns: false }],
-							],
+							presets: [['@babel/preset-env', { useBuiltIns: "usage", corejs: { version: "3.37" } }]],
+							plugins: ["@babel/plugin-transform-modules-commonjs"]
 						},
 					},
 				},
@@ -179,9 +178,8 @@ function generateViewConfig(build) {
 					use: {
 						loader: 'babel-loader',
 						options: {
-							presets: [
-								['@babel/preset-env', { useBuiltIns: false }],
-							],
+							presets: [['@babel/preset-env', { useBuiltIns: "usage", corejs: { version: "3.37" } }]],
+							plugins: ["@babel/plugin-transform-modules-commonjs"]
 						},
 					},
 				},
