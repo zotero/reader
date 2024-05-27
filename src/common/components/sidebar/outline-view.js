@@ -101,13 +101,9 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		);
 	}
 
-
-
-
-
 	return (
-		<div className="outline-view" data-tabstop="1">
-			{renderItems(outline)}
+		<div className={cx('outline-view', { loading: outline === null })} data-tabstop="1">
+			{outline === null ? <div className="spinner"/> : renderItems(outline)}
 		</div>
 	);
 }

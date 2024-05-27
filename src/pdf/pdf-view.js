@@ -29,7 +29,8 @@ import {
 	distanceBetweenRects,
 	getTransformFromRects,
 	getRotationDegrees,
-	normalizeDegrees
+	normalizeDegrees,
+	getRectsAreaSize
 } from './lib/utilities';
 import { debounceUntilScrollFinishes, normalizeKey } from '../common/lib/utilities';
 import {
@@ -54,6 +55,7 @@ import {
 	smoothPath
 } from './lib/path';
 import { History } from '../common/lib/history';
+import { predictPageLabels } from './lib/page-label-predictor';
 
 class PDFView {
 	constructor(options) {
@@ -142,6 +144,8 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
 			this._iframeWindow.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('printResolution', 300);
+			this._iframeWindow.PDFViewerApplicationOptions.set('enableScripting', false);
+			this._iframeWindow.PDFViewerApplicationOptions.set('disablePreferences', true);
 		};
 
 		window.addEventListener('webviewerloaded', () => {
@@ -179,7 +183,9 @@ class PDFView {
 				let y = event.target.scrollTop;
 
 				if (this._overlayPopup) {
-					this._onSetOverlayPopup();
+					this._overlayPopupDelayer.close(() => {});
+					this._selectedOverlay = null;
+					this._onSetOverlayPopup(null);
 				}
 
 				// TODO: Consider creating "getSelectionAnnotationPopup"
@@ -254,8 +260,8 @@ class PDFView {
 
 	async _init2() {
 		if (this._primary) {
-			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
-			this._onSetOutline(outline);
+			// let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
+			// this._onSetOutline(outline);
 			this._pdfRenderer.start();
 		}
 
@@ -358,7 +364,7 @@ class PDFView {
 			pdfView: this,
 			window: this._iframeWindow,
 			onUpdate: (thumbnails) => {
-				// TODO: When rendering a thumbnails it's also a good chance to getPageData with extracted pageLabel
+				// TODO: When rendering thumbnails it's also a good chance to getPageData with extracted pageLabel
 				this._onSetThumbnails(thumbnails);
 			}
 		});
@@ -377,13 +383,17 @@ class PDFView {
 		let pageIndex = originalPage.id - 1;
 
 		if (!this._pdfPages[pageIndex]) {
-			let t = Date.now();
 			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
 			this._pdfPages[pageIndex] = pageData;
 
-			if (pageData.pageLabel) {
-				this._onSetPageLabels({ ...this._pageLabels, [pageIndex]: pageData.pageLabel });
+			if (!this._pdfPageLabels) {
+				this._pdfPageLabels = await PDFViewerApplication.pdfDocument.getPageLabels();
 			}
+
+			// Re-calculate page labels whenever a new page data is loaded
+			let { pagesCount } = this._iframeWindow.PDFViewerApplication.pdfViewer;
+			let pageLabels = predictPageLabels(this._pdfPages, pagesCount, this._pdfPageLabels);
+			this._onSetPageLabels(pageLabels);
 		}
 
 		this._pages.push(page);
@@ -465,6 +475,10 @@ class PDFView {
 				page.render();
 			}
 		}
+	}
+
+	destroy() {
+		this._overlayPopupDelayer.destroy();
 	}
 
 	focus() {
@@ -732,20 +746,21 @@ class PDFView {
 			});
 		}
 		else if (location.pageLabel) {
-
+			let pageIndex = this._pageLabels.findIndex(x => x === location.pageLabel);
+			if (pageIndex !== -1) {
+				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
+			}
 		}
 		else if (location.pageNumber) {
-			// let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
-			// if (pageIndex === -1) {
-			// 	if (parseInt(location.pageNumber) == location.pageNumber) {
-			// 		pageIndex = parseInt(location.pageNumber) - 1;
-			// 	}
-			// }
-			let pageIndex = parseInt(location.pageNumber) - 1;
+			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
 			if (pageIndex !== -1) {
-				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-					pageNumber: pageIndex + 1
-				});
+				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
+			}
+			else {
+				let pageIndex = parseInt(location.pageNumber) - 1;
+				if (pageIndex !== -1) {
+					this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
+				}
 			}
 		}
 		if (!skipHistory) {
@@ -966,14 +981,14 @@ class PDFView {
 			// Calculate text resizing handle rectangles taking into account text rotation
 			if (this._pdfPages[annotation.position.pageIndex]
 				&& (!annotation.position.nextPageRects || this._pdfPages[annotation.position.pageIndex + 1])) {
-				let structuredText = this._pdfPages[annotation.position.pageIndex].structuredText;
+				let { chars } = this._pdfPages[annotation.position.pageIndex];
 				let startHandle;
 				let endHandle;
 				let padding = 3;
 				if (annotation.position.nextPageRects) {
 					if (annotation.position.pageIndex + 1 === position.pageIndex) {
-						let structuredText = this._pdfPages[annotation.position.pageIndex + 1].structuredText;
-						let rotation = getRectRotationOnText(structuredText, annotation.position.nextPageRects.at(-1));
+						let { chars } = this._pdfPages[annotation.position.pageIndex + 1];
+						let rotation = getRectRotationOnText(chars, annotation.position.nextPageRects.at(-1));
 						// Add page rotation to text rotation
 						rotation += this.getViewportRotation(annotation.position.pageIndex + 1);
 						rotation = normalizeDegrees(rotation);
@@ -988,7 +1003,7 @@ class PDFView {
 						endHandle = { rect, vertical: [90, 270].includes(rotation) };
 					}
 					else {
-						let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+						let rotation = getRectRotationOnText(chars, annotation.position.rects[0]);
 						// Add page rotation to text rotation
 						rotation += this.getViewportRotation(annotation.position.pageIndex);
 						rotation = normalizeDegrees(rotation);
@@ -1004,7 +1019,7 @@ class PDFView {
 					}
 				}
 				else {
-					let rotation = getRectRotationOnText(structuredText, annotation.position.rects[0]);
+					let rotation = getRectRotationOnText(chars, annotation.position.rects[0]);
 					// Add page rotation to text rotation
 					rotation += this.getViewportRotation(annotation.position.pageIndex);
 					rotation = normalizeDegrees(rotation);
@@ -1017,7 +1032,7 @@ class PDFView {
 						|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
 					);
 					startHandle = { rect, vertical: [90, 270].includes(rotation) };
-					rotation = getRectRotationOnText(structuredText, annotation.position.rects.at(-1));
+					rotation = getRectRotationOnText(chars, annotation.position.rects.at(-1));
 					// Add page rotation to text rotation
 					rotation += this.getViewportRotation(annotation.position.pageIndex);
 					rotation = normalizeDegrees(rotation);
@@ -1185,11 +1200,34 @@ class PDFView {
 		if (!pdfPage) {
 			return;
 		}
+		let selectableOverlays = [];
 		for (let overlay of pdfPage.overlays) {
 			if (intersectAnnotationWithPoint(overlay.position, position)) {
-				return overlay;
+				selectableOverlays.push(overlay);
 			}
 		}
+
+		selectableOverlays.sort((a, b) => {
+			let aSize, bSize;
+
+			if (a.position.rects) {
+				aSize = getRectsAreaSize(a.position.rects);
+			}
+			else if (a.position.paths) {
+				aSize = 0;
+			}
+
+			if (b.position.rects) {
+				bSize = getRectsAreaSize(b.position.rects);
+			}
+			else if (b.position.paths) {
+				bSize = 0;
+			}
+
+			return aSize - bSize;
+		});
+
+		return selectableOverlays[0];
 	}
 
 	_getPageAnnotations(pageIndex) {
@@ -1223,26 +1261,18 @@ class PDFView {
 			}
 		}
 
-		function getAnnotationAreaSize(annotation) {
-			let areaSize = 0;
-			for (let rect of annotation.position.rects) {
-				areaSize += (rect[2] - rect[0]) * (rect[3] - rect[1]);
-			}
-			return areaSize;
-		}
-
 		selectableAnnotations.sort((a, b) => {
 			let aSize, bSize;
 
 			if (a.position.rects) {
-				aSize = getAnnotationAreaSize(a);
+				aSize = getRectsAreaSize(a.position.rects);
 			}
 			else if (a.position.paths) {
 				aSize = 0;
 			}
 
 			if (b.position.rects) {
-				bSize = getAnnotationAreaSize(b);
+				bSize = getRectsAreaSize(b.position.rects);
 			}
 			else if (b.position.paths) {
 				bSize = 0;
@@ -1290,11 +1320,11 @@ class PDFView {
 			}
 		}
 
-		let overlay = this._getSelectableOverlay(position);
-		if (overlay) {
-			let action = { type: 'overlay', overlay };
-			return { action, selectAnnotations: [] };
-		}
+		// let overlay = this._getSelectableOverlay(position);
+		// if (overlay) {
+		// 	let action = { type: 'overlay', overlay };
+		// 	return { action, selectAnnotations: [] };
+		// }
 
 		let selectedAnnotations = this.getSelectedAnnotations();
 		let selectAnnotations = selectedAnnotations;
@@ -1499,15 +1529,16 @@ class PDFView {
 		let page = this.getPageByIndex(position.pageIndex);
 		let { action, selectAnnotations } = this.getActionAtPosition(position, event);
 
-		if (action.type === 'overlay') {
-			if (action.overlay.type === 'internal-link') {
-				this.navigate({ dest: action.overlay.dest });
-			}
-			else if (action.overlay.type === 'external-link') {
-				this._onOpenLink(action.overlay.url);
-			}
-			return;
-		}
+		// if (action.type === 'overlay') {
+		// 	// TODO: Only link overlay should block text selection, while citation and reference shouldn't
+		// 	if (action.overlay.type === 'internal-link') {
+		// 		this.navigate({ dest: action.overlay.dest });
+		// 	}
+		// 	else if (action.overlay.type === 'external-link') {
+		// 		this._onOpenLink(action.overlay.url);
+		// 	}
+		// 	return;
+		// }
 
 		this.action = action;
 		this.pointerDownPosition = position;
@@ -1615,7 +1646,9 @@ class PDFView {
 				this._selectionRanges = getLineSelectionRanges(this._pdfPages, position, position);
 				this.action.mode = 'lines';
 			}
-			action.triggered = true;
+			if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
+				action.triggered = true;
+			}
 		}
 
 		if (action.selection) {
@@ -1662,37 +1695,54 @@ class PDFView {
 		let dragging = !!event.dataTransfer;
 		// Set action cursor on hover
 		if (!this.pointerDownPosition) {
-			this.hover = null;
+			this._hover = null;
 			let position = this.pointerEventToPosition(event);
 			if (position) {
 				let { action, selectAnnotations } = this.getActionAtPosition(position, event);
-				this.updateCursor(action);
-				if (action.type === 'overlay') {
-					if (this._selectedOverlay !== action.overlay) {
-						this._overlayPopupDelayer.open(action.overlay, async () => {
-							this._selectedOverlay = action.overlay;
-							let rect = this.getClientRect(action.overlay.position.rects[0], action.overlay.position.pageIndex);
-							let overlayPopup = { ...action.overlay, rect };
+
+
+
+
+				let overlay = this._getSelectableOverlay(position);
+
+
+				let overlayWithPopup = false;
+				let clickableOverlay = false;
+				if (overlay) {
+					if (['citation', 'reference'].includes(overlay.type)
+						|| overlay.type === 'internal-link' && overlay.source === 'matched') {
+						overlayWithPopup = true;
+					}
+					if (['internal-link', 'external-link'].includes(overlay.type)) {
+						clickableOverlay = true;
+					}
+
+					this._hover = overlay.position;
+
+				}
+
+				if (clickableOverlay) {
+					this.updateCursor({ type: 'overlay' });
+				}
+				else {
+					this.updateCursor(action);
+				}
+
+				if (overlayWithPopup) {
+					if (this._selectedOverlay !== overlay) {
+						this._overlayPopupDelayer.open(overlay, async () => {
+							this._selectedOverlay = overlay;
+							let rect = this.getClientRect(overlay.position.rects[0], overlay.position.pageIndex);
+							let overlayPopup = { ...overlay, rect };
 							if (overlayPopup.type === 'internal-link') {
-								// Temporary implementation of internal link preview
-								let { x, y, pageIndex } = await this._getPositionFromDestination(action.overlay.dest);
-								let [left, bottom, right, top] = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex].viewport.viewBox;
-								let r = [x, y - 300, x + 300, y];
-								r = [
-									Math.max(r[0], left),
-									Math.max(r[1], bottom),
-									Math.min(r[2], right),
-									Math.min(r[3], top)
-								];
-								overlayPopup.width = (r[2] - r[0]) * 1.3;
-								overlayPopup.height = (r[3] - r[1]) * 1.3;
-								let position = {
-									pageIndex,
-									rects: [r]
-								};
-								overlayPopup.image = await this._pdfRenderer._renderPosition(position);
+								if (overlayPopup.source === 'matched') {
+									overlayPopup.image = await this._pdfRenderer._renderPosition(overlay.previewPosition);
+									this._onSetOverlayPopup(overlayPopup);
+								}
 							}
-							this._onSetOverlayPopup(overlayPopup);
+							else if (['citation', 'reference'].includes(overlay.type)){
+								this._onSetOverlayPopup(overlayPopup);
+							}
 						});
 					}
 				}
@@ -1702,9 +1752,6 @@ class PDFView {
 						this._onSetOverlayPopup(null);
 					});
 				}
-				if (selectAnnotations?.length) {
-					this.hover = { pageIndex: position.pageIndex, id: selectAnnotations[0].id };
-				}
 			}
 			else {
 				this.updateCursor();
@@ -1712,6 +1759,10 @@ class PDFView {
 			this._render();
 			return;
 		}
+
+		this._selectedOverlay = null;
+		this._onSetOverlayPopup(null);
+
 		let action = this.action;
 		if (!action) {
 			return;
@@ -1900,7 +1951,9 @@ class PDFView {
 			else if (action.mode === 'lines') {
 				this._selectionRanges = getLineSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
-			action.triggered = true;
+			if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
+				action.triggered = true;
+			}
 		}
 		// Only note and image annotations are supported
 		else if (action.type === 'moveAndDrag' && dragging) {
@@ -2021,6 +2074,20 @@ class PDFView {
 
 		if (this.pointerDownPosition) {
 			// let position = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
+
+			if (!this.action.triggered) {
+				let overlay = this._getSelectableOverlay(position);
+				let pointerDownOverlay = this._getSelectableOverlay(this.pointerDownPosition);
+				if (overlay && overlay === pointerDownOverlay) {
+					if (overlay.type === 'internal-link') {
+						this.navigate({ position: overlay.destinationPosition });
+					}
+					else if (overlay.type === 'external-link') {
+						this._onOpenLink(overlay.url);
+					}
+				}
+			}
+
 			let action = this.action;
 			if (action) {
 				if (action.triggered) {
@@ -2179,7 +2246,7 @@ class PDFView {
 
 	cancel() {
 		this.setSelection();
-		this.hover = null;
+		this._hover = null;
 		this.action = null;
 		this.updateCursor();
 		this._render();
@@ -2534,6 +2601,13 @@ class PDFView {
 
 	setSpreadMode(mode) {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchspreadmode', { mode });
+	}
+
+	async setSidebarView(sidebarView) {
+		if (sidebarView === 'outline') {
+			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
+			this._onSetOutline(outline);
+		}
 	}
 
 	async _getPositionFromDestination(dest) {

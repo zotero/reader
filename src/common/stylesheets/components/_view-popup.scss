@@ -55,7 +55,6 @@
 		display: flex;
 		align-items: center;
 	}
-
 }
 
 .selection-popup {
@@ -113,12 +112,57 @@
 	padding: 5px;
 
 	img {
+		max-width: 400px;
 		@include pdf-page-image-dark-light;
 	}
 }
 
 .link-popup {
 	padding: 4px;
+}
+
+.citation-popup {
+	padding: 5px;
+
+	.inner {
+		width: 400px;
+		max-height: 250px;
+		overflow-y: auto;
+
+		.reference-row {
+			//user-select: none;
+			//cursor: default;
+			padding: 5px;
+			border-radius: 5px;
+			word-break: break-all;
+
+			//&:hover, &:focus {
+			//	outline: none;
+			//	box-shadow: none;
+			//	background: var(--fill-quinary);
+			//}
+		}
+	}
+}
+
+.reference-popup {
+	padding: 5px;
+	width: 400px;
+	max-height: 250px;
+
+	.reference-row {
+		//user-select: none;
+		//cursor: default;
+		padding: 5px;
+		border-radius: 5px;
+		word-break: break-all;
+
+		//&:hover, &:focus {
+		//	outline: none;
+		//	box-shadow: none;
+		//	background: var(--fill-quinary);
+		//}
+	}
 }
 
 .annotation-popup {

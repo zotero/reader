@@ -1,32 +1,38 @@
 #!/bin/bash
 
+# Set paths for the PDF.js build and target directories
 PDFJS_BUILD=./pdfjs/pdf.js/build/generic-legacy
-DEV_BUILD=./build/dev/pdf
-WEB_BUILD=./build/web/pdf
-ZOTERO_BUILD=./build/zotero/pdf
+BUILD_BASE=./build
 
-rm -rf $DEV_BUILD
-rm -rf $WEB_BUILD
-rm -rf $ZOTERO_BUILD
+# Define builds array
+BUILDS=("dev" "web" "zotero")
 
+# Move into the PDF.js directory, install dependencies, and build
 cd pdfjs/pdf.js
 npm ci
-# Zotero with FF 60 ESR runs only the `legacy` build
+# Zotero with FF 115 ESR runs only the `legacy` build
 npx gulp generic-legacy
 cd ../../
 
-mkdir -p build/dev/pdf
-cp -r $PDFJS_BUILD/* $DEV_BUILD/
-cp -r pdfjs/viewer.css $DEV_BUILD/web/
-rm $DEV_BUILD/web/*.pdf
+# Loop over each build and set up directories
+for BUILD in "${BUILDS[@]}"; do
+    BUILD_DIR="$BUILD_BASE/$BUILD/pdf"
 
-mkdir -p build/web/pdf
-cp -r $PDFJS_BUILD/* $WEB_BUILD/
-cp -r pdfjs/viewer.css $WEB_BUILD/web/
-rm $WEB_BUILD/web/*.pdf
+    # Remove the existing build directory
+    rm -rf "$BUILD_DIR"
 
-mkdir -p build/zotero/pdf
-cp -r $PDFJS_BUILD/* $ZOTERO_BUILD/
-cp -r pdfjs/viewer.css $ZOTERO_BUILD/web/
-rm $ZOTERO_BUILD/web/*.pdf
-rm $ZOTERO_BUILD/web/*.map
+    # Create necessary directories
+    mkdir -p "$BUILD_DIR/build"
+    mkdir -p "$BUILD_DIR/web/images"
+
+    # Copy files from PDFJS_BUILD to the current build directory
+    cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
+    cp -r "$PDFJS_BUILD/build/pdf.mjs" "$BUILD_DIR/build/"
+    cp -r "$PDFJS_BUILD/build/pdf.worker.mjs" "$BUILD_DIR/build/"
+    cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
+    cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
+    cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
+    cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
+    cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
+    cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
+done

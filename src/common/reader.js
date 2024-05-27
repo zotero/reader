@@ -139,8 +139,8 @@ class Reader {
 			colorScheme: options.colorScheme,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
-			outline: [],
-			pageLabels: {},
+			outline: null, // null — loading, [] — empty
+			pageLabels: [],
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
 			sidebarView: 'annotations',
@@ -409,6 +409,11 @@ class Reader {
 			this._secondaryView?.setFontFamily(this._state.fontFamily);
 		}
 
+		if (init || this._state.sidebarView !== previousState.sidebarView) {
+			this._primaryView?.setSidebarView?.(this._state.sidebarView);
+			this._secondaryView?.setSidebarView?.(this._state.sidebarView);
+		}
+
 		if (init || this._state.sidebarOpen !== previousState.sidebarOpen) {
 			if (this._state.sidebarOpen) {
 				document.body.classList.add('sidebar-open');
@@ -436,6 +441,7 @@ class Reader {
 			}
 			// Unsplit
 			else if ((previousState.splitType || init) && !this._state.splitType) {
+				this._secondaryView?.destroy();
 				this._secondaryView = null;
 				this._secondaryViewContainer.replaceChildren();
 				this._lastViewPrimary = true;

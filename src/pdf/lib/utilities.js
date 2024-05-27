@@ -505,3 +505,11 @@ export function darkenHex(hex, percent) {
 	b = Math.max(0, b * (1 - percent / 100));
 	return rgbToHex(Math.round(r), Math.round(g), Math.round(b));
 }
+
+export function getRectsAreaSize(rects) {
+	let areaSize = 0;
+	for (let rect of rects) {
+		areaSize += (rect[2] - rect[0]) * (rect[3] - rect[1]);
+	}
+	return areaSize;
+}

@@ -73,8 +73,7 @@ function isDash() {
 	return true;
 }
 
-function getRangeBySelection({ structuredText, anchor, head, reverse }) {
-	let chars = flattenChars(structuredText);
+function getRangeBySelection({ chars, anchor, head, reverse }) {
 	// Note: Offsets can be between 0 and chars.length (the cursor can after the last char)
 	if (!chars.length) {
 		return null;
@@ -133,11 +132,10 @@ function getRangeBySelection({ structuredText, anchor, head, reverse }) {
 		}
 	}
 
-	return getRange(structuredText, anchorOffset, headOffset);
+	return getRange(chars, anchorOffset, headOffset);
 }
 
-function getRangeByHighlight(structuredText, rects) {
-	let chars = flattenChars(structuredText);
+function getRangeByHighlight(chars, rects) {
 	if (!chars.length) {
 		return null;
 	}
@@ -164,7 +162,7 @@ function getRangeByHighlight(structuredText, rects) {
 		return null;
 	}
 
-	let range = getRange(structuredText, anchorOffset, headOffset);
+	let range = getRange(chars, anchorOffset, headOffset);
 	range.offset = range.anchorOffset;
 	range.from = range.anchorOffset;
 	range.to = range.headOffset;
@@ -192,7 +190,47 @@ function getLineSelectionRect(line, charFrom, charTo) {
 	}
 }
 
-function getRange(structuredText, anchorOffset, headOffset) {
+function getRectsFromChars(chars) {
+	let lineRects = [];
+	let currentLineRect = null;
+	for (let char of chars) {
+		if (!currentLineRect) {
+			currentLineRect = char.inlineRect.slice();
+		}
+		currentLineRect = [
+			Math.min(currentLineRect[0], char.inlineRect[0]),
+			Math.min(currentLineRect[1], char.inlineRect[1]),
+			Math.max(currentLineRect[2], char.inlineRect[2]),
+			Math.max(currentLineRect[3], char.inlineRect[3])
+		];
+		if (char.lineBreakAfter) {
+			lineRects.push(currentLineRect);
+			currentLineRect = null;
+		}
+	}
+	if (currentLineRect) {
+		lineRects.push(currentLineRect);
+	}
+	return lineRects;
+}
+
+function getTextFromChars(chars) {
+	let text = [];
+	for (let char of chars) {
+		if (!char.ignorable) {
+			text.push(char.c);
+		}
+		if (char.spaceAfter) {
+			text.push(' ');
+		}
+		if (char.paragraphBreakAfter) {
+			text.push(' ');
+		}
+	}
+	return text.join('').trim();
+}
+
+function getRange(chars, anchorOffset, headOffset) {
 	let charStart;
 	let charEnd;
 	if (anchorOffset < headOffset) {
@@ -207,244 +245,119 @@ function getRange(structuredText, anchorOffset, headOffset) {
 		return { collapsed: true, anchorOffset, headOffset, rects: [], text: '' };
 	}
 
-	// Get text
-	let text = [];
-	let extracting = false;
-
-	let { paragraphs } = structuredText;
-
-	let n = 0;
-
-	loop1: for (let paragraph of paragraphs) {
-		for (let line of paragraph.lines) {
-			for (let word of line.words) {
-				for (let char of word.chars) {
-					if (n === charStart) {
-						extracting = true;
-					}
-					if (extracting) {
-						text.push(char.c);
-					}
-					if (n === charEnd) {
-						break loop1;
-					}
-					n++;
-				}
-				if (extracting && word.spaceAfter) {
-					text.push(' ');
-				}
-			}
-			if (line !== paragraph.lines.at(-1)) {
-				if (line.hyphenated) {
-					text.pop();
-				}
-				else {
-					text.push(' ');
-				}
-			}
-		}
-		// Especially important when a single line is incorrectly recognized as a paragraph
-		text.push(' ');
-	}
-	text = text.join('');
-	// Get rects
-	extracting = false;
-	let rects = [];
-	n = 0;
-	loop2: for (let paragraph of paragraphs) {
-		for (let line of paragraph.lines) {
-			let charFrom = null;
-			let charTo = null;
-			for (let word of line.words) {
-				for (let char of word.chars) {
-					if (n === charStart || extracting && !charFrom) {
-						charFrom = char;
-						extracting = true;
-					}
-					if (extracting) {
-						charTo = char;
-						if (n === charEnd) {
-							rects.push(getLineSelectionRect(line, charFrom, charTo));
-							break loop2;
-						}
-					}
-					n++;
-				}
-			}
-			if (extracting && charFrom && charTo) {
-				rects.push(getLineSelectionRect(line, charFrom, charTo));
-				charFrom = null;
-			}
-		}
-	}
-
+	let rangeChars = chars.slice(charStart, charEnd + 1);
+	let text = getTextFromChars(rangeChars);
+	let rects = getRectsFromChars(rangeChars);
 	rects = rects.map(rect => rect.map(value => parseFloat(value.toFixed(3))));
 	return { anchorOffset, headOffset, rects, text };
 }
 
-function getNextLineClosestOffset(structuredText, offset) {
-	let indexes = getIndexesByCharOffset(structuredText, offset);
-	let currentLine = structuredText.paragraphs[indexes.pIndex].lines[indexes.lIndex];
-	let currentChar = currentLine.words[indexes.wIndex].chars[indexes.cIndex];
-
-	// Check if there's a next line
-	if (indexes.lIndex + 1 >= structuredText.paragraphs[indexes.pIndex].lines.length) {
-		return null; // There is no next line
+function getNextLineClosestOffset(chars, offset) {
+	let currentLineEnd = chars.indexOf(x => x.lineBreakAfter, offset);
+	if (currentLineEnd === chars.length - 1) {
+		return null;
 	}
-
-	let nextLine = structuredText.paragraphs[indexes.pIndex].lines[indexes.lIndex + 1];
-	let closestChar = null;
-	let closestDistance = Infinity;
-	let offsetStart = offset - indexes.cIndex; // Offset at the start of the next line
-	let closestOffset = 0;
-
-	nextLine.words.forEach((word, wordIndex) => {
-		word.chars.forEach((char, charIndex) => {
-			let distance = Math.abs(char.rect[0] - currentChar.rect[0]);
-			if (distance < closestDistance) {
-				closestDistance = distance;
-				closestChar = char;
-				closestOffset = offsetStart + word.chars.slice(0, wordIndex).reduce((total, word) => total + word.chars.length, 0) + charIndex;
-			}
-		});
-		offsetStart += word.chars.length;
-	});
-
+	let nextLineStart = currentLineEnd + 1;
+	let nextLineEnd = chars.indexOf(x => x.lineBreakAfter, nextLineStart);
+	let closestOffset = null;
+	let closestDist = null;
+	let currentChar = chars[offset];
+	for (let i = nextLineStart; i <= nextLineEnd; i++) {
+		let char = chars[i];
+		if (closestDist === null || rectsDist(char.rect, currentChar.rect) < closestDist) {
+			closestDist = rectsDist(char.rect, currentChar.rect);
+			closestOffset = i;
+		}
+	}
 	return closestOffset;
 }
 
-function getPrevLineClosestOffset(structuredText, offset) {
-	let indexes = getIndexesByCharOffset(structuredText, offset);
-	let currentLine = structuredText.paragraphs[indexes.pIndex].lines[indexes.lIndex];
-	let currentChar = currentLine.words[indexes.wIndex].chars[indexes.cIndex];
-
-	// Check if there's a previous line
-	if (indexes.lIndex - 1 < 0) {
-		return null; // There is no previous line
+function getPrevLineClosestOffset(chars, offset) {
+	let prevLineEnd = chars.lastIndexOf(x => x.lineBreakAfter, offset);
+	let prevLineStart = chars.lastIndexOf(x => x.lineBreakAfter, prevLineEnd - 1);
+	if (prevLineStart === -1) {
+		return null;
 	}
-
-	let prevLine = structuredText.paragraphs[indexes.pIndex].lines[indexes.lIndex - 1];
-	let closestChar = null;
-	let closestDistance = Infinity;
-	let offsetStart = offset - indexes.cIndex; // Offset at the start of the previous line
-	let closestOffset = 0;
-
-	prevLine.words.forEach((word, wordIndex) => {
-		word.chars.forEach((char, charIndex) => {
-			let distance = Math.abs(char.rect[0] - currentChar.rect[0]);
-			if (distance < closestDistance) {
-				closestDistance = distance;
-				closestChar = char;
-				closestOffset = offsetStart - word.chars.slice(0, wordIndex).reduce((total, word) => total + word.chars.length, 0) - charIndex;
-			}
-		});
-		offsetStart -= word.chars.length;
-	});
-
+	else {
+		prevLineStart++;
+	}
+	let closestOffset = null;
+	let closestDist = null;
+	let currentChar = chars[offset];
+	for (let i = prevLineStart; i <= prevLineEnd; i++) {
+		let char = chars[i];
+		if (closestDist === null || rectsDist(char.rect, currentChar.rect) < closestDist) {
+			closestDist = rectsDist(char.rect, currentChar.rect);
+			closestOffset = i;
+		}
+	}
 	return closestOffset;
 }
 
-function getClosestWord(structuredText, rect) {
-	let closestWord = null;
-	let closestDistance = Infinity;
-	let offsetStart = 0;
-	let offsetEnd = 0;
-
-	structuredText.paragraphs.forEach(paragraph => {
-		paragraph.lines.forEach(line => {
-			line.words.forEach(word => {
-				let distance = rectsDist(rect, word.rect);
-				if (distance < closestDistance) {
-					closestDistance = distance;
-					closestWord = word;
-
-					offsetEnd = offsetStart + word.chars.length;
-				}
-				offsetStart += word.chars.length;
-			});
-		});
-	});
-
+function getClosestWord(chars, rect) {
+	let closestWordStart;
+	let closestWordEnd;
+	let closestWordDistance = null;
+	let start = 0;
+	for (let i = 0; i < chars.length; i++) {
+		let char = chars[i];
+		if (char.wordBreakAfter) {
+			let end = i;
+			let wordChars = chars.slice(start, end + 1);
+			let wordRect = [
+				Math.min(...wordChars.map(x => x.inlineRect[0])),
+				Math.min(...wordChars.map(x => x.inlineRect[1])),
+				Math.max(...wordChars.map(x => x.inlineRect[2])),
+				Math.max(...wordChars.map(x => x.inlineRect[3])),
+			];
+			let distance = rectsDist(rect, wordRect);
+			if (closestWordDistance === null || distance < closestWordDistance) {
+				closestWordDistance = distance;
+				closestWordStart = start;
+				closestWordEnd = end;
+			}
+			start = end + 1;
+		}
+	}
 	return {
-		anchorOffset: offsetEnd - closestWord.chars.length,
-		headOffset: offsetEnd
+		anchorOffset: closestWordStart,
+		headOffset: closestWordEnd + 1
 	};
 }
 
-function getClosestLine(structuredText, rect) {
-	let closestLine = null;
-	let closestDistance = Infinity;
-	let offsetStart = 0;
-	let offsetEnd = 0;
-
-	structuredText.paragraphs.forEach(paragraph => {
-		paragraph.lines.forEach(line => {
-			let lineLength = line.words.reduce((total, word) => {
-				return total + word.chars.length;
-			}, 0);
-
-			let distance = rectsDist(rect, line.rect);
-			if (distance < closestDistance) {
-				closestDistance = distance;
-				closestLine = line;
-				offsetEnd = offsetStart + lineLength;
+function getClosestLine(chars, rect) {
+	let closestLineStart;
+	let closestLineEnd;
+	let closestLineDistance = null;
+	let start = 0;
+	for (let i = 0; i < chars.length; i++) {
+		let char = chars[i];
+		if (char.lineBreakAfter) {
+			let end = i;
+			let lineChars = chars.slice(start, end + 1);
+			let lineRect = [
+				Math.min(...lineChars.map(x => x.inlineRect[0])),
+				Math.min(...lineChars.map(x => x.inlineRect[1])),
+				Math.max(...lineChars.map(x => x.inlineRect[2])),
+				Math.max(...lineChars.map(x => x.inlineRect[3])),
+			];
+			let distance = rectsDist(rect, lineRect);
+			if (closestLineDistance === null || distance < closestLineDistance) {
+				closestLineDistance = distance;
+				closestLineStart = start;
+				closestLineEnd = end;
 			}
-			offsetStart += lineLength;
-		});
-	});
-
+			start = end + 1;
+		}
+	}
 	return {
-		line: closestLine,
-		anchorOffset: offsetEnd - closestLine.words.reduce((total, word) => {
-			return total + word.chars.length;
-		}, 0),
-		headOffset: offsetEnd
+		anchorOffset: closestLineStart,
+		headOffset: closestLineEnd + 1
 	};
 }
 
-function getFlattenedCharsByIndex(pdfPages, pageIndex) {
-	let structuredText = pdfPages[pageIndex].structuredText;
-	return flattenChars(structuredText);
-}
-
-export function flattenChars(structuredText) {
-	let flatCharsArray = [];
-	for (let paragraph of structuredText.paragraphs) {
-		for (let line of paragraph.lines) {
-			for (let word of line.words) {
-				for (let charObj of word.chars) {
-					flatCharsArray.push(charObj);
-				}
-			}
-		}
-	}
-	return flatCharsArray;
-}
-
-function getIndexesByCharOffset(structuredText, targetOffset) {
-	let currentOffset = 0;
-
-	for (let pIndex = 0; pIndex < structuredText.paragraphs.length; pIndex++) {
-		let paragraph = structuredText.paragraphs[pIndex];
-		for (let lIndex = 0; lIndex < paragraph.lines.length; lIndex++) {
-			let line = paragraph.lines[lIndex];
-			for (let wIndex = 0; wIndex < line.words.length; wIndex++) {
-				let word = line.words[wIndex];
-				for (let cIndex = 0; cIndex < word.chars.length; cIndex++) {
-					if (currentOffset === targetOffset) {
-						return { pIndex, lIndex, wIndex, cIndex };
-					}
-					currentOffset++;
-				}
-			}
-		}
-	}
-
-	throw new Error('Target offset is out of range');
-}
-
-export function extractRange({ structuredText, pageIndex, anchor, head, reverse }) {
-	let range = getRangeBySelection({ structuredText, anchor, head, reverse });
+export function extractRange({ chars, pageIndex, anchor, head, reverse }) {
+	let range = getRangeBySelection({ chars, anchor, head, reverse });
 	if (!range) {
 		return null;
 	}
@@ -457,8 +370,8 @@ export function extractRange({ structuredText, pageIndex, anchor, head, reverse 
 	return range;
 }
 
-export function extractRangeByRects({ structuredText, pageIndex, rects }) {
-	let range = getRangeByHighlight(structuredText, rects);
+export function extractRangeByRects({ chars, pageIndex, rects }) {
+	let range = getRangeByHighlight(chars, rects);
 	if (!range) {
 		return null;
 	}
@@ -480,7 +393,7 @@ export function getSortIndex(pdfPages, position) {
 	let offset = 0;
 	let top = 0;
 	if (pdfPages[position.pageIndex]) {
-		let chars = getFlattenedCharsByIndex(pdfPages, position.pageIndex);
+		let { chars } = pdfPages[position.pageIndex];
 		let viewBox = pdfPages[position.pageIndex].viewBox;
 		let rect = getTopMostRectFromPosition(position) || getPositionBoundingRect(position);
 		offset = chars.length && getClosestOffset(chars, rect) || 0;
@@ -525,15 +438,15 @@ export function getModifiedSelectionRanges(pdfPages, selectionRanges, modifier) 
 		head.offset++;
 	}
 	else if (modifier === 'up') {
-		let structuredText = pdfPages[head.pageIndex].structuredText;
-		head.offset = getPrevLineClosestOffset(structuredText, head.pageIndex, head.offset);
+		let { chars } = pdfPages[head.pageIndex];
+		head.offset = getPrevLineClosestOffset(chars, head.pageIndex, head.offset);
 		if (head.offset === null) {
 			return [];
 		}
 	}
 	else if (modifier === 'down') {
-		let structuredText = pdfPages[head.pageIndex].structuredText;
-		head.offset = getNextLineClosestOffset(structuredText, head.pageIndex, head.offset);
+		let { chars } = pdfPages[head.pageIndex];
+		head.offset = getNextLineClosestOffset(chars, head.pageIndex, head.offset);
 		if (head.offset === null) {
 			return [];
 		}
@@ -549,10 +462,10 @@ export function getWordSelectionRanges(pdfPages, anchorPosition, headPosition) {
 	if (!pdfPages[anchorPosition.pageIndex]) {
 		return [];
 	}
-	let structuredText = pdfPages[anchorPosition.pageIndex].structuredText;
-	let anchorWord = getClosestWord(structuredText, anchorPosition.rects[0]);
-	structuredText = pdfPages[headPosition.pageIndex].structuredText;
-	let headWord = getClosestWord(structuredText, headPosition.rects[0]);
+	let { chars } = pdfPages[anchorPosition.pageIndex];
+	let anchorWord = getClosestWord(chars, anchorPosition.rects[0]);
+	chars = pdfPages[headPosition.pageIndex].chars;
+	let headWord = getClosestWord(chars, headPosition.rects[0]);
 	if (!anchorWord || !headWord) {
 		return [];
 	}
@@ -574,10 +487,10 @@ export function getLineSelectionRanges(pdfPages, anchorPosition, headPosition) {
 	if (!pdfPages[anchorPosition.pageIndex]) {
 		return [];
 	}
-	let structuredText = pdfPages[anchorPosition.pageIndex].structuredText;
-	let anchorLine = getClosestLine(structuredText, anchorPosition.rects[0]);
-	structuredText = pdfPages[headPosition.pageIndex].structuredText;
-	let headLine = getClosestLine(structuredText, headPosition.rects[0]);
+	let { chars } = pdfPages[anchorPosition.pageIndex];
+	let anchorLine = getClosestLine(chars, anchorPosition.rects[0]);
+	chars = pdfPages[headPosition.pageIndex].chars;
+	let headLine = getClosestLine(chars, headPosition.rects[0]);
 	if (!anchorLine || !headLine) {
 		return [];
 	}
@@ -593,6 +506,143 @@ export function getLineSelectionRanges(pdfPages, anchorPosition, headPosition) {
 		head.offset = headLine.anchorOffset;
 	}
 	return getSelectionRanges(pdfPages, anchor, head);
+}
+
+// Extract character array from given selectionRanges and pdfPages
+export function getCharsFromSelectionRanges(pdfPages, selectionRanges) {
+	const charsArray = [];
+
+	// Iterate over each selectionRange to directly access characters
+	selectionRanges.forEach(selection => {
+		const pageIndex = selection.position.pageIndex;
+		const page = pdfPages[pageIndex];
+
+		if (!page) return; // Skip if page is not available
+
+		let { chars } = page;
+
+		// Calculate character range based on anchor and head offsets
+		const anchorOffset = selection.anchorOffset;
+		const headOffset = selection.headOffset;
+		const start = Math.min(anchorOffset, headOffset);
+		const end = Math.max(anchorOffset, headOffset);
+
+		// Retrieve characters from the calculated range
+		charsArray.push(...chars.slice(start, end));
+	});
+
+	return charsArray;
+}
+
+function applySelectionRangeIsolation(pdfPages, selectionRanges) {
+	if (selectionRanges[0].collapsed === true) {
+		return selectionRanges;
+	}
+
+	let chars = getCharsFromSelectionRanges(pdfPages, selectionRanges);
+	let isolated;
+
+	let start;
+	if (selectionRanges[0].anchor) {
+		if (selectionRanges[0].head) {
+			start = selectionRanges[0].anchorOffset < selectionRanges[0].headOffset;
+		}
+		else {
+			start = true;
+		}
+	}
+	else {
+		start = selectionRanges.at(-1).anchorOffset < selectionRanges.at(-1).headOffset;
+	}
+
+	if (start) {
+		isolated = !!chars[0].isolated;
+	}
+	else {
+		isolated = !!chars.at(-1).isolated;
+	}
+
+	if (isolated) {
+		chars = chars.filter(x => x.isolated);
+	}
+	else {
+		chars = chars.filter(x => !x.isolated);
+
+	}
+
+	if (chars.length === 0) return [];
+
+	let reversed = selectionRanges[0].headOffset < selectionRanges[0].anchorOffset;
+
+	selectionRanges = [];
+	let currentRange = {
+		pageIndex: chars[0].pageIndex,
+		anchorOffset: chars[0].offset,
+		headOffset: chars[0].offset
+	};
+
+	for (let i = 0; i < chars.length; i++) {
+		const char = chars[i];
+
+		if (char.pageIndex !== currentRange.pageIndex) {
+			// Finish the current range and add it to the array
+			selectionRanges.push(currentRange);
+
+			// Start a new range
+			currentRange = {
+				pageIndex: char.pageIndex,
+				anchorOffset: char.offset,
+				headOffset: char.offset
+			};
+		} else {
+			// Extend the current range
+			currentRange.headOffset = char.offset + 1;
+		}
+	}
+
+	// Add the last range after the loop
+	selectionRanges.push(currentRange);
+
+	if (reversed) {
+		for (let selectionRange of selectionRanges) {
+			let tmp = selectionRange.anchorOffset;
+			selectionRange.anchorOffset = selectionRange.headOffset;
+			selectionRange.headOffset = tmp;
+		}
+	}
+
+	if (selectionRanges.length === 1) {
+		selectionRanges[0].anchor = true;
+		selectionRanges[0].head = true;
+	}
+	else {
+		if (start) {
+			selectionRanges[0].anchor = true;
+			selectionRanges.at(-1).head = true;
+		}
+		else {
+			selectionRanges.at(-1).anchor = true;
+			selectionRanges[0].head = true;
+		}
+	}
+
+	for (let selectionRange of selectionRanges) {
+		let { chars } = pdfPages[selectionRange.pageIndex];
+		let from = Math.min(selectionRange.anchorOffset, selectionRange.headOffset);
+		let to = Math.max(selectionRange.anchorOffset, selectionRange.headOffset);
+		let rects = getRectsFromChars(chars.slice(from, to));
+		selectionRange.position = {
+			pageIndex: selectionRange.pageIndex,
+			rects
+		};
+		selectionRange.sortIndex = getSortIndex(pdfPages, selectionRange.position);
+		selectionRange.text = getTextFromChars(chars.slice(from, to));
+		if (selectionRange.anchorOffset === selectionRange.headOffset) {
+			selectionRange.collapsed = true;
+		}
+	}
+
+	return selectionRanges;
 }
 
 export function getSelectionRanges(pdfPages, anchor, head) {
@@ -613,9 +663,9 @@ export function getSelectionRanges(pdfPages, anchor, head) {
 			h = head.offset !== undefined ? head.offset : [head.rects[0][0], head.rects[0][1]];
 		}
 
-		let structuredText = pdfPages[i].structuredText;
+		let { chars } = pdfPages[i];
 		let selectionRange = extractRange({
-			structuredText,
+			chars,
 			pageIndex: i,
 			anchor: a,
 			head: h,
@@ -640,17 +690,17 @@ export function getSelectionRanges(pdfPages, anchor, head) {
 
 		selectionRanges.push(selectionRange);
 	}
-	return selectionRanges;
+	return applySelectionRangeIsolation(pdfPages, selectionRanges);
 }
 
 export function getSelectionRangesByPosition(pdfPages, position) {
 	if (!pdfPages[position.pageIndex]) {
 		return [];
 	}
-	let structuredText = pdfPages[position.pageIndex].structuredText;
+	let { chars } = pdfPages[position.pageIndex];
 	let selectionRanges = [];
 	let selectionRange = extractRangeByRects({
-		structuredText,
+		chars,
 		pageIndex: position.pageIndex,
 		rects: position.rects
 	});
@@ -661,9 +711,9 @@ export function getSelectionRangesByPosition(pdfPages, position) {
 	selectionRanges = [selectionRange];
 
 	if (position.nextPageRects) {
-		let structuredText = pdfPages[position.pageIndex + 1].structuredText;
+		let { chars } = pdfPages[position.pageIndex + 1];
 		selectionRange = extractRangeByRects({
-			structuredText,
+			chars,
 			pageIndex: position.pageIndex + 1,
 			rects: position.nextPageRects
 		});
@@ -728,33 +778,18 @@ function getMostCommonValue(arr) {
 	return +Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
 }
 
-export function getRectRotationOnText(structuredText, rect) {
-	let chars = [];
-	for (let paragraph of structuredText.paragraphs) {
-		if (!quickIntersectRect(paragraph.rect, rect)) {
-			continue;
-		}
-		for (let line of paragraph.lines) {
-			if (!quickIntersectRect(line.rect, rect)) {
-				continue;
-			}
-			for (let word of line.words) {
-				if (!quickIntersectRect(word.rect, rect)) {
-					continue;
-				}
-				for (let char of word.chars) {
-					if (quickIntersectRect(getCenterRect(char.rect), rect)) {
-						chars.push(char);
-					}
-				}
-			}
+export function getRectRotationOnText(chars, rect) {
+	let chars2 = [];
+	for (let char of chars) {
+		if (quickIntersectRect(getCenterRect(char.rect), rect)) {
+			chars2.push(char);
 		}
 	}
-	if (!chars.length) {
+	if (!chars2.length) {
 		return 0;
 	}
 	// Get the most common rotation
-	return getMostCommonValue(chars.map(x => x.rotation));
+	return getMostCommonValue(chars2.map(x => x.rotation));
 }
 
 // Based on https://stackoverflow.com/a/16100733

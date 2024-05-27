@@ -75,6 +75,7 @@ function View(props) {
 				<OverlayPopup
 					params={state[name + 'ViewOverlayPopup']}
 					onOpenLink={props.onOpenLink}
+					onNavigate={props.onNavigate}
 				/>
 			}
 		</div>
@@ -135,7 +136,6 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						<Sidebar
 							type={props.type}
 							view={state.sidebarView}
-							enableOutlineView={!!state.outline.length}
 							filter={state.filter}
 							onChangeView={props.onChangeSidebarView}
 							onChangeFilter={props.onChangeFilter}

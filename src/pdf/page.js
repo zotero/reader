@@ -164,6 +164,68 @@ export default class Page {
 		};
 	}
 
+	drawHover() {
+		if (!this.layer._hover) {
+			return;
+		}
+		let color = '#46b1ff';
+		let alpha = 0.1;
+		this.actualContext.save();
+		this.actualContext.globalAlpha = alpha;
+		this.actualContext.globalCompositeOperation = 'multiply';
+		this.actualContext.fillStyle = color;
+
+		let position = this.layer._hover;
+		position = this.p2v(position);
+		let rects;
+		if (position.pageIndex === this.pageIndex) {
+			rects = position.rects;
+		}
+		else if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
+			rects = position.nextPageRects;
+		}
+
+		if (rects) {
+			for (let rect of rects) {
+				this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+			}
+		}
+
+		this.actualContext.restore();
+	}
+
+	drawOverlays() {
+		let color = '#76c6ff';
+		let alpha = 0.1;
+		this.actualContext.save();
+		this.actualContext.globalAlpha = alpha;
+		this.actualContext.globalCompositeOperation = 'multiply';
+		this.actualContext.fillStyle = color;
+
+		for (let overlay of this.layer._pdfPages[this.pageIndex].overlays) {
+			if (!(overlay.type === 'citation' || overlay.type === 'internal-link' && overlay.source === 'matched')) {
+				continue;
+			}
+			let { position } = overlay;
+			position = this.p2v(position);
+			let rects = position.rects;
+			if (position.nextPageRects && position.pageIndex + 1 === this.pageIndex) {
+				rects = position.nextPageRects;
+			}
+			else if (position.pageIndex === this.pageIndex) {
+
+			}
+			else {
+				continue;
+			}
+
+			for (let rect of rects) {
+				this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+			}
+		}
+		this.actualContext.restore();
+	}
+
 	drawNote(ctx, color) {
 		ctx.beginPath();
 		ctx.fillStyle = color;
@@ -287,7 +349,7 @@ export default class Page {
 		if (!pageData) {
 			return;
 		}
-		let structuredText = pageData.structuredText;
+		let { chars } = pageData;
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
 		// this.actualContext.globalAlpha = 0;
@@ -307,7 +369,7 @@ export default class Page {
 		width *= this.scale;
 		for (let rect of rects) {
 			// Get the underline line rect taking into account text rotation
-			let rotation = getRectRotationOnText(structuredText, pdfRect);
+			let rotation = getRectRotationOnText(chars, pdfRect);
 			// Add page rotation to text rotation
 			rotation += getRotationDegrees(this.transform);
 			rotation = normalizeDegrees(rotation);
@@ -520,8 +582,9 @@ export default class Page {
 
 
 
+		this.drawOverlays();
 
-
+		this.drawHover();
 
 
 
@@ -696,7 +759,7 @@ export default class Page {
 			}
 			if (this.layer._pdfPages[this.pageIndex]
 				&& (!annotation2.position.nextPageRects || this.layer._pdfPages[this.pageIndex + 1])) {
-				let structuredText = this.layer._pdfPages[this.pageIndex].structuredText;
+				let { chars } = this.layer._pdfPages[this.pageIndex];
 				let position = this.p2v(annotation2.position);
 				this.actualContext.save();
 				this.actualContext.globalCompositeOperation = 'multiply';
@@ -706,8 +769,8 @@ export default class Page {
 				let padding = 1 * devicePixelRatio;
 				if (annotation2.position.nextPageRects) {
 					if (position.pageIndex + 1 === this.pageIndex) {
-						let structuredText = this.layer._pdfPages[this.pageIndex + 1].structuredText;
-						let rotation = getRectRotationOnText(structuredText, annotation2.position.nextPageRects.at(-1));
+						let { chars } = this.layer._pdfPages[this.pageIndex + 1];
+						let rotation = getRectRotationOnText(chars, annotation2.position.nextPageRects.at(-1));
 						// Add page rotation to text rotation
 						rotation += getRotationDegrees(this.transform);
 						rotation = normalizeDegrees(rotation);
@@ -720,7 +783,7 @@ export default class Page {
 						);
 					}
 					else {
-						let rotation = getRectRotationOnText(structuredText, annotation2.position.rects[0]);
+						let rotation = getRectRotationOnText(chars, annotation2.position.rects[0]);
 						let [x1, y1, x2, y2] = position.rects[0];
 						// Add page rotation to text rotation
 						rotation += getRotationDegrees(this.transform);
@@ -734,7 +797,7 @@ export default class Page {
 					}
 				}
 				else {
-					let rotation = getRectRotationOnText(structuredText, annotation2.position.rects[0]);
+					let rotation = getRectRotationOnText(chars, annotation2.position.rects[0]);
 					// Add page rotation to text rotation
 					rotation += getRotationDegrees(this.transform);
 					rotation = normalizeDegrees(rotation);
@@ -745,7 +808,7 @@ export default class Page {
 						|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
 						|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
 					);
-					rotation = getRectRotationOnText(structuredText, annotation2.position.rects.at(-1));
+					rotation = getRectRotationOnText(chars, annotation2.position.rects.at(-1));
 					// Add page rotation to text rotation
 					rotation += getRotationDegrees(this.transform);
 					rotation = normalizeDegrees(rotation);

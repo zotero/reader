@@ -2,6 +2,8 @@ import React from 'react';
 import PreviewPopup from './preview-popup';
 import LinkPopup from './link-popup';
 import FootnotePopup from './footnote-popup';
+import ReferencePopup from './reference/reference-popup';
+import CitationPopup from './reference/citation-popup';
 
 
 function OverlayPopup(props) {
@@ -13,6 +15,12 @@ function OverlayPopup(props) {
 	}
 	else if (props.params.type === 'footnote') {
 		return <FootnotePopup {...props}/>;
+	}
+	else if (props.params.type === 'citation') {
+		return <CitationPopup {...props}/>;
+	}
+	else if (props.params.type === 'reference') {
+		return <ReferencePopup {...props}/>;
 	}
 }
 

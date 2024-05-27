@@ -1066,6 +1066,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return rectContains(selectionBoundingRect, x, y);
 	}
 
+	destroy() {
+		this._overlayPopupDelayer.destroy();
+	}
+
 	// ***
 	// Setters that get called once there are changes in reader._state
 	// ***
