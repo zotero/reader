@@ -4,9 +4,6 @@
 PDFJS_BUILD=./pdfjs/pdf.js/build/generic-legacy
 BUILD_BASE=./build
 
-# Define builds array
-BUILDS=("dev" "web" "zotero")
-
 # Move into the PDF.js directory, install dependencies, and build
 cd pdfjs/pdf.js
 npm ci
@@ -14,25 +11,50 @@ npm ci
 npx gulp generic-legacy
 cd ../../
 
-# Loop over each build and set up directories
-for BUILD in "${BUILDS[@]}"; do
-    BUILD_DIR="$BUILD_BASE/$BUILD/pdf"
+# Set up directories for dev build
+BUILD=dev
+BUILD_DIR="$BUILD_BASE/$BUILD/pdf"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR/build"
+mkdir -p "$BUILD_DIR/web/images"
+cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
+cp -r "$PDFJS_BUILD/build/pdf.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_BUILD/build/pdf.worker.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
+cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
 
-    # Remove the existing build directory
-    rm -rf "$BUILD_DIR"
+# Set up directories for web build
+BUILD=web
+BUILD_DIR="$BUILD_BASE/$BUILD/pdf"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR/build"
+mkdir -p "$BUILD_DIR/web/images"
+cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
+cp -r "$PDFJS_BUILD/build/pdf.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_BUILD/build/pdf.worker.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
+cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
 
-    # Create necessary directories
-    mkdir -p "$BUILD_DIR/build"
-    mkdir -p "$BUILD_DIR/web/images"
-
-    # Copy files from PDFJS_BUILD to the current build directory
-    cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
-    cp -r "$PDFJS_BUILD/build/pdf.mjs" "$BUILD_DIR/build/"
-    cp -r "$PDFJS_BUILD/build/pdf.worker.mjs" "$BUILD_DIR/build/"
-    cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
-    cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
-    cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
-    cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
-    cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
-    cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
-done
+# Set up directories for zotero build
+BUILD=zotero
+BUILD_DIR="$BUILD_BASE/$BUILD/pdf"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR/build"
+mkdir -p "$BUILD_DIR/web/images"
+cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
+cp -r "$PDFJS_BUILD/build/pdf.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_BUILD/build/pdf.worker.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
+cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
+cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
