@@ -377,7 +377,12 @@ class PDFView {
 		}
 
 		this._detachPage(originalPage);
-		originalPage.div.querySelector('.textLayer').draggable = true;
+		try {
+			originalPage.div.querySelector('.textLayer').draggable = true;
+		}
+		catch (e) {
+			console.log(e);
+		}
 		let page = new Page(this, originalPage);
 
 		let pageIndex = originalPage.id - 1;
