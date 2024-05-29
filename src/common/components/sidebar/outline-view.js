@@ -17,7 +17,7 @@ function Item({ item, children, onNavigate, onOpenLink, onUpdate }) {
 		if (event.key === 'Enter' && item.url) {
 			onOpenLink(item.url);
 		}
-		if (item?.items.length) {
+		if (item.items?.length) {
 			if (event.key === 'Enter') {
 				handleExpandToggleClick();
 			}
@@ -94,7 +94,7 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 						onOpenLink={onOpenLink}
 						onUpdate={handleUpdate}
 					>
-						{item.expanded && item.items && renderItems(item.items)}
+						{item.expanded && item?.items && renderItems(item.items)}
 					</Item>
 				);
 			})}</ul>
