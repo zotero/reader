@@ -195,6 +195,9 @@ export default class Page {
 	}
 
 	drawOverlays() {
+		if (!this.layer._pdfPages[this.pageIndex]) {
+			return;
+		}
 		let color = '#76c6ff';
 		let alpha = 0.1;
 		this.actualContext.save();

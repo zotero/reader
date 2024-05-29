@@ -375,15 +375,22 @@ class PDFView {
 		}
 
 		this._detachPage(originalPage);
-		try {
-			originalPage.div.querySelector('.textLayer').draggable = true;
-		}
-		catch (e) {
-			console.log(e);
-		}
+
+		originalPage.textLayerPromise.then(() => {
+			try {
+				originalPage.div.querySelector('.textLayer').draggable = true;
+			}
+			catch (e) {
+				console.log(e);
+			}
+		});
+
 		let page = new Page(this, originalPage);
 
 		let pageIndex = originalPage.id - 1;
+
+		this._pages.push(page);
+		this._render();
 
 		if (!this._pdfPages[pageIndex]) {
 			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
@@ -399,7 +406,6 @@ class PDFView {
 			this._onSetPageLabels(pageLabels);
 		}
 
-		this._pages.push(page);
 		this._render();
 	}
 
