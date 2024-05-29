@@ -118,9 +118,7 @@ class PDFView {
 
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
-		// this._annotations = [];
-
-		this._activeOverlay = null;
+		this._outlineLoaded = false;
 
 		this._selectionRanges = [];
 
@@ -2609,8 +2607,9 @@ class PDFView {
 	}
 
 	async setSidebarView(sidebarView) {
-		if (sidebarView === 'outline') {
-			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
+		if (sidebarView === 'outline' && !this._outlineLoaded) {
+			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2();
+			this._outlineLoaded = true;
 			this._onSetOutline(outline);
 		}
 	}
