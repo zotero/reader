@@ -9,7 +9,9 @@ function PreviewPopup(props) {
 			uniqueRef={{}}
 			padding={10}
 		>
-			<img width={props.params.width} height={props.params.height} src={props.params.image}/>
+			<div className="inner">
+				<img style={{ maxHeight: props.params.height + 'px', maxWidth: props.params.width + 'px' }} src={props.params.image}/>
+			</div>
 		</ViewPopup>
 	);
 }

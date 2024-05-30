@@ -83,6 +83,15 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 		} else {
 			top = rect[3] + padding;
 			side = 'top';
+
+			side = 'right';
+			left = rect[2] + padding;
+			top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
+			if (top < 0) {
+				top = rect[1];
+			} else if (top + height > viewRect[3]) {
+				top = (rect[1] + (rect[3] - rect[1])) - height;
+			}
 		}
 
 		xrect.current = rect;

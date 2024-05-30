@@ -1746,6 +1746,11 @@ class PDFView {
 							if (overlayPopup.type === 'internal-link') {
 								if (overlayPopup.source === 'matched') {
 									overlayPopup.image = await this._pdfRenderer._renderPosition(overlay.previewPosition);
+
+									let rect = overlay.previewPosition.rects[0];
+									overlayPopup.width = rect[2] - rect[0];
+									overlayPopup.height = Math.abs(rect[3] - rect[1]);
+
 									this._onSetOverlayPopup(overlayPopup);
 								}
 							}
