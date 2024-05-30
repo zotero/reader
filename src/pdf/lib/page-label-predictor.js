@@ -42,12 +42,13 @@ export function predictPageLabels(pdfPages, pagesCount, pdfPageLabels) {
 	}
 
 	let allPageLabels = Object.values(pdfPages).map(x => x.pageLabel).filter(x => x).sort((a, b) => a.pageIndex - b.pageIndex);
-
 	if (
 		pdfPageLabels
 		&& pdfPageLabels.length === pagesCount
-		&& allPageLabels[0]
-		&& pdfPageLabels[allPageLabels[0].pageIndex] === allPageLabels[0].chars.map(x => x.u).join('')
+		&& (
+			allPageLabels[0] && pdfPageLabels[allPageLabels[0].pageIndex] === allPageLabels[0].chars.map(x => x.u).join('')
+			|| allPageLabels.length === 0
+		)
 	) {
 		for (let i = 0; i < pagesCount; i++) {
 			pageLabels[i] = pdfPageLabels[i];
