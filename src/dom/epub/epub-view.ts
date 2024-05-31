@@ -465,6 +465,22 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return this.book.path.relative(url.pathname + url.hash);
 	}
 
+	protected _splitHref(href: string): [string, string | null] {
+		let [pathname, hash] = href.split('#');
+		try {
+			pathname = decodeURIComponent(pathname);
+		}
+		catch (e) {}
+		if (hash) {
+			try {
+				hash = decodeURIComponent(hash);
+			}
+			catch (e) {
+			}
+		}
+		return [pathname, hash ?? null];
+	}
+
 	protected override _handlePointerOverInternalLink(link: HTMLAnchorElement) {
 		let element = this._getFootnoteTargetElement(link);
 		if (element) {
@@ -687,7 +703,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			if (!linkInTargetHref) {
 				continue;
 			}
-			let [pathname, hash] = linkInTargetHref.split('#');
+			let [pathname, hash] = this._splitHref(linkInTargetHref);
 			if (pathname === section.href && hash === link.id) {
 				return true;
 			}
@@ -701,7 +717,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (!href) {
 			return null;
 		}
-		let [pathname, hash] = href.split('#');
+		let [pathname, hash] = this._splitHref(href);
 		if (!pathname || !hash) {
 			return null;
 		}
