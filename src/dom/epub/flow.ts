@@ -1,7 +1,7 @@
 import SectionView from "./section-view";
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
-import { CustomScrollIntoViewOptions } from "../common/dom-view";
+import { NavigateOptions } from "../common/dom-view";
 import { closestElement } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
 import { PersistentRange } from "../common/lib/range";
@@ -21,7 +21,7 @@ export interface Flow {
 
 	readonly visibleViews: SectionView[];
 
-	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void;
+	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void;
 
 	canNavigateToPreviousPage(): boolean;
 
@@ -71,7 +71,9 @@ abstract class AbstractFlow implements Flow {
 
 	protected _onViewUpdate: () => void;
 
-	protected _onPushHistoryPoint: () => void;
+	protected _onPushHistoryPoint: (transient: boolean) => void;
+
+	protected _nextHistoryPushIsFromNavigation = false;
 
 	protected constructor(options: Options) {
 		this._view = options.view;
@@ -84,7 +86,7 @@ abstract class AbstractFlow implements Flow {
 		this._onViewUpdate = options.onViewUpdate;
 		this._onPushHistoryPoint = options.onPushHistoryPoint;
 
-		this._iframeWindow.addEventListener('scroll', this._onPushHistoryPoint);
+		this._iframeWindow.addEventListener('scroll', this._pushHistoryPoint);
 
 		let intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
 			threshold: [0, 1]
@@ -155,7 +157,7 @@ abstract class AbstractFlow implements Flow {
 		return this._view.views.slice(startIdx, endIdx + 1);
 	}
 
-	abstract scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void;
+	abstract scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void;
 
 	abstract canNavigateToNextPage(): boolean;
 
@@ -177,9 +179,15 @@ abstract class AbstractFlow implements Flow {
 			this.update();
 			this._onUpdateViewState();
 			this._onUpdateViewStats();
+			this._pushHistoryPoint();
 		},
 		200
 	);
+
+	protected _pushHistoryPoint = () => {
+		this._onPushHistoryPoint(!this._nextHistoryPushIsFromNavigation);
+		this._nextHistoryPushIsFromNavigation = false;
+	};
 
 	protected abstract update(): void;
 
@@ -190,7 +198,7 @@ abstract class AbstractFlow implements Flow {
 	abstract setSpreadMode(spreadMode: SpreadMode): void;
 
 	destroy(): void {
-		this._iframeWindow.removeEventListener('scroll', this._onPushHistoryPoint);
+		this._iframeWindow.removeEventListener('scroll', this._pushHistoryPoint);
 	}
 }
 
@@ -200,7 +208,7 @@ interface Options {
 	onUpdateViewState: () => void;
 	onUpdateViewStats: () => void;
 	onViewUpdate: () => void;
-	onPushHistoryPoint: () => void;
+	onPushHistoryPoint: (transient: boolean) => void;
 }
 
 export class ScrolledFlow extends AbstractFlow {
@@ -223,11 +231,15 @@ export class ScrolledFlow extends AbstractFlow {
 		this._iframeDocument.body.classList.remove('flow-mode-scrolled');
 	}
 
-	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void {
+	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void {
 		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
 
 		if (options?.ifNeeded && (rect.top >= 0 && rect.bottom < this._iframe.clientHeight)) {
 			return;
+		}
+
+		if (!options?.skipHistory) {
+			this._nextHistoryPushIsFromNavigation = true;
 		}
 
 		// Disable smooth scrolling when target is too far away
@@ -412,11 +424,16 @@ export class PaginatedFlow extends AbstractFlow {
 		this._onViewUpdate();
 	}
 
-	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: CustomScrollIntoViewOptions): void {
+	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void {
 		let index = EPUBView.getContainingSectionIndex(target);
 		if (index === null) {
 			return;
 		}
+
+		if (!options?.skipHistory) {
+			this._nextHistoryPushIsFromNavigation = true;
+		}
+
 		this.currentSectionIndex = index;
 		// Otherwise, center the target horizontally
 		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
