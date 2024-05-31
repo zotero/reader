@@ -138,13 +138,8 @@ replaced-body {
 		color: var(--visited-link-color) !important;
 	}
 
-	sup {
-		// Prevent footnote superscripts from affecting the line-height
-		line-height: 1 !important;
-		font-size: 0.8em !important;
-		vertical-align: baseline !important;
-		position: relative !important;
-		top: -0.5em !important;
+	.sup-sub-like {
+		line-height: 0 !important;
 	}
 
 	body:not(.footnote-popup-content) & {

@@ -59,12 +59,22 @@ export async function sanitizeAndRender(xhtml: string, options: {
 
 	container.append(...sectionDoc.childNodes);
 
-	// Add table-like class to elements matching selectors that set display: table or display: inline-table
-	for (let selector of [...styleScoper.tableSelectors, 'table', 'mtable']) {
+	// Add classes to elements that emulate <table>, <sup>, and <sub>
+	for (let selector of styleScoper.tagEmulatingSelectors.table) {
 		try {
 			for (let table of container.querySelectorAll(selector)) {
 				table.classList.add('table-like');
 				table.role = 'table';
+			}
+		}
+		catch (e) {
+			// Ignore
+		}
+	}
+	for (let selector of styleScoper.tagEmulatingSelectors.supSub) {
+		try {
+			for (let elem of container.querySelectorAll(selector)) {
+				elem.classList.add('sup-sub-like');
 			}
 		}
 		catch (e) {
@@ -76,7 +86,10 @@ export async function sanitizeAndRender(xhtml: string, options: {
 }
 
 export class StyleScoper {
-	tableSelectors = new Set<string>();
+	tagEmulatingSelectors = {
+		table: new Set<string>(['table', 'mtable']),
+		supSub: new Set<string>(['sup', 'sub']),
+	};
 
 	private _document: Document;
 
@@ -187,10 +200,13 @@ export class StyleScoper {
 				});
 			}).processSync(styleRule.selectorText);
 
-			// Keep track of selectors that set display: table, because we want to add a class to those elements
-			// in sanitizeAndRender()
+			// Keep track of selectors that emulate <table>, <sup>, and <sub>, because we want to add classes
+			// to matching elements in sanitizeAndRender()
 			if (styleRule.style.display === 'table' || styleRule.style.display === 'inline-table') {
-				this.tableSelectors.add(styleRule.selectorText);
+				this.tagEmulatingSelectors.table.add(styleRule.selectorText);
+			}
+			if (styleRule.style.verticalAlign === 'super' || styleRule.style.verticalAlign === 'sub') {
+				this.tagEmulatingSelectors.supSub.add(styleRule.selectorText);
 			}
 
 			// If this rule sets a monospace font, make it !important so that it overrides the default content font
