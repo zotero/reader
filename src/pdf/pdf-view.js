@@ -1709,11 +1709,7 @@ class PDFView {
 			if (position) {
 				let { action, selectAnnotations } = this.getActionAtPosition(position, event);
 
-
-
-
 				let overlay = this._getSelectableOverlay(position);
-
 
 				let overlayWithPopup = false;
 				let clickableOverlay = false;
@@ -1725,9 +1721,18 @@ class PDFView {
 					if (['internal-link', 'external-link'].includes(overlay.type)) {
 						clickableOverlay = true;
 					}
-
+					if (overlay.type === 'external-link') {
+						let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[overlay.position.pageIndex];
+						page.div.title = overlay.url;
+					}
 					this._hover = overlay.position;
-
+				}
+				else {
+					for (let page of this._iframeWindow.PDFViewerApplication.pdfViewer._pages) {
+						if (page.div.title) {
+							page.div.title = '';
+						}
+					}
 				}
 
 				if (clickableOverlay) {
