@@ -424,20 +424,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}
 
-	protected _openExternalLinkOverlayPopup(linkNode: HTMLAnchorElement) {
-		let range = linkNode.ownerDocument.createRange();
-		range.selectNode(linkNode);
-		let domRect = range.getBoundingClientRect();
-		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		let overlayPopup = {
-			type: 'external-link',
-			url: linkNode.href,
-			rect,
-			ref: linkNode
-		};
-		this._options.onSetOverlayPopup(overlayPopup);
-	}
-
 	/**
 	 * For use in the console during development.
 	 */
@@ -511,18 +497,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		const link = target.closest('a');
 		if (link) {
 			if (this._isExternalLink(link)) {
-				this._overlayPopupDelayer.open(link, () => {
-					this._openExternalLinkOverlayPopup(link);
-				});
+				link.title = link.href;
 			}
 			else {
 				this._handlePointerOverInternalLink(link);
 			}
-		}
-		else {
-			this._overlayPopupDelayer.close(() => {
-				this._options.onSetOverlayPopup();
-			});
 		}
 
 		if (this._tool.type == 'note') {
