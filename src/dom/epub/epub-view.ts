@@ -68,6 +68,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	readonly pageMapping = new PageMapping();
 
+	private _lastResizeWidth: number | null = null;
+
+	private _lastResizeHeight: number | null = null;
+
 	scale = 1;
 
 	private _sectionsContainer!: HTMLElement;
@@ -195,6 +199,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			await new Promise(resolve => requestAnimationFrame(resolve));
 			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
 		}
+
+		this._lastResizeWidth = this._iframeWindow.innerWidth;
+		this._lastResizeHeight = this._iframeWindow.innerHeight;
+
 		this._handleViewUpdate();
 
 		// @ts-ignore
@@ -434,7 +442,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	// ***
 
 	protected override _handleResize() {
-		if (!this.flow) return;
+		if (!this.flow || document.hidden
+				|| (this._iframeWindow.innerWidth === this._lastResizeWidth
+					&& this._iframeWindow.innerHeight === this._lastResizeHeight)) {
+			return;
+		}
+		this._lastResizeWidth = this._iframeWindow.innerWidth;
+		this._lastResizeHeight = this._iframeWindow.innerHeight;
+
 		let beforeCFI = this.flow.startCFI;
 		let beforeOffset = this.flow.startCFIOffsetY;
 		if (beforeCFI) {
