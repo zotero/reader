@@ -18,6 +18,7 @@
 	],
 	"dependencies": {
 		"classnames": "^2.3.1",
+		"darkreader": "^4.9.83",
 		"epubjs": "file:epubjs/epub.js",
 		"postcss-selector-parser": "^6.0.13",
 		"prop-types": "^15.8.1",

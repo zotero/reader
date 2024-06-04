@@ -59,12 +59,22 @@ export async function sanitizeAndRender(xhtml: string, options: {
 
 	container.append(...sectionDoc.childNodes);
 
-	// Add table-like class to elements matching selectors that set display: table or display: inline-table
-	for (let selector of [...styleScoper.tableSelectors, 'table', 'mtable']) {
+	// Add classes to elements that emulate <table>, <sup>, and <sub>
+	for (let selector of styleScoper.tagEmulatingSelectors.table) {
 		try {
 			for (let table of container.querySelectorAll(selector)) {
 				table.classList.add('table-like');
 				table.role = 'table';
+			}
+		}
+		catch (e) {
+			// Ignore
+		}
+	}
+	for (let selector of styleScoper.tagEmulatingSelectors.supSub) {
+		try {
+			for (let elem of container.querySelectorAll(selector)) {
+				elem.classList.add('sup-sub-like');
 			}
 		}
 		catch (e) {
@@ -76,7 +86,10 @@ export async function sanitizeAndRender(xhtml: string, options: {
 }
 
 export class StyleScoper {
-	tableSelectors = new Set<string>();
+	tagEmulatingSelectors = {
+		table: new Set<string>(['table', 'mtable']),
+		supSub: new Set<string>(['sup', 'sub']),
+	};
 
 	private _document: Document;
 
@@ -99,7 +112,7 @@ export class StyleScoper {
 		let scopeClass = `__scope_${this._sheets.size}`;
 		this._sheets.set(css, { scopeClass });
 
-		let cssModified = this._rewriteEPUBProperties(css);
+		let cssModified = rewriteEPUBProperties(css);
 
 		let sheet;
 		let added = false;
@@ -187,15 +200,23 @@ export class StyleScoper {
 				});
 			}).processSync(styleRule.selectorText);
 
-			// Keep track of selectors that set display: table, because we want to add a class to those elements
-			// in sanitizeAndRender()
+			// Keep track of selectors that emulate <table>, <sup>, and <sub>, because we want to add classes
+			// to matching elements in sanitizeAndRender()
 			if (styleRule.style.display === 'table' || styleRule.style.display === 'inline-table') {
-				this.tableSelectors.add(styleRule.selectorText);
+				this.tagEmulatingSelectors.table.add(styleRule.selectorText);
+			}
+			if (styleRule.style.verticalAlign === 'super' || styleRule.style.verticalAlign === 'sub') {
+				this.tagEmulatingSelectors.supSub.add(styleRule.selectorText);
 			}
 
 			// If this rule sets a monospace font, make it !important so that it overrides the default content font
 			if (styleRule.style.fontFamily && /\bmono(space)?\b/i.test(styleRule.style.fontFamily)) {
 				styleRule.style.setProperty('font-family', styleRule.style.fontFamily, 'important');
+			}
+
+			// If this rule sets a font-size, rewrite it to be relative
+			if (styleRule.style.fontSize) {
+				styleRule.style.fontSize = rewriteFontSize(styleRule.style.fontSize);
 			}
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
@@ -209,13 +230,6 @@ export class StyleScoper {
 				this._visitRule(childRule, scopeClass);
 			}
 		}
-	}
-
-	private _rewriteEPUBProperties(css: string): string {
-		for (let [re, replacement] of EPUB_CSS_REPLACEMENTS) {
-			css = css.replace(re, replacement);
-		}
-		return css;
 	}
 }
 
@@ -259,6 +273,65 @@ const EPUB_CSS_REPLACEMENTS: [RegExp, string][] = Object.entries({
 	});
 	return [[ruleRe, ruleReplacement], ...valueReplacements];
 });
+
+function rewriteEPUBProperties(css: string): string {
+	for (let [re, replacement] of EPUB_CSS_REPLACEMENTS) {
+		css = css.replace(re, replacement);
+	}
+	return css;
+}
+
+// Mappings and routine based on
+// https://github.com/kovidgoyal/calibre/blob/d1bbe63eb10cbf0abbe56a06fce92ad220de03b0/src/calibre/srv/fast_css_transform.cpp#L191-L210
+// Copyright (C) 2008-2024 Kovid Goyal (GPLv3)
+
+/* eslint-disable quote-props */
+const BASE_FONT_SIZE = 13;
+const DPI = 96;
+const PT_TO_PX = DPI / 72;
+const PT_TO_REM = PT_TO_PX / BASE_FONT_SIZE;
+
+const FONT_SIZE_REPLACEMENTS: Record<string, string> = {
+	'xx-small': '0.5rem',
+	'x-small': '0.625rem',
+	'small': '0.75rem',
+	'medium': '1rem',
+	'large': '1.125rem',
+	'x-large': '1.5rem',
+	'xx-large': '2rem',
+	'xxx-large': '2.55rem',
+};
+
+const FONT_SIZE_UNITS: Record<string, number> = {
+	'mm': 2.8346456693,
+	'cm': 28.346456693,
+	'in': 72,
+	'pc': 12,
+	'q': 0.708661417325,
+	'pt': 1,
+};
+/* eslint-enable quote-props */
+
+function rewriteFontSize(fontSize: string): string {
+	if (fontSize.toLowerCase() in FONT_SIZE_REPLACEMENTS) {
+		return FONT_SIZE_REPLACEMENTS[fontSize.toLowerCase()];
+	}
+
+	let match = fontSize.match(/^([0-9.]+)([a-zA-Z]+)$/);
+	if (match) {
+		let value = parseFloat(match[1]);
+		let unit = match[2].toLowerCase();
+		if (unit === 'px') {
+			return value / BASE_FONT_SIZE + 'rem';
+		}
+		else if (unit in FONT_SIZE_UNITS) {
+			let factor = FONT_SIZE_UNITS[unit];
+			return value * factor * PT_TO_REM + 'rem';
+		}
+	}
+
+	return fontSize;
+}
 
 type SheetMetadata = {
 	sheet?: CSSStyleSheet;

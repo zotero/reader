@@ -68,6 +68,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	readonly pageMapping = new PageMapping();
 
+	private _lastResizeWidth: number | null = null;
+
+	private _lastResizeHeight: number | null = null;
+
 	scale = 1;
 
 	private _sectionsContainer!: HTMLElement;
@@ -154,6 +158,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let styleScoper = new StyleScoper(this._iframeDocument);
 		await Promise.all(this.book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
 
+		if (this._sectionViews.some(view => view.error) && await this._isEncrypted()) {
+			this._options.onEPUBEncrypted();
+			this._sectionsContainer.remove();
+			return;
+		}
+
 		if (this._options.fontFamily) {
 			this._iframeDocument.documentElement.style.setProperty('--content-font-family', this._options.fontFamily);
 		}
@@ -189,10 +199,24 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			await new Promise(resolve => requestAnimationFrame(resolve));
 			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
 		}
+
+		this._lastResizeWidth = this._iframeWindow.innerWidth;
+		this._lastResizeHeight = this._iframeWindow.innerHeight;
+
 		this._handleViewUpdate();
 
 		// @ts-ignore
 		this.book.archive.zip = null;
+	}
+
+	private async _isEncrypted() {
+		try {
+			let xml = await this.book.archive.request('/META-INF/encryption.xml', 'text') as string;
+			return xml.includes('<EncryptedData');
+		}
+		catch (e) {
+			return false;
+		}
 	}
 
 	private async _displaySection(section: Section, styleScoper: StyleScoper) {
@@ -418,7 +442,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	// ***
 
 	protected override _handleResize() {
-		if (!this.flow) return;
+		if (!this.flow || document.hidden
+				|| (this._iframeWindow.innerWidth === this._lastResizeWidth
+					&& this._iframeWindow.innerHeight === this._lastResizeHeight)) {
+			return;
+		}
+		this._lastResizeWidth = this._iframeWindow.innerWidth;
+		this._lastResizeHeight = this._iframeWindow.innerHeight;
+
 		let beforeCFI = this.flow.startCFI;
 		let beforeOffset = this.flow.startCFIOffsetY;
 		if (beforeCFI) {
@@ -447,6 +478,22 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		// canonical URL, but it'll error without a host. So give it one!
 		let url = new URL(href, new URL(section.canonical, 'https://www.example.com/'));
 		return this.book.path.relative(url.pathname + url.hash);
+	}
+
+	protected _splitHref(href: string): [string, string | null] {
+		let [pathname, hash] = href.split('#');
+		try {
+			pathname = decodeURIComponent(pathname);
+		}
+		catch (e) {}
+		if (hash) {
+			try {
+				hash = decodeURIComponent(hash);
+			}
+			catch (e) {
+			}
+		}
+		return [pathname, hash ?? null];
 	}
 
 	protected override _handlePointerOverInternalLink(link: HTMLAnchorElement) {
@@ -671,7 +718,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			if (!linkInTargetHref) {
 				continue;
 			}
-			let [pathname, hash] = linkInTargetHref.split('#');
+			let [pathname, hash] = this._splitHref(linkInTargetHref);
 			if (pathname === section.href && hash === link.id) {
 				return true;
 			}
@@ -685,7 +732,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (!href) {
 			return null;
 		}
-		let [pathname, hash] = href.split('#');
+		let [pathname, hash] = this._splitHref(href);
 		if (!pathname || !hash) {
 			return null;
 		}

@@ -18,6 +18,8 @@ class SectionView {
 
 	body!: HTMLElement;
 
+	error = false;
+
 	private readonly _window: Window & typeof globalThis;
 
 	private readonly _document: Document;
@@ -100,6 +102,7 @@ class SectionView {
 		errorDiv.append(`[Section ${this.section.index}: ${message}]`);
 		this.container.replaceChildren(errorDiv);
 		this.body = errorDiv;
+		this.error = true;
 	}
 
 	/**

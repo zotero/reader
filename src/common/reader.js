@@ -136,11 +136,12 @@ class Reader {
 			fontFamily: options.fontFamily,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
+			colorScheme: options.colorScheme,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
-			outline: [],
-			outlineQuery: '',
-			pageLabels: {},
+			outline: null, // null — loading, [] — empty
+      outlineQuery: '',
+			pageLabels: [],
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
 			sidebarView: 'annotations',
@@ -339,13 +340,28 @@ class Reader {
 		}
 
 		if (init || this._state.useDarkModeForContent !== previousState.useDarkModeForContent) {
-			if (this._state.useDarkModeForContent) {
-				document.body.classList.add('use-dark-mode-for-content');
+			document.body.classList.toggle(
+				'use-dark-mode-for-content',
+				this._state.useDarkModeForContent
+			);
+
+			if (!init) {
+				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
+				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
+			}
+		}
+
+		if (init || this._state.colorScheme !== previousState.colorScheme) {
+			if (this._state.colorScheme) {
+				document.documentElement.dataset.colorScheme = this._state.colorScheme;
 			}
 			else {
-				document.body.classList.remove('use-dark-mode-for-content');
+				delete document.documentElement.dataset.colorScheme;
 			}
 			if (!init) {
+				this._primaryView?.setColorScheme(this._state.colorScheme);
+				this._secondaryView?.setColorScheme(this._state.colorScheme);
+				// also update useDarkModeForContent as it depends on colorScheme
 				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
 				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
 			}
@@ -395,6 +411,11 @@ class Reader {
 			this._secondaryView?.setFontFamily(this._state.fontFamily);
 		}
 
+		if (init || this._state.sidebarView !== previousState.sidebarView) {
+			this._primaryView?.setSidebarView?.(this._state.sidebarView);
+			this._secondaryView?.setSidebarView?.(this._state.sidebarView);
+		}
+
 		if (init || this._state.sidebarOpen !== previousState.sidebarOpen) {
 			if (this._state.sidebarOpen) {
 				document.body.classList.add('sidebar-open');
@@ -422,6 +443,7 @@ class Reader {
 			}
 			// Unsplit
 			else if ((previousState.splitType || init) && !this._state.splitType) {
+				this._secondaryView?.destroy();
 				this._secondaryView = null;
 				this._secondaryViewContainer.replaceChildren();
 				this._lastViewPrimary = true;
@@ -540,6 +562,10 @@ class Reader {
 
 	useDarkModeForContent(use) {
 		this._updateState({ useDarkModeForContent: use });
+	}
+
+	setColorScheme(colorScheme) {
+		this._updateState({ colorScheme });
 	}
 
 	setReadOnly(readOnly) {
@@ -739,8 +765,12 @@ class Reader {
 			this._keyboardManager.handleViewKeyUp(event);
 		};
 
-		let onSetZoom = (iframe, zoom) => {
+		let onSetZoom = this._onSetZoom && ((iframe, zoom) => {
 			this._onSetZoom(iframe, zoom);
+		});
+
+		let onEPUBEncrypted = () => {
+			this.setErrorMessage(this._getString('pdfReader.epubEncrypted'));
 		};
 
 		let data;
@@ -766,6 +796,7 @@ class Reader {
 			annotations: this._state.annotations.filter(x => !x._hidden),
 			showAnnotations: this._state.showAnnotations,
 			useDarkMode: this._state.useDarkModeForContent,
+			colorScheme: this._state.colorScheme,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
@@ -814,7 +845,8 @@ class Reader {
 		} else if (this._type === 'epub') {
 			view = new EPUBView({
 				...common,
-				fontFamily: this._state.fontFamily
+				fontFamily: this._state.fontFamily,
+				onEPUBEncrypted,
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({

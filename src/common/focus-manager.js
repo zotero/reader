@@ -81,7 +81,7 @@ export class FocusManager {
 
 	_handlePointerDown(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar')) {
+			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row')) {
 				// Note: Doing event.preventDefault() also prevents :active class on Firefox
 				event.preventDefault();
 			}

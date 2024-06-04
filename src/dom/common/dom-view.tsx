@@ -1,5 +1,5 @@
 // @ts-ignore
-import annotationOverlayCSS from '!!raw-loader!./stylesheets/annotation-overlay.css';
+import annotationOverlayCSS from './stylesheets/annotation-overlay.scss';
 
 import {
 	Annotation,
@@ -70,6 +70,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _useDarkMode: boolean;
 
+	protected _colorScheme: string | null;
+
 	protected _annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 
 	protected _selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
@@ -112,6 +114,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Don't show annotations if this is false
 		this._showAnnotations = options.showAnnotations;
 		this._useDarkMode = options.useDarkMode;
+		this._colorScheme = options.colorScheme;
 		this._annotationPopup = options.annotationPopup;
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
@@ -173,7 +176,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Allow fonts from data: URIs and from that origin
 		let fontSrc = (origin || '') + ' data:';
 		// Don't allow any scripts
-		let scriptSrc = "'none'";
+		let scriptSrc = "'unsafe-eval'";
 		// Don't allow any child frames
 		let childSrc = "'none'";
 		// Don't allow form submissions
@@ -421,20 +424,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}
 
-	protected _openExternalLinkOverlayPopup(linkNode: HTMLAnchorElement) {
-		let range = linkNode.ownerDocument.createRange();
-		range.selectNode(linkNode);
-		let domRect = range.getBoundingClientRect();
-		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		let overlayPopup = {
-			type: 'external-link',
-			url: linkNode.href,
-			rect,
-			ref: linkNode
-		};
-		this._options.onSetOverlayPopup(overlayPopup);
-	}
-
 	/**
 	 * For use in the console during development.
 	 */
@@ -495,6 +484,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this.setAnnotations(this._options.annotations);
 		this.setTool(this._options.tool);
 		this.setUseDarkMode(this._options.useDarkMode);
+		this.setColorScheme(this._options.colorScheme);
 
 		await this._onInitialDisplay(this._options.viewState || {});
 		setTimeout(() => {
@@ -507,18 +497,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		const link = target.closest('a');
 		if (link) {
 			if (this._isExternalLink(link)) {
-				this._overlayPopupDelayer.open(link, () => {
-					this._openExternalLinkOverlayPopup(link);
-				});
+				link.title = link.href;
 			}
 			else {
 				this._handlePointerOverInternalLink(link);
 			}
-		}
-		else {
-			this._overlayPopupDelayer.close(() => {
-				this._options.onSetOverlayPopup();
-			});
 		}
 
 		if (this._tool.type == 'note') {
@@ -1062,6 +1045,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return rectContains(selectionBoundingRect, x, y);
 	}
 
+	destroy() {
+		this._overlayPopupDelayer.destroy();
+	}
+
 	// ***
 	// Setters that get called once there are changes in reader._state
 	// ***
@@ -1104,6 +1091,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	setUseDarkMode(use: boolean) {
 		this._useDarkMode = use;
 		this._iframeDocument.documentElement.classList.toggle('disable-dark-mode', !use);
+	}
+
+	setColorScheme(colorScheme: string | null) {
+		this._colorScheme = colorScheme;
+		if (colorScheme) {
+			this._iframeDocument.documentElement.dataset.colorScheme = colorScheme;
+		}
+		else {
+			delete this._iframeDocument.documentElement.dataset.colorScheme;
+		}
 	}
 
 	setSelectedAnnotationIDs(ids: string[]) {
@@ -1187,6 +1184,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	annotations: WADMAnnotation[];
 	showAnnotations: boolean;
 	useDarkMode: boolean;
+	colorScheme: string | null;
 	annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 	selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
 	overlayPopup: OverlayPopupParams | null;
@@ -1212,6 +1210,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onTabOut: (isShiftTab?: boolean) => void;
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
+	onEPUBEncrypted: () => void;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string

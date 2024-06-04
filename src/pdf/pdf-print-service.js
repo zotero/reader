@@ -195,13 +195,13 @@ class PrintTask {
 					return;
 				}
 				if (typeof zoteroPrint !== 'undefined') {
-					zoteroPrint();
+					zoteroPrint().then(resolve);
 				}
 				else {
 					window._print();
+					// Delay promise resolution in case print() was not synchronous.
+					setTimeout(resolve, 20); // Tidy-up.
 				}
-				// Delay promise resolution in case print() was not synchronous.
-				setTimeout(resolve, 20); // Tidy-up.
 			}, 0);
 		});
 	}

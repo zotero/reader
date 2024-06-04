@@ -92,9 +92,6 @@ class AnnotationManager {
 	}
 
 	updateAnnotations(annotations) {
-		if (this._readOnly) {
-			throw new Error('Cannot update annotation for read-only file');
-		}
 		// Validate data
 		for (let annotation of annotations) {
 			if (annotation.position && !annotation.sortIndex) {
@@ -104,6 +101,10 @@ class AnnotationManager {
 			if (existingAnnotation.readOnly) {
 				throw new Error('Cannot update read-only annotation');
 			}
+			// To save image it should have only id and image properties
+			if (this._readOnly && !(annotation.image && Object.keys(annotation).length === 2)) {
+				throw new Error('Cannot update annotations for read-only file');
+			}
 		}
 		for (let annotation of annotations) {
 			let existingAnnotation = this._getAnnotationByID(annotation.id);
@@ -112,7 +113,7 @@ class AnnotationManager {
 			}
 			let includeImage = !!annotation.image;
 			// If only updating an image skip the code below together with dateModified updating
-			if (annotation.image && Object.keys(annotation).length === 1) {
+			if (annotation.image && Object.keys(annotation).length === 2) {
 				let { image } = annotation;
 				this._save({ ...existingAnnotation, image }, includeImage);
 				continue;

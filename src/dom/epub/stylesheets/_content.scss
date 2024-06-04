@@ -47,15 +47,19 @@
 			--text-color: #fefefe;
 			--link-color: #63caff;
 			--visited-link-color: #0099e5;
-
-			#annotation-overlay .annotation-container.blended {
-				mix-blend-mode: screen;
-			}
 		}
+	}
+
+	&[data-color-scheme=dark]:not(.disable-dark-mode) {
+		--background-color: #121212;
+		--text-color: #fefefe;
+		--link-color: #63caff;
+		--visited-link-color: #0099e5;
 	}
 }
 
 :root {
+	font-size: calc(var(--content-scale) * 13pt) !important;
 	background-color: var(--background-color) !important;
 	color: var(--text-color) !important;
 }
@@ -80,7 +84,7 @@ replaced-body {
 	color: inherit !important;
 
 	font-family: var(--content-font-family, "Georgia"), serif;
-	font-size: calc(var(--content-scale) * 13pt) !important;
+	font-size: inherit !important;
 	line-height: var(--content-line-height);
 	text-align: justify;
 	text-rendering: optimizeLegibility;
@@ -134,13 +138,8 @@ replaced-body {
 		color: var(--visited-link-color) !important;
 	}
 
-	sup {
-		// Prevent footnote superscripts from affecting the line-height
-		line-height: 1 !important;
-		font-size: 0.8em !important;
-		vertical-align: baseline !important;
-		position: relative !important;
-		top: -0.5em !important;
+	.sup-sub-like {
+		line-height: 0 !important;
 	}
 
 	body:not(.footnote-popup-content) & {

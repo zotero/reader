@@ -12,16 +12,18 @@
 	&::after {
 		content: "";
 		position: absolute;
-		left: $offset;
 		border: solid transparent;
 		border-width: $border-y $border-x;
-		transform: translateX(-$border-x);
+
 	}
 
 	#{if($position == "bottom", "&", "&[class*='bottom']")} {
 		&::before,
 		&::after {
 			border-top-width: 0;
+			transform: translateX(-$border-x);
+			left: 50%;
+
 		}
 
 		&::before {
@@ -35,10 +37,14 @@
 		}
 	}
 
+
 	#{if($position == "top", "&", "&[class*='top']")} {
 		&::before,
 		&::after {
 			border-bottom-width: 0;
+			transform: translateX(-$border-x);
+			left: 50%;
+
 		}
 
 		&::before {
@@ -52,21 +58,44 @@
 		}
 	}
 
-	#{if($position == "top", "&", "&[class*='left']")} {
+	#{if($position == "left", "&", "&[class*='left']")} {
 		&::before,
 		&::after {
-			left: 20px;
+			border-right-width: 0;
+			transform: translateY(-8px);
+			top: 50%;
+		}
+
+		&::before {
+			right: (-$border-x - 1px);
+			border-left-color: var(--color-panedivider);
+		}
+
+		&::after {
+			right: -$border-x;
+			border-left-color: var(--color-background);
 		}
 	}
 
-	#{if($position == "top", "&", "&[class*='right']")} {
+	#{if($position == "right", "&", "&[class*='right']")} {
 		&::before,
 		&::after {
-			left: unset;
-			right: 20px;
-			transform: translateX($border-x);
+			border-left-width: 0;
+			transform: translateY(-8px);
+			top: 50%;
+		}
+
+		&::before {
+			left: (-$border-x - 1px);
+			border-right-color: var(--color-panedivider);
+		}
+
+		&::after {
+			left: -$border-x;
+			border-right-color: var(--color-background);
 		}
 	}
+
 }
 
 // An implementation of Firefox light-dark() CSS mixin, which is not supported in 102
