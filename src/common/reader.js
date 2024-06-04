@@ -140,7 +140,7 @@ class Reader {
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
 			outline: null, // null — loading, [] — empty
-      outlineQuery: '',
+			outlineQuery: '',
 			pageLabels: [],
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
