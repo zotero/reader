@@ -21,13 +21,16 @@ function Sidebar(props) {
 	return (
 		<div id="sidebarContainer" className="sidebarOpen">
 			<div className="sidebar-toolbar">
-				<div className="start" data-tabstop={1}>
+				<div className="start" data-tabstop={1} role="tablist">
 					{props.type === 'pdf' &&
 						<button
 							id="viewThumbnail"
 							className={cx('toolbar-button', { active: props.view === 'thumbnails' })}
 							title="Show Thumbnails" tabIndex={-1}
 							onClick={() => props.onChangeView('thumbnails')}
+							role="tab"
+							aria-selected={props.view === 'thumbnails' }
+							aria-controls='thumbnailsView'
 						><IconThumbnails/></button>
 					}
 					<button
@@ -36,6 +39,9 @@ function Sidebar(props) {
 						title="Show Annotations"
 						tabIndex={-1}
 						onClick={() => props.onChangeView('annotations')}
+						role="tab"
+						aria-selected={props.view === 'annotations' }
+						aria-controls='annotationsView'
 					><IconAnnotations/></button>
 					<button
 						id="viewOutline"
@@ -43,6 +49,9 @@ function Sidebar(props) {
 						title="Show Document Outline (double-click to expand/collapse all items)"
 						tabIndex={-1}
 						onClick={() => props.onChangeView('outline')}
+						role="tab"
+						aria-selected={props.view === 'outline' }
+						aria-controls='outlineView'
 					><IconOutline/></button>
 				</div>
 				<div className="end">
@@ -57,7 +66,7 @@ function Sidebar(props) {
 			</div>
 			<div id="sidebarContent" className="sidebar-content">
 				{props.view === 'thumbnails' && props.thumbnailsView}
-				{props.view === 'annotations' && <div id="annotationsView">{props.annotationsView}</div>}
+				{props.view === 'annotations' && <div id="annotationsView" role="tabpanel" aria-labelledby='viewAnnotations'>{props.annotationsView}</div>}
 				{props.view === 'outline' && props.outlineView}
 			</div>
 		</div>

@@ -300,15 +300,19 @@ let Content = React.forwardRef((props, ref) => {
 	return (
 		<Fragment>
 			<div
+				id={props.id}
 				ref={innerRef}
 				suppressContentEditableWarning={true}
 				className="content"
 				contentEditable={!props.readOnly}
 				dir="auto"
 				placeholder={props.placeholder}
-				data-tabstop={!props.readOnly ? 1 : undefined}
-				tabIndex={!props.readOnly ? -1 : undefined}
+				data-tabstop={props.tabstop || (!props.readOnly ? 1 : undefined)}
+				tabIndex={(!props.readOnly || props.tabstop) ? -1 : undefined}
 				onInput={handleInput}
+				role="textbox"
+				aria-label={props.ariaLabel}
+				aria-readonly={props.readOnly}
 			/>
 			<div className="renderer" ref={rendererRef}></div>
 		</Fragment>
@@ -334,6 +338,8 @@ function Editor(props) {
 				enableRichText={props.enableRichText}
 				placeholder={props.placeholder}
 				onChange={props.onChange}
+				ariaLabel={props.ariaLabel}
+				tabstop={props.tabstop}
 			/>
 		</div>
 	);

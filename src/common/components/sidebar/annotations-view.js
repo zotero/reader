@@ -42,6 +42,9 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={(event) => handleDrop(event, null, color.color)}
+						role="checkbox"
+						aria-checked={color.selected}
+						aria-description={intl.formatMessage({ id: "pdfReader.tagSelectorMessage" })}
 					><IconColor16 color={color.color}/></button>
 				))}
 			</div>}
@@ -55,6 +58,9 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={(event) => handleDrop(event, { name: tag.name, color: tag.color })}
+						role="checkbox"
+						aria-checked={tag.selected}
+						aria-description={intl.formatMessage({ id: "pdfReader.tagSelectorMessage" })}
 					>{!!tag.color && <span className="icon"><IconTagCircle color={tag.color}/></span>}{tag.name}</button>
 				))}
 			</div>}
@@ -82,6 +88,9 @@ const Annotation = React.memo((props) => {
 			data-sidebar-annotation-id={props.annotation.id}
 			onMouseDown={(event) => event.stopPropagation()}
 			onFocus={() => props.onFocus(props.annotation.id)}
+			role="option"
+			aria-labelledby={`page_${props.annotation.id}`}
+			aria-describedby={props.annotation.id}
 		>
 			<SidebarPreview
 				type={props.type}
@@ -447,7 +456,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 	return (
 		<React.Fragment>
-			<div id="annotations" className="annotations" data-tabstop={props.annotations.length ? 1 : undefined} onKeyDownCapture={handleKeyDown}>
+			<div id="annotations" role='listbox' className="annotations" data-tabstop={props.annotations.length ? 1 : undefined} onKeyDownCapture={handleKeyDown}>
 				{props.annotations.length
 					? filteredAnnotations.map(annotation => (
 						<Annotation

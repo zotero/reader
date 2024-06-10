@@ -52,9 +52,16 @@ function SearchBox({ query, placeholder, onInput }) {
 		inputRef.current.focus();
 	}
 
+	function handleClearButton(event) {
+		handleClear(event);
+		// Make sure focus remain on the input - it can get lost if the button is clicked
+		// via screen readers' cursor
+		inputRef.current.focus();
+	}
+
 	return (
 		<div ref={inputRef2} className={`search-box ${expanded ? 'expanded' : ''}`}>
-			<div className="btn magnifier" onClick={handleMagnifierClick}>{expanded ? <IconMagnifier16/> : <IconMagnifier20/>}</div>
+			<div className="btn magnifier" onClick={handleMagnifierClick} aria-hidden="true">{expanded ? <IconMagnifier16/> : <IconMagnifier20/>}</div>
 			<input
 				ref={inputRef}
 				id="searchInput"
@@ -68,7 +75,7 @@ function SearchBox({ query, placeholder, onInput }) {
 				onFocus={handleFocus}
 				onBlur={handleBlur}
 			/>
-			{query.length !== 0 && <div className="btn clear" onClick={handleClear}><IconSearchCancel/></div>}
+			{query.length !== 0 && <div className="btn clear" role="button" aria-label={intl.formatMessage({ id: 'general.clear' })} onClick={handleClearButton}><IconSearchCancel/></div>}
 		</div>
 	);
 }

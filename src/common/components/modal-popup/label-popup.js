@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import TooltipPopup from './common/tooltip-popup';
 
 
@@ -73,6 +73,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 	let [checked, setChecked] = useState(data.checked);
 	let [auto, setAuto] = useState(false);
 	let inputRef = useRef();
+	const intl = useIntl();
 
 	useEffect(() => {
 		inputRef.current.focus();
@@ -232,6 +233,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						maxLength={32}
 						onChange={handleChange}
 						onKeyDown={handleInputKeydown}
+						aria-label={intl.formatMessage({ id: "pdfReader.editPageNumber"})}
 					/>
 				</div>
 				<div className="column second">
