@@ -111,8 +111,8 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 			// TODO: Don't reset page labels if they can't be reliably extracted from text
 			onClose();
 			let annotations = params.allAnnotations.filter(x => !x.readOnly);
-			let { pageIndex } = annotation.position;
 			for (let annotation of annotations) {
+				let { pageIndex } = annotation.position;
 				annotationsToUpdate.push({
 					id: annotation.id,
 					pageLabel: params.pageLabels[pageIndex] || (pageIndex + 1).toString()
