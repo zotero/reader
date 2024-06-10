@@ -31,7 +31,7 @@ function PreviewPopup(props) {
 			onRender={handleRender}
 		>
 			<div ref={innerRef} className="inner">
-				<img style={{ maxHeight: props.params.height + 'px', maxWidth: props.params.width + 'px' }} src={props.params.image}/>
+				<img height={props.params.height} width={props.params.width} src={props.params.image}/>
 			</div>
 		</ViewPopup>
 	);

@@ -118,7 +118,6 @@
 		overflow-y: auto;
 
 		img {
-			max-width: 400px;
 			@include pdf-page-image-dark-light;
 		}
 	}
