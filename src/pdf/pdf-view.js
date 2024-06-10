@@ -144,6 +144,8 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplicationOptions.set('printResolution', 300);
 			this._iframeWindow.PDFViewerApplicationOptions.set('enableScripting', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('disablePreferences', true);
+			this._iframeWindow.PDFViewerApplicationOptions.set('disableHistory', true);
+			this._iframeWindow.PDFViewerApplicationOptions.set('enableXfa', false);
 		};
 
 		window.addEventListener('webviewerloaded', () => {
