@@ -135,7 +135,73 @@ class PDFRenderer {
 		return image;
 	}
 
-	async _renderPosition(position) {
+
+	_trimCanvas(canvas, padding = 0) {
+		const ctx = canvas.getContext('2d', { willReadFrequently: true });
+		const width = canvas.width;
+		const height = canvas.height;
+		const imageData = ctx.getImageData(0, 0, width, height);
+		const data = new Uint32Array(imageData.data.buffer);
+
+		let minX = width, minY = height, maxX = 0, maxY = 0;
+		let foundNonWhitePixel = false;
+
+		// Function to check if a pixel is white
+		function isWhite(pixel) {
+			// A white pixel will have all 8-bit components set to 255 (0xFFFFFFFF)
+			return (pixel & 0xFFFFFF) === 0xFFFFFF && (pixel >>> 24) === 255;
+		}
+
+		// Scan for non-white, non-transparent pixels
+		for (let y = 0; y < height; y++) {
+			for (let x = 0; x < width; x++) {
+				const index = y * width + x;
+				if (!isWhite(data[index])) {
+					if (x < minX) minX = x;
+					if (x > maxX) maxX = x;
+					if (y < minY) minY = y;
+					if (y > maxY) maxY = y;
+					foundNonWhitePixel = true;
+				}
+			}
+		}
+
+		// If no non-white pixel is found, return the original canvas and an empty rect
+		if (!foundNonWhitePixel) {
+			return {
+				canvas: canvas,
+				rect: [0, 0, width, height]
+			};
+		}
+
+		// Apply padding and ensure bounds do not exceed canvas dimensions
+		minX = Math.max(0, minX - padding);
+		minY = Math.max(0, minY - padding);
+		maxX = Math.min(width - 1, maxX + padding);
+		maxY = Math.min(height - 1, maxY + padding);
+
+		// Calculate dimensions of the content area with padding
+		const trimmedWidth = maxX - minX + 1;
+		const trimmedHeight = maxY - minY + 1;
+
+		// Extract the content area with padding
+		const trimmedData = ctx.getImageData(minX, minY, trimmedWidth, trimmedHeight);
+
+		// Clear the canvas and resize it
+		canvas.width = trimmedWidth;
+		canvas.height = trimmedHeight;
+
+		// Draw the trimmed image data back onto the resized canvas
+		ctx.putImageData(trimmedData, 0, 0);
+
+		// Return the modified canvas and the bounding rectangle
+		return {
+			canvas: canvas,
+			rect: [minX, minY, minX + trimmedWidth, minY + trimmedHeight]
+		};
+	}
+
+	async renderPreviewPage(position) {
 		let SCALE = window.devicePixelRatio;
 		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
 
@@ -153,14 +219,11 @@ class PDFRenderer {
 		);
 		let scale = Math.min(SCALE, maxScale);
 
-		expandedPosition = p2v(expandedPosition, page.getViewport({ scale }));
-		rect = expandedPosition.rects[0];
 
-		let viewport = page.getViewport({ scale, offsetX: -rect[0], offsetY: -rect[1] });
-		position = p2v(position, viewport);
-
-		let canvasWidth = (rect[2] - rect[0]);
-		let canvasHeight = (rect[3] - rect[1]);
+		let viewport = page.getViewport({ scale });
+		let position2 = p2v(position, viewport);
+		let canvasWidth = viewport.width;
+		let canvasHeight = viewport.height;
 
 		let canvas = this._pdfView._iframeWindow.document.createElement('canvas');
 		let ctx = canvas.getContext('2d', { alpha: false });
@@ -182,14 +245,41 @@ class PDFRenderer {
 		await page.render(renderContext).promise;
 
 
-		let image = canvas.toDataURL('image/png', 1);
+		rect = position2.rects[0];
+		ctx.fillStyle = '#f57b7b';
+		ctx.globalCompositeOperation = 'multiply';
+		if (rect[2] - rect[0] < 5 || rect[3] - rect[1] < 5) {
+			let centerX = (rect[0] + rect[2]) / 2;
+			let centerY = (rect[1] + rect[3]) / 2;
+			ctx.beginPath();
+			ctx.arc(centerX, centerY, 7, 0, Math.PI * 2, false);
+			ctx.fill();
+		}
+		else {
+			ctx.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+		}
+
+		let { canvas: canvas2, rect: rect2 } = this._trimCanvas(canvas, 15);
+
+		let width = canvas2.width / scale;
+		let height = canvas2.height / scale;
+
+		let rect3 = position2.rects[0].slice();
+		let x = (rect3[0] + rect3[2]) / 2;
+		let y = (rect3[1] + rect3[3]) / 2;
+		x -= rect2[0];
+		y -= rect2[1];
+		x /= scale;
+		y /= scale;
+
+		let image = canvas2.toDataURL('image/png', 1);
 
 		// Zeroing the width and height causes Firefox to release graphics
 		// resources immediately, which can greatly reduce memory consumption. (PDF.js)
 		canvas.width = 0;
 		canvas.height = 0;
 
-		return image;
+		return { image, width, height, x, y };
 	}
 
 	start() {

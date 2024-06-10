@@ -537,6 +537,9 @@ export function getCharsFromSelectionRanges(pdfPages, selectionRanges) {
 }
 
 function applySelectionRangeIsolation(pdfPages, selectionRanges) {
+	if (!selectionRanges.length) {
+		return [];
+	}
 	if (selectionRanges[0].collapsed === true) {
 		return selectionRanges;
 	}

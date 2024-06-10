@@ -84,13 +84,24 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 			top = rect[3] + padding;
 			side = 'top';
 
-			side = 'right';
-			left = rect[2] + padding;
-			top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
-			if (top < 0) {
-				top = rect[1];
-			} else if (top + height > viewRect[3]) {
-				top = (rect[1] + (rect[3] - rect[1])) - height;
+			if (rect[0] < (viewRect[2] - viewRect[0]) / 2) {
+				side = 'right';
+				left = rect[2] + padding;
+				top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
+				if (top < 0) {
+					top = rect[1];
+				} else if (top + height > viewRect[3]) {
+					top = (rect[1] + (rect[3] - rect[1])) - height;
+				}
+			} else {
+				side = 'left';
+				left = rect[0] - width - padding;
+				top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
+				if (top < 0) {
+					top = rect[1];
+				} else if (top + height > viewRect[3]) {
+					top = (rect[1] + (rect[3] - rect[1])) - height;
+				}
 			}
 		}
 

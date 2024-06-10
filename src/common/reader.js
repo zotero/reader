@@ -37,6 +37,7 @@ class Reader {
 		this._platform = options.platform;
 		this._data = options.data;
 		this._password = options.password;
+		this._preview = options.preview;
 
 		this._readerContext = { type: this._type, platform: this._platform };
 
@@ -224,64 +225,81 @@ class Reader {
 
 		this._primaryView = this._createView(true, options.location);
 
-		ReactDOM.render(
-			<IntlProvider
-				locale={window.navigator.language}
-				messages={this._localizedStrings}
-				onError={window.development && (() => {
-				})}
-			>
-				<ReaderContext.Provider value = { this._readerContext }>
-					<ReaderUI
-						type={this._type}
-						state={this._state}
-						onSelectAnnotations={this.setSelectedAnnotations.bind(this)}
-						onZoomIn={this.zoomIn.bind(this)}
-						onZoomOut={this.zoomOut.bind(this)}
-						onZoomReset={this.zoomReset.bind(this)}
-						onNavigateBack={this.navigateBack.bind(this)}
-						onNavigateToPreviousPage={this.navigateToPreviousPage.bind(this)}
-						onNavigateToNextPage={this.navigateToNextPage.bind(this)}
-						onChangePageNumber={pageNumber => this.navigate({ pageNumber })}
-						onChangeTool={this.setTool.bind(this)}
-						onToggleFind={this.toggleFindPopup.bind(this)}
-						onChangeFilter={this.setFilter.bind(this)}
-						onChangeSidebarView={this.setSidebarView.bind(this)}
-						onToggleSidebar={(open) => { this.toggleSidebar(open); this._onToggleSidebar(open); }}
-						onResizeSidebar={(width) => { this.setSidebarWidth(width); this._onChangeSidebarWidth(width); }}
-						onResizeSplitView={this.setSplitViewSize.bind(this)}
-						onAddAnnotation={(annotation) => { this._annotationManager.addAnnotation(annotation); this.setSelectedAnnotations([]); } }
-						onUpdateAnnotations={(annotations) => { this._annotationManager.updateAnnotations(annotations); this._enableAnnotationDeletionFromComment = false; }}
-						onDeleteAnnotations={this._annotationManager.deleteAnnotations.bind(this._annotationManager)}
-						onOpenTagsPopup={this._onOpenTagsPopup}
-						onOpenPageLabelPopup={this._handleOpenPageLabelPopup.bind(this)}
-						onOpenColorContextMenu={params => this._onOpenContextMenu(createColorContextMenu(this, params))}
-						onOpenAnnotationContextMenu={params => this._onOpenContextMenu(createAnnotationContextMenu(this, params))}
-						onOpenSelectorContextMenu={params => this._onOpenContextMenu(createSelectorContextMenu(this, params))}
-						onOpenThumbnailContextMenu={params => this._onOpenContextMenu(createThumbnailContextMenu(this, params))}
-						onCloseContextMenu={this.closeContextMenu.bind(this)}
-						onCloseLabelPopup={this._handleLabelPopupClose.bind(this)}
-						onEnterPassword={this.enterPassword.bind(this)}
-						onAddToNote={(annotations) => { this._onAddToNote(annotations); this.setSelectedAnnotations([]); }}
-						onNavigate={this.navigate.bind(this)}
-						onUpdateOutline={outline => this._updateState({ outline })}
-						onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
-						onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
-						onOpenLink={this._onOpenLink}
-						onChangeFindState={this._handleFindStateChange.bind(this)}
-						onFindNext={this.findNext.bind(this)}
-						onFindPrevious={this.findPrevious.bind(this)}
-						onToggleFindPopup={this.toggleFindPopup.bind(this)}
-						onToggleContextPane={this._onToggleContextPane}
-						ref={this._readerRef}
-					/>
-				</ReaderContext.Provider>
-			</IntlProvider>,
-			document.getElementById('reader-ui'),
-			() => {
-				this._resolveUIInitializedPromise();
-			}
-		);
+		if (!this._preview) {
+			ReactDOM.render(
+				<IntlProvider
+					locale={window.navigator.language}
+					messages={this._localizedStrings}
+					onError={window.development && (() => {
+					})}
+				>
+					<ReaderContext.Provider value={this._readerContext}>
+						<ReaderUI
+							type={this._type}
+							state={this._state}
+							onSelectAnnotations={this.setSelectedAnnotations.bind(this)}
+							onZoomIn={this.zoomIn.bind(this)}
+							onZoomOut={this.zoomOut.bind(this)}
+							onZoomReset={this.zoomReset.bind(this)}
+							onNavigateBack={this.navigateBack.bind(this)}
+							onNavigateToPreviousPage={this.navigateToPreviousPage.bind(this)}
+							onNavigateToNextPage={this.navigateToNextPage.bind(this)}
+							onChangePageNumber={pageNumber => this.navigate({ pageNumber })}
+							onChangeTool={this.setTool.bind(this)}
+							onToggleFind={this.toggleFindPopup.bind(this)}
+							onChangeFilter={this.setFilter.bind(this)}
+							onChangeSidebarView={this.setSidebarView.bind(this)}
+							onToggleSidebar={(open) => {
+								this.toggleSidebar(open);
+								this._onToggleSidebar(open);
+							}}
+							onResizeSidebar={(width) => {
+								this.setSidebarWidth(width);
+								this._onChangeSidebarWidth(width);
+							}}
+							onResizeSplitView={this.setSplitViewSize.bind(this)}
+							onAddAnnotation={(annotation) => {
+								this._annotationManager.addAnnotation(annotation);
+								this.setSelectedAnnotations([]);
+							}}
+							onUpdateAnnotations={(annotations) => {
+								this._annotationManager.updateAnnotations(annotations);
+								this._enableAnnotationDeletionFromComment = false;
+							}}
+							onDeleteAnnotations={this._annotationManager.deleteAnnotations.bind(this._annotationManager)}
+							onOpenTagsPopup={this._onOpenTagsPopup}
+							onOpenPageLabelPopup={this._handleOpenPageLabelPopup.bind(this)}
+							onOpenColorContextMenu={params => this._onOpenContextMenu(createColorContextMenu(this, params))}
+							onOpenAnnotationContextMenu={params => this._onOpenContextMenu(createAnnotationContextMenu(this, params))}
+							onOpenSelectorContextMenu={params => this._onOpenContextMenu(createSelectorContextMenu(this, params))}
+							onOpenThumbnailContextMenu={params => this._onOpenContextMenu(createThumbnailContextMenu(this, params))}
+							onCloseContextMenu={this.closeContextMenu.bind(this)}
+							onCloseLabelPopup={this._handleLabelPopupClose.bind(this)}
+							onEnterPassword={this.enterPassword.bind(this)}
+							onAddToNote={(annotations) => {
+								this._onAddToNote(annotations);
+								this.setSelectedAnnotations([]);
+							}}
+							onNavigate={this.navigate.bind(this)}
+							onUpdateOutline={outline => this._updateState({ outline })}
+							onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
+							onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
+							onOpenLink={this._onOpenLink}
+							onChangeFindState={this._handleFindStateChange.bind(this)}
+							onFindNext={this.findNext.bind(this)}
+							onFindPrevious={this.findPrevious.bind(this)}
+							onToggleFindPopup={this.toggleFindPopup.bind(this)}
+							onToggleContextPane={this._onToggleContextPane}
+							ref={this._readerRef}
+						/>
+					</ReaderContext.Provider>
+				</IntlProvider>,
+				document.getElementById('reader-ui'),
+				() => {
+					this._resolveUIInitializedPromise();
+				}
+			);
+		}
 
 		this._updateState(this._state, true);
 
@@ -789,6 +807,7 @@ class Reader {
 			data,
 			platform: this._platform,
 			readOnly: this._state.readOnly,
+			preview: this._preview,
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),

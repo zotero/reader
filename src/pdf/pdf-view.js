@@ -55,13 +55,13 @@ import {
 	smoothPath
 } from './lib/path';
 import { History } from '../common/lib/history';
-import { predictPageLabels } from './lib/page-label-predictor';
 
 class PDFView {
 	constructor(options) {
 		this._options = options;
 		this._primary = options.primary;
 		this._readOnly = options.readOnly;
+		this._preview = options.preview;
 		this._container = options.container;
 		this._password = options.password;
 		this._useDarkMode = options.useDarkMode;
@@ -137,7 +137,7 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplicationOptions.set('isEvalSupported', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('defaultUrl', '');
 			this._iframeWindow.PDFViewerApplicationOptions.set('historyUpdateUrl', false);
-			this._iframeWindow.PDFViewerApplicationOptions.set('textLayerMode', 1);
+			this._iframeWindow.PDFViewerApplicationOptions.set('textLayerMode', this._preview ? 0 : 1);
 			this._iframeWindow.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 			this._iframeWindow.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
 			this._iframeWindow.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
@@ -152,61 +152,75 @@ class PDFView {
 		});
 
 		this._iframe.addEventListener('load', () => {
-			// Delete existing local history data
-			// TODO: This can be removed in future
-			try { localStorage.removeItem('pdfjs.history'); } catch (e) {}
-			try { this._iframeWindow.localStorage.removeItem('pdfjs.history'); } catch (e) {}
-			setOptions();
-			if (!this._useDarkMode) {
-				this._iframeWindow.document.body.classList.add('disableDarkMode');
-			}
-			if (this._colorScheme) {
-				this._iframeWindow.document.documentElement.dataset.colorScheme = this._colorScheme;
-			}
-			this._iframeWindow.onAttachPage = this._attachPage.bind(this);
-			this._iframeWindow.onDetachPage = this._detachPage.bind(this);
-			this._init();
-			if (options.data.buf) {
-				this._iframeWindow.PDFViewerApplication.open({ data: options.data.buf, password: this._password });
-			}
-			else {
-				this._iframeWindow.PDFViewerApplication.open({ url: options.data.url, password: this._password });
-			}
-			window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
-			window.if = this._iframeWindow;
-			this._resolveInitializedPromise();
-
-			this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
-				let x = event.target.scrollLeft;
-				let y = event.target.scrollTop;
-
-				if (this._overlayPopup) {
-					this._overlayPopupDelayer.close(() => {});
-					this._selectedOverlay = null;
-					this._onSetOverlayPopup(null);
+			// This is necessar to make sure this is called after webviewerloaded
+			setTimeout(() => {
+				// Delete existing local history data
+				// TODO: This can be removed in future
+				try {
+					localStorage.removeItem('pdfjs.history');
 				}
+				catch (e) {
+				}
+				try {
+					this._iframeWindow.localStorage.removeItem('pdfjs.history');
+				}
+				catch (e) {
+				}
+				setOptions();
+				if (!this._useDarkMode) {
+					this._iframeWindow.document.body.classList.add('disableDarkMode');
+				}
+				if (this._colorScheme) {
+					this._iframeWindow.document.documentElement.dataset.colorScheme = this._colorScheme;
+				}
+				this._iframeWindow.onAttachPage = this._attachPage.bind(this);
+				this._iframeWindow.onDetachPage = this._detachPage.bind(this);
+				if (!this._preview) {
+					this._init();
+				}
+				if (options.data.buf) {
+					this._iframeWindow.PDFViewerApplication.open({ data: options.data.buf, password: this._password });
+				}
+				else {
+					this._iframeWindow.PDFViewerApplication.open({ url: options.data.url, password: this._password });
+				}
+				window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
+				window.if = this._iframeWindow;
+				this._resolveInitializedPromise();
 
-				// TODO: Consider creating "getSelectionAnnotationPopup"
-				if (this._annotationPopup) {
-					let annotations = this.getSelectedAnnotations();
-					if (annotations.length === 1) {
-						let annotation = annotations[0];
-						let rect = this.getClientRectForPopup(annotation.position, x, y);
-						this._onSetAnnotationPopup({ rect, annotation });
+				this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
+					let x = event.target.scrollLeft;
+					let y = event.target.scrollTop;
+
+					if (this._overlayPopup) {
+						this._overlayPopupDelayer.close(() => {
+						});
+						this._selectedOverlay = null;
+						this._onSetOverlayPopup(null);
 					}
-				}
 
-				if (this._selectionPopup) {
-					let selectionRange = this._selectionRanges[0];
-					if (selectionRange) {
-						let rect = this.getClientRectForPopup(selectionRange.position);
-						this._onSetSelectionPopup({ ...this._selectionPopup, rect });
+					// TODO: Consider creating "getSelectionAnnotationPopup"
+					if (this._annotationPopup) {
+						let annotations = this.getSelectedAnnotations();
+						if (annotations.length === 1) {
+							let annotation = annotations[0];
+							let rect = this.getClientRectForPopup(annotation.position, x, y);
+							this._onSetAnnotationPopup({ rect, annotation });
+						}
 					}
-				}
-			});
 
-			this._iframeWindow.addEventListener('focus', (event) => {
-				options.onFocus();
+					if (this._selectionPopup) {
+						let selectionRange = this._selectionRanges[0];
+						if (selectionRange) {
+							let rect = this.getClientRectForPopup(selectionRange.position);
+							this._onSetSelectionPopup({ ...this._selectionPopup, rect });
+						}
+					}
+				});
+
+				this._iframeWindow.addEventListener('focus', (event) => {
+					options.onFocus();
+				});
 			});
 		});
 
@@ -257,7 +271,7 @@ class PDFView {
 	}
 
 	async _init2() {
-		if (this._primary) {
+		if (this._primary && !this._preview) {
 			// let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
 			// this._onSetOutline(outline);
 			this._pdfRenderer.start();
@@ -271,7 +285,7 @@ class PDFView {
 
 	async _handleDocumentInit() {
 		if (this._viewState) {
-			this._setState(this._viewState, !!this._location);
+			await this._setState(this._viewState, !!this._location);
 		}
 		// Default state
 		else {
@@ -281,6 +295,7 @@ class PDFView {
 		if (this._location) {
 			this.navigate(this._location);
 		}
+		await this._initProcessedData();
 	}
 
 	_updateFindMatchesCount({ matchesCount }) {
@@ -368,8 +383,26 @@ class PDFView {
 		});
 	}
 
+	async _initProcessedData() {
+		let { pageLabels, pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
+		for (let key in pages) {
+			this._pdfPages[key] = pages[key];
+		}
+		this._onSetPageLabels(pageLabels);
+		this._render();
+	}
+
 	async _attachPage(originalPage) {
 		this._init2 && this._init2();
+
+		if (this._preview) {
+			this._detachPage(originalPage);
+			let page = new Page(this, originalPage);
+			this._pages.push(page);
+			this._render();
+			return;
+		}
+
 		if (this._primary && !this._pdfThumbnails) {
 			this._initThumbnails();
 		}
@@ -377,11 +410,10 @@ class PDFView {
 		this._detachPage(originalPage);
 
 		originalPage.textLayerPromise.then(() => {
-			try {
-				originalPage.div.querySelector('.textLayer').draggable = true;
-			}
-			catch (e) {
-				console.log(e);
+			// Text layer may no longer exist if it was detached in the meantime
+			let textLayer = originalPage.div.querySelector('.textLayer');
+			if (textLayer) {
+				textLayer.draggable = true;
 			}
 		});
 
@@ -394,19 +426,11 @@ class PDFView {
 
 		if (!this._pdfPages[pageIndex]) {
 			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
-			this._pdfPages[pageIndex] = pageData;
-
-			if (!this._pdfPageLabels) {
-				this._pdfPageLabels = await PDFViewerApplication.pdfDocument.getPageLabels();
+			if (!this._pdfPages[pageIndex]) {
+				this._pdfPages[pageIndex] = pageData;
+				this._render();
 			}
-
-			// Re-calculate page labels whenever a new page data is loaded
-			let { pagesCount } = this._iframeWindow.PDFViewerApplication.pdfViewer;
-			let pageLabels = predictPageLabels(this._pdfPages, pagesCount, this._pdfPageLabels);
-			this._onSetPageLabels(pageLabels);
 		}
-
-		this._render();
 	}
 
 	_detachPage(originalPage) {
@@ -1715,10 +1739,10 @@ class PDFView {
 				let clickableOverlay = false;
 				if (overlay) {
 					if (['citation', 'reference'].includes(overlay.type)
-						|| overlay.type === 'internal-link' && overlay.source === 'matched') {
+						|| overlay.type === 'internal-link') {
 						overlayWithPopup = true;
 					}
-					if (['internal-link', 'external-link'].includes(overlay.type)) {
+					if (['internal-link', 'external-link', 'citation'].includes(overlay.type)) {
 						clickableOverlay = true;
 					}
 					if (overlay.type === 'external-link') {
@@ -1749,17 +1773,15 @@ class PDFView {
 							let rect = this.getClientRect(overlay.position.rects[0], overlay.position.pageIndex);
 							let overlayPopup = { ...overlay, rect };
 							if (overlayPopup.type === 'internal-link') {
-								if (overlayPopup.source === 'matched') {
-									overlayPopup.image = await this._pdfRenderer._renderPosition(overlay.previewPosition);
-
-									let rect = overlay.previewPosition.rects[0];
-									overlayPopup.width = rect[2] - rect[0];
-									overlayPopup.height = Math.abs(rect[3] - rect[1]);
-
-									this._onSetOverlayPopup(overlayPopup);
-								}
+								let { image, width, height, x, y } = await this._pdfRenderer.renderPreviewPage(overlay.destinationPosition);
+								overlayPopup.image = image;
+								overlayPopup.width = width;
+								overlayPopup.height = height;
+								overlayPopup.x = x;
+								overlayPopup.y = y;
+								this._onSetOverlayPopup(overlayPopup);
 							}
-							else if (['citation', 'reference'].includes(overlay.type)){
+							else if (['citation', 'reference'].includes(overlay.type)) {
 								this._onSetOverlayPopup(overlayPopup);
 							}
 						});
@@ -2103,6 +2125,9 @@ class PDFView {
 					}
 					else if (overlay.type === 'external-link') {
 						this._onOpenLink(overlay.url);
+					}
+					else if (overlay.type === 'citation') {
+						this.navigate({ position: overlay.references[0].position });
 					}
 				}
 			}
