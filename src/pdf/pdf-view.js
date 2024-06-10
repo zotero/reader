@@ -390,6 +390,7 @@ class PDFView {
 		}
 		this._onSetPageLabels(pageLabels);
 		this._render();
+		this._updateViewStats();
 	}
 
 	async _attachPage(originalPage) {
