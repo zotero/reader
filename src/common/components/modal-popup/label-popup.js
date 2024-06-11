@@ -18,9 +18,7 @@ function getData(params) {
 		annotations = params.selectedAnnotations;
 	}
 
-	if (annotations.some(x => x.readOnly)) {
-		return;
-	}
+	annotations = annotations.filter(x => !x.readOnly);
 
 	annotations.sort((a, b) => a.position.pageIndex - b.position.pageIndex);
 
