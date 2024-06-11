@@ -114,7 +114,7 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 
 	let pointerClass = {};
 	if (pos.current) {
-		pointerClass['page-popup-' + pos.current.side] = true;
+		pointerClass['page-popup-' + pos.current.side + '-center'] = true;
 	}
 
 	return (

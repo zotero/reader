@@ -17,7 +17,7 @@
 
 	}
 
-	#{if($position == "bottom", "&", "&[class*='bottom']")} {
+	#{if($position == "bottom-center", "&", "&[class*='bottom-center']")} {
 		&::before,
 		&::after {
 			border-top-width: 0;
@@ -38,7 +38,7 @@
 	}
 
 
-	#{if($position == "top", "&", "&[class*='top']")} {
+	#{if($position == "top-center", "&", "&[class*='top-center']")} {
 		&::before,
 		&::after {
 			border-bottom-width: 0;
@@ -58,7 +58,7 @@
 		}
 	}
 
-	#{if($position == "left", "&", "&[class*='left']")} {
+	#{if($position == "left-center", "&", "&[class*='left-center']")} {
 		&::before,
 		&::after {
 			border-right-width: 0;
@@ -77,7 +77,7 @@
 		}
 	}
 
-	#{if($position == "right", "&", "&[class*='right']")} {
+	#{if($position == "right-center", "&", "&[class*='right-center']")} {
 		&::before,
 		&::after {
 			border-left-width: 0;
@@ -96,6 +96,83 @@
 		}
 	}
 
+	// ---
+
+	#{if($position == "top-left", "&", "&[class*='top-left']")} {
+		&::before,
+		&::after {
+			border-bottom-width: 0;
+			transform: translateX(-$border-x);
+			left: 20px;
+		}
+
+		&::before {
+			bottom: (-$border-y - 1px);
+			border-top-color: var(--color-panedivider);
+		}
+
+		&::after {
+			bottom: -$border-y;
+			border-top-color: var(--color-background);
+		}
+	}
+
+	#{if($position == "top-right", "&", "&[class*='top-right']")} {
+		&::before,
+		&::after {
+			border-bottom-width: 0;
+			transform: translateX(-$border-x);
+			right: 20px;
+		}
+
+		&::before {
+			bottom: (-$border-y - 1px);
+			border-top-color: var(--color-panedivider);
+		}
+
+		&::after {
+			bottom: -$border-y;
+			border-top-color: var(--color-background);
+		}
+	}
+
+	#{if($position == "bottom-left", "&", "&[class*='bottom-left']")} {
+		&::before,
+		&::after {
+			border-top-width: 0;
+			transform: translateX(-$border-x);
+			left: 20px;
+		}
+
+		&::before {
+			top: (-$border-y - 1px);
+			border-bottom-color: var(--color-panedivider);
+		}
+
+		&::after {
+			top: -$border-y;
+			border-bottom-color: var(--color-background);
+		}
+	}
+
+	#{if($position == "bottom-right", "&", "&[class*='bottom-right']")} {
+		&::before,
+		&::after {
+			border-top-width: 0;
+			transform: translateX(-$border-x);
+			right: 20px;
+		}
+
+		&::before {
+			top: (-$border-y - 1px);
+			border-bottom-color: var(--color-panedivider);
+		}
+
+		&::after {
+			top: -$border-y;
+			border-bottom-color: var(--color-background);
+		}
+	}
 }
 
 // An implementation of Firefox light-dark() CSS mixin, which is not supported in 102

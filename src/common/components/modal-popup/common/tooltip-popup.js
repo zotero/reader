@@ -67,8 +67,7 @@ function TooltipPopup({ rect, className, children, onClose }) {
 				left
 			},
 			classes: {
-				['popup-' + vertical]: true,
-				['popup-' + horizontal]: true
+				['popup-' + vertical + '-' + horizontal]: true,
 			}
 		});
 	}
