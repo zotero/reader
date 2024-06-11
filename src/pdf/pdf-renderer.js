@@ -136,8 +136,7 @@ class PDFRenderer {
 	}
 
 
-	_trimCanvas(canvas, padding = 0) {
-		const ctx = canvas.getContext('2d', { willReadFrequently: true });
+	_trimCanvas(canvas, ctx, padding = 0) {
 		const width = canvas.width;
 		const height = canvas.height;
 		const imageData = ctx.getImageData(0, 0, width, height);
@@ -226,7 +225,7 @@ class PDFRenderer {
 		let canvasHeight = viewport.height;
 
 		let canvas = this._pdfView._iframeWindow.document.createElement('canvas');
-		let ctx = canvas.getContext('2d', { alpha: false });
+		let ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
 
 		if (!canvasWidth || !canvasHeight) {
 			return '';
@@ -244,22 +243,38 @@ class PDFRenderer {
 
 		await page.render(renderContext).promise;
 
+		let { canvas: canvas2, rect: rect2 } = this._trimCanvas(canvas, ctx, 15);
 
+		// Render the dot after trimming the canvas to make sure it doesn't interfere with trimming
 		rect = position2.rects[0];
 		ctx.fillStyle = '#f57b7b';
 		ctx.globalCompositeOperation = 'multiply';
 		if (rect[2] - rect[0] < 5 || rect[3] - rect[1] < 5) {
+			let radius = 7;
 			let centerX = (rect[0] + rect[2]) / 2;
 			let centerY = (rect[1] + rect[3]) / 2;
+			if (centerX < rect2[0]) {
+				centerX = radius;
+			}
+			else if (centerX > rect2[2]) {
+				centerX = rect2[2] - radius;
+			}
+			if (centerY < rect2[1]) {
+				centerY = radius;
+			}
+			else if (centerY > rect2[3]) {
+				centerY = rect2[3] - radius;
+			}
 			ctx.beginPath();
 			ctx.arc(centerX, centerY, 7, 0, Math.PI * 2, false);
 			ctx.fill();
 		}
 		else {
-			ctx.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+			// Adjust x and y after trimming
+			let x = rect[0] - rect2[0];
+			let y = rect[1] - rect2[1];
+			ctx.fillRect(x, y, rect[2] - rect[0], rect[3] - rect[1]);
 		}
-
-		let { canvas: canvas2, rect: rect2 } = this._trimCanvas(canvas, 15);
 
 		let width = canvas2.width / scale;
 		let height = canvas2.height / scale;
