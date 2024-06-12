@@ -811,7 +811,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			onUpdateViewState: () => this._updateViewState(),
 			onUpdateViewStats: () => this._updateViewStats(),
 			onViewUpdate: () => this._handleViewUpdate(),
-			onPushHistoryPoint: () => this._pushHistoryPoint(true),
+			onPushHistoryPoint: (transient) => {
+				this._pushHistoryPoint(transient);
+			},
 		});
 		this.flow.setSpreadMode(this.spreadMode);
 
@@ -965,10 +967,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		else {
 			super.navigate(location, options);
-		}
-
-		if (!options.skipHistory) {
-			this._pushHistoryPoint();
 		}
 	}
 

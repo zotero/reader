@@ -98,7 +98,7 @@ class AnnotationManager {
 				throw new Error(`If updating 'position', 'sortIndex' has to be provided as well`);
 			}
 			let existingAnnotation = this._getAnnotationByID(annotation.id);
-			if (existingAnnotation.readOnly) {
+			if (existingAnnotation.readOnly && !(annotation.image && Object.keys(annotation).length === 2)) {
 				throw new Error('Cannot update read-only annotation');
 			}
 			// To save image it should have only id and image properties
