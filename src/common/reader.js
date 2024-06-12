@@ -283,7 +283,7 @@ class Reader {
 							}}
 							onNavigate={this.navigate.bind(this)}
 							onUpdateOutline={outline => this._updateState({ outline })}
-              onUpdateOutlineQuery={outlineQuery => this._updateState({ outlineQuery })}
+							onUpdateOutlineQuery={outlineQuery => this._updateState({ outlineQuery })}
 							onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 							onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 							onOpenLink={this._onOpenLink}
