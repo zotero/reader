@@ -533,31 +533,21 @@ class PDFView {
 
 		let rect = this.getPositionBoundingViewRect(position);
 
+		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
 
-		let { scrollTop, scrollLeft } = element;
+		// Calculate the center of the bounding rectangle
+		let rectCenterX = (rect[0] + rect[2]) / 2;
+		let rectCenterY = (rect[1] + rect[3]) / 2;
 
-		let viewRect = [scrollLeft, scrollTop, element.clientWidth + scrollLeft, element.clientHeight + scrollTop];
+		// Calculate the new scroll position to center the bounding rectangle
+		let left = rectCenterX - (clientWidth / 2);
+		let top = rectCenterY - (clientHeight / 2);
 
-		let padding = 10;
+		// Ensure the new scroll position does not go out of bounds
+		left = Math.max(0, Math.min(left, scrollWidth - clientWidth));
+		top = Math.max(0, Math.min(top, scrollHeight - clientHeight));
 
-		let left = scrollLeft;
-		let top = scrollTop;
-
-		if (rect[1] < viewRect[1]) {
-			top = scrollTop - (viewRect[1] - rect[1]) - padding;
-		}
-		else if (rect[3] > viewRect[3]) {
-			top = scrollTop + (rect[3] - viewRect[3]) + padding;
-		}
-
-		if (rect[0] < viewRect[0]) {
-			left = scrollLeft - (viewRect[0] - rect[0]) + padding;
-		}
-		else if (rect[2] > viewRect[2]) {
-			left = scrollLeft + (rect[2] - viewRect[2]) - padding;
-		}
-
-		// // Scroll the element smoothly
+		// Scroll the element smoothly
 		element.scrollTo({
 			left,
 			top,
