@@ -2104,6 +2104,12 @@ class PDFView {
 		if (!this.action && event.target.classList.contains('textAnnotation')) {
 			return;
 		}
+
+		this._overlayPopupDelayer.close(() => {
+			this._selectedOverlay = null;
+			this._onSetOverlayPopup(null);
+		});
+
 		let position = this.pointerEventToPosition(event);
 
 		if (this.pointerDownPosition) {
