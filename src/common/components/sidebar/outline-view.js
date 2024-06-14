@@ -102,7 +102,7 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 	}
 
 	return (
-		<div className={cx('outline-view', { loading: outline === null })} data-tabstop="1">
+		<div className={cx('outline-view', { loading: outline === null })} data-tabstop="1" id="outlineView" role="tabpanel" aria-labelledby="viewOutline">
 			{outline === null ? <div className="spinner"/> : renderItems(outline)}
 		</div>
 	);

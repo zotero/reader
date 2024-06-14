@@ -11,6 +11,10 @@ const Thumbnail = memo(({ thumbnail, selected, pageLabel, onContextMenu }) => {
 			className={cx('thumbnail', { selected })}
 			data-page-index={thumbnail.pageIndex}
 			onContextMenu={onContextMenu}
+			role="option"
+			aria-label={pageLabel}
+			aria-selected={selected}
+			id={`thumbnail_${thumbnail.pageIndex}`}
 		>
 			<div className="image">
 				{thumbnail.image
@@ -199,7 +203,7 @@ function ThumbnailsView(props) {
 	}, [onOpenThumbnailContextMenu, selected]);
 
 	return (
-		<div className="thumbnails-view">
+		<div id="thumbnailsView" className="thumbnails-view" role="tabpanel" aria-labelledby="viewThumbnail">
 			{platform === 'web' && (
 				<div className="thumbnails-header">
 					<FormattedMessage id="pdfReader.selectedPages" values={ { count: selected.length }} />
@@ -219,6 +223,10 @@ function ThumbnailsView(props) {
 				onMouseDown={handleMouseDown}
 				ref={containerRef}
 				tabIndex={-1}
+				role='listbox'
+				aria-label={intl.formatMessage({ id: "pdfReader.thumbnails" })}
+				aria-activedescendant={`thumbnail_${selected[selected.length-1]}`}
+				aria-multiselectable="true"
 			>
 				{props.thumbnails.map((thumbnail, index) => {
 					let pageLabel = props.pageLabels[index] || (index + 1).toString();

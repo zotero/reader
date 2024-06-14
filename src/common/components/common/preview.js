@@ -91,6 +91,7 @@ export function PopupPreview(props) {
 						data-tabstop={!props.readOnly ? true : undefined}
 						tabIndex={-1}
 						className="more"
+						title={intl.formatMessage({ id: 'pdfReader.openMenu' })}
 						disabled={props.readOnly}
 						onClick={handleClickMore}
 					>{props.readOnly ? <IconLock/> : <IconOptions/>}</button>
@@ -102,6 +103,7 @@ export function PopupPreview(props) {
 					<Editor
 						id={annotation.id}
 						text={annotation.comment}
+						ariaLabel={intl.formatMessage({ id: 'pdfReader.annotationComment' })}
 						placeholder={props.readOnly ? intl.formatMessage({ id: 'pdfReader.readOnly' })
 							: intl.formatMessage({ id: 'pdfReader.addComment' })}
 						readOnly={props.readOnly}
@@ -116,6 +118,8 @@ export function PopupPreview(props) {
 					className="tags"
 					data-tabstop={1}
 					onClick={handleTagsClick}
+					aria-description={intl.formatMessage({ id: 'pdfReader.manageTags' })}
+					aria-haspopup={true}
 				>{annotation.tags.length ? annotation.tags.map((tag, index) => (
 					<span
 						className="tag" key={index}
@@ -215,7 +219,9 @@ export function SidebarPreview(props) {
 				id={annotation.id}
 				text={annotation.text}
 				placeholder={intl.formatMessage({ id: 'pdfReader.noExtractedText' })}
+				ariaLabel={intl.formatMessage({ id: 'pdfReader.annotationText' })}
 				readOnly={props.readOnly || state !== 3}
+				tabstop={state >= 1}
 				expanded={props.state >= 2}
 				enableRichText={annotation.type !== 'text'}
 				onChange={handleTextChange}
@@ -238,6 +244,7 @@ export function SidebarPreview(props) {
 				readOnly={props.readOnly || !(state === 1 || state === 2 || state === 3)}
 				expanded={state >= 1}
 				placeholder={intl.formatMessage({ id: 'pdfReader.addComment' })}
+				ariaLabel={intl.formatMessage({ id: 'pdfReader.annotationComment' })}
 				enableRichText={annotation.type !== 'text'}
 				onChange={handleCommentChange}
 			/>
@@ -287,6 +294,7 @@ export function SidebarPreview(props) {
 							className="page"
 							onClick={handlePageLabelClick}
 							onDoubleClick={handlePageLabelDoubleClick}
+							id={`page_${annotation.id}`}
 						>
 							<div><FormattedMessage id="pdfReader.page"/></div>
 							<div className="label">{annotation.pageLabel || '-'}</div>
@@ -305,6 +313,7 @@ export function SidebarPreview(props) {
 						tabIndex={props.selected && !props.readOnly ? -1 : undefined}
 						className="more"
 						disabled={props.readOnly}
+						title={intl.formatMessage({ id: 'pdfReader.openMenu' })}
 						onClick={handleClickMore}
 						// Make sure 'more' button focusing never triggers annotation element focusing,
 						// which triggers annotation selection
@@ -331,6 +340,8 @@ export function SidebarPreview(props) {
 					onClick={e => handleSectionClick(e, 'tags')}
 					draggable={true}
 					onDragStart={handleDragStart}
+					aria-haspopup={true}
+					aria-description={intl.formatMessage({ id: 'pdfReader.manageTags' })}
 				>{tags}</button>
 			)}
 		</div>
