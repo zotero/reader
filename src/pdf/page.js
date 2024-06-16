@@ -270,7 +270,11 @@ export default class Page {
 		let width = 7;
 		let height = 7;
 		for (let annotation of annotations) {
-			if (!['highlight', 'underline', 'image'].includes(annotation.type) || !annotation.comment) {
+			if (
+				!['highlight', 'underline', 'image'].includes(annotation.type)
+				|| !annotation.comment
+				|| annotation.position.pageIndex !== this.pageIndex
+			) {
 				continue;
 			}
 			let position = annotation.position;
