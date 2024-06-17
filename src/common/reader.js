@@ -135,6 +135,7 @@ class Reader {
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
+			hyphenate: options.hyphenate,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
 			colorScheme: options.colorScheme,
@@ -422,9 +423,16 @@ class Reader {
 			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
 		}
 
-		if (this._type === 'epub' && this._state.fontFamily !== previousState.fontFamily) {
-			this._primaryView?.setFontFamily(this._state.fontFamily);
-			this._secondaryView?.setFontFamily(this._state.fontFamily);
+		if (this._type === 'epub') {
+			if (this._state.fontFamily !== previousState.fontFamily) {
+				this._primaryView?.setFontFamily(this._state.fontFamily);
+				this._secondaryView?.setFontFamily(this._state.fontFamily);
+			}
+
+			if (this._state.hyphenate !== previousState.hyphenate) {
+				this._primaryView?.setHyphenate(this._state.hyphenate);
+				this._secondaryView?.setHyphenate(this._state.hyphenate);
+			}
 		}
 
 		if (init || this._state.sidebarView !== previousState.sidebarView) {
@@ -863,6 +871,7 @@ class Reader {
 			view = new EPUBView({
 				...common,
 				fontFamily: this._state.fontFamily,
+				hyphenate: this._state.hyphenate,
 				onEPUBEncrypted,
 			});
 		} else if (this._type === 'snapshot') {
@@ -1122,6 +1131,10 @@ class Reader {
 
 	setFontFamily(fontFamily) {
 		this._updateState({ fontFamily });
+	}
+
+	setHyphenate(hyphenate) {
+		this._updateState({ hyphenate });
 	}
 
 	setSidebarView(view) {

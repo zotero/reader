@@ -165,8 +165,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 
 		if (this._options.fontFamily) {
-			this._iframeDocument.documentElement.style.setProperty('--content-font-family', this._options.fontFamily);
+			this.setFontFamily(this._options.fontFamily);
 		}
+		this.setHyphenate(this._options.hyphenate ?? true);
 
 		this._sectionsContainer.hidden = false;
 		await this._initPageMapping(viewState);
@@ -843,6 +844,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	setFontFamily(fontFamily: string) {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
+		this._renderAnnotations();
+	}
+
+	setHyphenate(hyphenate: boolean) {
+		this._iframeDocument.documentElement.classList.toggle('hyphenate', hyphenate);
 		this._renderAnnotations();
 	}
 

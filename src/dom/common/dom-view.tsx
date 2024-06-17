@@ -1191,6 +1191,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	findState: FindState;
 	viewState?: State;
 	fontFamily?: string;
+	hyphenate?: boolean;
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;
