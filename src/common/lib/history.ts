@@ -1,4 +1,5 @@
 import { NavLocation } from "../types";
+import { basicDeepEqual } from "./utilities";
 
 const MIN_TIME_BETWEEN_POINTS = 2000;
 
@@ -43,13 +44,18 @@ export class History {
 	 * 					to be saved as a standalone point in history
 	 */
 	save(location: NavLocation, transient = false) {
-		// Check
-		if (JSON.stringify(location) === JSON.stringify(this._currentLocation)) {
+		// Make sure the location doesn't exist in the current or the closest
+		// back/forward stack values
+		if (
+			basicDeepEqual(this._currentLocation, location)
+			|| basicDeepEqual(this._backStack.at(-1), location)
+			|| basicDeepEqual(this._forwardStack.at(-1), location)
+		) {
 			return;
 		}
 		if (
 			// Replace the current location if the new location is transient and
-			// the previous was as well, or if currently on a pre vious point in history
+			// the previous was as well, or if currently on a previous point in history
 			transient && (this._lastPushIsTransient || this.canNavigateForward)
 			// Or if not enough time passed from the last hard point,
 			// which we want to prevent when going through annotations or outline items
