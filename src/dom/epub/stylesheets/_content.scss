@@ -62,6 +62,10 @@
 	font-size: calc(var(--content-scale) * 13pt) !important;
 	background-color: var(--background-color) !important;
 	color: var(--text-color) !important;
+
+	&:not(.hyphenate) * {
+		hyphens: none !important;
+	}
 }
 
 body > .sections > .section-container ::selection {
