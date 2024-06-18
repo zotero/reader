@@ -155,5 +155,17 @@ export default {
 	'pdfReader.phraseNotFound': 'Phrase not found',
 	'pdfReader.selectedPages': '{count, plural, one {# page} other {# pages}} selected',
 	'pdfReader.pageOptions': 'Page Options',
-	'pdfReader.epubEncrypted': 'This ebook appears to be encrypted and cannot be opened.'
+	'pdfReader.epubEncrypted': 'This ebook appears to be encrypted and cannot be opened.',
+	'pdfReader.find': 'Find',
+	'pdfReader.close': 'Close',
+	'pdfReader.showThumbnails': 'Show Thumbnails',
+	'pdfReader.showOutline': 'Show Outline',
+	'pdfReader.findPrevious': 'Find the previous occurrence of the phrase',
+	'pdfReader.findNext': 'Find the next occurrence of the phrase',
+	'pdfReader.toggleSidebar': 'Toggle Sidebar',
+	'pdfReader.findInDocument': 'Find in Document',
+	'pdfReader.toggleContextPane': 'Toggle Context Pane',
+	'pdfReader.highlightAll': 'Highlight all',
+	'pdfReader.matchCase': 'Match case',
+	'pdfReader.wholeWords': 'Whole words'
 };

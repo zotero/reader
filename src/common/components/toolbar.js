@@ -77,7 +77,7 @@ function Toolbar(props) {
 				<button
 					id="sidebarToggle"
 					className="toolbar-button sidebar-toggle"
-					title="Toggle Sidebar"
+					title={intl.formatMessage({ id: 'pdfReader.toggleSidebar' })}
 					tabIndex={-1}
 					onClick={handleSidebarButtonClick}
 				><IconSidebar/></button>
@@ -233,7 +233,7 @@ function Toolbar(props) {
 				<CustomSections type="Toolbar"/>
 				<button
 					className={cx('toolbar-button find', { active: props.findPopupOpen })}
-					title="Find in Document"
+					title={intl.formatMessage({ id: 'pdfReader.findInDocument' })}
 					tabIndex={-1}
 					onClick={handleFindClick}
 				><IconFind/></button>
@@ -242,7 +242,7 @@ function Toolbar(props) {
 						<div className="divider"/>
 						<button
 							className="toolbar-button context-pane-toggle"
-							title="Toggle Context Pane"
+							title={intl.formatMessage({ id: 'pdfReader.toggleContextPane' })}
 							tabIndex={-1}
 							onClick={props.onToggleContextPane}
 						>{props.stackedView ? <IconSidebarBottom/> : <IconSidebar className="standard-view"/>}</button>

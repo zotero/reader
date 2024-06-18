@@ -1,5 +1,5 @@
 import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
-import { FormattedMessage } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import { debounce } from '../../lib/debounce';
 import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
 
@@ -8,6 +8,7 @@ import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
+	const intl = useIntl();
 	const inputRef = useRef();
 	const [query, setQuery] = useState(params.query);
 
@@ -72,7 +73,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 				<input
 					ref={inputRef}
 					type="text"
-					title="Find"
+					title={intl.formatMessage({ id: 'pdfReader.find' })}
 					className="toolbar-text-input"
 					placeholder="Find in document…"
 					value={query !== null ? query : params.query}
@@ -85,21 +86,21 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 				<div className="group" data-tabstop={1}>
 					<button
 						className="previous toolbar-button"
-						title="Find the previous occurrence of the phrase"
+						title={intl.formatMessage({ id: 'pdfReader.findPrevious' })}
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindPrevious}
 					><IconChevronUp/></button>
 					<button
 						className="next toolbar-button"
-						title="Find the next occurrence of the phrase"
+						title={intl.formatMessage({ id: 'pdfReader.findNext' })}
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindNext}
 					><IconChevronDown/></button>
 					<button
 						className="close toolbar-button"
-						title="Close"
+						title={intl.formatMessage({ id: 'pdfReader.close' })}
 						tabIndex="-1"
 						onClick={handleCloseClick}
 					><IconClose/></button>
@@ -114,7 +115,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						checked={params.highlightAll}
 						onChange={handleHighlightAllChange}
 					/>
-					<label htmlFor="highlight-all">Highlight all</label>
+					<label htmlFor="highlight-all"><FormattedMessage id="pdfReader.highlightAll"/></label>
 				</div>
 				<div className="option">
 					<input
@@ -124,7 +125,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						checked={params.caseSensitive}
 						onChange={handleMatchCaseChange}
 					/>
-					<label htmlFor="case-sensitive">Match case</label>
+					<label htmlFor="case-sensitive"><FormattedMessage id="pdfReader.matchCase"/></label>
 				</div>
 				<div className="option">
 					<input
@@ -134,7 +135,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						checked={params.entireWord}
 						onChange={handleWholeWordsChange}
 					/>
-					<label htmlFor="entire-word">Whole words</label>
+					<label htmlFor="entire-word"><FormattedMessage id="pdfReader.wholeWords"/></label>
 				</div>
 			</div>
 			{params.result &&
