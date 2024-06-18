@@ -159,6 +159,7 @@ class Reader {
 			primaryViewAnnotationPopup: null,
 			primaryViewSelectionPopup: null,
 			primaryViewOverlayPopup: null,
+			primaryViewEPUBAppearancePopup: null,
 			primaryViewFindState: {
 				popupOpen: false,
 				active: false,
@@ -173,6 +174,7 @@ class Reader {
 			secondaryViewAnnotationPopup: null,
 			secondaryViewSelectionPopup: null,
 			secondaryViewOverlayPopup: null,
+			secondaryViewEPUBAppearancePopup: null,
 			secondaryViewFindState: {
 				popupOpen: false,
 				active: false,
@@ -181,7 +183,7 @@ class Reader {
 				caseSensitive: false,
 				entireWord: false,
 				result: null
-			}
+			},
 		};
 
 		if (options.secondaryViewState) {
@@ -247,6 +249,7 @@ class Reader {
 							onNavigateToNextPage={this.navigateToNextPage.bind(this)}
 							onChangePageNumber={pageNumber => this.navigate({ pageNumber })}
 							onChangeTool={this.setTool.bind(this)}
+							onToggleEPUBAppearance={this.toggleEPUBAppearancePopup.bind(this)}
 							onToggleFind={this.toggleFindPopup.bind(this)}
 							onChangeFilter={this.setFilter.bind(this)}
 							onChangeSidebarView={this.setSidebarView.bind(this)}
@@ -286,10 +289,10 @@ class Reader {
 							onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 							onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 							onOpenLink={this._onOpenLink}
+							onChangeEPUBAppearance={this._handleEPUBAppearanceChange.bind(this)}
 							onChangeFindState={this._handleFindStateChange.bind(this)}
 							onFindNext={this.findNext.bind(this)}
 							onFindPrevious={this.findPrevious.bind(this)}
-							onToggleFindPopup={this.toggleFindPopup.bind(this)}
 							onToggleContextPane={this._onToggleContextPane}
 							ref={this._readerRef}
 						/>
@@ -633,6 +636,12 @@ class Reader {
 		this._focusManager.restoreFocus();
 	}
 
+	_handleEPUBAppearanceChange(params) {
+		this._ensureType('epub');
+		this._primaryView?.setAppearance(params);
+		this._secondaryView?.setAppearance(params);
+	}
+
 	_handleFindStateChange(primary, params) {
 		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
 	}
@@ -651,6 +660,27 @@ class Reader {
 		(primary ? this._primaryView : this._secondaryView).findPrevious();
 	}
 
+	toggleEPUBAppearancePopup({ open }) {
+		let key = 'epubAppearancePopup';
+		if (open === undefined) {
+			open = !this._state[key];
+		}
+		if (open) {
+			this.toggleFindPopup({ primary: true, open: false });
+			this.toggleFindPopup({ primary: false, open: false });
+		}
+		this._updateState({ [key]: open });
+		if (open) {
+			setTimeout(() => {
+				let selector = '.epub-appearance-popup input';
+				document.querySelector(selector)?.focus();
+			}, 100);
+		}
+		else {
+			this._focusManager.restoreFocus();
+		}
+	}
+
 	toggleFindPopup({ primary, open } = {}) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
@@ -659,6 +689,9 @@ class Reader {
 		let findState = this._state[key];
 		if (open === undefined) {
 			open = !findState.popupOpen;
+		}
+		if (open) {
+			this.toggleEPUBAppearancePopup({ primary, open: false });
 		}
 		findState = { ...findState, popupOpen: open, active: false, result: null };
 		this._updateState({ [key]: findState });

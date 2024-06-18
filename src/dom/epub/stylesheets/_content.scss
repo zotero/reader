@@ -79,7 +79,13 @@ replaced-html {
 replaced-body {
 	// https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height
 	--content-line-height-compensation: 1;
-	--content-line-height: calc((1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667)) * var(--content-line-height-compensation));
+	--content-line-height: calc(
+		(1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667))
+		* var(--content-line-height-compensation)
+		* var(--content-line-height-adjust, 1.2)
+	);
+	--content-word-spacing: calc(var(--content-word-spacing-adjust, 0) * 1%);
+	--content-letter-spacing: calc(var(--content-letter-spacing-adjust, 0) * 1em);
 
 	display: block;
 	margin-left: 0 !important;
@@ -89,7 +95,9 @@ replaced-body {
 
 	font-family: var(--content-font-family, "Georgia"), serif;
 	font-size: inherit !important;
-	line-height: var(--content-line-height);
+	line-height: var(--content-line-height) !important;
+	word-spacing: var(--content-word-spacing) !important;
+	letter-spacing: var(--content-letter-spacing) !important;
 	text-align: justify;
 	text-rendering: optimizeLegibility;
 
@@ -122,6 +130,9 @@ replaced-body {
 	p {
 		// Really enforce some of our formatting choices on body paragraphs
 		font-family: var(--content-font-family, "Georgia"), serif !important;
+		line-height: var(--content-line-height) !important;
+		word-spacing: var(--content-word-spacing) !important;
+		letter-spacing: var(--content-letter-spacing) !important;
 		background: transparent !important;
 		color: inherit !important;
 

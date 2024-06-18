@@ -15,10 +15,11 @@ import ContextMenu from './context-menu';
 import LabelPopup from './modal-popup/label-popup';
 import PasswordPopup from './modal-popup/password-popup';
 import PrintPopup from './modal-popup/print-popup';
+import EPUBAppearancePopup from "./view-popup/epub-appearance-popup";
 
 
 function View(props) {
-	let { primary, state } = props;
+	let { primary, state, type } = props;
 
 	let name = primary ? 'primary' : 'secondary';
 
@@ -113,6 +114,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					enableNavigateBack={viewStats.canNavigateBack}
 					enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 					enableNavigateToNextPage={viewStats.canNavigateToNextPage}
+					epubAppearancePopup={state.epubAppearancePopup}
 					findPopupOpen={findState.popupOpen}
 					tool={state.tool}
 					readOnly={state.readOnly}
@@ -128,6 +130,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onChangePageNumber={props.onChangePageNumber}
 					onChangeTool={props.onChangeTool}
 					onOpenColorContextMenu={props.onOpenColorContextMenu}
+					onToggleEPUBAppearance={props.onToggleEPUBAppearance}
 					onToggleFind={props.onToggleFind}
 					onToggleContextPane={props.onToggleContextPane}
 				/>
@@ -192,6 +195,14 @@ const ReaderUI = React.forwardRef((props, ref) => {
 			{state.passwordPopup && <PasswordPopup params={state.passwordPopup} onEnterPassword={props.onEnterPassword}/>}
 			{state.printPopup && <PrintPopup params={state.printPopup}/>}
 			{state.errorMessage && <div className="error-bar" tabIndex={-1}>{state.errorMessage}</div>}
+			{props.type === 'epub' && state.epubAppearancePopup && (
+				// We always read the primaryViewState, but we write both view states
+				<EPUBAppearancePopup
+					params={state.primaryViewState.appearance}
+					onChange={props.onChangeEPUBAppearance}
+					onClose={() => props.onToggleEPUBAppearance({ open: false })}
+				/>
+			)}
 		</Fragment>
 	);
 });

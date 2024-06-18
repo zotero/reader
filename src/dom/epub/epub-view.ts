@@ -55,7 +55,7 @@ import {
 	PaginatedFlow,
 	ScrolledFlow
 } from "./flow";
-import { RTL_SCRIPTS } from "./defines";
+import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -85,6 +85,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	private _flowMode!: FlowMode;
 
 	private _savedPageMapping!: string;
+
+	private _appearance?: EPUBAppearance;
 
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
 		super(options);
@@ -189,6 +191,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		else {
 			this.setSpreadMode(SpreadMode.None);
+		}
+		if (viewState.appearance) {
+			this.setAppearance(viewState.appearance);
+		}
+		else {
+			this.setAppearance(DEFAULT_EPUB_APPEARANCE);
 		}
 		if (!viewState.cfi || viewState.cfi === '_start') {
 			this.navigateToFirstPage();
@@ -570,6 +578,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			savedPageMapping: this._savedPageMapping,
 			flowMode: this._flowMode,
 			spreadMode: this.spreadMode,
+			appearance: this._appearance,
 		};
 		this._options.onChangeViewState(viewState);
 	}
@@ -842,6 +851,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._handleViewUpdate();
 	}
 
+	setAppearance(appearance: EPUBAppearance) {
+		this._appearance = { ...appearance };
+		this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
+		this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
+		this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
+		this._handleViewUpdate();
+	}
+
 	setFontFamily(fontFamily: string) {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
 		this._renderAnnotations();
@@ -1080,6 +1097,13 @@ export interface EPUBViewState extends DOMViewState {
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
 	spreadMode?: SpreadMode;
+	appearance?: EPUBAppearance;
+}
+
+export interface EPUBAppearance {
+	lineHeight: number;
+	wordSpacing: number;
+	letterSpacing: number;
 }
 
 export interface EPUBViewData {

@@ -15,7 +15,7 @@ export class FocusManager {
 		// Some browsers (Chrome) trigger focus event when focusing an iframe and some not (Firefox),
 		// therefore just use an interval because document.activeElement is always correct
 		setInterval(() => {
-			if (document.activeElement !== document.body && !document.activeElement.closest('.context-menu')) {
+			if (document.activeElement !== document.body && !document.activeElement.closest('.context-menu-overlay')) {
 				this._lastActiveElement = document.activeElement;
 			}
 		}, 100);
