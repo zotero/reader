@@ -112,6 +112,47 @@ input {
 	color: var(--fill-primary);
 }
 
+input[type="range"] {
+	-moz-appearance: none;
+	background: transparent;
+	accent-color: var(--accent-blue);
+
+	&::-moz-range-track {
+		border-radius: 2px;
+		background: var(--fill-quinary);
+		box-shadow: 0 0   2px 0 rgba(0, 0, 0, 0.04) inset,
+					0 0   2px 0 rgba(0, 0, 0, 0.03) inset,
+					0 1px 2px 0 rgba(0, 0, 0, 0.02) inset;
+	}
+
+	&::-moz-range-progress {
+		height: 4px;
+		border-radius: 2px;
+		background: var(--accent-blue);
+	}
+
+	&::-moz-range-thumb {
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background: var(--material-control);
+		border: 0.5px var(--fill-senary);
+		box-shadow: 0 1px    0.75px 0 rgba(0, 0, 0, 0.05),
+					0 0.25px 0.25px 0 rgba(0, 0, 0, 0.15);
+	}
+
+	&:active {
+		&::-moz-range-thumb {
+			background: rgba(240, 240, 240, 1);
+		}
+	}
+
+	&:disabled {
+		opacity: 50%;
+	}
+}
+
 @page {
 	margin: 0;
 }
