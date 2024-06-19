@@ -2648,6 +2648,12 @@ class PDFView {
 
 	async setSidebarView(sidebarView) {
 		if (sidebarView === 'outline' && !this._outlineLoaded) {
+			await this._iframeWindow.PDFViewerApplication.initializedPromise;
+			// TODO: Properly wait for pdfDocument initialization
+			if (!this._iframeWindow.PDFViewerApplication.pdfDocument) {
+				setTimeout(() => this.setSidebarView('outline'), 1000);
+				return;
+			}
 			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2();
 			this._outlineLoaded = true;
 			this._onSetOutline(outline);
