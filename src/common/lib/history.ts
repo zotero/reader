@@ -49,7 +49,6 @@ export class History {
 		if (
 			basicDeepEqual(this._currentLocation, location)
 			|| basicDeepEqual(this._backStack.at(-1), location)
-			|| basicDeepEqual(this._forwardStack.at(-1), location)
 		) {
 			return;
 		}
