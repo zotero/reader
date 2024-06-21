@@ -582,7 +582,7 @@ class PDFView {
 		let all = [...created, ...updated, ...deleted];
 		let pageIndexes = getPageIndexesFromAnnotations(all);
 		this._render(pageIndexes);
-		if (this._primary) {
+		if (this._primary && !this._preview) {
 			this._pdfThumbnails.render(pageIndexes, true);
 			this._pdfRenderer.start();
 		}
