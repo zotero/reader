@@ -44,12 +44,8 @@ export class History {
 	 * 					to be saved as a standalone point in history
 	 */
 	save(location: NavLocation, transient = false) {
-		// Make sure the location doesn't exist in the current or the closest
-		// back/forward stack values
-		if (
-			basicDeepEqual(this._currentLocation, location)
-			|| basicDeepEqual(this._backStack.at(-1), location)
-		) {
+		// Make sure the location doesn't exist in the closest back value
+		if (basicDeepEqual(this._backStack.at(-1), location)) {
 			return;
 		}
 		if (
@@ -70,9 +66,8 @@ export class History {
 			this._currentLocation = location;
 			// Clear the forward stack when pushing a new location
 			this._forwardStack = [];
-			// Can be transient only if history was empty
-			this._lastPushIsTransient = transient;
 		}
+		this._lastPushIsTransient = transient;
 		this._lastSaveTime = Date.now();
 		this._onUpdate();
 	}
