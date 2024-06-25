@@ -76,6 +76,7 @@ button {
 	padding: 0;
 	font: inherit;
 	outline: inherit;
+	cursor: default;
 
 	&:focus-visible {
 		outline: none;
