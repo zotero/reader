@@ -1,5 +1,5 @@
 // @ts-ignore
-import annotationOverlayCSS from './stylesheets/annotation-overlay.scss';
+import injectCSS from './stylesheets/inject.scss';
 
 import {
 	Annotation,
@@ -126,7 +126,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 
 		this._iframe = document.createElement('iframe');
-		this._iframe.sandbox.add('allow-same-origin');
+		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');
 		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
 		// unless the allow-scripts permission is added to the frame's sandbox. We prevent scripts in the frame from
 		// running via the CSP.
@@ -477,7 +477,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
 		let style = this._iframeDocument.createElement('style');
-		style.innerHTML = annotationOverlayCSS;
+		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
 
 		// Pass options to setters that were delayed until iframe initialization
@@ -1172,6 +1172,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	navigateForward() {
 		this._history.navigateForward();
 	}
+
+	abstract print(): Promise<void>;
 }
 
 export type DOMViewOptions<State extends DOMViewState, Data> = {
