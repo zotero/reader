@@ -309,7 +309,10 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 			if (section === 'comment' && expansionStateRef.current === 3) {
 				setExpansionState(2);
 			}
-			if (!(selectedIDsRef.current.length === 1 && selectedIDsRef.current[0] === id)) {
+			if (
+				!(selectedIDsRef.current.length === 1 && selectedIDsRef.current[0] === id)
+				|| selectedIDsRef.current.length === 1 && section === 'header'
+			) {
 				props.onSelectAnnotations([id], false, event);
 			}
 		}
