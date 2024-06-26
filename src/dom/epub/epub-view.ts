@@ -1016,9 +1016,35 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	// Still need to figure out how this is going to work
-	print() {
-		console.log('Print');
+	async print() {
+		// It's going to get ugly in here, so hide the iframe
+		this._iframe.classList.remove('loaded');
+
+		// Mount all views
+		let viewsToMount = this._sectionViews.filter(view => !view.mounted);
+		for (let view of viewsToMount) {
+			view.mount();
+		}
+
+		// Wait for all images to load
+		await Promise.allSettled(
+			Array.from(this._iframeDocument.images)
+				.map(image => image.decode())
+		);
+
+		if (typeof this._iframeWindow.zoteroPrint === 'function') {
+			await this._iframeWindow.zoteroPrint();
+		}
+		else {
+			this._iframeWindow.print();
+		}
+
+		// Unmount the views that weren't mounted before
+		for (let view of viewsToMount) {
+			view.unmount();
+		}
+
+		this._iframe.classList.add('loaded');
 	}
 
 	setSidebarOpen(_sidebarOpen: boolean) {

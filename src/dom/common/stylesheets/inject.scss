@@ -39,3 +39,9 @@
 :root[data-color-scheme=dark]:not(.disable-dark-mode) {
 	@include -dark-rules();
 }
+
+@media print {
+	#annotation-overlay {
+		display: none !important;
+	}
+}

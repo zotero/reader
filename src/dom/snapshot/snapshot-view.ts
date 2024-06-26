@@ -513,9 +513,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	// Still need to figure out how this is going to work
-	print() {
-		console.log('Print');
+	async print() {
+		if (typeof this._iframeWindow.zoteroPrint === 'function') {
+			await this._iframeWindow.zoteroPrint();
+		}
+		else {
+			this._iframeWindow.print();
+		}
 	}
 
 	setSidebarOpen(_sidebarOpen: boolean) {

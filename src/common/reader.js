@@ -1194,6 +1194,13 @@ class Reader {
 				window.print();
 			}
 		}
+		else {
+			// Show print popup with indeterminate progress bar
+			this._updateState({ printPopup: { percent: null } });
+			this._primaryView.print().then(() => {
+				this._updateState({ printPopup: null });
+			});
+		}
 	}
 
 	abortPrint() {
