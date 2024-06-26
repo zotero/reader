@@ -37,7 +37,7 @@ function View(props) {
 	return (
 		<div className={name}>
 			<div
-				data-tabstop={true}
+				data-tabstop={1}
 				tabIndex={-1}
 				data-proxy={`#${name}-view > iframe`}
 				style={{ position: 'absolute' }}

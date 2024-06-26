@@ -307,8 +307,8 @@ let Content = React.forwardRef((props, ref) => {
 				contentEditable={!props.readOnly}
 				dir="auto"
 				placeholder={props.placeholder}
-				data-tabstop={props.tabstop || (!props.readOnly ? 1 : undefined)}
-				tabIndex={(!props.readOnly || props.tabstop) ? -1 : undefined}
+				data-tabstop={!props.readOnly ? 1 : undefined}
+				tabIndex={!props.readOnly ? -1 : undefined}
 				onInput={handleInput}
 				role="textbox"
 				aria-label={props.ariaLabel}
@@ -339,7 +339,6 @@ function Editor(props) {
 				placeholder={props.placeholder}
 				onChange={props.onChange}
 				ariaLabel={props.ariaLabel}
-				tabstop={props.tabstop}
 			/>
 		</div>
 	);

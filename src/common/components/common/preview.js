@@ -88,7 +88,7 @@ export function PopupPreview(props) {
 						</div>
 					)}
 					<button
-						data-tabstop={!props.readOnly ? true : undefined}
+						data-tabstop={!props.readOnly ? 1 : undefined}
 						tabIndex={-1}
 						className="more"
 						title={intl.formatMessage({ id: 'pdfReader.openMenu' })}
@@ -204,6 +204,20 @@ export function SidebarPreview(props) {
 		}
 	}
 
+	function handleKeyDown(event) {
+		let { key } = event;
+		if (['Enter', 'Space'].includes(key)) {
+			if ([1, 2].includes(state)) {
+				if (props.readOnly) {
+					handleSectionClick(event, 'text');
+				}
+				else {
+					handleTextDoubleClick();
+				}
+			}
+		}
+	}
+
 	let { annotation, state, type } = props;
 
 	let text = ['highlight', 'underline'].includes(annotation.type) && (
@@ -212,7 +226,10 @@ export function SidebarPreview(props) {
 			onClick={e => handleSectionClick(e, 'text')}
 			onDoubleClick={handleTextDoubleClick}
 			draggable={state !== 3 || props.readOnly}
+			data-tabstop={[1, 2].includes(state) ? 1 : undefined}
+			tabIndex={[1, 2].includes(state) ? -1 : undefined}
 			onDragStart={handleDragStart}
+			onKeyDown={handleKeyDown}
 		>
 			<div className="blockquote-border" style={{ backgroundColor: annotation.color }}/>
 			<ExpandableEditor
@@ -221,7 +238,6 @@ export function SidebarPreview(props) {
 				placeholder={intl.formatMessage({ id: 'pdfReader.noExtractedText' })}
 				ariaLabel={intl.formatMessage({ id: 'pdfReader.annotationText' })}
 				readOnly={props.readOnly || state !== 3}
-				tabstop={state >= 1}
 				expanded={props.state >= 2}
 				enableRichText={annotation.type !== 'text'}
 				onChange={handleTextChange}
