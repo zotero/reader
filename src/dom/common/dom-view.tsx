@@ -98,6 +98,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handledPointerIDs = new Set<number>();
 
+	protected _iframeCoordScaleFactor = 1;
+
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
 
 	protected _touchAnnotationStartPosition: CaretPosition | null = null;
@@ -244,6 +246,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			rect.y + this._iframe.getBoundingClientRect().y - this._container.getBoundingClientRect().y,
 			rect.width,
 			rect.height
+		);
+	}
+
+	protected _scaleDOMRect(rect: DOMRect): DOMRect {
+		return new DOMRect(
+			rect.x * this._iframeCoordScaleFactor,
+			rect.y * this._iframeCoordScaleFactor,
+			rect.width * this._iframeCoordScaleFactor,
+			rect.height * this._iframeCoordScaleFactor
 		);
 	}
 
@@ -395,7 +406,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
-		let domRect = this._getViewportBoundingRect(range);
+		let domRect = this._scaleDOMRect(this._getViewportBoundingRect(range));
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		let annotation = this._getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
@@ -420,6 +431,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 			domRect = this._getViewportBoundingRect(range);
 		}
+		domRect = this._scaleDOMRect(domRect);
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}
@@ -714,7 +726,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Prevent native context menu
 		event.preventDefault();
 		let br = this._iframe.getBoundingClientRect();
-		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+		this._options.onOpenViewContextMenu({
+			x: br.x + event.clientX * this._iframeCoordScaleFactor,
+			y: br.y + event.clientY * this._iframeCoordScaleFactor,
+		});
 	}
 
 	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
@@ -729,8 +744,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._selectedAnnotationIDs.includes(id)) {
 			this._options.onOpenAnnotationContextMenu({
 				ids: this._selectedAnnotationIDs,
-				x: br.x + event.clientX,
-				y: br.y + event.clientY,
+				x: br.x + event.clientX * this._iframeCoordScaleFactor,
+				y: br.y + event.clientY * this._iframeCoordScaleFactor,
 				view: true,
 			});
 		}
@@ -738,8 +753,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._options.onSelectAnnotations([id], event.nativeEvent);
 			this._options.onOpenAnnotationContextMenu({
 				ids: [id],
-				x: br.x + event.clientX,
-				y: br.y + event.clientY,
+				x: br.x + event.clientX * this._iframeCoordScaleFactor,
+				y: br.y + event.clientY * this._iframeCoordScaleFactor,
 				view: true,
 			});
 		}

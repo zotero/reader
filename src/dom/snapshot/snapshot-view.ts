@@ -481,6 +481,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 		if (this._options.onSetZoom) {
 			this._options.onSetZoom(this._iframe, scale);
+			// Store the scale factor so we can adjust clientX/clientY coordinates when opening popups
+			// TODO: Use CSS zoom instead of onSetZoom() when Zotero is on fx>=126
+			this._iframeCoordScaleFactor = scale;
 		}
 		else {
 			if (scale == 1) {
