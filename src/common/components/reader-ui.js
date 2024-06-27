@@ -203,6 +203,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onClose={() => props.onToggleEPUBAppearance({ open: false })}
 				/>
 			)}
+			<div id="a11tyAnnouncement" aria-live="polite"></div>
 		</Fragment>
 	);
 });

@@ -646,11 +646,23 @@ class Reader {
 		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
 	}
 
+	// Announce the index of current search result to screen readers
+	setA11tySearchResultMessage(primaryView) {
+		let result = (primaryView ? this._state.primaryViewFindState : this._state.secondaryViewFindState).result;
+		if (!result) return;
+		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${result.index + 1}`;
+		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${result.total}`;
+		this.setA11tyMessage(`${searchIndex}. ${totalResults}`);
+	}
+
 	findNext(primary) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findNext();
+		setTimeout(() => {
+			this.setA11tySearchResultMessage(primary);
+		});
 	}
 
 	findPrevious(primary) {
@@ -658,6 +670,9 @@ class Reader {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findPrevious();
+		setTimeout(() => {
+			this.setA11tySearchResultMessage(primary);
+		});
 	}
 
 	toggleEPUBAppearancePopup({ open }) {
@@ -830,6 +845,14 @@ class Reader {
 			this.setErrorMessage(this._getString('pdfReader.epubEncrypted'));
 		};
 
+		let onFocusAnnotation = (annotation) => {
+			if (!annotation) return;
+			// Announce the current annotation to screen readers
+			let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
+			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
+			this.setA11tyMessage(annotationContent);
+		}
+
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -875,7 +898,8 @@ class Reader {
 			onSelectAnnotations,
 			onTabOut,
 			onKeyDown,
-			onKeyUp
+			onKeyUp,
+			onFocusAnnotation
 		};
 
 		if (this._type === 'pdf') {
@@ -923,6 +947,13 @@ class Reader {
 
 	setErrorMessage(errorMessage) {
 		this._updateState({ errorMessage });
+	}
+
+	// Set content of aria-live container that screen readers will announce
+	setA11tyMessage(a11tyMessage) {
+		// Voiceover won't announce messages inserted via <div id="a11tyAnnouncement" aria-live="polite">{state.a11tyMessage}</div>
+		// but setting .innerText does work. Likely due to either voiceover bug or not full aria-live support by firefox.
+		document.getElementById("a11tyAnnouncement").innerText = a11tyMessage;
 	}
 
 	getUnsavedAnnotations() {

@@ -86,6 +86,7 @@ class PDFView {
 		this._onOpenAnnotationContextMenu = options.onOpenAnnotationContextMenu;
 		this._onKeyUp = options.onKeyUp;
 		this._onKeyDown = options.onKeyDown;
+		this._onFocusAnnotation = options.onFocusAnnotation;
 
 		this._onTabOut = options.onTabOut;
 
@@ -489,6 +490,7 @@ class PDFView {
 			}
 		}
 
+		this._onFocusAnnotation(this._focusedObject);
 		this._lastFocusedObject = this._focusedObject;
 
 		this._render();
