@@ -2,6 +2,7 @@
 
 # Set paths for the PDF.js build and target directories
 PDFJS_BUILD=./pdfjs/pdf.js/build/generic-legacy
+PDFJS_MINIFIED_BUILD=./pdfjs/pdf.js/build/minified-legacy
 BUILD_BASE=./build
 
 # Move into the PDF.js directory, install dependencies, and build
@@ -9,6 +10,7 @@ cd pdfjs/pdf.js
 npm ci
 # Zotero with FF 115 ESR runs only the `legacy` build
 npx gulp generic-legacy
+npx gulp minified-legacy
 cd ../../
 
 # Set up directories for dev build
@@ -34,12 +36,12 @@ rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/build"
 mkdir -p "$BUILD_DIR/web/images"
 cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
-cp -r "$PDFJS_BUILD/build/pdf.mjs" "$BUILD_DIR/build/"
-cp -r "$PDFJS_BUILD/build/pdf.worker.mjs" "$BUILD_DIR/build/"
+cp -r "$PDFJS_MINIFIED_BUILD/build/pdf.min.mjs" "$BUILD_DIR/build/pdf.mjs"
+cp -r "$PDFJS_MINIFIED_BUILD/build/pdf.worker.min.mjs" "$BUILD_DIR/build/pdf.worker.mjs"
 cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
 cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
 cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
-cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
+npx terser "$PDFJS_BUILD/web/viewer.mjs" -o "$BUILD_DIR/web/viewer.mjs"
 cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
 cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
 
