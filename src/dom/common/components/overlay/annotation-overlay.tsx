@@ -245,14 +245,16 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		}
 	}
 
+	if (!rects.size) {
+		return null;
+	}
+
 	let commentIconPosition;
 	if (annotation.comment) {
 		let commentIconRange = ranges[0].cloneRange();
 		collapseToOneCharacterAtStart(commentIconRange);
 		let rect = commentIconRange.getBoundingClientRect();
-		if (rect.x || rect.y || rect.width || rect.height) {
-			commentIconPosition = { x: rect.x + doc.defaultView!.scrollX, y: rect.y + doc.defaultView!.scrollY };
-		}
+		commentIconPosition = { x: rect.x + doc.defaultView!.scrollX, y: rect.y + doc.defaultView!.scrollY };
 	}
 	else {
 		commentIconPosition = null;
