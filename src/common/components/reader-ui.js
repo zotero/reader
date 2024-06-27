@@ -19,7 +19,7 @@ import EPUBAppearancePopup from "./view-popup/epub-appearance-popup";
 
 
 function View(props) {
-	let { primary, state, type } = props;
+	let { primary, state } = props;
 
 	let name = primary ? 'primary' : 'secondary';
 
