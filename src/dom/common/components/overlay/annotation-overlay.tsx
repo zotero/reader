@@ -250,7 +250,9 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		let commentIconRange = ranges[0].cloneRange();
 		collapseToOneCharacterAtStart(commentIconRange);
 		let rect = commentIconRange.getBoundingClientRect();
-		commentIconPosition = { x: rect.x + doc.defaultView!.scrollX, y: rect.y + doc.defaultView!.scrollY };
+		if (rect.x || rect.y || rect.width || rect.height) {
+			commentIconPosition = { x: rect.x + doc.defaultView!.scrollX, y: rect.y + doc.defaultView!.scrollY };
+		}
 	}
 	else {
 		commentIconPosition = null;
