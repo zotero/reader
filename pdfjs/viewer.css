@@ -335,7 +335,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	background: transparent;
 }
 .customAnnotationLayer ::selection {
-	background-color: Highlight;
+	background-color: #71ADFD;
 }
 
 .textLayer .endOfContent {
@@ -358,6 +358,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	position: absolute;
 	left: 0;
 	top: 0;
+	z-index: 3;
 }
 
 .textAnnotation {
