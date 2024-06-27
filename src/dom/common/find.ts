@@ -58,6 +58,7 @@ class DefaultFindProcessor implements FindProcessor {
 					color: 'rgba(180, 0, 170, 1)',
 					text: '',
 					key: 'findResult_' + (this._annotationKeyPrefix || '') + '_' + this._buf.length,
+					position: null,
 					range,
 				}
 			};

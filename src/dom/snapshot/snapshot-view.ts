@@ -8,6 +8,7 @@ import {
 	OutlineItem
 } from "../../common/types";
 import {
+	getAnnotationImage,
 	getStartElement
 } from "../common/lib/range";
 import {
@@ -29,6 +30,7 @@ import {
 	createSearchContext,
 	SearchContext
 } from "../common/lib/dom-text-search";
+import { getImageDataURL } from "../../common/lib/utilities";
 
 // @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';
@@ -193,6 +195,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (text === '') {
 			return null;
 		}
+		let image = type == 'image' && getAnnotationImage(range) || undefined;
 
 		let selector = this.toSelector(range);
 		if (!selector) {
@@ -205,39 +208,85 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			color,
 			sortIndex,
 			position: selector,
-			text
+			text,
+			image
 		};
 	}
 
-	private _getSortIndex(range: Range) {
+	protected _getAnnotationFromElement(elem: Element, type: AnnotationType, color: string | undefined): NewAnnotation<WADMAnnotation> | null {
+		let text;
+		if (type == 'highlight' || type == 'underline') {
+			text = elem instanceof this._iframeWindow.HTMLElement ? elem.innerText : elem.textContent;
+			// If this annotation type wants text, but we didn't get any, abort
+			if (!text) {
+				return null;
+			}
+		}
+		else {
+			text = undefined;
+		}
+		let image = type == 'image' && elem.tagName === 'IMG' && getImageDataURL(elem) || undefined;
+
+		let selector = this.toSelector(elem);
+		if (!selector) {
+			return null;
+		}
+
+		let sortIndex = this._getSortIndex(elem);
+		return {
+			type,
+			color,
+			sortIndex,
+			position: selector,
+			text,
+			image
+		};
+	}
+
+	private _getSortIndex(rangeOrNode: Range | Node) {
+		let stop = 'nodeType' in rangeOrNode ? rangeOrNode : rangeOrNode.startContainer;
+		let stopOffset = 'nodeType' in rangeOrNode ? 0 : rangeOrNode.startOffset;
 		let iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
 		let count = 0;
 		let node: Node | null;
 		while ((node = iter.nextNode())) {
-			if (range.startContainer.contains(node)) {
-				return String(count + range.startOffset).padStart(8, '0');
+			if (stop.contains(node)) {
+				return String(count + stopOffset).padStart(8, '0');
+			}
+			else if (stop.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) {
+				return String(count).padStart(8, '0');
 			}
 			count += node.nodeValue!.trim().length;
 		}
 		return '00000000';
 	}
 
-	toSelector(range: Range): Selector | null {
-		let doc = range.commonAncestorContainer.ownerDocument;
-		if (!doc) return null;
-		let targetElement;
-		// In most cases, the range will wrap a single child of the
-		// commonAncestorContainer. Build a selector targeting that element,
-		// not the container.
-		if (range.startContainer === range.endContainer
-			&& range.startOffset == range.endOffset - 1
-			&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
-			targetElement = range.startContainer.childNodes[range.startOffset];
+	toSelector(rangeOrNode: Range | Node): Selector | null {
+		let doc;
+		let targetNode;
+		if ('nodeType' in rangeOrNode) {
+			let node = rangeOrNode;
+			if (!node.ownerDocument) return null;
+			doc = node.ownerDocument;
+			targetNode = node;
 		}
 		else {
-			targetElement = range.commonAncestorContainer;
+			let range = rangeOrNode;
+			if (!range.commonAncestorContainer.ownerDocument) return null;
+			doc = range.commonAncestorContainer.ownerDocument;
+			// In most cases, the range will wrap a single child of the
+			// commonAncestorContainer. Build a selector targeting that element,
+			// not the container.
+			if (range.startContainer === range.endContainer
+				&& range.startOffset == range.endOffset - 1
+				&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
+				targetNode = range.startContainer.childNodes[range.startOffset];
+			}
+			else {
+				targetNode = range.commonAncestorContainer;
+			}
 		}
-		let targetElementQuery = getUniqueSelectorContaining(targetElement, doc.body);
+		let targetElementQuery = getUniqueSelectorContaining(targetNode, doc.body);
 		if (targetElementQuery) {
 			let newCommonAncestor = doc.body.querySelector(targetElementQuery);
 			if (!newCommonAncestor) {
@@ -249,13 +298,16 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			};
 			// If the user has highlighted the full text content of the element, no need to add a
 			// TextPositionSelector.
-			if (range.toString().trim() !== (newCommonAncestor.textContent || '').trim()) {
-				selector.refinedBy = textPositionFromRange(range, newCommonAncestor) || undefined;
+			if (!('nodeType' in rangeOrNode) && rangeOrNode.toString().trim() !== (newCommonAncestor.textContent || '').trim()) {
+				selector.refinedBy = textPositionFromRange(rangeOrNode, newCommonAncestor) || undefined;
 			}
 			return selector;
 		}
+		else if (!('nodeType' in rangeOrNode)) {
+			return textPositionFromRange(rangeOrNode, doc.body);
+		}
 		else {
-			return textPositionFromRange(range, doc.body);
+			return null;
 		}
 	}
 

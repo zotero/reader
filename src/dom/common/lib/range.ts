@@ -1,11 +1,19 @@
-import { isFirefox, isWin } from "../../../common/lib/utilities";
+import {
+	isFirefox,
+	isWin,
+	getImageDataURL
+} from "../../../common/lib/utilities";
+import {
+	closestElement,
+	getContainingBlock
+} from "./nodes";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
  * (Range objects automatically normalize their start/end points when the DOM changes, which is not what we want -
  * even if the start or end is removed from the DOM temporarily, we want to keep our ranges unchanged.)
  */
-export class PersistentRange {
+export class PersistentRange implements StaticRange {
 	startContainer: Node;
 
 	startOffset: number;
@@ -14,11 +22,15 @@ export class PersistentRange {
 
 	endOffset: number;
 
-	constructor(range: Range) {
+	constructor(range: StaticRangeInit) {
 		this.startContainer = range.startContainer;
 		this.startOffset = range.startOffset;
 		this.endContainer = range.endContainer;
 		this.endOffset = range.endOffset;
+	}
+
+	get collapsed(): boolean {
+		return this.startContainer === this.endContainer && this.startOffset === this.endOffset;
 	}
 
 	toRange(): Range {
@@ -132,6 +144,30 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 	return ranges;
 }
 
+export function findImageInRange(range: Range): HTMLImageElement | null {
+	if (range.startContainer == range.endContainer && range.startOffset == range.endOffset - 1) {
+		let node = range.startContainer.childNodes[range.startOffset];
+		if (node && node.nodeName == 'IMG') {
+			return node as HTMLImageElement;
+		}
+	}
+
+	let doc = range.commonAncestorContainer.ownerDocument;
+	if (!doc) {
+		return null;
+	}
+	let treeWalker = doc.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_ELEMENT,
+		node => (range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP));
+	let node: Node | null = treeWalker.currentNode;
+	while (node) {
+		if (node.nodeName == 'IMG') {
+			return node as HTMLImageElement;
+		}
+		node = treeWalker.nextNode();
+	}
+	return null;
+}
+
 /**
  * Create a single range spanning all the positions included in the set of input ranges. For
  * example, if rangeA goes from nodeA at offset 5 to nodeB at offset 2 and rangeB goes from nodeC
@@ -196,4 +232,31 @@ export function getStartElement(range: Range | PersistentRange): Element | null 
 		startContainer = startContainer.parentNode;
 	}
 	return startContainer as Element | null;
+}
+
+export function getAnnotationText(range: Range): string {
+	let text = '';
+	let lastSplitRange;
+	for (let splitRange of splitRangeToTextNodes(range)) {
+		if (lastSplitRange) {
+			let lastSplitRangeContainer = closestElement(lastSplitRange.commonAncestorContainer);
+			let lastSplitRangeBlock = lastSplitRangeContainer && getContainingBlock(lastSplitRangeContainer);
+			let splitRangeContainer = closestElement(splitRange.commonAncestorContainer);
+			let splitRangeBlock = splitRangeContainer && getContainingBlock(splitRangeContainer);
+			if (lastSplitRangeBlock !== splitRangeBlock) {
+				text += '\n\n';
+			}
+		}
+		text += splitRange.toString().replace(/\s+/g, ' ');
+		lastSplitRange = splitRange;
+	}
+	return text.trim();
+}
+
+export function getAnnotationImage(range: Range): string | null {
+	let imageElem = findImageInRange(range);
+	if (!imageElem) {
+		return null;
+	}
+	return getImageDataURL(imageElem);
 }

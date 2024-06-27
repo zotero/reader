@@ -111,6 +111,7 @@ export default {
 	'pdfReader.underlineText': 'Underline Text',
 	'pdfReader.addNote': 'Add Note',
 	'pdfReader.selectArea': 'Select Area',
+	'pdfReader.selectImage': 'Select Image',
 	'pdfReader.addText': 'Add Text',
 	'pdfReader.draw': 'Draw',
 	'pdfReader.eraser': 'Eraser',
