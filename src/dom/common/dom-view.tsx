@@ -68,6 +68,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _showAnnotations: boolean;
 
+	protected _annotationShadowRoot!: ShadowRoot;
+
+	protected _annotationRenderRoot!: HTMLElement;
+
 	protected _useDarkMode: boolean;
 
 	protected _colorScheme: string | null;
@@ -331,20 +335,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _renderAnnotations() {
-		if (!this._iframeDocument) {
+		if (!this._annotationRenderRoot) {
 			return;
 		}
-		let container = this._iframeDocument.body.querySelector(':scope > #annotation-overlay');
 		if (!this._showAnnotations) {
-			if (container) {
-				container.remove();
-			}
+			this._annotationRenderRoot.replaceChildren();
 			return;
-		}
-		if (!container) {
-			container = this._iframeDocument.createElement('div');
-			container.id = 'annotation-overlay';
-			this._iframeDocument.body.append(container);
 		}
 		let displayedAnnotations: DisplayedAnnotation[] = [
 			...this._annotations.map(a => ({
@@ -398,7 +394,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
 			/>
-		), container);
+		), this._annotationRenderRoot);
 	}
 
 	protected _openSelectionPopup(selection: Selection) {
@@ -421,7 +417,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Note: Popup won't be visible if sidebar is opened
 		let domRect;
 		if (annotation.type == 'note') {
-			domRect = this._iframeDocument.querySelector(`[data-annotation-id="${annotation.id}"]`)
+			domRect = this._annotationRenderRoot.querySelector(`[data-annotation-id="${annotation.id}"]`)
 				?.getBoundingClientRect();
 		}
 		if (!domRect) {
@@ -488,9 +484,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.addEventListener('scroll', this._handleScrollCapture.bind(this), { passive: true, capture: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
+		let annotationOverlay = this._iframeDocument.createElement('div');
+		annotationOverlay.id = 'annotation-overlay';
+		this._annotationShadowRoot = annotationOverlay.attachShadow({ mode: 'open' });
+		this._iframeDocument.body.append(annotationOverlay);
+
+		this._annotationRenderRoot = this._iframeDocument.createElement('div');
+		this._annotationShadowRoot.append(this._annotationRenderRoot);
+
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
-		this._iframeDocument.head.append(style);
+		this._annotationShadowRoot.append(style);
 
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);
@@ -505,8 +509,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
-		let target = event.target as Element;
-		const link = target.closest('a');
+		const link = (event.target as Element).closest('a');
 		if (link) {
 			if (this._isExternalLink(link)) {
 				link.title = link.href;
@@ -561,7 +564,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent): Range | null {
-		let target = event.target as Element;
+		// Use composedPath()[0] to get the actual target, even if it's within a shadow tree
+		let target = event.composedPath()[0] as Element;
 		// Disable pointer events and rerender so we can get the cursor position in the text layer,
 		// not the annotation layer, even if the mouse is over the annotation layer
 		let range = this._iframeDocument.createRange();
@@ -834,7 +838,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	};
 
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
-		return this._iframeDocument.elementsFromPoint(clientX, clientY)
+		return this._annotationShadowRoot.elementsFromPoint(clientX, clientY)
 			.map(target => target.getAttribute('data-annotation-id'))
 			.filter(Boolean) as string[];
 	}
@@ -977,7 +981,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (!(event.target as Element).closest('.annotation-container')) {
+		if (!(event.target as Element).closest('#annotation-overlay')) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
