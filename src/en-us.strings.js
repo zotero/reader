@@ -119,7 +119,7 @@ export default {
 	'pdfReader.noteAnnotation' : 'Note annotation',
 	'pdfReader.textAnnotation' : 'Text annotation',
 	'pdfReader.imageAnnotation' : 'Image annotation',
-	'pdfReader.inkAnnotation' : 'Drawing annotation',
+	'pdfReader.inkAnnotation' : 'Ink annotation',
 	'pdfReader.searchResultIndex' : 'Search result',
 	'pdfReader.searchResultTotal' : 'Total search results',
 	'pdfReader.eraser': 'Eraser',
