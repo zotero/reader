@@ -647,12 +647,12 @@ class Reader {
 	}
 
 	// Announce the index of current search result to screen readers
-	setA11tySearchResultMessage(primaryView) {
+	setA11ySearchResultMessage(primaryView) {
 		let result = (primaryView ? this._state.primaryViewFindState : this._state.secondaryViewFindState).result;
 		if (!result) return;
 		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${result.index + 1}`;
 		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${result.total}`;
-		this.setA11tyMessage(`${searchIndex}. ${totalResults}`);
+		this.setA11yMessage(`${searchIndex}. ${totalResults}`);
 	}
 
 	findNext(primary) {
@@ -661,7 +661,7 @@ class Reader {
 		}
 		(primary ? this._primaryView : this._secondaryView).findNext();
 		setTimeout(() => {
-			this.setA11tySearchResultMessage(primary);
+			this.setA11ySearchResultMessage(primary);
 		});
 	}
 
@@ -671,7 +671,7 @@ class Reader {
 		}
 		(primary ? this._primaryView : this._secondaryView).findPrevious();
 		setTimeout(() => {
-			this.setA11tySearchResultMessage(primary);
+			this.setA11ySearchResultMessage(primary);
 		});
 	}
 
@@ -850,7 +850,7 @@ class Reader {
 			// Announce the current annotation to screen readers
 			let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
 			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
-			this.setA11tyMessage(annotationContent);
+			this.setA11yMessage(annotationContent);
 		}
 
 		let data;
@@ -950,10 +950,10 @@ class Reader {
 	}
 
 	// Set content of aria-live container that screen readers will announce
-	setA11tyMessage(a11tyMessage) {
-		// Voiceover won't announce messages inserted via <div id="a11tyAnnouncement" aria-live="polite">{state.a11tyMessage}</div>
+	setA11yMessage(a11yMessage) {
+		// Voiceover won't announce messages inserted via <div id="a11yAnnouncement" aria-live="polite">{state.a11yMessage}</div>
 		// but setting .innerText does work. Likely due to either voiceover bug or not full aria-live support by firefox.
-		document.getElementById("a11tyAnnouncement").innerText = a11tyMessage;
+		document.getElementById("a11yAnnouncement").innerText = a11yMessage;
 	}
 
 	getUnsavedAnnotations() {
