@@ -498,10 +498,6 @@ class PDFView {
 		return !!this._focusedObject;
 	}
 
-	setSelection(selection) {
-		this.selection = selection;
-	}
-
 	getPageByIndex(pageIndex) {
 		return this._pages.find(x => x.pageIndex === pageIndex);
 	}
@@ -1529,7 +1525,10 @@ class PDFView {
 
 		if (this._options.platform !== 'web' && event.button === 2) {
 			let br = this._iframe.getBoundingClientRect();
-			let selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
+			let selectableAnnotation;
+			if (position) {
+				selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
+			}
 			let selectedAnnotations = this.getSelectedAnnotations();
 			if (!selectableAnnotation) {
 				if (this._selectedAnnotationIDs.length !== 0) {
@@ -1548,9 +1547,9 @@ class PDFView {
 			return;
 		}
 
-
 		if (!position) {
-			this.setSelection();
+			this._setSelectionRanges();
+			this._onSelectAnnotations([], event);
 			this._render();
 			return;
 		}
