@@ -55,6 +55,50 @@ export function normalizeKey(key, code) {
 	return key;
 }
 
+// Key combination taking into account layout and modifier keys
+export function getKeyCombination(event) {
+	let modifiers = [];
+	if (event.metaKey && isMac()) {
+		modifiers.push('Cmd');
+	}
+	if (event.ctrlKey) {
+		modifiers.push('Ctrl');
+	}
+	if (event.altKey) {
+		modifiers.push('Alt');
+	}
+	if (event.shiftKey) {
+		modifiers.push('Shift');
+	}
+	let key = normalizeKey(event.key, event.code);
+	if (key === ' ') {
+		key = 'Space';
+	}
+	// Combine the modifiers and the normalized key into a single string
+	modifiers.push(key);
+	return modifiers.join('-');
+}
+
+// Physical key combination
+export function getCodeCombination(event) {
+	let modifiers = [];
+	if (event.metaKey && isMac()) {
+		modifiers.push('Cmd');
+	}
+	if (event.ctrlKey) {
+		modifiers.push('Ctrl');
+	}
+	if (event.altKey) {
+		modifiers.push('Alt');
+	}
+	if (event.shiftKey) {
+		modifiers.push('Shift');
+	}
+	// Combine the modifiers and the normalized key into a single string
+	modifiers.push(event.code);
+	return modifiers.join('-');
+}
+
 export function setCaretToEnd(target) {
 	let range = document.createRange();
 	let sel = window.getSelection();

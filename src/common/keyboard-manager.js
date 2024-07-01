@@ -1,4 +1,11 @@
-import { isTextBox, isLinux, isMac, normalizeKey } from './lib/utilities';
+import {
+	isTextBox,
+	isLinux,
+	isMac,
+	getKeyCombination,
+	isWin,
+	getCodeCombination
+} from './lib/utilities';
 import { ANNOTATION_COLORS } from './defines';
 
 export class KeyboardManager {
@@ -23,14 +30,10 @@ export class KeyboardManager {
 	}
 
 	_handleKeyDown(event, view) {
-		let { key, code } = event;
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
 		let mod = ctrl || cmd;
-		let alt = event.altKey;
 		let shift = event.shiftKey;
-
-		key = normalizeKey(key, code);
 
 		this.shift = shift;
 		this.mod = mod;
@@ -39,22 +42,35 @@ export class KeyboardManager {
 			return;
 		}
 
-		if ((cmd || ctrl && isLinux()) && key === '['
-			|| (alt && !isMac() || cmd) && key === 'ArrowLeft') {
-			this._reader.navigateBack();
-			event.preventDefault();
-			return;
-		}
-		else if ((cmd || ctrl && isLinux()) && key === ']'
-			|| (alt && !isMac() || cmd) && key === 'ArrowRight') {
-			this._reader.navigateForward();
-			event.preventDefault();
-			return;
+		let key = getKeyCombination(event);
+		let code = getCodeCombination(event);
+
+		if (!isTextBox(event.target)) {
+			if (
+				key === 'Cmd-['
+				|| key === 'Cmd-ArrowLeft'
+				|| isLinux() && key === 'Ctrl-['
+				|| (isLinux() || isWin()) && 'Alt-ArrowLeft'
+			) {
+				this._reader.navigateBack();
+				event.preventDefault();
+				return;
+			}
+			if (
+				key === 'Cmd-]'
+				|| key === 'Cmd-ArrowRight'
+				|| isLinux() && key === 'Ctrl-]'
+				|| (isLinux() || isWin()) && 'Alt-ArrowRight'
+			) {
+				this._reader.navigateForward();
+				event.preventDefault();
+				return;
+			}
 		}
 
 		// Escape must be pressed alone. We basically want to prevent
 		// Option-Escape (speak text on macOS) deselecting text
-		if (key === 'Escape' && !(mod || alt || shift)) {
+		if (key === 'Escape') {
 			this._reader._lastView.focus();
 			this._reader.abortPrint();
 			this._reader._updateState({
@@ -81,7 +97,7 @@ export class KeyboardManager {
 			});
 		}
 
-		if (mod && key === 'a') {
+		if (['Cmd-a', 'Ctrl-a'].includes(key)) {
 			// Prevent text selection if not inside a text box
 			if (!isTextBox(event.target)) {
 				event.preventDefault();
@@ -94,38 +110,38 @@ export class KeyboardManager {
 				}
 			}
 		}
-		else if (mod && key === 'f') {
+		else if (['Cmd-f', 'Ctrl-f'].includes(key)) {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
 		}
-		else if (shift && mod && key === 'g') {
+		else if (['Cmd-Shift-g', 'Ctrl-Shift-g'].includes(key)) {
 			event.preventDefault();
 			this._reader.findPrevious();
 		}
-		else if (mod && key === 'g') {
+		else if (['Cmd-g', 'Ctrl-g'].includes(key)) {
 			event.preventDefault();
 			this._reader.findNext();
 		}
-		else if (mod && alt && key === 'g') {
+		else if (['Cmd-Alt-g', 'Ctrl-Alt-g'].includes(key)) {
 			event.preventDefault();
 			let pageNumberInput = document.getElementById('pageNumber');
 			pageNumberInput.focus();
 			pageNumberInput.select();
 		}
-		else if (mod && key === 'p') {
+		else if (['Cmd-p', 'Ctrl-p'].includes(key)) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.print();
 		}
-		else if (mod && key === '=') {
+		else if (['Cmd-=', 'Ctrl-='].includes(key)) {
 			event.preventDefault();
 			this._reader.zoomIn();
 		}
-		else if (mod && key === '-') {
+		else if (['Cmd--', 'Ctrl--'].includes(key)) {
 			event.preventDefault();
 			this._reader.zoomOut();
 		}
-		else if (mod && key === '0') {
+		else if (['Cmd-0', 'Ctrl-0'].includes(key)) {
 			event.preventDefault();
 			this._reader.zoomReset();
 		}
@@ -181,32 +197,31 @@ export class KeyboardManager {
 		}
 
 		if (!isTextBox(event.target)) {
-			if (alt && code === 'Digit1') {
+			if (code === 'Alt-Digit1') {
 				this._reader.toggleTool('highlight');
 			}
-			else if (alt && code === 'Digit2') {
+			else if (code === 'Alt-Digit2') {
 				this._reader.toggleTool('underline');
 			}
-			else if (alt && code === 'Digit3') {
+			else if (code === 'Alt-Digit3') {
 				this._reader.toggleTool('note');
 			}
-			else if (alt && this._reader._type === 'pdf' && code === 'Digit4') {
+			else if (this._reader._type === 'pdf' && code === 'Alt-Digit4') {
 				this._reader.toggleTool('text');
 			}
-			else if (alt && this._reader._type === 'pdf' && code === 'Digit5') {
+			else if (this._reader._type === 'pdf' && code === 'Alt-Digit5') {
 				this._reader.toggleTool('image');
 			}
-			else if (alt && this._reader._type === 'pdf' && code === 'Digit6') {
+			else if (this._reader._type === 'pdf' && code === 'Alt-Digit6') {
 				this._reader.toggleTool('ink');
 			}
-			else if (alt && this._reader._type === 'pdf' && code === 'Digit7') {
+			else if (this._reader._type === 'pdf' && code === 'Alt-Digit7') {
 				this._reader.toggleTool('eraser');
 			}
-			else if (alt
-				&& (
-					this._reader._type === 'pdf' && code === 'Digit8'
-					|| ['epub', 'snapshot'].includes(this._reader._type) && code === 'Digit4'
-				) && this._reader._state.tool.color) {
+			else if ((
+				this._reader._type === 'pdf' && code === 'Alt-Digit8'
+				|| ['epub', 'snapshot'].includes(this._reader._type) && code === 'Alt-Digit4'
+			) && this._reader._state.tool.color) {
 				let idx = ANNOTATION_COLORS.findIndex(x => x[1] === this._reader._state.tool.color);
 				if (idx === ANNOTATION_COLORS.length - 1) {
 					idx = 0;
@@ -216,7 +231,7 @@ export class KeyboardManager {
 				}
 				this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 			}
-			else if (!alt && !mod && code.startsWith('Digit') && this._reader._state.tool.color) {
+			else if (code.startsWith('Digit') && this._reader._state.tool.color) {
 				let idx = parseInt(code.slice(5)) - 1;
 				if (ANNOTATION_COLORS[idx]) {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
