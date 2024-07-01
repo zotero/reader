@@ -1579,7 +1579,8 @@ class PDFView {
 			this._openAnnotationPopup();
 		}
 
-		if (selectAnnotations && !selectAnnotations.length) {
+		// Deselect annotations, but only if shift isn't pressed which means doing text selection
+		if (selectAnnotations && !selectAnnotations.length && !shift) {
 			this._onSelectAnnotations([], event);
 		}
 
