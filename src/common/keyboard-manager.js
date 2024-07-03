@@ -50,7 +50,7 @@ export class KeyboardManager {
 				key === 'Cmd-['
 				|| key === 'Cmd-ArrowLeft'
 				|| isLinux() && key === 'Ctrl-['
-				|| (isLinux() || isWin()) && 'Alt-ArrowLeft'
+				|| (isLinux() || isWin()) && key == 'Alt-ArrowLeft'
 			) {
 				this._reader.navigateBack();
 				event.preventDefault();
@@ -60,7 +60,7 @@ export class KeyboardManager {
 				key === 'Cmd-]'
 				|| key === 'Cmd-ArrowRight'
 				|| isLinux() && key === 'Ctrl-]'
-				|| (isLinux() || isWin()) && 'Alt-ArrowRight'
+				|| (isLinux() || isWin()) && key == 'Alt-ArrowRight'
 			) {
 				this._reader.navigateForward();
 				event.preventDefault();
