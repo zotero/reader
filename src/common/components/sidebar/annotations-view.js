@@ -480,7 +480,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 					))
 					: !props.filter.query.length && !props.readOnly && !window.isWeb && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
 			</div>
-			{(!!tags.length || colors.length > 1) && (
+			{(!!tags.length || colors.length > 1 || authors.length > 1) && (
 				<Selector
 					tags={tags}
 					colors={colors}
