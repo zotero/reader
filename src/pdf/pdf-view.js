@@ -698,7 +698,15 @@ class PDFView {
 
 	_setSelectionRanges(selectionRanges) {
 		this._selectionRanges = selectionRanges || [];
-		this._onSetSelectionPopup();
+		let selectionRange = this._selectionRanges[0];
+		if (selectionRange && !selectionRange.collapsed) {
+			let rect = this.getClientRectForPopup(selectionRange.position);
+			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+			this._onSetSelectionPopup({ rect, annotation });
+		}
+		else {
+			this._onSetSelectionPopup();
+		}
 	}
 
 	_isSelectionCollapsed() {
@@ -2411,6 +2419,24 @@ class PDFView {
 			this.navigateToNextPage();
 			event.stopPropagation();
 			event.preventDefault();
+		}
+		else if (shift && this._selectionRanges.length) {
+			// Prevent browser doing its own text selection
+			event.stopPropagation();
+			event.preventDefault();
+			if (key === 'ArrowLeft') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'left'));
+			}
+			else if (key === 'ArrowRight') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'right'));
+			}
+			else if (key === 'ArrowUp') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'up'));
+			}
+			else if (key === 'ArrowDown') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'down'));
+			}
+			this._render();
 		}
 
 		if (key === 'Escape') {
