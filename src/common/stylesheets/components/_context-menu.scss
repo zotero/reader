@@ -15,7 +15,9 @@
 	border: var(--material-panedivider);
 	border-radius: 5px;
 	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
-	inset-inline-start: -9999px;
+	/*! rtl:begin:ignore */
+	left: -9999px;
+	/*! rtl:begin:ignore */
 	min-width: 120px;
 	padding: 5px;
 	font-size: 12px;
