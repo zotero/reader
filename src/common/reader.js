@@ -1144,32 +1144,35 @@ class Reader {
 				else {
 					this._updateState({ selectedAnnotationIDs: ids });
 
-					if (triggeredFromView) {
-						if (annotation.type !== 'text') {
-							this._enableAnnotationDeletionFromComment = true;
-							if (annotation.comment) {
-								let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-								if (sidebarItem) {
-									// Make sure to call this after all events, because mousedown will re-focus the View
-									setTimeout(() => sidebarItem.focus());
+					// Don't navigate to annotation or focus comment if opening a context menu
+					if (triggeringEvent.button !== 2) {
+						if (triggeredFromView) {
+							if (annotation.type !== 'text') {
+								this._enableAnnotationDeletionFromComment = true;
+								if (annotation.comment) {
+									let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+									if (sidebarItem) {
+										// Make sure to call this after all events, because mousedown will re-focus the View
+										setTimeout(() => sidebarItem.focus());
+									}
+								}
+								else {
+									setTimeout(() => {
+										let content;
+										if (this._state.sidebarOpen) {
+											content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
+										}
+										else {
+											content = document.querySelector(`.annotation-popup .comment .content`);
+										}
+										content?.focus();
+									}, 50);
 								}
 							}
-							else {
-								setTimeout(() => {
-									let content;
-									if (this._state.sidebarOpen) {
-										content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
-									}
-									else {
-										content = document.querySelector(`.annotation-popup .comment .content`);
-									}
-									content?.focus();
-								}, 50);
-							}
 						}
-					}
-					else {
-						this._lastView.navigate({ annotationID: annotation.id });
+						else {
+							this._lastView.navigate({ annotationID: annotation.id });
+						}
 					}
 				}
 			}
