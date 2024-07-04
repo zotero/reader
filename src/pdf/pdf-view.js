@@ -1539,6 +1539,9 @@ class PDFView {
 		let position = this.pointerEventToPosition(event);
 
 		if (this._options.platform !== 'web' && event.button === 2) {
+			// Clear pointer down because pointer up event won't be received in this iframe
+			// when opening a native context menu
+			this._pointerDownTriggered = false;
 			let br = this._iframe.getBoundingClientRect();
 			let selectableAnnotation;
 			if (position) {
