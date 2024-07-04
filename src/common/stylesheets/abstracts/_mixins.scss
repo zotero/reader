@@ -3,7 +3,6 @@
 //
 
 @use "sass:math";
-
 @mixin popover-pointer($width, $height, $offset: 50%, $position: null) {
 	$border-x: math.div($width, 2);
 	$border-y: $height;
@@ -22,8 +21,9 @@
 		&::after {
 			border-top-width: 0;
 			transform: translateX(-$border-x);
+			/*! rtl:begin:ignore */
 			left: 50%;
-
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
@@ -43,7 +43,9 @@
 		&::after {
 			border-bottom-width: 0;
 			transform: translateX(-$border-x);
+			/*! rtl:begin:ignore */
 			left: 50%;
+			/*! rtl:end:ignore */
 
 		}
 
@@ -61,38 +63,50 @@
 	#{if($position == "left-center", "&", "&[class*='left-center']")} {
 		&::before,
 		&::after {
+			/*! rtl:begin:ignore */
 			border-right-width: 0;
 			transform: translateY(-8px);
 			top: 50%;
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
+			/*! rtl:begin:ignore */
 			right: (-$border-x - 1px);
 			border-left-color: var(--color-panedivider);
+			/*! rtl:end:ignore */
 		}
 
 		&::after {
+			/*! rtl:begin:ignore */
 			right: -$border-x;
 			border-left-color: var(--color-background);
+			/*! rtl:end:ignore */
 		}
 	}
 
 	#{if($position == "right-center", "&", "&[class*='right-center']")} {
 		&::before,
 		&::after {
+			/*! rtl:begin:ignore */
 			border-left-width: 0;
 			transform: translateY(-8px);
 			top: 50%;
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
+			/*! rtl:begin:ignore */
 			left: (-$border-x - 1px);
 			border-right-color: var(--color-panedivider);
+			/*! rtl:end:ignore */
 		}
 
 		&::after {
+			/*! rtl:begin:ignore */
 			left: -$border-x;
 			border-right-color: var(--color-background);
+			/*! rtl:end:ignore */
 		}
 	}
 
@@ -103,7 +117,9 @@
 		&::after {
 			border-bottom-width: 0;
 			transform: translateX(-$border-x);
+			/*! rtl:begin:ignore */
 			left: 20px;
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
@@ -122,7 +138,9 @@
 		&::after {
 			border-bottom-width: 0;
 			transform: translateX(-$border-x);
+			/*! rtl:begin:ignore */
 			right: 20px;
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
@@ -141,7 +159,9 @@
 		&::after {
 			border-top-width: 0;
 			transform: translateX(-$border-x);
+			/*! rtl:begin:ignore */
 			left: 20px;
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
@@ -160,7 +180,9 @@
 		&::after {
 			border-top-width: 0;
 			transform: translateX(-$border-x);
+			/*! rtl:begin:ignore */
 			right: 20px;
+			/*! rtl:end:ignore */
 		}
 
 		&::before {
