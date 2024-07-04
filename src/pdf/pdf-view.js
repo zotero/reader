@@ -130,6 +130,7 @@ class PDFView {
 		this._iframeWindow = null;
 
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
+		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
 
 		let setOptions = () => {
 			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
@@ -387,11 +388,15 @@ class PDFView {
 	}
 
 	async _initProcessedData() {
-		let { pageLabels, pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
+		let pageLabels = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageLabels2();
+		this._onSetPageLabels(pageLabels);
+		this._resolvePageLabelsPromise();
+		this._render();
+		this._updateViewStats();
+		let { pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
 		for (let key in pages) {
 			this._pdfPages[key] = pages[key];
 		}
-		this._onSetPageLabels(pageLabels);
 		this._render();
 		this._updateViewStats();
 	}
@@ -760,7 +765,7 @@ class PDFView {
 		}, 2000);
 	}
 
-	navigate(location, skipHistory) {
+	async navigate(location, skipHistory) {
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
 			this.navigateToPosition(annotation.position);
@@ -778,12 +783,14 @@ class PDFView {
 			});
 		}
 		else if (location.pageLabel) {
+			await this._pageLabelsPromise;
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageLabel);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
 			}
 		}
 		else if (location.pageNumber) {
+			await this._pageLabelsPromise;
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
