@@ -2118,7 +2118,7 @@ class PDFView {
 
 	_handlePointerUp(event) {
 		this._pointerDownTriggered = false;
-		if (!this.action && event.target?.classList.contains('textAnnotation')) {
+		if (!this.action && event.target.classList?.contains('textAnnotation')) {
 			return;
 		}
 
