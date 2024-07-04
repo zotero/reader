@@ -194,6 +194,9 @@ export class FocusManager {
 		let item = document.activeElement;
 
 		let group = item.closest('[data-tabstop]');
+		if (!group) {
+			return;
+		}
 
 		let contextMenu = document.querySelector('.context-menu');
 		if (contextMenu) {
