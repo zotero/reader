@@ -1,5 +1,6 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
+import cx from 'classnames';
 import { debounce } from '../../lib/debounce';
 import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
 
@@ -52,37 +53,42 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	}
 
 	function handleCloseClick() {
-		onChange({ ...params, popupOpen: false, active: false });
+		onChange({ ...params, popupOpen: false, active: false, result: null });
 	}
 
 	function handleHighlightAllChange(event) {
-		onChange({ ...params, highlightAll: event.currentTarget.checked });
+		onChange({ ...params, highlightAll: event.currentTarget.checked, result: null });
 	}
 
 	function handleMatchCaseChange(event) {
-		onChange({ ...params, caseSensitive: event.currentTarget.checked });
+		onChange({ ...params, caseSensitive: event.currentTarget.checked, result: null });
 	}
 
 	function handleWholeWordsChange(event) {
-		onChange({ ...params, entireWord: event.currentTarget.checked });
+		onChange({ ...params, entireWord: event.currentTarget.checked, result: null });
 	}
 
 	return (
 		<div className="find-popup">
 			<div className="row input">
-				<input
-					ref={inputRef}
-					type="text"
-					title={intl.formatMessage({ id: 'pdfReader.find' })}
-					className="toolbar-text-input"
-					placeholder="Find in document…"
-					value={query !== null ? query : params.query}
-					tabIndex="-1"
-					data-tabstop={1}
-					autoComplete="off"
-					onChange={handleInputChange}
-					onKeyDown={handleInputKeyDown}
-				/>
+				<div className={cx('input-box', { loading: !params.result && params.active && params.query })}>
+					<input
+						ref={inputRef}
+						type="text"
+						title={intl.formatMessage({ id: 'pdfReader.find' })}
+						className="toolbar-text-input"
+						placeholder="Find in document…"
+						value={query !== null ? query : params.query}
+						tabIndex="-1"
+						data-tabstop={1}
+						autoComplete="off"
+						onChange={handleInputChange}
+						onKeyDown={handleInputKeyDown}
+					/>
+					<div className="spinner-container">
+						<div className="spinner"></div>
+					</div>
+				</div>
 				<div className="group" data-tabstop={1}>
 					<button
 						className="previous toolbar-button"
