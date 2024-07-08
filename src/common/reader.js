@@ -1145,7 +1145,7 @@ class Reader {
 					this._updateState({ selectedAnnotationIDs: ids });
 
 					// Don't navigate to annotation or focus comment if opening a context menu
-					if (triggeringEvent.button !== 2) {
+					if (!triggeringEvent || triggeringEvent.button !== 2) {
 						if (triggeredFromView) {
 							if (annotation.type !== 'text') {
 								this._enableAnnotationDeletionFromComment = true;
