@@ -35,7 +35,7 @@ class PrintTask {
 
 	// Renders the page to the canvas of the given print service, and returns
 	// the suggested dimensions of the output page.
-	renderPage(
+	async renderPage(
 		activeServiceOnEntry,
 		pdfDocument,
 		pageNumber,
@@ -57,24 +57,21 @@ class PrintTask {
 		ctx.fillRect(0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
 		ctx.restore();
 
-		return pdfDocument.getPage(pageNumber).then((pdfPage) => {
-			const renderContext = {
-				canvasContext: ctx,
-				transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
-				viewport: pdfPage.getViewport({ scale: 1, rotation: size.rotation }),
-				intent: "print",
-				annotationStorage: pdfDocument.annotationStorage
-			};
-			return pdfPage.render(renderContext).promise.then(() => {
-				if (this._includeAnnotations) {
-					this._pdfView.renderPageAnnotationsOnCanvas(this.scratchCanvas, renderContext.viewport, pageNumber - 1);
-				}
-			});
-		}).then(function () {
-			return {
-				width, height,
-			};
-		});
+		let pdfPage = await pdfDocument.getPage(pageNumber);
+		const renderContext = {
+			canvasContext: ctx,
+			transform: [PRINT_UNITS, 0, 0, PRINT_UNITS, 0, 0],
+			viewport: pdfPage.getViewport({ scale: 1, rotation: size.rotation }),
+			intent: "print",
+			annotationStorage: pdfDocument.annotationStorage
+		};
+		await pdfPage.render(renderContext).promise;
+		if (this._includeAnnotations) {
+			this._pdfView.renderPageAnnotationsOnCanvas(this.scratchCanvas, renderContext.viewport, pageNumber - 1);
+		}
+		return {
+			width, height,
+		};
 	}
 
 	layout() {

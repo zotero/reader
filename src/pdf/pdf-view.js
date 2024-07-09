@@ -401,6 +401,15 @@ class PDFView {
 		this._updateViewStats();
 	}
 
+	async _ensureBasicPageData(pageIndex) {
+		if (!this._pdfPages[pageIndex]) {
+			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
+			if (!this._pdfPages[pageIndex]) {
+				this._pdfPages[pageIndex] = pageData;
+			}
+		}
+	}
+
 	async _attachPage(originalPage) {
 		this._init2 && this._init2();
 
@@ -525,9 +534,12 @@ class PDFView {
 		// this._iframeWindow.focus();
 	}
 
-	renderPageAnnotationsOnCanvas(canvas, viewport, pageIndex) {
-		let annotations = this._annotations.filter(x => x.position.pageIndex === pageIndex);
-		drawAnnotationsOnCanvas(canvas, viewport, annotations);
+	async renderPageAnnotationsOnCanvas(canvas, viewport, pageIndex) {
+		// Underline annotations need pdfPage[pageIndex].chars to determine text rotation
+		if (this._annotations.find(x => x.position.pageIndex === pageIndex && x.type === 'underline')) {
+			await this._ensureBasicPageData(pageIndex);
+		}
+		drawAnnotationsOnCanvas(canvas, viewport, this._annotations, pageIndex, this._pdfPages);
 	}
 
 	navigateToPosition(position) {
