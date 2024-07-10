@@ -1,4 +1,4 @@
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import React, { createContext } from 'react';
 import { IntlProvider } from 'react-intl';
 import ReaderUI from './components/reader-ui';
@@ -69,7 +69,6 @@ class Reader {
 		this._secondaryView = null;
 		this._lastViewPrimary = true;
 
-		this.uiInitializedPromise = new Promise(resolve => this._resolveUIInitializedPromise = resolve);
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 
 		this._splitViewContainer = document.getElementById('split-view');
@@ -229,7 +228,7 @@ class Reader {
 		this._primaryView = this._createView(true, options.location);
 
 		if (!this._preview) {
-			ReactDOM.render(
+			createRoot(document.getElementById('reader-ui')).render(
 				<IntlProvider
 					locale={window.navigator.language}
 					messages={this._localizedStrings}
@@ -297,11 +296,7 @@ class Reader {
 							ref={this._readerRef}
 						/>
 					</ReaderContext.Provider>
-				</IntlProvider>,
-				document.getElementById('reader-ui'),
-				() => {
-					this._resolveUIInitializedPromise();
-				}
+				</IntlProvider>
 			);
 		}
 
