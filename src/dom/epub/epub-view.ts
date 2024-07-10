@@ -861,12 +861,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	setFontFamily(fontFamily: string) {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
-		this._renderAnnotations();
+		this._renderAnnotations(true);
 	}
 
 	setHyphenate(hyphenate: boolean) {
 		this._iframeDocument.documentElement.classList.toggle('hyphenate', hyphenate);
-		this._renderAnnotations();
+		this._renderAnnotations(true);
 	}
 
 	// ***

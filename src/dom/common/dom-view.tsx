@@ -19,7 +19,8 @@ import {
 	WADMAnnotation,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
-import ReactDOM from "react-dom";
+import { flushSync } from "react-dom";
+import { createRoot, Root } from "react-dom/client";
 import {
 	AnnotationOverlay,
 	DisplayedAnnotation
@@ -70,7 +71,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _annotationShadowRoot!: ShadowRoot;
 
-	protected _annotationRenderRoot!: HTMLElement;
+	protected _annotationRenderRootEl!: HTMLElement;
+
+	protected _annotationRenderRoot!: Root;
 
 	protected _useDarkMode: boolean;
 
@@ -307,7 +310,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleViewUpdate() {
 		this._updateViewState();
 		this._updateViewStats();
-		this._renderAnnotations();
+		this._renderAnnotations(true);
 		this._repositionPopups();
 	}
 
@@ -334,12 +337,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onSetOverlayPopup();
 	}
 
-	protected _renderAnnotations() {
-		if (!this._annotationRenderRoot) {
+	protected _renderAnnotations(synchronous = false) {
+		if (!this._annotationRenderRootEl) {
 			return;
 		}
 		if (!this._showAnnotations) {
-			this._annotationRenderRoot.replaceChildren();
+			this._annotationRenderRootEl.replaceChildren();
 			return;
 		}
 		let displayedAnnotations: DisplayedAnnotation[] = [
@@ -382,7 +385,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: this.toDisplayedRange(this._previewAnnotation.position)!,
 			});
 		}
-		ReactDOM.render((
+		let doRender = () => this._annotationRenderRoot.render(
 			<AnnotationOverlay
 				iframe={this._iframe}
 				annotations={displayedAnnotations}
@@ -394,7 +397,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
 			/>
-		), this._annotationRenderRoot);
+		);
+		if (synchronous) {
+			// We have to flushSync() when we're rendering due to a page change,
+			// or another DOM change external to React. Without it, React will
+			// take its sweet time rendering the annotations, and they'll show
+			// in the wrong position relative to the text until it's done.
+			flushSync(doRender);
+		}
+		else {
+			doRender();
+		}
 	}
 
 	protected _openSelectionPopup(selection: Selection) {
@@ -417,7 +430,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Note: Popup won't be visible if sidebar is opened
 		let domRect;
 		if (annotation.type == 'note') {
-			domRect = this._annotationRenderRoot.querySelector(`[data-annotation-id="${annotation.id}"]`)
+			domRect = this._annotationRenderRootEl.querySelector(`[data-annotation-id="${annotation.id}"]`)
 				?.getBoundingClientRect();
 		}
 		if (!domRect) {
@@ -489,8 +502,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._annotationShadowRoot = annotationOverlay.attachShadow({ mode: 'open' });
 		this._iframeDocument.body.append(annotationOverlay);
 
-		this._annotationRenderRoot = this._iframeDocument.createElement('div');
-		this._annotationShadowRoot.append(this._annotationRenderRoot);
+		this._annotationRenderRootEl = this._iframeDocument.createElement('div');
+		this._annotationShadowRoot.append(this._annotationRenderRootEl);
+		this._annotationRenderRoot = createRoot(this._annotationRenderRootEl);
 
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
@@ -1047,7 +1061,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// the document is scrolled. But scrollable sub-frames (e.g. elements with overflow: auto) don't have their own
 		// annotation layers. When one of them is scrolled, trigger a rerender so annotations get repositioned.
 		if (event.target !== this._iframeDocument) {
-			this._renderAnnotations();
+			this._renderAnnotations(true);
 		}
 	}
 
@@ -1173,12 +1187,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
 			this._highlightedPosition = selector;
-			this._renderAnnotations();
+			this._renderAnnotations(true);
 
 			setTimeout(() => {
 				if (this._highlightedPosition === selector) {
 					this._highlightedPosition = null;
-					this._renderAnnotations();
+					this._renderAnnotations(true);
 				}
 			}, 2000);
 		}
