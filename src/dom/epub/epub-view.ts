@@ -143,13 +143,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
 
+		let swipeIndicatorContainer = this._iframeDocument.createElement('div');
+		swipeIndicatorContainer.classList.add('swipe-indicators');
+
 		let swipeIndicatorLeft = this._iframeDocument.createElement('div');
 		swipeIndicatorLeft.classList.add('swipe-indicator-left');
-		this._iframeDocument.body.append(swipeIndicatorLeft);
+		swipeIndicatorContainer.append(swipeIndicatorLeft);
 
 		let swipeIndicatorRight = this._iframeDocument.createElement('div');
 		swipeIndicatorRight.classList.add('swipe-indicator-right');
-		this._iframeDocument.body.append(swipeIndicatorRight);
+		swipeIndicatorContainer.append(swipeIndicatorRight);
+
+		this._iframeDocument.body.append(swipeIndicatorContainer);
 
 		this._sectionsContainer = this._iframeDocument.createElement('div');
 		this._sectionsContainer.classList.add('sections');
