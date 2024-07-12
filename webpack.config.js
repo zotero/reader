@@ -192,6 +192,7 @@ function generateViewConfig(build) {
 				},
 				{
 					test: /\.s?css$/,
+					exclude: path.resolve(__dirname, './src/dom'),
 					use: [
 						MiniCssExtractPlugin.loader,
 						{
@@ -203,6 +204,21 @@ function generateViewConfig(build) {
 						{
 							loader: 'sass-loader',
 						},
+					]
+				},
+				{
+					test: /\.scss$/,
+					include: path.resolve(__dirname, './src/dom'),
+					use: [
+						{
+							loader: 'raw-loader',
+						},
+						{
+							loader: 'sass-loader',
+							options: {
+								additionalData: `$platform: '${build}';`
+							}
+						}
 					]
 				}
 			],
