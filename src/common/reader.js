@@ -58,6 +58,7 @@ class Reader {
 		this._onToggleContextPane = options.onToggleContextPane;
 		this._onToolbarShiftTab = options.onToolbarShiftTab;
 		this._onIframeTab = options.onIframeTab;
+		this._onTextSelectionAnnotationModeChange = options.onTextSelectionAnnotationModeChange;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
@@ -137,6 +138,7 @@ class Reader {
 			hyphenate: options.hyphenate,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
+			textSelectionAnnotationMode: options.textSelectionAnnotationMode || 'highlight',
 			colorScheme: options.colorScheme,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
 			thumbnails: [],
@@ -293,6 +295,7 @@ class Reader {
 							onFindNext={this.findNext.bind(this)}
 							onFindPrevious={this.findPrevious.bind(this)}
 							onToggleContextPane={this._onToggleContextPane}
+							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 							ref={this._readerRef}
 						/>
 					</ReaderContext.Provider>
@@ -639,6 +642,14 @@ class Reader {
 
 	_handleFindStateChange(primary, params) {
 		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
+	}
+
+	setTextSelectionAnnotationMode(mode) {
+		if (!['highlight', 'underline'].includes(mode)) {
+			throw new Error(`Invalid 'textSelectionAnnotationMode' value '${mode}'`);
+		}
+		this._updateState({ textSelectionAnnotationMode: mode });
+		this._onTextSelectionAnnotationModeChange(mode);
 	}
 
 	// Announce the index of current search result to screen readers

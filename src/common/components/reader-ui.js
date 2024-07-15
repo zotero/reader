@@ -54,9 +54,11 @@ function View(props) {
 			{state[name + 'ViewSelectionPopup'] && !state.readOnly &&
 				<SelectionPopup
 					params={state[name + 'ViewSelectionPopup']}
+					textSelectionAnnotationMode={state.textSelectionAnnotationMode}
 					enableAddToNote={state.enableAddToNote}
 					onAddToNote={props.onAddToNote}
 					onAddAnnotation={props.onAddAnnotation}
+					onChangeTextSelectionAnnotationMode={props.onChangeTextSelectionAnnotationMode}
 				/>
 			}
 			{state[name + 'ViewAnnotationPopup'] && !state.sidebarOpen &&
