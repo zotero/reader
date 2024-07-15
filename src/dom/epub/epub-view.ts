@@ -55,7 +55,7 @@ import {
 	PaginatedFlow,
 	ScrolledFlow
 } from "./flow";
-import { RTL_SCRIPTS } from "./defines";
+import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -85,6 +85,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	private _flowMode!: FlowMode;
 
 	private _savedPageMapping!: string;
+
+	private _appearance?: EPUBAppearance;
 
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
 		super(options);
@@ -141,13 +143,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
 
+		let swipeIndicatorContainer = this._iframeDocument.createElement('div');
+		swipeIndicatorContainer.classList.add('swipe-indicators');
+
 		let swipeIndicatorLeft = this._iframeDocument.createElement('div');
 		swipeIndicatorLeft.classList.add('swipe-indicator-left');
-		this._iframeDocument.body.append(swipeIndicatorLeft);
+		swipeIndicatorContainer.append(swipeIndicatorLeft);
 
 		let swipeIndicatorRight = this._iframeDocument.createElement('div');
 		swipeIndicatorRight.classList.add('swipe-indicator-right');
-		this._iframeDocument.body.append(swipeIndicatorRight);
+		swipeIndicatorContainer.append(swipeIndicatorRight);
+
+		this._iframeDocument.body.append(swipeIndicatorContainer);
 
 		this._sectionsContainer = this._iframeDocument.createElement('div');
 		this._sectionsContainer.classList.add('sections');
@@ -165,8 +172,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 
 		if (this._options.fontFamily) {
-			this._iframeDocument.documentElement.style.setProperty('--content-font-family', this._options.fontFamily);
+			this.setFontFamily(this._options.fontFamily);
 		}
+		this.setHyphenate(this._options.hyphenate ?? true);
 
 		this._sectionsContainer.hidden = false;
 		await this._initPageMapping(viewState);
@@ -188,6 +196,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		else {
 			this.setSpreadMode(SpreadMode.None);
+		}
+		if (viewState.appearance) {
+			this.setAppearance(viewState.appearance);
+		}
+		else {
+			this.setAppearance(DEFAULT_EPUB_APPEARANCE);
 		}
 		if (!viewState.cfi || viewState.cfi === '_start') {
 			this.navigateToFirstPage();
@@ -569,6 +583,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			savedPageMapping: this._savedPageMapping,
 			flowMode: this._flowMode,
 			spreadMode: this.spreadMode,
+			appearance: this._appearance,
 		};
 		this._options.onChangeViewState(viewState);
 	}
@@ -841,9 +856,22 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._handleViewUpdate();
 	}
 
+	setAppearance(appearance: EPUBAppearance) {
+		this._appearance = { ...appearance };
+		this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
+		this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
+		this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
+		this._handleViewUpdate();
+	}
+
 	setFontFamily(fontFamily: string) {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
-		this._renderAnnotations();
+		this._renderAnnotations(true);
+	}
+
+	setHyphenate(hyphenate: boolean) {
+		this._iframeDocument.documentElement.classList.toggle('hyphenate', hyphenate);
+		this._renderAnnotations(true);
 	}
 
 	// ***
@@ -1016,9 +1044,35 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	// Still need to figure out how this is going to work
-	print() {
-		console.log('Print');
+	async print() {
+		// It's going to get ugly in here, so hide the iframe
+		this._iframe.classList.remove('loaded');
+
+		// Mount all views
+		let viewsToMount = this._sectionViews.filter(view => !view.mounted);
+		for (let view of viewsToMount) {
+			view.mount();
+		}
+
+		// Wait for all images to load
+		await Promise.allSettled(
+			Array.from(this._iframeDocument.images)
+				.map(image => image.decode())
+		);
+
+		if (typeof this._iframeWindow.zoteroPrint === 'function') {
+			await this._iframeWindow.zoteroPrint();
+		}
+		else {
+			this._iframeWindow.print();
+		}
+
+		// Unmount the views that weren't mounted before
+		for (let view of viewsToMount) {
+			view.unmount();
+		}
+
+		this._iframe.classList.add('loaded');
 	}
 
 	setSidebarOpen(_sidebarOpen: boolean) {
@@ -1074,6 +1128,13 @@ export interface EPUBViewState extends DOMViewState {
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
 	spreadMode?: SpreadMode;
+	appearance?: EPUBAppearance;
+}
+
+export interface EPUBAppearance {
+	lineHeight: number;
+	wordSpacing: number;
+	letterSpacing: number;
 }
 
 export interface EPUBViewData {

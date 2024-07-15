@@ -1,9 +1,11 @@
 import { p2v } from './coordinates';
 import {
 	applyInverseTransform,
-	applyTransform,
+	applyTransform, darkenHex, getRotationDegrees, normalizeDegrees,
 	transform
 } from './utilities';
+import { getRectRotationOnText } from '../selection';
+import view from '../../common/view';
 
 function calculateLines(context, text, maxWidth) {
 	let words = text.split(' ');
@@ -42,7 +44,7 @@ function calculateLines(context, text, maxWidth) {
 	return lines;
 }
 
-export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
+export function drawAnnotationsOnCanvas(canvas, viewport, annotations, pageIndex, pdfPages) {
 	let ctx = canvas.getContext('2d', { alpha: false });
 
 	let scale = canvas.width / viewport.width;
@@ -50,13 +52,63 @@ export function drawAnnotationsOnCanvas(canvas, viewport, annotations) {
 	ctx.globalCompositeOperation = 'multiply';
 
 	for (let annotation of annotations) {
+		if (!(annotation.position.pageIndex === pageIndex
+			|| annotation.position.nextPageRects && annotation.position.pageIndex + 1 === pageIndex)) {
+			continue;
+		}
+
 		let { color } = annotation;
-		let position = p2v(annotation.position, viewport);
+		let position = p2v(annotation.position, viewport, pageIndex);
 		ctx.save();
 		if (annotation.type === 'highlight') {
+			let rects;
+			if (position.nextPageRects && position.pageIndex + 1 === pageIndex) {
+				rects = position.nextPageRects;
+			}
+			else {
+				rects = position.rects;
+			}
 			ctx.fillStyle = color + '80';
-			for (let rect of position.rects) {
+			for (let rect of rects) {
 				ctx.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+			}
+		}
+		else if (annotation.type === 'underline') {
+			let color = annotation.color;
+			let pageData = pdfPages[pageIndex];
+			ctx.fillStyle = color;
+			let rects;
+			let pdfRect;
+			if (position.nextPageRects && position.pageIndex + 1 === pageIndex) {
+				rects = position.nextPageRects;
+				pdfRect = annotation.position.nextPageRects[0];
+			}
+			else {
+				rects = position.rects;
+				pdfRect = annotation.position.rects[0];
+			}
+			let width = 1;
+			width *= viewport.scale;
+			for (let rect of rects) {
+				// Note: This gets underline line rect taking into account text rotation,
+				// if pageData exists, otherwise just uses 0 degrees, which
+				// result in incorrect underline annotation rendering
+				let rotation = 0;
+				if (pageData) {
+					let { chars } = pageData;
+					rotation = getRectRotationOnText(chars, pdfRect);
+				}
+				// Add page rotation to text rotation
+				rotation += getRotationDegrees(viewport.transform);
+				rotation = normalizeDegrees(rotation);
+				let [x1, y1, x2, y2] = rect;
+				let rect2 = (
+					rotation === 0 && [x1, y2 - width, x2, y2]
+					|| rotation === 90 && [x2 - width, y2, x2, y1]
+					|| rotation === 180 && [x1, y1, x2, y1 - width]
+					|| rotation === 270 && [x1, y2, x1 - width, y1]
+				);
+				ctx.fillRect(rect2[0], rect2[1], rect2[2] - rect2[0], rect2[3] - rect2[1]);
 			}
 		}
 		else if (annotation.type === 'note') {

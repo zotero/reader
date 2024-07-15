@@ -196,7 +196,7 @@ class PDFThumbnails {
 			console.log(e);
 		}
 		finally {
-			this._pdfView.renderPageAnnotationsOnCanvas(canvas, drawViewport, pageIndex);
+			await this._pdfView.renderPageAnnotationsOnCanvas(canvas, drawViewport, pageIndex);
 			const reducedCanvas = this._reduceImage(canvas, canvasWidth, canvasHeight);
 			this._thumbnails = this._thumbnails.slice();
 			this._thumbnails[pageIndex] = {

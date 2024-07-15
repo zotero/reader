@@ -4,27 +4,31 @@
 	overscroll-behavior: none;
 }
 
-.swipe-indicator-left, .swipe-indicator-right {
-	display: block;
-	position: fixed;
-	top: calc(50% - 50px);
-	width: 80px;
-	height: 100px;
-	background-color: #bdbdbd;
-	z-index: 9999;
-	pointer-events: none;
-}
+.swipe-indicators {
+	display: contents;
 
-.swipe-indicator-left {
-	left: calc((min(var(--swipe-amount, 0), 1) - 1) * 80px);
-	opacity: calc(min(var(--swipe-amount, 0), 1) * 0.8);
-	border-radius: 0 80px 80px 0;
-}
+	.swipe-indicator-left, .swipe-indicator-right {
+		display: block;
+		position: fixed;
+		top: calc(50% - 50px);
+		width: 80px;
+		height: 100px;
+		background-color: #bdbdbd;
+		z-index: 9999;
+		pointer-events: none;
+	}
 
-.swipe-indicator-right {
-	left: calc(100vw + (max(var(--swipe-amount, 0), -1) * 80px));
-	opacity: calc(max(var(--swipe-amount, 0), -1) * -0.8);
-	border-radius: 80px 0 0 80px;
+	.swipe-indicator-left {
+		left: calc((min(var(--swipe-amount, 0), 1) - 1) * 80px);
+		opacity: calc(min(var(--swipe-amount, 0), 1) * 0.8);
+		border-radius: 0 80px 80px 0;
+	}
+
+	.swipe-indicator-right {
+		left: calc(100vw + (max(var(--swipe-amount, 0), -1) * 80px));
+		opacity: calc(max(var(--swipe-amount, 0), -1) * -0.8);
+		border-radius: 80px 0 0 80px;
+	}
 }
 
 > .sections {

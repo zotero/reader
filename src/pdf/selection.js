@@ -255,12 +255,12 @@ function getRange(chars, anchorOffset, headOffset) {
 }
 
 function getNextLineClosestOffset(chars, offset) {
-	let currentLineEnd = chars.indexOf(x => x.lineBreakAfter, offset);
-	if (currentLineEnd === chars.length - 1) {
-		return null;
+	let currentLineEnd = chars.findIndex((x, idx) => idx >= offset && x.lineBreakAfter);
+	if (currentLineEnd === -1 || currentLineEnd === chars.length - 1) {
+		return chars.length;
 	}
 	let nextLineStart = currentLineEnd + 1;
-	let nextLineEnd = chars.indexOf(x => x.lineBreakAfter, nextLineStart);
+	let nextLineEnd = chars.findIndex((x, idx) => idx >= nextLineStart && x.lineBreakAfter);
 	let closestOffset = null;
 	let closestDist = null;
 	let currentChar = chars[offset];
@@ -275,10 +275,16 @@ function getNextLineClosestOffset(chars, offset) {
 }
 
 function getPrevLineClosestOffset(chars, offset) {
-	let prevLineEnd = chars.lastIndexOf(x => x.lineBreakAfter, offset);
-	let prevLineStart = chars.lastIndexOf(x => x.lineBreakAfter, prevLineEnd - 1);
+	if (offset === chars.length) {
+		offset--;
+	}
+	let prevLineEnd = chars.findLastIndex((x, idx) => idx < offset && x.lineBreakAfter);
+	if (prevLineEnd === -1) {
+		return 0;
+	}
+	let prevLineStart = chars.findLastIndex((x, idx) => idx < prevLineEnd && x.lineBreakAfter);
 	if (prevLineStart === -1) {
-		return null;
+		prevLineStart = 0;
 	}
 	else {
 		prevLineStart++;
@@ -434,23 +440,68 @@ export function getModifiedSelectionRanges(pdfPages, selectionRanges, modifier) 
 	}
 
 	if (modifier === 'left') {
-		head.offset--;
+		if (head.offset === 0) {
+			if (pdfPages[head.pageIndex - 1]) {
+				let { chars } = pdfPages[head.pageIndex - 1];
+				if (chars.length) {
+					head.pageIndex--;
+					head.offset = chars.length - 1;
+				}
+			}
+		}
+		else {
+			head.offset--;
+		}
 	}
 	else if (modifier === 'right') {
-		head.offset++;
+		let { chars } = pdfPages[head.pageIndex];
+		if (head.offset === chars.length) {
+			if (pdfPages[head.pageIndex + 1]) {
+				let { chars } = pdfPages[head.pageIndex + 1];
+				if (chars.length) {
+					head.pageIndex++;
+					head.offset = 1;
+				}
+			}
+		}
+		else {
+			head.offset++;
+		}
 	}
 	else if (modifier === 'up') {
-		let { chars } = pdfPages[head.pageIndex];
-		head.offset = getPrevLineClosestOffset(chars, head.pageIndex, head.offset);
-		if (head.offset === null) {
-			return [];
+		if (head.offset === 0) {
+			if (pdfPages[head.pageIndex - 1]) {
+				let { chars } = pdfPages[head.pageIndex - 1];
+				if (chars.length) {
+					head.pageIndex--;
+					head.offset = chars.length - 1;
+				}
+			}
+		}
+		else {
+			let { chars } = pdfPages[head.pageIndex];
+			let offset = getPrevLineClosestOffset(chars, head.offset);
+			if (offset !== null) {
+				head.offset = offset;
+			}
 		}
 	}
 	else if (modifier === 'down') {
 		let { chars } = pdfPages[head.pageIndex];
-		head.offset = getNextLineClosestOffset(chars, head.pageIndex, head.offset);
-		if (head.offset === null) {
-			return [];
+		if (head.offset === chars.length) {
+			if (pdfPages[head.pageIndex + 1]) {
+				let { chars } = pdfPages[head.pageIndex + 1];
+				if (chars.length) {
+					head.pageIndex++;
+					head.offset = 1;
+				}
+			}
+		}
+		else {
+			let offset = getNextLineClosestOffset(chars, head.offset);
+			if (offset !== null) {
+				head.offset = offset;
+			}
 		}
 	}
 	else if (typeof modifier === 'object') {
@@ -473,7 +524,7 @@ export function getWordSelectionRanges(pdfPages, anchorPosition, headPosition) {
 	}
 	let anchor = { pageIndex: anchorPosition.pageIndex };
 	let head = { pageIndex: headPosition.pageIndex };
-	if (anchorWord.anchorOffset < headWord.anchorOffset && anchor.pageIndex === head.pageIndex
+	if (anchorWord.anchorOffset <= headWord.anchorOffset && anchor.pageIndex === head.pageIndex
 		|| anchor.pageIndex < head.pageIndex) {
 		anchor.offset = anchorWord.anchorOffset;
 		head.offset = headWord.headOffset;
@@ -498,7 +549,7 @@ export function getLineSelectionRanges(pdfPages, anchorPosition, headPosition) {
 	}
 	let anchor = { pageIndex: anchorPosition.pageIndex };
 	let head = { pageIndex: headPosition.pageIndex };
-	if (anchorLine.anchorOffset < headLine.anchorOffset && anchor.pageIndex === head.pageIndex
+	if (anchorLine.anchorOffset <= headLine.anchorOffset && anchor.pageIndex === head.pageIndex
 		|| anchor.pageIndex < head.pageIndex) {
 		anchor.offset = anchorLine.anchorOffset;
 		head.offset = headLine.headOffset;
@@ -597,7 +648,7 @@ function applySelectionRangeIsolation(pdfPages, selectionRanges) {
 			currentRange = {
 				pageIndex: char.pageIndex,
 				anchorOffset: char.offset,
-				headOffset: char.offset
+				headOffset: char.offset + 1
 			};
 		} else {
 			// Extend the current range

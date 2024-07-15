@@ -369,6 +369,8 @@ export class ScrolledFlow extends AbstractFlow {
 export class PaginatedFlow extends AbstractFlow {
 	private _sectionsContainer: HTMLElement;
 
+	private _swipeIndicators: HTMLElement;
+
 	private _touchStartID: number | null = null;
 
 	private _touchStartX = 0;
@@ -377,7 +379,8 @@ export class PaginatedFlow extends AbstractFlow {
 
 	constructor(options: Options) {
 		super(options);
-		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections')! as HTMLElement;
+		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections') as HTMLElement;
+		this._swipeIndicators = this._iframeDocument.querySelector('.swipe-indicators') as HTMLElement;
 
 		this._iframeDocument.addEventListener('keydown', this._handleKeyDown, { capture: true });
 		this._iframeDocument.addEventListener('pointerdown', this._handlePointerDown);
@@ -579,7 +582,8 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerDown = (event: PointerEvent) => {
-		if (this._touchStartID !== null || event.pointerType !== 'touch') {
+		if (this._touchStartID !== null || event.pointerType !== 'touch'
+				|| (event.target as Element).closest('#annotation-overlay')) {
 			return;
 		}
 		this._touchStartID = event.pointerId;
@@ -598,8 +602,7 @@ export class PaginatedFlow extends AbstractFlow {
 		else if (swipeAmount > 0 && !this.canNavigateToPreviousPage()) {
 			swipeAmount = Math.min(swipeAmount, 0.6);
 		}
-		this._iframeDocument.body.classList.add('swiping');
-		this._iframeDocument.documentElement.style.setProperty('--swipe-amount', swipeAmount.toString());
+		this._swipeIndicators.style.setProperty('--swipe-amount', swipeAmount.toString());
 	};
 
 	private _handlePointerUp = (event: PointerEvent) => {
@@ -607,8 +610,7 @@ export class PaginatedFlow extends AbstractFlow {
 			return;
 		}
 		event.preventDefault();
-		this._iframeDocument.body.classList.remove('swiping');
-		this._iframeDocument.documentElement.style.setProperty('--swipe-amount', '0');
+		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
 		this._touchStartID = null;
 
 		// Switch pages after swiping 100px

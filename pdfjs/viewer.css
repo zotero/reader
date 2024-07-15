@@ -60,7 +60,6 @@ body {
 	right: 0;
 	bottom: 0;
 	left: 0;
-	min-width: 320px;
 }
 
 #viewerContainer {
@@ -336,7 +335,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	background: transparent;
 }
 .customAnnotationLayer ::selection {
-	background-color: Highlight;
+	background-color: #71ADFD;
 }
 
 .textLayer .endOfContent {
@@ -359,6 +358,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	position: absolute;
 	left: 0;
 	top: 0;
+	z-index: 3;
 }
 
 .textAnnotation {

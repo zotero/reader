@@ -1,23 +1,26 @@
-#annotation-overlay .annotation-container {
+.annotation-container {
 	z-index: 9999;
 	pointer-events: none;
 	position: absolute;
 	left: 0;
 	top: 0;
+	width: 0;
+	height: 0;
+	background: transparent;
 	overflow: visible;
 }
 
-#annotation-overlay .annotation-container.blended {
+.annotation-container.blended {
 	mix-blend-mode: multiply;
 }
 
-#annotation-overlay .resizer {
+.resizer {
 	cursor: col-resize;
 	touch-action: none;
 }
 
 @media (any-pointer: coarse) {
-	#annotation-overlay .resizer {
+	.resizer {
 		stroke: transparent;
 		stroke-width: 20px;
 		margin: -10px;
@@ -25,7 +28,7 @@
 }
 
 @mixin -dark-rules() {
-	#annotation-overlay .annotation-container.blended {
+	.annotation-container.blended {
 		mix-blend-mode: screen;
 	}
 }
@@ -38,4 +41,10 @@
 
 :root[data-color-scheme=dark]:not(.disable-dark-mode) {
 	@include -dark-rules();
+}
+
+@media print {
+	:host {
+		display: none !important;
+	}
 }

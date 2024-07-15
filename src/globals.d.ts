@@ -4,6 +4,8 @@ declare interface Window {
 	dev?: boolean;
 
 	DarkReader: typeof import('darkreader');
+
+	zoteroPrint?: () => Promise<void>;
 }
 
 declare interface Document {

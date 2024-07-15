@@ -118,7 +118,7 @@ class AnnotationManager {
 				this._save({ ...existingAnnotation, image }, includeImage);
 				continue;
 			}
-			if (annotation.position) {
+			if (annotation.position || annotation.color) {
 				annotation.image = undefined;
 			}
 			// All properties in the existing annotation position are preserved except nextPageRects,

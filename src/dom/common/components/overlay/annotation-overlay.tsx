@@ -45,7 +45,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 
 		let handleWindowPointerDown = (event: PointerEvent) => {
 			setAltDown(event.altKey);
-			if (event.button == 0 && !(event.target as Element).closest('.annotation-container')) {
+			if (event.button == 0 && !(event.target as Element).closest('#annotation-overlay')) {
 				setPointerDownOutside(true);
 			}
 		};
@@ -243,6 +243,10 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				}
 			}
 		}
+	}
+
+	if (!rects.size) {
+		return null;
 	}
 
 	let commentIconPosition;

@@ -24,7 +24,7 @@ function SelectionPopup(props) {
 			uniqueRef={{}}
 			padding={20}
 		>
-			<div className="colors" data-tabstop={true}>
+			<div className="colors" data-tabstop={1}>
 				{ANNOTATION_COLORS.map((color, index) => (<button
 					key={index}
 					tabIndex={-1}
@@ -34,7 +34,7 @@ function SelectionPopup(props) {
 				><IconColor16 color={color[1]}/></button>))}
 			</div>
 			{props.enableAddToNote &&
-				<button className="toolbar-button wide-button" data-tabstop={true} onClick={handleAddToNote}>
+				<button className="toolbar-button wide-button" data-tabstop={1} onClick={handleAddToNote}>
 					<FormattedMessage id="pdfReader.addToNote"/>
 				</button>}
 			<CustomSections type="TextSelectionPopup" annotation={props.params.annotation}/>

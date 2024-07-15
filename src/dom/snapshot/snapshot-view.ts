@@ -481,6 +481,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 		if (this._options.onSetZoom) {
 			this._options.onSetZoom(this._iframe, scale);
+			// Store the scale factor so we can adjust clientX/clientY coordinates when opening popups
+			// TODO: Use CSS zoom instead of onSetZoom() when Zotero is on fx>=126
+			this._iframeCoordScaleFactor = scale;
 		}
 		else {
 			if (scale == 1) {
@@ -513,9 +516,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	// Still need to figure out how this is going to work
-	print() {
-		console.log('Print');
+	async print() {
+		if (typeof this._iframeWindow.zoteroPrint === 'function') {
+			await this._iframeWindow.zoteroPrint();
+		}
+		else {
+			this._iframeWindow.print();
+		}
 	}
 
 	setSidebarOpen(_sidebarOpen: boolean) {

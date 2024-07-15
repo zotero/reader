@@ -300,6 +300,7 @@ let Content = React.forwardRef((props, ref) => {
 	return (
 		<Fragment>
 			<div
+				id={props.id}
 				ref={innerRef}
 				suppressContentEditableWarning={true}
 				className="content"
@@ -309,6 +310,9 @@ let Content = React.forwardRef((props, ref) => {
 				data-tabstop={!props.readOnly ? 1 : undefined}
 				tabIndex={!props.readOnly ? -1 : undefined}
 				onInput={handleInput}
+				role="textbox"
+				aria-label={props.ariaLabel}
+				aria-readonly={props.readOnly}
 			/>
 			<div className="renderer" ref={rendererRef}></div>
 		</Fragment>
@@ -334,6 +338,7 @@ function Editor(props) {
 				enableRichText={props.enableRichText}
 				placeholder={props.placeholder}
 				onChange={props.onChange}
+				ariaLabel={props.ariaLabel}
 			/>
 		</div>
 	);

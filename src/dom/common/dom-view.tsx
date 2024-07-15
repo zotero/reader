@@ -1,5 +1,5 @@
 // @ts-ignore
-import annotationOverlayCSS from './stylesheets/annotation-overlay.scss';
+import injectCSS from './stylesheets/inject.scss';
 
 import {
 	Annotation,
@@ -19,7 +19,8 @@ import {
 	WADMAnnotation,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
-import ReactDOM from "react-dom";
+import { flushSync } from "react-dom";
+import { createRoot, Root } from "react-dom/client";
 import {
 	AnnotationOverlay,
 	DisplayedAnnotation
@@ -68,6 +69,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _showAnnotations: boolean;
 
+	protected _annotationShadowRoot!: ShadowRoot;
+
+	protected _annotationRenderRootEl!: HTMLElement;
+
+	protected _annotationRenderRoot!: Root;
+
 	protected _useDarkMode: boolean;
 
 	protected _colorScheme: string | null;
@@ -98,6 +105,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handledPointerIDs = new Set<number>();
 
+	protected _iframeCoordScaleFactor = 1;
+
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
 
 	protected _touchAnnotationStartPosition: CaretPosition | null = null;
@@ -126,7 +135,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 
 		this._iframe = document.createElement('iframe');
-		this._iframe.sandbox.add('allow-same-origin');
+		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');
 		// A WebKit bug prevents listeners added by the parent page (us) from running inside a child frame (this._iframe)
 		// unless the allow-scripts permission is added to the frame's sandbox. We prevent scripts in the frame from
 		// running via the CSP.
@@ -247,6 +256,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		);
 	}
 
+	protected _scaleDOMRect(rect: DOMRect): DOMRect {
+		return new DOMRect(
+			rect.x * this._iframeCoordScaleFactor,
+			rect.y * this._iframeCoordScaleFactor,
+			rect.width * this._iframeCoordScaleFactor,
+			rect.height * this._iframeCoordScaleFactor
+		);
+	}
+
 	protected _getAnnotationFromTextSelection(type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		let selection = this._iframeDocument.getSelection();
 		if (!selection || selection.isCollapsed) {
@@ -292,7 +310,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleViewUpdate() {
 		this._updateViewState();
 		this._updateViewStats();
-		this._renderAnnotations();
+		this._renderAnnotations(true);
 		this._repositionPopups();
 	}
 
@@ -319,21 +337,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onSetOverlayPopup();
 	}
 
-	protected _renderAnnotations() {
-		if (!this._iframeDocument) {
+	protected _renderAnnotations(synchronous = false) {
+		if (!this._annotationRenderRootEl) {
 			return;
 		}
-		let container = this._iframeDocument.body.querySelector(':scope > #annotation-overlay');
 		if (!this._showAnnotations) {
-			if (container) {
-				container.remove();
-			}
+			this._annotationRenderRootEl.replaceChildren();
 			return;
-		}
-		if (!container) {
-			container = this._iframeDocument.createElement('div');
-			container.id = 'annotation-overlay';
-			this._iframeDocument.body.append(container);
 		}
 		let displayedAnnotations: DisplayedAnnotation[] = [
 			...this._annotations.map(a => ({
@@ -375,7 +385,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: this.toDisplayedRange(this._previewAnnotation.position)!,
 			});
 		}
-		ReactDOM.render((
+		let doRender = () => this._annotationRenderRoot.render(
 			<AnnotationOverlay
 				iframe={this._iframe}
 				annotations={displayedAnnotations}
@@ -387,7 +397,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				onResizeStart={this._handleAnnotationResizeStart}
 				onResizeEnd={this._handleAnnotationResizeEnd}
 			/>
-		), container);
+		);
+		if (synchronous) {
+			// We have to flushSync() when we're rendering due to a page change,
+			// or another DOM change external to React. Without it, React will
+			// take its sweet time rendering the annotations, and they'll show
+			// in the wrong position relative to the text until it's done.
+			flushSync(doRender);
+		}
+		else {
+			doRender();
+		}
 	}
 
 	protected _openSelectionPopup(selection: Selection) {
@@ -395,7 +415,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
-		let domRect = this._getViewportBoundingRect(range);
+		let domRect = this._scaleDOMRect(this._getViewportBoundingRect(range));
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		let annotation = this._getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
@@ -410,7 +430,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Note: Popup won't be visible if sidebar is opened
 		let domRect;
 		if (annotation.type == 'note') {
-			domRect = this._iframeDocument.querySelector(`[data-annotation-id="${annotation.id}"]`)
+			domRect = this._annotationRenderRootEl.querySelector(`[data-annotation-id="${annotation.id}"]`)
 				?.getBoundingClientRect();
 		}
 		if (!domRect) {
@@ -420,6 +440,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 			domRect = this._getViewportBoundingRect(range);
 		}
+		domRect = this._scaleDOMRect(domRect);
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}
@@ -476,9 +497,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.addEventListener('scroll', this._handleScrollCapture.bind(this), { passive: true, capture: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
+		let annotationOverlay = this._iframeDocument.createElement('div');
+		annotationOverlay.id = 'annotation-overlay';
+		this._annotationShadowRoot = annotationOverlay.attachShadow({ mode: 'open' });
+		this._iframeDocument.body.append(annotationOverlay);
+
+		this._annotationRenderRootEl = this._iframeDocument.createElement('div');
+		this._annotationShadowRoot.append(this._annotationRenderRootEl);
+		this._annotationRenderRoot = createRoot(this._annotationRenderRootEl);
+
 		let style = this._iframeDocument.createElement('style');
-		style.innerHTML = annotationOverlayCSS;
-		this._iframeDocument.head.append(style);
+		style.innerHTML = injectCSS;
+		this._annotationShadowRoot.append(style);
 
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);
@@ -493,8 +523,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerOver(event: PointerEvent) {
-		let target = event.target as Element;
-		const link = target.closest('a');
+		const link = (event.target as Element).closest('a');
 		if (link) {
 			if (this._isExternalLink(link)) {
 				link.title = link.href;
@@ -549,7 +578,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent): Range | null {
-		let target = event.target as Element;
+		// Use composedPath()[0] to get the actual target, even if it's within a shadow tree
+		let target = event.composedPath()[0] as Element;
 		// Disable pointer events and rerender so we can get the cursor position in the text layer,
 		// not the annotation layer, even if the mouse is over the annotation layer
 		let range = this._iframeDocument.createRange();
@@ -714,7 +744,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Prevent native context menu
 		event.preventDefault();
 		let br = this._iframe.getBoundingClientRect();
-		this._options.onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+		this._options.onOpenViewContextMenu({
+			x: br.x + event.clientX * this._iframeCoordScaleFactor,
+			y: br.y + event.clientY * this._iframeCoordScaleFactor,
+		});
 	}
 
 	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
@@ -729,8 +762,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._selectedAnnotationIDs.includes(id)) {
 			this._options.onOpenAnnotationContextMenu({
 				ids: this._selectedAnnotationIDs,
-				x: br.x + event.clientX,
-				y: br.y + event.clientY,
+				x: br.x + event.clientX * this._iframeCoordScaleFactor,
+				y: br.y + event.clientY * this._iframeCoordScaleFactor,
 				view: true,
 			});
 		}
@@ -738,8 +771,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._options.onSelectAnnotations([id], event.nativeEvent);
 			this._options.onOpenAnnotationContextMenu({
 				ids: [id],
-				x: br.x + event.clientX,
-				y: br.y + event.clientY,
+				x: br.x + event.clientX * this._iframeCoordScaleFactor,
+				y: br.y + event.clientY * this._iframeCoordScaleFactor,
 				view: true,
 			});
 		}
@@ -819,7 +852,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	};
 
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
-		return this._iframeDocument.elementsFromPoint(clientX, clientY)
+		return this._annotationShadowRoot.elementsFromPoint(clientX, clientY)
 			.map(target => target.getAttribute('data-annotation-id'))
 			.filter(Boolean) as string[];
 	}
@@ -962,7 +995,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (!(event.target as Element).closest('.annotation-container')) {
+		if (!(event.target as Element).closest('#annotation-overlay')) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
@@ -1028,7 +1061,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// the document is scrolled. But scrollable sub-frames (e.g. elements with overflow: auto) don't have their own
 		// annotation layers. When one of them is scrolled, trigger a rerender so annotations get repositioned.
 		if (event.target !== this._iframeDocument) {
-			this._renderAnnotations();
+			this._renderAnnotations(true);
 		}
 	}
 
@@ -1154,12 +1187,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
 			this._highlightedPosition = selector;
-			this._renderAnnotations();
+			this._renderAnnotations(true);
 
 			setTimeout(() => {
 				if (this._highlightedPosition === selector) {
 					this._highlightedPosition = null;
-					this._renderAnnotations();
+					this._renderAnnotations(true);
 				}
 			}, 2000);
 		}
@@ -1172,6 +1205,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	navigateForward() {
 		this._history.navigateForward();
 	}
+
+	abstract print(): Promise<void>;
 }
 
 export type DOMViewOptions<State extends DOMViewState, Data> = {
@@ -1191,6 +1226,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	findState: FindState;
 	viewState?: State;
 	fontFamily?: string;
+	hyphenate?: boolean;
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;

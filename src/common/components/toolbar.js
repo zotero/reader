@@ -14,6 +14,7 @@ import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
 import IconChevronLeft from '../../../res/icons/20/chevron-left.svg';
 import IconChevronUp from '../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../res/icons/20/chevron-down.svg';
+import IconFormatText from '../../../res/icons/20/format-text.svg';
 import IconHighlight from '../../../res/icons/20/annotate-highlight.svg';
 import IconUnderline from '../../../res/icons/20/annotate-underline.svg';
 import IconNote from '../../../res/icons/20/annotate-note.svg';
@@ -77,7 +78,7 @@ function Toolbar(props) {
 				<button
 					id="sidebarToggle"
 					className="toolbar-button sidebar-toggle"
-					title="Toggle Sidebar"
+					title={intl.formatMessage({ id: 'pdfReader.toggleSidebar' })}
 					tabIndex={-1}
 					onClick={handleSidebarButtonClick}
 				><IconSidebar/></button>
@@ -106,6 +107,15 @@ function Toolbar(props) {
 					disabled={!props.enableZoomReset}
 					onClick={props.onZoomReset}
 				><IconAutoWidth/></button>
+				{props.type === 'epub' && (
+					<button
+						id="epubAppearance"
+						className={cx('toolbar-button epubFormattingOptions', { active: props.epubAppearancePopup })}
+						title={intl.formatMessage({ id: 'pdfReader.epubAppearance' })}
+						tabIndex={-1}
+						onClick={props.onToggleEPUBAppearance}
+					><IconFormatText/></button>
+				)}
 				<div className="divider"/>
 				<button
 					id="navigateBack"
@@ -233,7 +243,7 @@ function Toolbar(props) {
 				<CustomSections type="Toolbar"/>
 				<button
 					className={cx('toolbar-button find', { active: props.findPopupOpen })}
-					title="Find in Document"
+					title={intl.formatMessage({ id: 'pdfReader.findInDocument' })}
 					tabIndex={-1}
 					onClick={handleFindClick}
 				><IconFind/></button>
@@ -242,7 +252,7 @@ function Toolbar(props) {
 						<div className="divider"/>
 						<button
 							className="toolbar-button context-pane-toggle"
-							title="Toggle Context Pane"
+							title={intl.formatMessage({ id: 'pdfReader.toggleContextPane' })}
 							tabIndex={-1}
 							onClick={props.onToggleContextPane}
 						>{props.stackedView ? <IconSidebarBottom/> : <IconSidebar className="standard-view"/>}</button>

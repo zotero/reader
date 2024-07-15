@@ -30,7 +30,7 @@ function PreviewPopup(props) {
 			padding={10}
 			onRender={handleRender}
 		>
-			<div ref={innerRef} className="inner">
+			<div dir="ltr" ref={innerRef} className="inner">
 				<img height={props.params.height} width={props.params.width} src={props.params.image}/>
 			</div>
 		</ViewPopup>

@@ -9,7 +9,7 @@ function generateReaderConfig(build) {
 	let config = {
 		name: build,
 		mode: build === 'dev' ? 'development' : 'production',
-		devtool: build === 'zotero' ? false : 'source-map',
+		devtool: (build === 'zotero' || build === 'web') ? false : 'source-map',
 		entry: {
 			reader: [
 				'./src/index.' + build + '.js',
@@ -28,8 +28,8 @@ function generateReaderConfig(build) {
 			},
 		},
 		optimization: {
-			minimize: true,
-			minimizer: [new CssMinimizerPlugin()],
+			minimize: build === 'web',
+			minimizer: [new CssMinimizerPlugin(), '...'], // ... is for built-in TerserPlugin https://webpack.js.org/configuration/optimization/#optimizationminimizer
 		},
 		module: {
 			rules: [
@@ -152,9 +152,12 @@ function generateViewConfig(build) {
 	let config = {
 		name: build,
 		mode: build === 'view-dev' ? 'development' : 'production',
-		devtool: 'source-map',
+		devtool: build === 'web' ? false : 'source-map',
 		entry: {
-			view: ['./src/index.' + build + '.js']
+			view: [
+				'./src/index.' + build + '.js',
+				'./src/common/stylesheets/view.scss'
+			],
 		},
 		output: {
 			path: path.resolve(__dirname, './build/' + build),
@@ -168,8 +171,8 @@ function generateViewConfig(build) {
 			},
 		},
 		optimization: {
-			minimize: true,
-			minimizer: [new CssMinimizerPlugin()],
+			minimize: build === 'web',
+			minimizer: [new CssMinimizerPlugin(), '...'], // ... is for built-in TerserPlugin https://webpack.js.org/configuration/optimization/#optimizationminimizer
 		},
 		module: {
 			rules: [
@@ -192,6 +195,7 @@ function generateViewConfig(build) {
 				},
 				{
 					test: /\.s?css$/,
+					exclude: path.resolve(__dirname, './src/dom'),
 					use: [
 						MiniCssExtractPlugin.loader,
 						{
@@ -203,6 +207,21 @@ function generateViewConfig(build) {
 						{
 							loader: 'sass-loader',
 						},
+					]
+				},
+				{
+					test: /\.scss$/,
+					include: path.resolve(__dirname, './src/dom'),
+					use: [
+						{
+							loader: 'raw-loader',
+						},
+						{
+							loader: 'sass-loader',
+							options: {
+								additionalData: `$platform: '${build}';`
+							}
+						}
 					]
 				}
 			],

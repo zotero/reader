@@ -1,5 +1,6 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle, useLayoutEffect } from 'react';
-import { FormattedMessage } from 'react-intl';
+import React, { useState, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
+import { FormattedMessage, useIntl } from 'react-intl';
+import cx from 'classnames';
 import { debounce } from '../../lib/debounce';
 import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
 
@@ -8,6 +9,7 @@ import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
+	const intl = useIntl();
 	const inputRef = useRef();
 	const [query, setQuery] = useState(params.query);
 
@@ -51,55 +53,60 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	}
 
 	function handleCloseClick() {
-		onChange({ ...params, popupOpen: false, active: false });
+		onChange({ ...params, popupOpen: false, active: false, result: null });
 	}
 
 	function handleHighlightAllChange(event) {
-		onChange({ ...params, highlightAll: event.currentTarget.checked });
+		onChange({ ...params, highlightAll: event.currentTarget.checked, result: null });
 	}
 
 	function handleMatchCaseChange(event) {
-		onChange({ ...params, caseSensitive: event.currentTarget.checked });
+		onChange({ ...params, caseSensitive: event.currentTarget.checked, result: null });
 	}
 
 	function handleWholeWordsChange(event) {
-		onChange({ ...params, entireWord: event.currentTarget.checked });
+		onChange({ ...params, entireWord: event.currentTarget.checked, result: null });
 	}
 
 	return (
 		<div className="find-popup">
 			<div className="row input">
-				<input
-					ref={inputRef}
-					type="text"
-					title="Find"
-					className="toolbar-text-input"
-					placeholder="Find in document…"
-					value={query !== null ? query : params.query}
-					tabIndex="-1"
-					data-tabstop={1}
-					autoComplete="off"
-					onChange={handleInputChange}
-					onKeyDown={handleInputKeyDown}
-				/>
+				<div className={cx('input-box', { loading: !params.result && params.active && params.query })}>
+					<input
+						ref={inputRef}
+						type="text"
+						title={intl.formatMessage({ id: 'pdfReader.find' })}
+						className="toolbar-text-input"
+						placeholder="Find in document…"
+						value={query !== null ? query : params.query}
+						tabIndex="-1"
+						data-tabstop={1}
+						autoComplete="off"
+						onChange={handleInputChange}
+						onKeyDown={handleInputKeyDown}
+					/>
+					<div className="spinner-container">
+						<div className="spinner"></div>
+					</div>
+				</div>
 				<div className="group" data-tabstop={1}>
 					<button
 						className="previous toolbar-button"
-						title="Find the previous occurrence of the phrase"
+						title={intl.formatMessage({ id: 'pdfReader.findPrevious' })}
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindPrevious}
 					><IconChevronUp/></button>
 					<button
 						className="next toolbar-button"
-						title="Find the next occurrence of the phrase"
+						title={intl.formatMessage({ id: 'pdfReader.findNext' })}
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindNext}
 					><IconChevronDown/></button>
 					<button
 						className="close toolbar-button"
-						title="Close"
+						title={intl.formatMessage({ id: 'pdfReader.close' })}
 						tabIndex="-1"
 						onClick={handleCloseClick}
 					><IconClose/></button>
@@ -114,7 +121,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						checked={params.highlightAll}
 						onChange={handleHighlightAllChange}
 					/>
-					<label htmlFor="highlight-all">Highlight all</label>
+					<label htmlFor="highlight-all"><FormattedMessage id="pdfReader.highlightAll"/></label>
 				</div>
 				<div className="option">
 					<input
@@ -124,7 +131,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						checked={params.caseSensitive}
 						onChange={handleMatchCaseChange}
 					/>
-					<label htmlFor="case-sensitive">Match case</label>
+					<label htmlFor="case-sensitive"><FormattedMessage id="pdfReader.matchCase"/></label>
 				</div>
 				<div className="option">
 					<input
@@ -134,7 +141,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 						checked={params.entireWord}
 						onChange={handleWholeWordsChange}
 					/>
-					<label htmlFor="entire-word">Whole words</label>
+					<label htmlFor="entire-word"><FormattedMessage id="pdfReader.wholeWords"/></label>
 				</div>
 			</div>
 			{params.result &&

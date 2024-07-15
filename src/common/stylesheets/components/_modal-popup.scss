@@ -30,7 +30,9 @@
 .label-popup {
 	position: absolute;
 	@include popover-pointer($width: 16px, $height: 8px);
-	left: -1000px;
+	/*! rtl:begin:ignore */
+	left: -9999px;
+	/*! rtl:end:ignore */
 	background: var(--material-background);
 	border: var(--material-panedivider);
 	border-radius: 5px;

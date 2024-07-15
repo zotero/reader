@@ -1,5 +1,6 @@
 .outline-view {
 	padding: 4px 8px;
+	outline: none;
 
 	ul {
 		li {
@@ -20,12 +21,11 @@
 					white-space: normal;
 					padding: 0.21875rem;
 					cursor: pointer;
+				}
 
-					&:focus {
-						box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
-						border-radius: 3px;
-						outline: none;
-					}
+				&.active .title {
+					outline: 3px solid var(--accent-blue50);
+					border-radius: 5px;
 				}
 
 				.toggle {

@@ -86,6 +86,7 @@ class PDFView {
 		this._onOpenAnnotationContextMenu = options.onOpenAnnotationContextMenu;
 		this._onKeyUp = options.onKeyUp;
 		this._onKeyDown = options.onKeyDown;
+		this._onFocusAnnotation = options.onFocusAnnotation;
 
 		this._onTabOut = options.onTabOut;
 
@@ -129,6 +130,7 @@ class PDFView {
 		this._iframeWindow = null;
 
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
+		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
 
 		let setOptions = () => {
 			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
@@ -386,13 +388,26 @@ class PDFView {
 	}
 
 	async _initProcessedData() {
-		let { pageLabels, pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
+		let pageLabels = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageLabels2();
+		this._onSetPageLabels(pageLabels);
+		this._resolvePageLabelsPromise();
+		this._render();
+		this._updateViewStats();
+		let { pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
 		for (let key in pages) {
 			this._pdfPages[key] = pages[key];
 		}
-		this._onSetPageLabels(pageLabels);
 		this._render();
 		this._updateViewStats();
+	}
+
+	async _ensureBasicPageData(pageIndex) {
+		if (!this._pdfPages[pageIndex]) {
+			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
+			if (!this._pdfPages[pageIndex]) {
+				this._pdfPages[pageIndex] = pageData;
+			}
+		}
 	}
 
 	async _attachPage(originalPage) {
@@ -489,15 +504,12 @@ class PDFView {
 			}
 		}
 
+		this._onFocusAnnotation(this._focusedObject);
 		this._lastFocusedObject = this._focusedObject;
 
 		this._render();
 
 		return !!this._focusedObject;
-	}
-
-	setSelection(selection) {
-		this.selection = selection;
 	}
 
 	getPageByIndex(pageIndex) {
@@ -522,9 +534,12 @@ class PDFView {
 		// this._iframeWindow.focus();
 	}
 
-	renderPageAnnotationsOnCanvas(canvas, viewport, pageIndex) {
-		let annotations = this._annotations.filter(x => x.position.pageIndex === pageIndex);
-		drawAnnotationsOnCanvas(canvas, viewport, annotations);
+	async renderPageAnnotationsOnCanvas(canvas, viewport, pageIndex) {
+		// Underline annotations need pdfPage[pageIndex].chars to determine text rotation
+		if (this._annotations.find(x => x.position.pageIndex === pageIndex && x.type === 'underline')) {
+			await this._ensureBasicPageData(pageIndex);
+		}
+		drawAnnotationsOnCanvas(canvas, viewport, this._annotations, pageIndex, this._pdfPages);
 	}
 
 	navigateToPosition(position) {
@@ -533,31 +548,21 @@ class PDFView {
 
 		let rect = this.getPositionBoundingViewRect(position);
 
+		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
 
-		let { scrollTop, scrollLeft } = element;
+		// Calculate the center of the bounding rectangle
+		let rectCenterX = (rect[0] + rect[2]) / 2;
+		let rectCenterY = (rect[1] + rect[3]) / 2;
 
-		let viewRect = [scrollLeft, scrollTop, element.clientWidth + scrollLeft, element.clientHeight + scrollTop];
+		// Calculate the new scroll position to center the bounding rectangle
+		let left = rectCenterX - (clientWidth / 2);
+		let top = rectCenterY - (clientHeight / 2);
 
-		let padding = 10;
+		// Ensure the new scroll position does not go out of bounds
+		left = Math.max(0, Math.min(left, scrollWidth - clientWidth));
+		top = Math.max(0, Math.min(top, scrollHeight - clientHeight));
 
-		let left = scrollLeft;
-		let top = scrollTop;
-
-		if (rect[1] < viewRect[1]) {
-			top = scrollTop - (viewRect[1] - rect[1]) - padding;
-		}
-		else if (rect[3] > viewRect[3]) {
-			top = scrollTop + (rect[3] - viewRect[3]) + padding;
-		}
-
-		if (rect[0] < viewRect[0]) {
-			left = scrollLeft - (viewRect[0] - rect[0]) + padding;
-		}
-		else if (rect[2] > viewRect[2]) {
-			left = scrollLeft + (rect[2] - viewRect[2]) - padding;
-		}
-
-		// // Scroll the element smoothly
+		// Scroll the element smoothly
 		element.scrollTo({
 			left,
 			top,
@@ -592,7 +597,7 @@ class PDFView {
 		let all = [...created, ...updated, ...deleted];
 		let pageIndexes = getPageIndexesFromAnnotations(all);
 		this._render(pageIndexes);
-		if (this._primary) {
+		if (this._primary && !this._preview) {
 			this._pdfThumbnails.render(pageIndexes, true);
 			this._pdfRenderer.start();
 		}
@@ -710,7 +715,15 @@ class PDFView {
 
 	_setSelectionRanges(selectionRanges) {
 		this._selectionRanges = selectionRanges || [];
-		this._onSetSelectionPopup();
+		let selectionRange = this._selectionRanges[0];
+		if (selectionRange && !selectionRange.collapsed) {
+			let rect = this.getClientRectForPopup(selectionRange.position);
+			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+			this._onSetSelectionPopup({ rect, annotation });
+		}
+		else {
+			this._onSetSelectionPopup();
+		}
 	}
 
 	_isSelectionCollapsed() {
@@ -764,7 +777,7 @@ class PDFView {
 		}, 2000);
 	}
 
-	navigate(location, skipHistory) {
+	async navigate(location, skipHistory) {
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
 			this.navigateToPosition(annotation.position);
@@ -782,12 +795,14 @@ class PDFView {
 			});
 		}
 		else if (location.pageLabel) {
+			await this._pageLabelsPromise;
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageLabel);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
 			}
 		}
 		else if (location.pageNumber) {
+			await this._pageLabelsPromise;
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
@@ -1536,8 +1551,14 @@ class PDFView {
 		let position = this.pointerEventToPosition(event);
 
 		if (this._options.platform !== 'web' && event.button === 2) {
+			// Clear pointer down because pointer up event won't be received in this iframe
+			// when opening a native context menu
+			this._pointerDownTriggered = false;
 			let br = this._iframe.getBoundingClientRect();
-			let selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
+			let selectableAnnotation;
+			if (position) {
+				selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
+			}
 			let selectedAnnotations = this.getSelectedAnnotations();
 			if (!selectableAnnotation) {
 				if (this._selectedAnnotationIDs.length !== 0) {
@@ -1556,9 +1577,9 @@ class PDFView {
 			return;
 		}
 
-
 		if (!position) {
-			this.setSelection();
+			this._setSelectionRanges();
+			this._onSelectAnnotations([], event);
 			this._render();
 			return;
 		}
@@ -1588,7 +1609,8 @@ class PDFView {
 			this._openAnnotationPopup();
 		}
 
-		if (selectAnnotations && !selectAnnotations.length) {
+		// Deselect annotations, but only if shift isn't pressed which means doing text selection
+		if (selectAnnotations && !selectAnnotations.length && !shift) {
 			this._onSelectAnnotations([], event);
 		}
 
@@ -2111,9 +2133,15 @@ class PDFView {
 
 	_handlePointerUp(event) {
 		this._pointerDownTriggered = false;
-		if (!this.action && event.target.classList.contains('textAnnotation')) {
+		if (!this.action && event.target.classList?.contains('textAnnotation')) {
 			return;
 		}
+
+		this._overlayPopupDelayer.close(() => {
+			this._selectedOverlay = null;
+			this._onSetOverlayPopup(null);
+		});
+
 		let position = this.pointerEventToPosition(event);
 
 		if (this.pointerDownPosition) {
@@ -2414,6 +2442,24 @@ class PDFView {
 			event.stopPropagation();
 			event.preventDefault();
 		}
+		else if (shift && this._selectionRanges.length) {
+			// Prevent browser doing its own text selection
+			event.stopPropagation();
+			event.preventDefault();
+			if (key === 'ArrowLeft') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'left'));
+			}
+			else if (key === 'ArrowRight') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'right'));
+			}
+			else if (key === 'ArrowUp') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'up'));
+			}
+			else if (key === 'ArrowDown') {
+				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'down'));
+			}
+			this._render();
+		}
 
 		if (key === 'Escape') {
 			this.action = null;
@@ -2652,6 +2698,12 @@ class PDFView {
 
 	async setSidebarView(sidebarView) {
 		if (sidebarView === 'outline' && !this._outlineLoaded) {
+			await this._iframeWindow.PDFViewerApplication.initializedPromise;
+			// TODO: Properly wait for pdfDocument initialization
+			if (!this._iframeWindow.PDFViewerApplication.pdfDocument) {
+				setTimeout(() => this.setSidebarView('outline'), 1000);
+				return;
+			}
 			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2();
 			this._outlineLoaded = true;
 			this._onSetOutline(outline);

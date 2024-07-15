@@ -1,4 +1,4 @@
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import React, { createContext } from 'react';
 import { IntlProvider } from 'react-intl';
 import ReaderUI from './components/reader-ui';
@@ -69,7 +69,6 @@ class Reader {
 		this._secondaryView = null;
 		this._lastViewPrimary = true;
 
-		this.uiInitializedPromise = new Promise(resolve => this._resolveUIInitializedPromise = resolve);
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 
 		this._splitViewContainer = document.getElementById('split-view');
@@ -135,6 +134,7 @@ class Reader {
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
+			hyphenate: options.hyphenate,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
 			colorScheme: options.colorScheme,
@@ -159,6 +159,7 @@ class Reader {
 			primaryViewAnnotationPopup: null,
 			primaryViewSelectionPopup: null,
 			primaryViewOverlayPopup: null,
+			primaryViewEPUBAppearancePopup: null,
 			primaryViewFindState: {
 				popupOpen: false,
 				active: false,
@@ -173,6 +174,7 @@ class Reader {
 			secondaryViewAnnotationPopup: null,
 			secondaryViewSelectionPopup: null,
 			secondaryViewOverlayPopup: null,
+			secondaryViewEPUBAppearancePopup: null,
 			secondaryViewFindState: {
 				popupOpen: false,
 				active: false,
@@ -181,7 +183,7 @@ class Reader {
 				caseSensitive: false,
 				entireWord: false,
 				result: null
-			}
+			},
 		};
 
 		if (options.secondaryViewState) {
@@ -227,7 +229,7 @@ class Reader {
 		this._primaryView = this._createView(true, options.location);
 
 		if (!this._preview) {
-			ReactDOM.render(
+			createRoot(document.getElementById('reader-ui')).render(
 				<IntlProvider
 					locale={window.navigator.language}
 					messages={this._localizedStrings}
@@ -247,6 +249,7 @@ class Reader {
 							onNavigateToNextPage={this.navigateToNextPage.bind(this)}
 							onChangePageNumber={pageNumber => this.navigate({ pageNumber })}
 							onChangeTool={this.setTool.bind(this)}
+							onToggleEPUBAppearance={this.toggleEPUBAppearancePopup.bind(this)}
 							onToggleFind={this.toggleFindPopup.bind(this)}
 							onChangeFilter={this.setFilter.bind(this)}
 							onChangeSidebarView={this.setSidebarView.bind(this)}
@@ -287,19 +290,15 @@ class Reader {
 							onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 							onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 							onOpenLink={this._onOpenLink}
+							onChangeEPUBAppearance={this._handleEPUBAppearanceChange.bind(this)}
 							onChangeFindState={this._handleFindStateChange.bind(this)}
 							onFindNext={this.findNext.bind(this)}
 							onFindPrevious={this.findPrevious.bind(this)}
-							onToggleFindPopup={this.toggleFindPopup.bind(this)}
 							onToggleContextPane={this._onToggleContextPane}
 							ref={this._readerRef}
 						/>
 					</ReaderContext.Provider>
-				</IntlProvider>,
-				document.getElementById('reader-ui'),
-				() => {
-					this._resolveUIInitializedPromise();
-				}
+				</IntlProvider>
 			);
 		}
 
@@ -424,9 +423,16 @@ class Reader {
 			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
 		}
 
-		if (this._type === 'epub' && this._state.fontFamily !== previousState.fontFamily) {
-			this._primaryView?.setFontFamily(this._state.fontFamily);
-			this._secondaryView?.setFontFamily(this._state.fontFamily);
+		if (this._type === 'epub') {
+			if (this._state.fontFamily !== previousState.fontFamily) {
+				this._primaryView?.setFontFamily(this._state.fontFamily);
+				this._secondaryView?.setFontFamily(this._state.fontFamily);
+			}
+
+			if (this._state.hyphenate !== previousState.hyphenate) {
+				this._primaryView?.setHyphenate(this._state.hyphenate);
+				this._secondaryView?.setHyphenate(this._state.hyphenate);
+			}
 		}
 
 		if (init || this._state.sidebarView !== previousState.sidebarView) {
@@ -627,8 +633,23 @@ class Reader {
 		this._focusManager.restoreFocus();
 	}
 
+	_handleEPUBAppearanceChange(params) {
+		this._ensureType('epub');
+		this._primaryView?.setAppearance(params);
+		this._secondaryView?.setAppearance(params);
+	}
+
 	_handleFindStateChange(primary, params) {
 		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
+	}
+
+	// Announce the index of current search result to screen readers
+	setA11ySearchResultMessage(primaryView) {
+		let result = (primaryView ? this._state.primaryViewFindState : this._state.secondaryViewFindState).result;
+		if (!result) return;
+		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${result.index + 1}`;
+		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${result.total}`;
+		this.setA11yMessage(`${searchIndex}. ${totalResults}`);
 	}
 
 	findNext(primary) {
@@ -636,6 +657,9 @@ class Reader {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findNext();
+		setTimeout(() => {
+			this.setA11ySearchResultMessage(primary);
+		});
 	}
 
 	findPrevious(primary) {
@@ -643,6 +667,30 @@ class Reader {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findPrevious();
+		setTimeout(() => {
+			this.setA11ySearchResultMessage(primary);
+		});
+	}
+
+	toggleEPUBAppearancePopup({ open }) {
+		let key = 'epubAppearancePopup';
+		if (open === undefined) {
+			open = !this._state[key];
+		}
+		if (open) {
+			this.toggleFindPopup({ primary: true, open: false });
+			this.toggleFindPopup({ primary: false, open: false });
+		}
+		this._updateState({ [key]: open });
+		if (open) {
+			setTimeout(() => {
+				let selector = '.epub-appearance-popup input';
+				document.querySelector(selector)?.focus();
+			}, 100);
+		}
+		else {
+			this._focusManager.restoreFocus();
+		}
 	}
 
 	toggleFindPopup({ primary, open } = {}) {
@@ -653,6 +701,9 @@ class Reader {
 		let findState = this._state[key];
 		if (open === undefined) {
 			open = !findState.popupOpen;
+		}
+		if (open) {
+			this.toggleEPUBAppearancePopup({ primary, open: false });
 		}
 		findState = { ...findState, popupOpen: open, active: false, result: null };
 		this._updateState({ [key]: findState });
@@ -791,6 +842,14 @@ class Reader {
 			this.setErrorMessage(this._getString('pdfReader.epubEncrypted'));
 		};
 
+		let onFocusAnnotation = (annotation) => {
+			if (!annotation) return;
+			// Announce the current annotation to screen readers
+			let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
+			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
+			this.setA11yMessage(annotationContent);
+		}
+
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -836,7 +895,8 @@ class Reader {
 			onSelectAnnotations,
 			onTabOut,
 			onKeyDown,
-			onKeyUp
+			onKeyUp,
+			onFocusAnnotation
 		};
 
 		if (this._type === 'pdf') {
@@ -865,6 +925,7 @@ class Reader {
 			view = new EPUBView({
 				...common,
 				fontFamily: this._state.fontFamily,
+				hyphenate: this._state.hyphenate,
 				onEPUBEncrypted,
 			});
 		} else if (this._type === 'snapshot') {
@@ -883,6 +944,13 @@ class Reader {
 
 	setErrorMessage(errorMessage) {
 		this._updateState({ errorMessage });
+	}
+
+	// Set content of aria-live container that screen readers will announce
+	setA11yMessage(a11yMessage) {
+		// Voiceover won't announce messages inserted via <div id="a11yAnnouncement" aria-live="polite">{state.a11yMessage}</div>
+		// but setting .innerText does work. Likely due to either voiceover bug or not full aria-live support by firefox.
+		document.getElementById("a11yAnnouncement").innerText = a11yMessage;
 	}
 
 	getUnsavedAnnotations() {
@@ -1073,32 +1141,35 @@ class Reader {
 				else {
 					this._updateState({ selectedAnnotationIDs: ids });
 
-					if (triggeredFromView) {
-						if (annotation.type !== 'text') {
-							this._enableAnnotationDeletionFromComment = true;
-							if (annotation.comment) {
-								let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-								if (sidebarItem) {
-									// Make sure to call this after all events, because mousedown will re-focus the View
-									setTimeout(() => sidebarItem.focus());
+					// Don't navigate to annotation or focus comment if opening a context menu
+					if (!triggeringEvent || triggeringEvent.button !== 2) {
+						if (triggeredFromView) {
+							if (annotation.type !== 'text') {
+								this._enableAnnotationDeletionFromComment = true;
+								if (annotation.comment) {
+									let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
+									if (sidebarItem) {
+										// Make sure to call this after all events, because mousedown will re-focus the View
+										setTimeout(() => sidebarItem.focus());
+									}
+								}
+								else {
+									setTimeout(() => {
+										let content;
+										if (this._state.sidebarOpen) {
+											content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
+										}
+										else {
+											content = document.querySelector(`.annotation-popup .comment .content`);
+										}
+										content?.focus();
+									}, 50);
 								}
 							}
-							else {
-								setTimeout(() => {
-									let content;
-									if (this._state.sidebarOpen) {
-										content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
-									}
-									else {
-										content = document.querySelector(`.annotation-popup .comment .content`);
-									}
-									content?.focus();
-								}, 50);
-							}
 						}
-					}
-					else {
-						this._lastView.navigate({ annotationID: annotation.id });
+						else {
+							this._lastView.navigate({ annotationID: annotation.id });
+						}
 					}
 				}
 			}
@@ -1124,6 +1195,10 @@ class Reader {
 
 	setFontFamily(fontFamily) {
 		this._updateState({ fontFamily });
+	}
+
+	setHyphenate(hyphenate) {
+		this._updateState({ hyphenate });
 	}
 
 	setSidebarView(view) {
@@ -1195,6 +1270,13 @@ class Reader {
 			else {
 				window.print();
 			}
+		}
+		else {
+			// Show print popup with indeterminate progress bar
+			this._updateState({ printPopup: { percent: null } });
+			this._primaryView.print().then(() => {
+				this._updateState({ printPopup: null });
+			});
 		}
 	}
 

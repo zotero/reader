@@ -270,7 +270,11 @@ export default class Page {
 		let width = 7;
 		let height = 7;
 		for (let annotation of annotations) {
-			if (!['highlight', 'underline', 'image'].includes(annotation.type) || !annotation.comment) {
+			if (
+				!['highlight', 'underline', 'image'].includes(annotation.type)
+				|| !annotation.comment
+				|| annotation.position.pageIndex !== this.pageIndex
+			) {
 				continue;
 			}
 			let position = annotation.position;
@@ -466,10 +470,10 @@ export default class Page {
 		for (let annotation of annotations) {
 			if (annotation.type === 'text' && annotation.position.pageIndex === this.pageIndex) {
 				let position = annotation.position;
-				let rect = position.rects[0];
 				if (action && action.position && ['resize', 'rotate'].includes(action.type) && action.annotation.id === annotation.id) {
 					position = action.position;
 				}
+				let rect = position.rects[0];
 
 				let node = customAnnotations.find(x => x.getAttribute('data-id') === annotation.id);
 				let disabled = this.layer._readOnly || annotation.readOnly;
