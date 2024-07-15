@@ -82,8 +82,10 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		let list = [];
 		function flatten(items) {
 			for (let item of items) {
-				list.push(item);
-				if (item.items && item.expanded) {
+				if ((item.matched !== false) || (item.childMatched !== false)) {
+					list.push(item);
+				}
+				if (item.items && item.expanded && (item.childMatched !== false)) {
 					flatten(item.items);
 				}
 			}

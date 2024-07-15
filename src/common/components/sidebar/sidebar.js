@@ -49,6 +49,7 @@ function Sidebar(props) {
 
 	function handleOutlineSearchInput(query) {
 		function recursiveSearch(items, queryString) {
+			let containActive = false;
 			const isMatch = (sourceString) => { 
 				sourceString = sourceString.toLowerCase();
 				queryString = queryString.toLowerCase();
@@ -56,19 +57,34 @@ function Sidebar(props) {
 			}
 			items.forEach((item) => {
 				if (queryString == '') {
-					item.matched = undefined;
-					item.childMatched = undefined;
-					item.expanded = (item.expandedBak !== undefined) ? item.expandedBak : item.expanded;
-					item.expandedBak = undefined;
+					if ('expandedBak' in item) {
+						if (item.expandedBak !== undefined) {
+							item.expanded = item.expandedBak;
+						}
+						else {
+							delete item.expanded;
+						}
+					}
+					delete item.matched;
+					delete item.childMatched;
+					delete item.expandedBak;
+
 					if (item.items?.length) {	
-						recursiveSearch(item.items, query);
+						if (recursiveSearch(item.items, query).containActive) {
+							item.expanded = true;
+							containActive = true;
+						}
+					}
+					if (item.active) {
+						containActive = true;
 					}
 				}
 				else {
 					item.matched = isMatch(item.title);
 					item.childMatched = false;
-					item.expandedBak = (item.expandedBak !== undefined) ? item.expandedBak : item.expanded;
+					item.expandedBak = ('expandedBak' in item) ? item.expandedBak : item.expanded;
 					if (item.items?.length) {	
+						delete item.expanded;
 						recursiveSearch(item.items, query);
 						item.items.forEach((iitem) => {
 							if ((iitem.matched === true) || (iitem.childMatched === true)) {
@@ -79,10 +95,13 @@ function Sidebar(props) {
 					}
 				}
 			});
-			return items;
+			return {
+				items: items,
+				containActive: containActive
+			}
 		}
 		props.onUpdateOutlineQuery(query);
-    	props.onUpdateOutline([...recursiveSearch(props.outline, query)]);
+    	props.onUpdateOutline([...recursiveSearch(props.outline, query).items]);
 	}
 
 	return (
