@@ -27,12 +27,11 @@ body {
 	font-size: 13px;
 	// TODO: Remove --note-font-size, as it's probably not necessary to change font size for highlights and comments
 	--note-font-size: 13 / 16 * 1rem;
-	--bottomPlaceholderHeight: 0;
 }
 
 :root {
 	color-scheme: light dark;
-	background-color: Window;
+	background-color: transparent;
 	font-family: var(--font-family);
 	font-size: var(--font-size);
 	font-style: normal;

@@ -58,6 +58,7 @@ class Reader {
 		this._onToggleContextPane = options.onToggleContextPane;
 		this._onToolbarShiftTab = options.onToolbarShiftTab;
 		this._onIframeTab = options.onIframeTab;
+		this._onBringReaderToFront = options.onBringReaderToFront;
 		this._onTextSelectionAnnotationModeChange = options.onTextSelectionAnnotationModeChange;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
@@ -622,6 +623,7 @@ class Reader {
 	}
 
 	openContextMenu(params) {
+		this?._onBringReaderToFront(true);
 		this._updateState({ contextMenu: params });
 		setTimeout(() => {
 			window.focus();
@@ -632,6 +634,7 @@ class Reader {
 	closeContextMenu() {
 		this._updateState({ contextMenu: null });
 		this._focusManager.restoreFocus();
+		this?._onBringReaderToFront(false);
 	}
 
 	_handleEPUBAppearanceChange(params) {
@@ -922,10 +925,10 @@ class Reader {
 			if (primary) {
 				initPDFPrintService({
 					onProgress: (percent) => {
-						this._updateState({ printPopup: { percent } });
+						this._handleSetPrintPopup({ percent });
 					},
 					onFinish: () => {
-						this._updateState({ printPopup: null });
+						this._handleSetPrintPopup(null);
 					},
 					pdfView: view
 				});
@@ -1274,7 +1277,7 @@ class Reader {
 	print() {
 		if (this._type === 'pdf') {
 			if (this._state.annotations.length) {
-				this._updateState({ printPopup: {} });
+				this._handleSetPrintPopup({});
 			}
 			else {
 				window.print();
@@ -1282,9 +1285,9 @@ class Reader {
 		}
 		else {
 			// Show print popup with indeterminate progress bar
-			this._updateState({ printPopup: { percent: null } });
+			this._handleSetPrintPopup(null);
 			this._primaryView.print().then(() => {
-				this._updateState({ printPopup: null });
+				this._handleSetPrintPopup(null);
 			});
 		}
 	}
@@ -1369,6 +1372,7 @@ class Reader {
 
 	_handleOpenPageLabelPopup(id) {
 		this._ensureType('pdf');
+		this?._onBringReaderToFront(true);
 		let pageLabels = this._state.pageLabels;
 		let selectedIDs = this._state.selectedAnnotationIDs;
 		let currentAnnotation = this._annotationManager._getAnnotationByID(id);
@@ -1383,6 +1387,7 @@ class Reader {
 
 	_handleLabelPopupClose() {
 		this._updateState({ labelPopup: null });
+		this?._onBringReaderToFront(false);
 	}
 
 	_handleDeleteAnnotations = (ids) => {
@@ -1400,6 +1405,11 @@ class Reader {
 		});
 		this._onDeleteAnnotations(ids);
 	};
+
+	_handleSetPrintPopup(state) {
+		this?._onBringReaderToFront(!!state);
+		this._updateState({ printPopup: state });
+	}
 
 	rotatePageLeft() {
 		this._ensureType('pdf');
