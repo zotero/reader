@@ -125,10 +125,10 @@
 
 .selection-popup {
 	max-width: 198px;
-	padding: 4px;
+	padding: 8px;
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: 8px;
 
 	.colors {
 		gap: 4px;
@@ -158,17 +158,18 @@
 			align-items: center;
 			border-radius: 6px;
 			color: var(--fill-secondary);
+			border: 0.5px solid transparent;
 
-			&.active {
+			&.active, &:active, &.active-pseudo-class-fix {
 				background: var(--material-button, #FFFFFF);
 				border: 0.5px solid var(--fill-senary, #00000005);
 				box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
 			}
 
-			&:hover {
-				background-color: var(--fill-quinary);
+			&:active:not(.active), &.active-pseudo-class-fix:not(.active) {
+				background-color: var(--color-button50);
+				z-index: 1;
 			}
-
 		}
 	}
 
