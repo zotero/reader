@@ -86,6 +86,9 @@ async function createReader() {
 		},
 		onToggleContextPane() {
 			console.log('Toggle context pane');
+		},
+		onTextSelectionAnnotationModeChange(mode) {
+			console.log(`Change text selection annotation mode to '${mode}'`);
 		}
 	});
 	reader.enableAddToNote(true);

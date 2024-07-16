@@ -38,13 +38,17 @@ function SelectionPopup(props) {
 					onClick={() => handleColorPick(color[1])}
 				><IconColor16 color={color[1]}/></button>))}
 			</div>
-			<div className="tool-toggle">
+			<div className="tool-toggle" data-tabstop={1}>
 				<button
+					tabIndex={-1}
 					className={cx('highlight', { active: props.textSelectionAnnotationMode === 'highlight' })}
+					title={intl.formatMessage({ id: 'pdfReader.highlightText' })}
 					onClick={() => props.onChangeTextSelectionAnnotationMode('highlight')}
 				><IconHighlight/></button>
 				<button
+					tabIndex={-1}
 					className={cx('underline', { active: props.textSelectionAnnotationMode === 'underline' })}
+					title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
 					onClick={() => props.onChangeTextSelectionAnnotationMode('underline')}
 				><IconUnderline/></button>
 			</div>

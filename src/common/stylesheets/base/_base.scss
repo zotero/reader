@@ -80,14 +80,14 @@ button {
 
 	&:focus-visible {
 		outline: none;
-		border-color: rgba(0,0,0,0);
-		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
+		border-color: rgba(0,0,0,0) !important;
+		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search) !important;
 	}
 
 	&:-moz-focusring {
 		outline: none;
-		border-color: rgba(0,0,0,0);
-		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search);
+		border-color: rgba(0,0,0,0) !important;
+		box-shadow: 0 0 0 var(--width-focus-border) var(--color-focus-search) !important;
 	}
 
 	@if $platform == "web" {
