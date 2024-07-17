@@ -623,7 +623,7 @@ class Reader {
 	}
 
 	openContextMenu(params) {
-		this?._onBringReaderToFront(true);
+		this._onBringReaderToFront?.(true);
 		this._updateState({ contextMenu: params });
 		setTimeout(() => {
 			window.focus();
@@ -634,7 +634,7 @@ class Reader {
 	closeContextMenu() {
 		this._updateState({ contextMenu: null });
 		this._focusManager.restoreFocus();
-		this?._onBringReaderToFront(false);
+		this._onBringReaderToFront?.(false);
 	}
 
 	_handleEPUBAppearanceChange(params) {
@@ -1372,7 +1372,7 @@ class Reader {
 
 	_handleOpenPageLabelPopup(id) {
 		this._ensureType('pdf');
-		this?._onBringReaderToFront(true);
+		this._onBringReaderToFront?.(true);
 		let pageLabels = this._state.pageLabels;
 		let selectedIDs = this._state.selectedAnnotationIDs;
 		let currentAnnotation = this._annotationManager._getAnnotationByID(id);
@@ -1387,7 +1387,7 @@ class Reader {
 
 	_handleLabelPopupClose() {
 		this._updateState({ labelPopup: null });
-		this?._onBringReaderToFront(false);
+		this._onBringReaderToFront?.(false);
 	}
 
 	_handleDeleteAnnotations = (ids) => {
@@ -1407,7 +1407,7 @@ class Reader {
 	};
 
 	_handleSetPrintPopup(state) {
-		this?._onBringReaderToFront(!!state);
+		this._onBringReaderToFront?.(!!state);
 		this._updateState({ printPopup: state });
 	}
 
