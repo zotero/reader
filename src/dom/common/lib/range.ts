@@ -197,3 +197,11 @@ export function getStartElement(range: Range | PersistentRange): Element | null 
 	}
 	return startContainer as Element | null;
 }
+
+export function getPageBoundingRect(range: Range) {
+	let rect = range.getBoundingClientRect();
+	let win = range.commonAncestorContainer.ownerDocument!.defaultView!;
+	rect.x += win.scrollX;
+	rect.y += win.scrollY;
+	return rect;
+}

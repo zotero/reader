@@ -345,19 +345,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._annotationRenderRootEl.replaceChildren();
 			return;
 		}
-		let displayedAnnotations: DisplayedAnnotation[] = [
-			...this._annotations.map(a => ({
-				id: a.id,
-				type: a.type,
-				color: a.color,
-				sortIndex: a.sortIndex,
-				text: a.text,
-				comment: a.comment,
-				readOnly: a.readOnly,
-				key: a.id,
-				range: this.toDisplayedRange(a.position),
-			})).filter(a => !!a.range) as DisplayedAnnotation[],
-		];
+		let displayedAnnotations: DisplayedAnnotation[] = this._annotations.map(a => ({
+			id: a.id,
+			type: a.type,
+			color: a.color,
+			sortIndex: a.sortIndex,
+			text: a.text,
+			comment: a.comment,
+			readOnly: a.readOnly,
+			key: a.id,
+			range: this.toDisplayedRange(a.position),
+		})).filter(a => !!a.range) as DisplayedAnnotation[];
 		let findAnnotations = this._find?.getAnnotations();
 		if (findAnnotations) {
 			displayedAnnotations.push(...findAnnotations.map(a => ({

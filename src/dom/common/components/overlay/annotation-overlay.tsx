@@ -1,4 +1,5 @@
 import React, {
+	memo,
 	useCallback,
 	useEffect,
 	useRef,
@@ -7,6 +8,7 @@ import React, {
 import {
 	caretPositionFromPoint,
 	collapseToOneCharacterAtStart,
+	getPageBoundingRect,
 	splitRangeToTextNodes,
 	supportsCaretPositionFromPoint
 } from "../../lib/range";
@@ -15,6 +17,8 @@ import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
+import { rectsEqual } from "../../lib/rect";
+import cx from "classnames";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -188,16 +192,19 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 
 	let dragImageRef = useRef<SVGGElement>(null);
 
-	let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
-	if (!ranges.length) {
-		return null;
-	}
-	const doc = ranges[0].commonAncestorContainer.ownerDocument;
-	if (!doc || !doc.defaultView) {
-		return null;
-	}
+	let handlePointerDown = useCallback((event: React.PointerEvent) => {
+		onPointerDown?.(annotation, event);
+	}, [annotation, onPointerDown]);
 
-	let handleDragStart = (event: React.DragEvent) => {
+	let handlePointerUp = useCallback((event: React.PointerEvent) => {
+		onPointerUp?.(annotation, event);
+	}, [annotation, onPointerUp]);
+
+	let handleContextMenu = useCallback((event: React.MouseEvent) => {
+		onContextMenu?.(annotation, event);
+	}, [annotation, onContextMenu]);
+
+	let handleDragStart = useCallback((event: React.DragEvent) => {
 		if (!onDragStart || annotation.text === undefined) {
 			return;
 		}
@@ -208,22 +215,31 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
 		}
 		onDragStart(annotation, event.dataTransfer);
-	};
+	}, [annotation, onDragStart]);
 
-	let handleResizeStart = (annotation: DisplayedAnnotation) => {
+	let handleResizeStart = useCallback((annotation: DisplayedAnnotation) => {
 		setResizing(true);
 		setResizedRange(annotation.range);
 		onResizeStart?.(annotation);
-	};
+	}, [onResizeStart]);
 
-	let handleResizeEnd = (annotation: DisplayedAnnotation, cancelled: boolean) => {
+	let handleResizeEnd = useCallback((annotation: DisplayedAnnotation, cancelled: boolean) => {
 		setResizing(false);
 		onResizeEnd?.(annotation, resizedRange, cancelled);
-	};
+	}, [onResizeEnd, resizedRange]);
 
-	let handleResize = (annotation: DisplayedAnnotation, range: Range) => {
+	let handleResize = useCallback((annotation: DisplayedAnnotation, range: Range) => {
 		setResizedRange(range);
-	};
+	}, []);
+
+	let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
+	if (!ranges.length) {
+		return null;
+	}
+	const doc = ranges[0].commonAncestorContainer.ownerDocument;
+	if (!doc || !doc.defaultView) {
+		return null;
+	}
 
 	let rects = new Map<string, DOMRect>();
 	let interactiveElementRects = new Set<DOMRect>();
@@ -294,16 +310,11 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					<div
 						// @ts-ignore
 						xmlns="http://www.w3.org/1999/xhtml"
-						style={{
-							pointerEvents: interactiveElementRects.has(rect) ? 'none' : 'auto',
-							cursor: 'default',
-							width: '100%',
-							height: '100%',
-						}}
+						className={cx('annotation-div', { 'disable-pointer-events': interactiveElementRects.has(rect) })}
 						draggable={true}
-						onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
-						onPointerUp={onPointerUp && (event => onPointerUp!(annotation, event))}
-						onContextMenu={onPointerUp && (event => onContextMenu!(annotation, event))}
+						onPointerDown={handlePointerDown}
+						onPointerUp={handlePointerUp}
+						onContextMenu={handleContextMenu}
 						onDragStart={handleDragStart}
 						data-annotation-id={annotation.id}
 					/>
@@ -323,7 +334,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		{widgetContainer && ((selected && !isResizing) || commentIconPosition) && ReactDOM.createPortal(
 			<>
 				{selected && !isResizing && (
-					<RangeSelectionBorder range={annotation.range}/>
+					<SelectionBorder rect={getPageBoundingRect(annotation.range)}/>
 				)}
 				{commentIconPosition && (
 					<CommentIcon {...commentIconPosition} color={annotation.color!}/>
@@ -353,11 +364,8 @@ const Note: React.FC<NoteProps> = (props) => {
 
 	let dragImageRef = useRef<SVGSVGElement>(null);
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
-	if (!doc || !doc.defaultView) {
-		return null;
-	}
 
-	let handleDragStart = (event: React.DragEvent) => {
+	let handleDragStart = useCallback((event: React.DragEvent) => {
 		if (!onDragStart || annotation.comment === undefined) {
 			return;
 		}
@@ -367,7 +375,11 @@ const Note: React.FC<NoteProps> = (props) => {
 			event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
 		}
 		onDragStart(annotation, event.dataTransfer);
-	};
+	}, [annotation, onDragStart]);
+
+	if (!doc || !doc.defaultView) {
+		return null;
+	}
 
 	let rect = annotation.range.getBoundingClientRect();
 	rect.x += doc.defaultView.scrollX;
@@ -469,7 +481,7 @@ type StaggeredNotesProps = {
 	pointerEventsSuppressed: boolean;
 };
 
-const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
+let SelectionBorder: React.FC<SelectionBorderProps> = (props) => {
 	let { rect, preview } = props;
 	return (
 		<rect
@@ -482,23 +494,14 @@ const SelectionBorder: React.FC<SelectionBorderProps> = React.memo((props) => {
 			strokeDasharray="10 6"
 			strokeWidth={2}/>
 	);
-}, (prev, next) => JSON.stringify(prev.rect) === JSON.stringify(next.rect));
+};
 SelectionBorder.displayName = 'SelectionBorder';
+SelectionBorder = memo(SelectionBorder, (prev, next) => {
+	return rectsEqual(prev.rect, next.rect) && prev.preview === next.preview;
+});
 type SelectionBorderProps = {
 	rect: DOMRect;
 	preview?: boolean;
-};
-
-const RangeSelectionBorder: React.FC<RangeSelectionBorderProps> = (props) => {
-	let rect = props.range.getBoundingClientRect();
-	let win = props.range.commonAncestorContainer.ownerDocument!.defaultView!;
-	rect.x += win.scrollX;
-	rect.y += win.scrollY;
-	return <SelectionBorder rect={rect}/>;
-};
-RangeSelectionBorder.displayName = 'RangeSelectionBorder';
-type RangeSelectionBorderProps = {
-	range: Range;
 };
 
 const Resizer: React.FC<ResizerProps> = (props) => {
@@ -513,36 +516,36 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	highlightRects = Array.from(highlightRects)
 		.sort((a, b) => (a.bottom - b.bottom) || (a.left - b.left));
 
-	let handlePointerDown = (event: React.PointerEvent) => {
+	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		if (event.button !== 0) {
 			return;
 		}
 		event.preventDefault();
 		(event.target as Element).setPointerCapture(event.pointerId);
-	};
+	}, []);
 
-	let handlePointerUp = (event: React.PointerEvent) => {
+	let handlePointerUp = useCallback((event: React.PointerEvent) => {
 		if (event.button !== 0
 				|| !resizingSide
 				|| !(event.target as Element).hasPointerCapture(event.pointerId)) {
 			return;
 		}
 		(event.target as Element).releasePointerCapture(event.pointerId);
-	};
+	}, [resizingSide]);
 
-	let handleGotPointerCapture = (event: React.PointerEvent, side: 'start' | 'end') => {
+	let handleGotPointerCapture = useCallback((event: React.PointerEvent, side: 'start' | 'end') => {
 		setResizingSide(side);
 		setPointerCapture({ elem: event.target as Element, pointerId: event.pointerId });
 		onResizeStart(annotation);
-	};
+	}, [annotation, onResizeStart]);
 
-	let handleLostPointerCapture = () => {
+	let handleLostPointerCapture = useCallback(() => {
 		setResizingSide(false);
 		if (pointerCapture) {
 			setPointerCapture(null);
 			onResizeEnd(annotation, false);
 		}
-	};
+	}, [annotation, onResizeEnd, pointerCapture]);
 
 	let handleKeyDown = useCallback((event: KeyboardEvent) => {
 		if (event.key !== 'Escape' || !resizingSide || !pointerCapture) {
@@ -565,7 +568,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		return () => win?.removeEventListener('keydown', handleKeyDown, true);
 	}, [win, handleKeyDown]);
 
-	let handlePointerMove = (event: React.PointerEvent, isStart: boolean) => {
+	let handlePointerMove = useCallback((event: React.PointerEvent, isStart: boolean) => {
 		let clientX = event.clientX;
 		if (isSafari) {
 			let targetRect = (event.target as Element).getBoundingClientRect();
@@ -622,7 +625,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 
 			onResize(annotation, newRange);
 		}
-	};
+	}, [annotation, doc, onResize]);
 
 	if (!highlightRects.length) {
 		return null;
@@ -639,7 +642,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			height={topLeftRect.height}
 			fill={annotation.color}
 			className="resizer"
-			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'auto' }}
+			pointerEvents={pointerEventsSuppressed ? 'none' : 'auto'}
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
@@ -654,7 +657,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			height={bottomRightRect.height}
 			fill={annotation.color}
 			className="resizer"
-			style={{ pointerEvents: pointerEventsSuppressed ? 'none' : 'auto' }}
+			pointerEvents={pointerEventsSuppressed ? 'none' : 'auto'}
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
@@ -704,12 +707,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 				<div
 					// @ts-ignore
 					xmlns="http://www.w3.org/1999/xhtml"
-					style={{
-						pointerEvents: 'auto',
-						cursor: 'default',
-						width: '100%',
-						height: '100%',
-					}}
+					className="annotation-div"
 					draggable={true}
 					onPointerDown={props.onPointerDown}
 					onPointerUp={props.onPointerUp}
@@ -723,7 +721,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 	</>;
 });
 CommentIcon.displayName = 'CommentIcon';
-CommentIcon = React.memo(CommentIcon);
+CommentIcon = memo(CommentIcon);
 type CommentIconProps = {
 	annotation?: { id?: string },
 	x: number;

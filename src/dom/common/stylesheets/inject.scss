@@ -14,6 +14,17 @@
 	mix-blend-mode: multiply;
 }
 
+.annotation-div {
+	cursor: default;
+	width: 100%;
+	height: 100%;
+	pointer-events: auto;
+
+	&.disable-pointer-events {
+		pointer-events: none;
+	}
+}
+
 .resizer {
 	cursor: col-resize;
 	touch-action: none;

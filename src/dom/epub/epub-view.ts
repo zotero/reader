@@ -56,6 +56,7 @@ import {
 	ScrolledFlow
 } from "./flow";
 import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
+import { isClientRectVisible } from "../common/lib/rect";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -361,7 +362,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					return null;
 				}
 				let sectionIndex = EPUBView.getContainingSectionIndex(range);
-				if (sectionIndex === null || !this._sectionViews[sectionIndex].mounted) {
+				if (sectionIndex === null
+					|| !this._sectionViews[sectionIndex].mounted
+					|| this._flowMode === 'paginated'
+						&& !isClientRectVisible(range.getBoundingClientRect(), this._iframeWindow)) {
 					return null;
 				}
 				return range;
