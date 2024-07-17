@@ -1248,6 +1248,9 @@ class PDFView {
 	}
 
 	_getSelectableOverlay(position) {
+		if (!position) {
+			return;
+		}
 		let pdfPage = this._pdfPages[position.pageIndex];
 		if (!pdfPage) {
 			return;
@@ -2148,7 +2151,7 @@ class PDFView {
 		if (this.pointerDownPosition) {
 			// let position = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
 
-			if (!this.action.triggered) {
+			if (!this.action.triggered && position) {
 				let overlay = this._getSelectableOverlay(position);
 				let pointerDownOverlay = this._getSelectableOverlay(this.pointerDownPosition);
 				if (overlay && overlay === pointerDownOverlay) {
