@@ -232,6 +232,14 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		setResizedRange(range);
 	}, []);
 
+	let allowResize = selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint();
+
+	useEffect(() => {
+		if (!allowResize && isResizing) {
+			handleResizeEnd(annotation, true);
+		}
+	}, [allowResize, annotation, handleResizeEnd, isResizing]);
+
 	let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
 	if (!ranges.length) {
 		return null;
@@ -320,7 +328,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					/>
 				</foreignObject>
 			))}
-			{selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint() && (
+			{allowResize && (
 				<Resizer
 					annotation={annotation}
 					highlightRects={[...rects.values()]}
