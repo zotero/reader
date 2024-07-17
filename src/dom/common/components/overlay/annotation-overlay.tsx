@@ -2,13 +2,14 @@ import React, {
 	memo,
 	useCallback,
 	useEffect,
+	useMemo,
 	useRef,
 	useState
 } from 'react';
 import {
 	caretPositionFromPoint,
 	collapseToOneCharacterAtStart,
-	getPageBoundingRect,
+	getBoundingPageRect, getPageRects,
 	splitRangeToTextNodes,
 	supportsCaretPositionFromPoint
 } from "../../lib/range";
@@ -185,12 +186,14 @@ type AnnotationOverlayProps = {
 	onResizeEnd: (id: string, range: Range, cancelled: boolean) => void;
 };
 
-const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
+let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let { annotation, selected, singleSelection, onPointerDown, onPointerUp, onContextMenu, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
 
-	let dragImageRef = useRef<SVGGElement>(null);
+	let outerGroupRef = useRef<SVGGElement>(null);
+	let rectGroupRef = useRef<SVGGElement>(null);
+	let dragImageRef = isSafari ? outerGroupRef : rectGroupRef;
 
 	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		onPointerDown?.(annotation, event);
@@ -215,7 +218,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			event.dataTransfer.setDragImage(elem, event.clientX - br.left, event.clientY - br.top);
 		}
 		onDragStart(annotation, event.dataTransfer);
-	}, [annotation, onDragStart]);
+	}, [annotation, dragImageRef, onDragStart]);
 
 	let handleResizeStart = useCallback((annotation: DisplayedAnnotation) => {
 		setResizing(true);
@@ -240,48 +243,95 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		}
 	}, [allowResize, annotation, handleResizeEnd, isResizing]);
 
-	let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
-	if (!ranges.length) {
-		return null;
-	}
-	const doc = ranges[0].commonAncestorContainer.ownerDocument;
-	if (!doc || !doc.defaultView) {
-		return null;
-	}
-
-	let rects = new Map<string, DOMRect>();
-	let interactiveElementRects = new Set<DOMRect>();
-	for (let range of ranges) {
-		let closestInteractiveElement = range.startContainer.parentElement?.closest('a, area');
-		for (let rect of range.getClientRects()) {
-			if (rect.width == 0 || rect.height == 0) {
-				continue;
-			}
-			rect.x += doc.defaultView!.scrollX;
-			rect.y += doc.defaultView!.scrollY;
-			let key = JSON.stringify(rect);
-			if (!rects.has(key)) {
-				rects.set(key, rect);
-				if (closestInteractiveElement) {
-					interactiveElementRects.add(rect);
+	let { rects, interactiveRects, commentIconPosition } = useMemo(() => {
+		let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
+		let rects = new Map<string, DOMRect>();
+		let interactiveRects = new Set<DOMRect>();
+		for (let range of ranges) {
+			let closestInteractiveElement = range.startContainer.parentElement?.closest('a, area');
+			for (let rect of getPageRects(range)) {
+				if (rect.width == 0 || rect.height == 0) {
+					continue;
+				}
+				let key = JSON.stringify(rect);
+				if (!rects.has(key)) {
+					rects.set(key, rect);
+					if (closestInteractiveElement) {
+						interactiveRects.add(rect);
+					}
 				}
 			}
 		}
-	}
+
+		let commentIconPosition;
+		if (annotation.comment) {
+			let commentIconRange = ranges[0].cloneRange();
+			collapseToOneCharacterAtStart(commentIconRange);
+			let rect = getBoundingPageRect(commentIconRange);
+			commentIconPosition = { x: rect.x, y: rect.y };
+		}
+		else {
+			commentIconPosition = null;
+		}
+
+		return { rects, interactiveRects, commentIconPosition };
+	}, [annotation, isResizing, resizedRange]);
+
+	let rectGroup = useMemo(() => {
+		return <g ref={rectGroupRef}>
+			{[...rects.entries()].map(([key, rect]) => (
+				<rect
+					x={rect.x}
+					y={annotation.type == 'underline' ? rect.y + rect.height : rect.y}
+					width={rect.width}
+					height={annotation.type == 'underline' ? 3 : rect.height}
+					opacity="50%"
+					key={key}
+				/>
+			))}
+		</g>;
+	}, [annotation, rects]);
+
+	let foreignObjects = useMemo(() => {
+		return !pointerEventsSuppressed && !isResizing && [...rects.entries()].map(([key, rect]) => (
+			// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
+			<foreignObject
+				x={rect.x}
+				y={rect.y}
+				width={rect.width}
+				height={rect.height}
+				key={key + '-foreign'}
+			>
+				<div
+					// @ts-ignore
+					xmlns="http://www.w3.org/1999/xhtml"
+					className={cx('annotation-div', { 'disable-pointer-events': interactiveRects.has(rect) })}
+					draggable={true}
+					onPointerDown={handlePointerDown}
+					onPointerUp={handlePointerUp}
+					onContextMenu={handleContextMenu}
+					onDragStart={handleDragStart}
+					data-annotation-id={annotation.id}
+				/>
+			</foreignObject>
+		));
+	}, [annotation, handleContextMenu, handleDragStart, handlePointerDown, handlePointerUp, interactiveRects, isResizing, pointerEventsSuppressed, rects]);
+
+	let resizer = useMemo(() => {
+		return allowResize && (
+			<Resizer
+				annotation={annotation}
+				highlightRects={[...rects.values()]}
+				onResizeStart={handleResizeStart}
+				onResizeEnd={handleResizeEnd}
+				onResize={handleResize}
+				pointerEventsSuppressed={pointerEventsSuppressed}
+			/>
+		);
+	}, [allowResize, annotation, handleResize, handleResizeEnd, handleResizeStart, pointerEventsSuppressed, rects]);
 
 	if (!rects.size) {
 		return null;
-	}
-
-	let commentIconPosition;
-	if (annotation.comment) {
-		let commentIconRange = ranges[0].cloneRange();
-		collapseToOneCharacterAtStart(commentIconRange);
-		let rect = commentIconRange.getBoundingClientRect();
-		commentIconPosition = { x: rect.x + doc.defaultView!.scrollX, y: rect.y + doc.defaultView!.scrollY };
-	}
-	else {
-		commentIconPosition = null;
 	}
 
 	// When the user drags the annotation, we *want* to set the drag image to the rendered annotation -- a highlight
@@ -293,56 +343,15 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	// the whole outer <g> containing the underline/highlight (potentially small) and the interactive <foreignObject>s
 	// (big) so that we get all the highlighted text to render in the drag image.
 	return <>
-		<g fill={annotation.color} ref={isSafari ? dragImageRef : undefined}>
-			<g ref={isSafari ? undefined : dragImageRef}>
-				{[...rects.entries()].map(([key, rect]) => (
-					<rect
-						x={rect.x}
-						y={annotation.type == 'underline' ? rect.y + rect.height : rect.y}
-						width={rect.width}
-						height={annotation.type == 'underline' ? 3 : rect.height}
-						opacity="50%"
-						key={key}
-					/>
-				))}
-			</g>
-			{!pointerEventsSuppressed && !isResizing && [...rects.entries()].map(([key, rect]) => (
-				// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
-				<foreignObject
-					x={rect.x}
-					y={rect.y}
-					width={rect.width}
-					height={rect.height}
-					key={key + '-foreign'}
-				>
-					<div
-						// @ts-ignore
-						xmlns="http://www.w3.org/1999/xhtml"
-						className={cx('annotation-div', { 'disable-pointer-events': interactiveElementRects.has(rect) })}
-						draggable={true}
-						onPointerDown={handlePointerDown}
-						onPointerUp={handlePointerUp}
-						onContextMenu={handleContextMenu}
-						onDragStart={handleDragStart}
-						data-annotation-id={annotation.id}
-					/>
-				</foreignObject>
-			))}
-			{allowResize && (
-				<Resizer
-					annotation={annotation}
-					highlightRects={[...rects.values()]}
-					onResizeStart={handleResizeStart}
-					onResizeEnd={handleResizeEnd}
-					onResize={handleResize}
-					pointerEventsSuppressed={pointerEventsSuppressed}
-				/>
-			)}
+		<g fill={annotation.color} ref={outerGroupRef}>
+			{rectGroup}
+			{foreignObjects}
+			{resizer}
 		</g>
 		{widgetContainer && ((selected && !isResizing) || commentIconPosition) && ReactDOM.createPortal(
 			<>
 				{selected && !isResizing && (
-					<SelectionBorder rect={getPageBoundingRect(annotation.range)}/>
+					<SelectionBorder rect={getBoundingPageRect(annotation.range)}/>
 				)}
 				{commentIconPosition && (
 					<CommentIcon {...commentIconPosition} color={annotation.color!}/>
@@ -353,6 +362,7 @@ const HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	</>;
 };
 HighlightOrUnderline.displayName = 'HighlightOrUnderline';
+HighlightOrUnderline = memo(HighlightOrUnderline);
 type HighlightOrUnderlineProps = {
 	annotation: DisplayedAnnotation;
 	selected: boolean;

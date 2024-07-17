@@ -198,10 +198,20 @@ export function getStartElement(range: Range | PersistentRange): Element | null 
 	return startContainer as Element | null;
 }
 
-export function getPageBoundingRect(range: Range) {
+export function getBoundingPageRect(range: Range) {
 	let rect = range.getBoundingClientRect();
-	let win = range.commonAncestorContainer.ownerDocument!.defaultView!;
-	rect.x += win.scrollX;
-	rect.y += win.scrollY;
+	let win = range.commonAncestorContainer.ownerDocument?.defaultView;
+	rect.x += win?.scrollX ?? 0;
+	rect.y += win?.scrollY ?? 0;
 	return rect;
+}
+
+export function getPageRects(range: Range): DOMRectList {
+	let rects = range.getClientRects();
+	let win = range.commonAncestorContainer.ownerDocument?.defaultView;
+	for (let rect of rects) {
+		rect.x += win?.scrollX ?? 0;
+		rect.y += win?.scrollY ?? 0;
+	}
+	return rects;
 }

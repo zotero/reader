@@ -44,6 +44,7 @@ import {
 import { debounce } from "../../common/lib/debounce";
 import {
 	getBoundingRect,
+	isClientRectVisible,
 	rectContains
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
@@ -63,11 +64,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _selectedAnnotationIDs: string[];
 
-	protected _annotations!: WADMAnnotation[];
+	protected _annotations: WADMAnnotation[] = [];
 
-	protected _annotationsByID!: Map<string, WADMAnnotation>;
+	protected _annotationsByID: Map<string, WADMAnnotation> = new Map();
 
 	protected _showAnnotations: boolean;
+
+	protected _displayedAnnotationCache: WeakMap<WADMAnnotation, DisplayedAnnotation> = new WeakMap();
 
 	protected _annotationShadowRoot!: ShadowRoot;
 
@@ -310,6 +313,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleViewUpdate() {
 		this._updateViewState();
 		this._updateViewStats();
+		this._displayedAnnotationCache = new WeakMap();
 		this._renderAnnotations(true);
 		this._repositionPopups();
 	}
@@ -345,17 +349,27 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._annotationRenderRootEl.replaceChildren();
 			return;
 		}
-		let displayedAnnotations: DisplayedAnnotation[] = this._annotations.map(a => ({
-			id: a.id,
-			type: a.type,
-			color: a.color,
-			sortIndex: a.sortIndex,
-			text: a.text,
-			comment: a.comment,
-			readOnly: a.readOnly,
-			key: a.id,
-			range: this.toDisplayedRange(a.position),
-		})).filter(a => !!a.range) as DisplayedAnnotation[];
+		let displayedAnnotations: DisplayedAnnotation[] = this._annotations.map((annotation) => {
+			if (this._displayedAnnotationCache.has(annotation)) {
+				return this._displayedAnnotationCache.get(annotation)!;
+			}
+
+			let range = this.toDisplayedRange(annotation.position);
+			if (!range) return null;
+			let displayedAnnotation = {
+				id: annotation.id,
+				type: annotation.type,
+				color: annotation.color,
+				sortIndex: annotation.sortIndex,
+				text: annotation.text,
+				comment: annotation.comment,
+				readOnly: annotation.readOnly,
+				key: annotation.id,
+				range,
+			};
+			this._displayedAnnotationCache.set(annotation, displayedAnnotation);
+			return displayedAnnotation;
+		}).filter(a => !!a) as DisplayedAnnotation[];
 		let findAnnotations = this._find?.getAnnotations();
 		if (findAnnotations) {
 			displayedAnnotations.push(...findAnnotations.map(a => ({
@@ -383,6 +397,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: this.toDisplayedRange(this._previewAnnotation.position)!,
 			});
 		}
+
+		displayedAnnotations = displayedAnnotations.filter(
+			a => isClientRectVisible(a.range.getBoundingClientRect(), this._iframeWindow)
+		);
+
 		let doRender = () => this._annotationRenderRoot.render(
 			<AnnotationOverlay
 				iframe={this._iframe}
@@ -1052,7 +1071,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handleScroll() {
-		this._repositionPopups();
+		requestAnimationFrame(() => {
+			this._renderAnnotations();
+			this._repositionPopups();
+		});
 	}
 
 	protected _handleScrollCapture(event: Event) {
