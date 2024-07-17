@@ -34,12 +34,12 @@
 }
 
 @media (prefers-color-scheme: dark) {
-	:root:not(.disable-dark-mode) {
+	#annotation-render-root:not(.disable-dark-mode) {
 		@include -dark-rules();
 	}
 }
 
-:root[data-color-scheme=dark]:not(.disable-dark-mode) {
+#annotation-render-root[data-color-scheme=dark]:not(.disable-dark-mode) {
 	@include -dark-rules();
 }
 

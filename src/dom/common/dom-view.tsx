@@ -503,6 +503,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.body.append(annotationOverlay);
 
 		this._annotationRenderRootEl = this._iframeDocument.createElement('div');
+		this._annotationRenderRootEl.id = 'annotation-render-root';
 		this._annotationShadowRoot.append(this._annotationRenderRootEl);
 		this._annotationRenderRoot = createRoot(this._annotationRenderRootEl);
 
@@ -1124,15 +1125,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	setUseDarkMode(use: boolean) {
 		this._useDarkMode = use;
 		this._iframeDocument.documentElement.classList.toggle('disable-dark-mode', !use);
+		this._annotationRenderRootEl.classList.toggle('disable-dark-mode', !use);
 	}
 
 	setColorScheme(colorScheme: string | null) {
 		this._colorScheme = colorScheme;
 		if (colorScheme) {
 			this._iframeDocument.documentElement.dataset.colorScheme = colorScheme;
+			this._annotationRenderRootEl.dataset.colorScheme = colorScheme;
 		}
 		else {
 			delete this._iframeDocument.documentElement.dataset.colorScheme;
+			delete this._annotationRenderRootEl.dataset.colorScheme;
 		}
 	}
 
