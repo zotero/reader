@@ -288,6 +288,7 @@ class PDFView {
 	}
 
 	async _handleDocumentInit() {
+		this.setTool(this._tool);
 		if (this._viewState) {
 			await this._setState(this._viewState, !!this._location);
 		}
@@ -1346,7 +1347,7 @@ class PDFView {
 		// Mouse events don't have pointerType
 		let mouse = !event.pointerType || event.pointerType === 'mouse';
 		// If using a mouse and not the main button is pressed
-		if (mouse && event.button >= 1) {
+		if (mouse && event.button >= 1 || this._tool.type === 'hand') {
 			return { action: { type: 'none' }, selectAnnotations: [] };
 		}
 		// If holding shift, only allow text selection, to select text under annotations
