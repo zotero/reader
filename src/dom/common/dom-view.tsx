@@ -378,24 +378,30 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			})));
 		}
 		if (this._highlightedPosition) {
-			displayedAnnotations.push({
-				type: 'highlight',
-				color: SELECTION_COLOR,
-				key: '_highlightedPosition',
-				range: this.toDisplayedRange(this._highlightedPosition)!,
-			});
+			let range = this.toDisplayedRange(this._highlightedPosition);
+			if (range) {
+				displayedAnnotations.push({
+					type: 'highlight',
+					color: SELECTION_COLOR,
+					key: '_highlightedPosition',
+					range,
+				});
+			}
 		}
 		if (this._previewAnnotation) {
-			displayedAnnotations.push({
-				sourceID: this._draggingNoteAnnotation?.id,
-				type: this._previewAnnotation.type,
-				color: this._previewAnnotation.color,
-				sortIndex: this._previewAnnotation.sortIndex,
-				text: this._previewAnnotation.text,
-				comment: this._previewAnnotation.comment,
-				key: '_previewAnnotation',
-				range: this.toDisplayedRange(this._previewAnnotation.position)!,
-			});
+			let range = this.toDisplayedRange(this._previewAnnotation.position);
+			if (range) {
+				displayedAnnotations.push({
+					sourceID: this._draggingNoteAnnotation?.id,
+					type: this._previewAnnotation.type,
+					color: this._previewAnnotation.color,
+					sortIndex: this._previewAnnotation.sortIndex,
+					text: this._previewAnnotation.text,
+					comment: this._previewAnnotation.comment,
+					key: '_previewAnnotation',
+					range,
+				});
+			}
 		}
 
 		displayedAnnotations = displayedAnnotations.filter(
