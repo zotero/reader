@@ -5,6 +5,7 @@ import { NavigateOptions } from "../common/dom-view";
 import { closestElement } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
 import { PersistentRange } from "../common/lib/range";
+import { isSafari } from "../../common/lib/utilities";
 
 export interface Flow {
 	readonly startView: SectionView | null;
@@ -223,12 +224,26 @@ export class ScrolledFlow extends AbstractFlow {
 		for (let view of this._view.views) {
 			view.mount();
 		}
+
+		if (isSafari) {
+			// Safari doesn't actually make the body scrollable unless we invalidate
+			// something or other by manually setting overflowY to auto
+			// (This is a Safari bug)
+			setTimeout(() => {
+				this._iframeDocument.body.style.overflowY = 'auto';
+			});
+		}
 	}
 
 	override destroy(): void {
 		super.destroy();
 		this._iframe.classList.remove('flow-mode-scrolled');
 		this._iframeDocument.body.classList.remove('flow-mode-scrolled');
+
+		if (isSafari) {
+			// Undo our Safari workaround above
+			this._iframeDocument.body.style.overflowY = '';
+		}
 	}
 
 	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void {
