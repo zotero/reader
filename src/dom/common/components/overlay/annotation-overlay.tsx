@@ -119,7 +119,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let widgetContainer = useRef<SVGSVGElement>(null);
 
 	return <>
-		<svg className="annotation-container blended">
+		<svg className={cx('annotation-container blended', { 'disable-pointer-events': pointerEventsSuppressed })}>
 			{annotations.filter(annotation => annotation.type == 'highlight' || annotation.type == 'underline').map((annotation) => {
 				if (annotation.id) {
 					return (
@@ -134,21 +134,20 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 							onDragStart={handleDragStart}
 							onResizeStart={handleResizeStart}
 							onResizeEnd={handleResizeEnd}
-							pointerEventsSuppressed={pointerEventsSuppressed}
 							widgetContainer={widgetContainer.current}
 						/>
 					);
 				}
 				else {
 					return (
-						<HighlightOrUnderline
-							annotation={annotation}
-							key={annotation.key}
-							selected={false}
-							singleSelection={false}
-							pointerEventsSuppressed={true}
-							widgetContainer={widgetContainer.current}
-						/>
+						<g className="disable-pointer-events" key={annotation.key}>
+							<HighlightOrUnderline
+								annotation={annotation}
+								selected={false}
+								singleSelection={false}
+								widgetContainer={widgetContainer.current}
+							/>
+						</g>
 					);
 				}
 			})}
@@ -157,7 +156,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			))}
 		</svg>
 		<svg
-			className="annotation-container"
+			className={cx('annotation-container', { 'disable-pointer-events': pointerEventsSuppressed })}
 			ref={widgetContainer}
 		>
 			<StaggeredNotes
@@ -167,7 +166,6 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 				onPointerUp={handlePointerUp}
 				onContextMenu={handleContextMenu}
 				onDragStart={handleDragStart}
-				pointerEventsSuppressed={pointerEventsSuppressed}
 			/>
 		</svg>
 	</>;
@@ -187,7 +185,7 @@ type AnnotationOverlayProps = {
 };
 
 let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
-	let { annotation, selected, singleSelection, onPointerDown, onPointerUp, onContextMenu, onDragStart, onResizeStart, onResizeEnd, pointerEventsSuppressed, widgetContainer } = props;
+	let { annotation, selected, singleSelection, onPointerDown, onPointerUp, onContextMenu, onDragStart, onResizeStart, onResizeEnd, widgetContainer } = props;
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
 
@@ -293,13 +291,14 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	}, [annotation, rects]);
 
 	let foreignObjects = useMemo(() => {
-		return !pointerEventsSuppressed && !isResizing && [...rects.entries()].map(([key, rect]) => (
+		return !isResizing && [...rects.entries()].map(([key, rect]) => (
 			// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 			<foreignObject
 				x={rect.x}
 				y={rect.y}
 				width={rect.width}
 				height={rect.height}
+				className="needs-pointer-events"
 				key={key + '-foreign'}
 			>
 				<div
@@ -315,7 +314,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				/>
 			</foreignObject>
 		));
-	}, [annotation, handleContextMenu, handleDragStart, handlePointerDown, handlePointerUp, interactiveRects, isResizing, pointerEventsSuppressed, rects]);
+	}, [annotation, handleContextMenu, handleDragStart, handlePointerDown, handlePointerUp, interactiveRects, isResizing, rects]);
 
 	let resizer = useMemo(() => {
 		return allowResize && (
@@ -325,10 +324,9 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				onResizeStart={handleResizeStart}
 				onResizeEnd={handleResizeEnd}
 				onResize={handleResize}
-				pointerEventsSuppressed={pointerEventsSuppressed}
 			/>
 		);
-	}, [allowResize, annotation, handleResize, handleResizeEnd, handleResizeStart, pointerEventsSuppressed, rects]);
+	}, [allowResize, annotation, handleResize, handleResizeEnd, handleResizeStart, rects]);
 
 	if (!rects.size) {
 		return null;
@@ -373,12 +371,11 @@ type HighlightOrUnderlineProps = {
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
 	onResizeStart?: (annotation: DisplayedAnnotation) => void;
 	onResizeEnd?: (annotation: DisplayedAnnotation, range: Range, cancelled: boolean) => void;
-	pointerEventsSuppressed: boolean;
 	widgetContainer: Element | null;
 };
 
 const Note: React.FC<NoteProps> = (props) => {
-	let { annotation, staggerIndex, selected, onPointerDown, onPointerUp, onContextMenu, onDragStart, disablePointerEvents } = props;
+	let { annotation, staggerIndex, selected, onPointerDown, onPointerUp, onContextMenu, onDragStart } = props;
 
 	let dragImageRef = useRef<SVGSVGElement>(null);
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
@@ -416,10 +413,10 @@ const Note: React.FC<NoteProps> = (props) => {
 			opacity={annotation.id ? '100%' : '50%'}
 			selected={selected}
 			large={true}
-			onPointerDown={disablePointerEvents || !onPointerDown ? undefined : (event => onPointerDown!(annotation, event))}
-			onPointerUp={disablePointerEvents || !onPointerUp ? undefined : (event => onPointerUp!(annotation, event))}
-			onContextMenu={disablePointerEvents || !onContextMenu ? undefined : (event => onContextMenu!(annotation, event))}
-			onDragStart={disablePointerEvents ? undefined : handleDragStart}
+			onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
+			onPointerUp={onPointerUp && (event => onPointerUp!(annotation, event))}
+			onContextMenu={onContextMenu && (event => onContextMenu!(annotation, event))}
+			onDragStart={handleDragStart}
 		/>
 	);
 };
@@ -432,10 +429,9 @@ type NoteProps = {
 	onPointerUp?: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onContextMenu?: (annotation: DisplayedAnnotation, event: React.MouseEvent) => void;
 	onDragStart?: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
-	disablePointerEvents: boolean;
 };
 
-const NotePreview: React.FC<NotePreviewProps> = (props) => {
+let NotePreview: React.FC<NotePreviewProps> = (props) => {
 	let { annotation } = props;
 	let doc = annotation.range.commonAncestorContainer.ownerDocument;
 	if (!doc || !doc.defaultView) {
@@ -448,12 +444,13 @@ const NotePreview: React.FC<NotePreviewProps> = (props) => {
 	return <SelectionBorder rect={rect} preview={true} key={annotation.key} />;
 };
 NotePreview.displayName = 'NotePreview';
+NotePreview = memo(NotePreview);
 type NotePreviewProps = {
 	annotation: DisplayedAnnotation;
 };
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
-	let { annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onContextMenu, onDragStart, pointerEventsSuppressed } = props;
+	let { annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onContextMenu, onDragStart } = props;
 	let staggerMap = new Map<string | undefined, number>();
 	return <>
 		{annotations.map((annotation) => {
@@ -470,19 +467,19 @@ const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 						onPointerUp={onPointerUp}
 						onContextMenu={onContextMenu}
 						onDragStart={onDragStart}
-						disablePointerEvents={pointerEventsSuppressed}
 					/>
 				);
 			}
 			else {
 				return (
-					<Note
-						annotation={annotation}
-						staggerIndex={stagger}
-						key={annotation.key}
-						selected={false}
-						disablePointerEvents={true}
-					/>
+					<div className="disable-pointer-events" key={annotation.key}>
+						<Note
+							annotation={annotation}
+							staggerIndex={stagger}
+							key={annotation.key}
+							selected={false}
+						/>
+					</div>
 				);
 			}
 		})}
@@ -496,7 +493,6 @@ type StaggeredNotesProps = {
 	onPointerUp: (annotation: DisplayedAnnotation, event: React.PointerEvent) => void;
 	onContextMenu: (annotation: DisplayedAnnotation, event: React.MouseEvent) => void;
 	onDragStart: (annotation: DisplayedAnnotation, dataTransfer: DataTransfer) => void;
-	pointerEventsSuppressed: boolean;
 };
 
 let SelectionBorder: React.FC<SelectionBorderProps> = (props) => {
@@ -525,7 +521,7 @@ type SelectionBorderProps = {
 const Resizer: React.FC<ResizerProps> = (props) => {
 	let WIDTH = 3;
 
-	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart, pointerEventsSuppressed } = props;
+	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart } = props;
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	let [pointerCapture, setPointerCapture] = useState<{ elem: Element, pointerId: number } | null>(null);
 
@@ -659,8 +655,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			width={WIDTH}
 			height={topLeftRect.height}
 			fill={annotation.color}
-			className="resizer"
-			pointerEvents={pointerEventsSuppressed ? 'none' : 'auto'}
+			className="resizer inherit-pointer-events"
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
@@ -674,8 +669,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			width={WIDTH}
 			height={bottomRightRect.height}
 			fill={annotation.color}
-			className="resizer"
-			pointerEvents={pointerEventsSuppressed ? 'none' : 'auto'}
+			className="resizer inherit-pointer-events"
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
@@ -692,7 +686,6 @@ type ResizerProps = {
 	onResizeStart: (annotation: DisplayedAnnotation) => void;
 	onResizeEnd: (annotation: DisplayedAnnotation, cancelled: boolean) => void;
 	onResize: (annotation: DisplayedAnnotation, range: Range) => void;
-	pointerEventsSuppressed: boolean;
 };
 
 let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref) => {
@@ -715,27 +708,26 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 		{props.selected && (
 			<SelectionBorder rect={new DOMRect(x, y, size, size)}/>
 		)}
-		{(props.onPointerDown || props.onPointerUp || props.onDragStart || props.onDragEnd) && (
-			<foreignObject
-				x={x}
-				y={y}
-				width={size}
-				height={size}
-			>
-				<div
-					// @ts-ignore
-					xmlns="http://www.w3.org/1999/xhtml"
-					className="annotation-div"
-					draggable={true}
-					onPointerDown={props.onPointerDown}
-					onPointerUp={props.onPointerUp}
-					onContextMenu={props.onContextMenu}
-					onDragStart={props.onDragStart}
-					onDragEnd={props.onDragEnd}
-					data-annotation-id={props.annotation?.id}
-				/>
-			</foreignObject>
-		)}
+		<foreignObject
+			x={x}
+			y={y}
+			width={size}
+			height={size}
+			className="needs-pointer-events"
+		>
+			<div
+				// @ts-ignore
+				xmlns="http://www.w3.org/1999/xhtml"
+				className="annotation-div"
+				draggable={true}
+				onPointerDown={props.onPointerDown}
+				onPointerUp={props.onPointerUp}
+				onContextMenu={props.onContextMenu}
+				onDragStart={props.onDragStart}
+				onDragEnd={props.onDragEnd}
+				data-annotation-id={props.annotation?.id}
+			/>
+		</foreignObject>
 	</>;
 });
 CommentIcon.displayName = 'CommentIcon';
