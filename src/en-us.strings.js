@@ -183,5 +183,7 @@ export default {
 	'pdfReader.toggleContextPane': 'Toggle Context Pane',
 	'pdfReader.highlightAll': 'Highlight all',
 	'pdfReader.matchCase': 'Match case',
-	'pdfReader.wholeWords': 'Whole words'
+	'pdfReader.wholeWords': 'Whole words',
+	'pdfReader.convertToHighlight': 'Convert to Highlight',
+	'pdfReader.convertToUnderline': 'Convert to Underline'
 };

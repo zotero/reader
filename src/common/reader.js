@@ -988,6 +988,10 @@ class Reader {
 		this._annotationManager.deleteAnnotations(ids);
 	}
 
+	convertAnnotations(ids, type) {
+		this._annotationManager.convertAnnotations(ids, type);
+	}
+
 	/**
 	 * Trigger copying inside the currently focused iframe or the main window
 	 */

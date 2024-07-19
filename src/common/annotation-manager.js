@@ -165,6 +165,29 @@ class AnnotationManager {
 		this.render();
 	}
 
+	convertAnnotations(ids, type) {
+		let annotations = [];
+		for (let id of ids) {
+			let annotation = this._getAnnotationByID(id);
+			if (annotation) {
+				if (!['highlight', 'underline'].includes(annotation.type)) {
+					throw new Error('Only highlight ↔ underline conversion is supported');
+				}
+				if (annotation.type === type) {
+					continue;
+				}
+				annotations.push(annotation);
+			}
+		}
+		for (let annotation of annotations) {
+			let dateModified = (new Date()).toISOString();
+			annotation = { ...annotation, type, dateModified, id: this._generateObjectKey() };
+			this._save(annotation);
+		}
+		this.deleteAnnotations(annotations.map(x => x.id));
+		this.render();
+	}
+
 	// Note: Keep in sync with Zotero client
 	_generateObjectKey() {
 		let len = 8;

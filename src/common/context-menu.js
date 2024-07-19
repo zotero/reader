@@ -238,6 +238,24 @@ export function createAnnotationContextMenu(reader, params) {
 				}
 			],
 			[
+				annotations.every(x => ['highlight', 'underline'].includes(x.type))
+				&& annotations.some(x => x.type === 'underline')
+				&& {
+					label: reader._getString('pdfReader.convertToHighlight'),
+					disabled: readOnly,
+					persistent: true,
+					onCommand: () => reader.convertAnnotations(params.ids, 'highlight')
+				},
+				annotations.every(x => ['highlight', 'underline'].includes(x.type))
+				&& annotations.some(x => x.type === 'highlight')
+				&& {
+					label: reader._getString('pdfReader.convertToUnderline'),
+					disabled: readOnly,
+					persistent: true,
+					onCommand: () => reader.convertAnnotations(params.ids, 'underline')
+				},
+			],
+			[
 				{
 					label: reader._getString('general.delete'),
 					disabled: readOnly,
