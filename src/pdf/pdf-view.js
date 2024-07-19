@@ -113,9 +113,7 @@ class PDFView {
 			onNavigate: location => this.navigate(location, true)
 		});
 
-		if (this._primary) {
-			this._pdfRenderer = new PDFRenderer({ pdfView: this });
-		}
+		this._pdfRenderer = new PDFRenderer({ pdfView: this });
 
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
