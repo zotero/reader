@@ -29,6 +29,7 @@ import React from "react";
 import { Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
+	getBoundingPageRect,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	supportsCaretPositionFromPoint
@@ -44,7 +45,7 @@ import {
 import { debounce } from "../../common/lib/debounce";
 import {
 	getBoundingRect,
-	isClientRectVisible,
+	isPageRectVisible,
 	rectContains
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
@@ -71,6 +72,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _showAnnotations: boolean;
 
 	protected _displayedAnnotationCache: WeakMap<WADMAnnotation, DisplayedAnnotation> = new WeakMap();
+
+	protected _boundingPageRectCache: WeakMap<Range, DOMRectReadOnly> = new WeakMap();
 
 	protected _annotationShadowRoot!: ShadowRoot;
 
@@ -259,6 +262,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		);
 	}
 
+	protected _getBoundingPageRectCached(range: Range): DOMRectReadOnly {
+		if (this._boundingPageRectCache.has(range)) {
+			return this._boundingPageRectCache.get(range)!;
+		}
+
+		let rect = getBoundingPageRect(range);
+		this._boundingPageRectCache.set(range, rect);
+		return rect;
+	}
+
 	protected _scaleDOMRect(rect: DOMRect): DOMRect {
 		return new DOMRect(
 			rect.x * this._iframeCoordScaleFactor,
@@ -314,6 +327,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._updateViewState();
 		this._updateViewStats();
 		this._displayedAnnotationCache = new WeakMap();
+		this._boundingPageRectCache = new WeakMap();
 		this._renderAnnotations(true);
 		this._repositionPopups();
 	}
@@ -405,7 +419,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		displayedAnnotations = displayedAnnotations.filter(
-			a => isClientRectVisible(a.range.getBoundingClientRect(), this._iframeWindow)
+			a => isPageRectVisible(this._getBoundingPageRectCached(a.range), this._iframeWindow)
 		);
 
 		let doRender = () => this._annotationRenderRoot.render(
