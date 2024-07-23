@@ -113,8 +113,6 @@ class PDFView {
 			onNavigate: location => this.navigate(location, true)
 		});
 
-		this._pdfRenderer = new PDFRenderer({ pdfView: this });
-
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
 		this._outlineLoaded = false;
@@ -232,7 +230,6 @@ class PDFView {
 	async _init() {
 		// this._iframeWindow.document.body.draggable = true;
 
-
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 		this._iframeWindow.addEventListener('keyup', this._onKeyUp);
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
@@ -273,10 +270,12 @@ class PDFView {
 	}
 
 	async _init2() {
+		this._pdfRenderer = new PDFRenderer({ pdfView: this });
+
 		if (this._primary && !this._preview) {
 			// let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
 			// this._onSetOutline(outline);
-			this._pdfRenderer.start();
+			this._pdfRenderer?.start();
 		}
 
 		this._init2 = null;
@@ -597,8 +596,8 @@ class PDFView {
 		let pageIndexes = getPageIndexesFromAnnotations(all);
 		this._render(pageIndexes);
 		if (this._primary && !this._preview) {
-			this._pdfThumbnails.render(pageIndexes, true);
-			this._pdfRenderer.start();
+			this._pdfThumbnails?.render(pageIndexes, true);
+			this._pdfRenderer?.start();
 		}
 	}
 
@@ -1800,7 +1799,7 @@ class PDFView {
 							let rect = this.getClientRect(overlay.position.rects[0], overlay.position.pageIndex);
 							let overlayPopup = { ...overlay, rect };
 							if (overlayPopup.type === 'internal-link') {
-								let { image, width, height, x, y } = await this._pdfRenderer.renderPreviewPage(overlay.destinationPosition);
+								let { image, width, height, x, y } = await this._pdfRenderer?.renderPreviewPage(overlay.destinationPosition);
 								overlayPopup.image = image;
 								overlayPopup.width = width;
 								overlayPopup.height = height;

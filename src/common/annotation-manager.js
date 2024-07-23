@@ -230,7 +230,8 @@ class AnnotationManager {
 			return;
 		}
 		if ((Date.now() - this._lastChangeTime < DEBOUNCE_TIME)
-			&& (Date.now() - this._lastSaveTime < DEBOUNCE_MAX_TIME)) {
+			&& (Date.now() - this._lastSaveTime < DEBOUNCE_MAX_TIME)
+			&& !this._skipAnnotationSavingDebounce) {
 			setTimeout(this._triggerSaving.bind(this), 1000);
 			return;
 		}
