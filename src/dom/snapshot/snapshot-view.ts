@@ -41,8 +41,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	private _searchContext: SearchContext | null = null;
 
-	private _scale!: number;
-
 	protected async _getSrcDoc() {
 		if (this._options.data.srcDoc) {
 			return this._options.data.srcDoc;
@@ -104,7 +102,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
-		this._setScale(viewState.scale || 1);
+		this._setScale(viewState.scale ?? 1);
 		if (viewState.scrollYPercent !== undefined) {
 			this._iframeWindow.scrollTo({
 				top: viewState.scrollYPercent
@@ -328,7 +326,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	protected override _updateViewState() {
-		let scale = Math.round(this._scale * 1000) / 1000; // Three decimal places
+		let scale = Math.round(this.scale * 1000) / 1000; // Three decimal places
 		let scrollYPercent = this._iframeWindow.scrollY
 			/ (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight)
 			* 100;
@@ -349,9 +347,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected override _updateViewStats() {
 		let viewStats: ViewStats = {
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
-			canZoomIn: this._scale === undefined || this._scale < 1.5,
-			canZoomOut: this._scale === undefined || this._scale > 0.6,
-			canZoomReset: this._scale !== undefined && this._scale !== 1,
+			canZoomIn: this.scale === undefined || this.scale < this.MAX_SCALE,
+			canZoomOut: this.scale === undefined || this.scale > this.MIN_SCALE,
+			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
 		};
@@ -367,8 +365,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._updateViewState();
 	}
 
-	protected override _handleScroll() {
-		super._handleScroll();
+	protected override _handleScroll(event: Event) {
+		super._handleScroll(event);
 		this._updateViewState();
 		this._pushHistoryPoint(true);
 	}
@@ -455,29 +453,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	zoomIn() {
-		let scale = this._scale;
-		if (scale === undefined) scale = 1;
-		scale += 0.1;
-		this._setScale(scale);
-		this._handleViewUpdate();
-	}
-
-	zoomOut() {
-		let scale = this._scale;
-		if (scale === undefined) scale = 1;
-		scale -= 0.1;
-		this._setScale(scale);
-		this._handleViewUpdate();
-	}
-
-	zoomReset() {
-		this._setScale(1);
-		this._handleViewUpdate();
-	}
-
-	private _setScale(scale: number) {
-		this._scale = scale;
+	protected _setScale(scale: number) {
+		this.scale = scale;
 
 		if (this._options.onSetZoom) {
 			this._options.onSetZoom(this._iframe, scale);

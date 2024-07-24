@@ -37,7 +37,7 @@ import {
 import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./find";
 import { SELECTION_COLOR } from "../../common/defines";
-import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
+import { debounceUntilScrollFinishes, isMac, isSafari } from "../../common/lib/utilities";
 import {
 	closestElement,
 	isElement
@@ -51,6 +51,10 @@ import {
 import { History } from "../../common/lib/history";
 
 abstract class DOMView<State extends DOMViewState, Data> {
+	readonly MIN_SCALE = 0.6;
+
+	readonly MAX_SCALE = 1.5;
+
 	initializedPromise: Promise<void>;
 
 	protected readonly _container: Element;
@@ -111,6 +115,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handledPointerIDs = new Set<number>();
 
+	protected _lastScrollTime: number | null = null;
+
+	protected _isCtrlKeyDown = false;
+
 	protected _iframeCoordScaleFactor = 1;
 
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
@@ -120,6 +128,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
 	protected _resizing = false;
+
+	scale = 1;
 
 	protected constructor(options: DOMViewOptions<State, Data>) {
 		this._options = options;
@@ -514,8 +524,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument = this._iframe.contentDocument!;
 
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
-		this._iframeWindow.addEventListener('keyup', this._options.onKeyUp);
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
+		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
 		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
 		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
@@ -532,6 +542,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
 		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
 		this._iframeDocument.addEventListener('scroll', this._handleScrollCapture.bind(this), { passive: true, capture: true });
+		this._iframeDocument.addEventListener('wheel', this._handleWheelCapture.bind(this), { passive: false, capture: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
 		let annotationOverlay = this._iframeDocument.createElement('div');
@@ -671,6 +682,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let { key } = event;
 		let shift = event.shiftKey;
 
+		// To figure out if wheel events are pinch-to-zoom
+		this._isCtrlKeyDown = event.key === 'Control';
+
 		// Focusable elements in PDF view are annotations and overlays (links, citations, figures).
 		// Once TAB is pressed, arrows can be used to navigate between them
 		let focusableElements: HTMLElement[] = [];
@@ -754,6 +768,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Pass keydown even to the main window where common keyboard
 		// shortcuts are handled i.e. Delete, Cmd-Minus, Cmd-f, etc.
 		this._options.onKeyDown(event);
+	}
+
+	protected _handleKeyUp(event: KeyboardEvent) {
+		if (event.key === 'Control') {
+			this._isCtrlKeyDown = false;
+		}
+
+		this._options.onKeyUp(event);
 	}
 
 	private _handleDragStart(event: DragEvent) {
@@ -1090,7 +1112,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._handleViewUpdate();
 	}
 
-	protected _handleScroll() {
+	protected _handleScroll(event: Event) {
+		this._lastScrollTime = event.timeStamp;
 		requestAnimationFrame(() => {
 			this._renderAnnotations();
 			this._repositionPopups();
@@ -1103,6 +1126,49 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// annotation layers. When one of them is scrolled, trigger a rerender so annotations get repositioned.
 		if (event.target !== this._iframeDocument) {
 			this._renderAnnotations(true);
+		}
+	}
+
+	protected _handleWheelCapture(event: WheelEvent) {
+		if (!event.ctrlKey && !(event.metaKey && isMac())) {
+			return;
+		}
+
+		// Handle pinch-to-zoom and modifier scrolls
+		// This routine is a simplified version of PDF.js webViewerWheel()
+		// See pdf.js/web/app.js
+
+		event.preventDefault();
+		event.stopPropagation();
+
+		// Don't turn a scroll into a zoom when modifier is pressed
+		if (this._lastScrollTime !== null && event.timeStamp - this._lastScrollTime < 100) {
+			this._lastScrollTime = event.timeStamp;
+			return;
+		}
+
+		let deltaMode = event.deltaMode;
+		let scaleFactor = Math.exp(-event.deltaY / 100);
+		let isPinchToZoom = event.ctrlKey
+			&& !this._isCtrlKeyDown
+			&& deltaMode === WheelEvent.DOM_DELTA_PIXEL
+			&& event.deltaX === 0
+			&& (Math.abs(scaleFactor - 1) < 0.05 || isMac())
+			&& event.deltaZ === 0;
+
+		if (isPinchToZoom) {
+			this.zoomBy(scaleFactor - 1);
+		}
+		else {
+			let delta = -event.deltaY;
+			if (deltaMode === WheelEvent.DOM_DELTA_LINE
+				|| deltaMode === WheelEvent.DOM_DELTA_PAGE) {
+				delta *= 0.01;
+			}
+			else {
+				delta *= 0.001;
+			}
+			this.zoomBy(delta);
 		}
 	}
 
@@ -1211,6 +1277,30 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	focus() {
 		this._iframe.focus();
 	}
+
+	zoomIn() {
+		this.zoomBy(0.1);
+	}
+
+	zoomOut() {
+		this.zoomBy(-0.1);
+	}
+
+	zoomBy(delta: number) {
+		let scale = this.scale;
+		if (scale === undefined) scale = 1;
+		scale += delta;
+		scale = Math.max(this.MIN_SCALE, Math.min(this.MAX_SCALE, scale));
+		this._setScale(scale);
+		this._handleViewUpdate();
+	}
+
+	zoomReset() {
+		this._setScale(1);
+		this._handleViewUpdate();
+	}
+
+	protected abstract _setScale(scale: number): void;
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
 		if (location.annotationID) {

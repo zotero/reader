@@ -72,8 +72,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private _lastResizeHeight: number | null = null;
 
-	scale = 1;
-
 	private _sectionsContainer!: HTMLElement;
 
 	private readonly _sectionViews: SectionView[] = [];
@@ -601,8 +599,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			pagesCount: this.pageMapping.length,
 			usePhysicalPageNumbers: this.pageMapping.isPhysical,
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
-			canZoomIn: this.scale === undefined || this.scale < 1.5,
-			canZoomOut: this.scale === undefined || this.scale > 0.8,
+			canZoomIn: this.scale === undefined || this.scale < this.MAX_SCALE,
+			canZoomOut: this.scale === undefined || this.scale > this.MIN_SCALE,
 			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
@@ -902,28 +900,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	zoomIn() {
-		let scale = this.scale;
-		if (scale === undefined) scale = 1;
-		scale += 0.1;
-		this._setScale(scale);
-		this._handleViewUpdate();
-	}
-
-	zoomOut() {
-		let scale = this.scale;
-		if (scale === undefined) scale = 1;
-		scale -= 0.1;
-		this._setScale(scale);
-		this._handleViewUpdate();
-	}
-
-	zoomReset() {
-		this._setScale(1);
-		this._handleViewUpdate();
-	}
-
-	private _setScale(scale: number) {
+	protected _setScale(scale: number) {
 		let cfiBefore = this.flow?.startCFI;
 		this.scale = scale;
 		this._iframeDocument.documentElement.style.setProperty('--content-scale', String(scale));
