@@ -66,6 +66,22 @@
 	&:not(.hyphenate) * {
 		hyphens: none !important;
 	}
+
+	@media (prefers-color-scheme: dark) {
+		&:not(.disable-dark-mode) {
+			* {
+				color: inherit !important;
+				background: transparent !important;
+			}
+		}
+	}
+
+	&[data-color-scheme=dark]:not(.disable-dark-mode) {
+		* {
+			color: inherit !important;
+			background: transparent !important;
+		}
+	}
 }
 
 body > .sections > .section-container ::selection {
