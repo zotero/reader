@@ -859,6 +859,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
 		this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
 		this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
+		this._iframeDocument.documentElement.classList.toggle('use-original-font', appearance.useOriginalFont);
 		this._handleViewUpdate();
 	}
 
@@ -1112,6 +1113,7 @@ export interface EPUBAppearance {
 	lineHeight: number;
 	wordSpacing: number;
 	letterSpacing: number;
+	useOriginalFont: boolean;
 }
 
 export interface EPUBViewData {

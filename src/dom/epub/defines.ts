@@ -25,4 +25,5 @@ export const DEFAULT_EPUB_APPEARANCE: EPUBAppearance = Object.freeze({
 	lineHeight: 1.2,
 	wordSpacing: 0,
 	letterSpacing: 0,
+	useOriginalFont: false,
 });
