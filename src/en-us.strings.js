@@ -160,6 +160,7 @@ export default {
 	'pdfReader.epubAppearance.lineHeight': 'Line height',
 	'pdfReader.epubAppearance.wordSpacing': 'Word spacing',
 	'pdfReader.epubAppearance.letterSpacing': 'Letter spacing',
+	'pdfReader.epubAppearance.useOriginalFont': 'Use original font',
 	'pdfReader.epubAppearance.lineHeight.revert': 'Use default line height',
 	'pdfReader.epubAppearance.wordSpacing.revert': 'Use default word spacing',
 	'pdfReader.epubAppearance.letterSpacing.revert': 'Use default letter spacing',

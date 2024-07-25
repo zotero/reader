@@ -109,7 +109,9 @@ replaced-body {
 	background: transparent !important;
 	color: inherit !important;
 
-	font-family: var(--content-font-family, "Georgia"), serif;
+	:root:not(.use-original-font) & {
+		font-family: var(--content-font-family, "Georgia", serif);
+	}
 	font-size: inherit !important;
 	line-height: var(--content-line-height) !important;
 	word-spacing: var(--content-word-spacing) !important;
@@ -143,9 +145,11 @@ replaced-body {
 		--content-line-height-compensation: 1.167;
 	}
 
-	p {
+	p, [role="paragraph"] {
 		// Really enforce some of our formatting choices on body paragraphs
-		font-family: var(--content-font-family, "Georgia"), serif !important;
+		:root:not(.use-original-font) & {
+			font-family: var(--content-font-family, "Georgia", serif);
+		}
 		line-height: var(--content-line-height) !important;
 		word-spacing: var(--content-word-spacing) !important;
 		letter-spacing: var(--content-letter-spacing) !important;

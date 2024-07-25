@@ -14,7 +14,12 @@ function EPUBAppearancePopup({ params, onChange, onClose }) {
 	}
 
 	function handleChange(event) {
-		params[event.target.name] = parseFloat(event.target.value);
+		if (event.target.type === 'checkbox') {
+			params[event.target.name] = event.target.checked;
+		}
+		else {
+			params[event.target.name] = parseFloat(event.target.value);
+		}
 		onChange(params);
 	}
 
@@ -90,6 +95,17 @@ function EPUBAppearancePopup({ params, onChange, onClose }) {
 						aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.letterSpacing.revert' })}
 						onClick={() => handleRevert('letterSpacing')}
 					><IconRevert/></button>
+				</div>
+
+				<div className="checkbox-row">
+					<input
+						type="checkbox"
+						id="use-original-font"
+						name="useOriginalFont"
+						checked={params.useOriginalFont}
+						onChange={handleChange}
+					/>
+					<label htmlFor="use-original-font"><FormattedMessage id="pdfReader.epubAppearance.useOriginalFont"/></label>
 				</div>
 			</div>
 		</div>
