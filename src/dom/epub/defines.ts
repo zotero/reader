@@ -1,4 +1,4 @@
-import { EPUBAppearance } from "./epub-view";
+import { EPUBAppearance, PageWidth } from "./epub-view";
 
 export const EPUB_LOCATION_BREAK_INTERVAL = 1800;
 
@@ -25,5 +25,6 @@ export const DEFAULT_EPUB_APPEARANCE: EPUBAppearance = Object.freeze({
 	lineHeight: 1.2,
 	wordSpacing: 0,
 	letterSpacing: 0,
+	pageWidth: PageWidth.Normal,
 	useOriginalFont: false,
 });

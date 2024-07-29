@@ -855,11 +855,31 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	setAppearance(appearance: EPUBAppearance) {
+		let cfiBefore = this.flow?.startCFI;
+
 		this._appearance = { ...appearance };
 		this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
 		this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
 		this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
 		this._iframeDocument.documentElement.classList.toggle('use-original-font', appearance.useOriginalFont);
+
+		let pageWidth;
+		switch (appearance.pageWidth) {
+			case PageWidth.Narrow:
+				pageWidth = 'narrow';
+				break;
+			case PageWidth.Normal:
+				pageWidth = 'normal';
+				break;
+			case PageWidth.Full:
+				pageWidth = 'full';
+				break;
+		}
+		this._iframeDocument.documentElement.dataset.pageWidth = pageWidth;
+
+		if (cfiBefore) {
+			this.navigate({ pageNumber: cfiBefore.toString() }, { skipHistory: true, behavior: 'auto' });
+		}
 		this._handleViewUpdate();
 	}
 
@@ -1113,7 +1133,14 @@ export interface EPUBAppearance {
 	lineHeight: number;
 	wordSpacing: number;
 	letterSpacing: number;
+	pageWidth: PageWidth;
 	useOriginalFont: boolean;
+}
+
+export const enum PageWidth {
+	Narrow = -1,
+	Normal = 0,
+	Full = 1
 }
 
 export interface EPUBViewData {

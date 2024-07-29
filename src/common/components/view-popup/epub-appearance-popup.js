@@ -5,7 +5,7 @@ import IconRevert from '../../../../res/icons/16/revert.svg';
 import { FormattedMessage, useIntl } from 'react-intl';
 import { DEFAULT_EPUB_APPEARANCE as DEFAULTS } from '../../../dom/epub/defines';
 
-function EPUBAppearancePopup({ params, onChange, onClose }) {
+function EPUBAppearancePopup({ params, enablePageWidth, onChange, onClose }) {
 	const intl = useIntl();
 
 	if (!params) {
@@ -94,6 +94,28 @@ function EPUBAppearancePopup({ params, onChange, onClose }) {
 						className={cx('toolbar-button', { hidden: params.letterSpacing === DEFAULTS.letterSpacing })}
 						aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.letterSpacing.revert' })}
 						onClick={() => handleRevert('letterSpacing')}
+					><IconRevert/></button>
+				</div>
+
+				<div className="row">
+					<label htmlFor="page-width"><FormattedMessage id="pdfReader.epubAppearance.pageWidth"/></label>
+					<input
+						type="range"
+						id="page-width"
+						name="pageWidth"
+						value={params.pageWidth}
+						min="-1"
+						max="1"
+						step="1"
+						onChange={handleChange}
+						disabled={!enablePageWidth}
+					/>
+					<span className="value"/>
+					<button
+						className={cx('toolbar-button', { hidden: params.pageWidth === DEFAULTS.pageWidth })}
+						aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.pageWidth.revert' })}
+						onClick={() => handleRevert('pageWidth')}
+						disabled={!enablePageWidth}
 					><IconRevert/></button>
 				</div>
 
