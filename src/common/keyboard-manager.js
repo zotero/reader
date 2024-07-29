@@ -135,14 +135,17 @@ export class KeyboardManager {
 		}
 		else if (['Cmd-=', 'Ctrl-='].includes(key)) {
 			event.preventDefault();
+			event.stopPropagation();
 			this._reader.zoomIn();
 		}
 		else if (['Cmd--', 'Ctrl--'].includes(key)) {
 			event.preventDefault();
+			event.stopPropagation();
 			this._reader.zoomOut();
 		}
-		else if (['Cmd-0', 'Ctrl-0'].includes(key)) {
+		else if (['Cmd-0', 'Ctrl-0'].includes(key) || ['Cmd-Digit0', 'Ctrl-Digit0'].includes(code)) {
 			event.preventDefault();
+			event.stopPropagation();
 			this._reader.zoomReset();
 		}
 		else if (['Delete', 'Backspace'].includes(key)) {
