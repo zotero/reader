@@ -41,23 +41,29 @@
 	overflow: hidden;
 	overscroll-behavior: none;
 
-	&.spread-mode-none {
-		max-width: 800px;
-		column-width: 800px;
-		column-gap: 100vw;
-		--media-max-width: calc(100vw - 80px);
-	}
-
 	&.spread-mode-odd {
 		column-width: calc(50vw - 80px);
 		--media-max-width: calc(50vw - 80px);
 	}
 
-	@media (max-width: 800px) {
-		max-width: 800px;
-		column-width: 800px;
+	&.spread-mode-none {
 		column-gap: 100vw;
 		--media-max-width: calc(100vw - 80px);
+	}
+
+	:root[data-page-width="narrow"] &.spread-mode-none {
+		max-width: 650px;
+		column-width: 650px;
+	}
+
+	:root[data-page-width="normal"] &.spread-mode-none {
+		max-width: 800px;
+		column-width: 800px;
+	}
+
+	:root[data-page-width="full"] &.spread-mode-none {
+		max-width: calc(100vw - 80px);
+		column-width: calc(100vw - 80px);
 	}
 
 	> .section-container {

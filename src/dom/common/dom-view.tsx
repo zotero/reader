@@ -53,7 +53,7 @@ import { History } from "../../common/lib/history";
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
 
-	readonly MAX_SCALE = 1.5;
+	readonly MAX_SCALE = 1.8;
 
 	initializedPromise: Promise<void>;
 

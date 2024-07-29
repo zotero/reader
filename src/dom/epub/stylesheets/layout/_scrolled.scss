@@ -8,7 +8,19 @@
 	> .section-container {
 		margin-inline: auto;
 		margin-bottom: 100px;
-		max-width: 800px;
+
+		:root[data-page-width="narrow"] & {
+			max-width: 650px;
+		}
+
+		:root[data-page-width="normal"] & {
+			max-width: 800px;
+		}
+
+		:root[data-page-width="full"] & {
+			max-width: 100%;
+		}
+
 		// Try some different permutations of the 'contain' values that we want,
 		// because Firefox, at least, seems to throw away the whole property
 		// when it sees an unknown value.

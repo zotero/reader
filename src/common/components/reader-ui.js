@@ -201,6 +201,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 				// We always read the primaryViewState, but we write both view states
 				<EPUBAppearancePopup
 					params={state.primaryViewState.appearance}
+					enablePageWidth={state.primaryViewState.flowMode !== 'paginated' || state.primaryViewState.spreadMode === 0 }
 					onChange={props.onChangeEPUBAppearance}
 					onClose={() => props.onToggleEPUBAppearance({ open: false })}
 				/>

@@ -142,7 +142,7 @@ input[type="range"] {
 					0 0.25px 0.25px 0 rgba(0, 0, 0, 0.15);
 	}
 
-	&:active {
+	&:active:not(:disabled) {
 		&::-moz-range-thumb {
 			background: rgba(240, 240, 240, 1);
 		}
