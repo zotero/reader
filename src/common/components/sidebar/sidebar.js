@@ -66,9 +66,15 @@ function Sidebar(props) {
 				</div>
 			</div>
 			<div id="sidebarContent" className="sidebar-content">
-				{props.view === 'thumbnails' && props.thumbnailsView}
-				{props.view === 'annotations' && <div id="annotationsView" role="tabpanel" aria-labelledby="viewAnnotations">{props.annotationsView}</div>}
-				{props.view === 'outline' && props.outlineView}
+				<div className={cx("viewWrapper", { hidden: props.view !== 'thumbnails'})}>
+					{props.thumbnailsView}
+				</div>
+				<div id="annotationsView" role="tabpanel" aria-labelledby="viewAnnotations" className={cx("viewWrapper", { hidden: props.view !== 'annotations'})}>
+					{props.annotationsView}
+				</div>
+				<div className={cx("viewWrapper", { hidden: props.view !== 'outline'})}>
+					{props.outlineView}
+				</div>
 			</div>
 		</div>
 	);

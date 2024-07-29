@@ -459,7 +459,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 
 	return (
 		<React.Fragment>
-			<div id="annotations" role="listbox" className="annotations" data-tabstop={props.annotations.length ? 1 : undefined} onKeyDownCapture={handleKeyDown}>
+			<div id="annotations" role="listbox" className="annotations" data-tabstop={filteredAnnotations.length ? 1 : undefined} onKeyDownCapture={handleKeyDown}>
 				{props.annotations.length
 					? filteredAnnotations.map(annotation => (
 						<Annotation

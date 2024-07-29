@@ -41,6 +41,10 @@ body.sidebar-open {
 	overflow: auto;
 	-webkit-overflow-scrolling: touch;
 	background-color: var(--material-sidepane);
+
+	.viewWrapper.hidden {
+		display: none;
+	}
 }
 
 #sidebarResizer {

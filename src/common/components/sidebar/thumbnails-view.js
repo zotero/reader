@@ -6,13 +6,14 @@ import { ReaderContext } from '../../reader';
 import IconOptions from '../../../../res/icons/16/options.svg';
 
 const Thumbnail = memo(({ thumbnail, selected, pageLabel, onContextMenu }) => {
+	const intl = useIntl();
 	return (
 		<div
 			className={cx('thumbnail', { selected })}
 			data-page-index={thumbnail.pageIndex}
 			onContextMenu={onContextMenu}
 			role="option"
-			aria-label={pageLabel}
+			aria-label={intl.formatMessage({ id: 'pdfReader.page' }) + `${pageLabel}`}
 			aria-selected={selected}
 			id={`thumbnail_${thumbnail.pageIndex}`}
 		>

@@ -138,7 +138,7 @@ export class FocusManager {
 				return proxy;
 			}
 			return x;
-		});
+		}).filter(group =>!group.closest(".viewWrapper.hidden"));
 
 
 		if (reverse) {
