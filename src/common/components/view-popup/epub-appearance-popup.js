@@ -110,7 +110,7 @@ function EPUBAppearancePopup({ params, enablePageWidth, onChange, onClose }) {
 						onChange={handleChange}
 						disabled={!enablePageWidth}
 					/>
-					<span className="value"/>
+					<span className="value">{(params.pageWidth + 3) / 4 * 100}%</span>
 					<button
 						className={cx('toolbar-button', { hidden: params.pageWidth === DEFAULTS.pageWidth })}
 						aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.pageWidth.revert' })}
