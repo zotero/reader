@@ -854,10 +854,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._handleViewUpdate();
 	}
 
-	setAppearance(appearance: EPUBAppearance) {
+	setAppearance(partialAppearance: Partial<EPUBAppearance>) {
 		let cfiBefore = this.flow?.startCFI;
 
-		this._appearance = { ...appearance };
+		let appearance = {
+			...DEFAULT_EPUB_APPEARANCE,
+			...partialAppearance
+		};
+		this._appearance = appearance;
 		this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
 		this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
 		this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
@@ -1126,7 +1130,7 @@ export interface EPUBViewState extends DOMViewState {
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
 	spreadMode?: SpreadMode;
-	appearance?: EPUBAppearance;
+	appearance?: Partial<EPUBAppearance>;
 }
 
 export interface EPUBAppearance {
