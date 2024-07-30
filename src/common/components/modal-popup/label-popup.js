@@ -11,14 +11,14 @@ function getData(params) {
 	if (!annotation) {
 		return;
 	}
-	if (!params.selectedAnnotations.length) {
-		annotations = [params.currentAnnotation];
+
+	let selectedAnnotations = params.selectedAnnotations.filter(x => !x.readOnly);
+	if (selectedAnnotations.length && selectedAnnotations.includes(params.currentAnnotation)) {
+		annotations = selectedAnnotations;
 	}
 	else {
-		annotations = params.selectedAnnotations;
+		annotations = [params.currentAnnotation];
 	}
-
-	annotations = annotations.filter(x => !x.readOnly);
 
 	annotations.sort((a, b) => a.position.pageIndex - b.position.pageIndex);
 
