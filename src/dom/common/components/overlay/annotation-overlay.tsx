@@ -118,9 +118,39 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 
 	let widgetContainer = useRef<SVGSVGElement>(null);
 
+	let highlightUnderlines: DisplayedAnnotation[] = [];
+	let numSelectedHighlightUnderlines = 0;
+	let notes: DisplayedAnnotation[] = [];
+	let notePreviews: DisplayedAnnotation[] = [];
+	for (let annotation of annotations) {
+		if (annotation.type === 'highlight' || annotation.type === 'underline') {
+			// Put selected highlights/underlines at the end of the array,
+			// so they render on top
+			if (annotation.id && selectedAnnotationIDs.includes(annotation.id)) {
+				highlightUnderlines.push(annotation);
+				numSelectedHighlightUnderlines++;
+			}
+			else {
+				highlightUnderlines.splice(
+					highlightUnderlines.length - numSelectedHighlightUnderlines,
+					0,
+					annotation
+				);
+			}
+		}
+		else if (annotation.type == 'note') {
+			if (annotation.id) {
+				notes.push(annotation);
+			}
+			else {
+				notePreviews.push(annotation);
+			}
+		}
+	}
+
 	return <>
 		<svg className={cx('annotation-container blended', { 'disable-pointer-events': pointerEventsSuppressed })}>
-			{annotations.filter(annotation => annotation.type == 'highlight' || annotation.type == 'underline').map((annotation) => {
+			{highlightUnderlines.map((annotation) => {
 				if (annotation.id) {
 					return (
 						<HighlightOrUnderline
@@ -151,7 +181,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 					);
 				}
 			})}
-			{annotations.filter(annotation => annotation.type == 'note' && !annotation.id).map(annotation => (
+			{notePreviews.map(annotation => (
 				<NotePreview annotation={annotation} key={annotation.key} />
 			))}
 		</svg>
@@ -160,7 +190,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			ref={widgetContainer}
 		>
 			<StaggeredNotes
-				annotations={annotations.filter(a => a.type == 'note' && a.id)}
+				annotations={notes}
 				selectedAnnotationIDs={selectedAnnotationIDs}
 				onPointerDown={handlePointerDown}
 				onPointerUp={handlePointerUp}
