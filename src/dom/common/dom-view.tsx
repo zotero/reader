@@ -992,6 +992,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		annotation.sortIndex = updatedAnnotation.sortIndex;
 		annotation.text = updatedAnnotation.text;
 		this._options.onUpdateAnnotations([annotation]);
+
+		// If the resize ends over a link, that somehow counts as a click in Fx
+		// (even though the mousedown wasn't over the link - weird). Prevent that.
+		this._preventNextClickEvent();
 	};
 
 	protected _handleCopy(event: ClipboardEvent) {
@@ -1041,16 +1045,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			event.preventDefault();
 
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
-			// if the note is added to a link. "Fix" this by eating all click events in the next half second.
+			// if the note is added to a link. "Fix" this by eating any click event in the next half second.
 			// Very silly.
-			let clickListener = (event: Event) => {
-				event.stopImmediatePropagation();
-				event.preventDefault();
-			};
-			event.target!.addEventListener('click', clickListener, { once: true, capture: true });
-			setTimeout(() => {
-				event.target!.removeEventListener('click', clickListener);
-			}, 500);
+			this._preventNextClickEvent();
 
 			return;
 		}
@@ -1174,6 +1171,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	private _handleFocus() {
 		this._options.onFocus();
+	}
+
+	private _preventNextClickEvent() {
+		let clickListener = (event: Event) => {
+			event.stopImmediatePropagation();
+			event.preventDefault();
+		};
+		this._iframeDocument.addEventListener('click', clickListener, { once: true, capture: true });
+		setTimeout(() => {
+			this._iframeDocument.removeEventListener('click', clickListener);
+		}, 500);
 	}
 
 	private _selectionContainsPoint(x: number, y: number): boolean {
