@@ -35,6 +35,12 @@
 
 @namespace epub url('http://www.idpf.org/2007/ops');
 
+@mixin unset-properties($properties...) {
+	@each $property in $properties {
+		#{$property}: unset !important;
+	}
+}
+
 :root {
 	--background-color: #ffffff;
 	--text-color: #121212;
@@ -93,6 +99,11 @@ replaced-html {
 }
 
 replaced-body {
+	&::before, &::after {
+		content: unset !important;
+		display: none !important;
+	}
+
 	// https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height
 	--content-line-height-compensation: 1;
 	--content-line-height: calc(
@@ -104,15 +115,14 @@ replaced-body {
 	--content-letter-spacing: calc(var(--content-letter-spacing-adjust, 0) * 1em);
 
 	display: block;
-	margin-left: 0 !important;
-	margin-right: 0 !important;
-	background: transparent !important;
-	color: inherit !important;
+	@include unset-properties(
+			margin, padding, width, height, min-width, min-height, max-width, max-height,
+			background, color, border, overflow, font-size
+	);
 
 	:root:not(.use-original-font) & {
 		font-family: var(--content-font-family, "Georgia", serif);
 	}
-	font-size: inherit !important;
 	line-height: var(--content-line-height) !important;
 	word-spacing: var(--content-word-spacing) !important;
 	letter-spacing: var(--content-letter-spacing) !important;
