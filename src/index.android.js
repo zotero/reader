@@ -11,7 +11,7 @@ window.createView = (options) => {
 		// TODO: Implement a more efficient way to transfer large files
 		data: {
 			...options.data,
-			buf: new Uint8Array(options.buf).buffer
+			buf: new Uint8Array(options.buf)
 		},
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
