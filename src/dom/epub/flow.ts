@@ -6,6 +6,8 @@ import { closestElement } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
 import { PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
+import { getSelectionRanges } from "../common/lib/selection";
+import { rectContains } from "../common/lib/rect";
 
 export interface Flow {
 	readonly startView: SectionView | null;
@@ -603,6 +605,23 @@ export class PaginatedFlow extends AbstractFlow {
 				|| (event.target as Element).closest('#annotation-overlay')) {
 			return;
 		}
+		// Safari: Ignore touches near a selection, because Safari still sends pointer events
+		// for selection handle drags
+		if (isSafari) {
+			let selectionRect = getSelectionRanges(this._iframeWindow.getSelection()!)[0]
+				?.getBoundingClientRect();
+			if (selectionRect && selectionRect.width && selectionRect.height) {
+				selectionRect.x -= 40;
+				selectionRect.y -= 40;
+				selectionRect.width += 80;
+				selectionRect.height += 80;
+				if (rectContains(selectionRect, event.clientX, event.clientY)) {
+					console.log('Ignoring pointerdown near selection');
+					return;
+				}
+			}
+		}
+
 		this._touchStartID = event.pointerId;
 		this._touchStartX = event.clientX;
 	};
