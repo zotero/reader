@@ -402,6 +402,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.addEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.addEventListener('pointerup', this._handlePointerUp);
 		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: false });
+		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange);
 		this._iframe.classList.add('flow-mode-paginated');
 		this._iframeDocument.body.classList.add('flow-mode-paginated');
 	}
@@ -413,6 +414,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.removeEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.removeEventListener('pointerup', this._handlePointerUp);
 		this._iframeDocument.removeEventListener('wheel', this._handleWheel);
+		this._iframeDocument.removeEventListener('selectionchange', this._handleSelectionChange);
 		this._iframe.classList.remove('flow-mode-paginated');
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
@@ -652,6 +654,11 @@ export class PaginatedFlow extends AbstractFlow {
 			event.preventDefault();
 		}
 	}, 100);
+
+	private _handleSelectionChange = () => {
+		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
+		this._touchStartID = null;
+	};
 
 	update() {
 		let foundStart = false;
