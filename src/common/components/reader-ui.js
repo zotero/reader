@@ -185,7 +185,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					}
 
 				</div>
-				<SidebarResizer onResize={props.onResizeSidebar}/>
+				{state.sidebarOpen === true && <SidebarResizer onResize={props.onResizeSidebar}/>}
 			</div>
 			<div className="split-view">
 				<View {...props} primary={true} state={state}/>
