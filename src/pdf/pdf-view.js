@@ -779,7 +779,6 @@ class PDFView {
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
 			this.navigateToPosition(annotation.position);
-			this._highlightPosition(annotation.position);
 		}
 		else if (location.dest) {
 			this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
