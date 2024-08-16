@@ -1,5 +1,5 @@
 import React, { Fragment, useState, useCallback, useEffect, useLayoutEffect, useRef, useImperativeHandle } from 'react';
-import { useIntl } from 'react-intl';
+import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import { IconColor16 } from './common/icons';
 import { debounce } from '../lib/debounce';
@@ -85,7 +85,7 @@ function SliderRow({ item }) {
 
 	return (
 		<div className={cx('row slider', { checked: item.checked }, { center: isFirefox || isSafari })}>
-			<div>Size:</div>
+			<div>{<FormattedMessage id="pdfReader.size"/>}:</div>
 			<input
 				ref={inputRef}
 				tabIndex={-1}

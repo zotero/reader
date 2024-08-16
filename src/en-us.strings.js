@@ -188,5 +188,6 @@ export default {
 	'pdfReader.matchCase': 'Match case',
 	'pdfReader.wholeWords': 'Whole words',
 	'pdfReader.convertToHighlight': 'Convert to Highlight',
-	'pdfReader.convertToUnderline': 'Convert to Underline'
+	'pdfReader.convertToUnderline': 'Convert to Underline',
+	'pdfReader.size': 'Size'
 };
