@@ -392,7 +392,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				|| previousState.query !== state.query
 				|| previousState.caseSensitive !== state.caseSensitive
 				|| previousState.entireWord !== state.entireWord
-				|| previousState.active !== state.active) {
+				|| previousState.active !== state.active
+				|| !previousState.result) {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
 					searchContext: this._getSearchContext(),
