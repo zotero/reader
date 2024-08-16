@@ -619,9 +619,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected override _handleViewUpdate() {
 		super._handleViewUpdate();
 		this.flow.invalidate();
-		if (this._find) {
-			this._find.handleViewUpdate();
-		}
 	}
 
 	protected _openFootnoteOverlayPopup(link: HTMLAnchorElement, element: Element) {
@@ -795,7 +792,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				console.log('Initiating new search', state);
 				this._find = new EPUBFindProcessor({
 					view: this,
-					startRange: this.flow.startRange!,
+					startRange: (this.flow.startRange && new PersistentRange(this.flow.startRange)) ?? undefined,
 					findState: { ...state },
 					onSetFindState: this._options.onSetFindState,
 				});

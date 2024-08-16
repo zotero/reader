@@ -6,6 +6,7 @@ import DefaultFindProcessor, {
 import EPUBView from "./epub-view";
 import SectionView from "./section-view";
 import { FindState } from "../../common/types";
+import { PersistentRange } from "../common/lib/range";
 
 export class EPUBFindProcessor implements FindProcessor {
 	readonly view: EPUBView;
@@ -22,7 +23,7 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	constructor(options: {
 		view: EPUBView,
-		startRange: Range,
+		startRange?: Range | PersistentRange,
 		findState: FindState,
 		onSetFindState?: (state?: FindState) => void,
 	}) {
@@ -30,9 +31,18 @@ export class EPUBFindProcessor implements FindProcessor {
 		this.findState = options.findState;
 		this._onSetFindState = options.onSetFindState;
 
-		// Process visible views first, and then the rest of the views if we haven't exceeded 999 results yet
-		this._processViews(this.view.flow.visibleViews, options.startRange);
-		this._processViews(this.view.views, undefined, 999);
+		let startIndex = this.view.flow.startView
+			? this.view.views.indexOf(this.view.flow.startView)
+			: 0;
+		for (let i = startIndex; i < startIndex + this.view.views.length; i++) {
+			let view = this.view.views[i % this.view.views.length];
+			if (view === this.view.flow.startView) {
+				this._getOrCreateProcessor(view, options.startRange);
+			}
+			else {
+				this._getOrCreateProcessor(view);
+			}
+		}
 	}
 
 	prev(): FindResult | null {
@@ -51,7 +61,9 @@ export class EPUBFindProcessor implements FindProcessor {
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
-				return this._selectedProcessor.prev(false);
+				let result = this._selectedProcessor.prev(false);
+				this._setFindState();
+				return result;
 			}
 
 			nextIndex--;
@@ -106,20 +118,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		return highlights;
 	}
 
-	handleViewUpdate() {
-		this._processViews(this.view.flow.visibleViews);
-	}
-
-	private _processViews(views: SectionView[], startRange?: Range, maxResults?: number) {
-		for (let view of views) {
-			if (maxResults !== undefined && this._totalResults > maxResults) {
-				break;
-			}
-			this._getOrCreateProcessor(view, startRange);
-		}
-	}
-
-	private _getOrCreateProcessor(view: SectionView, startRange?: Range): DefaultFindProcessor {
+	private _getOrCreateProcessor(view: SectionView, startRange?: Range | PersistentRange): DefaultFindProcessor {
 		if (this._processors[view.section.index]) {
 			return this._processors[view.section.index];
 		}
