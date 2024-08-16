@@ -32,6 +32,7 @@ import {
 	getBoundingPageRect,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
+	PersistentRange,
 	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges } from "./lib/selection";
@@ -118,6 +119,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _lastScrollTime: number | null = null;
 
 	protected _isCtrlKeyDown = false;
+
+	protected _lastSelectionRange: PersistentRange | null = null;
 
 	protected _iframeCoordScaleFactor = 1;
 
@@ -846,6 +849,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		else {
 			this._updateViewStats();
 			this._tryUseTool();
+		}
+
+		// Regardless of whether the selection is collapsed, save it for Find
+		if (selection?.rangeCount) {
+			this._lastSelectionRange = new PersistentRange(selection.getRangeAt(0));
 		}
 	}
 

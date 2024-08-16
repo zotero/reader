@@ -30,7 +30,7 @@ class DefaultFindProcessor implements FindProcessor {
 
 	constructor(options: {
 		searchContext: SearchContext,
-		startRange?: Range,
+		startRange?: Range | PersistentRange,
 		findState: FindState,
 		onSetFindState?: (state?: FindState) => void,
 		annotationKeyPrefix?: string,
@@ -41,6 +41,10 @@ class DefaultFindProcessor implements FindProcessor {
 
 		this._buf = [];
 
+		let startRange = options.startRange;
+		if (startRange instanceof PersistentRange) {
+			startRange = startRange.toRange();
+		}
 		let ranges = executeSearch(
 			options.searchContext,
 			this.findState.query,
@@ -61,8 +65,8 @@ class DefaultFindProcessor implements FindProcessor {
 					range,
 				}
 			};
-			if (this._initialPos === null && options.startRange) {
-				if (EPUBView.compareBoundaryPoints(Range.START_TO_START, originalRange, options.startRange) >= 0) {
+			if (this._initialPos === null && startRange) {
+				if (EPUBView.compareBoundaryPoints(Range.START_TO_START, originalRange, startRange) >= 0) {
 					this._initialPos = this._buf.length;
 				}
 			}

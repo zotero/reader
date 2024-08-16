@@ -396,6 +396,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
 					searchContext: this._getSearchContext(),
+					startRange: this._lastSelectionRange ?? undefined,
 					findState: { ...state },
 					onSetFindState: this._options.onSetFindState,
 				});
