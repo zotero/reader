@@ -24,11 +24,7 @@ import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import {
 	getVisibleTextNodes
 } from "../common/lib/nodes";
-import DefaultFindProcessor from "../common/find";
-import {
-	createSearchContext,
-	SearchContext
-} from "../common/lib/dom-text-search";
+import DefaultFindProcessor, { createSearchContext, SearchContext } from "../common/find";
 
 // @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';
@@ -377,7 +373,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	// Unlike annotation, selection and overlay popups, find popup open state is determined
 	// with .open property. All popup properties are preserved even when it's closed
-	setFindState(state: FindState) {
+	async setFindState(state: FindState) {
 		let previousState = this._findState;
 		this._findState = state;
 		if (!state.active && previousState && previousState.active !== state.active) {
@@ -396,11 +392,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				|| !previousState.result) {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
-					searchContext: this._getSearchContext(),
-					startRange: this._lastSelectionRange ?? undefined,
 					findState: { ...state },
 					onSetFindState: this._options.onSetFindState,
 				});
+				await this._find.run(
+					this._getSearchContext(),
+					this._lastSelectionRange ?? undefined
+				);
 				this.findNext();
 			}
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {

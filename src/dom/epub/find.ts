@@ -1,7 +1,7 @@
 import DefaultFindProcessor, {
 	FindAnnotation,
 	FindProcessor,
-	FindResult
+	FindResult, SearchContext
 } from "../common/find";
 import EPUBView from "./epub-view";
 import SectionView from "./section-view";
@@ -15,6 +15,8 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	private _processors: DefaultFindProcessor[] = [];
 
+	private _processorPromises: Promise<DefaultFindProcessor>[] = [];
+
 	private _selectedProcessor: DefaultFindProcessor | null = null;
 
 	private _totalResults = 0;
@@ -23,29 +25,28 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	constructor(options: {
 		view: EPUBView,
-		startRange?: Range | PersistentRange,
 		findState: FindState,
 		onSetFindState?: (state?: FindState) => void,
 	}) {
 		this.view = options.view;
 		this.findState = options.findState;
 		this._onSetFindState = options.onSetFindState;
+	}
 
+	async run(startRange?: Range | PersistentRange, onFirstResult?: () => void) {
 		let startIndex = this.view.flow.startView
 			? this.view.views.indexOf(this.view.flow.startView)
 			: 0;
 		for (let i = startIndex; i < startIndex + this.view.views.length; i++) {
 			let view = this.view.views[i % this.view.views.length];
-			if (view === this.view.flow.startView) {
-				this._getOrCreateProcessor(view, options.startRange);
-			}
-			else {
-				this._getOrCreateProcessor(view);
+			let processor = await this._getOrCreateProcessor(view, startRange);
+			if (this._selectedProcessor === processor) {
+				onFirstResult?.();
 			}
 		}
 	}
 
-	prev(): FindResult | null {
+	async prev(): Promise<FindResult | null> {
 		if (this._selectedProcessor) {
 			this._selectedProcessor.prev(false);
 			this._setFindState();
@@ -57,7 +58,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		if (nextIndex < 0) {
 			nextIndex += this.view.views.length;
 		}
-		this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
+		this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
@@ -70,14 +71,14 @@ export class EPUBFindProcessor implements FindProcessor {
 			if (nextIndex < 0) {
 				nextIndex += this.view.views.length;
 			}
-			this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
+			this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
 		}
 		while (this._selectedProcessor !== stop);
 
 		return null;
 	}
 
-	next(): FindResult | null {
+	async next(): Promise<FindResult | null> {
 		if (this._selectedProcessor) {
 			this._selectedProcessor.next(false);
 			this._setFindState();
@@ -88,7 +89,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) + 1 : 0;
 		nextIndex %= this.view.views.length;
 		if (this._selectedProcessor) this._selectedProcessor.position = null;
-		this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
+		this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
@@ -99,7 +100,7 @@ export class EPUBFindProcessor implements FindProcessor {
 
 			nextIndex++;
 			nextIndex %= this.view.views.length;
-			this._selectedProcessor = this._getOrCreateProcessor(this.view.views[nextIndex]);
+			this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
 		}
 		while (this._selectedProcessor !== stop);
 
@@ -118,23 +119,31 @@ export class EPUBFindProcessor implements FindProcessor {
 		return highlights;
 	}
 
-	private _getOrCreateProcessor(view: SectionView, startRange?: Range | PersistentRange): DefaultFindProcessor {
-		if (this._processors[view.section.index]) {
-			return this._processors[view.section.index];
+	private _getOrCreateProcessor(view: SectionView, startRange?: Range | PersistentRange): Promise<DefaultFindProcessor> {
+		let index = view.section.index;
+		if (this._processorPromises[index] !== undefined) {
+			return this._processorPromises[index];
 		}
-		let processor = new DefaultFindProcessor({
-			searchContext: view.searchContext,
-			startRange,
-			findState: { ...this.findState },
-			annotationKeyPrefix: 'section' + view.section.index,
-		});
-		this._processors[view.section.index] = processor;
-		if (!this._selectedProcessor && processor.initialPosition !== null) {
-			this._selectedProcessor = processor;
-		}
-		this._totalResults += processor.getResults().length;
-		this._setFindState();
-		return processor;
+		return this._processorPromises[index] = (async () => {
+			if (this._processors[index] !== undefined) {
+				return this._processors[index];
+			}
+			let processor = new DefaultFindProcessor({
+				findState: this.findState,
+				annotationKeyPrefix: 'section' + index,
+			});
+			await processor.run(
+				view.searchContext,
+				startRange,
+			);
+			this._processors[index] = processor;
+			if (!this._selectedProcessor && processor.initialPosition !== null) {
+				this._selectedProcessor = processor;
+			}
+			this._totalResults += processor.getResults().length;
+			this._setFindState();
+			return processor;
+		})();
 	}
 
 	private _setFindState() {

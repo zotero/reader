@@ -1,18 +1,11 @@
 import { DisplayedAnnotation } from "./components/overlay/annotation-overlay";
-import {
-	executeSearch,
-	SearchContext
-} from "./lib/dom-text-search";
+import { executeSearch, InternalSearchContext } from "./lib/dom-text-search";
 import { FindState } from "../../common/types";
 import { PersistentRange } from "./lib/range";
 import EPUBView from "../epub/epub-view";
 
 export interface FindProcessor {
 	getAnnotations(): FindAnnotation[];
-
-	prev(): FindResult | null;
-
-	next(): FindResult | null;
 }
 
 class DefaultFindProcessor implements FindProcessor {
@@ -29,8 +22,6 @@ class DefaultFindProcessor implements FindProcessor {
 	private readonly _annotationKeyPrefix?: string;
 
 	constructor(options: {
-		searchContext: SearchContext,
-		startRange?: Range | PersistentRange,
 		findState: FindState,
 		onSetFindState?: (state?: FindState) => void,
 		annotationKeyPrefix?: string,
@@ -40,33 +31,50 @@ class DefaultFindProcessor implements FindProcessor {
 		this._annotationKeyPrefix = options.annotationKeyPrefix;
 
 		this._buf = [];
+	}
 
-		let startRange = options.startRange;
+	async run(searchContext: SearchContext, startRange?: Range | PersistentRange) {
 		if (startRange instanceof PersistentRange) {
 			startRange = startRange.toRange();
 		}
-		let ranges = executeSearch(
-			options.searchContext,
+		let charDataMap: CharacterData[] = [];
+		let internalSearchContext: InternalSearchContext = {
+			text: searchContext.text,
+			internalCharDataRanges: searchContext.charDataRanges.map((charDataRange) => {
+				let charDataID = charDataMap.length;
+				charDataMap.push(charDataRange.charData);
+				return {
+					charDataID,
+					start: charDataRange.start,
+					end: charDataRange.end,
+				};
+			}),
+		};
+		let ranges = await executeSearch(
+			internalSearchContext,
 			this.findState.query,
 			{
 				caseSensitive: this.findState.caseSensitive,
 				entireWord: this.findState.entireWord
 			}
 		);
-		for (let originalRange of ranges) {
-			let range = new PersistentRange(originalRange);
+		for (let internalOutputRange of ranges) {
+			let range = new Range();
+			range.setStart(charDataMap[internalOutputRange.startCharDataID], internalOutputRange.startIndex);
+			range.setEnd(charDataMap[internalOutputRange.endCharDataID], internalOutputRange.endIndex);
+			let persistentRange = new PersistentRange(range);
 			let findResult: FindResult = {
-				range,
+				range: persistentRange,
 				highlight: {
 					type: 'highlight',
 					color: 'rgba(180, 0, 170, 1)',
 					text: '',
 					key: 'findResult_' + (this._annotationKeyPrefix || '') + '_' + this._buf.length,
-					range,
+					range: persistentRange,
 				}
 			};
 			if (this._initialPos === null && startRange) {
-				if (EPUBView.compareBoundaryPoints(Range.START_TO_START, originalRange, startRange) >= 0) {
+				if (EPUBView.compareBoundaryPoints(Range.START_TO_START, range, startRange) >= 0) {
 					this._initialPos = this._buf.length;
 				}
 			}
@@ -211,7 +219,47 @@ class DefaultFindProcessor implements FindProcessor {
 	}
 }
 
+export function createSearchContext(nodes: CharacterData[]): SearchContext {
+	let text = '';
+	let charDataRanges: CharDataRange[] = [];
+	for (let charData of nodes) {
+		let data = normalize(charData.data);
+		charDataRanges.push({
+			charData,
+			start: text.length,
+			end: text.length + data.length - 1,
+		});
+		text += data;
+	}
+	return { text, charDataRanges };
+}
+
+function normalize(s: string) {
+	return s
+		// Remove smart quotes
+		.replace(/[\u2018\u2019]/g, "'")
+		.replace(/[\u201C\u201D]/g, '"');
+}
+
 export type FindAnnotation = Omit<DisplayedAnnotation, 'range'> & { range: PersistentRange };
+
+export type SearchContext = {
+	text: string;
+	charDataRanges: CharDataRange[];
+}
+
+export type CharDataRange = {
+	charData: CharacterData;
+	start: number;
+	end: number;
+}
+
+export type OutputRange = {
+	startCharData: CharacterData;
+	endCharData: CharacterData;
+	startIndex: number;
+	endIndex: number;
+}
 
 export type FindResult = {
 	range: PersistentRange;

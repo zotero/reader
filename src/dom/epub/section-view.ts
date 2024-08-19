@@ -1,13 +1,10 @@
 import Section from "epubjs/types/section";
 import { getPotentiallyVisibleTextNodes } from "../common/lib/nodes";
 import {
-	createSearchContext,
-	SearchContext
-} from "../common/lib/dom-text-search";
-import {
 	sanitizeAndRender,
 	StyleScoper
 } from "./lib/sanitize-and-render";
+import { createSearchContext, SearchContext } from "../common/find";
 
 class SectionView {
 	readonly section: Section;

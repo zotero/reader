@@ -773,7 +773,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	// Unlike annotation, selection and overlay popups, find popup open state is determined
 	// with .open property. All popup properties are preserved even when it's closed
-	setFindState(state: FindState) {
+	async setFindState(state: FindState) {
 		let previousState = this._findState;
 		this._findState = state;
 		if (!state.active && previousState && previousState.active !== state.active) {
@@ -793,11 +793,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				console.log('Initiating new search', state);
 				this._find = new EPUBFindProcessor({
 					view: this,
-					startRange: (this.flow.startRange && new PersistentRange(this.flow.startRange)) ?? undefined,
 					findState: { ...state },
 					onSetFindState: this._options.onSetFindState,
 				});
-				this.findNext();
+				let startRange = (this.flow.startRange && new PersistentRange(this.flow.startRange)) ?? undefined;
+				let onFirstResult = () => this.findNext();
+				await this._find.run(startRange, onFirstResult);
 			}
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {
 				this._find!.findState.highlightAll = state.highlightAll;
@@ -903,7 +904,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		console.log('Find next');
 		if (this._find) {
 			let processor = this._find;
-			let result = processor.next();
+			let result = await processor.next();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
 			}
@@ -915,7 +916,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		console.log('Find previous');
 		if (this._find) {
 			let processor = this._find;
-			let result = processor.prev();
+			let result = await processor.prev();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
 			}
