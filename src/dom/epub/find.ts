@@ -39,7 +39,10 @@ export class EPUBFindProcessor implements FindProcessor {
 			: 0;
 		for (let i = startIndex; i < startIndex + this.view.views.length; i++) {
 			let view = this.view.views[i % this.view.views.length];
-			let processor = await this._getOrCreateProcessor(view, startRange);
+			let processor = await this._getOrCreateProcessor(
+				view,
+				this._selectedProcessor ? undefined : startRange
+			);
 			if (this._selectedProcessor === processor) {
 				onFirstResult?.();
 			}
