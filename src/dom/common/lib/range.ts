@@ -215,3 +215,18 @@ export function getPageRects(range: Range): DOMRectList {
 	}
 	return rects;
 }
+
+export function getInnerText(range: Range): string {
+	let doc = range.commonAncestorContainer.ownerDocument;
+	if (!doc) {
+		return range.toString();
+	}
+
+	// We need to actually insert the wrapper into the DOM to get a white-space-normalized innerText
+	let wrapper = doc.createElement('div');
+	wrapper.append(range.cloneContents());
+	doc.body.append(wrapper);
+	let innerText = wrapper.innerText;
+	wrapper.remove();
+	return innerText;
+}

@@ -8,6 +8,7 @@ import {
 	OutlineItem
 } from "../../common/types";
 import {
+	getInnerText,
 	getStartElement
 } from "../common/lib/range";
 import {
@@ -182,7 +183,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (range.collapsed) {
 			return null;
 		}
-		let text = type == 'highlight' || type == 'underline' ? range.toString().trim() : undefined;
+		let text = type == 'highlight' || type == 'underline' ? getInnerText(range).trim() : undefined;
 		// If this annotation type wants text, but we didn't get any, abort
 		if (text === '') {
 			return null;
