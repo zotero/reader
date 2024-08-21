@@ -29,8 +29,7 @@ window.createView = options => {
 		viewState: options.viewState,
 		container: document.getElementById('view'),
 		data: {
-			// TODO: Implement a more efficient way to transfer large files
-			buf: new Uint8Array(options.buf)
+			url: new URL(options.url)
 		},
 		onSaveAnnotations: annotations => {
 			postMessage('onSaveAnnotations', {annotations});
