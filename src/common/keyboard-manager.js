@@ -116,10 +116,12 @@ export class KeyboardManager {
 		}
 		else if (['Cmd-Shift-g', 'Ctrl-Shift-g'].includes(key)) {
 			event.preventDefault();
+			event.stopPropagation();
 			this._reader.findPrevious();
 		}
 		else if (['Cmd-g', 'Ctrl-g'].includes(key)) {
 			event.preventDefault();
+			event.stopPropagation();
 			this._reader.findNext();
 		}
 		else if (['Cmd-Alt-g', 'Ctrl-Alt-g'].includes(key)) {
