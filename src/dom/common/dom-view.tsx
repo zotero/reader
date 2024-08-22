@@ -476,7 +476,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
-	protected _openAnnotationPopup(annotation: WADMAnnotation) {
+	protected _openAnnotationPopup(annotation?: WADMAnnotation) {
+		if (!annotation) {
+			if (this._selectedAnnotationIDs.length != 1) {
+				console.log('No selected annotation to open popup for');
+				return;
+			}
+			annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0]);
+			if (!annotation) {
+				// Shouldn't happen
+				console.log('Selected annotation not found');
+				return;
+			}
+		}
+
 		// Note: Popup won't be visible if sidebar is opened
 		let domRect;
 		if (annotation.type == 'note') {
@@ -1049,7 +1062,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
 		if (event.button == 0 && this._tool.type == 'note' && this._previewAnnotation) {
-			this._options.onAddAnnotation(this._previewAnnotation, true);
+			this._options.onAddAnnotation(this._previewAnnotation!, true);
+			this._renderAnnotations(true);
+			this._openAnnotationPopup();
 			event.preventDefault();
 
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
