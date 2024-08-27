@@ -34,23 +34,18 @@ function generateReaderConfig(build) {
 		module: {
 			rules: [
 				{
-					test: /\.(ts|js)x?$/,
+					test: /\.(js|jsx)$/,
 					exclude: /node_modules/,
 					use: {
 						loader: 'babel-loader',
 						options: {
 							presets: [
-								['@babel/preset-env', {
-									useBuiltIns: false,
-									targets: build === 'zotero' || build === 'dev'
-										? { firefox: 115, chrome: 128 }
-										: undefined
-								}],
+								['@babel/preset-env', { useBuiltIns: false }],
 							],
 						},
 					},
 				},
-				build === 'dev' && {
+				{
 					test: /\.tsx?$/,
 					exclude: /node_modules/,
 					use: 'ts-loader',
