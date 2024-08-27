@@ -297,7 +297,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return new EpubCFI(rangeOrNode, section.cfiBase);
 	}
 
-	getRange(cfi: EpubCFI | string, mount = false): Range | null {
+	getRange(cfi: EpubCFI | string, mount = false): PersistentRange | null {
 		if (!this._sectionViews.length) {
 			// The book isn't loaded yet -- don't spam the console
 			return null;
@@ -315,7 +315,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			view.mount();
 		}
 		if (this._rangeCache.has(cfiString)) {
-			return this._rangeCache.get(cfiString)!.toRange();
+			return this._rangeCache.get(cfiString)!;
 		}
 		try {
 			let range = cfi.toRange(view.container.ownerDocument, undefined, view.container);
@@ -323,8 +323,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				console.error('Unable to get range for CFI', cfiString);
 				return null;
 			}
-			this._rangeCache.set(cfiString, new PersistentRange(range));
-			return range;
+			let persistentRange = new PersistentRange(range);
+			this._rangeCache.set(cfiString, persistentRange);
+			return persistentRange;
 		}
 		catch (e) {
 			console.error('Unable to get range for CFI', cfiString, e);
@@ -362,7 +363,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				if (sectionIndex === null || !this._sectionViews[sectionIndex].mounted) {
 					return null;
 				}
-				return range;
+				return range.toRange();
 			}
 			default:
 				// No other selector types supported on EPUBs

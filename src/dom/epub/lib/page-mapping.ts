@@ -121,11 +121,11 @@ class PageMapping {
 		return this.tree.minKey()?.toRange() ?? null;
 	}
 
-	getRange(pageLabel: string): Range | null {
+	getRange(pageLabel: string): PersistentRange | null {
 		// This is slow, but only needs to be called when manually navigating to a physical page number
 		for (let [key, value] of this.tree.entries()) {
 			if (value === pageLabel) {
-				return key.toRange();
+				return key;
 			}
 		}
 		return null;
