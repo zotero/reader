@@ -21,6 +21,8 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	private _totalResults = 0;
 
+	private _cancelled = false;
+
 	private readonly _onSetFindState?: (state?: FindState) => void;
 
 	constructor(options: {
@@ -34,6 +36,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	}
 
 	async run(startRange?: Range | PersistentRange, onFirstResult?: () => void) {
+		this._cancelled = false;
 		let startIndex = this.view.flow.startView
 			? this.view.views.indexOf(this.view.flow.startView)
 			: 0;
@@ -43,10 +46,15 @@ export class EPUBFindProcessor implements FindProcessor {
 				view,
 				this._selectedProcessor ? undefined : startRange
 			);
+			if (this._cancelled) return;
 			if (this._selectedProcessor === processor) {
 				onFirstResult?.();
 			}
 		}
+	}
+
+	cancel() {
+		this._cancelled = true;
 	}
 
 	async prev(): Promise<FindResult | null> {
@@ -150,6 +158,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	}
 
 	private _setFindState() {
+		if (this._cancelled) return;
 		if (this._onSetFindState) {
 			let index = 0;
 			let foundSelected = false;

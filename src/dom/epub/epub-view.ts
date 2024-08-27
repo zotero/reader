@@ -790,6 +790,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					|| previousState.entireWord !== state.entireWord
 					|| previousState.active !== state.active) {
 				console.log('Initiating new search', state);
+				this._find?.cancel();
 				this._find = new EPUBFindProcessor({
 					view: this,
 					findState: { ...state },
