@@ -79,6 +79,11 @@
 }
 
 replaced-body {
+	section {
+		// It's like break-after, but Firefox supports it
+		margin-bottom: 100vh;
+	}
+
 	img, svg, audio, video {
 		max-width: var(--media-max-width) !important;
 		max-height: calc(100vh - 80px) !important;

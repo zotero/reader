@@ -37,6 +37,10 @@
 }
 
 replaced-body {
+	section {
+		margin-bottom: 100px;
+	}
+
 	img, svg, audio, video {
 		// Size the media element's box so it fits within one page
 		max-width: calc(min(100vw - 80px, 100%)) !important;
