@@ -1,8 +1,8 @@
-import { DisplayedAnnotation } from "./components/overlay/annotation-overlay";
-import { executeSearch, InternalSearchContext } from "./lib/dom-text-search";
-import { FindState } from "../../common/types";
-import { PersistentRange } from "./lib/range";
-import EPUBView from "../epub/epub-view";
+import { DisplayedAnnotation } from "../../components/overlay/annotation-overlay";
+import { FindState } from "../../../../common/types";
+import { PersistentRange } from "../range";
+import EPUBView from "../../../epub/epub-view";
+import type { InternalOutputRange, InternalSearchContext } from "./internal-types";
 
 export interface FindProcessor {
 	getAnnotations(): FindAnnotation[];
@@ -20,6 +20,10 @@ class DefaultFindProcessor implements FindProcessor {
 	private readonly _onSetFindState?: (state?: FindState) => void;
 
 	private readonly _annotationKeyPrefix?: string;
+
+	private _worker: Worker | null = null;
+
+	private _cancelled = false;
 
 	constructor(options: {
 		findState: FindState,
@@ -50,7 +54,7 @@ class DefaultFindProcessor implements FindProcessor {
 				};
 			}),
 		};
-		let ranges = await executeSearch(
+		let ranges = await this._executeSearch(
 			internalSearchContext,
 			this.findState.query,
 			{
@@ -81,6 +85,14 @@ class DefaultFindProcessor implements FindProcessor {
 			this._buf.push(findResult);
 		}
 		this._setFindState();
+	}
+
+	cancel() {
+		if (this._worker) {
+			this._worker.terminate();
+			this._worker = null;
+		}
+		this._cancelled = true;
 	}
 
 	prev(loop = true): FindResult | null {
@@ -205,7 +217,34 @@ class DefaultFindProcessor implements FindProcessor {
 		});
 	}
 
+	private _executeSearch(
+		context: InternalSearchContext,
+		term: string,
+		options: {
+			caseSensitive: boolean,
+			entireWord: boolean,
+		}
+	): Promise<InternalOutputRange[]> {
+		if (this._worker) {
+			throw new Error('Search is already running');
+		}
+		// @ts-ignore
+		let worker = new Worker(new URL('./worker.ts', import.meta.url));
+		let promise = new Promise<InternalOutputRange[]>((resolve, reject) => {
+			worker.onmessage = (event) => {
+				resolve(event.data);
+			};
+			worker.onerror = (event) => {
+				reject(event.error);
+			};
+		});
+		worker.postMessage({ context, term, options });
+		this._worker = worker;
+		return promise;
+	}
+
 	private _setFindState() {
+		if (this._cancelled) return;
 		if (this._onSetFindState) {
 			this._onSetFindState({
 				...this.findState,

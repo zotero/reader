@@ -26,7 +26,7 @@ import {
 	getVisibleTextNodes,
 	iterateWalker
 } from "../common/lib/nodes";
-import DefaultFindProcessor, { createSearchContext } from "../common/find";
+import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 
 // @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';

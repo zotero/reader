@@ -2,7 +2,7 @@ import DefaultFindProcessor, {
 	FindAnnotation,
 	FindProcessor,
 	FindResult
-} from "../common/find";
+} from "../common/lib/find";
 import EPUBView from "./epub-view";
 import SectionRenderer from "./section-renderer";
 import { FindState } from "../../common/types";
@@ -53,6 +53,9 @@ export class EPUBFindProcessor implements FindProcessor {
 	}
 
 	cancel() {
+		for (let processor of this._processors) {
+			processor?.cancel();
+		}
 		this._cancelled = true;
 	}
 

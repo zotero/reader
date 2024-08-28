@@ -36,7 +36,7 @@ import {
 	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges } from "./lib/selection";
-import { FindProcessor } from "./find";
+import { FindProcessor } from "./lib/find";
 import { SELECTION_COLOR } from "../../common/defines";
 import { debounceUntilScrollFinishes, isMac, isSafari } from "../../common/lib/utilities";
 import {

@@ -1,4 +1,4 @@
-import type { InternalCharDataRange, InternalOutputRange, InternalSearchContext } from "./index";
+import type { InternalCharDataRange, InternalOutputRange, InternalSearchContext } from "./internal-types";
 
 onmessage = async (event) => {
 	let { context, term, options } = event.data;

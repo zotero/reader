@@ -4,7 +4,7 @@ import {
 	sanitizeAndRender,
 	StyleScoper
 } from "./lib/sanitize-and-render";
-import { createSearchContext, SearchContext } from "../common/find";
+import { createSearchContext } from "../common/lib/find";
 
 class SectionRenderer {
 	readonly section: Section;
