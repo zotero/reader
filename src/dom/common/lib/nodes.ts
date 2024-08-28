@@ -58,3 +58,14 @@ export function getContainingBlock(element: Element): Element | null {
 	}
 	return null;
 }
+
+export function iterateWalker(walker: TreeWalker | NodeIterator): Iterable<Node> {
+	return {
+		[Symbol.iterator]: function* () {
+			let node: Node | null;
+			while ((node = walker.nextNode())) {
+				yield node;
+			}
+		}
+	};
+}

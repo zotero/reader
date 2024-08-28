@@ -23,7 +23,8 @@ import DOMView, {
 } from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import {
-	getVisibleTextNodes
+	getVisibleTextNodes,
+	iterateWalker
 } from "../common/lib/nodes";
 import DefaultFindProcessor, { createSearchContext } from "../common/find";
 
@@ -211,8 +212,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	private _getSortIndex(range: Range) {
 		let iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
 		let count = 0;
-		let node: Node | null;
-		while ((node = iter.nextNode())) {
+		for (let node of iterateWalker(iter)) {
 			if (range.startContainer.contains(node)) {
 				return String(count + range.startOffset).padStart(8, '0');
 			}

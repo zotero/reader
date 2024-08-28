@@ -1,5 +1,5 @@
 import Section from "epubjs/types/section";
-import { getPotentiallyVisibleTextNodes } from "../common/lib/nodes";
+import { getPotentiallyVisibleTextNodes, iterateWalker } from "../common/lib/nodes";
 import {
 	sanitizeAndRender,
 	StyleScoper
@@ -118,9 +118,8 @@ class SectionRenderer {
 				? NodeFilter.FILTER_ACCEPT
 				: NodeFilter.FILTER_SKIP;
 		});
-		let node = null;
 		let bestRange = null;
-		while ((node = iter.nextNode())) {
+		for (let node of iterateWalker(iter)) {
 			let range = this._document.createRange();
 			if (node.nodeType == Node.ELEMENT_NODE) {
 				range.selectNode(node);

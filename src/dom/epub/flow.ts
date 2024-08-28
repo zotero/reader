@@ -395,6 +395,11 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
 
+	private get _spreadWidth(): number {
+		return this._sectionsContainer.offsetWidth
+			+ parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
+	}
+
 	get currentSectionIndex(): number {
 		return this._currentSectionIndex;
 	}
@@ -437,8 +442,7 @@ export class PaginatedFlow extends AbstractFlow {
 		if (options?.block === 'center') {
 			x += rect.width / 2;
 		}
-		let gap = parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
-		let spreadWidth = this._sectionsContainer.offsetWidth + gap;
+		let spreadWidth = this._spreadWidth;
 		this._sectionsContainer.scrollTo({
 			left: Math.floor(x / spreadWidth) * spreadWidth,
 			top: 0
@@ -495,9 +499,8 @@ export class PaginatedFlow extends AbstractFlow {
 			this._onViewUpdate();
 			return;
 		}
-		let gap = parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
 		this._sectionsContainer.scrollBy({
-			left: -this._sectionsContainer.offsetWidth - gap,
+			left: -this._spreadWidth,
 			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
 		});
 		this._onViewUpdate();
@@ -508,9 +511,8 @@ export class PaginatedFlow extends AbstractFlow {
 			this.navigateToNextSection();
 			return;
 		}
-		let gap = parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
 		this._sectionsContainer.scrollBy({
-			left: this._sectionsContainer.offsetWidth + gap,
+			left: this._spreadWidth,
 			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
 		});
 		this._onViewUpdate();

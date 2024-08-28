@@ -1,4 +1,5 @@
 import { moveRangeEndsIntoTextNodes } from "./range";
+import { iterateWalker } from "./nodes";
 
 // We generate and support a very limited subset of the Web Annotation Data Model:
 // https://www.w3.org/TR/annotation-model/#selectors
@@ -72,8 +73,7 @@ export function textPositionFromRange(range: Range, root: Element): TextPosition
 		type: 'TextPositionSelector'
 	};
 	let pos = 0;
-	let node: Node | null = null;
-	while ((node = iter.nextNode())) {
+	for (let node of iterateWalker(iter)) {
 		if (node === range.startContainer) {
 			selector.start = pos + range.startOffset;
 		}
@@ -94,8 +94,7 @@ export function textPositionToRange(selector: TextPositionSelector, root: Elemen
 	let iter = root.ownerDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
 	let range = root.ownerDocument.createRange();
 	let pos = 0;
-	let node: Node | null = null;
-	while ((node = iter.nextNode())) {
+	for (let node of iterateWalker(iter)) {
 		if (!node.nodeValue) {
 			continue;
 		}

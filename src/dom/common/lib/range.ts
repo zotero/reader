@@ -1,4 +1,5 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
+import { iterateWalker } from "./nodes";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
@@ -73,8 +74,7 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
 			// Get the last text node inside the container/child
 			let walker = doc.createTreeWalker(endNode || range.endContainer, NodeFilter.SHOW_TEXT);
-			let node;
-			while ((node = walker.nextNode())) {
+			for (let node of iterateWalker(walker)) {
 				endNode = node;
 			}
 		}
