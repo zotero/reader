@@ -1,5 +1,4 @@
 import BTree from "sorted-btree";
-import SectionView from "../section-view";
 import EPUBView from "../epub-view";
 import { getPotentiallyVisibleTextNodes } from "../../common/lib/nodes";
 import { EPUB_LOCATION_BREAK_INTERVAL } from "../defines";
@@ -10,6 +9,43 @@ import {
 import { PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
+	static generate(view: EPUBView): PageMapping {
+		let mapping = new PageMapping(view);
+		let sectionBodies = view.renderers.map(renderer => renderer.body);
+		mapping._addPhysicalPages(sectionBodies);
+		if (!mapping.tree.length) {
+			mapping._addEPUBLocations(sectionBodies);
+		}
+		mapping.tree.freeze();
+		return mapping;
+	}
+
+	static load(saved: string, view: EPUBView): PageMapping | null {
+		let mapping = new PageMapping(view);
+
+		let obj = JSON.parse(saved);
+		if (!obj) {
+			return null;
+		}
+		if (!obj.version || obj.version < PageMapping.VERSION) {
+			console.warn(`Page mappings are old: ${obj.version} < ${PageMapping.VERSION}`);
+			return null;
+		}
+
+		let { mappings } = obj;
+		if (!Array.isArray(mappings)) {
+			console.error('Unable to load persisted page mapping', saved);
+			return null;
+		}
+		mapping.tree.setPairs(mappings
+			.map(([cfi, label]) => [view.getRange(lengthenCFI(cfi)), label])
+			.filter(([range, label]) => !!range && typeof label === 'string')
+			.map(([range, label]) => [new PersistentRange(range), label]) as [PersistentRange, string][]);
+		mapping._isPhysical = obj.isPhysical;
+
+		return mapping;
+	}
+
 	static readonly VERSION = 9;
 
 	readonly tree = new BTree<PersistentRange, string>(
@@ -20,6 +56,12 @@ class PageMapping {
 
 	private _isPhysical = false;
 
+	private _view: EPUBView;
+
+	private constructor(view: EPUBView) {
+		this._view = view;
+	}
+
 	get length(): number {
 		return this.tree.length;
 	}
@@ -28,23 +70,14 @@ class PageMapping {
 		return this._isPhysical;
 	}
 
-	generate(views: SectionView[]) {
-		this._addPhysicalPages(views);
-		if (this.tree.length) {
-			return;
-		}
-		this._addEPUBLocations(views);
-		this.tree.freeze();
-	}
-
-	private _addPhysicalPages(views: Iterable<SectionView>) {
+	private _addPhysicalPages(sectionBodies: HTMLElement[]) {
 		if (this.tree.length) {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
-		for (let view of views) {
+		for (let body of sectionBodies) {
 			for (let matcher of MATCHERS) {
-				let elems = view.container.querySelectorAll(matcher.selector);
+				let elems = body.querySelectorAll(matcher.selector);
 				let successes = 0;
 				for (let elem of elems) {
 					let pageNumber = matcher.extract(elem);
@@ -69,14 +102,14 @@ class PageMapping {
 		}
 	}
 
-	private _addEPUBLocations(views: Iterable<SectionView>) {
+	private _addEPUBLocations(sectionBodies: HTMLElement[]) {
 		if (this.tree.length) {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
 		let locationNumber = 0;
-		for (let view of views) {
-			let textNodes = getPotentiallyVisibleTextNodes(view.body);
+		for (let body of sectionBodies) {
+			let textNodes = getPotentiallyVisibleTextNodes(body);
 			let remainingBeforeBreak = 0;
 			for (let node of textNodes) {
 				if (/^\s*$/.test(node.data)) continue;
@@ -131,12 +164,12 @@ class PageMapping {
 		return null;
 	}
 
-	save(view: EPUBView): string {
+	save(): string {
 		let version = PageMapping.VERSION;
 		let isPhysical = this._isPhysical;
 		let mappings = this.tree.toArray()
 			.map(([range, label]) => {
-				let cfi = view.getCFI(range.toRange());
+				let cfi = this._view.getCFI(range.toRange());
 				if (!cfi) {
 					return null;
 				}
@@ -148,28 +181,6 @@ class PageMapping {
 			isPhysical,
 			mappings,
 		});
-	}
-
-	load(saved: string, view: EPUBView): boolean {
-		let obj = JSON.parse(saved);
-		if (!obj) {
-			return false;
-		}
-		if (!obj.version || obj.version < PageMapping.VERSION) {
-			console.warn(`Page mappings are old: ${obj.version} < ${PageMapping.VERSION}`);
-			return false;
-		}
-		this._isPhysical = obj.isPhysical;
-		let mappings = obj.mappings;
-		if (!Array.isArray(mappings)) {
-			console.error('Unable to load persisted page mapping', saved);
-			return false;
-		}
-		this.tree.setPairs(mappings
-			.map(([cfi, label]) => [view.getRange(lengthenCFI(cfi)), label])
-			.filter(([range, label]) => !!range && typeof label === 'string')
-			.map(([range, label]) => [new PersistentRange(range), label]) as [PersistentRange, string][]);
-		return !!this.tree.length;
 	}
 }
 

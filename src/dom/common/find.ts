@@ -254,13 +254,6 @@ export type CharDataRange = {
 	end: number;
 }
 
-export type OutputRange = {
-	startCharData: CharacterData;
-	endCharData: CharacterData;
-	startIndex: number;
-	endIndex: number;
-}
-
 export type FindResult = {
 	range: PersistentRange;
 	highlight: FindAnnotation;

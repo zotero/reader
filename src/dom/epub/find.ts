@@ -1,10 +1,10 @@
 import DefaultFindProcessor, {
 	FindAnnotation,
 	FindProcessor,
-	FindResult, SearchContext
+	FindResult
 } from "../common/find";
 import EPUBView from "./epub-view";
-import SectionView from "./section-view";
+import SectionRenderer from "./section-renderer";
 import { FindState } from "../../common/types";
 import { PersistentRange } from "../common/lib/range";
 
@@ -37,11 +37,10 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	async run(startRange?: Range | PersistentRange, onFirstResult?: () => void) {
 		this._cancelled = false;
-		let startIndex = this.view.flow.startView
-			? this.view.views.indexOf(this.view.flow.startView)
-			: 0;
-		for (let i = startIndex; i < startIndex + this.view.views.length; i++) {
-			let view = this.view.views[i % this.view.views.length];
+		let startIndex = this.view.flow.startSection?.index
+			?? 0;
+		for (let i = startIndex; i < startIndex + this.view.renderers.length; i++) {
+			let view = this.view.renderers[i % this.view.renderers.length];
 			let processor = await this._getOrCreateProcessor(
 				view,
 				this._selectedProcessor ? undefined : startRange
@@ -67,9 +66,9 @@ export class EPUBFindProcessor implements FindProcessor {
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) - 1 : -1;
 		if (nextIndex < 0) {
-			nextIndex += this.view.views.length;
+			nextIndex += this.view.renderers.length;
 		}
-		this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
+		this._selectedProcessor = await this._getOrCreateProcessor(this.view.renderers[nextIndex]);
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
@@ -80,9 +79,9 @@ export class EPUBFindProcessor implements FindProcessor {
 
 			nextIndex--;
 			if (nextIndex < 0) {
-				nextIndex += this.view.views.length;
+				nextIndex += this.view.renderers.length;
 			}
-			this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
+			this._selectedProcessor = await this._getOrCreateProcessor(this.view.renderers[nextIndex]);
 		}
 		while (this._selectedProcessor !== stop);
 
@@ -98,9 +97,9 @@ export class EPUBFindProcessor implements FindProcessor {
 			}
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) + 1 : 0;
-		nextIndex %= this.view.views.length;
+		nextIndex %= this.view.renderers.length;
 		if (this._selectedProcessor) this._selectedProcessor.position = null;
-		this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
+		this._selectedProcessor = await this._getOrCreateProcessor(this.view.renderers[nextIndex]);
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
@@ -110,8 +109,8 @@ export class EPUBFindProcessor implements FindProcessor {
 			}
 
 			nextIndex++;
-			nextIndex %= this.view.views.length;
-			this._selectedProcessor = await this._getOrCreateProcessor(this.view.views[nextIndex]);
+			nextIndex %= this.view.renderers.length;
+			this._selectedProcessor = await this._getOrCreateProcessor(this.view.renderers[nextIndex]);
 		}
 		while (this._selectedProcessor !== stop);
 
@@ -121,7 +120,7 @@ export class EPUBFindProcessor implements FindProcessor {
 	getAnnotations(): FindAnnotation[] {
 		let highlights = [];
 		for (let [i, processor] of this._processors.entries()) {
-			if (!processor || !this.view.views[i]?.mounted) continue;
+			if (!processor || !this.view.renderers[i]?.mounted) continue;
 			processor.findState.highlightAll = this.findState.highlightAll;
 			for (let highlight of processor.getAnnotations()) {
 				highlights.push(highlight);
@@ -130,8 +129,8 @@ export class EPUBFindProcessor implements FindProcessor {
 		return highlights;
 	}
 
-	private _getOrCreateProcessor(view: SectionView, startRange?: Range | PersistentRange): Promise<DefaultFindProcessor> {
-		let index = view.section.index;
+	private _getOrCreateProcessor(renderer: SectionRenderer, startRange?: Range | PersistentRange): Promise<DefaultFindProcessor> {
+		let index = renderer.section.index;
 		if (this._processorPromises[index] !== undefined) {
 			return this._processorPromises[index];
 		}
@@ -144,8 +143,8 @@ export class EPUBFindProcessor implements FindProcessor {
 				annotationKeyPrefix: 'section' + index,
 			});
 			await processor.run(
-				view.searchContext,
-				startRange,
+				renderer.searchContext,
+				startRange
 			);
 			this._processors[index] = processor;
 			if (!this._selectedProcessor && processor.initialPosition !== null) {

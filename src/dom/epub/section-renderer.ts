@@ -6,7 +6,7 @@ import {
 } from "./lib/sanitize-and-render";
 import { createSearchContext, SearchContext } from "../common/find";
 
-class SectionView {
+class SectionRenderer {
 	readonly section: Section;
 
 	readonly container: HTMLElement;
@@ -24,8 +24,6 @@ class SectionView {
 	private readonly _sectionsContainer: HTMLElement;
 
 	private readonly _styleScoper: StyleScoper;
-
-	private _searchContext: SearchContext | null = null;
 
 	constructor(options: {
 		section: Section,
@@ -156,11 +154,10 @@ class SectionView {
 	}
 
 	get searchContext() {
-		if (!this._searchContext) {
-			this._searchContext = createSearchContext(getPotentiallyVisibleTextNodes(this.container));
-		}
-		return this._searchContext;
+		let searchContext = createSearchContext(getPotentiallyVisibleTextNodes(this.container));
+		Object.defineProperty(this, 'searchContext', { value: searchContext });
+		return searchContext;
 	}
 }
 
-export default SectionView;
+export default SectionRenderer;

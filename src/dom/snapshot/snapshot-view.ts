@@ -25,7 +25,7 @@ import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import {
 	getVisibleTextNodes
 } from "../common/lib/nodes";
-import DefaultFindProcessor, { createSearchContext, SearchContext } from "../common/find";
+import DefaultFindProcessor, { createSearchContext } from "../common/find";
 
 // @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';
@@ -36,7 +36,11 @@ import { DynamicThemeFix } from "darkreader";
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
 
-	private _searchContext: SearchContext | null = null;
+	private get _searchContext() {
+		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
+		Object.defineProperty(this, '_searchContext', { value: searchContext });
+		return searchContext;
+	}
 
 	protected async _getSrcDoc() {
 		if (this._options.data.srcDoc) {
@@ -297,13 +301,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		return { scrollCoords: [this._iframeWindow.scrollX, this._iframeWindow.scrollY] };
 	}
 
-	private _getSearchContext() {
-		if (!this._searchContext) {
-			this._searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
-		}
-		return this._searchContext;
-	}
-
 	// Popups:
 	// - For each popup (except find popup) 'rect' bounding box has to be provided.
 	// 	 The popup is then automatically positioned around this rect.
@@ -396,7 +393,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					onSetFindState: this._options.onSetFindState,
 				});
 				await this._find.run(
-					this._getSearchContext(),
+					this._searchContext,
 					this._lastSelectionRange ?? undefined
 				);
 				this.findNext();
