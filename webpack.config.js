@@ -34,18 +34,23 @@ function generateReaderConfig(build) {
 		module: {
 			rules: [
 				{
-					test: /\.(js|jsx)$/,
+					test: /\.(ts|js)x?$/,
 					exclude: /node_modules/,
 					use: {
 						loader: 'babel-loader',
 						options: {
 							presets: [
-								['@babel/preset-env', { useBuiltIns: false }],
+								['@babel/preset-env', {
+									useBuiltIns: false,
+									targets: build === 'zotero' || build === 'dev'
+										? { firefox: 115, chrome: 128 }
+										: undefined
+								}],
 							],
 						},
 					},
 				},
-				{
+				build === 'dev' && {
 					test: /\.tsx?$/,
 					exclude: /node_modules/,
 					use: 'ts-loader',
@@ -177,7 +182,7 @@ function generateViewConfig(build) {
 		module: {
 			rules: [
 				{
-					test: /\.(js|jsx)$/,
+					test: /\.(ts|js)x?$/,
 					exclude: /node_modules/,
 					use: {
 						loader: 'babel-loader',
@@ -188,7 +193,7 @@ function generateViewConfig(build) {
 						},
 					},
 				},
-				{
+				build === 'view-dev' && {
 					test: /\.tsx?$/,
 					exclude: /node_modules/,
 					use: 'ts-loader',
