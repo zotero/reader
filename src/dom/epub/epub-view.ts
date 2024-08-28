@@ -783,6 +783,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (!state.active && previousState && previousState.active !== state.active) {
 			console.log('Closing find popup');
 			if (this._find) {
+				this._find.cancel();
 				this._find = null;
 				this._handleViewUpdate();
 			}
