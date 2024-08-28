@@ -96,6 +96,16 @@ replaced-body {
 		display: block;
 		overflow: auto;
 		max-height: calc(100vh - 80px);
+
+		// SageJournals: force role="list" tables to be normal
+		&:not(table)[role="list"] {
+			overflow: unset;
+			max-height: none;
+
+			[role="listitem"] {
+				display: block;
+			}
+		}
 	}
 
 	@media (max-width: 800px) {

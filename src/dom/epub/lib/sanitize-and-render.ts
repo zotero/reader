@@ -62,9 +62,11 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	// Add classes to elements that emulate <table>, <sup>, and <sub>
 	for (let selector of styleScoper.tagEmulatingSelectors.table) {
 		try {
-			for (let table of container.querySelectorAll(selector)) {
+			for (let table of Array.from(container.querySelectorAll(selector))) {
 				table.classList.add('table-like');
-				table.role = 'table';
+				if (!table.role) {
+					table.role = 'table';
+				}
 			}
 		}
 		catch (e) {
@@ -73,7 +75,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	}
 	for (let selector of styleScoper.tagEmulatingSelectors.supSub) {
 		try {
-			for (let elem of container.querySelectorAll(selector)) {
+			for (let elem of Array.from(container.querySelectorAll(selector))) {
 				elem.classList.add('sup-sub-like');
 			}
 		}
