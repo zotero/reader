@@ -678,11 +678,11 @@ export class PaginatedFlow extends AbstractFlow {
 					true
 				);
 				if (startRange) {
-					startRange.collapse(true);
+					startRange.collapse(false);
 					this._cachedStartRange = new PersistentRange(startRange);
 				}
 				if (startCFIRange) {
-					startCFIRange.collapse(true);
+					startCFIRange.collapse(false);
 					this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
 					this._cachedStartCFIOffsetY = 0;
 				}
