@@ -161,7 +161,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._iframeDocument.body.append(this._sectionsContainer);
 
 		let styleScoper = new StyleScoper(this._iframeDocument);
-		await Promise.all(this.book.spine.spineItems.map(section => this._displaySection(section, styleScoper)));
+		await this._displaySections(styleScoper);
 
 		if (this._sectionRenderers.some(view => view.error) && await this._isEncrypted()) {
 			this._options.onEPUBEncrypted();
@@ -242,6 +242,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		await renderer.render(this.book.archive.request.bind(this.book.archive));
 		renderer.body.lang = this.book.packaging.metadata.language;
 		this._sectionRenderers[section.index] = renderer;
+	}
+
+	private _displaySections(styleScoper: StyleScoper) {
+		return Promise.all(this.book.spine.spineItems
+			// We should do this:
+			// .filter(section => section.linear)
+			// But we need to be sure it won't break anything
+			.map(section => this._displaySection(section, styleScoper)));
 	}
 
 	private _initPageMapping(json?: string): PageMapping {
