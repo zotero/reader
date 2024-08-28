@@ -493,6 +493,9 @@ export class PaginatedFlow extends AbstractFlow {
 	}
 
 	navigateToPreviousPage(): void {
+		if (!this.canNavigateToPreviousPage()) {
+			return;
+		}
 		if (this.atStartOfSection()) {
 			this.navigateToPreviousSection();
 			this._sectionsContainer.scrollTo({ left: this._sectionsContainer.scrollWidth, top: 0 });
@@ -507,6 +510,9 @@ export class PaginatedFlow extends AbstractFlow {
 	}
 
 	navigateToNextPage(): void {
+		if (!this.canNavigateToNextPage()) {
+			return;
+		}
 		if (this.atEndOfSection()) {
 			this.navigateToNextSection();
 			return;
