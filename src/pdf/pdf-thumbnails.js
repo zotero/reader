@@ -221,6 +221,12 @@ class PDFThumbnails {
 	}
 
 	async render(pageIndexes = [], rerenderOnly) {
+		// If there are no thumbnails being rerendered due to annotation changes,
+		// clear the rendering queue to only render the thumbnails that were recently
+		// scrolled into view in the sidebar thumbnails view
+		if (!this._thumbnails.some(x => x.forceRerender)) {
+			this._renderQueue.end();
+		}
 		for (let pageIndex of pageIndexes) {
 			let thumbnail = this._thumbnails[pageIndex];
 			// Only already rendered thumbnails will be re-rendered, which means

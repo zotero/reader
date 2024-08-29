@@ -53,7 +53,7 @@ function ThumbnailsView(props) {
 
 	useEffect (() => {
 		let options = {
-			root: containerRef.current,
+			root: document.querySelector('.sidebar-content'),
 			rootMargin: "200px",
 			threshold: 1.0
 		};
