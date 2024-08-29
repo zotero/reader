@@ -51,6 +51,22 @@ export async function sanitizeAndRender(xhtml: string, options: {
 		else if (elem.tagName == 'title') {
 			toRemove.push(elem);
 		}
+		else if (elem.tagName === 'object'
+				&& elem.hasAttribute('data')
+				&& elem.getAttribute("type")?.startsWith("image/")) {
+			// <object data="..."> apparently can't display blob: SVGs in Firefox
+			let img = doc.createElement('img');
+			for (let attr of elem.getAttributeNames()) {
+				if (attr === 'data' || attr === 'title') {
+					continue;
+				}
+				img.setAttribute(attr, elem.getAttribute(attr)!);
+			}
+			img.src = elem.getAttribute('data')!;
+			img.alt = elem.getAttribute('title') || elem.textContent || '';
+			elem.replaceWith(img);
+			walker.currentNode = img;
+		}
 	}
 
 	for (let elem of toRemove) {
