@@ -46,7 +46,7 @@ class PageMapping {
 		return mapping;
 	}
 
-	static readonly VERSION = 9;
+	static readonly VERSION = 10;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
@@ -191,7 +191,7 @@ type Matcher = {
 
 const MATCHERS: Matcher[] = [
 	{
-		selector: '[id*="page" i]:empty',
+		selector: '[id*="page" i]:not(#pagetop):not(#pagebottom):empty',
 		extract: el => el.id.replace(/page[-_]?/i, '').replace(/^(.*_)+/, '')
 	},
 
