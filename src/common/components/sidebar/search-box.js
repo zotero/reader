@@ -23,7 +23,7 @@ function SearchBox({ query, placeholder, onInput }) {
 	function handleKeyDown(event) {
 		if (event.key === 'Escape') {
 			if (event.target.value) {
-				handleClear();
+				handleClear(event);
 				event.stopPropagation();
 			}
 		}

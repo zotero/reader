@@ -15,6 +15,7 @@ class AnnotationManager {
 		this._readOnly = options.readOnly;
 		this._authorName = options.authorName;
 		this._annotations = options.annotations;
+		this._tools = options.tools;
 		this._onChangeFilter = options.onChangeFilter;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
@@ -59,12 +60,13 @@ class AnnotationManager {
 			return null;
 		}
 		// Mandatory properties
-		let { color, sortIndex } = annotation;
-		if (!color) {
-			throw new Error(`Missing 'color' property`);
-		}
-		if (!sortIndex) {
+		if (!annotation.sortIndex) {
 			throw new Error(`Missing 'sortIndex' property`);
+		}
+
+		// Use the current default color from the toolbar, if missing
+		if (!annotation.color) {
+			annotation.color = this._tools[annotation.type].color;
 		}
 
 		// Optional properties
@@ -123,7 +125,7 @@ class AnnotationManager {
 			}
 			// All properties in the existing annotation position are preserved except nextPageRects,
 			// which isn't preserved only when a new rects property is given
-			let deleteNextPageRects = annotation.rects && !annotation.position?.nextPageRects;
+			let deleteNextPageRects = annotation.position?.rects && !annotation.position?.nextPageRects;
 			annotation = {
 				...existingAnnotation,
 				...annotation,

@@ -74,8 +74,15 @@ export function getKeyCombination(event) {
 	if (key === ' ') {
 		key = 'Space';
 	}
+
+	if (['Shift', 'Control', 'Meta', 'Alt'].includes(key)) {
+		key = '';
+	}
+
 	// Combine the modifiers and the normalized key into a single string
-	modifiers.push(key);
+	if (key) {
+		modifiers.push(key);
+	}
 	return modifiers.join('-');
 }
 
@@ -94,8 +101,17 @@ export function getCodeCombination(event) {
 	if (event.shiftKey) {
 		modifiers.push('Shift');
 	}
+
+	let { key, code } = event;
+
+	if (['Shift', 'Control', 'Meta', 'Alt'].includes(key)) {
+		code = '';
+	}
+
 	// Combine the modifiers and the normalized key into a single string
-	modifiers.push(event.code);
+	if (code) {
+		modifiers.push(code);
+	}
 	return modifiers.join('-');
 }
 

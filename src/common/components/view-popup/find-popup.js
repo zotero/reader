@@ -7,15 +7,20 @@ import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
 import IconChevronUp from '../../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
+import { getCodeCombination, getKeyCombination } from '../../lib/utilities';
 
-function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
+function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation }) {
 	const intl = useIntl();
 	const inputRef = useRef();
+	const preventInputRef = useRef(false);
 	const [query, setQuery] = useState(params.query);
 
 	const debounceInputChange = useCallback(debounce(value => {
+		if (!inputRef.current) {
+			return;
+		}
 		let query = inputRef.current.value;
-		if (!(query.length === 1 && RegExp(/^\p{Script=Latin}/, 'u').test(query))) {
+		if (query !== params.query && !(query.length === 1 && RegExp(/^\p{Script=Latin}/, 'u').test(query))) {
 			onChange({ ...params, query, active: true, result: null });
 		}
 	}, DEBOUNCE_FIND_POPUP_INPUT), [onChange]);
@@ -31,23 +36,49 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious }) {
 	}, [params.query]);
 
 	function handleInputChange(event) {
+		if (preventInputRef.current) {
+			preventInputRef.current = false;
+			return;
+		}
 		let value = event.target.value;
 		setQuery(value);
 		debounceInputChange();
 	}
 
 	function handleInputKeyDown(event) {
-		if (event.key === 'Enter') {
+		let key = getKeyCombination(event);
+		let code = getCodeCombination(event);
+		if (key === 'Enter') {
 			if (params.active) {
-				if (event.shiftKey) {
-					onFindPrevious();
-				}
-				else {
-					onFindNext();
-				}
+				onFindNext();
 			}
 			else {
 				onChange({ ...params, active: true });
+			}
+		}
+		else if (key === 'Shift-Enter') {
+			if (params.active) {
+				onFindPrevious();
+			}
+			else {
+				onChange({ ...params, active: true });
+			}
+		}
+		else if (key === 'Escape') {
+			onChange({ ...params, popupOpen: false, active: false, result: null });
+			event.preventDefault();
+			event.stopPropagation();
+		}
+		else if (code === 'Ctrl-Alt-Digit1') {
+			preventInputRef.current = true;
+			if (params.result?.annotation) {
+				onAddAnnotation({ ...params.result.annotation, type: 'highlight' }, true);
+			}
+		}
+		else if (code === 'Ctrl-Alt-Digit2') {
+			preventInputRef.current = true;
+			if (params.result?.annotation) {
+				onAddAnnotation({ ...params.result.annotation, type: 'underline' }, true);
 			}
 		}
 	}

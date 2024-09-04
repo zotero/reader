@@ -1,5 +1,5 @@
 import Page from './page';
-import { v2p } from './lib/coordinates';
+import { p2v, v2p } from './lib/coordinates';
 import {
 	getLineSelectionRanges,
 	getModifiedSelectionRanges,
@@ -30,21 +30,28 @@ import {
 	getTransformFromRects,
 	getRotationDegrees,
 	normalizeDegrees,
-	getRectsAreaSize
+	getRectsAreaSize,
+	getClosestObject
 } from './lib/utilities';
-import { debounceUntilScrollFinishes, normalizeKey } from '../common/lib/utilities';
 import {
+	debounceUntilScrollFinishes,
+	getCodeCombination,
+	getKeyCombination,
 	getAffectedAnnotations,
-	isFirefox,
 	isMac,
+	isLinux,
+	isWin,
+	isFirefox,
 	isSafari,
-	pressedNextKey,
-	pressedPreviousKey,
 	throttle
 } from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
-import { DEFAULT_TEXT_ANNOTATION_FONT_SIZE, MIN_IMAGE_ANNOTATION_SIZE, PDF_NOTE_DIMENSIONS } from '../common/defines';
+import {
+	DEFAULT_TEXT_ANNOTATION_FONT_SIZE,
+	MIN_IMAGE_ANNOTATION_SIZE,
+	PDF_NOTE_DIMENSIONS
+} from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
@@ -55,6 +62,7 @@ import {
 	smoothPath
 } from './lib/path';
 import { History } from '../common/lib/history';
+import { FindState, PDFFindController } from './pdf-find-controller';
 
 class PDFView {
 	constructor(options) {
@@ -265,8 +273,47 @@ class PDFView {
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));
-		this._iframeWindow.PDFViewerApplication.eventBus.on('updatefindmatchescount', this._updateFindMatchesCount.bind(this));
-		this._iframeWindow.PDFViewerApplication.eventBus.on('updatefindcontrolstate', this._updateFindControlState.bind(this));
+
+		this._findController = new PDFFindController({
+			linkService: this._iframeWindow.PDFViewerApplication.pdfViewer.linkService,
+			onNavigate: (position) => {
+				this.navigateToPosition(position);
+			},
+			onUpdateMatches: ({ matchesCount }) => {
+				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+				if (matchesCount.current) {
+					let selectionRanges = getSelectionRanges(
+						this._pdfPages,
+						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
+						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
+					);
+					result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+				}
+				if (this._pdfjsFindState === FindState.PENDING) {
+					result = null;
+				}
+				this._onSetFindState({ ...this._findState, result });
+				this._render();
+			},
+			onUpdateState: async ({ matchesCount, state, rawQuery }) => {
+				this._pdfjsFindState = state;
+				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+				if (matchesCount.current) {
+					await this._ensureBasicPageData(matchesCount.currentPageIndex);
+					let selectionRanges = getSelectionRanges(
+						this._pdfPages,
+						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
+						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
+					);
+					result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+				}
+				if (this._pdfjsFindState === FindState.PENDING || !rawQuery.length) {
+					result = null;
+				}
+				this._onSetFindState({ ...this._findState, result });
+				this._render();
+			}
+		});
 	}
 
 	async _init2() {
@@ -297,24 +344,9 @@ class PDFView {
 		if (this._location) {
 			this.navigate(this._location);
 		}
+
 		await this._initProcessedData();
-	}
-
-	_updateFindMatchesCount({ matchesCount }) {
-		let result = { total: matchesCount.total, index: matchesCount.current - 1 };
-		if (this._pdfjsFindState === 3) {
-			result = null;
-		}
-		this._onSetFindState({ ...this._findState, result });
-	}
-
-	_updateFindControlState({ matchesCount, state, rawQuery }) {
-		this._pdfjsFindState = state;
-		let result = { total: matchesCount.total, index: matchesCount.current - 1 };
-		if (this._pdfjsFindState === 3 || !rawQuery.length) {
-			result = null;
-		}
-		this._onSetFindState({ ...this._findState, result });
+		this._findController.setDocument(this._iframeWindow.PDFViewerApplication.pdfDocument);
 	}
 
 	async _setState(state, skipScroll) {
@@ -477,36 +509,91 @@ class PDFView {
 		this._render();
 	}
 
-	_focusNext(reverse) {
-		let objects = [...this._annotations];
+	_focusNext(side) {
+		let visiblePages = this._iframeWindow.PDFViewerApplication.pdfViewer._getVisiblePages();
+		let visibleObjects = [];
+
+		let scrollY = this._iframeWindow.PDFViewerApplication.pdfViewer.scroll.lastY;
+		let scrollX = this._iframeWindow.PDFViewerApplication.pdfViewer.scroll.lastX;
+		for (let view of visiblePages.views) {
+			let visibleRect = [
+				scrollX,
+				scrollY,
+				scrollX + this._iframeWindow.innerWidth,
+				scrollY + this._iframeWindow.innerHeight,
+			];
+
+			let pageIndex = view.id - 1;
+
+			let overlays = [];
+			let pdfPage = this._pdfPages[pageIndex];
+			if (pdfPage) {
+				overlays = pdfPage.overlays;
+			}
+
+			let objects = [];
+
+			for (let annotation of this._annotations) {
+				if (annotation.position.pageIndex === pageIndex
+					|| annotation.position.nextPageRects && annotation.position.pageIndex + 1 === pageIndex) {
+					objects.push({ type: 'annotation', object: annotation });
+				}
+			}
+
+			for (let overlay of overlays) {
+				objects.push({ type: 'overlay', object: overlay });
+			}
+
+			for (let object of objects) {
+				let p = p2v(object.object.position, view.view.viewport, pageIndex);
+				let br = getPositionBoundingRect(p, pageIndex);
+				let absoluteRect = [
+					view.x + br[0],
+					view.y + br[1],
+					view.x + br[2],
+					view.y + br[3],
+				];
+
+				object.rect = absoluteRect;
+				object.pageIndex = pageIndex;
+
+				if (quickIntersectRect(absoluteRect, visibleRect)) {
+					visibleObjects.push(object);
+				}
+			}
+		}
+
+		let nextObject;
+
+		let focusedObject;
 		if (this._focusedObject) {
-			if (reverse) {
-				objects.reverse();
+			for (let visibleObject of visibleObjects) {
+				if (visibleObject.object === this._focusedObject.object
+					&& visibleObject.pageIndex === this._focusedObject.pageIndex) {
+					focusedObject = visibleObject;
+				}
 			}
+		}
 
-			let index = objects.findIndex(x => x === this._focusedObject);
-			if (index === -1) {
-
-			}
-			if (index < objects.length - 1) {
-				this._focusedObject = objects[index + 1];
-				this.navigateToPosition(this._focusedObject.position);
-			}
+		if (focusedObject && side) {
+			let otherObjects = visibleObjects.filter(x => x !== focusedObject);
+			nextObject = getClosestObject(focusedObject.rect, otherObjects, side);
 		}
 		else {
-			let pageIndex = this._iframeWindow.PDFViewerApplication.pdfViewer.currentPageNumber - 1;
-			let pageObjects = objects.filter(x => x.position.pageIndex === pageIndex);
-			if (pageObjects.length) {
-				this._focusedObject = pageObjects[0];
-				this.navigateToPosition(this._focusedObject.position);
-			}
+			let cornerPointRect = [scrollX, scrollY, scrollX, scrollY];
+			nextObject = getClosestObject(cornerPointRect, visibleObjects);
 		}
 
-		this._onFocusAnnotation(this._focusedObject);
-		this._lastFocusedObject = this._focusedObject;
-
-		this._render();
-
+		if (nextObject) {
+			this._focusedObject = nextObject;
+			this._onFocusAnnotation(nextObject.object);
+			this._lastFocusedObject = this._focusedObject;
+			this._render();
+			if (this._selectedOverlay) {
+				this._selectedOverlay = null;
+				this._onSetOverlayPopup(null);
+			}
+		}
 		return !!this._focusedObject;
 	}
 
@@ -590,8 +677,26 @@ class PDFView {
 
 	setAnnotations(annotations) {
 		let affected = getAffectedAnnotations(this._annotations, annotations, true);
-		this._annotations = annotations;
 		let { created, updated, deleted } = affected;
+		this._annotations = annotations;
+		if (this._focusedObject?.type === 'annotation') {
+			if (updated.find(x => x.id === this._focusedObject.object.id)) {
+				this._focusedObject.object = updated.find(x => x.id === this._focusedObject.object.id);
+			}
+			else if (deleted.find(x => x.id === this._focusedObject.object.id)) {
+				this._focusedObject = null;
+			}
+		}
+
+		if (this._lastFocusedObject?.type === 'annotation') {
+			if (updated.find(x => x.id === this._lastFocusedObject.object.id)) {
+				this._lastFocusedObject.object = updated.find(x => x.id === this._lastFocusedObject.object.id);
+			}
+			else if (deleted.find(x => x.id === this._lastFocusedObject.object.id)) {
+				this._lastFocusedObject = null;
+			}
+		}
+
 		let all = [...created, ...updated, ...deleted];
 		let pageIndexes = getPageIndexesFromAnnotations(all);
 		this._render(pageIndexes);
@@ -635,7 +740,7 @@ class PDFView {
 
 	setFindState(state) {
 		if (!state.active && this._findState.active !== state.active) {
-			this._iframeWindow.PDFViewerApplication.eventBus.dispatch('findbarclose', { source: this._iframeWindow });
+			this._findController.onClose();
 		}
 
 		if (state.active) {
@@ -647,8 +752,8 @@ class PDFView {
 				// Immediately update find state because pdf.js find will trigger _updateFindMatchesCount
 				// and _updateFindControlState that update the current find state
 				this._findState = state;
-				this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
-					source: this._iframeWindow,
+
+				this._findController.find({
 					type: 'find',
 					query: state.query,
 					phraseSearch: true,
@@ -665,8 +770,7 @@ class PDFView {
 	}
 
 	findNext() {
-		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
-			source: this._iframeWindow,
+		this._findController.find({
 			type: 'again',
 			query: this._findState.query,
 			phraseSearch: true,
@@ -678,7 +782,7 @@ class PDFView {
 	}
 
 	findPrevious() {
-		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('find', {
+		this._findController.find({
 			source: this._iframeWindow,
 			type: 'again',
 			query: this._findState.query,
@@ -693,7 +797,7 @@ class PDFView {
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
 		this._setSelectionRanges();
-		this._clearFocus();
+		// this._clearFocus();
 
 		this._render();
 
@@ -1548,6 +1652,8 @@ class PDFView {
 			return;
 		}
 
+		this._clearFocus();
+
 		let shift = event.shiftKey;
 		let position = this.pointerEventToPosition(event);
 
@@ -2393,14 +2499,10 @@ class PDFView {
 		if (this.textAnnotationFocused()) {
 			return;
 		}
-		let { key, code } = event;
-		let ctrl = event.ctrlKey;
-		let cmd = event.metaKey && isMac();
-		let mod = ctrl || cmd;
 		let alt = event.altKey;
-		let shift = event.shiftKey;
 
-		key = normalizeKey(key, code);
+		let key = getKeyCombination(event);
+		let code = getCodeCombination(event);
 
 		if (event.target.classList.contains('textAnnotation')) {
 			return;
@@ -2413,76 +2515,447 @@ class PDFView {
 				setTextLayerSelection(this._iframeWindow, this._selectionRanges);
 			}
 		}
-
 		// Prevent "open file", "download file" PDF.js keyboard shortcuts
 		// https://github.com/mozilla/pdf.js/wiki/Frequently-Asked-Questions#faq-shortcuts
 
-		if (mod && ['o', 's'].includes(key)) {
+		if (['Cmd-o', 'Ctrl-o', 'Cmd-s', 'Ctrl-s'].includes(key)) {
 			event.stopPropagation();
 			event.preventDefault();
 		}
 		// Prevent full screen
-		else if (mod && alt && key === 'p') {
+		else if (['Ctrl-Alt-p', 'Ctrl-Alt-p'].includes(key)) {
 			event.stopPropagation();
 		}
 		// Prevent PDF.js page view rotation
-		else if (key.toLowerCase() === 'r') {
+		else if (key === 'r') {
 			event.stopPropagation();
 		}
-		else if (['n', 'j', 'p', 'k'].includes(key.toLowerCase())) {
+		else if (['n', 'j', 'p', 'k'].includes(key)) {
 			event.stopPropagation();
 		}
 		// This is necessary when a page is zoomed in and left/right arrow keys can't change page
-		else if (alt && key === 'ArrowUp') {
+		else if (['Alt-ArrowUp'].includes(key)) {
 			this.navigateToPreviousPage();
 			event.stopPropagation();
 			event.preventDefault();
 		}
-		else if (alt && key === 'ArrowDown') {
+		else if (['Alt-ArrowDown'].includes(key)) {
 			this.navigateToNextPage();
 			event.stopPropagation();
 			event.preventDefault();
 		}
-		else if (shift && this._selectionRanges.length) {
+		else if (key.startsWith('Shift') && this._selectionRanges.length) {
 			// Prevent browser doing its own text selection
 			event.stopPropagation();
 			event.preventDefault();
-			if (key === 'ArrowLeft') {
+			if (key === 'Shift-ArrowLeft') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'left'));
 			}
-			else if (key === 'ArrowRight') {
+			else if (key === 'Shift-ArrowRight') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'right'));
 			}
-			else if (key === 'ArrowUp') {
+			else if (key === 'Shift-ArrowUp') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'up'));
 			}
-			else if (key === 'ArrowDown') {
+			else if (key === 'Shift-ArrowDown') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'down'));
 			}
 			this._render();
 		}
+		else if (
+			!this._readOnly
+			&& this._selectedAnnotationIDs.length === 1
+			&& !this._annotations.find(x => x.id === this._selectedAnnotationIDs[0])?.readOnly
+		) {
+			let annotation = this._annotations.find(x => x.id === this._selectedAnnotationIDs[0]);
+			let modified = false;
+
+			let { id, type, position } = annotation;
+			const STEP = 5; // pt
+			const PADDING = 5;
+			let viewBox = this._pdfPages[position.pageIndex].viewBox;
+
+			if (
+				['note', 'text', 'image', 'ink'].includes(type)
+				&& ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)
+			) {
+				let rect;
+				if (annotation.type === 'ink') {
+					rect = getPositionBoundingRect(position);
+				}
+				else {
+					rect = position.rects[0].slice();
+				}
+				let dx = 0;
+				let dy = 0;
+				if (key === 'ArrowLeft' && rect[0] >= STEP + PADDING) {
+					dx = -STEP;
+				}
+				else if (key === 'ArrowRight' && rect[2] <= viewBox[2] - STEP - PADDING) {
+					dx = STEP;
+				}
+				else if (key === 'ArrowDown' && rect[1] >= STEP + PADDING) {
+					dy = -STEP;
+				}
+				else if (key === 'ArrowUp' && rect[3] <= viewBox[3] - STEP - PADDING) {
+					dy = STEP;
+				}
+				if (dx || dy) {
+					position = JSON.parse(JSON.stringify(position));
+					if (annotation.type === 'ink') {
+						let m = [1, 0, 0, 1, dx, dy];
+						position = applyTransformationMatrixToInkPosition(m, position);
+					}
+					else {
+						rect[0] += dx;
+						rect[1] += dy;
+						rect[2] += dx;
+						rect[3] += dy;
+						position = { ...position, rects: [rect] };
+					}
+					let sortIndex = getSortIndex(this._pdfPages, position);
+					this._onUpdateAnnotations([{ id, position, sortIndex }]);
+					this._render();
+				}
+				event.stopPropagation();
+				event.preventDefault();
+			}
+			else if (['highlight', 'underline'].includes(type)
+				&& ['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key)) {
+				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+				if (key === 'Shift-ArrowLeft') {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'left');
+				}
+				else if (key === 'Shift-ArrowRight') {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'right');
+				}
+				else if (key === 'Shift-ArrowUp') {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'up');
+				}
+				else if (key === 'Shift-ArrowDown') {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'down');
+				}
+
+				if (!(selectionRanges.length === 1
+					&& selectionRanges[0].anchorOffset >= selectionRanges[0].headOffset)) {
+					let annotation2 = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+					let { text, sortIndex, position } = annotation2;
+					this._onUpdateAnnotations([{ id, text, sortIndex, position }]);
+				}
+				event.stopPropagation();
+				event.preventDefault();
+			}
+			else if (['highlight', 'underline'].includes(type)
+				&& (
+					isMac() && ['Cmd-Shift-ArrowLeft', 'Cmd-Shift-ArrowRight', 'Cmd-Shift-ArrowUp', 'Cmd-Shift-ArrowDown'].includes(key)
+					|| (isWin() || isLinux()) && ['Alt-Shift-ArrowLeft', 'Alt-Shift-ArrowRight', 'Alt-Shift-ArrowUp', 'Alt-Shift-ArrowDown'].includes(key)
+				)) {
+				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+				selectionRanges = getReversedSelectionRanges(selectionRanges);
+				if (
+					isMac() && key === 'Cmd-Shift-ArrowLeft'
+					|| (isWin() || isLinux()) && key === 'Alt-Shift-ArrowLeft'
+				) {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'left');
+				}
+				else if (
+					isMac() && key === 'Cmd-Shift-ArrowRight'
+					|| (isWin() || isLinux()) && key === 'Alt-Shift-ArrowRight'
+				) {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'right');
+				}
+				else if (
+					isMac() && key === 'Cmd-Shift-ArrowUp'
+					|| (isWin() || isLinux()) && key === 'Alt-Shift-ArrowUp'
+				) {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'up');
+				}
+				else if (
+					isMac() && key === 'Cmd-Shift-ArrowDown'
+					|| (isWin() || isLinux()) && key === 'Cmd-Shift-ArrowDown'
+				) {
+					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'down');
+				}
+				if (!(selectionRanges.length === 1
+					&& selectionRanges[0].anchorOffset <= selectionRanges[0].headOffset)) {
+					let annotation2 = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+					let { text, sortIndex, position } = annotation2;
+					this._onUpdateAnnotations([{ id, text, sortIndex, position }]);
+				}
+				event.stopPropagation();
+				event.preventDefault();
+			}
+			else if (
+				['text', 'image', 'ink'].includes(type)
+				&& (
+					isMac() && ['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key)
+					|| (isWin() || isLinux()) && ['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key)
+				)
+			) {
+				if (type === 'ink') {
+					let rect = getPositionBoundingRect(position);
+					let r1 = rect.slice();
+					let ratio = (rect[2] - rect[0]) / (rect[3] - rect[1]);
+					let [, y] = rect;
+
+					if (key === 'Shift-ArrowLeft') {
+						rect[2] -= STEP;
+						rect[1] += STEP / ratio;
+						modified = true;
+					}
+					else if (key === 'Shift-ArrowRight') {
+						rect[2] += STEP;
+						rect[1] -= STEP / ratio;
+						modified = true;
+					}
+					else if (key === 'Shift-ArrowDown') {
+						modified = true;
+						y -= STEP;
+						rect[2] += STEP * ratio;
+						rect[1] = y;
+					}
+					else if (key === 'Shift-ArrowUp') {
+						y += STEP;
+						rect[2] -= STEP * ratio;
+						rect[1] = y;
+						modified = true;
+					}
+					if (modified) {
+						let r2 = rect;
+						let mm = getTransformFromRects(r1, r2);
+						position = applyTransformationMatrixToInkPosition(mm, annotation.position);
+					}
+				}
+				else if (type === 'image') {
+					let rect = position.rects[0].slice();
+
+					let [, y, x] = rect;
+					if (key === 'Shift-ArrowLeft') {
+						x -= STEP;
+						rect[2] = x < rect[0] + MIN_IMAGE_ANNOTATION_SIZE && rect[0] + MIN_IMAGE_ANNOTATION_SIZE || x;
+						modified = true;
+					}
+					else if (key === 'Shift-ArrowRight') {
+						x += STEP;
+						rect[2] = x < viewBox[2] && x || viewBox[2];
+						modified = true;
+					}
+					else if (key === 'Shift-ArrowDown') {
+						y -= STEP;
+						rect[1] = y > viewBox[1] && y || viewBox[1];
+						modified = true;
+					}
+					else if (key === 'Shift-ArrowUp') {
+						y += STEP;
+						rect[1] = y > rect[3] - MIN_IMAGE_ANNOTATION_SIZE && rect[3] - MIN_IMAGE_ANNOTATION_SIZE || y;
+						modified = true;
+					}
+
+					if (modified) {
+						position = { ...position, rects: [rect] };
+					}
+				}
+				else if (type === 'text') {
+					let rect = position.rects[0].slice();
+					const MIN_TEXT_ANNOTATION_WIDTH = 10;
+					let x = rect[2];
+					if (key === 'Shift-ArrowLeft') {
+						x -= STEP;
+						rect[2] = x < rect[0] + MIN_TEXT_ANNOTATION_WIDTH && rect[0] + MIN_TEXT_ANNOTATION_WIDTH || x;
+						modified = true;
+					}
+					else if (key === 'Shift-ArrowRight') {
+						x += STEP;
+						rect[2] = x;
+						modified = true;
+					}
+
+					if (modified) {
+						let r1 = annotation.position.rects[0];
+						let r2 = rect;
+						let m1 = getRotationTransform(r1, annotation.position.rotation);
+						let m2 = getRotationTransform(r2, annotation.position.rotation);
+						let mm = getScaleTransform(r1, r2, m1, m2, 'r');
+						let mmm = transform(m2, mm);
+						mmm = inverseTransform(mmm);
+						r2 = [
+							...applyTransform(r2, m2),
+							...applyTransform(r2.slice(2), m2)
+						];
+						rect = [
+							...applyTransform(r2, mmm),
+							...applyTransform(r2.slice(2), mmm)
+						];
+
+						position = { ...position, rects: [rect] };
+
+						position = measureTextAnnotationDimensions({
+							...annotation,
+							position
+						});
+					}
+				}
+				if (modified) {
+					let sortIndex = getSortIndex(this._pdfPages, position);
+					this._onUpdateAnnotations([{ id, position, sortIndex }]);
+					this._render();
+				}
+				event.stopPropagation();
+				event.preventDefault();
+			}
+		}
+		else if (
+			code === 'Ctrl-Alt-Digit1'
+			&& this._selectionRanges.length
+			&& !this._selectionRanges[0].collapsed
+			&& !this._readOnly
+		) {
+			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+			annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+			this._onAddAnnotation(annotation, true);
+			this.navigateToPosition(annotation.position);
+			this._setSelectionRanges();
+		}
+		else if (
+			code === 'Ctrl-Alt-Digit2'
+			&& this._selectionRanges.length
+			&& !this._selectionRanges[0].collapsed
+			&& !this._readOnly
+		) {
+			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'underline');
+			annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+			this._onAddAnnotation(annotation, true);
+			this.navigateToPosition(annotation.position);
+			this._setSelectionRanges();
+		}
+		else if (code === 'Ctrl-Alt-Digit3' && !this._readOnly) {
+
+			// 1. Add to this annotation to last selected object, to have it after escape
+			// 2. Errors when writing
+
+			let pageIndex = this._iframeWindow.PDFViewerApplication.pdfViewer.currentPageNumber - 1;
+			let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+			let viewBox = page.viewport.viewBox;
+			let cx = (viewBox[0] + viewBox[2]) / 2;
+			let cy = (viewBox[1] + viewBox[3]) / 2;
+			let position = {
+				pageIndex,
+				rects: [[
+					cx - PDF_NOTE_DIMENSIONS / 2,
+					cy - PDF_NOTE_DIMENSIONS / 2,
+					cx + PDF_NOTE_DIMENSIONS / 2,
+					cy + PDF_NOTE_DIMENSIONS / 2
+				]]
+			};
+			let annotation = this._onAddAnnotation({
+				type: 'note',
+				pageLabel: this._getPageLabel(pageIndex, true),
+				sortIndex: getSortIndex(this._pdfPages, position),
+				position
+			});
+			if (annotation) {
+				this.navigateToPosition(position);
+				this._onSelectAnnotations([annotation.id], event);
+				this._openAnnotationPopup();
+				this._focusedObject = {
+					type: 'annotation',
+					object: annotation,
+					rect: annotation.position.rects[0],
+					pageIndex: annotation.position.pageIndex
+				};
+				this._render();
+			}
+		}
+		else if (code === 'Ctrl-Alt-Digit4' && !this._readOnly) {
+			let pageIndex = this._iframeWindow.PDFViewerApplication.pdfViewer.currentPageNumber - 1;
+			let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+			let viewBox = page.viewport.viewBox;
+			let cx = (viewBox[0] + viewBox[2]) / 2;
+			let cy = (viewBox[1] + viewBox[3]) / 2;
+			let position = {
+				pageIndex,
+				fontSize: DEFAULT_TEXT_ANNOTATION_FONT_SIZE,
+				rotation: 0,
+				rects: [[
+					cx - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
+					cy - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
+					cx + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
+					cy + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2
+				]]
+			};
+			let annotation = this._onAddAnnotation({
+				type: 'text',
+				pageLabel: this._getPageLabel(pageIndex, true),
+				sortIndex: getSortIndex(this._pdfPages, position),
+				position
+			});
+			if (annotation) {
+				this.navigateToPosition(position);
+				this.setSelectedAnnotationIDs([annotation.id]);
+				setTimeout(() => {
+					this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`)?.focus();
+				}, 100);
+			}
+		}
+		else if (code === 'Ctrl-Alt-Digit5' && !this._readOnly) {
+			let pageIndex = this._iframeWindow.PDFViewerApplication.pdfViewer.currentPageNumber - 1;
+			let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+			let viewBox = page.viewport.viewBox;
+			let cx = (viewBox[0] + viewBox[2]) / 2;
+			let cy = (viewBox[1] + viewBox[3]) / 2;
+			let size = MIN_IMAGE_ANNOTATION_SIZE * 4;
+			let position = {
+				pageIndex,
+				rects: [[
+					cx - size / 2,
+					cy - size / 2,
+					cx + size / 2,
+					cy + size / 2
+				]]
+			};
+			let annotation = this._onAddAnnotation({
+				type: 'image',
+				pageLabel: this._getPageLabel(pageIndex, true),
+				sortIndex: getSortIndex(this._pdfPages, position),
+				position
+			}, true);
+			if (annotation) {
+				this.navigateToPosition(position);
+			}
+		}
 
 		if (key === 'Escape') {
-			this.action = null;
-			if (this._selectionRanges.length) {
+			if (this.action || this.pointerDownPosition || this._selectionRanges.length) {
+				event.preventDefault();
+				this.action = null;
+				this.pointerDownPosition = null;
 				this._setSelectionRanges();
 				this._render();
 				return;
 			}
-			this.pointerDownPosition = null;
-			if (this._selectedAnnotationIDs.length) {
+			else if (this._selectedAnnotationIDs.length) {
+				event.preventDefault();
 				this._onSelectAnnotations([], event);
 				if (this._lastFocusedObject) {
 					this._focusedObject = this._lastFocusedObject;
 					this._render();
 				}
+				return;
+			}
+			else if (this._selectedOverlay) {
+				this._selectedOverlay = null;
+				this._onSetOverlayPopup(null);
+				event.preventDefault();
+				return;
 			}
 			else if (this._focusedObject) {
+				event.preventDefault();
 				this._clearFocus();
+				return;
 			}
 		}
 
-		if (shift && key === 'Tab') {
+		if (key === 'Shift-Tab') {
 			if (this._focusedObject) {
 				this._clearFocus();
 			}
@@ -2498,28 +2971,81 @@ class PDFView {
 				}
 			}
 			else {
-				this._clearFocus();
+				// this._clearFocus();
 				this._onTabOut();
 			}
 			event.preventDefault();
 		}
 
-		if (this._focusedObject) {
-			if (pressedNextKey(event)) {
-				this._focusNext();
+		if (this._focusedObject && !this._selectedAnnotationIDs.length) {
+			if (key === 'ArrowLeft') {
+				this._focusNext('left');
 				event.preventDefault();
+				event.stopPropagation();
 			}
-			else if (pressedPreviousKey(event)) {
-				this._focusNext(true);
+			else if (key === 'ArrowRight') {
+				this._focusNext('right');
 				event.preventDefault();
+				event.stopPropagation();
+			}
+			if (key === 'ArrowUp') {
+				this._focusNext('top');
+				event.preventDefault();
+				event.stopPropagation();
+			}
+			if (key === 'ArrowDown') {
+				this._focusNext('bottom');
+				event.preventDefault();
+				event.stopPropagation();
 			}
 			else if (['Enter', 'Space'].includes(key)) {
-				if (this._focusedObject.type) {
-					this._onSelectAnnotations([this._focusedObject.id], event);
-					this._openAnnotationPopup();
-				}
-				else {
+				if (this._focusedObject) {
+					if (this._focusedObject.type === 'annotation') {
+						this._onSelectAnnotations([this._focusedObject.object.id], event);
+						this._openAnnotationPopup();
+					}
+					else if (this._focusedObject.type === 'overlay') {
+						let overlay = this._focusedObject.object;
+						this._selectedOverlay = overlay;
+						let rect = this.getClientRect(overlay.position.rects[0], overlay.position.pageIndex);
+						let overlayPopup = { ...overlay, rect };
+						if (overlayPopup.type === 'internal-link') {
+							(async () => {
+								let {
+									image,
+									width,
+									height,
+									x,
+									y
+								} = await this._pdfRenderer?.renderPreviewPage(overlay.destinationPosition);
+								overlayPopup.image = image;
+								overlayPopup.width = width;
+								overlayPopup.height = height;
+								overlayPopup.x = x;
+								overlayPopup.y = y;
+								this._onSetOverlayPopup(overlayPopup);
+							})();
+						}
+						else if (['citation', 'reference'].includes(overlay.type)) {
+							this._onSetOverlayPopup(overlayPopup);
+						}
+						else if (overlay.type === 'external-link') {
+							this._onOpenLink(overlay.url);
+						}
+					}
 
+					event.preventDefault();
+					event.stopPropagation();
+				}
+			}
+		}
+		else if (this._selectedAnnotationIDs.length === 1) {
+			let annotation = this._annotations.find(x => x.id === this._selectedAnnotationIDs[0]);
+			if (annotation.type === 'text') {
+				if (['Enter'].includes(key)) {
+					setTimeout(() => {
+						this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`)?.focus();
+					}, 100);
 				}
 			}
 		}

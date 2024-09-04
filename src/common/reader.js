@@ -25,6 +25,8 @@ import { debounce } from './lib/debounce';
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
 window.computedFontFamily = window.getComputedStyle(document.body).getPropertyValue('font-family');
+window.computedColorFocusBorder = window.getComputedStyle(document.body).getPropertyValue('--color-focus-border');
+window.computedWidthFocusBorder = window.getComputedStyle(document.body).getPropertyValue('--width-focus-border');
 
 export const ReaderContext = createContext({});
 
@@ -218,6 +220,7 @@ class Reader {
 			readOnly: this._state.readOnly,
 			authorName: options.authorName,
 			annotations: options.annotations,
+			tools: this._tools,
 			onSave: this._onSaveAnnotations,
 			onDelete: this._handleDeleteAnnotations,
 			onRender: (annotations) => {
@@ -264,9 +267,13 @@ class Reader {
 								this._onChangeSidebarWidth(width);
 							}}
 							onResizeSplitView={this.setSplitViewSize.bind(this)}
-							onAddAnnotation={(annotation) => {
-								this._annotationManager.addAnnotation(annotation);
-								this.setSelectedAnnotations([]);
+							onAddAnnotation={(annotation, select) => {
+								annotation = this._annotationManager.addAnnotation(annotation);
+								if (select) {
+									this.setSelectedAnnotations([annotation.id]);
+								} else {
+									this.setSelectedAnnotations([]);
+								}
 							}}
 							onUpdateAnnotations={(annotations) => {
 								this._annotationManager.updateAnnotations(annotations);
@@ -1105,6 +1112,12 @@ class Reader {
 			return;
 		}
 
+		let reselecting = ids.length === 1 && this._state.selectedAnnotationIDs.includes(ids[0]);
+
+		if (ids[0]) {
+			this._lastSelectedAnnotationID = ids[0];
+		}
+
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = triggeredFromView;
 		if (ids.length === 1) {
@@ -1160,27 +1173,19 @@ class Reader {
 					// Don't navigate to annotation or focus comment if opening a context menu
 					if (!triggeringEvent || triggeringEvent.button !== 2) {
 						if (triggeredFromView) {
-							if (annotation.type !== 'text') {
+							if (['note', 'highlight', 'underline'].includes(annotation.type)
+								&& !annotation.comment && (!triggeringEvent || !('key' in triggeringEvent))) {
 								this._enableAnnotationDeletionFromComment = true;
-								if (annotation.comment) {
-									let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
-									if (sidebarItem) {
-										// Make sure to call this after all events, because mousedown will re-focus the View
-										setTimeout(() => sidebarItem.focus());
+								setTimeout(() => {
+									let content;
+									if (this._state.sidebarOpen) {
+										content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
 									}
-								}
-								else {
-									setTimeout(() => {
-										let content;
-										if (this._state.sidebarOpen) {
-											content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
-										}
-										else {
-											content = document.querySelector(`.annotation-popup .comment .content`);
-										}
-										content?.focus();
-									}, 50);
-								}
+									else {
+										content = document.querySelector(`.annotation-popup .comment .content`);
+									}
+									content?.focus();
+								}, 50);
 							}
 						}
 						else {

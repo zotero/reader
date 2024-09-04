@@ -43,14 +43,6 @@ function View(props) {
 				data-proxy={`#${name}-view > iframe`}
 				style={{ position: 'absolute' }}
 			/>
-			{state[name + 'ViewFindState'].popupOpen &&
-				<FindPopup
-					params={state[name + 'ViewFindState']}
-					onChange={handleFindStateChange}
-					onFindNext={handleFindNext}
-					onFindPrevious={handleFindPrevious}
-				/>
-			}
 			{state[name + 'ViewSelectionPopup'] && !state.readOnly &&
 				<SelectionPopup
 					params={state[name + 'ViewSelectionPopup']}
@@ -79,6 +71,15 @@ function View(props) {
 					params={state[name + 'ViewOverlayPopup']}
 					onOpenLink={props.onOpenLink}
 					onNavigate={props.onNavigate}
+				/>
+			}
+			{state[name + 'ViewFindState'].popupOpen &&
+				<FindPopup
+					params={state[name + 'ViewFindState']}
+					onChange={handleFindStateChange}
+					onFindNext={handleFindNext}
+					onFindPrevious={handleFindPrevious}
+					onAddAnnotation={props.onAddAnnotation}
 				/>
 			}
 		</div>

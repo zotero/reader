@@ -224,7 +224,7 @@ function ThumbnailsView(props) {
 				onMouseDown={handleMouseDown}
 				ref={containerRef}
 				tabIndex={-1}
-				role='listbox'
+				role="listbox"
 				aria-label={intl.formatMessage({ id: "pdfReader.thumbnails" })}
 				aria-activedescendant={`thumbnail_${selected[selected.length-1]}`}
 				aria-multiselectable="true"

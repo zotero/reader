@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useRef } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
 import cx from 'classnames';
 import Editor from './editor';
@@ -136,6 +136,13 @@ export function PopupPreview(props) {
 export function SidebarPreview(props) {
 	const intl = useIntl();
 	const { platform } = useContext(ReaderContext);
+	const lastImageRef = useRef();
+
+	// Store and render the last image to avoid flickering when annotation manager removes
+	// old image, but the new one isn't generated yet
+	if (props.annotation.image) {
+		lastImageRef.current = props.annotation.image;
+	}
 
 	function handlePageLabelClick(event) {
 		event.stopPropagation();
@@ -276,6 +283,8 @@ export function SidebarPreview(props) {
 	let expandedState = {};
 	expandedState['expanded' + props.state] = true;
 
+	let image = annotation.image || lastImageRef.current;
+
 	return (
 		<div
 			onContextMenu={handleContextMenu}
@@ -337,10 +346,10 @@ export function SidebarPreview(props) {
 					>{props.readOnly ? <IconLock/> : <IconOptions/>}</button>
 				</div>
 			</header>
-			{annotation.image && (
+			{image && (
 				<img
 					className="image"
-					src={annotation.image}
+					src={image}
 					onClick={e => handleSectionClick(e, 'image')}
 					draggable={true}
 					onDragStart={handleDragStart}
