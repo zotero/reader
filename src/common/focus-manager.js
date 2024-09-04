@@ -81,7 +81,7 @@ export class FocusManager {
 
 	_handlePointerDown(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row')) {
+			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row, .preview-popup')) {
 				// Note: Doing event.preventDefault() also prevents :active class on Firefox
 				event.preventDefault();
 			}
@@ -105,11 +105,11 @@ export class FocusManager {
 		if ((e.target.closest('.outline-view') || e.target.closest('input[type="range"]')) && ['ArrowLeft', 'ArrowRight'].includes(e.key)) {
 			return;
 		}
-		if (pressedNextKey(e) && !e.target.closest('[contenteditable], input[type="text"]')) {
+		if (pressedNextKey(e) && !e.target.closest('[contenteditable], input[type="text"], .preview-popup')) {
 			e.preventDefault();
 			this.tabToItem();
 		}
-		else if (pressedPreviousKey(e) && !e.target.closest('[contenteditable], input[type="text"]')) {
+		else if (pressedPreviousKey(e) && !e.target.closest('[contenteditable], input[type="text"], .preview-popup')) {
 			e.preventDefault();
 			this.tabToItem(true);
 		}
@@ -168,6 +168,19 @@ export class FocusManager {
 
 		group = groups[groupIndex];
 
+		// If jumping into the sidebar annotations view, focus the last selected annotation,
+		// but don't trigger navigation in the view
+		if (group.classList.contains('annotations')
+			&& this._reader._lastSelectedAnnotationID
+			// Make sure there are at least two annotations, otherwise it won't be possible to navigate to annotation
+			&& this._reader._state.annotations.length >= 2
+			// Make sure the annotation still exists
+			&& this._reader._state.annotations.find(x => x.id === this._reader._lastSelectedAnnotationID)) {
+			this._reader._updateState({ selectedAnnotationIDs: [this._reader._lastSelectedAnnotationID] });
+			// It also needs to be focused, otherwise pressing TAB will shift the focus to an unexpected location
+			setTimeout(() => group.querySelector(`[data-sidebar-annotation-id="${this._reader._lastSelectedAnnotationID}"]`)?.focus(), 100);
+			return;
+		}
 
 		let focusableParent = item.parentNode.closest('[tabindex="-1"]');
 

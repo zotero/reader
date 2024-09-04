@@ -28,3 +28,6 @@ export const MIN_IMAGE_ANNOTATION_SIZE = 10; // pt
 export const DEBOUNCE_STATE_CHANGE = 300; // ms
 export const DEBOUNCE_STATS_CHANGE = 100; // ms
 export const DEBOUNCE_FIND_POPUP_INPUT = 500; // ms
+
+export const FIND_RESULT_COLOR_ALL = '#EDD3ED';
+export const FIND_RESULT_COLOR_CURRENT = '#D4E0D1';

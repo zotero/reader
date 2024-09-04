@@ -4,7 +4,8 @@ import {
 	isMac,
 	getKeyCombination,
 	isWin,
-	getCodeCombination
+	getCodeCombination,
+	setCaretToEnd
 } from './lib/utilities';
 import { ANNOTATION_COLORS } from './defines';
 
@@ -68,33 +69,89 @@ export class KeyboardManager {
 			}
 		}
 
-		// Escape must be pressed alone. We basically want to prevent
-		// Option-Escape (speak text on macOS) deselecting text
+		// Focus on the last view if an arrow key is pressed in an empty annotation comment within the sidebar,
+		// and the annotation was selected from the view
+		let content = document.activeElement?.closest('.annotation .comment .content');
+		if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)
+			&& (!content || !content.innerText)
+			&& this._reader._annotationSelectionTriggeredFromView
+		) {
+			setTimeout(() => this._reader._lastView.focus());
+		}
+
 		if (key === 'Escape') {
-			this._reader._lastView.focus();
-			this._reader.abortPrint();
-			this._reader._updateState({
-				selectedAnnotationIDs: [],
-				labelPopup: null,
-				contextMenu: null,
-				tool: this._reader._tools['pointer'],
-				primaryViewFindState: {
-					...this._reader._state.primaryViewFindState,
-					active: false,
-					popupOpen: false,
-				},
-				secondaryViewFindState: {
-					...this._reader._state.secondaryViewFindState,
-					active: false,
-					popupOpen: false
+			// Blur annotation comment and focus either the last view or the annotation in the sidebar
+			if (document.activeElement.closest('.annotation .content')) {
+				// Restore focus to the last view if the comment was focused by clicking on
+				// an annotation without a comment.
+				if (this._reader._annotationSelectionTriggeredFromView) {
+					this._reader._updateState({ selectedAnnotationIDs: [] });
+					setTimeout(() => this._reader._lastView.focus());
 				}
-			});
-			this._reader.setFilter({
-				query: '',
-				colors: [],
-				tags: [],
-				authors: []
-			});
+				// Focus sidebar annotation (this is necessary for when using Enter/Escape to quickly
+				// focus/blur sidebar annotation comment
+				else {
+					setTimeout(() => document.activeElement.closest('.annotation').focus());
+				}
+			}
+			// Close print popup and cancel print preparation
+			else if (this._reader._state.printPopup) {
+				event.preventDefault();
+				this._reader.abortPrint();
+				setTimeout(() => this._reader._lastView.focus());
+			}
+			// Close context menu
+			else if (this._reader._state.contextMenu) {
+				event.preventDefault();
+				this._reader._updateState({ contextMenu: null });
+				setTimeout(() => this._reader._lastView.focus());
+			}
+			// Close label popup
+			else if (this._reader._state.labelPopup) {
+				event.preventDefault();
+				this._reader._updateState({ labelPopup: null });
+				setTimeout(() => this._reader._lastView.focus());
+			}
+			// Close both overlay popups
+			else if (
+				this._reader._state.primaryViewOverlayPopup
+				|| this._reader._state.secondaryViewOverlayPopup
+			) {
+				event.preventDefault();
+				this._reader._updateState({
+					primaryViewOverlayPopup: null,
+					secondaryViewOverlayPopup: null
+				});
+				setTimeout(() => this._reader._lastView.focus());
+			}
+			// Deselect annotations
+			else if (this._reader._state.selectedAnnotationIDs.length) {
+				event.preventDefault();
+				this._reader._updateState({ selectedAnnotationIDs: [] });
+				setTimeout(() => this._reader._lastView.focus());
+			}
+			// Switch off the current annotation tool
+			else if (this._reader._state.tool !== this._reader._tools['pointer']) {
+				this._reader._updateState({ tool: this._reader._tools['pointer'] });
+				event.preventDefault();
+				setTimeout(() => this._reader._lastView.focus());
+			}
+			else {
+				setTimeout(() => this._reader._lastView.focus());
+			}
+		}
+
+		// Focus sidebar annotation comment if pressed Enter
+		if (key === 'Enter') {
+			if (document.activeElement.classList.contains('annotation')) {
+				setTimeout(() => {
+					let input = document.activeElement.querySelector('.comment .content');
+					if (input) {
+						input.focus();
+						setCaretToEnd(input);
+					}
+				});
+			}
 		}
 
 		if (['Cmd-a', 'Ctrl-a'].includes(key)) {

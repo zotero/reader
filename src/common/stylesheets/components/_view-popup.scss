@@ -222,6 +222,7 @@
 		overflow-y: auto;
 
 		img {
+			pointer-events: none;
 			@include pdf-page-image-dark-light;
 		}
 	}

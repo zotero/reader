@@ -9,7 +9,12 @@ import {
 	normalizeDegrees,
 	inverseTransform
 } from './lib/utilities';
-import { DARKEN_INK_AND_TEXT_COLOR, MIN_IMAGE_ANNOTATION_SIZE, SELECTION_COLOR } from '../common/defines';
+import {
+	DARKEN_INK_AND_TEXT_COLOR,
+	FIND_RESULT_COLOR_ALL, FIND_RESULT_COLOR_CURRENT,
+	MIN_IMAGE_ANNOTATION_SIZE,
+	SELECTION_COLOR
+} from '../common/defines';
 import { getRectRotationOnText } from './selection';
 import { darkenHex } from './lib/utilities';
 
@@ -443,6 +448,43 @@ export default class Page {
 		this.actualContext.restore();
 	}
 
+	_renderFindResults() {
+		if (!this.layer._findController) {
+			return;
+		}
+		if (!this.layer._findController.highlightMatches) {
+			return;
+		}
+		let { _pageMatchesPosition, selected } = this.layer._findController;
+		let positions = _pageMatchesPosition[this.pageIndex];
+
+		if (!positions || !positions.length) {
+			return;
+		}
+
+		this.actualContext.save();
+		this.actualContext.globalCompositeOperation = 'multiply';
+
+		for (let i = 0; i < positions.length; i++) {
+			let position = positions[i];
+			if (selected.pageIdx === this.pageIndex && i === selected.matchIdx) {
+				this.actualContext.fillStyle = FIND_RESULT_COLOR_CURRENT;
+			}
+			else {
+				if (!this.layer._findController.state.highlightAll) {
+					continue;
+				}
+				this.actualContext.fillStyle = FIND_RESULT_COLOR_ALL;
+			}
+
+			position = this.p2v(position);
+			for (let rect of position.rects) {
+				this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+			}
+		}
+
+		this.actualContext.restore();
+	}
 
 
 	render() {
@@ -514,6 +556,13 @@ export default class Page {
 					node.addEventListener('blur', (event) => {
 						node.classList.remove('focusable');
 						// node.contentEditable = false;
+					});
+					node.addEventListener('keydown', (event) => {
+						if (event.key === 'Escape') {
+							event.stopPropagation();
+							event.preventDefault();
+							node.blur();
+						}
 					});
 					customAnnotationLayer.append(node);
 				}
@@ -593,28 +642,24 @@ export default class Page {
 
 		this.drawHover();
 
+		this._renderFindResults();
 
 
-
-		if (focusedObject && (
-			focusedObject.position.pageIndex === this.pageIndex
-			|| focusedObject.position.nextPageRects && focusedObject.position.pageIndex + 1 === this.pageIndex
-		)) {
-			let position = focusedObject.position;
-
-			this.actualContext.strokeStyle = '#838383';
-			this.actualContext.beginPath();
-			this.actualContext.setLineDash([5 * devicePixelRatio, 3 * devicePixelRatio]);
-			this.actualContext.lineWidth = 2 * devicePixelRatio;
-
+		if (!selectedAnnotationIDs.length
+			&& focusedObject && (
+				focusedObject.pageIndex === this.pageIndex
+				|| focusedObject.object.position.nextPageRects && focusedObject.pageIndex === this.pageIndex
+			)
+		) {
+			let position = focusedObject.object.position;
+			this.actualContext.strokeStyle = window.computedColorFocusBorder;
+			this.actualContext.lineWidth = 3 * devicePixelRatio;
 
 			let padding = 5 * devicePixelRatio;
-
 
 			let rect = getPositionBoundingRect(position, this.pageIndex);
 
 			rect = this.getViewRect(rect);
-
 
 			rect = [
 				rect[0] - padding,
@@ -622,7 +667,19 @@ export default class Page {
 				rect[2] + padding,
 				rect[3] + padding,
 			];
-			this.actualContext.rect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+
+			let radius = 10 * devicePixelRatio; // Radius for rounded corners
+
+			this.actualContext.beginPath();
+			this.actualContext.moveTo(rect[0] + radius, rect[1]);
+			this.actualContext.lineTo(rect[2] - radius, rect[1]);
+			this.actualContext.arcTo(rect[2], rect[1], rect[2], rect[1] + radius, radius);
+			this.actualContext.lineTo(rect[2], rect[3] - radius);
+			this.actualContext.arcTo(rect[2], rect[3], rect[2] - radius, rect[3], radius);
+			this.actualContext.lineTo(rect[0] + radius, rect[3]);
+			this.actualContext.arcTo(rect[0], rect[3], rect[0], rect[3] - radius, radius);
+			this.actualContext.lineTo(rect[0], rect[1] + radius);
+			this.actualContext.arcTo(rect[0], rect[1], rect[0] + radius, rect[1], radius);
 			this.actualContext.stroke();
 		}
 

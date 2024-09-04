@@ -9,11 +9,17 @@ export function fitRectIntoRect(rect, containingRect) {
 
 export function getPositionBoundingRect(position, pageIndex) {
 	// Use nextPageRects
-	if (position.rects) {
+	if (position.nextPageRects && position.pageIndex + 1 === pageIndex) {
+		let rects = position.nextPageRects;
+		return [
+			Math.min(...rects.map(x => x[0])),
+			Math.min(...rects.map(x => x[1])),
+			Math.max(...rects.map(x => x[2])),
+			Math.max(...rects.map(x => x[3]))
+		];
+	}
+	if (position.rects && (position.pageIndex === pageIndex || pageIndex === undefined)) {
 		let rects = position.rects;
-		if (position.nextPageRects && position.pageIndex + 1 === pageIndex) {
-			rects = position.nextPageRects;
-		}
 		if (position.rotation) {
 			let rect = rects[0];
 			let tm = getRotationTransform(rect, position.rotation);
@@ -512,4 +518,93 @@ export function getRectsAreaSize(rects) {
 		areaSize += (rect[2] - rect[0]) * (rect[3] - rect[1]);
 	}
 	return areaSize;
+}
+
+export function getClosestObject(currentObjectRect, otherObjects, side) {
+	let closestObject = null;
+	let closestObjectDistance = null;
+
+	for (let object of otherObjects) {
+		let objectRect = object.rect;
+		if (side === 'left') {
+			if (currentObjectRect[0] >= objectRect[2]) {
+				let r1 = [currentObjectRect[0], currentObjectRect[1], currentObjectRect[0], currentObjectRect[3]];
+				let r2 = [objectRect[2], objectRect[1], objectRect[2], objectRect[3]];
+				let distance = distanceBetweenRects(r1, r2);
+				if (distance >= 0 && (!closestObject || closestObjectDistance > distance)) {
+					closestObject = object;
+					closestObjectDistance = distance;
+				}
+			}
+		}
+		else if (side === 'right') {
+			if (objectRect[0] >= currentObjectRect[2]) {
+				let r1 = [currentObjectRect[2], currentObjectRect[1], currentObjectRect[2], currentObjectRect[3]];
+				let r2 = [objectRect[0], objectRect[1], objectRect[0], objectRect[3]];
+				let distance = distanceBetweenRects(r1, r2);
+				if (distance >= 0 && (!closestObject || closestObjectDistance > distance)) {
+					closestObject = object;
+					closestObjectDistance = distance;
+				}
+			}
+		}
+		else if (side === 'top') {
+			if (objectRect[3] <= currentObjectRect[1]) {
+				let r1 = [currentObjectRect[0], currentObjectRect[1], currentObjectRect[2], currentObjectRect[1]];
+				let r2 = [objectRect[0], objectRect[3], objectRect[2], objectRect[3]];
+				let distance = distanceBetweenRects(r1, r2);
+				if (distance >= 0 && (!closestObject || closestObjectDistance > distance)) {
+					closestObject = object;
+					closestObjectDistance = distance;
+				}
+			}
+		}
+		else if (side === 'bottom') {
+			if (currentObjectRect[3] <= objectRect[1]) {
+				let r1 = [currentObjectRect[0], currentObjectRect[3], currentObjectRect[2], currentObjectRect[3]];
+				let r2 = [objectRect[0], objectRect[1], objectRect[2], objectRect[1]];
+				let distance = distanceBetweenRects(r1, r2);
+				if (distance >= 0 && (!closestObject || closestObjectDistance > distance)) {
+					closestObject = object;
+					closestObjectDistance = distance;
+				}
+			}
+		}
+	}
+
+	if (!closestObject) {
+		for (let object of otherObjects) {
+			let objectRect = object.rect;
+			if (quickIntersectRect(currentObjectRect, objectRect) || !side) {
+				let distance = distanceBetweenRects(currentObjectRect, objectRect);
+				if ((!closestObject || closestObjectDistance > distance)) {
+					closestObject = object;
+					closestObjectDistance = distance;
+				}
+			}
+		}
+	}
+
+	return closestObject;
+}
+
+export function getRangeRects(chars, offsetStart, offsetEnd) {
+	let rects = [];
+	let start = offsetStart;
+	for (let i = start; i <= offsetEnd; i++) {
+		let char = chars[i];
+		if (char.lineBreakAfter || i === offsetEnd) {
+			let firstChar = chars[start];
+			let lastChar = char;
+			let rect = [
+				firstChar.rect[0],
+				firstChar.inlineRect[1],
+				lastChar.rect[2],
+				firstChar.inlineRect[3],
+			];
+			rects.push(rect);
+			start = i + 1;
+		}
+	}
+	return rects;
 }

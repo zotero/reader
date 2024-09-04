@@ -193,7 +193,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	}, []);
 
 	// Allow navigating to next/previous annotation if inner annotation element like
-	// more button, empty comment or tags are focused
+	// more button, or tags are focused, but not comment/text
 	function handleKeyDown(event) {
 		let node = event.target;
 		// Don't do anything if annotation element is focused, because focus-manager will do the navigation
@@ -201,7 +201,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 			return;
 		}
 		let annotationNode = node.closest('.annotation');
-		if (!node.classList.contains('content') || !node.innerText) {
+		if (!node.classList.contains('content')) {
 			if (pressedPreviousKey(event)) {
 				annotationNode.previousElementSibling?.focus();
 				event.preventDefault();
