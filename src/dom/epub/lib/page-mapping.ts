@@ -138,7 +138,7 @@ class PageMapping {
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 	}
 
-	getPageIndex(range: Range): number | null {
+	getPageIndex(range: AbstractRange): number | null {
 		let pageStartRange = this.tree.getPairOrNextLower(new PersistentRange(range))?.[0];
 		if (!pageStartRange) {
 			return null;
@@ -146,7 +146,7 @@ class PageMapping {
 		return this.tree.keysArray().indexOf(pageStartRange);
 	}
 
-	getPageLabel(range: Range): string | null {
+	getPageLabel(range: AbstractRange): string | null {
 		return this.tree.getPairOrNextLower(new PersistentRange(range))?.[1] ?? null;
 	}
 
