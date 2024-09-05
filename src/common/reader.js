@@ -186,6 +186,10 @@ class Reader {
 				entireWord: false,
 				result: null
 			},
+			a11yVirtualCursorTarget: {
+				node: null,
+				ts: null
+			}
 		};
 
 		if (options.secondaryViewState) {
@@ -655,23 +659,11 @@ class Reader {
 		this._onTextSelectionAnnotationModeChange(mode);
 	}
 
-	// Announce the index of current search result to screen readers
-	setA11ySearchResultMessage(primaryView) {
-		let result = (primaryView ? this._state.primaryViewFindState : this._state.secondaryViewFindState).result;
-		if (!result) return;
-		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${result.index + 1}`;
-		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${result.total}`;
-		this.setA11yMessage(`${searchIndex}. ${totalResults}`);
-	}
-
 	findNext(primary) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findNext();
-		setTimeout(() => {
-			this.setA11ySearchResultMessage(primary);
-		});
 	}
 
 	findPrevious(primary) {
@@ -679,9 +671,6 @@ class Reader {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findPrevious();
-		setTimeout(() => {
-			this.setA11ySearchResultMessage(primary);
-		});
 	}
 
 	toggleEPUBAppearancePopup({ open }) {
@@ -797,6 +786,7 @@ class Reader {
 			this.focusView(primary);
 			// A workaround for Firefox/Zotero because iframe focusing doesn't trigger 'focusin' event
 			this._focusManager._closeFindPopupIfEmpty();
+			this.placeA11yVirtualCursor();
 		};
 
 		let onRequestPassword = () => {
@@ -862,6 +852,35 @@ class Reader {
 			this.setA11yMessage(annotationContent);
 		}
 
+		// Add page number as aria-label to provided node to improve screen reader navigation
+		let setA11yNavContent = (node, pageIndex) => {
+			node.setAttribute('aria-label', `${this._getString("pdfReader.page")}: ${pageIndex}`);
+		};
+
+		// Set which node should receive focus when the focus enters the reader to
+		// help screen readers place virtual cursor at the right location
+		let setA11yVirtualCursorTarget = (node) => {
+			if (node && node !== this._state.a11yVirtualCursorTarget.node) {
+				this._updateState({ a11yVirtualCursorTarget: { node, ts: Date.now() } });
+			}
+			// Clear the cursor only half a second after it was set. It ensures the
+			// target is not cleared by scrolling of the document during outline navigation.
+			// Particularly important for snapshots where a random scroll event would fire after
+			// debounceUntilScrollFinishes is done. In all other instances of scrolling,
+			// the virtual cursor target is cleared
+			if (node === null && Date.now() - this._state.a11yVirtualCursorTarget.ts > 500) {
+				this._updateState({ a11yVirtualCursorTarget: { node: null, ts: null } });
+			}
+		};
+
+		// Announce the search index, page and snippet of the search result
+		let a11yAnnounceSearchMessage = (index, total, pageLabel, snippet) => {
+			let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${index + 1}.`;
+			let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${total}.`;
+			let page = pageLabel !== null ? `${this._getString("pdfReader.page")}: ${pageLabel}.` : "";
+			this.setA11yMessage(`${searchIndex} ${totalResults} ${snippet || ""} ${page}`);
+		};
+
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -908,7 +927,9 @@ class Reader {
 			onTabOut,
 			onKeyDown,
 			onKeyUp,
-			onFocusAnnotation
+			onFocusAnnotation,
+			setA11yVirtualCursorTarget,
+			a11yAnnounceSearchMessage
 		};
 
 		if (this._type === 'pdf') {
@@ -939,6 +960,7 @@ class Reader {
 				fontFamily: this._state.fontFamily,
 				hyphenate: this._state.hyphenate,
 				onEPUBEncrypted,
+				setA11yNavContent,
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
@@ -963,6 +985,46 @@ class Reader {
 		// Voiceover won't announce messages inserted via <div id="a11yAnnouncement" aria-live="polite">{state.a11yMessage}</div>
 		// but setting .innerText does work. Likely due to either voiceover bug or not full aria-live support by firefox.
 		document.getElementById("a11yAnnouncement").innerText = a11yMessage;
+	}
+
+	// Make a11yVirtualCursorTarget node set previously focusable and
+	// focus it to help screen readers understand where the virtual cursor needs to
+	// be positioned. This is required because screen readers are not aware of
+	// scroll positioning, so without this, the virtual cursor will always land
+	// at the start of the document.
+	placeA11yVirtualCursor() {
+		let target = this._state.a11yVirtualCursorTarget.node;
+		let doc = this._lastView._iframe.contentDocument;
+		// If the target is a text node, use its parent (e.g. <p> or <h>)
+		if (target?.nodeType === Node.TEXT_NODE) {
+			target = target.parentNode;
+		}
+		if (!target || !doc.contains(target)) return;
+		// Make it temporarily focusable
+		target.setAttribute("tabindex", "-1");
+		target.focus();
+
+		// On blur or keypress, blur it
+		if (doc.activeElement == target) {
+			target.addEventListener("blur", (_) => {
+				target.removeAttribute("tabindex");
+			});
+			target.addEventListener("keydown", (_) => {
+				target.blur();
+			});
+			// Keypress may not fire if screen reader is being used, in which
+			// case remove tabindex next time the page content is scrolled
+			let cleanUpOnScroll = (_) => {
+				target.blur();
+				doc.removeEventListener("scroll", cleanUpOnScroll);
+			};
+			doc.addEventListener("scroll", cleanUpOnScroll);
+		}
+		// If the focus didn't take, make sure temp tabindex is removed
+		else {
+			target.removeAttribute("tabindex");
+		}
+		this._updateState({ a11yVirtualCursorTarget: { node: null, ts: null } });
 	}
 
 	getUnsavedAnnotations() {

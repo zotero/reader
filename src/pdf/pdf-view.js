@@ -216,6 +216,9 @@ class PDFView {
 							this._onSetSelectionPopup({ ...this._selectionPopup, rect });
 						}
 					}
+					// Clear whichever node we wanted to focus for screen reader virtual cursor
+					// navigation to not interfere with mouse interface.
+					this._options.setA11yVirtualCursorTarget(null);
 				});
 
 				this._iframeWindow.addEventListener('focus', (event) => {
@@ -519,6 +522,8 @@ class PDFView {
 		for (let page of this._pages) {
 			if (!pageIndexes || pageIndexes.includes(page.pageIndex)) {
 				page.render();
+				// Aria label with page index set by pdf.js is off by one, so fix it here
+				page.originalPage.div.dataset.l10nArgs = JSON.stringify({ page: this._getPageLabel(page.pageIndex) });
 			}
 		}
 	}
@@ -658,6 +663,8 @@ class PDFView {
 					findPrevious: false
 				});
 			}
+			// Make sure the state is updated regardless to have last _findState.result value
+			this._findState = state;
 		}
 		else {
 			this._findState = state;
@@ -675,6 +682,7 @@ class PDFView {
 			highlightAll: this._findState.highlightAll,
 			findPrevious: false
 		});
+		this.a11yHandleSearchResultUpdate();
 	}
 
 	findPrevious() {
@@ -688,6 +696,30 @@ class PDFView {
 			highlightAll: this._findState.highlightAll,
 			findPrevious: true
 		});
+		this.a11yHandleSearchResultUpdate();
+	}
+
+
+	// After the search result is switched to, record which node the
+	// search result is in to place screen readers' virtual cursor on it
+	// + announce the result.
+	async a11yHandleSearchResultUpdate() {
+		await debounceUntilScrollFinishes(this._iframeWindow.document);
+		let searchResult = this._iframeWindow.document.querySelector(".highlight.selected.appended");
+		if (!searchResult || !this._findState.result) return;
+
+		this._options.setA11yVirtualCursorTarget(searchResult.parentNode);
+
+		let { index, total } = this._findState.result;
+		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let pageLabel = this._getPageLabel(currentPageNumber - 1);
+
+		let span = searchResult.parentNode;
+		let previousSpanText = span.previousSibling?.textContent || "";
+		let nextSpanText = span.nextSibling?.textContent || "";
+		let snippet = previousSpanText + span.textContent + nextSpanText;
+
+		this._options.a11yAnnounceSearchMessage(index, total, pageLabel, snippet);
 	}
 
 	setSelectedAnnotationIDs(ids) {

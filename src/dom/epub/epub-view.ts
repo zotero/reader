@@ -22,6 +22,7 @@ import Epub, {
 	NavItem,
 } from "epubjs";
 import {
+	getStartElement,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
 	splitRangeToTextNodes
@@ -42,6 +43,7 @@ import SectionRenderer from "./section-renderer";
 import Section from "epubjs/types/section";
 import {
 	closestElement,
+	getVisibleTextNodes,
 	getContainingBlock
 } from "../common/lib/nodes";
 import { StyleScoper } from "./lib/sanitize-and-render";
@@ -56,6 +58,7 @@ import {
 	ScrolledFlow
 } from "./flow";
 import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
+import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -177,6 +180,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._sectionsContainer.hidden = false;
 		this.pageMapping = this._initPageMapping(viewState.savedPageMapping);
 		this._initOutline();
+		this._addAriaNavigationLandmarks();
 
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
@@ -339,6 +343,24 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		catch (e) {
 			console.error('Unable to get range for CFI', cfiString, e);
 			return null;
+		}
+	}
+
+	// Add landmarks with page labels for screen reader navigation
+	private async _addAriaNavigationLandmarks() {
+		for (let [key, value] of this.pageMapping.tree.entries()) {
+			let node = key.startContainer;
+			let containingElement = closestElement(node);
+
+			if (!containingElement) continue;
+
+			// This is semantically not correct, as we are assigning
+			// navigation role to <p> and <h> nodes but this is the
+			// best solution to avoid adding nodes into the DOM, which
+			// will break CFIs.
+			containingElement.setAttribute("role", "navigation");
+
+			this._options.setA11yNavContent(containingElement, value);
 		}
 	}
 
@@ -911,6 +933,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let result = await processor.next();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
+				this.a11yHandleSearchResultUpdate(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -923,9 +946,28 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let result = await processor.prev();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
+				this.a11yHandleSearchResultUpdate(result.range);
 			}
 			this._renderAnnotations();
 		}
+	}
+
+	// After the search result is switched to, record which node the
+	// search result is in to place screen readers' virtual cursor on it
+	// + announce the result.
+	async a11yHandleSearchResultUpdate(range: PersistentRange) {
+		await debounceUntilScrollFinishes(this._iframeDocument);
+
+		let searchResult = getStartElement(range);
+		let currentPageLabel = this.pageMapping.getPageLabel(range);
+		if (!searchResult || !this._findState?.result || !currentPageLabel) return;
+
+		this._options.setA11yVirtualCursorTarget(searchResult);
+
+		let { index, total } = this._findState.result;
+		
+		let snippet = this._findState.result.snippets[this._findState.result.index];
+		this._options.a11yAnnounceSearchMessage(index, total, currentPageLabel, snippet);
 	}
 
 	protected _setScale(scale: number) {
@@ -994,6 +1036,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					return;
 				}
 				this.flow.scrollIntoView(view.container, options);
+				// Once scrolling is done, tell screen readers to focus the first textual element of
+				// the section. Used when you navigate to a new section via outline in the sidebar.
+				let firstText = getVisibleTextNodes(view.body)[0];
+				debounceUntilScrollFinishes(this._iframeDocument).then(() => {
+					this._options.setA11yVirtualCursorTarget(firstText || view.body);
+				});
 			}
 		}
 		else {

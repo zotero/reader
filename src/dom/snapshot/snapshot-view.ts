@@ -9,7 +9,8 @@ import {
 } from "../../common/types";
 import {
 	getInnerText,
-	getStartElement
+	getStartElement,
+	PersistentRange
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -33,6 +34,7 @@ import injectCSS from './stylesheets/inject.scss';
 // @ts-expect-error
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import { DynamicThemeFix } from "darkreader";
+import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -312,7 +314,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
 		if (range) {
-			getStartElement(range)?.scrollIntoView(options);
+			let elem = getStartElement(range);
+			if (!elem) return;
+			elem.scrollIntoView(options);
+			// Remember which node was navigated to for screen readers to place
+			// virtual cursor on it later. Used for navigating between sections in the outline.
+			this._options.setA11yVirtualCursorTarget(elem);
+			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
+				this._options.setA11yVirtualCursorTarget(elem);
+			});
 		}
 		else {
 			console.warn('Not a valid snapshot selector', selector);
@@ -434,6 +444,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			let result = this._find.next();
 			if (result) {
 				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
+				this.a11yHandleSearchResultUpdate(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -445,9 +456,28 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			let result = this._find.prev();
 			if (result) {
 				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
+				this.a11yHandleSearchResultUpdate(result.range);
 			}
 			this._renderAnnotations();
 		}
+	}
+
+
+	// After the search result is switched to, record which node the
+	// search result is in to place screen readers' virtual cursor on it
+	// + announce the result.
+	async a11yHandleSearchResultUpdate(range: PersistentRange) {
+		await debounceUntilScrollFinishes(this._iframeDocument);
+
+		let searchResult = getStartElement(range);
+		if (!searchResult || !this._findState?.result) return;
+
+		this._options.setA11yVirtualCursorTarget(searchResult);
+
+		let { index, total } = this._findState.result;
+		
+		let snippet = this._findState.result.snippets[this._findState.result.index];
+		this._options.a11yAnnounceSearchMessage(index, total, null, snippet);
 	}
 
 	protected _setScale(scale: number) {

@@ -1138,6 +1138,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._renderAnnotations();
 			this._repositionPopups();
 		});
+		// Clear whatever node we may have planned to focus for screen readers
+		// to not interfere with mouse navigation
+		this._options.setA11yVirtualCursorTarget(null);
 	}
 
 	protected _handleScrollCapture(event: Event) {
@@ -1412,6 +1415,9 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
+	setA11yVirtualCursorTarget: (node: Node | null) => void;
+	setA11yNavContent: (node: Node, pageIndex: string) => void;
+	a11yAnnounceSearchMessage: (index: number, total: number, pageLabel: string | null, snippet: string) => void;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string
