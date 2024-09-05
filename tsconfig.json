@@ -4,7 +4,7 @@
 		"jsx": "react",
 		"allowJs": true,
 		"strict": true,
-		"target": "ESNext",
+		"target": "ES2023",
 		"moduleResolution": "Node",
 		"allowSyntheticDefaultImports": true,
 		"noImplicitOverride": true
