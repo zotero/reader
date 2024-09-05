@@ -196,7 +196,14 @@ function generateViewConfig(build) {
 				{
 					test: /\.tsx?$/,
 					exclude: /node_modules/,
-					use: 'ts-loader',
+					use: {
+						loader: 'ts-loader',
+						options: {
+							compilerOptions: {
+								target: 'ES2022'
+							}
+						}
+					},
 				},
 				{
 					test: /\.s?css$/,
