@@ -182,7 +182,7 @@ function generateViewConfig(build) {
 		module: {
 			rules: [
 				{
-					test: /\.(ts|js)x?$/,
+					test: /\.(js|jsx)$/,
 					exclude: /node_modules/,
 					use: {
 						loader: 'babel-loader',
@@ -193,7 +193,7 @@ function generateViewConfig(build) {
 						},
 					},
 				},
-				build === 'view-dev' && {
+				{
 					test: /\.tsx?$/,
 					exclude: /node_modules/,
 					use: 'ts-loader',
