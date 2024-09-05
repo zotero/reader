@@ -239,7 +239,10 @@ export class StyleScoper {
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {
 			let importRule = rule as CSSImportRule;
-			this._visitStyleSheet(importRule.styleSheet, scopeClass);
+			let styleSheet = importRule.styleSheet;
+			if (styleSheet) {
+				this._visitStyleSheet(styleSheet, scopeClass);
+			}
 		}
 
 		// If this rule contains child rules, visit each of them
