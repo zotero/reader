@@ -132,7 +132,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizing = false;
 
-	protected _a11yVirtualCursorTarget: { node: Node | null, ts: number | null };
+	protected _a11yVirtualCursorTarget: { node: Node | null, allowUpdates: boolean };
 
 	scale = 1;
 
@@ -156,7 +156,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 		this._a11yVirtualCursorTarget = {
 			node: null,
-			ts: null
+			allowUpdates: true
 		};
 
 		this._iframe = document.createElement('iframe');
@@ -1228,19 +1228,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// Set which node should receive focus when the focus enters the reader to
 	// help screen readers place virtual cursor at the right location
 	protected _setA11yVirtualCursorTarget(node: Node | null) {
-		if (node && node !== this._a11yVirtualCursorTarget.node) {
-			this._a11yVirtualCursorTarget = { node, ts: Date.now() };
-		}
-		if (node === null && Date.now() - (this._a11yVirtualCursorTarget?.ts || 0) > 500) {
-			this._a11yVirtualCursorTarget = { node: null, ts: null };
-		}
+		if (!this._a11yVirtualCursorTarget.allowUpdates) return;
+		this._a11yVirtualCursorTarget.node = node;
 	}
 
 	// Return the virtual cursor and, unless specified otherwise, clear the state
 	getA11yVirtualCursorTarget(retain = false) {
 		let node = this._a11yVirtualCursorTarget.node;
 		if (!retain) {
-			this._a11yVirtualCursorTarget = { node: null, ts: null };
+			this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
 		}
 		return node;
 	}

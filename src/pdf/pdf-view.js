@@ -44,7 +44,7 @@ import {
 } from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
-import { DEFAULT_TEXT_ANNOTATION_FONT_SIZE, MIN_IMAGE_ANNOTATION_SIZE, PDF_NOTE_DIMENSIONS } from '../common/defines';
+import { DEFAULT_TEXT_ANNOTATION_FONT_SIZE, MIN_IMAGE_ANNOTATION_SIZE, PDF_NOTE_DIMENSIONS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
@@ -55,6 +55,7 @@ import {
 	smoothPath
 } from './lib/path';
 import { History } from '../common/lib/history';
+import { debounce } from '../common/lib/debounce';
 
 class PDFView {
 	constructor(options) {
@@ -130,7 +131,7 @@ class PDFView {
 
 		this._a11yVirtualCursorTarget = {
 			node: null,
-			ts: null
+			allowUpdates: null
 		};
 
 		let setOptions = () => {
@@ -713,7 +714,9 @@ class PDFView {
 		let searchResult = this._iframeWindow.document.querySelector(".highlight.selected.appended");
 		if (!searchResult || !this._findState.result) return;
 
+		this._a11yVirtualCursorTarget.allowUpdates = true;
 		this._setA11yVirtualCursorTarget(searchResult.parentNode);
+		this._a11yVirtualCursorTarget.allowUpdates = false;
 
 		let { index, total } = this._findState.result;
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
@@ -728,32 +731,28 @@ class PDFView {
 	}
 
 	// Record the top of the current page as the element that the virtual cursor
-	// should land on when focus enters the content. Used after the page
-	// input value is changed in the toolbar
-	async a11yWillPlaceVirtCursorOnTop() {
-		await debounceUntilScrollFinishes(this._iframeWindow.document, 500);
+	// should land on when focus enters the content. Debounce is needed to
+	// make sure that the value is set when scrolling is finished because it
+	// clears the cursor target.
+	a11yWillPlaceVirtCursorOnTop = debounce(() => {
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[currentPageNumber - 1];
 		let pageTop = page.div.querySelector("span");
 		this._setA11yVirtualCursorTarget(pageTop);
-	}
+	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	// Set which node should receive focus when the focus enters the reader to
 	// help screen readers place virtual cursor at the right location
 	_setA11yVirtualCursorTarget(node) {
-		if (node && node !== this._a11yVirtualCursorTarget.node) {
-			this._a11yVirtualCursorTarget = { node, ts: Date.now() };
-		}
-		if (node === null && Date.now() - this._a11yVirtualCursorTarget.ts > 500) {
-			this._a11yVirtualCursorTarget = { node: null, ts: null };
-		}
+		if (!this._a11yVirtualCursorTarget.allowUpdates) return;
+		this._a11yVirtualCursorTarget.node = node;
 	}
 
 	// Return the virtual cursor and, unless specified otherwise, clear the state
 	getA11yVirtualCursorTarget(retain = false) {
 		let node = this._a11yVirtualCursorTarget.node;
 		if (!retain) {
-			this._a11yVirtualCursorTarget = { node: null, ts: null };
+			this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
 		}
 		return node;
 	}
@@ -872,7 +871,6 @@ class PDFView {
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
-				this.a11yWillPlaceVirtCursorOnTop();
 			}
 			else {
 				let pageIndex = parseInt(location.pageNumber) - 1;
@@ -896,12 +894,10 @@ class PDFView {
 
 	navigateToNextPage() {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.nextPage();
-		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	navigateToPreviousPage() {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.previousPage();
-		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	navigateToFirstPage() {
@@ -2446,6 +2442,7 @@ class PDFView {
 			scrollMode,
 			spreadMode
 		});
+		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	_handleContextMenu(event) {
