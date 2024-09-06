@@ -319,9 +319,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			elem.scrollIntoView(options);
 			// Remember which node was navigated to for screen readers to place
 			// virtual cursor on it later. Used for navigating between sections in the outline.
-			this._options.setA11yVirtualCursorTarget(elem);
 			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
-				this._options.setA11yVirtualCursorTarget(elem);
+				this._setA11yVirtualCursorTarget(elem);
 			});
 		}
 		else {
@@ -472,7 +471,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		let searchResult = getStartElement(range);
 		if (!searchResult || !this._findState?.result) return;
 
-		this._options.setA11yVirtualCursorTarget(searchResult);
+		this._setA11yVirtualCursorTarget(searchResult);
 
 		let { index, total } = this._findState.result;
 		

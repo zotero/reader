@@ -132,6 +132,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizing = false;
 
+	protected _a11yVirtualCursorTarget: { node: Node | null, ts: number | null };
+
 	scale = 1;
 
 	protected constructor(options: DOMViewOptions<State, Data>) {
@@ -152,6 +154,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			onUpdate: () => this._updateViewStats(),
 			onNavigate: location => this.navigate(location, { skipHistory: true, behavior: 'auto' }),
 		});
+		this._a11yVirtualCursorTarget = {
+			node: null,
+			ts: null
+		};
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');
@@ -1140,7 +1146,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 		// Clear whatever node we may have planned to focus for screen readers
 		// to not interfere with mouse navigation
-		this._options.setA11yVirtualCursorTarget(null);
+		this._setA11yVirtualCursorTarget(null);
 	}
 
 	protected _handleScrollCapture(event: Event) {
@@ -1217,6 +1223,26 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
 		);
 		return rectContains(selectionBoundingRect, x, y);
+	}
+
+	// Set which node should receive focus when the focus enters the reader to
+	// help screen readers place virtual cursor at the right location
+	protected _setA11yVirtualCursorTarget(node: Node | null) {
+		if (node && node !== this._a11yVirtualCursorTarget.node) {
+			this._a11yVirtualCursorTarget = { node, ts: Date.now() };
+		}
+		if (node === null && Date.now() - (this._a11yVirtualCursorTarget?.ts || 0) > 500) {
+			this._a11yVirtualCursorTarget = { node: null, ts: null };
+		}
+	}
+
+	// Return the virtual cursor and, unless specified otherwise, clear the state
+	getA11yVirtualCursorTarget(retain = false) {
+		let node = this._a11yVirtualCursorTarget.node;
+		if (!retain) {
+			this._a11yVirtualCursorTarget = { node: null, ts: null };
+		}
+		return node;
 	}
 
 	destroy() {

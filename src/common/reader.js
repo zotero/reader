@@ -185,10 +185,6 @@ class Reader {
 				caseSensitive: false,
 				entireWord: false,
 				result: null
-			},
-			a11yVirtualCursorTarget: {
-				node: null,
-				ts: null
 			}
 		};
 
@@ -786,7 +782,7 @@ class Reader {
 			this.focusView(primary);
 			// A workaround for Firefox/Zotero because iframe focusing doesn't trigger 'focusin' event
 			this._focusManager._closeFindPopupIfEmpty();
-			this.placeA11yVirtualCursor();
+			this.placeA11yVirtualCursor(primary);
 		};
 
 		let onRequestPassword = () => {
@@ -857,22 +853,6 @@ class Reader {
 			node.setAttribute('aria-label', `${this._getString("pdfReader.page")}: ${pageIndex}`);
 		};
 
-		// Set which node should receive focus when the focus enters the reader to
-		// help screen readers place virtual cursor at the right location
-		let setA11yVirtualCursorTarget = (node) => {
-			if (node && node !== this._state.a11yVirtualCursorTarget.node) {
-				this._updateState({ a11yVirtualCursorTarget: { node, ts: Date.now() } });
-			}
-			// Clear the cursor only half a second after it was set. It ensures the
-			// target is not cleared by scrolling of the document during outline navigation.
-			// Particularly important for snapshots where a random scroll event would fire after
-			// debounceUntilScrollFinishes is done. In all other instances of scrolling,
-			// the virtual cursor target is cleared
-			if (node === null && Date.now() - this._state.a11yVirtualCursorTarget.ts > 500) {
-				this._updateState({ a11yVirtualCursorTarget: { node: null, ts: null } });
-			}
-		};
-
 		// Announce the search index, page and snippet of the search result
 		let a11yAnnounceSearchMessage = (index, total, pageLabel, snippet) => {
 			let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${index + 1}.`;
@@ -928,7 +908,6 @@ class Reader {
 			onKeyDown,
 			onKeyUp,
 			onFocusAnnotation,
-			setA11yVirtualCursorTarget,
 			a11yAnnounceSearchMessage
 		};
 
@@ -992,14 +971,15 @@ class Reader {
 	// be positioned. This is required because screen readers are not aware of
 	// scroll positioning, so without this, the virtual cursor will always land
 	// at the start of the document.
-	placeA11yVirtualCursor() {
-		let target = this._state.a11yVirtualCursorTarget.node;
-		let doc = this._lastView._iframe.contentDocument;
+	placeA11yVirtualCursor(primary) {
+		let view = primary ? this._primaryView : this._secondaryView;
+		let doc = view._iframe.contentDocument;
+		let target = view.getA11yVirtualCursorTarget();
 		// If the target is a text node, use its parent (e.g. <p> or <h>)
 		if (target?.nodeType === Node.TEXT_NODE) {
 			target = target.parentNode;
 		}
-		if (!target || !doc.contains(target)) return;
+		if (!target) return;
 		// Make it temporarily focusable
 		target.setAttribute("tabindex", "-1");
 		target.focus();
@@ -1024,7 +1004,6 @@ class Reader {
 		else {
 			target.removeAttribute("tabindex");
 		}
-		this._updateState({ a11yVirtualCursorTarget: { node: null, ts: null } });
 	}
 
 	getUnsavedAnnotations() {

@@ -962,7 +962,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let currentPageLabel = this.pageMapping.getPageLabel(range);
 		if (!searchResult || !this._findState?.result || !currentPageLabel) return;
 
-		this._options.setA11yVirtualCursorTarget(searchResult);
+		this._setA11yVirtualCursorTarget(searchResult);
 
 		let { index, total } = this._findState.result;
 		
@@ -985,7 +985,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		let node = this.flow.startRange.startContainer;
 		let containingElement = closestElement(node);
-		this._options.setA11yVirtualCursorTarget(containingElement);
+		this._setA11yVirtualCursorTarget(containingElement);
 	}
 
 	protected _setScale(scale: number) {
@@ -1059,7 +1059,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				// the section. Used when you navigate to a new section via outline in the sidebar.
 				let firstText = getVisibleTextNodes(view.body)[0];
 				debounceUntilScrollFinishes(this._iframeDocument).then(() => {
-					this._options.setA11yVirtualCursorTarget(firstText || view.body);
+					this._setA11yVirtualCursorTarget(firstText || view.body);
 				});
 			}
 		}

@@ -128,6 +128,11 @@ class PDFView {
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
 
+		this._a11yVirtualCursorTarget = {
+			node: null,
+			ts: null
+		};
+
 		let setOptions = () => {
 			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
 				return;
@@ -218,7 +223,7 @@ class PDFView {
 					}
 					// Clear whichever node we wanted to focus for screen reader virtual cursor
 					// navigation to not interfere with mouse interface.
-					this._options.setA11yVirtualCursorTarget(null);
+					this._setA11yVirtualCursorTarget(null);
 				});
 
 				this._iframeWindow.addEventListener('focus', (event) => {
@@ -708,7 +713,7 @@ class PDFView {
 		let searchResult = this._iframeWindow.document.querySelector(".highlight.selected.appended");
 		if (!searchResult || !this._findState.result) return;
 
-		this._options.setA11yVirtualCursorTarget(searchResult.parentNode);
+		this._setA11yVirtualCursorTarget(searchResult.parentNode);
 
 		let { index, total } = this._findState.result;
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
@@ -730,7 +735,27 @@ class PDFView {
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[currentPageNumber - 1];
 		let pageTop = page.div.querySelector("span");
-		this._options.setA11yVirtualCursorTarget(pageTop);
+		this._setA11yVirtualCursorTarget(pageTop);
+	}
+
+	// Set which node should receive focus when the focus enters the reader to
+	// help screen readers place virtual cursor at the right location
+	_setA11yVirtualCursorTarget(node) {
+		if (node && node !== this._a11yVirtualCursorTarget.node) {
+			this._a11yVirtualCursorTarget = { node, ts: Date.now() };
+		}
+		if (node === null && Date.now() - this._a11yVirtualCursorTarget.ts > 500) {
+			this._a11yVirtualCursorTarget = { node: null, ts: null };
+		}
+	}
+
+	// Return the virtual cursor and, unless specified otherwise, clear the state
+	getA11yVirtualCursorTarget(retain = false) {
+		let node = this._a11yVirtualCursorTarget.node;
+		if (!retain) {
+			this._a11yVirtualCursorTarget = { node: null, ts: null };
+		}
+		return node;
 	}
 
 	setSelectedAnnotationIDs(ids) {
