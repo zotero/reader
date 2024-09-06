@@ -722,6 +722,17 @@ class PDFView {
 		this._options.a11yAnnounceSearchMessage(index, total, pageLabel, snippet);
 	}
 
+	// Record the top of the current page as the element that the virtual cursor
+	// should land on when focus enters the content. Used after the page
+	// input value is changed in the toolbar
+	async a11yWillPlaceVirtCursorOnTop() {
+		await debounceUntilScrollFinishes(this._iframeWindow.document, 500);
+		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[currentPageNumber - 1];
+		let pageTop = page.div.querySelector("span");
+		this._options.setA11yVirtualCursorTarget(pageTop);
+	}
+
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
 		this._setSelectionRanges();
@@ -836,6 +847,7 @@ class PDFView {
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
+				this.a11yWillPlaceVirtCursorOnTop();
 			}
 			else {
 				let pageIndex = parseInt(location.pageNumber) - 1;
@@ -859,10 +871,12 @@ class PDFView {
 
 	navigateToNextPage() {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.nextPage();
+		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	navigateToPreviousPage() {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.previousPage();
+		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	navigateToFirstPage() {

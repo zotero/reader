@@ -970,6 +970,24 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._options.a11yAnnounceSearchMessage(index, total, currentPageLabel, snippet);
 	}
 
+	// Place virtual cursor to the top of the current page. Used after the page
+	// input value is changed in the toolbar
+	async a11yWillPlaceVirtCursorOnTop() {
+		if (!this.flow.startRange) return;
+		let counter = 0;
+		let initialStartContainer = this.flow.startRange.startContainer;
+		// Wait to be scrolled to the new page and for the flow to be updated.
+		// Used instead of debounceUntilScrollFinishes which returns before the flow is changed.
+		while (initialStartContainer == this.flow.startRange.startContainer && counter < 100) {
+			await new Promise(resolve => setTimeout(resolve, 100));
+			// ensure we are not stuck in an infinite loop is something goes wrong
+			counter += 1;
+		}
+		let node = this.flow.startRange.startContainer;
+		let containingElement = closestElement(node);
+		this._options.setA11yVirtualCursorTarget(containingElement);
+	}
+
 	protected _setScale(scale: number) {
 		this._keepPosition(() => {
 			this.scale = scale;
@@ -1001,6 +1019,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				console.error('Unable to find range');
 				return;
 			}
+			this.a11yWillPlaceVirtCursorOnTop();
 			this.flow.scrollIntoView(range, options);
 		}
 		else if (location.href) {
@@ -1067,10 +1086,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	navigateToPreviousPage() {
 		this.flow.navigateToPreviousPage();
+		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	navigateToNextPage() {
 		this.flow.navigateToNextPage();
+		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	canNavigateToPreviousSection() {
