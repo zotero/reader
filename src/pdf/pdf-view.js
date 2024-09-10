@@ -528,8 +528,6 @@ class PDFView {
 		for (let page of this._pages) {
 			if (!pageIndexes || pageIndexes.includes(page.pageIndex)) {
 				page.render();
-				// Aria label with page index set by pdf.js is off by one, so fix it here
-				page.originalPage.div.dataset.l10nArgs = JSON.stringify({ page: this._getPageLabel(page.pageIndex) });
 			}
 		}
 	}
