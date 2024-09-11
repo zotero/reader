@@ -964,7 +964,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let currentPageLabel = this.pageMapping.getPageLabel(range);
 		if (!searchResult || !this._findState?.result || !currentPageLabel) return;
 
-		// Make sure that the search results are not overriden by a11yWillPlaceVirtCursorOnTop 
+		// Make sure that the search results are not overriden by a11yWillPlaceVirtCursorOnTop
 		this._a11yVirtualCursorTarget.allowUpdates = true;
 		this._setA11yVirtualCursorTarget(searchResult);
 		this._a11yVirtualCursorTarget.allowUpdates = false;
@@ -980,6 +980,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	// when scrolling is finished because it clears the cursor target.
 	protected a11yWillPlaceVirtCursorOnTop = debounce(() => {
 		if (!this.flow.startRange) return;
+		// If the focus is within the document, do nothing to avoid unnecessarily moving
+		// the cursor to the top of the page if the window is blurred and then re-focused.
+		if (this._iframeDocument.hasFocus()) return;
 		let node = this.flow.startRange.startContainer;
 		let containingElement = closestElement(node);
 		this._setA11yVirtualCursorTarget(containingElement);

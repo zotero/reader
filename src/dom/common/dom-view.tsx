@@ -38,7 +38,7 @@ import {
 import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./lib/find";
 import { SELECTION_COLOR } from "../../common/defines";
-import { debounceUntilScrollFinishes, isMac, isSafari } from "../../common/lib/utilities";
+import { debounceUntilScrollFinishes, isMac, isSafari, placeA11yVirtualCursor } from "../../common/lib/utilities";
 import {
 	closestElement,
 	isElement
@@ -1064,6 +1064,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		this._options.onSetOverlayPopup();
 
+		// If we marked a node as future focus target for screen readers, clear it to avoid scrolling to it
+		this._setA11yVirtualCursorTarget(null);
+
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
@@ -1144,9 +1147,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._renderAnnotations();
 			this._repositionPopups();
 		});
-		// Clear whatever node we may have planned to focus for screen readers
-		// to not interfere with mouse navigation
-		this._setA11yVirtualCursorTarget(null);
+		// If there exists a focused node for screen readers, make sure it gets blurred
+		let cursorTarget = this._iframeDocument.querySelector("[a11y-cursor-target]");
+		if (cursorTarget) {
+			(cursorTarget as HTMLElement).blur();
+		}
 	}
 
 	protected _handleScrollCapture(event: Event) {
@@ -1203,6 +1208,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	private _handleFocus() {
 		this._options.onFocus();
+
+		// Help screen readers understand where to place virtual cursor
+		placeA11yVirtualCursor(this._a11yVirtualCursorTarget.node);
+		this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
 	}
 
 	private _preventNextClickEvent() {
@@ -1230,15 +1239,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _setA11yVirtualCursorTarget(node: Node | null) {
 		if (!this._a11yVirtualCursorTarget.allowUpdates) return;
 		this._a11yVirtualCursorTarget.node = node;
-	}
-
-	// Return the virtual cursor and, unless specified otherwise, clear the state
-	getA11yVirtualCursorTarget(retain = false) {
-		let node = this._a11yVirtualCursorTarget.node;
-		if (!retain) {
-			this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
-		}
-		return node;
 	}
 
 	destroy() {

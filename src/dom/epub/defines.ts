@@ -29,4 +29,4 @@ export const DEFAULT_EPUB_APPEARANCE: EPUBAppearance = Object.freeze({
 	useOriginalFont: false,
 });
 
-export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 500;
+export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 100;

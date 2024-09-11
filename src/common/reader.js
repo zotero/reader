@@ -782,7 +782,6 @@ class Reader {
 			this.focusView(primary);
 			// A workaround for Firefox/Zotero because iframe focusing doesn't trigger 'focusin' event
 			this._focusManager._closeFindPopupIfEmpty();
-			this.placeA11yVirtualCursor(primary);
 		};
 
 		let onRequestPassword = () => {
@@ -964,46 +963,6 @@ class Reader {
 		// Voiceover won't announce messages inserted via <div id="a11yAnnouncement" aria-live="polite">{state.a11yMessage}</div>
 		// but setting .innerText does work. Likely due to either voiceover bug or not full aria-live support by firefox.
 		document.getElementById("a11yAnnouncement").innerText = a11yMessage;
-	}
-
-	// Make a11yVirtualCursorTarget node set previously focusable and
-	// focus it to help screen readers understand where the virtual cursor needs to
-	// be positioned. This is required because screen readers are not aware of
-	// scroll positioning, so without this, the virtual cursor will always land
-	// at the start of the document.
-	placeA11yVirtualCursor(primary) {
-		let view = primary ? this._primaryView : this._secondaryView;
-		let doc = view._iframe.contentDocument;
-		let target = view.getA11yVirtualCursorTarget();
-		// If the target is a text node, use its parent (e.g. <p> or <h>)
-		if (target?.nodeType === Node.TEXT_NODE) {
-			target = target.parentNode;
-		}
-		if (!target) return;
-		// Make it temporarily focusable
-		target.setAttribute("tabindex", "-1");
-		target.focus();
-
-		// On blur or keypress, blur it
-		if (doc.activeElement == target) {
-			target.addEventListener("blur", (_) => {
-				target.removeAttribute("tabindex");
-			});
-			target.addEventListener("keydown", (_) => {
-				target.blur();
-			});
-			// Keypress may not fire if screen reader is being used, in which
-			// case remove tabindex next time the page content is scrolled
-			let cleanUpOnScroll = (_) => {
-				target.blur();
-				doc.removeEventListener("scroll", cleanUpOnScroll);
-			};
-			doc.addEventListener("scroll", cleanUpOnScroll);
-		}
-		// If the focus didn't take, make sure temp tabindex is removed
-		else {
-			target.removeAttribute("tabindex");
-		}
 	}
 
 	getUnsavedAnnotations() {

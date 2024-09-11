@@ -32,7 +32,7 @@ import {
 	normalizeDegrees,
 	getRectsAreaSize
 } from './lib/utilities';
-import { debounceUntilScrollFinishes, normalizeKey } from '../common/lib/utilities';
+import { debounceUntilScrollFinishes, normalizeKey, placeA11yVirtualCursor } from '../common/lib/utilities';
 import {
 	getAffectedAnnotations,
 	isFirefox,
@@ -222,13 +222,15 @@ class PDFView {
 							this._onSetSelectionPopup({ ...this._selectionPopup, rect });
 						}
 					}
-					// Clear whichever node we wanted to focus for screen reader virtual cursor
-					// navigation to not interfere with mouse interface.
-					this._setA11yVirtualCursorTarget(null);
+					// If there exists a focused node for screen readers, make sure it gets blurred
+					this._iframeWindow.document.querySelector("[a11y-cursor-target]")?.blur();
 				});
 
 				this._iframeWindow.addEventListener('focus', (event) => {
 					options.onFocus();
+					// Help screen readers understand where to place virtual cursor
+					placeA11yVirtualCursor(this._a11yVirtualCursorTarget.node);
+					this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
 				});
 			});
 		});
@@ -733,6 +735,9 @@ class PDFView {
 	// make sure that the value is set when scrolling is finished because it
 	// clears the cursor target.
 	a11yWillPlaceVirtCursorOnTop = debounce(() => {
+		// If the focus is within the document, do nothing to avoid unnecessarily moving
+		// the cursor to the top of the page if the window is blurred and then re-focused.
+		if (this._iframeWindow.document.hasFocus()) return;
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[currentPageNumber - 1];
 		let pageTop = page.div.querySelector("span");
@@ -742,17 +747,10 @@ class PDFView {
 	// Set which node should receive focus when the focus enters the reader to
 	// help screen readers place virtual cursor at the right location
 	_setA11yVirtualCursorTarget(node) {
+		console.log("Trying to set cursor at ", node);
 		if (!this._a11yVirtualCursorTarget.allowUpdates) return;
+		console.log("-- Set!");
 		this._a11yVirtualCursorTarget.node = node;
-	}
-
-	// Return the virtual cursor and, unless specified otherwise, clear the state
-	getA11yVirtualCursorTarget(retain = false) {
-		let node = this._a11yVirtualCursorTarget.node;
-		if (!retain) {
-			this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
-		}
-		return node;
 	}
 
 	setSelectedAnnotationIDs(ids) {
@@ -1609,6 +1607,8 @@ class PDFView {
 		// Prevents showing focus box after pressing Enter and de-selecting annotation which was select with mouse
 		this._lastFocusedObject = null;
 
+		// If we marked a node as future focus target for screen readers, clear it to avoid scrolling to it
+		this._setA11yVirtualCursorTarget(null);
 		if (!event.target.closest('#viewerContainer')) {
 			return;
 		}
