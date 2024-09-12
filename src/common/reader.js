@@ -655,6 +655,18 @@ class Reader {
 		this._onTextSelectionAnnotationModeChange(mode);
 	}
 
+	// Announce info about current search result to screen readers.
+	// FindState is updated multiple times while navigating between results
+	// so debounce is used to fire only after the last update.
+	a11yAnnounceSearchMessage = debounce((findStateResult) => {
+		if (!findStateResult) return;
+		let { index, total, currentPageLabel, currentSnippet } = findStateResult;
+		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${index + 1}.`;
+		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${total}.`;
+		let page = currentPageLabel ? `${this._getString("pdfReader.page")}: ${currentPageLabel}.` : "";
+		this.setA11yMessage(`${searchIndex} ${totalResults} ${currentSnippet || ""} ${page}`);
+	}, 100);
+
 	findNext(primary) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
@@ -813,6 +825,7 @@ class Reader {
 
 		let onSetFindState = (params) => {
 			this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
+			this.a11yAnnounceSearchMessage(params.result);
 		};
 
 		let onSelectAnnotations = (ids, triggeringEvent) => {
@@ -850,14 +863,6 @@ class Reader {
 		// Add page number as aria-label to provided node to improve screen reader navigation
 		let setA11yNavContent = (node, pageIndex) => {
 			node.setAttribute('aria-label', `${this._getString("pdfReader.page")}: ${pageIndex}`);
-		};
-
-		// Announce the search index, page and snippet of the search result
-		let a11yAnnounceSearchMessage = (index, total, pageLabel, snippet) => {
-			let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${index + 1}.`;
-			let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${total}.`;
-			let page = pageLabel !== null ? `${this._getString("pdfReader.page")}: ${pageLabel}.` : "";
-			this.setA11yMessage(`${searchIndex} ${totalResults} ${snippet || ""} ${page}`);
 		};
 
 		let data;
@@ -906,8 +911,7 @@ class Reader {
 			onTabOut,
 			onKeyDown,
 			onKeyUp,
-			onFocusAnnotation,
-			a11yAnnounceSearchMessage
+			onFocusAnnotation
 		};
 
 		if (this._type === 'pdf') {

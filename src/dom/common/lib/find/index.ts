@@ -246,12 +246,15 @@ class DefaultFindProcessor implements FindProcessor {
 	private _setFindState() {
 		if (this._cancelled) return;
 		if (this._onSetFindState) {
+			let snippets = this.getSnippets();
 			this._onSetFindState({
 				...this.findState,
 				result: {
 					total: this._buf.length,
 					index: this._pos === null ? 0 : this._pos,
-					snippets: this.getSnippets(),
+					snippets: snippets,
+					currentPageLabel: "",
+					currentSnippet: this._pos === null ? "" : snippets[this._pos]
 				}
 			});
 		}

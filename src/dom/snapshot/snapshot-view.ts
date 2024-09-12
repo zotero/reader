@@ -320,7 +320,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			// Remember which node was navigated to for screen readers to place
 			// virtual cursor on it later. Used for navigating between sections in the outline.
 			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
-				this._setA11yVirtualCursorTarget(elem);
+				this._a11yVirtualCursorTarget = elem;
 			});
 		}
 		else {
@@ -443,7 +443,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			let result = this._find.next();
 			if (result) {
 				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
-				this.a11yHandleSearchResultUpdate(result.range);
+				this._a11yVirtualCursorTarget = getStartElement(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -455,28 +455,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			let result = this._find.prev();
 			if (result) {
 				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
-				this.a11yHandleSearchResultUpdate(result.range);
+				this._a11yVirtualCursorTarget = getStartElement(result.range);
 			}
 			this._renderAnnotations();
 		}
-	}
-
-
-	// After the search result is switched to, record which node the
-	// search result is in to place screen readers' virtual cursor on it
-	// + announce the result.
-	async a11yHandleSearchResultUpdate(range: PersistentRange) {
-		await debounceUntilScrollFinishes(this._iframeDocument);
-
-		let searchResult = getStartElement(range);
-		if (!searchResult || !this._findState?.result) return;
-
-		this._setA11yVirtualCursorTarget(searchResult);
-
-		let { index, total } = this._findState.result;
-		
-		let snippet = this._findState.result.snippets[this._findState.result.index];
-		this._options.a11yAnnounceSearchMessage(index, total, null, snippet);
 	}
 
 	protected _setScale(scale: number) {

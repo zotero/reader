@@ -132,7 +132,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizing = false;
 
-	protected _a11yVirtualCursorTarget: { node: Node | null, allowUpdates: boolean };
+	protected _a11yVirtualCursorTarget: Node | null;
 
 	scale = 1;
 
@@ -154,10 +154,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			onUpdate: () => this._updateViewStats(),
 			onNavigate: location => this.navigate(location, { skipHistory: true, behavior: 'auto' }),
 		});
-		this._a11yVirtualCursorTarget = {
-			node: null,
-			allowUpdates: true
-		};
+		this._a11yVirtualCursorTarget = null;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');
@@ -1065,7 +1062,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onSetOverlayPopup();
 
 		// If we marked a node as future focus target for screen readers, clear it to avoid scrolling to it
-		this._setA11yVirtualCursorTarget(null);
+		this._a11yVirtualCursorTarget = null;
 
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
@@ -1210,8 +1207,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onFocus();
 
 		// Help screen readers understand where to place virtual cursor
-		placeA11yVirtualCursor(this._a11yVirtualCursorTarget.node);
-		this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
+		placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+		this._a11yVirtualCursorTarget = null;
 	}
 
 	private _preventNextClickEvent() {
@@ -1232,13 +1229,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
 		);
 		return rectContains(selectionBoundingRect, x, y);
-	}
-
-	// Set which node should receive focus when the focus enters the reader to
-	// help screen readers place virtual cursor at the right location
-	protected _setA11yVirtualCursorTarget(node: Node | null) {
-		if (!this._a11yVirtualCursorTarget.allowUpdates) return;
-		this._a11yVirtualCursorTarget.node = node;
 	}
 
 	destroy() {
@@ -1437,9 +1427,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
-	setA11yVirtualCursorTarget: (node: Node | null) => void;
 	setA11yNavContent: (node: Node, pageIndex: string) => void;
-	a11yAnnounceSearchMessage: (index: number, total: number, pageLabel: string | null, snippet: string) => void;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string

@@ -129,10 +129,7 @@ class PDFView {
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
 
-		this._a11yVirtualCursorTarget = {
-			node: null,
-			allowUpdates: null
-		};
+		this._a11yVirtualCursorTarget = null;
 
 		let setOptions = () => {
 			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
@@ -229,8 +226,8 @@ class PDFView {
 				this._iframeWindow.addEventListener('focus', (event) => {
 					options.onFocus();
 					// Help screen readers understand where to place virtual cursor
-					placeA11yVirtualCursor(this._a11yVirtualCursorTarget.node);
-					this._a11yVirtualCursorTarget = { node: null, allowUpdates: true };
+					placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+					this._a11yVirtualCursorTarget = null;
 				});
 			});
 		});
@@ -671,6 +668,7 @@ class PDFView {
 			}
 			// Make sure the state is updated regardless to have last _findState.result value
 			this._findState = state;
+			this.a11yWillPlaceVirtCursorOnSearchResult();
 		}
 		else {
 			this._findState = state;
@@ -688,7 +686,6 @@ class PDFView {
 			highlightAll: this._findState.highlightAll,
 			findPrevious: false
 		});
-		this.a11yHandleSearchResultUpdate();
 	}
 
 	findPrevious() {
@@ -702,33 +699,16 @@ class PDFView {
 			highlightAll: this._findState.highlightAll,
 			findPrevious: true
 		});
-		this.a11yHandleSearchResultUpdate();
 	}
 
 
 	// After the search result is switched to, record which node the
-	// search result is in to place screen readers' virtual cursor on it
-	// + announce the result.
-	async a11yHandleSearchResultUpdate() {
-		await debounceUntilScrollFinishes(this._iframeWindow.document);
+	// search result is in to place screen readers' virtual cursor on it.
+	a11yWillPlaceVirtCursorOnSearchResult = debounce(() => {
 		let searchResult = this._iframeWindow.document.querySelector(".highlight.selected.appended");
 		if (!searchResult || !this._findState.result) return;
-
-		this._a11yVirtualCursorTarget.allowUpdates = true;
-		this._setA11yVirtualCursorTarget(searchResult.parentNode);
-		this._a11yVirtualCursorTarget.allowUpdates = false;
-
-		let { index, total } = this._findState.result;
-		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
-		let pageLabel = this._getPageLabel(currentPageNumber - 1);
-
-		let span = searchResult.parentNode;
-		let previousSpanText = span.previousSibling?.textContent || "";
-		let nextSpanText = span.nextSibling?.textContent || "";
-		let snippet = previousSpanText + span.textContent + nextSpanText;
-
-		this._options.a11yAnnounceSearchMessage(index, total, pageLabel, snippet);
-	}
+		this._a11yVirtualCursorTarget = searchResult.parentNode;
+	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	// Record the top of the current page as the element that the virtual cursor
 	// should land on when focus enters the content. Debounce is needed to
@@ -738,20 +718,13 @@ class PDFView {
 		// If the focus is within the document, do nothing to avoid unnecessarily moving
 		// the cursor to the top of the page if the window is blurred and then re-focused.
 		if (this._iframeWindow.document.hasFocus()) return;
+		// Do not interfere with marking search results as virtual cursor targets
+		if (this._findState?.active) return;
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[currentPageNumber - 1];
-		let pageTop = page.div.querySelector("span");
-		this._setA11yVirtualCursorTarget(pageTop);
+		let pageTop = page.div.querySelector(".textLayer span");
+		this._a11yVirtualCursorTarget = pageTop;
 	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
-
-	// Set which node should receive focus when the focus enters the reader to
-	// help screen readers place virtual cursor at the right location
-	_setA11yVirtualCursorTarget(node) {
-		console.log("Trying to set cursor at ", node);
-		if (!this._a11yVirtualCursorTarget.allowUpdates) return;
-		console.log("-- Set!");
-		this._a11yVirtualCursorTarget.node = node;
-	}
 
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
@@ -1608,7 +1581,7 @@ class PDFView {
 		this._lastFocusedObject = null;
 
 		// If we marked a node as future focus target for screen readers, clear it to avoid scrolling to it
-		this._setA11yVirtualCursorTarget(null);
+		this._a11yVirtualCursorTarget = null;
 		if (!event.target.closest('#viewerContainer')) {
 			return;
 		}

@@ -935,7 +935,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let result = await processor.next();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
-				this.a11yHandleSearchResultUpdate(result.range);
+				this._a11yVirtualCursorTarget = getStartElement(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -948,31 +948,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let result = await processor.prev();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
-				this.a11yHandleSearchResultUpdate(result.range);
+				this._a11yVirtualCursorTarget = getStartElement(result.range);
 			}
 			this._renderAnnotations();
 		}
-	}
-
-	// After the search result is switched to, record which node the
-	// search result is in to place screen readers' virtual cursor on it
-	// + announce the result.
-	async a11yHandleSearchResultUpdate(range: PersistentRange) {
-		await debounceUntilScrollFinishes(this._iframeDocument);
-
-		let searchResult = getStartElement(range);
-		let currentPageLabel = this.pageMapping.getPageLabel(range);
-		if (!searchResult || !this._findState?.result || !currentPageLabel) return;
-
-		// Make sure that the search results are not overriden by a11yWillPlaceVirtCursorOnTop
-		this._a11yVirtualCursorTarget.allowUpdates = true;
-		this._setA11yVirtualCursorTarget(searchResult);
-		this._a11yVirtualCursorTarget.allowUpdates = false;
-
-		let { index, total } = this._findState.result;
-		
-		let snippet = this._findState.result.snippets[this._findState.result.index];
-		this._options.a11yAnnounceSearchMessage(index, total, currentPageLabel, snippet);
 	}
 
 	// Place virtual cursor to the top of the current page.
@@ -983,9 +962,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		// If the focus is within the document, do nothing to avoid unnecessarily moving
 		// the cursor to the top of the page if the window is blurred and then re-focused.
 		if (this._iframeDocument.hasFocus()) return;
+		// Do not interfere with marking search results as virtual cursor targets
+		if (this._findState?.active) return;
 		let node = this.flow.startRange.startContainer;
 		let containingElement = closestElement(node);
-		this._setA11yVirtualCursorTarget(containingElement);
+		this._a11yVirtualCursorTarget = containingElement;
 	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	protected _setScale(scale: number) {
