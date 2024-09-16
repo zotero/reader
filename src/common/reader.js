@@ -860,6 +860,8 @@ class Reader {
 			this.setA11yMessage(annotationContent);
 		}
 
+		let getLocalizedString = (name) => this._getString(name);
+
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -906,7 +908,8 @@ class Reader {
 			onTabOut,
 			onKeyDown,
 			onKeyUp,
-			onFocusAnnotation
+			onFocusAnnotation,
+			getLocalizedString
 		};
 
 		if (this._type === 'pdf') {

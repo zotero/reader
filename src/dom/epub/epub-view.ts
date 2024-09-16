@@ -361,8 +361,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			// will break CFIs.
 			containingElement.setAttribute("role", "navigation");
 
-			// Todo: add localization
-			containingElement.setAttribute('aria-label', `Page: ${value}`);
+			let localizedLabel = `${this._options.getLocalizedString("pdfReader.page")}: ${value}`;
+			containingElement.setAttribute('aria-label', localizedLabel);
 		}
 	}
 
