@@ -361,7 +361,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			// will break CFIs.
 			containingElement.setAttribute("role", "navigation");
 
-			this._options.setA11yNavContent(containingElement, value);
+			// Todo: add localization
+			containingElement.setAttribute('aria-label', `Page: ${value}`);
 		}
 	}
 

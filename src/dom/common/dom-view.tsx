@@ -1427,7 +1427,6 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
-	setA11yNavContent: (node: Node, pageIndex: string) => void;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string

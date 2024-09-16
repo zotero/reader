@@ -860,11 +860,6 @@ class Reader {
 			this.setA11yMessage(annotationContent);
 		}
 
-		// Add page number as aria-label to provided node to improve screen reader navigation
-		let setA11yNavContent = (node, pageIndex) => {
-			node.setAttribute('aria-label', `${this._getString("pdfReader.page")}: ${pageIndex}`);
-		};
-
 		let data;
 		if (this._type === 'pdf') {
 			data = this._data;
@@ -942,7 +937,6 @@ class Reader {
 				fontFamily: this._state.fontFamily,
 				hyphenate: this._state.hyphenate,
 				onEPUBEncrypted,
-				setA11yNavContent,
 			});
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
