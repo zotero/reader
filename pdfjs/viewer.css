@@ -394,7 +394,7 @@ body, #viewerContainer {
 }
 
 @media (prefers-color-scheme: dark) {
-	body:not(.disableDarkMode), body:not(.disableDarkMode) #viewerContainer {
+	body, body #viewerContainer {
 		background-color: #272727; /* --color-toolbar */
 	}
 
@@ -419,8 +419,8 @@ body, #viewerContainer {
 	}
 }
 
-:root[data-color-scheme=dark] body:not(.disableDarkMode),
-:root[data-color-scheme=dark] body:not(.disableDarkMode) #viewerContainer {
+:root[data-color-scheme=dark] body,
+:root[data-color-scheme=dark] body #viewerContainer {
 	background-color: #272727;
 	/* --color-toolbar */
 }
