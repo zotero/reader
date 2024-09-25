@@ -28,3 +28,5 @@ export const MIN_IMAGE_ANNOTATION_SIZE = 10; // pt
 export const DEBOUNCE_STATE_CHANGE = 300; // ms
 export const DEBOUNCE_STATS_CHANGE = 100; // ms
 export const DEBOUNCE_FIND_POPUP_INPUT = 500; // ms
+
+export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 100; // ms

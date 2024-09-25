@@ -15,11 +15,14 @@ export class PersistentRange {
 
 	endOffset: number;
 
+	collapsed: boolean;
+
 	constructor(range: AbstractRange) {
 		this.startContainer = range.startContainer;
 		this.startOffset = range.startOffset;
 		this.endContainer = range.endContainer;
 		this.endOffset = range.endOffset;
+		this.collapsed = range.collapsed;
 	}
 
 	toRange(): Range {

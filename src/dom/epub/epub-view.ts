@@ -22,6 +22,7 @@ import Epub, {
 	NavItem,
 } from "epubjs";
 import {
+	getStartElement,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
 	splitRangeToTextNodes
@@ -42,6 +43,7 @@ import SectionRenderer from "./section-renderer";
 import Section from "epubjs/types/section";
 import {
 	closestElement,
+	getVisibleTextNodes,
 	getContainingBlock
 } from "../common/lib/nodes";
 import { StyleScoper } from "./lib/sanitize-and-render";
@@ -55,7 +57,9 @@ import {
 	PaginatedFlow,
 	ScrolledFlow
 } from "./flow";
-import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
+import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
+import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
+import { debounce } from '../../common/lib/debounce';
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -177,6 +181,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._sectionsContainer.hidden = false;
 		this.pageMapping = this._initPageMapping(viewState.savedPageMapping);
 		this._initOutline();
+		this._addAriaNavigationLandmarks();
 
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
@@ -339,6 +344,25 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		catch (e) {
 			console.error('Unable to get range for CFI', cfiString, e);
 			return null;
+		}
+	}
+
+	// Add landmarks with page labels for screen reader navigation
+	private async _addAriaNavigationLandmarks() {
+		for (let [key, value] of this.pageMapping.tree.entries()) {
+			let node = key.startContainer;
+			let containingElement = closestElement(node);
+
+			if (!containingElement) continue;
+
+			// This is semantically not correct, as we are assigning
+			// navigation role to <p> and <h> nodes but this is the
+			// best solution to avoid adding nodes into the DOM, which
+			// will break CFIs.
+			containingElement.setAttribute("role", "navigation");
+
+			let localizedLabel = `${this._options.getLocalizedString("pdfReader.page")}: ${value}`;
+			containingElement.setAttribute('aria-label', localizedLabel);
 		}
 	}
 
@@ -626,6 +650,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			spreadMode: this.spreadMode,
 		};
 		this._options.onChangeViewStats(viewStats);
+		this.a11yWillPlaceVirtCursorOnTop();
 	}
 
 	protected override _handleViewUpdate() {
@@ -911,6 +936,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let result = await processor.next();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
+				this._a11yVirtualCursorTarget = getStartElement(result.range);
 			}
 			this._renderAnnotations();
 		}
@@ -923,10 +949,26 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let result = await processor.prev();
 			if (result) {
 				this.flow.scrollIntoView(result.range);
+				this._a11yVirtualCursorTarget = getStartElement(result.range);
 			}
 			this._renderAnnotations();
 		}
 	}
+
+	// Place virtual cursor to the top of the current page.
+	// Debounce is needed to make sure that the value is set
+	// when scrolling is finished because it clears the cursor target.
+	protected a11yWillPlaceVirtCursorOnTop = debounce(() => {
+		if (!this.flow.startRange) return;
+		// If the focus is within the document, do nothing to avoid unnecessarily moving
+		// the cursor to the top of the page if the window is blurred and then re-focused.
+		if (this._iframeDocument.hasFocus()) return;
+		// Do not interfere with marking search results as virtual cursor targets
+		if (this._findState?.active) return;
+		let node = this.flow.startRange.startContainer;
+		let containingElement = closestElement(node);
+		this._a11yVirtualCursorTarget = containingElement;
+	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	protected _setScale(scale: number) {
 		this._keepPosition(() => {

@@ -73,7 +73,7 @@ function Toolbar(props) {
 	}
 
 	return (
-		<div className="toolbar" data-tabstop={1}>
+		<div className="toolbar" data-tabstop={1} role="application">
 			<div className="start">
 				<button
 					id="sidebarToggle"

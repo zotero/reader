@@ -332,3 +332,39 @@ if (!Array.prototype.findLastIndex) {
 		return -1;
 	};
 }
+
+/**
+ * Explicitly focus a given node within the view to force screen readers to move
+ * their virtual cursors to that element. Screen readers just look at rendered content
+ * so without this any navigation done via outline/Find in/page input in toolbar gets
+ * undone by virtual cursor either remaining where it was or even jumping to the beginning of content.
+ * @param target - node to focus from the view. Views keep track of it in  _a11yVirtualCursorTarget obj.
+ */
+export async function placeA11yVirtualCursor(target) {
+	// Can't focus a textnode, so grab its parent (e.g. <p>)
+	if (target?.nodeType === Node.TEXT_NODE) {
+		target = target.parentNode;
+	}
+	if (!target) return;
+	let doc = target.ownerDocument;
+	// Make it temporarily focusable
+	target.setAttribute("tabindex", "-1");
+	target.setAttribute("a11y-cursor-target", true);
+	target.focus();
+	// If focus didn't take, remove tabindex and stop
+	if (doc.activeElement != target) {
+		target.removeAttribute("tabindex");
+		return;
+	}
+	// Remove focus when element looses focus
+	target.addEventListener("blur", (_) => {
+		target.removeAttribute("tabindex");
+		target.removeAttribute("a11y-cursor-target");
+	});
+	// Blur the target on any keypress so that one can still scroll content with
+	// arrowUp/Down. Otherwise, all keydown events land on the target and
+	// nothing happens
+	target.addEventListener("keydown", (_) => {
+		target.blur();
+	});
+}

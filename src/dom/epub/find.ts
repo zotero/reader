@@ -178,12 +178,16 @@ export class EPUBFindProcessor implements FindProcessor {
 				}
 				snippets.push(...processor.getSnippets());
 			}
+			let current = this._selectedProcessor?.current;
+			let currentPage = current ? this.view.pageMapping.getPageLabel(current.range) : "";
 			this._onSetFindState({
 				...this.findState,
 				result: {
 					total: this._totalResults,
 					index,
 					snippets,
+					currentPageLabel: currentPage || "",
+					currentSnippet: snippets[index]
 				}
 			});
 		}

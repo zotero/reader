@@ -185,7 +185,7 @@ class Reader {
 				caseSensitive: false,
 				entireWord: false,
 				result: null
-			},
+			}
 		};
 
 		if (options.secondaryViewState) {
@@ -655,23 +655,23 @@ class Reader {
 		this._onTextSelectionAnnotationModeChange(mode);
 	}
 
-	// Announce the index of current search result to screen readers
-	setA11ySearchResultMessage(primaryView) {
-		let result = (primaryView ? this._state.primaryViewFindState : this._state.secondaryViewFindState).result;
-		if (!result) return;
-		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${result.index + 1}`;
-		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${result.total}`;
-		this.setA11yMessage(`${searchIndex}. ${totalResults}`);
-	}
+	// Announce info about current search result to screen readers.
+	// FindState is updated multiple times while navigating between results
+	// so debounce is used to fire only after the last update.
+	a11yAnnounceSearchMessage = debounce((findStateResult) => {
+		if (!findStateResult) return;
+		let { index, total, currentPageLabel, currentSnippet } = findStateResult;
+		let searchIndex = `${this._getString("pdfReader.searchResultIndex")}: ${index + 1}.`;
+		let totalResults = `${this._getString("pdfReader.searchResultTotal")}: ${total}.`;
+		let page = currentPageLabel ? `${this._getString("pdfReader.page")}: ${currentPageLabel}.` : "";
+		this.setA11yMessage(`${searchIndex} ${totalResults} ${currentSnippet || ""} ${page}`);
+	}, 100);
 
 	findNext(primary) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findNext();
-		setTimeout(() => {
-			this.setA11ySearchResultMessage(primary);
-		});
 	}
 
 	findPrevious(primary) {
@@ -679,9 +679,6 @@ class Reader {
 			primary = this._lastViewPrimary;
 		}
 		(primary ? this._primaryView : this._secondaryView).findPrevious();
-		setTimeout(() => {
-			this.setA11ySearchResultMessage(primary);
-		});
 	}
 
 	toggleEPUBAppearancePopup({ open }) {
@@ -828,6 +825,7 @@ class Reader {
 
 		let onSetFindState = (params) => {
 			this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
+			this.a11yAnnounceSearchMessage(params.result);
 		};
 
 		let onSelectAnnotations = (ids, triggeringEvent) => {
@@ -861,6 +859,8 @@ class Reader {
 			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
 			this.setA11yMessage(annotationContent);
 		}
+
+		let getLocalizedString = (name) => this._getString(name);
 
 		let data;
 		if (this._type === 'pdf') {
@@ -908,7 +908,8 @@ class Reader {
 			onTabOut,
 			onKeyDown,
 			onKeyUp,
-			onFocusAnnotation
+			onFocusAnnotation,
+			getLocalizedString
 		};
 
 		if (this._type === 'pdf') {

@@ -43,7 +43,7 @@ function Item({ item, id, children, onOpenLink, onUpdate, onSelect }) {
 	let { expanded, active } = item;
 
 	return (
-		<li>
+		<li id={`outline-${id}`} aria-label={item.title}>
 			<div
 				className={cx('item', { expandable: !!item.items?.length, expanded, active })}
 				data-id={id}
@@ -76,20 +76,20 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		}
 	}
 
+	function flatten(items, list = []) {
+		for (let item of items) {
+			list.push(item);
+			if (item.items && item.expanded) {
+				flatten(item.items, list);
+			}
+		}
+		return list;
+	}
+	
 	function handleKeyDown(event) {
 		let { key } = event;
 
-		let list = [];
-		function flatten(items) {
-			for (let item of items) {
-				list.push(item);
-				if (item.items && item.expanded) {
-					flatten(item.items);
-				}
-			}
-		}
-
-		flatten(outline);
+		let list = flatten(outline);
 
 		let currentIndex = list.findIndex(x => x.active);
 		let currentItem = list[currentIndex];
@@ -166,6 +166,7 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		);
 	}
 
+	let active = flatten(outline || []).findIndex(item => item.active);
 	return (
 		<div
 			ref={containerRef}
@@ -173,9 +174,10 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 			data-tabstop="1"
 			tabIndex={-1}
 			id="outlineView"
-			role="tabpanel"
+			role="listbox"
 			aria-labelledby="viewOutline"
 			onKeyDown={handleKeyDown}
+			aria-activedescendant={active !== -1 ? `outline-${active}` : null}
 		>
 			{outline === null ? <div className="spinner"/> : renderItems(outline)}
 		</div>
