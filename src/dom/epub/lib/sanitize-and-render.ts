@@ -105,7 +105,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 
 export class StyleScoper {
 	tagEmulatingSelectors = {
-		table: new Set<string>(['table', 'mtable']),
+		table: new Set<string>(['table', 'mtable', 'pre']),
 		supSub: new Set<string>(['sup', 'sub']),
 	};
 
