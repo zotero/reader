@@ -31,3 +31,5 @@ export const DEBOUNCE_FIND_POPUP_INPUT = 500; // ms
 
 export const FIND_RESULT_COLOR_ALL = '#EDD3ED';
 export const FIND_RESULT_COLOR_CURRENT = '#D4E0D1';
+
+export const ANNOTATION_POSITION_MAX_SIZE = 65000;

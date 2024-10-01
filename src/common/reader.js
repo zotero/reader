@@ -999,6 +999,10 @@ class Reader {
 		this._annotationManager.convertAnnotations(ids, type);
 	}
 
+	mergeAnnotations(ids) {
+		return this._annotationManager.mergeAnnotations(ids);
+	}
+
 	/**
 	 * Trigger copying inside the currently focused iframe or the main window
 	 */

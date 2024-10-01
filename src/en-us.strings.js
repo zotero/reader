@@ -189,5 +189,6 @@ export default {
 	'pdfReader.wholeWords': 'Whole words',
 	'pdfReader.convertToHighlight': 'Convert to Highlight',
 	'pdfReader.convertToUnderline': 'Convert to Underline',
-	'pdfReader.size': 'Size'
+	'pdfReader.size': 'Size',
+	'pdfReader.merge': 'Merge'
 };

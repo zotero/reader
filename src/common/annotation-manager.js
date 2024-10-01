@@ -1,5 +1,6 @@
 import { approximateMatch } from './lib/approximate-match';
 import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
+import { ANNOTATION_POSITION_MAX_SIZE } from './defines';
 
 const DEBOUNCE_TIME = 1000; // 1s
 const DEBOUNCE_MAX_TIME = 10000; // 10s
@@ -188,6 +189,78 @@ class AnnotationManager {
 		}
 		this.deleteAnnotations(annotations.map(x => x.id));
 		this.render();
+	}
+
+	mergeAnnotations(ids) {
+		let annotations = [];
+		for (let id of ids) {
+			let annotation = this._getAnnotationByID(id);
+			if (annotation) {
+				if (annotation.type !== 'ink') {
+					throw new Error('Only ink annotations can be merged');
+				}
+				if (annotation.readOnly) {
+					throw new Error('Cannot update read-only annotation');
+				}
+				if (this._readOnly) {
+					throw new Error('Cannot update annotations for read-only file');
+				}
+			}
+			annotations.push(annotation);
+		}
+		if (annotations.length < 2) {
+			throw new Error('At least two annotations must be provided');
+		}
+		if (new Set(annotations.map(x => x.color)).size !== 1) {
+			throw new Error('Annotations must have the same color');
+		}
+		if (new Set(annotations.map(x => x.position.pageIndex)).size !== 1) {
+			throw new Error('Annotations must be in the same page');
+		}
+
+		let { color, pageLabel } = annotations[0];
+
+		// Create a new annotation
+		let annotation = { type: 'ink', color, pageLabel };
+
+		if (this._authorName) {
+			annotation.authorName = this._authorName;
+			annotation.isAuthorNameAuthoritative = true;
+		}
+
+		annotation.id = this._generateObjectKey();
+		// Page index closest to the beginning of the page
+		annotation.sortIndex = annotations.sort((a, b) => a.sortIndex - b.sortIndex)[0].sortIndex;
+		// Oldest creation date
+		annotation.dateCreated = annotations.sort((a, b) => a.dateCreated - b.dateCreated)[0].dateCreated;
+		annotation.dateModified = (new Date()).toISOString();
+		// Combine and deduplicate tags from all annotations
+		annotation.tags = Array.from(new Set(...annotations.flatMap(x => x.tags)));
+
+		// Get the most common width
+		let widthMap = new Map();
+		for (let annotation of annotations) {
+			let { width, paths } = annotation.position;
+			let num = widthMap.get(width) || 0;
+			num += paths.flat().length;
+			widthMap.set(width, num);
+		}
+		let width = [...widthMap.entries()].sort((a, b) => b[1] - a[1])[0][0];
+
+		annotation.position = {
+			pageIndex: annotations[0].position.pageIndex,
+			width,
+			paths: annotations.flatMap(x => x.position.paths)
+		};
+
+		if (JSON.stringify(annotation.position).length > ANNOTATION_POSITION_MAX_SIZE) {
+			throw new Error(`Merged annotation 'position' exceeds ${ANNOTATION_POSITION_MAX_SIZE}`);
+		}
+
+		this._save(annotation);
+		this.deleteAnnotations(annotations.map(x => x.id));
+		this.render();
+		return annotation;
 	}
 
 	// Note: Keep in sync with Zotero client
