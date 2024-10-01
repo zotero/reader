@@ -8,6 +8,7 @@ import {
 	OutlineItem
 } from "../../common/types";
 import {
+	getBoundingPageRect,
 	getInnerText,
 	getStartElement
 } from "../common/lib/range";
@@ -311,12 +312,25 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
-		if (range) {
-			getStartElement(range)?.scrollIntoView(options);
-		}
-		else {
+		if (!range) {
 			console.warn('Not a valid snapshot selector', selector);
+			return;
 		}
+
+		// Non-element nodes and ranges don't have scrollIntoView(),
+		// so scroll using a temporary element, removed synchronously
+		let rect = getBoundingPageRect(range);
+		let tempElem = this._iframeDocument.createElement('div');
+		tempElem.style.position = 'absolute';
+		tempElem.style.visibility = 'hidden';
+		tempElem.style.left = rect.left + 'px';
+		tempElem.style.top = rect.top + 'px';
+		tempElem.style.width = rect.width + 'px';
+		tempElem.style.height = rect.height + 'px';
+
+		this._annotationShadowRoot.append(tempElem);
+		tempElem.scrollIntoView(options);
+		tempElem.remove();
 	}
 
 	protected override _updateViewState() {
