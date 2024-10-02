@@ -257,7 +257,8 @@ class AnnotationManager {
 		let width = [...widthMap.entries()].sort((a, b) => b[1] - a[1])[0][0];
 
 		annotation.position = {
-			pageIndex: annotations[0].position.pageIndex,
+			// Preserve pageIndex and potentially other unknown properties
+			...annotations[0].position,
 			width,
 			paths: annotations.flatMap(x => x.position.paths)
 		};
