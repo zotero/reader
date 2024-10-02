@@ -262,7 +262,12 @@ export function createAnnotationContextMenu(reader, params) {
 						|| (new Set(annotations.map(x => x.color))).size !== 1
 						|| (new Set(annotations.map(x => x.position.pageIndex))).size !== 1,
 					persistent: true,
-					onCommand: () => reader.mergeAnnotations(params.ids)
+					onCommand: () => {
+						let annotation = reader.mergeAnnotations(params.ids);
+						if (annotation) {
+							reader._updateState({ selectedAnnotationIDs: [annotation.id] });
+						}
+					}
 				},
 			],
 			[
