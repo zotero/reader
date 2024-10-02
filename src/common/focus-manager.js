@@ -92,6 +92,28 @@ export class FocusManager {
 	}
 
 	_handleKeyDown(e) {
+		// Switch focus back to the view if trying to resize highlight/underline annotation,
+		// but currently sidebar/popup comment is focused
+		let emptyComment = true;
+		let ids = this._reader._state.selectedAnnotationIDs;
+		if (ids.length === 1) {
+			let annotation = this._reader._state.annotations.find(x => x.id === ids[0]);
+			if (annotation?.comment) {
+				emptyComment = false;
+			}
+		}
+		// Restore focus to the last view if
+		if (this._reader._annotationSelectionTriggeredFromView
+			&& e.target.closest('[contenteditable="true"]')
+			&& emptyComment
+			&& e.shiftKey
+			&& e.key.startsWith('Arrow')) {
+			this._reader._lastView.focus();
+			e.preventDefault();
+			e.stopPropagation();
+			return;
+		}
+
 		if (e.shiftKey && e.key === 'Tab') {
 			this.tabToGroup(true);
 			e.preventDefault();
