@@ -75,6 +75,13 @@
 		&.hidden {
 			display: none;
 		}
+
+		:root.is-safari & {
+			// 'contain: paint' in a multi-column layout slows Safari to a crawl
+			// and causes content to disappear
+			contain: layout;
+			contain: layout style;
+		}
 	}
 }
 

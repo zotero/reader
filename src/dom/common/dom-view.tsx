@@ -575,6 +575,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		style.innerHTML = injectCSS;
 		this._annotationShadowRoot.append(style);
 
+		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
+
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);
 		this.setTool(this._options.tool);
