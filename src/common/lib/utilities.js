@@ -348,3 +348,14 @@ if (!Array.prototype.findLastIndex) {
 		return -1;
 	};
 }
+
+export function sortTags(tags) {
+	let collator = new Intl.Collator(['en-US'], { numeric: true, sensitivity: 'base' });
+	tags.sort((a, b) => {
+		if (!a.color && !b.color) return collator.compare(a.name, b.name);
+		if (!a.color && !b.color) return -1;
+		if (!a.color && b.color) return 1;
+		return a.position - b.position;
+	});
+	return tags;
+}

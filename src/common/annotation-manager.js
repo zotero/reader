@@ -1,6 +1,7 @@
 import { approximateMatch } from './lib/approximate-match';
 import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
 import { ANNOTATION_POSITION_MAX_SIZE } from './defines';
+import { sortTags } from './lib/utilities';
 
 const DEBOUNCE_TIME = 1000; // 1s
 const DEBOUNCE_MAX_TIME = 10000; // 10s
@@ -235,7 +236,15 @@ class AnnotationManager {
 		annotation.dateCreated = annotations.sort((a, b) => a.dateCreated - b.dateCreated)[0].dateCreated;
 		annotation.dateModified = (new Date()).toISOString();
 		// Combine and deduplicate tags from all annotations
-		annotation.tags = Array.from(new Set(...annotations.flatMap(x => x.tags)));
+		annotation.tags = [];
+		for (let existingAnnotation of annotations) {
+			for (let tag of existingAnnotation.tags) {
+				if (!annotation.tags.find(x => x.name === tag.name)) {
+					annotation.tags.push({ ...tag });
+				}
+			}
+		}
+		sortTags(annotation.tags);
 
 		// Get the most common width
 		let widthMap = new Map();
