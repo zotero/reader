@@ -22,7 +22,6 @@ export const DARKEN_INK_AND_TEXT_COLOR = 5; // percent
 export let SELECTION_COLOR = '#71ADFD';
 
 export const PDF_NOTE_DIMENSIONS = 22; // pt
-export const DEFAULT_TEXT_ANNOTATION_FONT_SIZE = 14; // pt
 export const MIN_IMAGE_ANNOTATION_SIZE = 10; // pt
 
 export const DEBOUNCE_STATE_CHANGE = 300; // ms
@@ -33,3 +32,12 @@ export const FIND_RESULT_COLOR_ALL = '#EDD3ED';
 export const FIND_RESULT_COLOR_CURRENT = '#D4E0D1';
 
 export const ANNOTATION_POSITION_MAX_SIZE = 65000;
+
+export const INK_ANNOTATION_WIDTH_STEPS = [
+	0.2, 0.4, 0.6, 0.8, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5,
+	6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10, 10.5, 11, 11.5, 12, 12.5,
+	13, 13.5, 14, 14.5, 15, 15.5, 16, 16.5, 17, 17.5, 18, 18.5, 19,
+	19.5, 20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24, 24.5, 25
+];
+
+export const TEXT_ANNOTATION_FONT_SIZE_STEPS = [10, 12, 14, 18, 24, 36, 48, 64, 72, 96, 144, 192];

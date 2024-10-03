@@ -44,28 +44,15 @@ function SliderRow({ item }) {
 		item.onCommand(sliderValueTransform(inputRef.current.value));
 	}, 300), []);
 
-	var range1 = { sliderMin: 0, sliderMax: 4, valueStart: 0.2, valueEnd: 1.0, step: 0.2 };
-	var range2 = { sliderMin: 5, sliderMax: 52, valueStart: 1.0, valueEnd: 25.0, step: 0.5 };
 
-	function generateSteps() {
-		var steps = [];
-		for (let i = range1.valueStart; i <= range1.valueEnd; i += range1.step) {
-			steps.push(parseFloat(i.toFixed(2)));
-		}
-		for (let i = range2.valueStart + range2.step; i <= range2.valueEnd; i += range2.step) {
-			steps.push(parseFloat(i.toFixed(2)));
-		}
-		return steps;
-	}
-
-	var stepsArray = generateSteps();
+	let { steps } = item;
 
 	function findClosest(value) {
 		let closestIndex = 0;
-		let minDiff = Math.abs(stepsArray[0] - value);
+		let minDiff = Math.abs(steps[0] - value);
 
-		for (let i = 1; i < stepsArray.length; i++) {
-			let diff = Math.abs(stepsArray[i] - value);
+		for (let i = 1; i < steps.length; i++) {
+			let diff = Math.abs(steps[i] - value);
 			if (diff < minDiff) {
 				minDiff = diff;
 				closestIndex = i;
@@ -75,7 +62,7 @@ function SliderRow({ item }) {
 	}
 
 	function sliderValueTransform(sliderValue) {
-		return stepsArray[sliderValue];
+		return steps[sliderValue];
 	}
 
 	function valueToSliderTransform(val) {
@@ -91,7 +78,7 @@ function SliderRow({ item }) {
 				tabIndex={-1}
 				type="range"
 				min="0"
-				max={stepsArray.length - 1}
+				max={steps.length - 1}
 				value={valueToSliderTransform(size)}
 				className="slider"
 				id="myRange"

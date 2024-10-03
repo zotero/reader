@@ -109,6 +109,7 @@ class Reader {
 			text: {
 				type: 'text',
 				color: ANNOTATION_COLORS[0][1],
+				size: 14
 			},
 			ink: {
 				type: 'ink',

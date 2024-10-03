@@ -1,4 +1,10 @@
-import { ANNOTATION_COLORS, EXTRA_INK_AND_TEXT_COLORS } from './defines';
+import {
+	ANNOTATION_COLORS,
+	EXTRA_INK_AND_TEXT_COLORS,
+	INK_ANNOTATION_WIDTH_STEPS,
+	TEXT_ANNOTATION_FONT_SIZE_STEPS
+} from './defines';
+import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
 
 function appendCustomItemGroups(name, reader, params) {
 	let itemGroups = [];
@@ -56,16 +62,22 @@ export function createColorContextMenu(reader, params) {
 				}
 			],
 			[
+				reader._state.tool.type === 'text' && {
+					slider: true,
+					size: reader._state.tool.size,
+					steps: TEXT_ANNOTATION_FONT_SIZE_STEPS,
+					onCommand: (size) => reader.setTool({ size })
+				},
 				reader._state.tool.type === 'ink' && {
 					slider: true,
 					size: reader._state.tool.size,
-					label: reader._getString('general.copy'),
+					steps: INK_ANNOTATION_WIDTH_STEPS,
 					onCommand: (size) => reader.setTool({ size })
 				},
 				reader._state.tool.type === 'eraser' && {
 					slider: true,
 					size: reader._state.tool.size,
-					label: reader._getString('general.copy'),
+					steps: INK_ANNOTATION_WIDTH_STEPS,
 					onCommand: (size) => reader.setTool({ size })
 				}
 			],
@@ -188,11 +200,27 @@ export function createAnnotationContextMenu(reader, params) {
 				(annotations.every(x => x.type === 'ink') && {
 					slider: true,
 					size: annotations[0].position.width,
-					label: reader._getString('general.copy'),
 					disabled: readOnly,
 					persistent: true,
+					steps: INK_ANNOTATION_WIDTH_STEPS,
 					onCommand: (width) => {
 						reader._annotationManager.updateAnnotations(annotations.map(({ id, sortIndex }) => ({ id, sortIndex, position: { width } })));
+					}
+				}),
+				(annotations.every(x => x.type === 'text') && {
+					slider: true,
+					size: annotations[0].position.fontSize,
+					disabled: readOnly,
+					persistent: true,
+					steps: TEXT_ANNOTATION_FONT_SIZE_STEPS,
+					onCommand: (fontSize) => {
+						reader._annotationManager.updateAnnotations(annotations.map(({ id, sortIndex, comment, position }) => {
+							position = measureTextAnnotationDimensions({
+								comment,
+								position: { ...position, fontSize }
+							});
+							return { id, sortIndex, position };
+						}));
 					}
 				})
 			],

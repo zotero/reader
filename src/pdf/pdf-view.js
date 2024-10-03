@@ -48,7 +48,6 @@ import {
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
 import {
-	DEFAULT_TEXT_ANNOTATION_FONT_SIZE,
 	MIN_IMAGE_ANNOTATION_SIZE,
 	PDF_NOTE_DIMENSIONS
 } from '../common/defines';
@@ -1743,15 +1742,16 @@ class PDFView {
 		}
 		else if (action.type === 'text') {
 			let rect = position.rects[0];
+			let fontSize = this._tool.size;
 			let newPosition = {
 				pageIndex: position.pageIndex,
-				fontSize: DEFAULT_TEXT_ANNOTATION_FONT_SIZE,
+				fontSize,
 				rotation: 0,
 				rects: [[
-					rect[0] - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
-					rect[1] - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
-					rect[2] + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
-					rect[3] + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2
+					rect[0] - fontSize / 2,
+					rect[1] - fontSize / 2,
+					rect[2] + fontSize / 2,
+					rect[3] + fontSize / 2
 				]]
 			};
 			this._onAddAnnotation({
@@ -2876,15 +2876,16 @@ class PDFView {
 			let viewBox = page.viewport.viewBox;
 			let cx = (viewBox[0] + viewBox[2]) / 2;
 			let cy = (viewBox[1] + viewBox[3]) / 2;
+			let fontSize = this._tools['text'].size;
 			let position = {
 				pageIndex,
-				fontSize: DEFAULT_TEXT_ANNOTATION_FONT_SIZE,
+				fontSize,
 				rotation: 0,
 				rects: [[
-					cx - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
-					cy - DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
-					cx + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2,
-					cy + DEFAULT_TEXT_ANNOTATION_FONT_SIZE / 2
+					cx - fontSize / 2,
+					cy - fontSize / 2,
+					cx + fontSize / 2,
+					cy + fontSize / 2
 				]]
 			};
 			let annotation = this._onAddAnnotation({
