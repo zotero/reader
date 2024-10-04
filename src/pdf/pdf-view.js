@@ -2759,24 +2759,42 @@ class PDFView {
 				else if (type === 'text') {
 					let rect = position.rects[0].slice();
 					const MIN_TEXT_ANNOTATION_WIDTH = 10;
-					let x = rect[2];
+					let dir;
 					if (key === 'Shift-ArrowLeft') {
-						x -= STEP;
+						let x = rect[2] - STEP;
 						rect[2] = x < rect[0] + MIN_TEXT_ANNOTATION_WIDTH && rect[0] + MIN_TEXT_ANNOTATION_WIDTH || x;
 						modified = true;
+						dir = 'r';
 					}
 					else if (key === 'Shift-ArrowRight') {
-						x += STEP;
-						rect[2] = x;
+						rect[2] += STEP;
 						modified = true;
+						dir = 'r';
+					}
+					else if (key === 'Shift-ArrowUp') {
+						rect[2] -= STEP;
+						rect[1] -= STEP;
+						modified = true;
+						dir = 'br';
+					}
+					else if (key === 'Shift-ArrowDown') {
+						rect[2] += STEP;
+						rect[1] += STEP;
+						modified = true;
+						dir = 'br';
 					}
 
 					if (modified) {
+						let fontSize = 0;
 						let r1 = annotation.position.rects[0];
-						let r2 = rect;
 						let m1 = getRotationTransform(r1, annotation.position.rotation);
+						let ratio = (r1[2] - r1[0]) / (r1[3] - r1[1]);
+						if (dir.length === 2) {
+							rect = adjustRectHeightByRatio(rect, ratio, dir);
+						}
+						let r2 = rect;
 						let m2 = getRotationTransform(r2, annotation.position.rotation);
-						let mm = getScaleTransform(r1, r2, m1, m2, 'r');
+						let mm = getScaleTransform(r1, r2, m1, m2, dir);
 						let mmm = transform(m2, mm);
 						mmm = inverseTransform(mmm);
 						r2 = [
@@ -2787,13 +2805,25 @@ class PDFView {
 							...applyTransform(r2, mmm),
 							...applyTransform(r2.slice(2), mmm)
 						];
+						let scale = calculateScale(annotation.position.rects[0], rect);
+						if (dir.length !== 2) {
+							scale = 1;
+						}
+						fontSize = annotation.position.fontSize * scale;
+						fontSize = Math.round(fontSize * 2) / 2;
 
-						position = { ...position, rects: [rect] };
+						position = { ...position, fontSize, rects: [rect] };
+						position.rects = [rect];
+						if (fontSize) {
+							position.fontSize = fontSize;
+						}
 
-						position = measureTextAnnotationDimensions({
-							...annotation,
-							position
-						});
+						if (dir.length !== 2) {
+							position = measureTextAnnotationDimensions({
+								...annotation,
+								position
+							});
+						}
 					}
 				}
 				if (modified) {
