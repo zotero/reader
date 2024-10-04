@@ -2617,6 +2617,7 @@ class PDFView {
 					let sortIndex = getSortIndex(this._pdfPages, position);
 					this._onUpdateAnnotations([{ id, position, sortIndex }]);
 					this._render();
+					this._onSetAnnotationPopup();
 				}
 				event.stopPropagation();
 				event.preventDefault();
@@ -2642,6 +2643,7 @@ class PDFView {
 					let annotation2 = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
 					let { text, sortIndex, position } = annotation2;
 					this._onUpdateAnnotations([{ id, text, sortIndex, position }]);
+					this._onSetAnnotationPopup();
 				}
 				event.stopPropagation();
 				event.preventDefault();
@@ -2682,6 +2684,7 @@ class PDFView {
 					let annotation2 = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
 					let { text, sortIndex, position } = annotation2;
 					this._onUpdateAnnotations([{ id, text, sortIndex, position }]);
+					this._onSetAnnotationPopup();
 				}
 				event.stopPropagation();
 				event.preventDefault();
@@ -2830,6 +2833,7 @@ class PDFView {
 					let sortIndex = getSortIndex(this._pdfPages, position);
 					this._onUpdateAnnotations([{ id, position, sortIndex }]);
 					this._render();
+					this._onSetAnnotationPopup();
 				}
 				event.stopPropagation();
 				event.preventDefault();
@@ -3078,8 +3082,13 @@ class PDFView {
 		}
 		else if (this._selectedAnnotationIDs.length === 1) {
 			let annotation = this._annotations.find(x => x.id === this._selectedAnnotationIDs[0]);
-			if (annotation.type === 'text') {
-				if (['Enter'].includes(key)) {
+			if (['Enter'].includes(key)) {
+				if (!this._annotationPopup) {
+					this._openAnnotationPopup();
+					event.preventDefault();
+					event.stopPropagation();
+				}
+				if (annotation.type === 'text') {
 					setTimeout(() => {
 						this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`)?.focus();
 					}, 100);
