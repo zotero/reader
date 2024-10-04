@@ -71,9 +71,9 @@ export class KeyboardManager {
 
 		// Focus on the last view if an arrow key is pressed in an empty annotation comment within the sidebar,
 		// and the annotation was selected from the view
-		let content = document.activeElement?.closest('.annotation .comment .content');
+		let content = document.activeElement?.closest('.comment .content');
 		if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)
-			&& (!content || !content.innerText)
+			&& (content && !content.innerText)
 			&& this._reader._annotationSelectionTriggeredFromView
 		) {
 			setTimeout(() => this._reader._lastView.focus());
