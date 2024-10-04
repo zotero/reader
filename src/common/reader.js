@@ -82,6 +82,7 @@ class Reader {
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = false;
 
+		// Stores the default or current values for each annotation type
 		this._tools = {
 			pointer: {
 				type: 'pointer'
@@ -888,6 +889,7 @@ class Reader {
 			platform: this._platform,
 			readOnly: this._state.readOnly,
 			preview: this._preview,
+			tools: this._tools, // Read-only. Useful for retrieving properties (e.g., size, color) from an inactive tool
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),

@@ -72,6 +72,7 @@ class PDFView {
 		this._preview = options.preview;
 		this._container = options.container;
 		this._password = options.password;
+		this._tools = options.tools;
 		this._useDarkMode = options.useDarkMode;
 		this._colorScheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
@@ -2812,6 +2813,7 @@ class PDFView {
 		) {
 			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
 			annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+			annotation.color = this._tools['highlight'].color;
 			this._onAddAnnotation(annotation, true);
 			this.navigateToPosition(annotation.position);
 			this._setSelectionRanges();
@@ -2824,6 +2826,7 @@ class PDFView {
 		) {
 			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'underline');
 			annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+			annotation.color = this._tools['underline'].color;
 			this._onAddAnnotation(annotation, true);
 			this.navigateToPosition(annotation.position);
 			this._setSelectionRanges();
@@ -2851,6 +2854,7 @@ class PDFView {
 				type: 'note',
 				pageLabel: this._getPageLabel(pageIndex, true),
 				sortIndex: getSortIndex(this._pdfPages, position),
+				color: this._tools['note'].color,
 				position
 			});
 			if (annotation) {
@@ -2887,6 +2891,7 @@ class PDFView {
 				type: 'text',
 				pageLabel: this._getPageLabel(pageIndex, true),
 				sortIndex: getSortIndex(this._pdfPages, position),
+				color: this._tools['text'].color,
 				position
 			});
 			if (annotation) {
@@ -2917,6 +2922,7 @@ class PDFView {
 				type: 'image',
 				pageLabel: this._getPageLabel(pageIndex, true),
 				sortIndex: getSortIndex(this._pdfPages, position),
+				color: this._tools['image'].color,
 				position
 			}, true);
 			if (annotation) {

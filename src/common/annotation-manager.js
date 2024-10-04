@@ -17,7 +17,6 @@ class AnnotationManager {
 		this._readOnly = options.readOnly;
 		this._authorName = options.authorName;
 		this._annotations = options.annotations;
-		this._tools = options.tools;
 		this._onChangeFilter = options.onChangeFilter;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
@@ -56,19 +55,17 @@ class AnnotationManager {
 		this.render();
 	}
 
-	//
 	addAnnotation(annotation) {
 		if (this._readOnly) {
 			return null;
 		}
 		// Mandatory properties
-		if (!annotation.sortIndex) {
-			throw new Error(`Missing 'sortIndex' property`);
+		let { color, sortIndex } = annotation;
+		if (!color) {
+			throw new Error(`Missing 'color' property`);
 		}
-
-		// Use the current default color from the toolbar, if missing
-		if (!annotation.color) {
-			annotation.color = this._tools[annotation.type].color;
+		if (!sortIndex) {
+			throw new Error(`Missing 'sortIndex' property`);
 		}
 
 		// Optional properties
