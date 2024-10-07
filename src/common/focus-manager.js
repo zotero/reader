@@ -229,13 +229,16 @@ export class FocusManager {
 		let item = document.activeElement;
 
 		let group = item.closest('[data-tabstop]');
-		if (!group) {
-			return;
-		}
 
+		// This is a special case for context menu. If there is a context menu
+		// in the DOM, arrow up/down must focus it ignoring everything else
 		let contextMenu = document.querySelector('.context-menu');
 		if (contextMenu) {
 			group = contextMenu;
+		}
+
+		if (!group) {
+			return;
 		}
 
 		if (item === group) {
