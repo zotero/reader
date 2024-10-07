@@ -1684,7 +1684,21 @@ class PDFView {
 				if (position) {
 					overlay = this._getSelectableOverlay(position);
 				}
-				this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
+				// If this is a keyboard contextmenu event, its position won't take our
+				// text selection into account since we don't use browser selection APIs.
+				// Position the menu manually.
+				if (event.mozInputSource === 6 && this._selectionRanges.length) {
+					const EXTRA_VERTICAL_PADDING = 10;
+					let selectionBoundingRect = this.getClientRectForPopup(this._selectionRanges[0].position);
+					this._onOpenViewContextMenu({
+						x: br.x + selectionBoundingRect[0],
+						y: br.y + selectionBoundingRect[3] + EXTRA_VERTICAL_PADDING,
+						overlay
+					});
+				}
+				else {
+					this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
+				}
 			}
 			else if (!selectedAnnotations.includes(selectableAnnotation)) {
 				this._onSelectAnnotations([selectableAnnotation.id], event);
@@ -2498,8 +2512,8 @@ class PDFView {
 	}
 
 	_handleContextMenu(event) {
-		// Open context menu on long press of touchscreen
-		if (event.mozInputSource === 5) {
+		// Open context menu due to touchscreen long press or context menu key press
+		if (event.mozInputSource === 5 || event.mozInputSource === 6) {
 			this._handlePointerDown(event);
 		}
 		if (this._options.platform !== 'web') {
