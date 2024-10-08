@@ -1203,35 +1203,32 @@ class Reader {
 							this.focusView(this._lastViewPrimary);
 						}
 					}
-					// construct an announcement with instructions for screen readers if an annotation
-					// is selected
-					let a11yAnnouncement = this._getString("pdfReader.a11yAnnotationSelected");
-					if (!this._state.sidebarOpen) {
-						// add note that popup is opened
-						a11yAnnouncement += " " + this._getString("pdfReader.a11yAnnotationPopupAppeared");
-					}
-					if (['highlight', 'underline'].includes(annotation.type)) {
-						// tell how to edit highlight/underline annotations
-						a11yAnnouncement += " " + this._getString("pdfReader.a11yEditTextAnnotation") + " " + this._getString(`pdfReader.a11yAnnotationModifier${isMac() ? "Mac" : ""}`);
-					}
-					else if (['note', 'text', 'image'].includes(annotation.type)) {
-						// tell how to move and resize remaining types
-						a11yAnnouncement += " " + this._getString("pdfReader.a11yMoveAnnotation");
-						if (['text', 'image'].includes(annotation.type)) {
-							a11yAnnouncement += " " + this._getString("pdfReader.a11yResizeAnnotation");
-						}
-					}
-					// Small delay for focus to settle which increases the change that aria-live
-					// announcement will be heard
+					// After a small delay for focus to settle, announce to screen readers that annotation
+					// is selected and how one can manipulate it
 					setTimeout(() => {
+						let a11yAnnouncement = this._getString("pdfReader.a11yAnnotationSelected");
+						if (document.querySelector(".annotation-popup")) {
+							// add note that popup is opened
+							a11yAnnouncement += " " + this._getString("pdfReader.a11yAnnotationPopupAppeared");
+						}
+						if (['highlight', 'underline'].includes(annotation.type)) {
+							// tell how to edit highlight/underline annotations
+							a11yAnnouncement += " " + this._getString("pdfReader.a11yEditTextAnnotation") + " " + this._getString(`pdfReader.a11yAnnotationModifier${isMac() ? "Mac" : ""}`);
+						}
+						else if (['note', 'text', 'image'].includes(annotation.type)) {
+							// tell how to move and resize remaining types
+							a11yAnnouncement += " " + this._getString("pdfReader.a11yMoveAnnotation");
+							if (['text', 'image'].includes(annotation.type)) {
+								a11yAnnouncement += " " + this._getString("pdfReader.a11yResizeAnnotation");
+							}
+						}
+
 						// only announce if the content view is focused. E.g. if comment in
 						// sidebar has focus, say nothing as it will not be relevant
 						if (document.activeElement.nodeName === "IFRAME") {
 							this.setA11yMessage(a11yAnnouncement);
 						}
 					}, 100);
-					console.log(a11yAnnouncement);
-					
 				}
 			}
 			// Smoothly scroll to the annotation, if only one was selected
