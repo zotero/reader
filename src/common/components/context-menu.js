@@ -96,6 +96,8 @@ function ContextMenu({ params, onClose }) {
 	const [position, setPosition] = useState({ style: {} });
 	const [update, setUpdate] = useState();
 	const containerRef = useRef();
+	const searchStringRef = useRef('');
+	const searchTimeoutRef = useRef(null);
 
 	useEffect(() => {
 		setUpdate({});
@@ -134,6 +136,37 @@ function ContextMenu({ params, onClose }) {
 		}
 	}
 
+	// Select a menuitem from typing, similar to native context menus
+	function handleKeyDown(event) {
+		let { key } = event;
+		// Ignore non-characters
+		if (key.length !== 1 || !key.match(/\S/)) return;
+
+		// Clear search string after 3 seconds of no typing
+		if (searchTimeoutRef.current) {
+			clearTimeout(searchTimeoutRef.current);
+		}
+		searchTimeoutRef.current = setTimeout(() => {
+			searchStringRef.current = '';
+		}, 2000);
+
+		// Keep track of what has been typed so far
+		searchStringRef.current += key.toLowerCase();
+
+		// Find all buttons with text that start with what has been typed
+		let menuOptions = [...document.querySelectorAll(".context-menu button:not([disabled])")];
+		let candidates = menuOptions.filter(option => option.textContent.toLowerCase().startsWith(searchStringRef.current));
+		
+		// If there is only one candidate, click it right away
+		if (candidates.length == 1) {
+			candidates[0].click();
+		}
+		// If there are multiple - focus the first one
+		else if (candidates.length > 1) {
+			candidates[0].focus();
+		}
+	}
+
 	function handleClick(event, item) {
 		onClose();
 		event.preventDefault();
@@ -143,7 +176,7 @@ function ContextMenu({ params, onClose }) {
 
 	return (
 		<div className="context-menu-overlay" onPointerDown={handlePointerDown}>
-			<div ref={containerRef} className="context-menu" style={position.style}>
+			<div ref={containerRef} className="context-menu" style={position.style} data-tabstop={1} onKeyDown={handleKeyDown}>
 				{params.itemGroups.map((items, i) => (
 					<div key={i} className="group">
 						{items.map((item, i) => {
