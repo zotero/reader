@@ -307,6 +307,7 @@ class Reader {
 							onToggleContextPane={this._onToggleContextPane}
 							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 							ref={this._readerRef}
+							tools={this._tools}
 						/>
 					</ReaderContext.Provider>
 				</IntlProvider>

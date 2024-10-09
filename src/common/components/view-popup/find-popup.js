@@ -9,7 +9,7 @@ import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import { getCodeCombination, getKeyCombination } from '../../lib/utilities';
 
-function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation }) {
+function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation, tools }) {
 	const intl = useIntl();
 	const inputRef = useRef();
 	const preventInputRef = useRef(false);
@@ -72,13 +72,13 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 		else if (code === 'Ctrl-Alt-Digit1') {
 			preventInputRef.current = true;
 			if (params.result?.annotation) {
-				onAddAnnotation({ ...params.result.annotation, type: 'highlight' }, true);
+				onAddAnnotation({ ...params.result.annotation, type: 'highlight', color: tools['highlight'].color }, true);
 			}
 		}
 		else if (code === 'Ctrl-Alt-Digit2') {
 			preventInputRef.current = true;
 			if (params.result?.annotation) {
-				onAddAnnotation({ ...params.result.annotation, type: 'underline' }, true);
+				onAddAnnotation({ ...params.result.annotation, type: 'underline', color: tools['underline'].color }, true);
 			}
 		}
 	}
