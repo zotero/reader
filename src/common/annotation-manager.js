@@ -59,9 +59,6 @@ class AnnotationManager {
 		if (this._readOnly) {
 			return null;
 		}
-		// Temp, just so we can finish with a11y tweaks. Otherwise, we error
-		// on Control-Option-1/2 from Find in popup
-		annotation.color = "#ffd400";
 		// Mandatory properties
 		let { color, sortIndex } = annotation;
 		if (!color) {

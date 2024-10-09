@@ -80,6 +80,7 @@ function View(props) {
 					onFindNext={handleFindNext}
 					onFindPrevious={handleFindPrevious}
 					onAddAnnotation={props.onAddAnnotation}
+					tools={props.tools}
 				/>
 			}
 		</div>
