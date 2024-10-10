@@ -307,6 +307,7 @@ class Reader {
 							onToggleContextPane={this._onToggleContextPane}
 							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 							ref={this._readerRef}
+							tools={this._tools}
 						/>
 					</ReaderContext.Provider>
 				</IntlProvider>
@@ -1178,10 +1179,11 @@ class Reader {
 					this._updateState({ selectedAnnotationIDs: ids });
 
 					// Don't navigate to annotation or focus comment if opening a context menu
+					// unless it is a note that was just created via shortcut
 					if (!triggeringEvent || triggeringEvent.button !== 2) {
 						if (triggeredFromView) {
 							if (['note', 'highlight', 'underline'].includes(annotation.type)
-								&& !annotation.comment && (!triggeringEvent || !('key' in triggeringEvent))) {
+								&& !annotation.comment && (!triggeringEvent || !('key' in triggeringEvent) || (triggeringEvent.code.includes("Digit") && annotation.type === "note"))) {
 								this._enableAnnotationDeletionFromComment = true;
 								setTimeout(() => {
 									let content;
@@ -1197,8 +1199,37 @@ class Reader {
 						}
 						else {
 							this._lastView.navigate({ annotationID: annotation.id });
+							// When annotation is added from "Find in" popup, close it and re-focus the view
+							this.toggleFindPopup({ primary: this._lastViewPrimary, open: false });
+							this.focusView(this._lastViewPrimary);
 						}
 					}
+					// After a small delay for focus to settle, announce to screen readers that annotation
+					// is selected and how one can manipulate it
+					setTimeout(() => {
+						let a11yAnnouncement = this._getString("pdfReader.a11yAnnotationSelected");
+						if (document.querySelector(".annotation-popup")) {
+							// add note that popup is opened
+							a11yAnnouncement += " " + this._getString("pdfReader.a11yAnnotationPopupAppeared");
+						}
+						if (['highlight', 'underline'].includes(annotation.type)) {
+							// tell how to edit highlight/underline annotations
+							a11yAnnouncement += " " + this._getString("pdfReader.a11yEditTextAnnotation") + " " + this._getString(`pdfReader.a11yAnnotationModifier${isMac() ? "Mac" : ""}`);
+						}
+						else if (['note', 'text', 'image'].includes(annotation.type)) {
+							// tell how to move and resize remaining types
+							a11yAnnouncement += " " + this._getString("pdfReader.a11yMoveAnnotation");
+							if (['text', 'image'].includes(annotation.type)) {
+								a11yAnnouncement += " " + this._getString("pdfReader.a11yResizeAnnotation");
+							}
+						}
+
+						// only announce if the content view is focused. E.g. if comment in
+						// sidebar has focus, say nothing as it will not be relevant
+						if (document.activeElement.nodeName === "IFRAME") {
+							this.setA11yMessage(a11yAnnouncement);
+						}
+					}, 100);
 				}
 			}
 			// Smoothly scroll to the annotation, if only one was selected
