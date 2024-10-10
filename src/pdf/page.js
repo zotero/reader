@@ -11,7 +11,10 @@ import {
 } from './lib/utilities';
 import {
 	DARKEN_INK_AND_TEXT_COLOR,
-	FIND_RESULT_COLOR_ALL, FIND_RESULT_COLOR_CURRENT,
+	FIND_RESULT_COLOR_ALL_DARK,
+	FIND_RESULT_COLOR_ALL_LIGHT,
+	FIND_RESULT_COLOR_CURRENT_DARK,
+	FIND_RESULT_COLOR_CURRENT_LIGHT,
 	MIN_IMAGE_ANNOTATION_SIZE,
 	SELECTION_COLOR
 } from '../common/defines';
@@ -35,6 +38,14 @@ export default class Page {
 		this.originalContext = canvas.getContext('2d');
 		this.originalContext.drawImage(this.originalPage.canvas, 0, 0);
 		this.actualContext = this.originalPage.canvas.getContext('2d');
+	}
+
+	get usingDarkMode() {
+		return (
+			window.matchMedia
+			&& window.matchMedia('(prefers-color-scheme: dark)').matches
+			&& this.layer._useDarkMode
+		);
 	}
 
 	getSortedObjects() {
@@ -325,8 +336,7 @@ export default class Page {
 	_renderHighlight(annotation) {
 		let color = annotation.color;
 		let alpha = 0.4;
-		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-			&& this.layer._useDarkMode) {
+		if (this.usingDarkMode) {
 			if (annotation.color === '#ffd400') {
 				color = darkenHex(annotation.color, 20);
 			}
@@ -351,8 +361,7 @@ export default class Page {
 
 	_renderUnderline(annotation) {
 		let color = annotation.color;
-		if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-			&& this.layer._useDarkMode) {
+		if (this.usingDarkMode) {
 			if (annotation.color === '#ffd400') {
 				color = darkenHex(annotation.color, 20);
 			}
@@ -463,23 +472,48 @@ export default class Page {
 		}
 
 		this.actualContext.save();
-		this.actualContext.globalCompositeOperation = 'multiply';
 
 		for (let i = 0; i < positions.length; i++) {
 			let position = positions[i];
 			if (selected.pageIdx === this.pageIndex && i === selected.matchIdx) {
-				this.actualContext.fillStyle = FIND_RESULT_COLOR_CURRENT;
+				this.actualContext.fillStyle = this.usingDarkMode
+					? FIND_RESULT_COLOR_CURRENT_DARK
+					: FIND_RESULT_COLOR_CURRENT_LIGHT;
 			}
 			else {
 				if (!this.layer._findController.state.highlightAll) {
 					continue;
 				}
-				this.actualContext.fillStyle = FIND_RESULT_COLOR_ALL;
+				this.actualContext.fillStyle = this.usingDarkMode
+					? FIND_RESULT_COLOR_ALL_DARK
+					: FIND_RESULT_COLOR_ALL_LIGHT;
 			}
 
 			position = this.p2v(position);
 			for (let rect of position.rects) {
-				this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
+				// Define the corner radius
+				let cornerRadius = 5;
+
+				// Calculate the width and height of the rectangle
+				let x = rect[0];
+				let y = rect[1];
+				let width = rect[2] - rect[0];
+				let height = rect[3] - rect[1];
+
+				// Draw the rectangle with rounded corners
+				this.actualContext.beginPath();
+				this.actualContext.moveTo(x + cornerRadius, y);
+				this.actualContext.lineTo(x + width - cornerRadius, y);
+				this.actualContext.quadraticCurveTo(x + width, y, x + width, y + cornerRadius);
+				this.actualContext.lineTo(x + width, y + height - cornerRadius);
+				this.actualContext.quadraticCurveTo(x + width, y + height, x + width - cornerRadius, y + height);
+				this.actualContext.lineTo(x + cornerRadius, y + height);
+				this.actualContext.quadraticCurveTo(x, y + height, x, y + height - cornerRadius);
+				this.actualContext.lineTo(x, y + cornerRadius);
+				this.actualContext.quadraticCurveTo(x, y, x + cornerRadius, y);
+				this.actualContext.closePath();
+
+				this.actualContext.fill();
 			}
 		}
 
