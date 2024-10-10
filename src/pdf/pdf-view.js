@@ -281,34 +281,43 @@ class PDFView {
 			},
 			onUpdateMatches: ({ matchesCount }) => {
 				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
-				if (matchesCount.current) {
-					let selectionRanges = getSelectionRanges(
-						this._pdfPages,
-						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
-						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
-					);
-					result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
-				}
 				if (this._pdfjsFindState === FindState.PENDING) {
 					result = null;
+				}
+				else if (matchesCount.current) {
+					// Note: This modifies result.annotation after the result has already been emitted by an event,
+					// which isn't a good practice
+					(async () => {
+						await this._ensureBasicPageData(matchesCount.currentPageIndex);
+						let selectionRanges = getSelectionRanges(
+							this._pdfPages,
+							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
+							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
+						);
+						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+					})();
 				}
 				this._onSetFindState({ ...this._findState, result });
 				this._render();
 			},
-			onUpdateState: async ({ matchesCount, state, rawQuery }) => {
+			onUpdateState: ({ matchesCount, state, rawQuery }) => {
 				this._pdfjsFindState = state;
 				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
-				if (matchesCount.current) {
-					await this._ensureBasicPageData(matchesCount.currentPageIndex);
-					let selectionRanges = getSelectionRanges(
-						this._pdfPages,
-						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
-						{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
-					);
-					result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
-				}
 				if (this._pdfjsFindState === FindState.PENDING || !rawQuery.length) {
 					result = null;
+				}
+				else if (matchesCount.current) {
+					// Note: This modifies result.annotation after the result has already been emitted by an event,
+					// which isn't a good practice
+					(async () => {
+						await this._ensureBasicPageData(matchesCount.currentPageIndex);
+						let selectionRanges = getSelectionRanges(
+							this._pdfPages,
+							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
+							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
+						);
+						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+					})();
 				}
 				this._onSetFindState({ ...this._findState, result });
 				this._render();
