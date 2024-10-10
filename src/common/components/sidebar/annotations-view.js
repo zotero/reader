@@ -175,7 +175,11 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations([annotation]);
 	}, []);
 
-	function handlePointerDown() {
+	function handlePointerDown(event) {
+		// Clicking on the rendered content when a contextmenu is open will
+		// lead to pointerup event not firing and the annotation becoming not-selectable
+		// via keyboard until it is clicked.
+		if (event.target.classList.contains("context-menu-overlay")) return;
 		pointerDownRef.current = true;
 	}
 
