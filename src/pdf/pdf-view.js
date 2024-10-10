@@ -603,7 +603,32 @@ class PDFView {
 
 
 	_render(pageIndexes) {
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let container = viewer.container;
+		let pages = viewer._pages;
+
+		const top = container.scrollTop,
+		  bottom = top + container.clientHeight;
+		const left = container.scrollLeft,
+		  right = left + container.clientWidth;
+
 		for (let page of this._pages) {
+			let element = pages[page.pageIndex].div;
+			const currentWidth = element.offsetLeft + element.clientLeft;
+			const currentHeight = element.offsetTop + element.clientTop;
+			const viewWidth = element.clientWidth,
+			  viewHeight = element.clientHeight;
+			const viewRight = currentWidth + viewWidth;
+			const viewBottom = currentHeight + viewHeight;
+			if (
+			  viewBottom <= top ||
+			  currentHeight >= bottom ||
+			  viewRight <= left ||
+			  currentWidth >= right
+			) {
+			  continue;
+			}
+
 			if (!pageIndexes || pageIndexes.includes(page.pageIndex)) {
 				page.render();
 			}
