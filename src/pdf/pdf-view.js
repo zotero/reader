@@ -1950,11 +1950,13 @@ class PDFView {
 						this._onSetOverlayPopup(null);
 					});
 				}
+				if (clickableOverlay || overlayWithPopup) {
+					this._render();
+				}
 			}
 			else {
 				this.updateCursor();
 			}
-			this._render();
 			return;
 		}
 
