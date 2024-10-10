@@ -14,14 +14,17 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 	const inputRef = useRef();
 	const preventInputRef = useRef(false);
 	const [query, setQuery] = useState(params.query);
+	const currentParamsRef = useRef();
+
+	currentParamsRef.current = params;
 
 	const debounceInputChange = useCallback(debounce(value => {
 		if (!inputRef.current) {
 			return;
 		}
 		let query = inputRef.current.value;
-		if (query !== params.query && !(query.length === 1 && RegExp(/^\p{Script=Latin}/, 'u').test(query))) {
-			onChange({ ...params, query, active: true, result: null });
+		if (query !== currentParamsRef.current.query && !(query.length === 1 && RegExp(/^\p{Script=Latin}/, 'u').test(query))) {
+			onChange({ ...currentParamsRef.current, query, active: true, result: null });
 		}
 	}, DEBOUNCE_FIND_POPUP_INPUT), [onChange]);
 
