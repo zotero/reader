@@ -157,12 +157,8 @@ function ContextMenu({ params, onClose }) {
 		let menuOptions = [...document.querySelectorAll(".context-menu button:not([disabled])")];
 		let candidates = menuOptions.filter(option => option.textContent.toLowerCase().startsWith(searchStringRef.current));
 		
-		// If there is only one candidate, click it right away
-		if (candidates.length == 1) {
-			candidates[0].click();
-		}
-		// If there are multiple - focus the first one
-		else if (candidates.length > 1) {
+		// Focus the first match
+		if (candidates.length) {
 			candidates[0].focus();
 		}
 	}
