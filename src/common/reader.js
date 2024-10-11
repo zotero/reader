@@ -877,7 +877,7 @@ class Reader {
 		let onFocusAnnotation = (annotation) => {
 			if (!annotation) return;
 			// Announce the current annotation to screen readers
-			if (annotation.type == "external-link") {
+			if (annotation.type == 'external-link') {
 				this.setA11yMessage(annotation.url);
 				return;
 			}
