@@ -195,13 +195,13 @@ export default {
     'pdfReader.a11yAnnotationModifier': 'Alt',
     'pdfReader.a11yAnnotationModifierControl': 'Control',
     'pdfReader.a11yTextualAnnotationFindInDocumentInstruction': 'To turn a search result into a highlight or underline annotation, press',
-    'pdfReader.a11yTextualAnnotationInstruction': 'To annotate text via keyboard, use \'Find in document\' to locate the phrase. Then, to turn search result into an annotation, press Control -',
-    'pdfReader.a11yAnnotationInstruction': 'To add this annotation into the document, focus the document and press Control -',
-    'pdfReader.a11yAnnotationNotSupported': 'Keyboard interface for this annotation type is not supported',
-    'pdfReader.a11yMoveAnnotation': 'Use arrow keys to move the annotation.',
-    'pdfReader.a11yEditTextAnnotation': 'To move the end of the text annotation, use arrow keys while holding Shift. To move the start of the annotation, use arrows while holding Shift -',
-    'pdfReader.a11yResizeAnnotation': 'Use arrow keys while holding Shift to resize the annotation.',
-    'pdfReader.a11yAnnotationSelected': 'selected',
-    'pdfReader.a11yAnnotationPopupAppeared': 'Use tab to navigate annotation details popup.',
-	'pdfReader.a11yAnnotationCreated': "has been created"
+    'pdfReader.a11yTextualAnnotationInstruction': 'To annotate text via the keyboard, first use “Find in Document” to locate the phrase. Then, to turn the search result into an annotation, press Control -',
+    'pdfReader.a11yAnnotationInstruction': 'To add this annotation to the document, focus the document and press Control -',
+    'pdfReader.a11yAnnotationNotSupported': 'This annotation type cannot be created via the keyboard.',
+    'pdfReader.a11yMoveAnnotation': 'Use the arrow keys to move the annotation.',
+    'pdfReader.a11yEditTextAnnotation': 'To move the end of the text annotation, use the left/right arrow keys while holding Shift. To move the start of the annotation, use the arrow keys while holding Shift -',
+    'pdfReader.a11yResizeAnnotation': 'To resize the annotation, use the arrow keys while holding Shift.',
+    'pdfReader.a11yAnnotationSelected': 'Annotation selected',
+    'pdfReader.a11yAnnotationPopupAppeared': 'Use Tab to navigate the annotation popup.'
+
 };
