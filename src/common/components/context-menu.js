@@ -131,6 +131,7 @@ function ContextMenu({ params, onClose }) {
 		if (event.target.classList.contains('context-menu-overlay')) {
 			// Closing context menu overlay results in another thumbnail click
 			setTimeout(onClose);
+			event.stopPropagation();
 		}
 	}
 
