@@ -201,8 +201,17 @@ export default {
     'pdfReader.a11yMoveAnnotation': 'Use the arrow keys to move the annotation.',
     'pdfReader.a11yEditTextAnnotation': 'To move the end of the text annotation, use the left/right arrow keys while holding Shift. To move the start of the annotation, use the arrow keys while holding Shift -',
     'pdfReader.a11yResizeAnnotation': 'To resize the annotation, use the arrow keys while holding Shift.',
-    'pdfReader.a11yAnnotationSelected': 'selected.',
     'pdfReader.a11yAnnotationPopupAppeared': 'Use Tab to navigate the annotation popup.',
-	'pdfReader.a11yAnnotationCreated': 'has been created.',
 
+    "pdfReader.a11yAnnotationCreated.highlight": "A highlight annotation has been created.",
+    "pdfReader.a11yAnnotationCreated.underline": "An underline annotation has been created.",
+    "pdfReader.a11yAnnotationCreated.note": "A note annotation has been created.",
+    "pdfReader.a11yAnnotationCreated.text": "A text annotation has been created.",
+    "pdfReader.a11yAnnotationCreated.image": "An image annotation has been created.",
+
+    "pdfReader.a11yAnnotationSelected.highlight": "A highlight annotation has been selected.",
+    "pdfReader.a11yAnnotationSelected.underline": "An underline annotation has been selected.",
+    "pdfReader.a11yAnnotationSelected.note": "A note annotation has been selected.",
+    "pdfReader.a11yAnnotationSelected.text": "A text annotation has been selected.",
+    "pdfReader.a11yAnnotationSelected.image": "An image annotation has been selected."
 };

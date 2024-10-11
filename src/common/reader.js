@@ -273,8 +273,7 @@ class Reader {
 								annotation = this._annotationManager.addAnnotation(annotation);
 								// Tell screen readers the annotation was added after focus is settled
 								setTimeout(() => {
-									let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
-									this.setA11yMessage(annotationType + ' ' + this._getString('pdfReader.a11yAnnotationCreated'));
+									this.setA11yMessage(this._getString(`pdfReader.a11yAnnotationCreated.${annotation.type}`));
 								}, 100);
 								if (select) {
 									this.setSelectedAnnotations([annotation.id]);
@@ -789,8 +788,7 @@ class Reader {
 			annotation = this._annotationManager.addAnnotation(annotation);
 			// Tell screen readers the annotation was added after focus is settled
 			setTimeout(() => {
-				let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
-				this.setA11yMessage(annotationType + ' ' + this._getString('pdfReader.a11yAnnotationCreated'));
+				this.setA11yMessage(this._getString(`pdfReader.a11yAnnotationCreated.${annotation.type}`));
 			}, 100);
 			if (select) {
 				this.setSelectedAnnotations([annotation.id], true);
@@ -1218,8 +1216,7 @@ class Reader {
 					// After a small delay for focus to settle, announce to screen readers that annotation
 					// is selected and how one can manipulate it
 					setTimeout(() => {
-						let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
-						let a11yAnnouncement = annotationType + ' ' + this._getString('pdfReader.a11yAnnotationSelected');
+						let a11yAnnouncement = this._getString(`pdfReader.a11yAnnotationSelected.${annotation.type}`);
 						if (document.querySelector('.annotation-popup')) {
 							// add note that popup is opened
 							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yAnnotationPopupAppeared');
