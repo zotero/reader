@@ -201,7 +201,8 @@ export default {
     'pdfReader.a11yMoveAnnotation': 'Use the arrow keys to move the annotation.',
     'pdfReader.a11yEditTextAnnotation': 'To move the end of the text annotation, use the left/right arrow keys while holding Shift. To move the start of the annotation, use the arrow keys while holding Shift -',
     'pdfReader.a11yResizeAnnotation': 'To resize the annotation, use the arrow keys while holding Shift.',
-    'pdfReader.a11yAnnotationSelected': 'Annotation selected',
-    'pdfReader.a11yAnnotationPopupAppeared': 'Use Tab to navigate the annotation popup.'
+    'pdfReader.a11yAnnotationSelected': 'selected.',
+    'pdfReader.a11yAnnotationPopupAppeared': 'Use Tab to navigate the annotation popup.',
+	'pdfReader.a11yAnnotationCreated': 'has been created.',
 
 };
