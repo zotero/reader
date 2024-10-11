@@ -3,7 +3,7 @@ import { useIntl } from 'react-intl';
 import cx from 'classnames';
 import CustomSections from './common/custom-sections';
 import { ReaderContext } from '../reader';
-
+import { isMac } from '../lib/utilities';
 import { IconColor20 } from './common/icons';
 
 import IconSidebar from '../../../res/icons/20/sidebar.svg';
@@ -70,6 +70,15 @@ function Toolbar(props) {
 		if (event.target.value != (props.pageLabel ?? (props.pageIndex + 1))) {
 			props.onChangePageNumber(event.target.value);
 		}
+	}
+
+	// Add aria instructions on how to add annotations with keyboard
+	function _constructAriaDecription(number) {
+		// Cmd/Alt+Option+1/2
+		let underlineOrHighlight = number <= 2;
+		let instruction = intl.formatMessage({ id: `pdfReader.a11y${underlineOrHighlight ? 'Textual' : ''}AnnotationInstruction` });
+		let modifier = intl.formatMessage({ id: `pdfReader.a11yAnnotationModifier${isMac() ? 'Mac' : ''}` });
+		return `${instruction} ${modifier} - ${number}`;
 	}
 
 	return (
@@ -177,6 +186,7 @@ function Toolbar(props) {
 					title={intl.formatMessage({ id: 'pdfReader.highlightText' })}
 					disabled={props.readOnly}
 					onClick={() => handleToolClick('highlight')}
+					aria-description={_constructAriaDecription(1)}
 				><IconHighlight/></button>
 				{ (platform !== 'web' || ['epub', 'snapshot'].includes(props.type)) && (
 					<button
@@ -185,6 +195,7 @@ function Toolbar(props) {
 						title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('underline')}
+						aria-description={_constructAriaDecription(2)}
 					><IconUnderline/></button>
 				)}
 				<button
@@ -195,6 +206,7 @@ function Toolbar(props) {
 					title={intl.formatMessage({ id: 'pdfReader.addNote' })}
 					disabled={props.readOnly}
 					onClick={() => handleToolClick('note')}
+					aria-description={_constructAriaDecription(3)}
 				><IconNote/></button>
 				{props.type === 'pdf' && platform !== 'web' && (
 					<button
@@ -203,6 +215,7 @@ function Toolbar(props) {
 						title={intl.formatMessage({ id: 'pdfReader.addText' })}
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('text')}
+						aria-description={_constructAriaDecription(4)}
 					><IconText/></button>
 				)}
 				{props.type === 'pdf' && (
@@ -212,6 +225,7 @@ function Toolbar(props) {
 						title={intl.formatMessage({ id: 'pdfReader.selectArea' })}
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('image')}
+						aria-description={_constructAriaDecription(5)}
 					><IconImage/></button>
 				)}
 				{props.type === 'pdf' && (
@@ -221,6 +235,7 @@ function Toolbar(props) {
 						title={intl.formatMessage({ id: 'pdfReader.draw' })}
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('ink')}
+						aria-description={intl.formatMessage({ id: 'pdfReader.a11yAnnotationNotSupported' })}
 					><IconInk/></button>
 				)}
 				<div className="divider"/>

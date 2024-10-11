@@ -190,5 +190,18 @@ export default {
 	'pdfReader.convertToHighlight': 'Convert to Highlight',
 	'pdfReader.convertToUnderline': 'Convert to Underline',
 	'pdfReader.size': 'Size',
-	'pdfReader.merge': 'Merge'
+	'pdfReader.merge': 'Merge',
+    'pdfReader.a11yAnnotationModifierMac': 'Option',
+    'pdfReader.a11yAnnotationModifier': 'Alt',
+    'pdfReader.a11yAnnotationModifierControl': 'Control',
+    'pdfReader.a11yTextualAnnotationFindInDocumentInstruction': 'To turn a search result into a highlight or underline annotation, press',
+    'pdfReader.a11yTextualAnnotationInstruction': 'To annotate text via keyboard, use \'Find in document\' to locate the phrase. Then, to turn search result into an annotation, press Control -',
+    'pdfReader.a11yAnnotationInstruction': 'To add this annotation into the document, focus the document and press Control -',
+    'pdfReader.a11yAnnotationNotSupported': 'Keyboard interface for this annotation type is not supported',
+    'pdfReader.a11yMoveAnnotation': 'Use arrow keys to move the annotation.',
+    'pdfReader.a11yEditTextAnnotation': 'To move the end of the text annotation, use arrow keys while holding Shift. To move the start of the annotation, use arrows while holding Shift -',
+    'pdfReader.a11yResizeAnnotation': 'Use arrow keys while holding Shift to resize the annotation.',
+    'pdfReader.a11yAnnotationSelected': 'selected',
+    'pdfReader.a11yAnnotationPopupAppeared': 'Use tab to navigate annotation details popup.',
+	'pdfReader.a11yAnnotationCreated': "has been created"
 };
