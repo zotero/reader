@@ -7,9 +7,9 @@ import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
 import IconChevronUp from '../../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
-import { getCodeCombination, getKeyCombination } from '../../lib/utilities';
+import { getCodeCombination, getKeyCombination, isMac } from '../../lib/utilities';
 
-function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation }) {
+function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation, tools }) {
 	const intl = useIntl();
 	const inputRef = useRef();
 	const preventInputRef = useRef(false);
@@ -75,13 +75,17 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 		else if (code === 'Ctrl-Alt-Digit1') {
 			preventInputRef.current = true;
 			if (params.result?.annotation) {
-				onAddAnnotation({ ...params.result.annotation, type: 'highlight' }, true);
+				onAddAnnotation({ ...params.result.annotation, type: 'highlight', color: tools['highlight'].color }, true);
+				// Close popup after adding annotation
+				onChange({ ...params, popupOpen: false, active: false, result: null });
 			}
 		}
 		else if (code === 'Ctrl-Alt-Digit2') {
 			preventInputRef.current = true;
 			if (params.result?.annotation) {
-				onAddAnnotation({ ...params.result.annotation, type: 'underline' }, true);
+				onAddAnnotation({ ...params.result.annotation, type: 'underline', color: tools['underline'].color }, true);
+				// Close popup after adding annotation
+				onChange({ ...params, popupOpen: false, active: false, result: null });
 			}
 		}
 	}
@@ -112,6 +116,11 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						title={intl.formatMessage({ id: 'pdfReader.find' })}
 						className="toolbar-text-input"
 						placeholder="Find in document…"
+						aria-description={
+							intl.formatMessage({ id: 'pdfReader.a11yTextualAnnotationFindInDocumentInstruction' })
+							+ ` ${intl.formatMessage({ id: 'pdfReader.a11yAnnotationModifierControl' })} - ${intl.formatMessage({ id: `pdfReader.a11yAnnotationModifier${isMac() ? 'Mac' : ''}` })} - ${1}`
+							+ `, ${intl.formatMessage({ id: 'pdfReader.a11yAnnotationModifierControl' })} - ${intl.formatMessage({ id: `pdfReader.a11yAnnotationModifier${isMac() ? 'Mac' : ''}` })} - ${2}`
+						}
 						value={query !== null ? query : params.query}
 						tabIndex="-1"
 						data-tabstop={1}

@@ -271,6 +271,10 @@ class Reader {
 							onResizeSplitView={this.setSplitViewSize.bind(this)}
 							onAddAnnotation={(annotation, select) => {
 								annotation = this._annotationManager.addAnnotation(annotation);
+								// Tell screen readers the annotation was added after focus is settled
+								setTimeout(() => {
+									this.setA11yMessage(this._getString(`pdfReader.a11yAnnotationCreated.${annotation.type}`));
+								}, 100);
 								if (select) {
 									this.setSelectedAnnotations([annotation.id]);
 								} else {
@@ -307,6 +311,7 @@ class Reader {
 							onToggleContextPane={this._onToggleContextPane}
 							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 							ref={this._readerRef}
+							tools={this._tools}
 						/>
 					</ReaderContext.Provider>
 				</IntlProvider>
@@ -781,6 +786,10 @@ class Reader {
 
 		let onAddAnnotation = (annotation, select) => {
 			annotation = this._annotationManager.addAnnotation(annotation);
+			// Tell screen readers the annotation was added after focus is settled
+			setTimeout(() => {
+				this.setA11yMessage(this._getString(`pdfReader.a11yAnnotationCreated.${annotation.type}`));
+			}, 100);
 			if (select) {
 				this.setSelectedAnnotations([annotation.id], true);
 			}
@@ -866,6 +875,10 @@ class Reader {
 		let onFocusAnnotation = (annotation) => {
 			if (!annotation) return;
 			// Announce the current annotation to screen readers
+			if (annotation.type == 'external-link') {
+				this.setA11yMessage(annotation.url);
+				return;
+			}
 			let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
 			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
 			this.setA11yMessage(annotationContent);
@@ -1178,10 +1191,11 @@ class Reader {
 					this._updateState({ selectedAnnotationIDs: ids });
 
 					// Don't navigate to annotation or focus comment if opening a context menu
+					// unless it is a note (so that one can type after creating it via shortcut, same as with text annotation)
 					if (!triggeringEvent || triggeringEvent.button !== 2) {
 						if (triggeredFromView) {
 							if (['note', 'highlight', 'underline'].includes(annotation.type)
-								&& !annotation.comment && (!triggeringEvent || !('key' in triggeringEvent))) {
+								&& !annotation.comment && (!triggeringEvent || annotation.type === 'note')) {
 								this._enableAnnotationDeletionFromComment = true;
 								setTimeout(() => {
 									let content;
@@ -1199,6 +1213,32 @@ class Reader {
 							this._lastView.navigate({ annotationID: annotation.id });
 						}
 					}
+					// After a small delay for focus to settle, announce to screen readers that annotation
+					// is selected and how one can manipulate it
+					setTimeout(() => {
+						let a11yAnnouncement = this._getString(`pdfReader.a11yAnnotationSelected.${annotation.type}`);
+						if (document.querySelector('.annotation-popup')) {
+							// add note that popup is opened
+							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yAnnotationPopupAppeared');
+						}
+						if (['highlight', 'underline'].includes(annotation.type)) {
+							// tell how to edit highlight/underline annotations
+							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yEditTextAnnotation') + ' ' + this._getString(`pdfReader.a11yAnnotationModifier${isMac() ? 'Mac' : ''}`);
+						}
+						else if (['note', 'text', 'image'].includes(annotation.type)) {
+							// tell how to move and resize remaining types
+							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yMoveAnnotation');
+							if (['text', 'image'].includes(annotation.type)) {
+								a11yAnnouncement += ' ' + this._getString('pdfReader.a11yResizeAnnotation');
+							}
+						}
+
+						// only announce if the content view is focused. E.g. if comment in
+						// sidebar has focus, say nothing as it will not be relevant
+						if (document.activeElement.nodeName === 'IFRAME') {
+							this.setA11yMessage(a11yAnnouncement);
+						}
+					}, 100);
 				}
 			}
 			// Smoothly scroll to the annotation, if only one was selected
