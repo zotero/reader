@@ -203,15 +203,15 @@ export default {
     'pdfReader.a11yResizeAnnotation': 'To resize the annotation, use the arrow keys while holding Shift.',
     'pdfReader.a11yAnnotationPopupAppeared': 'Use Tab to navigate the annotation popup.',
 
-    "pdfReader.a11yAnnotationCreated.highlight": "Highlight annotation created.",
-    "pdfReader.a11yAnnotationCreated.underline": "Underline annotation created.",
-    "pdfReader.a11yAnnotationCreated.note": "Note annotation created.",
-    "pdfReader.a11yAnnotationCreated.text": "Text annotation created.",
-    "pdfReader.a11yAnnotationCreated.image": "Image annotation created.",
+    "pdfReader.a11yAnnotationCreated.highlight": "Highlight annotation created",
+    "pdfReader.a11yAnnotationCreated.underline": "Underline annotation created",
+    "pdfReader.a11yAnnotationCreated.note": "Note annotation created",
+    "pdfReader.a11yAnnotationCreated.text": "Text annotation created",
+    "pdfReader.a11yAnnotationCreated.image": "Image annotation created",
 
-    "pdfReader.a11yAnnotationSelected.highlight": "Highlight annotation selected.",
-    "pdfReader.a11yAnnotationSelected.underline": "Underline annotation selected.",
-    "pdfReader.a11yAnnotationSelected.note": "Note annotation selected.",
-    "pdfReader.a11yAnnotationSelected.text": "Text annotation selected.",
-    "pdfReader.a11yAnnotationSelected.image": "Image annotation selected."
+    "pdfReader.a11yAnnotationSelected.highlight": "Highlight annotation selected",
+    "pdfReader.a11yAnnotationSelected.underline": "Underline annotation selected",
+    "pdfReader.a11yAnnotationSelected.note": "Note annotation selected",
+    "pdfReader.a11yAnnotationSelected.text": "Text annotation selected",
+    "pdfReader.a11yAnnotationSelected.image": "Image annotation selected"
 };
