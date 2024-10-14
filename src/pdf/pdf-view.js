@@ -1680,7 +1680,11 @@ class PDFView {
 				if (this._selectedAnnotationIDs.length !== 0) {
 					this._onSelectAnnotations([], event);
 				}
-				this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY });
+				let overlay;
+				if (position) {
+					overlay = this._getSelectableOverlay(position);
+				}
+				this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
 			}
 			else if (!selectedAnnotations.includes(selectableAnnotation)) {
 				this._onSelectAnnotations([selectableAnnotation.id], event);

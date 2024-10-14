@@ -93,6 +93,15 @@ export function createViewContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			[
 				{
+					label: reader._getString('pdfReader.copyLink'),
+					disabled: !(params.overlay && params.overlay.type === 'external-link' && !reader.canCopy),
+					onCommand: () => {
+						navigator.clipboard.writeText(params.overlay.url);
+					}
+				}
+			],
+			[
+				{
 					label: reader._getString('general.copy'),
 					disabled: !reader.canCopy,
 					onCommand: () => reader.copy()

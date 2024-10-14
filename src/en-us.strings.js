@@ -191,6 +191,7 @@ export default {
 	'pdfReader.convertToUnderline': 'Convert to Underline',
 	'pdfReader.size': 'Size',
 	'pdfReader.merge': 'Merge',
+	'pdfReader.copyLink': 'Copy Link',
     'pdfReader.a11yAnnotationModifierMac': 'Option',
     'pdfReader.a11yAnnotationModifier': 'Alt',
     'pdfReader.a11yAnnotationModifierControl': 'Control',
