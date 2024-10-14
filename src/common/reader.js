@@ -272,8 +272,11 @@ class Reader {
 							onAddAnnotation={(annotation, select) => {
 								annotation = this._annotationManager.addAnnotation(annotation);
 								// Tell screen readers the annotation was added after focus is settled
-								setTimeout(() => {
-									this.setA11yMessage(this._getString(`pdfReader.a11yAnnotationCreated.${annotation.type}`));
+								setTimeout(async () => {
+									// Temporary until web library supports fluent
+									if (!document.l10n) return;
+									let msg = await document.l10n.formatValue('pdfReader-a11yAnnotationCreated', { type : annotation.type } );
+									this.setA11yMessage(msg);
 								}, 100);
 								if (select) {
 									this.setSelectedAnnotations([annotation.id]);
@@ -787,8 +790,11 @@ class Reader {
 		let onAddAnnotation = (annotation, select) => {
 			annotation = this._annotationManager.addAnnotation(annotation);
 			// Tell screen readers the annotation was added after focus is settled
-			setTimeout(() => {
-				this.setA11yMessage(this._getString(`pdfReader.a11yAnnotationCreated.${annotation.type}`));
+			setTimeout(async () => {
+				// Temporary until web library supports fluent
+				if (!document.l10n) return;
+				let msg = await document.l10n.formatValue('pdfReader-a11yAnnotationCreated', { type : annotation.type } );
+				this.setA11yMessage(msg);
 			}, 100);
 			if (select) {
 				this.setSelectedAnnotations([annotation.id], true);
@@ -1215,24 +1221,11 @@ class Reader {
 					}
 					// After a small delay for focus to settle, announce to screen readers that annotation
 					// is selected and how one can manipulate it
-					setTimeout(() => {
-						let a11yAnnouncement = this._getString(`pdfReader.a11yAnnotationSelected.${annotation.type}`);
-						if (document.querySelector('.annotation-popup')) {
-							// add note that popup is opened
-							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yAnnotationPopupAppeared');
-						}
-						if (['highlight', 'underline'].includes(annotation.type)) {
-							// tell how to edit highlight/underline annotations
-							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yEditTextAnnotation') + ' ' + this._getString(`pdfReader.a11yAnnotationModifier${isMac() ? 'Mac' : ''}`);
-						}
-						else if (['note', 'text', 'image'].includes(annotation.type)) {
-							// tell how to move and resize remaining types
-							a11yAnnouncement += ' ' + this._getString('pdfReader.a11yMoveAnnotation');
-							if (['text', 'image'].includes(annotation.type)) {
-								a11yAnnouncement += ' ' + this._getString('pdfReader.a11yResizeAnnotation');
-							}
-						}
-
+					setTimeout(async () => {
+						// Temporary until web library supports fluent
+						if (!document.l10n) return;
+						let popupVisible = document.querySelector('.annotation-popup') ? "yes" : "no";
+						let a11yAnnouncement = await document.l10n.formatValue('pdfReader-a11yAnnotationSelected', { type: annotation.type, popupVisible });
 						// only announce if the content view is focused. E.g. if comment in
 						// sidebar has focus, say nothing as it will not be relevant
 						if (document.activeElement.nodeName === 'IFRAME') {
