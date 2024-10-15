@@ -275,7 +275,8 @@ class Reader {
 								setTimeout(async () => {
 									// Temporary until web library supports fluent
 									if (!document.l10n) return;
-									let msg = await document.l10n.formatValue('pdfReader-a11yAnnotationCreated', { type : annotation.type } );
+									let annotationType = await document.l10n.formatValue(`pdfReader-${annotation.type}Annotation`);
+									let msg = await document.l10n.formatValue('pdfReader-a11yAnnotationCreated', { type : annotationType } );
 									this.setA11yMessage(msg);
 								}, 100);
 								if (select) {
@@ -793,7 +794,8 @@ class Reader {
 			setTimeout(async () => {
 				// Temporary until web library supports fluent
 				if (!document.l10n) return;
-				let msg = await document.l10n.formatValue('pdfReader-a11yAnnotationCreated', { type : annotation.type } );
+				let annotationType = await document.l10n.formatValue(`pdfReader-${annotation.type}Annotation`);
+				let msg = await document.l10n.formatValue('pdfReader-a11yAnnotationCreated', { type : annotationType } );
 				this.setA11yMessage(msg);
 			}, 100);
 			if (select) {
@@ -1224,8 +1226,22 @@ class Reader {
 					setTimeout(async () => {
 						// Temporary until web library supports fluent
 						if (!document.l10n) return;
-						let popupVisible = document.querySelector('.annotation-popup') ? "yes" : "no";
-						let a11yAnnouncement = await document.l10n.formatValue('pdfReader-a11yAnnotationSelected', { type: annotation.type, popupVisible });
+						let annotationType =  await document.l10n.formatValue(`pdfReader-${annotation.type}Annotation`);
+						let a11yAnnouncement = await document.l10n.formatValue('pdfReader-a11yAnnotationSelected', { type: annotationType });
+						// Announce if there is a popup.
+						if (document.querySelector('.annotation-popup')) {
+							a11yAnnouncement += ' ' + await document.l10n.formatValue('pdfReader-a11yAnnotationPopupAppeared');
+						}
+						// Announce available keyboard interface options for this annotation type
+						if (['highlight', 'underline'].includes(annotation.type)) {
+							a11yAnnouncement += ' ' + await document.l10n.formatValue('pdfReader-a11yEditTextAnnotation');
+						}
+						else if (['note', 'text', 'image'].includes(annotation.type)) {
+							a11yAnnouncement += ' ' + await document.l10n.formatValue('pdfReader-a11yMoveAnnotation');
+							if (['text', 'image'].includes(annotation.type)) {
+								a11yAnnouncement += ' ' + await document.l10n.formatValue('pdfReader-a11yResizeAnnotation');
+							}
+						}
 						// only announce if the content view is focused. E.g. if comment in
 						// sidebar has focus, say nothing as it will not be relevant
 						if (document.activeElement.nodeName === 'IFRAME') {
