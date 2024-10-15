@@ -822,9 +822,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Prevent native context menu
 		event.preventDefault();
 		let br = this._iframe.getBoundingClientRect();
+		let overlay;
+		let a = (event.target as Element).closest('a');
+		if (a && this._isExternalLink(a)) {
+			overlay = {
+				type: 'external-link' as const,
+				url: a.href,
+			};
+		}
 		this._options.onOpenViewContextMenu({
 			x: br.x + event.clientX * this._iframeCoordScaleFactor,
 			y: br.y + event.clientY * this._iframeCoordScaleFactor,
+			overlay,
 		});
 	}
 
@@ -1407,7 +1416,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
 	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
-	onOpenViewContextMenu: (params: { x: number, y: number }) => void;
+	onOpenViewContextMenu: (params: { x: number, y: number, overlay?: { type: 'external-link', url: string } }) => void;
 	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
 	onFocus: () => void;
 	onTabOut: (isShiftTab?: boolean) => void;
