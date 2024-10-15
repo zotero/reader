@@ -125,7 +125,7 @@
 		.tag {
 			&::after {
 				content: ", ";
-				color: #000; /* replaced $text-color */
+				color: var(--fill-primary);
 			}
 
 			&:last-child {
