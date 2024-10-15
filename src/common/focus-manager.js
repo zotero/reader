@@ -135,6 +135,18 @@ export class FocusManager {
 			e.preventDefault();
 			this.tabToItem(true);
 		}
+		// If context menu is opened and a character is typed, forward the event to context menu
+		// so it can select a menuitem, similar to how native menus do it.
+		let contextMenu = document.querySelector('.context-menu');
+		if (contextMenu && e.key.length == 1 && !e.forwardedToContextMenu && !contextMenu.contains(e.target)) {
+			let eventCopy = new KeyboardEvent('keydown', {
+				key: e.key,
+				bubbles: true
+			});
+			// Mark the event to skip it when it gets captured here to avoid infinite loop
+			eventCopy.forwardedToContextMenu = true;
+			contextMenu.dispatchEvent(eventCopy);
+		}
 	}
 
 	tabToGroup(reverse) {

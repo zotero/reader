@@ -175,7 +175,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations([annotation]);
 	}, []);
 
-	function handlePointerDown() {
+	function handlePointerDown(event) {
 		pointerDownRef.current = true;
 	}
 
