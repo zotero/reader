@@ -192,27 +192,4 @@ export default {
 	'pdfReader.size': 'Size',
 	'pdfReader.merge': 'Merge',
 	'pdfReader.copyLink': 'Copy Link',
-    'pdfReader.a11yAnnotationModifierMac': 'Option',
-    'pdfReader.a11yAnnotationModifier': 'Alt',
-    'pdfReader.a11yAnnotationModifierControl': 'Control',
-    'pdfReader.a11yTextualAnnotationFindInDocumentInstruction': 'To turn a search result into a highlight or underline annotation, press',
-    'pdfReader.a11yTextualAnnotationInstruction': 'To annotate text via the keyboard, first use “Find in Document” to locate the phrase. Then, to turn the search result into an annotation, press Control -',
-    'pdfReader.a11yAnnotationInstruction': 'To add this annotation to the document, focus the document and press Control -',
-    'pdfReader.a11yAnnotationNotSupported': 'This annotation type cannot be created via the keyboard.',
-    'pdfReader.a11yMoveAnnotation': 'Use the arrow keys to move the annotation.',
-    'pdfReader.a11yEditTextAnnotation': 'To move the end of the text annotation, use the left/right arrow keys while holding Shift. To move the start of the annotation, use the arrow keys while holding Shift -',
-    'pdfReader.a11yResizeAnnotation': 'To resize the annotation, use the arrow keys while holding Shift.',
-    'pdfReader.a11yAnnotationPopupAppeared': 'Use Tab to navigate the annotation popup.',
-
-    "pdfReader.a11yAnnotationCreated.highlight": "Highlight annotation created",
-    "pdfReader.a11yAnnotationCreated.underline": "Underline annotation created",
-    "pdfReader.a11yAnnotationCreated.note": "Note annotation created",
-    "pdfReader.a11yAnnotationCreated.text": "Text annotation created",
-    "pdfReader.a11yAnnotationCreated.image": "Image annotation created",
-
-    "pdfReader.a11yAnnotationSelected.highlight": "Highlight annotation selected",
-    "pdfReader.a11yAnnotationSelected.underline": "Underline annotation selected",
-    "pdfReader.a11yAnnotationSelected.note": "Note annotation selected",
-    "pdfReader.a11yAnnotationSelected.text": "Text annotation selected",
-    "pdfReader.a11yAnnotationSelected.image": "Image annotation selected"
 };
