@@ -27,7 +27,7 @@ export default function FormattedText({ chars, onOpenLink }) {
 	// Convert the chars array to JSX by grouping and formatting
 	const formattedText = React.useMemo(() => {
 		return chars.reduce((acc, char, index) => {
-			const { u: currentChar, bold: isBold, italic: isItalic, url, spaceAfter } = char;
+			const { c: currentChar, bold: isBold, italic: isItalic, url, spaceAfter } = char;
 			if (!char.ignorable) {
 				// Start a new group if different style or first character
 				if (index === 0 || acc[acc.length - 1].isBold !== isBold || acc[acc.length - 1].isItalic !== isItalic || acc[acc.length - 1].url !== url) {
