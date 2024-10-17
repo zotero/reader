@@ -177,6 +177,7 @@ function Toolbar(props) {
 					disabled={props.readOnly}
 					onClick={() => handleToolClick('highlight')}
 					data-l10n-id="pdfReader-toolbar-highlight"
+					data-l10n-args='{"number": "1"}'
 				><IconHighlight/></button>
 				{ (platform !== 'web' || ['epub', 'snapshot'].includes(props.type)) && (
 					<button
@@ -186,6 +187,7 @@ function Toolbar(props) {
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('underline')}
 						data-l10n-id="pdfReader-toolbar-underline"
+						data-l10n-args='{"number": "2"}'
 					><IconUnderline/></button>
 				)}
 				<button
@@ -197,6 +199,7 @@ function Toolbar(props) {
 					disabled={props.readOnly}
 					onClick={() => handleToolClick('note')}
 					data-l10n-id="pdfReader-toolbar-note"
+					data-l10n-args='{"number": "3"}'
 				><IconNote/></button>
 				{props.type === 'pdf' && platform !== 'web' && (
 					<button
@@ -206,6 +209,7 @@ function Toolbar(props) {
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('text')}
 						data-l10n-id="pdfReader-toolbar-text"
+						data-l10n-args='{"number": "4"}'
 					><IconText/></button>
 				)}
 				{props.type === 'pdf' && (
@@ -216,6 +220,7 @@ function Toolbar(props) {
 						disabled={props.readOnly}
 						onClick={() => handleToolClick('image')}
 						data-l10n-id="pdfReader-toolbar-area"
+						data-l10n-args='{"number": "5"}'
 					><IconImage/></button>
 				)}
 				{props.type === 'pdf' && (
