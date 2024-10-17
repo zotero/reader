@@ -33,7 +33,7 @@ function Item({ item, id, children, onOpenLink, onUpdate, onSelect }) {
 	}
 
 	let toggle;
-	if (item.items?.length) {
+	if (item.items?.length && item.childMatched !== false) {
 		toggle = <div className="toggle" onClick={handleExpandToggleClick}><IconChevronDown8/></div>;
 	}
 	else {
@@ -45,7 +45,7 @@ function Item({ item, id, children, onOpenLink, onUpdate, onSelect }) {
 	return (
 		<li>
 			<div
-				className={cx('item', { expandable: !!item.items?.length, expanded, active })}
+				className={cx('item', { expandable: !!item.items?.length, unmatched: item.matched === false, expanded, active })}
 				data-id={id}
 			>
 				{toggle}
@@ -82,8 +82,10 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 		let list = [];
 		function flatten(items) {
 			for (let item of items) {
-				list.push(item);
-				if (item.items && item.expanded) {
+				if ((item.matched !== false) || (item.childMatched !== false)) {
+					list.push(item);
+				}
+				if (item.items && item.expanded && (item.childMatched !== false)) {
 					flatten(item.items);
 				}
 			}
@@ -151,6 +153,7 @@ function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
 			<ul>{items.map((item, index) => {
 				counter.n++;
 				return (
+					((item.matched !== false) || (item.childMatched !== false)) &&
 					<Item
 						key={index}
 						item={item}
