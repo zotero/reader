@@ -76,6 +76,7 @@ button {
 	font: inherit;
 	outline: inherit;
 	cursor: default;
+	user-select: none;
 
 	&:focus-visible {
 		outline: none;
