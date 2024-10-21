@@ -25,6 +25,8 @@ import IconFind from '../../../res/icons/20/magnifier.svg';
 import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
 
 
+const NO_COLOR_TOOLS = ['pointer', 'hand', 'zapper'];
+
 function Toolbar(props) {
 	const intl = useIntl();
 	const pageInputRef = useRef();
@@ -114,6 +116,15 @@ function Toolbar(props) {
 						tabIndex={-1}
 						onClick={props.onToggleEPUBAppearance}
 					><IconFormatText/></button>
+				)}
+				{props.type === 'snapshot' && (
+					<button
+						id="snapshotZapper"
+						className={cx('toolbar-button', { active: props.tool.type === 'zapper' })}
+						title={intl.formatMessage({ id: 'pdfReader.snapshotZapper' })}
+						tabIndex={-1}
+						onClick={() => handleToolClick('zapper')}
+					><IconEraser/></button>
 				)}
 				<div className="divider"/>
 				<button
@@ -232,14 +243,14 @@ function Toolbar(props) {
 				<button
 					tabIndex={-1}
 					className="toolbar-button toolbar-dropdown-button"
-					disabled={props.readOnly || ['pointer', 'hand'].includes(props.tool.type)}
+					disabled={props.readOnly || NO_COLOR_TOOLS.includes(props.tool.type)}
 					title={intl.formatMessage({ id: 'pdfReader.pickColor' })}
 					onClick={handleToolColorClick}
 				>
 					{
 						props.tool.type === 'eraser'
-						? <IconEraser/>
-						: <IconColor20 color={props.tool.color || ['pointer', 'hand'].includes(props.tool.type) && 'transparent'}/>
+							? <IconEraser/>
+							: <IconColor20 color={props.tool.color || NO_COLOR_TOOLS.includes(props.tool.type) && 'transparent'}/>
 					}
 					<IconChevronDown8/>
 				</button>

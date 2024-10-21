@@ -1,5 +1,4 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
-import cx from 'classnames';
+import React, { Fragment, useState, useRef, useImperativeHandle } from 'react';
 import Toolbar from './toolbar';
 import Sidebar from './sidebar/sidebar';
 import SelectionPopup from './view-popup/selection-popup';
@@ -16,6 +15,7 @@ import LabelPopup from './modal-popup/label-popup';
 import PasswordPopup from './modal-popup/password-popup';
 import PrintPopup from './modal-popup/print-popup';
 import EPUBAppearancePopup from "./view-popup/epub-appearance-popup";
+import SnapshotZapperPopup from "./view-popup/snapshot-zapper-popup";
 
 
 function View(props) {
@@ -119,6 +119,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 					enableNavigateToNextPage={viewStats.canNavigateToNextPage}
 					epubAppearancePopup={state.epubAppearancePopup}
+					snapshotZapperPopup={state.snapshotZapperPopup}
 					findPopupOpen={findState.popupOpen}
 					tool={state.tool}
 					readOnly={state.readOnly}
@@ -208,6 +209,14 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onClose={() => props.onToggleEPUBAppearance({ open: false })}
 				/>
 			)}
+			{
+				props.type === 'snapshot' && state.tool.type === 'zapper' && (
+					<SnapshotZapperPopup
+						numZapped={state.primaryViewState.zappedSelectors?.length || 0}
+						onRestoreAll={props.onRestoreAllZapped}
+					/>
+				)
+			}
 			<div id="a11yAnnouncement" aria-live="polite"></div>
 		</Fragment>
 	);

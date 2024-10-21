@@ -1,3 +1,15 @@
 ::selection {
     background-color: var(--selection-color);
 }
+
+.zotero-zapped {
+	display: none !important; // Ideally this is enough, but we'll have fallbacks
+	width: 0 !important;
+	height: 0 !important;
+	position: absolute !important;
+	left: -9999px !important;
+	top: -9999px !important;
+	visibility: hidden !important;
+	opacity: 0 !important;
+	clip-path: inset(50%) !important;
+}

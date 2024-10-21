@@ -16,7 +16,7 @@ import {
 	CssSelector,
 	textPositionFromRange,
 	Selector,
-	textPositionToRange
+	textPositionToRange, isCss
 } from "../common/lib/selector";
 import DOMView, {
 	DOMViewState,
@@ -37,6 +37,8 @@ import { DynamicThemeFix } from "darkreader";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
+
+	protected _zappedSelectors!: Selector[];
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -119,7 +121,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Horrifying, but it works
 		this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
 		this.setUseDarkMode(this._useDarkMode);
-
+		this._setZappedSelectors(viewState.zappedSelectors || []);
 		this._initOutline();
 	}
 
@@ -348,6 +350,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		let viewState: SnapshotViewState = {
 			scale,
 			scrollYPercent,
+			zappedSelectors: this._zappedSelectors,
 		};
 		this._options.onChangeViewState(viewState);
 	}
@@ -377,6 +380,23 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		super._handleScroll(event);
 		this._updateViewState();
 		this._pushHistoryPoint(true);
+	}
+
+	zap(selector: Selector) {
+		if (!isCss(selector)) {
+			throw new Error('Unable to zap non-CssSelector');
+		}
+		this._setZappedSelectors([...this._zappedSelectors, selector]);
+		this._updateViewState();
+		this._displayedAnnotationCache = new WeakMap();
+		this._renderAnnotations();
+	}
+
+	restoreAllZapped() {
+		this._setZappedSelectors([]);
+		this._updateViewState();
+		this._displayedAnnotationCache = new WeakMap();
+		this._renderAnnotations();
 	}
 
 	// ***
@@ -435,6 +455,24 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			else {
 				this._iframeWindow.DarkReader.auto(false);
 			}
+		}
+	}
+
+	protected _setZappedSelectors(selectors: Selector[]) {
+		this._zappedSelectors = selectors;
+		for (let elem of [...this._iframeDocument.querySelectorAll('.zotero-zapped')]) {
+			elem.classList.remove('zotero-zapped');
+		}
+		for (let selector of selectors) {
+			if (!isCss(selector)) {
+				// Shouldn't happen - we check type in #_zap()
+				throw new Error('Selector should be CssSelector');
+			}
+			let element = this._iframeDocument.querySelector(selector.value);
+			if (!element) {
+				continue;
+			}
+			element.classList.add('zotero-zapped');
 		}
 	}
 
@@ -520,6 +558,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 export interface SnapshotViewState extends DOMViewState {
 	scrollYPercent?: number;
+	zappedSelectors: Selector[];
 }
 
 export interface SnapshotViewData {

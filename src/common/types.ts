@@ -8,6 +8,7 @@ export type ToolType =
 	| 'text'
 	| 'ink'
 	| 'eraser'
+	| 'zapper'
 	| 'pointer';
 
 export type Tool = {
