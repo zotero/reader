@@ -1030,6 +1030,22 @@ class Reader {
 	}
 
 	/**
+	 * @param {BufferSource} metadata
+	 */
+	importAnnotationsFromKOReaderMetadata(metadata) {
+		this._ensureType('epub');
+		this._primaryView.importAnnotationsFromKOReaderMetadata(metadata);
+	}
+
+	/**
+	 * @param {string} metadata
+	 */
+	importAnnotationsFromCalibreMetadata(metadata) {
+		this._ensureType('epub');
+		this._primaryView.importAnnotationsFromCalibreMetadata(metadata);
+	}
+
+	/**
 	 * Trigger copying inside the currently focused iframe or the main window
 	 */
 	copy() {
