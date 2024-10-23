@@ -32,6 +32,10 @@ body.sidebar-open {
 			display: flex;
 		}
 
+		.end {
+			margin-left: 8px;
+		}
+
 		@include macOS-inactive-opacity;
 	}
 }

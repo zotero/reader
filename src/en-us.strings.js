@@ -98,6 +98,7 @@ export default {
 	'pdfReader.annotations': 'Annotations',
 	'pdfReader.showAnnotations': 'Show Annotations',
 	'pdfReader.searchAnnotations': 'Search Annotations',
+	'pdfReader.searchOutline': 'Search Outline',
 	'pdfReader.noAnnotations': 'Create an annotation to see it in the sidebar',
 	'pdfReader.noExtractedText': 'No extracted text',
 	'pdfReader.addComment': 'Add comment',
