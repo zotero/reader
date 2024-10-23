@@ -20,8 +20,8 @@ export function calibreAnnotationToRange(annotation: CalibreAnnotation, sectionR
 		sectionRenderer.section.cfiBase + '!'
 			+ annotation.end_cfi.replace(/^\/2\//, '/')));
 	try {
-		let startRange = startCFI.toRange(sectionRenderer.container.ownerDocument, undefined, sectionRenderer.container);
-		let endRange = endCFI.toRange(sectionRenderer.container.ownerDocument, undefined, sectionRenderer.container);
+		let startRange = startCFI.toRange(sectionRenderer.container.ownerDocument, undefined, sectionRenderer.container, { calibreCompat: true });
+		let endRange = endCFI.toRange(sectionRenderer.container.ownerDocument, undefined, sectionRenderer.container, { calibreCompat: true });
 		startRange.setEnd(endRange.endContainer, endRange.endOffset);
 		return startRange;
 	}
@@ -32,24 +32,36 @@ export function calibreAnnotationToRange(annotation: CalibreAnnotation, sectionR
 }
 
 export function parseAnnotationsFromCalibreMetadata(metadata: string) {
-	let doc = new DOMParser().parseFromString(metadata, 'text/xml');
-	let annotationMetas = doc.querySelectorAll('meta[name="calibre:annotation"][content]');
 	let calibreAnnotations: CalibreAnnotation[] = [];
-	for (let annotationMeta of annotationMetas) {
-		let annotation;
-		try {
-			annotation = JSON.parse(annotationMeta.getAttribute('content')!);
+	if (metadata.startsWith('encoding=json+base64:\n')) {
+		let bookmarks = JSON.parse(atob(metadata.substring('encoding=json+base64:\n'.length))) as any[];
+		for (let bookmark of bookmarks) {
+			if ('removed' in bookmark && bookmark.removed
+					|| bookmark.type !== 'highlight') {
+				continue;
+			}
+			calibreAnnotations.push(bookmark);
 		}
-		catch (e) {
-			console.error(e);
-			continue;
+	}
+	else {
+		let doc = new DOMParser().parseFromString(metadata, 'text/xml');
+		let annotationMetas = doc.querySelectorAll('meta[name="calibre:annotation"][content]');
+		for (let annotationMeta of annotationMetas) {
+			let annotation;
+			try {
+				annotation = JSON.parse(annotationMeta.getAttribute('content')!);
+			}
+			catch (e) {
+				console.error(e);
+				continue;
+			}
+			if (annotation.format !== 'EPUB'
+					|| 'removed' in annotation.annotation && annotation.annotation.removed
+					|| annotation.annotation.type !== 'highlight') {
+				continue;
+			}
+			calibreAnnotations.push(annotation.annotation);
 		}
-		if (annotation.format !== 'EPUB'
-				|| 'removed' in annotation.annotation && annotation.annotation.removed
-				|| annotation.annotation.type !== 'highlight') {
-			continue;
-		}
-		calibreAnnotations.push(annotation.annotation);
 	}
 	return calibreAnnotations;
 }
