@@ -14,8 +14,94 @@ import SearchBox from './search-box';
 function Sidebar(props) {
 	const intl = useIntl();
 
+	function handleOutlineDoubleClick() {
+		if (props.view !== 'outline' || props.outlineQuery !== '') {
+			// Do nothing when in other views or under searching
+			return;
+		}
+
+		function checkCollapsed(items) {
+			var haveCollapsed = false;
+			items.forEach((item) => {
+				if (item.items?.length) {
+					if (item.expanded === false || checkCollapsed(item.items)) {
+						haveCollapsed = true;
+					}
+				}
+			});
+			return haveCollapsed;
+		}
+		function toggleCollapsed(items, value) {
+			items.forEach((item) => {
+				if (item.items?.length) {
+					item.expanded = value;
+					toggleCollapsed(item.items, value);
+				}
+			});
+		}
+		toggleCollapsed(props.outline, checkCollapsed(props.outline));
+		props.onUpdateOutline([...props.outline]);
+	}
+
 	function handleSearchInput(query) {
 		props.onChangeFilter({ ...props.filter, query });
+	}
+
+	function handleOutlineSearchInput(query) {
+		function recursiveSearch(items, queryString) {
+			let containActive = false;
+			const isMatch = (sourceString) => { 
+				sourceString = sourceString.toLowerCase();
+				queryString = queryString.toLowerCase();
+				return sourceString.includes(queryString);
+			}
+			items.forEach((item) => {
+				if (queryString == '') {
+					if ('expandedBak' in item) {
+						if (item.expandedBak !== undefined) {
+							item.expanded = item.expandedBak;
+						}
+						else {
+							delete item.expanded;
+						}
+					}
+					delete item.matched;
+					delete item.childMatched;
+					delete item.expandedBak;
+
+					if (item.items?.length) {	
+						if (recursiveSearch(item.items, query).containActive) {
+							item.expanded = true;
+							containActive = true;
+						}
+					}
+					if (item.active) {
+						containActive = true;
+					}
+				}
+				else {
+					item.matched = isMatch(item.title);
+					item.childMatched = false;
+					item.expandedBak = ('expandedBak' in item) ? item.expandedBak : item.expanded;
+					if (item.items?.length) {	
+						delete item.expanded;
+						recursiveSearch(item.items, query);
+						item.items.forEach((iitem) => {
+							if ((iitem.matched === true) || (iitem.childMatched === true)) {
+								item.childMatched = true;
+								item.expanded = true;
+							}
+						});
+					}
+				}
+			});
+			return {
+				items: items,
+				containActive: containActive
+			}
+		}
+		props.onUpdateOutlineQuery(query);
+    	props.onUpdateOutline([...recursiveSearch(props.outline, query).items]);
 	}
 
 	return (
@@ -53,6 +139,7 @@ function Sidebar(props) {
 						aria-selected={props.view === 'outline' }
 						aria-controls="outlineView"
 						onClick={() => props.onChangeView('outline')}
+						onDoubleClick={handleOutlineDoubleClick}
 					><IconOutline/></button>
 				</div>
 				<div className="end">
@@ -61,6 +148,13 @@ function Sidebar(props) {
 							query={props.filter.query}
 							onInput={handleSearchInput}
 							placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
+						/>
+					}
+					{props.view === 'outline' &&
+						<SearchBox
+							query={props.outlineQuery}
+							onInput={handleOutlineSearchInput}
+							placeholder={intl.formatMessage({ id: 'pdfReader.searchOutline' })}
 						/>
 					}
 				</div>

@@ -144,6 +144,10 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							type={props.type}
 							view={state.sidebarView}
 							filter={state.filter}
+							outline={state.outline}
+							outlineQuery={state.outlineQuery}
+							onUpdateOutline={props.onUpdateOutline}
+							onUpdateOutlineQuery={props.onUpdateOutlineQuery}
 							onChangeView={props.onChangeSidebarView}
 							onChangeFilter={props.onChangeFilter}
 							thumbnailsView={
