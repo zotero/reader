@@ -124,6 +124,12 @@ function generateReaderConfig(build) {
 			'prop-types': 'PropTypes'
 		};
 	}
+	else if (build === 'web') {
+		config.externals = {
+			// No support for importing EPUB annotations on the web, so no need for luaparse there
+			luaparse: 'luaparse',
+		};
+	}
 	else if (build === 'dev') {
 		config.plugins.push(
 			new CopyWebpackPlugin({
