@@ -1,6 +1,6 @@
 import parser from "postcss-selector-parser";
 
-const REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
+export const SANITIZER_REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
 
 export async function sanitizeAndRender(xhtml: string, options: {
 	container: Element,
@@ -21,7 +21,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	let elem: Element | null = null;
 	// eslint-disable-next-line no-unmodified-loop-condition
 	while ((elem = walker.nextNode() as Element)) {
-		if (REPLACE_TAGS.has(elem.tagName)) {
+		if (SANITIZER_REPLACE_TAGS.has(elem.tagName)) {
 			let newElem = doc.createElement('replaced-' + elem.tagName);
 			for (let attr of elem.getAttributeNames()) {
 				newElem.setAttribute(attr, elem.getAttribute(attr)!);
@@ -202,7 +202,7 @@ export class StyleScoper {
 								parser.selector({
 									...selector,
 									nodes: selector.nodes.map((node) => {
-										if (node.type === 'tag' && REPLACE_TAGS.has(node.value.toLowerCase())) {
+										if (node.type === 'tag' && SANITIZER_REPLACE_TAGS.has(node.value.toLowerCase())) {
 											return parser.tag({
 												...node,
 												value: 'replaced-' + node.value

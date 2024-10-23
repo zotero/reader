@@ -56,6 +56,9 @@ import {
 	ScrolledFlow
 } from "./flow";
 import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
+import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
+import { ANNOTATION_COLORS } from "../../common/defines";
+import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -351,7 +354,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return {
 			type: 'FragmentSelector',
 			conformsTo: FragmentSelectorConformsTo.EPUB3,
-			value: cfi.toString()
+			value: cfi.toString(true)
 		};
 	}
 
@@ -470,6 +473,98 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			position: selector,
 			text
 		};
+	}
+
+	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
+		let existingAnnotation = this._annotations.find(
+			existingAnnotation => existingAnnotation.text === annotation!.text
+					&& existingAnnotation.sortIndex === annotation!.sortIndex
+		);
+		if (existingAnnotation) {
+			this._options.onUpdateAnnotations([{
+				...existingAnnotation,
+				comment: annotation.comment,
+			}]);
+		}
+		else {
+			this._options.onAddAnnotation(annotation);
+		}
+	}
+
+	importAnnotationsFromKOReaderMetadata(metadata: BufferSource) {
+		for (let koReaderAnnotation of parseAnnotationsFromKOReaderMetadata(metadata)) {
+			let range = koReaderAnnotationToRange(koReaderAnnotation, this._sectionRenderers);
+			if (!range) {
+				console.warn('Unable to resolve annotation', koReaderAnnotation);
+				continue;
+			}
+
+			let annotation = this._getAnnotationFromRange(
+				range,
+				'highlight',
+				ANNOTATION_COLORS[0][1] // Yellow
+			);
+			if (!annotation) {
+				console.warn('Unable to resolve range', koReaderAnnotation);
+				continue;
+			}
+			annotation.comment = koReaderAnnotation.note;
+
+			this._upsertAnnotation(annotation);
+		}
+	}
+
+	importAnnotationsFromCalibreMetadata(metadata: string) {
+		for (let calibreAnnotation of parseAnnotationsFromCalibreMetadata(metadata)) {
+			let range = calibreAnnotationToRange(calibreAnnotation, this._sectionRenderers);
+			if (!range) {
+				console.warn('Unable to resolve annotation', calibreAnnotation);
+				continue;
+			}
+
+			let type: 'highlight' | 'underline' = 'highlight';
+			let color = ANNOTATION_COLORS[0][1]; // Default to yellow
+			switch (calibreAnnotation.style?.kind) {
+				case 'color':
+					switch (calibreAnnotation.style.which) {
+						case 'green':
+							color = ANNOTATION_COLORS[2][1];
+							break;
+						case 'blue':
+							color = ANNOTATION_COLORS[3][1];
+							break;
+						case 'purple':
+							color = ANNOTATION_COLORS[4][1];
+							break;
+						case 'pink':
+							color = ANNOTATION_COLORS[5][1];
+							break;
+						case 'yellow':
+						default:
+							break;
+					}
+					break;
+				case 'decoration':
+					switch (calibreAnnotation.style.which) {
+						case 'strikeout':
+							color = ANNOTATION_COLORS[1][1]; // Red highlight as a stand-in
+							break;
+						case 'wavy':
+							type = 'underline';
+							break;
+					}
+					break;
+			}
+
+			let annotation = this._getAnnotationFromRange(range, type, color);
+			if (!annotation) {
+				console.warn('Unable to resolve range', calibreAnnotation);
+				continue;
+			}
+			annotation.comment = calibreAnnotation.notes || '';
+
+			this._upsertAnnotation(annotation);
+		}
 	}
 
 	// ***
