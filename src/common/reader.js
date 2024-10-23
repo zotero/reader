@@ -1114,10 +1114,6 @@ class Reader {
 
 	// Note: It's a bit weird, but this function is also used to deselect text in views, if an empty ids array is provided
 	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
-		// Switch to annotations view
-		if (triggeredFromView && ids.length === 1 && this._state.sidebarOpen && this._state.sidebarView !== 'annotations') {
-			this.setSidebarView('annotations');
-		}
 		let deleteIDs = [];
 		for (let annotation of this._state.annotations) {
 			if (annotation.type === 'text' && !annotation.comment && !ids.includes(annotation.id)) {
@@ -1209,7 +1205,7 @@ class Reader {
 								this._enableAnnotationDeletionFromComment = true;
 								setTimeout(() => {
 									let content;
-									if (this._state.sidebarOpen) {
+									if (this._state.sidebarOpen && this._state.sidebarView === 'annotations') {
 										content = document.querySelector(`[data-sidebar-annotation-id="${id}"] .comment .content`);
 									}
 									else {

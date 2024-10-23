@@ -53,7 +53,7 @@ function View(props) {
 					onChangeTextSelectionAnnotationMode={props.onChangeTextSelectionAnnotationMode}
 				/>
 			}
-			{state[name + 'ViewAnnotationPopup'] && !state.sidebarOpen &&
+			{state[name + 'ViewAnnotationPopup'] && (!state.sidebarOpen || state.sidebarView !== 'annotations') &&
 				<AnnotationPopup
 					type={props.type}
 					readOnly={state.readOnly}
