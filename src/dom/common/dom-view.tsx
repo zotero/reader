@@ -26,7 +26,7 @@ import {
 	DisplayedAnnotation
 } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { Selector } from "./lib/selector";
+import { isCss, Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
 	getBoundingPageRect,
@@ -376,30 +376,32 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._annotationRenderRootEl.replaceChildren();
 			return;
 		}
-		let displayedAnnotations: DisplayedAnnotation[] = this._annotations.map((annotation) => {
-			if (this._displayedAnnotationCache.has(annotation)) {
-				return this._displayedAnnotationCache.get(annotation)!;
-			}
+		let displayedAnnotations: DisplayedAnnotation[] = [];
+		if (this._tool?.type !== 'zapper') {
+			displayedAnnotations.push(...this._annotations.map((annotation) => {
+				if (this._displayedAnnotationCache.has(annotation)) {
+					return this._displayedAnnotationCache.get(annotation)!;
+				}
 
-			let range = this.toDisplayedRange(annotation.position);
-			if (!range) return null;
-			let displayedAnnotation = {
-				id: annotation.id,
-				type: annotation.type,
-				color: annotation.color,
-				sortIndex: annotation.sortIndex,
-				text: annotation.text,
-				comment: annotation.comment,
-				readOnly: annotation.readOnly,
-				key: annotation.id,
-				range,
-			};
-			this._displayedAnnotationCache.set(annotation, displayedAnnotation);
-			return displayedAnnotation;
-		}).filter(a => !!a) as DisplayedAnnotation[];
-		let findAnnotations = this._find?.getAnnotations();
-		if (findAnnotations) {
-			displayedAnnotations.push(...findAnnotations.map(a => ({
+				let range = this.toDisplayedRange(annotation.position);
+				if (!range) return null;
+				let displayedAnnotation = {
+					id: annotation.id,
+					type: annotation.type,
+					color: annotation.color,
+					sortIndex: annotation.sortIndex,
+					text: annotation.text,
+					comment: annotation.comment,
+					readOnly: annotation.readOnly,
+					key: annotation.id,
+					range,
+				} satisfies DisplayedAnnotation;
+				this._displayedAnnotationCache.set(annotation, displayedAnnotation);
+				return displayedAnnotation;
+			}).filter(a => !!a) as DisplayedAnnotation[]);
+		}
+		if (this._find) {
+			displayedAnnotations.push(...this._find.getAnnotations().map(a => ({
 				...a,
 				range: a.range.toRange(),
 			})));
@@ -600,10 +602,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		if (this._tool.type == 'note') {
+		if (this._tool.type == 'note' || this._tool.type === 'zapper') {
 			let range = this._getNoteTargetRange(event);
 			if (range) {
 				this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+				// Can only zap an element
+				if (this._tool.type === 'zapper' && this._previewAnnotation) {
+					if (isCss(this._previewAnnotation.position)) {
+						// Can't be refined
+						delete this._previewAnnotation.position.refinedBy;
+					}
+					else {
+						this._previewAnnotation = null;
+					}
+				}
 				this._renderAnnotations();
 			}
 		}
@@ -667,7 +679,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			let node = pos ? pos.offsetNode : target;
 			// Expand to the closest block element
 			while (node.parentNode
-			&& (!isElement(node) || this._iframeWindow.getComputedStyle(node).display.includes('inline'))) {
+					&& (!isElement(node) || this._iframeWindow.getComputedStyle(node).display.includes('inline'))) {
 				node = node.parentNode;
 			}
 			range.selectNode(node);
@@ -1069,13 +1081,21 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		this._options.onSetOverlayPopup();
 
-		// Create note annotation on pointer down event, if note tool is active.
-		// The note tool will be automatically deactivated in reader.js,
-		// because this is what we do in PDF reader
-		if (event.button == 0 && this._tool.type == 'note' && this._previewAnnotation) {
-			this._options.onAddAnnotation(this._previewAnnotation!, true);
-			this._renderAnnotations(true);
-			this._openAnnotationPopup();
+		if (event.button == 0 && this._previewAnnotation) {
+			if (this._tool.type === 'note') {
+				// Create note annotation on pointer down event, if note tool is active.
+				// The note tool will be automatically deactivated in reader.js,
+				// because this is what we do in PDF reader
+				this._options.onAddAnnotation(this._previewAnnotation, true);
+				this._renderAnnotations(true);
+				this._openAnnotationPopup();
+			}
+			else if (this._tool.type === 'zapper') {
+				let selector = this._previewAnnotation.position;
+				this._previewAnnotation = null;
+				this._options.onZap(selector);
+			}
+
 			event.preventDefault();
 
 			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
@@ -1342,6 +1362,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._handleViewUpdate();
 	}
 
+	abstract zap(selector: Selector): void;
+
+	abstract restoreAllZapped(): void;
+
 	protected abstract _setScale(scale: number): void;
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
@@ -1423,6 +1447,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
+	onZap: (selector: Selector) => void;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string

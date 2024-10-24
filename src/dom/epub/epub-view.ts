@@ -578,6 +578,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		super._handleKeyDown(event);
 	}
 
+	zap(_selector: Selector): void {
+		throw new Error('Unsupported');
+	}
+
+	restoreAllZapped(): void {
+		throw new Error('Unsupported');
+	}
+
 	protected override _updateViewState() {
 		let cfi;
 		if (this.flow.startCFI) {

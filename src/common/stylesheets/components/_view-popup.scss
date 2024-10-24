@@ -130,6 +130,26 @@
 	}
 }
 
+.snapshot-zapper-popup {
+	@include -control-popup;
+
+	inset-inline-end: 15px;
+	bottom: 15px;
+	padding-block: 4px;
+
+	flex-direction: row;
+	align-items: center;
+	gap: 0;
+
+	.instructions {
+		line-height: 28px;
+	}
+
+	.restore-all-label {
+		padding-inline-start: 4px;
+	}
+}
+
 .selection-popup {
 	max-width: 198px;
 	padding: 8px;
