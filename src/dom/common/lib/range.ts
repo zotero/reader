@@ -15,7 +15,7 @@ export class PersistentRange {
 
 	endOffset: number;
 
-	constructor(range: AbstractRange) {
+	constructor(range: Omit<AbstractRange, 'collapsed'>) {
 		this.startContainer = range.startContainer;
 		this.startOffset = range.startOffset;
 		this.endContainer = range.endContainer;
