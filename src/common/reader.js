@@ -1200,8 +1200,8 @@ class Reader {
 					// unless it is a note (so that one can type after creating it via shortcut, same as with text annotation)
 					if (!triggeringEvent || triggeringEvent.button !== 2) {
 						if (triggeredFromView) {
-							if (['note', 'highlight', 'underline'].includes(annotation.type)
-								&& !annotation.comment && (!triggeringEvent || annotation.type === 'note')) {
+							if (['note', 'highlight', 'underline', 'image'].includes(annotation.type)
+								&& !annotation.comment && (!triggeringEvent || !('key' in triggeringEvent))) {
 								this._enableAnnotationDeletionFromComment = true;
 								setTimeout(() => {
 									let content;
