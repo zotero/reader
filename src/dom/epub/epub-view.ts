@@ -491,6 +491,22 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
+	getKOReaderAnnotationStats(metadata: BufferSource): { count: number, lastModified?: Date } {
+		try {
+			let annotations = parseAnnotationsFromKOReaderMetadata(metadata);
+			if (annotations.length) {
+				return {
+					count: annotations.length,
+					lastModified: annotations.map(a => new Date(a.datetime)).reduce(
+						(max, cur) => (cur > max ? cur : max)
+					),
+				};
+			}
+		}
+		catch (e) {}
+		return { count: 0 };
+	}
+
 	importAnnotationsFromKOReaderMetadata(metadata: BufferSource) {
 		for (let koReaderAnnotation of parseAnnotationsFromKOReaderMetadata(metadata)) {
 			let range = koReaderAnnotationToRange(koReaderAnnotation, this._sectionRenderers);
@@ -512,6 +528,22 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 			this._upsertAnnotation(annotation);
 		}
+	}
+
+	getCalibreAnnotationStats(metadata: string): { count: number, lastModified?: Date } {
+		try {
+			let annotations = parseAnnotationsFromCalibreMetadata(metadata);
+			if (annotations.length) {
+				return {
+					count: annotations.length,
+					lastModified: annotations.map(a => new Date(a.timestamp)).reduce(
+						(max, cur) => (cur > max ? cur : max)
+					),
+				};
+			}
+		}
+		catch (e) {}
+		return { count: 0 };
 	}
 
 	importAnnotationsFromCalibreMetadata(metadata: string) {
