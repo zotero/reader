@@ -80,4 +80,5 @@ export type CalibreAnnotation = {
 		kind: 'decoration';
 		which: 'wavy' | 'strikeout' | string;
 	};
+	timestamp: string;
 };

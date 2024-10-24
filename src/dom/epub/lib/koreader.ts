@@ -111,9 +111,10 @@ export function parseAnnotationsFromKOReaderMetadata(metadata: BufferSource): KO
 			pos0: findField(annotationTable, 'pos0'),
 			pos1: findField(annotationTable, 'pos1'),
 			text: findField(annotationTable, 'text'),
+			datetime: findField(annotationTable, 'datetime'),
 		};
 		for (let [key, value] of Object.entries(annotationFields)) {
-			if (['pos0', 'pos1', 'text'].includes(key) && !value) {
+			if (['pos0', 'pos1', 'text', 'datetime'].includes(key) && !value) {
 				throw new Error(`Invalid KOReader metadata: annotation is missing required field "${key}"`);
 			}
 			if (value && value.type !== 'StringLiteral') {
@@ -125,6 +126,7 @@ export function parseAnnotationsFromKOReaderMetadata(metadata: BufferSource): KO
 			pos0: parseKOReaderPosition((annotationFields.pos0 as StringLiteral).value),
 			pos1: parseKOReaderPosition((annotationFields.pos1 as StringLiteral).value),
 			text: (annotationFields.text as StringLiteral).value,
+			datetime: (annotationFields.datetime as StringLiteral).value,
 		});
 	}
 	return annotations;
@@ -136,6 +138,7 @@ export type KOReaderAnnotation = {
 	pos0: KOReaderPosition;
 	pos1: KOReaderPosition;
 	text: string;
+	datetime: string;
 };
 
 export type KOReaderPosition = {
