@@ -1201,7 +1201,9 @@ class Reader {
 					if (!triggeringEvent || triggeringEvent.button !== 2) {
 						if (triggeredFromView) {
 							if (['note', 'highlight', 'underline', 'image'].includes(annotation.type)
-								&& !annotation.comment && (!triggeringEvent || !('key' in triggeringEvent))) {
+								&& !annotation.comment
+								&& (!triggeringEvent || !('key' in triggeringEvent) || annotation.type === 'note')
+							) {
 								this._enableAnnotationDeletionFromComment = true;
 								setTimeout(() => {
 									let content;
