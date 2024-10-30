@@ -530,6 +530,24 @@ export class PaginatedFlow extends AbstractFlow {
 		this._onViewUpdate();
 	}
 
+	navigateLeft() {
+		if (this._view.pageProgressionRTL) {
+			this.navigateToNextPage();
+		}
+		else {
+			this.navigateToPreviousPage();
+		}
+	}
+
+	navigateRight() {
+		if (this._view.pageProgressionRTL) {
+			this.navigateToPreviousPage();
+		}
+		else {
+			this.navigateToNextPage();
+		}
+	}
+
 	navigateToFirstPage(): void {
 		this.currentSectionIndex = this._view.renderers[0].section.index;
 		this._sectionsContainer.scrollTo({ left: 0, top: 0 });
@@ -641,20 +659,20 @@ export class PaginatedFlow extends AbstractFlow {
 		// Switch pages after swiping
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		if (swipeAmount <= -1) {
-			this.navigateToNextPage();
+			this.navigateRight();
 		}
 		else if (swipeAmount >= 1) {
-			this.navigateToPreviousPage();
+			this.navigateLeft();
 		}
 		// If there's no selection, allow single-tap page turns
 		else if (this._iframeWindow.getSelection()!.isCollapsed
 				&& Math.abs(event.clientX - this._touchStartX) < EPSILON_PX
 				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX) {
 			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {
-				this.navigateToNextPage();
+				this.navigateRight();
 			}
 			else if (event.clientX <= PAGE_TURN_TAP_MARGIN_PX) {
-				this.navigateToPreviousPage();
+				this.navigateLeft();
 			}
 		}
 	};

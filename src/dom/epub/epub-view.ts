@@ -72,6 +72,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	appearance?: EPUBAppearance;
 
+	pageProgressionRTL!: boolean;
+
 	private _lastResizeWidth: number | null = null;
 
 	private _lastResizeHeight: number | null = null;
@@ -81,8 +83,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	private readonly _sectionRenderers: SectionRenderer[] = [];
 
 	private readonly _rangeCache = new Map<string, PersistentRange>();
-
-	private _pageProgressionRTL!: boolean;
 
 	private _pageMappingJSON!: string;
 
@@ -123,12 +123,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		cspMeta.setAttribute('content', this._getCSP());
 		this._iframeDocument.head.prepend(cspMeta);
 
-		this._pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
-		if (!this._pageProgressionRTL) {
+		this.pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
+		if (!this.pageProgressionRTL) {
 			try {
 				let locale = new Intl.Locale(this.book.packaging.metadata.language).maximize();
-				this._pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
-				if (this._pageProgressionRTL) {
+				this.pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
+				if (this.pageProgressionRTL) {
 					console.log('Guessed RTL page progression from maximized locale: ' + locale);
 				}
 			}
@@ -554,7 +554,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
-				if (this._pageProgressionRTL) {
+				if (this.pageProgressionRTL) {
 					this.flow.navigateToNextPage();
 				}
 				else {
@@ -564,7 +564,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				return;
 			}
 			if (key == 'ArrowRight') {
-				if (this._pageProgressionRTL) {
+				if (this.pageProgressionRTL) {
 					this.flow.navigateToPreviousPage();
 				}
 				else {
