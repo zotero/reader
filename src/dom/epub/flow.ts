@@ -357,6 +357,10 @@ export class ScrolledFlow extends AbstractFlow {
 	}
 }
 
+const PAGE_TURN_SWIPE_LENGTH_PX = 100;
+const PAGE_TURN_TAP_MARGIN_PX = 20;
+const EPSILON_PX = 10;
+
 export class PaginatedFlow extends AbstractFlow {
 	private _sectionsContainer: HTMLElement;
 
@@ -365,6 +369,8 @@ export class PaginatedFlow extends AbstractFlow {
 	private _touchStartID: number | null = null;
 
 	private _touchStartX = 0;
+
+	private _touchStartY = 0;
 
 	private _currentSectionIndex!: number;
 
@@ -606,13 +612,14 @@ export class PaginatedFlow extends AbstractFlow {
 
 		this._touchStartID = event.pointerId;
 		this._touchStartX = event.clientX;
+		this._touchStartY = event.clientY;
 	};
 
 	private _handlePointerMove = (event: PointerEvent) => {
 		if (this._touchStartID === null || event.pointerId !== this._touchStartID) {
 			return;
 		}
-		let swipeAmount = (event.clientX - this._touchStartX) / 100;
+		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		// If on the first/last page, clamp the CSS variable so the indicator doesn't expand all the way
 		if (swipeAmount < 0 && !this.canNavigateToNextPage()) {
 			swipeAmount = Math.max(swipeAmount, -0.6);
@@ -631,13 +638,24 @@ export class PaginatedFlow extends AbstractFlow {
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
 		this._touchStartID = null;
 
-		// Switch pages after swiping 100px
-		let swipeAmount = (event.clientX - this._touchStartX) / 100;
+		// Switch pages after swiping
+		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		if (swipeAmount <= -1) {
 			this.navigateToNextPage();
 		}
-		if (swipeAmount >= 1) {
+		else if (swipeAmount >= 1) {
 			this.navigateToPreviousPage();
+		}
+		// If there's no selection, allow single-tap page turns
+		else if (this._iframeWindow.getSelection()!.isCollapsed
+				&& Math.abs(event.clientX - this._touchStartX) < EPSILON_PX
+				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX) {
+			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {
+				this.navigateToNextPage();
+			}
+			else if (event.clientX <= PAGE_TURN_TAP_MARGIN_PX) {
+				this.navigateToPreviousPage();
+			}
 		}
 	};
 
