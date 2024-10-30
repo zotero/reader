@@ -358,7 +358,7 @@ export class ScrolledFlow extends AbstractFlow {
 }
 
 const PAGE_TURN_SWIPE_LENGTH_PX = 100;
-const PAGE_TURN_TAP_MARGIN_PX = 20;
+const PAGE_TURN_TAP_MARGIN_PX = 150;
 const EPSILON_PX = 10;
 
 export class PaginatedFlow extends AbstractFlow {
