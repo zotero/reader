@@ -667,6 +667,7 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		// If there's no selection, allow single-tap page turns
 		else if (this._iframeWindow.getSelection()!.isCollapsed
+				&& !this._view.selectedAnnotationIDs.length
 				&& Math.abs(event.clientX - this._touchStartX) < EPSILON_PX
 				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX) {
 			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {

@@ -1299,6 +1299,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._updateViewStats();
 	}
 
+	get selectedAnnotationIDs() {
+		return this._selectedAnnotationIDs.slice();
+	}
+
 	setAnnotationPopup(popup: AnnotationPopupParams<WADMAnnotation>) {
 		this._annotationPopup = popup;
 	}
