@@ -607,7 +607,8 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerDown = (event: PointerEvent) => {
-		if (this._touchStartID !== null || event.pointerType !== 'touch'
+		if (this._touchStartID !== null
+				|| (event.pointerType !== 'touch' && event.pointerType !== 'pen')
 				|| (event.target as Element).closest('#annotation-overlay')) {
 			return;
 		}
