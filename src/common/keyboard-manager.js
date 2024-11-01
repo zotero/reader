@@ -255,6 +255,7 @@ export class KeyboardManager {
 			}
 			else {
 				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
+				this._reader._lastView.focus();
 			}
 		}
 
