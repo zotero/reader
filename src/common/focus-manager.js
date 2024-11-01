@@ -104,7 +104,7 @@ export class FocusManager {
 		}
 		// Restore focus to the last view if
 		if (this._reader._annotationSelectionTriggeredFromView
-			&& e.target.closest('[contenteditable="true"]')
+			&& e.target.closest('.comment [contenteditable="true"]')
 			&& emptyComment
 			&& e.shiftKey
 			&& e.key.startsWith('Arrow')) {
