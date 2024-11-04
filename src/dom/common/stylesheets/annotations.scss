@@ -1,0 +1,73 @@
+.annotation-container {
+	z-index: 9999;
+	pointer-events: none;
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background: transparent;
+	overflow: visible;
+}
+
+.annotation-container.blended {
+	mix-blend-mode: multiply;
+}
+
+.annotation-div {
+	cursor: default;
+	width: 100%;
+	height: 100%;
+	pointer-events: auto;
+}
+
+.inherit-pointer-events {
+	pointer-events: auto;
+}
+
+.disable-pointer-events {
+	pointer-events: none !important;
+
+	.inherit-pointer-events {
+		pointer-events: none !important;
+	}
+
+	.needs-pointer-events {
+		display: none !important;
+	}
+}
+
+.resizer {
+	cursor: col-resize;
+	touch-action: none;
+}
+
+@media (any-pointer: coarse) {
+	.resizer {
+		stroke: transparent;
+		stroke-width: 20px;
+		margin: -10px;
+	}
+}
+
+@mixin -dark-rules() {
+	.annotation-container.blended {
+		mix-blend-mode: screen;
+	}
+}
+
+@media (prefers-color-scheme: dark) {
+	#annotation-render-root:not(.disable-dark-mode) {
+		@include -dark-rules();
+	}
+}
+
+#annotation-render-root[data-color-scheme=dark]:not(.disable-dark-mode) {
+	@include -dark-rules();
+}
+
+@media print {
+	:host {
+		display: none !important;
+	}
+}

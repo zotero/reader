@@ -1,5 +1,7 @@
 // @ts-ignore
 import injectCSS from './stylesheets/inject.scss';
+// @ts-ignore
+import annotationsCSS from './stylesheets/annotations.scss';
 
 import {
 	Annotation,
@@ -561,6 +563,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.addEventListener('wheel', this._handleWheelCapture.bind(this), { passive: false, capture: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
+		let injectStyle = this._iframeDocument.createElement('style');
+		injectStyle.innerHTML = injectCSS;
+		this._iframeDocument.head.append(injectStyle);
+
 		let annotationOverlay = this._iframeDocument.createElement('div');
 		annotationOverlay.id = 'annotation-overlay';
 		this._annotationShadowRoot = annotationOverlay.attachShadow({ mode: 'open' });
@@ -571,9 +577,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._annotationShadowRoot.append(this._annotationRenderRootEl);
 		this._annotationRenderRoot = createRoot(this._annotationRenderRootEl);
 
-		let style = this._iframeDocument.createElement('style');
-		style.innerHTML = injectCSS;
-		this._annotationShadowRoot.append(style);
+		let annotationsStyle = this._iframeDocument.createElement('style');
+		annotationsStyle.innerHTML = annotationsCSS;
+		this._annotationShadowRoot.append(annotationsStyle);
 
 		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
 
@@ -996,21 +1002,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _handleAnnotationResizeStart = (_id: string) => {
 		this._resizing = true;
 		this._options.onSetAnnotationPopup(null);
-		if (isSafari) {
-			// Capturing the pointer doesn't stop text selection in Safari. We could set user-select: none
-			// (-webkit-user-select: none, actually), but that breaks caretPositionFromPoint (only in Safari).
-			// So we make the selection invisible instead.
-			this._iframeDocument.documentElement.style.setProperty('--selection-color', 'transparent');
-		}
+		this._iframeDocument.body.classList.add('resizing-annotation');
 	};
 
 	private _handleAnnotationResizeEnd = (id: string, range: Range, cancelled: boolean) => {
 		this._resizing = false;
-		if (isSafari) {
-			// See above - this resets the highlight color and clears the selection
-			this.setTool(this._tool);
-			this._iframeDocument.getSelection()?.removeAllRanges();
-		}
+		this._iframeDocument.body.classList.remove('resizing-annotation');
 		if (cancelled) {
 			return;
 		}
@@ -1063,6 +1060,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
 				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+				this._iframeDocument.body.classList.add('creating-touch-annotation');
 				event.stopPropagation();
 			}
 		}
@@ -1110,6 +1108,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._tryUseTool();
 		}
 		this._touchAnnotationStartPosition = null;
+		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
 
 	protected _handlePointerMove(event: PointerEvent) {

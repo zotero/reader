@@ -173,21 +173,30 @@ export function supportsCaretPositionFromPoint(): boolean {
 }
 
 export function caretPositionFromPoint(doc: Document, x: number, y: number): CaretPosition | null {
-	if (typeof doc.caretPositionFromPoint == 'function') {
-		return doc.caretPositionFromPoint(x, y);
-	}
-	else if (typeof doc.caretRangeFromPoint == 'function') {
-		const range = doc.caretRangeFromPoint(x, y);
-		if (!range) {
-			return null;
+	// Make sure text selection is enabled everywhere
+	// We need this for WebKit because user-select: none disables
+	// caretRangeFromPoint()
+	doc.body.classList.add('force-enable-selection-everywhere');
+	try {
+		if (typeof doc.caretPositionFromPoint == 'function') {
+			return doc.caretPositionFromPoint(x, y);
 		}
-		return {
-			offsetNode: range.startContainer,
-			offset: range.startOffset,
-			getClientRect: () => range.getBoundingClientRect()
-		};
+		else if (typeof doc.caretRangeFromPoint == 'function') {
+			const range = doc.caretRangeFromPoint(x, y);
+			if (!range) {
+				return null;
+			}
+			return {
+				offsetNode: range.startContainer,
+				offset: range.startOffset,
+				getClientRect: () => range.getBoundingClientRect()
+			};
+		}
+		return null;
 	}
-	return null;
+	finally {
+		doc.body.classList.remove('force-enable-selection-everywhere');
+	}
 }
 
 export function getStartElement(range: Range | PersistentRange): Element | null {
