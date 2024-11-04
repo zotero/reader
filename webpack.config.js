@@ -159,10 +159,7 @@ function generateViewConfig(build) {
 		mode: build === 'view-dev' ? 'development' : 'production',
 		devtool: build === 'web' ? false : 'source-map',
 		entry: {
-			view: [
-				'./src/index.' + build + '.js',
-				'./src/common/stylesheets/view.scss'
-			],
+			view: ['./src/index.' + build + '.js']
 		},
 		output: {
 			path: path.resolve(__dirname, './build/' + build),
