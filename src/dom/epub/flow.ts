@@ -548,6 +548,24 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 	}
 
+	canNavigateLeft() {
+		if (this._view.pageProgressionRTL) {
+			return this.canNavigateToNextPage();
+		}
+		else {
+			return this.canNavigateToPreviousPage();
+		}
+	}
+
+	canNavigateRight() {
+		if (this._view.pageProgressionRTL) {
+			return this.canNavigateToPreviousPage();
+		}
+		else {
+			return this.canNavigateToNextPage();
+		}
+	}
+
 	navigateToFirstPage(): void {
 		this.currentSectionIndex = this._view.renderers[0].section.index;
 		this._sectionsContainer.scrollTo({ left: 0, top: 0 });
@@ -640,10 +658,10 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		// If on the first/last page, clamp the CSS variable so the indicator doesn't expand all the way
-		if (swipeAmount < 0 && !this.canNavigateToNextPage()) {
+		if (swipeAmount < 0 && !this.canNavigateRight()) {
 			swipeAmount = Math.max(swipeAmount, -0.6);
 		}
-		else if (swipeAmount > 0 && !this.canNavigateToPreviousPage()) {
+		else if (swipeAmount > 0 && !this.canNavigateLeft()) {
 			swipeAmount = Math.min(swipeAmount, 0.6);
 		}
 		this._swipeIndicators.style.setProperty('--swipe-amount', swipeAmount.toString());
