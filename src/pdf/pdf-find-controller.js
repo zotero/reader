@@ -1002,16 +1002,22 @@ class PDFFindController {
 			return;
 		}
 
+		let resolvers = [];
 		for (let i = 0, ii = this._linkService.pagesCount; i < ii; i++) {
 			const { promise, resolve } = Promise.withResolvers();
 			this._extractTextPromises[i] = promise;
+			resolvers.push(resolve);
+		}
 
-			(async () => {
+		(async () => {
+			for (let i = 0; i < resolvers.length; i++) {
+				let resolve = resolvers[i];
 
 				let text = '';
 				let chars = [];
 
 				try {
+					await new Promise(resolve => setTimeout(resolve));
 					let pageData = await this._pdfDocument.getPageData({ pageIndex: i });
 
 					function getTextFromChars(chars) {
@@ -1027,7 +1033,8 @@ class PDFFindController {
 
 					chars = pageData.chars;
 					text = getTextFromChars(pageData.chars);
-				} catch (e) {
+				}
+				catch (e) {
 					console.log(e);
 				}
 
@@ -1041,8 +1048,8 @@ class PDFFindController {
 				] = normalize(text);
 
 				resolve();
-			})();
-		}
+			}
+		})();
 	}
 
 	_nextMatch() {
