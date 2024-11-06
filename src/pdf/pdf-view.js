@@ -1540,8 +1540,8 @@ class PDFView {
 				action = { type: 'text' };
 			}
 			else {
-				// Enable text selection if using mouse or using touch/pen with highlight/underline tool
-				if (mouse || ['highlight', 'underline'].includes(this._tool.type)) {
+				// Enable text selection if using mouse or pen or touch (finger) with highlight/underline tool
+				if (mouse || event.pointerType === 'pen' || ['highlight', 'underline'].includes(this._tool.type)) {
 					action = { type: 'selectText' };
 				}
 				// Otherwise don't trigger any action for touch/pen because it'll be scrolling
@@ -1870,8 +1870,12 @@ class PDFView {
 	}
 
 	_handleTouchMove(event) {
-		// Prevent default touch action (which is scroll) if any tool is enabled
-		if (this._tool.type !== 'pointer') {
+		if (
+			// Prevent default touch action (which is scroll) if any tool is enabled
+			this._tool.type !== 'pointer'
+			// Or a text selection action is triggered using a pen in the page (not the gray area)
+			|| (this.action?.type === 'selectText' && event.target.id !== 'viewer')
+		) {
 			event.preventDefault();
 		}
 	}
@@ -1882,6 +1886,7 @@ class PDFView {
 		// "[Intervention] Ignored attempt to cancel a touchend event with cancelable=false,
 		// for example because scrolling is in progress and cannot be interrupted"
 		event.preventDefault();
+		this._pointerDownTriggered = false;
 	}
 
 	_handlePointerMove = throttle((event) => {
