@@ -1064,7 +1064,21 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		);
 
 		if (typeof this._iframeWindow.zoteroPrint === 'function') {
-			await this._iframeWindow.zoteroPrint();
+			await this._iframeWindow.zoteroPrint({
+				overrideSettings: {
+					// Set title based on the book's title
+					title: this.book.packaging.metadata.title || '',
+					// Remove 'about:srcdoc' URL
+					docURL: '',
+					// And disable printing either of those things in the margins by default
+					headerStrLeft: '',
+					headerStrCenter: '',
+					headerStrRight: '',
+					footerStrLeft: '',
+					footerStrCenter: '',
+					footerStrRight: '',
+				}
+			});
 		}
 		else {
 			this._iframeWindow.print();

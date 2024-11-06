@@ -5,7 +5,7 @@ declare interface Window {
 
 	DarkReader: typeof import('darkreader');
 
-	zoteroPrint?: () => Promise<void>;
+	zoteroPrint?: (options?: { overrideSettings?: Record<string, string> }) => Promise<void>;
 }
 
 declare interface Document {

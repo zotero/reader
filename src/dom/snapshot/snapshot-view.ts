@@ -94,7 +94,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	getData() {
 		return {
 			srcDoc: this._iframe.srcdoc,
-			url: this._iframeDocument.head.querySelector('base')?.href
+			url: this._iframeDocument.head.querySelector('base')?.href,
+			importedFromURL: this._options.data.importedFromURL,
 		};
 	}
 
@@ -506,7 +507,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	async print() {
 		if (typeof this._iframeWindow.zoteroPrint === 'function') {
-			await this._iframeWindow.zoteroPrint();
+			await this._iframeWindow.zoteroPrint({
+				overrideSettings: {
+					docURL: this._options.data.importedFromURL || '',
+				},
+			});
 		}
 		else {
 			this._iframeWindow.print();
@@ -524,6 +529,8 @@ export interface SnapshotViewState extends DOMViewState {
 
 export interface SnapshotViewData {
 	srcDoc?: string;
+	url?: string;
+	importedFromURL?: string;
 }
 
 export default SnapshotView;
