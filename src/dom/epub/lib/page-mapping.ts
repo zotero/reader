@@ -46,7 +46,7 @@ class PageMapping {
 		return mapping;
 	}
 
-	static readonly VERSION = 10;
+	static readonly VERSION = 11;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
