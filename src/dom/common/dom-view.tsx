@@ -132,7 +132,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
-	protected _resizing = false;
+	protected _resizingAnnotationID: string | null = null;
 
 	scale = 1;
 
@@ -434,7 +434,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		displayedAnnotations = displayedAnnotations.filter(
-			a => isPageRectVisible(this._getBoundingPageRectCached(a.range), this._iframeWindow)
+			a => a.id === this._resizingAnnotationID
+				|| isPageRectVisible(this._getBoundingPageRectCached(a.range), this._iframeWindow)
 		);
 
 		let doRender = () => this._annotationRenderRoot.render(
@@ -724,7 +725,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		if (key === 'Escape' && !this._resizing) {
+		if (key === 'Escape' && !this._resizingAnnotationID) {
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
 			}
@@ -999,14 +1000,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations();
 	};
 
-	private _handleAnnotationResizeStart = (_id: string) => {
-		this._resizing = true;
+	private _handleAnnotationResizeStart = (id: string) => {
+		this._resizingAnnotationID = id;
 		this._options.onSetAnnotationPopup(null);
 		this._iframeDocument.body.classList.add('resizing-annotation');
 	};
 
 	private _handleAnnotationResizeEnd = (id: string, range: Range, cancelled: boolean) => {
-		this._resizing = false;
+		this._resizingAnnotationID = null;
 		this._iframeDocument.body.classList.remove('resizing-annotation');
 		if (cancelled) {
 			return;

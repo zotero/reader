@@ -556,6 +556,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart } = props;
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	let [pointerCapture, setPointerCapture] = useState<{ elem: Element, pointerId: number } | null>(null);
+	let [lastPointerMove, setLastPointerMove] = useState<React.PointerEvent | null>(null);
 
 	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction == 'rtl';
 
@@ -589,6 +590,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		setResizingSide(false);
 		if (pointerCapture) {
 			setPointerCapture(null);
+			setLastPointerMove(null);
 			onResizeEnd(annotation, false);
 		}
 	}, [annotation, onResizeEnd, pointerCapture]);
@@ -614,8 +616,9 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		return () => win.removeEventListener('keydown', handleKeyDown, true);
 	}, [win, handleKeyDown]);
 
-	let handlePointerMove = useCallback((event: React.PointerEvent, isStart: boolean) => {
-		let clientX = event.clientX;
+	let handlePointerMove = useCallback((event: React.PointerEvent) => {
+		let { clientX, clientY } = event;
+		let isStart = resizingSide === 'start' ? !rtl : rtl;
 		if (isSafari) {
 			let targetRect = (event.target as Element).getBoundingClientRect();
 			if (clientX >= targetRect.left && clientX <= targetRect.right) {
@@ -625,7 +628,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 				clientX = isStart ? targetRect.left - 1 : targetRect.right + 1;
 			}
 		}
-		let pos = caretPositionFromPoint(event.view.document, clientX, event.clientY);
+		let pos = caretPositionFromPoint(event.view.document, clientX, clientY);
 		if (pos) {
 			// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
 			if (pos.offsetNode.nodeType == Node.ELEMENT_NODE && (pos.offsetNode as Element).closest('svg')) {
@@ -671,7 +674,38 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 
 			onResize(annotation, newRange);
 		}
-	}, [annotation, doc, onResize]);
+
+		if (win) {
+			setLastPointerMove(event);
+		}
+	}, [annotation, doc, onResize, resizingSide, rtl, win]);
+
+	useEffect(() => {
+		if (!win || !resizingSide || !lastPointerMove) {
+			return undefined;
+		}
+		let scrollAmount = lastPointerMove.clientY < 50 ? -10 : lastPointerMove.clientY >= win.innerHeight - 50 ? 10 : 0;
+		if (!scrollAmount) {
+			return undefined;
+		}
+
+		win.scrollBy({ top: scrollAmount });
+		let intervalID = win.setInterval(() => {
+			win.scrollBy({ top: scrollAmount });
+		}, 20);
+		return () => win.clearInterval(intervalID);
+	}, [lastPointerMove, resizingSide, win]);
+
+	useEffect(() => {
+		if (!win || !resizingSide || !lastPointerMove) {
+			return undefined;
+		}
+		let handleScroll = () => {
+			handlePointerMove(lastPointerMove!);
+		};
+		win.addEventListener('scroll', handleScroll);
+		return () => win.removeEventListener('scroll', handleScroll);
+	}, [handlePointerMove, lastPointerMove, resizingSide, win]);
 
 	if (!highlightRects.length) {
 		return null;
@@ -691,7 +725,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
-			onPointerMove={resizingSide == 'start' ? (event => handlePointerMove(event, !rtl)) : undefined}
+			onPointerMove={resizingSide == 'start' ? (event => handlePointerMove(event)) : undefined}
 			onGotPointerCapture={event => handleGotPointerCapture(event, 'start')}
 			onLostPointerCapture={handleLostPointerCapture}
 		/>
@@ -705,7 +739,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
-			onPointerMove={resizingSide == 'end' ? (event => handlePointerMove(event, rtl)) : undefined}
+			onPointerMove={resizingSide == 'end' ? (event => handlePointerMove(event)) : undefined}
 			onGotPointerCapture={event => handleGotPointerCapture(event, 'end')}
 			onLostPointerCapture={handleLostPointerCapture}
 		/>
