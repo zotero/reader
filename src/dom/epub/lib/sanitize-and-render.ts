@@ -67,6 +67,11 @@ export async function sanitizeAndRender(xhtml: string, options: {
 			elem.replaceWith(img);
 			walker.currentNode = img;
 		}
+		else if (elem.tagName == 'img') {
+			let img = elem as HTMLImageElement;
+			img.loading = 'eager';
+			img.decoding = 'sync';
+		}
 	}
 
 	for (let elem of toRemove) {
