@@ -43,7 +43,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 	let pointerEventsSuppressed = isResizing || isPointerDownOutside || isAltDown;
 
 	useEffect(() => {
-		let win = iframe.contentWindow;
+		const win = iframe.contentWindow;
 		if (!win) {
 			return undefined;
 		}
@@ -83,10 +83,12 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		window.addEventListener('keydown', handleWindowKeyDownCapture, { capture: true, passive: true });
 		window.addEventListener('keyup', handleWindowKeyUpCapture, { capture: true, passive: true });
 		return () => {
-			win!.removeEventListener('pointerdown', handleWindowPointerDown);
-			win!.removeEventListener('pointerup', handleWindowPointerUp);
-			win!.removeEventListener('keydown', handleWindowKeyDownCapture, { capture: true });
-			win!.removeEventListener('keyup', handleWindowKeyUpCapture, { capture: true });
+			win.removeEventListener('pointerdown', handleWindowPointerDown);
+			win.removeEventListener('pointerup', handleWindowPointerUp);
+			win.removeEventListener('keydown', handleWindowKeyDownCapture, { capture: true });
+			win.removeEventListener('keyup', handleWindowKeyUpCapture, { capture: true });
+			window.removeEventListener('keydown', handleWindowKeyDownCapture, { capture: true });
+			window.removeEventListener('keyup', handleWindowKeyUpCapture, { capture: true });
 		};
 	}, [iframe.contentWindow]);
 
@@ -601,15 +603,15 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		onResizeEnd(annotation, true);
 	}, [pointerCapture, onResizeEnd, annotation, resizingSide]);
 
-	let doc = annotation.range.commonAncestorContainer.ownerDocument;
-	let win = doc?.defaultView;
+	const doc = annotation.range.commonAncestorContainer.ownerDocument;
+	const win = doc?.defaultView;
 
 	useEffect(() => {
 		if (!win) {
 			return undefined;
 		}
 		win.addEventListener('keydown', handleKeyDown, true);
-		return () => win?.removeEventListener('keydown', handleKeyDown, true);
+		return () => win.removeEventListener('keydown', handleKeyDown, true);
 	}, [win, handleKeyDown]);
 
 	let handlePointerMove = useCallback((event: React.PointerEvent, isStart: boolean) => {
