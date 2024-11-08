@@ -15,62 +15,72 @@ export async function sanitizeAndRender(xhtml: string, options: {
 		throw new Error('Invalid XHTML');
 	}
 
-	let walker = doc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
+	let walker = sectionDoc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 	let toRemove = [];
 
 	let elem: Element | null = null;
 	// eslint-disable-next-line no-unmodified-loop-condition
 	while ((elem = walker.nextNode() as Element)) {
-		if (SANITIZER_REPLACE_TAGS.has(elem.tagName)) {
-			let newElem = doc.createElement('replaced-' + elem.tagName);
-			for (let attr of elem.getAttributeNames()) {
-				newElem.setAttribute(attr, elem.getAttribute(attr)!);
-			}
-			newElem.append(...elem.childNodes);
-			elem.replaceWith(newElem);
-			walker.currentNode = newElem;
-		}
-		else if (elem.tagName == 'style') {
-			container.classList.add(
-				await styleScoper.add(elem.innerHTML || '')
-			);
-			toRemove.push(elem);
-		}
-		else if (elem.tagName == 'link' && elem.getAttribute('rel')?.toLowerCase() == 'stylesheet') {
-			let link = elem as HTMLLinkElement;
-			try {
+		let localName = elem.localName;
+		switch (localName) {
+			case 'style':
 				container.classList.add(
-					await styleScoper.addByURL(link.href)
+					await styleScoper.add(elem.innerHTML || '')
 				);
-			}
-			catch (e) {
-				console.error(e);
-			}
-			toRemove.push(elem);
-		}
-		else if (elem.tagName == 'title') {
-			toRemove.push(elem);
-		}
-		else if (elem.tagName === 'object'
-				&& elem.hasAttribute('data')
-				&& elem.getAttribute("type")?.startsWith("image/")) {
-			// <object data="..."> apparently can't display blob: SVGs in Firefox
-			let img = doc.createElement('img');
-			for (let attr of elem.getAttributeNames()) {
-				if (attr === 'data' || attr === 'title') {
-					continue;
+				toRemove.push(elem);
+				break;
+			case 'link': {
+				let link = elem as HTMLLinkElement;
+				if (link.relList.contains('stylesheet')) {
+					try {
+						container.classList.add(
+							await styleScoper.addByURL(link.href)
+						);
+					}
+					catch (e) {
+						console.error(e);
+					}
+					toRemove.push(elem);
 				}
-				img.setAttribute(attr, elem.getAttribute(attr)!);
+				break;
 			}
-			img.src = elem.getAttribute('data')!;
-			img.alt = elem.getAttribute('title') || elem.textContent || '';
-			elem.replaceWith(img);
-			walker.currentNode = img;
-		}
-		else if (elem.tagName == 'img') {
-			let img = elem as HTMLImageElement;
-			img.loading = 'eager';
-			img.decoding = 'sync';
+			case 'title':
+				toRemove.push(elem);
+				break;
+			case 'object':
+				if (elem.hasAttribute('data')
+						&& elem.getAttribute("type")?.startsWith("image/")) {
+					// <object data="..."> apparently can't display blob: SVGs in Firefox
+					let img = doc.createElement('img');
+					for (let attr of elem.getAttributeNames()) {
+						if (attr === 'data' || attr === 'title') {
+							continue;
+						}
+						img.setAttribute(attr, elem.getAttribute(attr)!);
+					}
+					img.src = elem.getAttribute('data')!;
+					img.alt = elem.getAttribute('title') || elem.textContent || '';
+					elem.replaceWith(img);
+					walker.currentNode = img;
+				}
+				break;
+			case 'img': {
+				let img = elem as HTMLImageElement;
+				img.loading = 'eager';
+				img.decoding = 'sync';
+				break;
+			}
+			default:
+				if (SANITIZER_REPLACE_TAGS.has(localName)) {
+					let newElem = doc.createElement('replaced-' + localName);
+					for (let attr of elem.getAttributeNames()) {
+						newElem.setAttribute(attr, elem.getAttribute(attr)!);
+					}
+					newElem.append(...elem.childNodes);
+					elem.replaceWith(newElem);
+					walker.currentNode = newElem;
+				}
+				break;
 		}
 	}
 
