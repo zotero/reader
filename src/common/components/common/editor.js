@@ -198,7 +198,8 @@ function Toolbar({ onCommand }) {
 	});
 
 	function handleKeyDown(event) {
-		if (!activeRef.current) {
+		let editable = event.target.closest('.editor [contenteditable=true]');
+		if (!editable || !toolbarRef.current.parentNode.contains(editable)) {
 			return;
 		}
 		let { key } = event;
