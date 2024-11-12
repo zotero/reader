@@ -953,7 +953,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
 		return this._annotationShadowRoot.elementsFromPoint(clientX, clientY)
 			.map(target => target.getAttribute('data-annotation-id'))
-			.filter(Boolean) as string[];
+			.filter(Boolean)
+			.sort() as string[];
 	}
 
 	private _handleAnnotationDragStart = (id: string, dataTransfer: DataTransfer) => {
