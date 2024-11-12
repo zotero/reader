@@ -1028,7 +1028,20 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				this._find = new EPUBFindProcessor({
 					view: this,
 					findState: { ...state },
-					onSetFindState: this._options.onSetFindState,
+					onSetFindState: (result) => {
+						this._options.onSetFindState({
+							...state,
+							result: {
+								total: result.total,
+								index: result.index,
+								snippets: result.snippets,
+								annotation: (
+									result.range
+									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
+								) ?? undefined
+							}
+						});
+					},
 				});
 				let startRange = (this.flow.startRange && new PersistentRange(this.flow.startRange)) ?? undefined;
 				let onFirstResult = () => this.findNext();

@@ -402,7 +402,20 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				console.log('Initiating new search', state);
 				this._find = new DefaultFindProcessor({
 					findState: { ...state },
-					onSetFindState: this._options.onSetFindState,
+					onSetFindState: (result) => {
+						this._options.onSetFindState({
+							...state,
+							result: {
+								total: result.total,
+								index: result.index,
+								snippets: result.snippets,
+								annotation: (
+									result.range
+									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
+								) ?? undefined
+							}
+						});
+					},
 				});
 				await this._find.run(
 					this._searchContext,

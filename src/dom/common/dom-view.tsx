@@ -14,6 +14,7 @@ import {
 	Platform,
 	SelectionPopupParams,
 	Tool,
+	ToolType,
 	ViewStats,
 	WADMAnnotation,
 } from "../../common/types";
@@ -37,9 +38,15 @@ import {
 import { getSelectionRanges } from "./lib/selection";
 import { FindProcessor } from "./lib/find";
 import { SELECTION_COLOR } from "../../common/defines";
-import { debounceUntilScrollFinishes, isMac, isSafari } from "../../common/lib/utilities";
 import {
-	closestElement,
+	debounceUntilScrollFinishes,
+	getCodeCombination,
+	getKeyCombination,
+	isMac,
+	isSafari
+} from "../../common/lib/utilities";
+import {
+	closestElement, getContainingBlock,
 	isElement
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
@@ -302,7 +309,25 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!selection || selection.isCollapsed) {
 			return null;
 		}
-		let range = makeRangeSpanning(...getSelectionRanges(selection));
+		let range: Range;
+		if (type === 'highlight' || type === 'underline') {
+			range = makeRangeSpanning(...getSelectionRanges(selection));
+		}
+		else if (type === 'note') {
+			let element = closestElement(selection.getRangeAt(0).commonAncestorContainer);
+			if (!element) {
+				return null;
+			}
+			let blockElement = getContainingBlock(element);
+			if (!blockElement) {
+				return null;
+			}
+			range = this._iframeDocument.createRange();
+			range.selectNode(blockElement);
+		}
+		else {
+			return null;
+		}
 		return this._getAnnotationFromRange(range, type, color);
 	}
 
@@ -689,13 +714,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		else {
 			let pos = supportsCaretPositionFromPoint()
 				&& caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-			let node = pos ? pos.offsetNode : target;
-			// Expand to the closest block element
-			while (node.parentNode
-			&& (!isElement(node) || this._iframeWindow.getComputedStyle(node).display.includes('inline'))) {
-				node = node.parentNode;
-			}
-			range.selectNode(node);
+			let element = closestElement(pos ? pos.offsetNode : target);
+			if (!element) return null;
+			let blockElement = getContainingBlock(element);
+			if (!blockElement) return null;
+			range.selectNode(blockElement);
 		}
 		let rect = range.getBoundingClientRect();
 		if (rect.right <= 0 || rect.left >= this._iframeWindow.innerWidth
@@ -722,11 +745,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected abstract _handleInternalLinkClick(link: HTMLAnchorElement): void;
 
 	protected _handleKeyDown(event: KeyboardEvent) {
-		let { key } = event;
-		let shift = event.shiftKey;
-
 		// To figure out if wheel events are pinch-to-zoom
 		this._isCtrlKeyDown = event.key === 'Control';
+
+		let key = getKeyCombination(event);
+		let code = getCodeCombination(event);
 
 		// Focusable elements in PDF view are annotations and overlays (links, citations, figures).
 		// Once TAB is pressed, arrows can be used to navigate between them
@@ -755,7 +778,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			// pass it to this._onKeyDown(event) below
 			return;
 		}
-		else if (shift && key === 'Tab') {
+		else if (key === 'Shift-Tab') {
 			if (focusedElement) {
 				focusedElement.blur();
 			}
@@ -806,6 +829,75 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					}
 				}
 			}
+		}
+
+		if (this._selectedAnnotationIDs.length === 1
+				&& (key.endsWith('Shift-ArrowLeft')
+					|| key.endsWith('Shift-ArrowRight'))) {
+			let resizeStart = key.startsWith('Cmd-') || key.startsWith('Ctrl-');
+			let granularity = event.altKey ? 'word' : 'character';
+
+			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0])!;
+			let selection = this._iframeDocument.getSelection()!;
+
+			let oldRange = this.toDisplayedRange(annotation.position)!;
+			selection.removeAllRanges();
+			selection.addRange(oldRange);
+			if (resizeStart) {
+				selection.collapseToStart();
+			}
+			else {
+				selection.collapseToEnd();
+			}
+			selection.modify(
+				'move',
+				key.endsWith('ArrowRight') ? 'right' : 'left',
+				granularity
+			);
+			let newRange = selection.getRangeAt(0);
+			if (resizeStart) {
+				newRange.setEnd(oldRange.endContainer, oldRange.endOffset);
+			}
+			else {
+				newRange.setStart(oldRange.startContainer, oldRange.startOffset);
+			}
+
+			if (newRange.collapsed) {
+				return;
+			}
+
+			annotation.position = this.toSelector(newRange)!;
+			this._options.onUpdateAnnotations([annotation]);
+			selection.removeAllRanges();
+
+			event.preventDefault();
+			return;
+		}
+
+		if (code === 'Ctrl-Alt-Digit1' || code === 'Ctrl-Alt-Digit2' || code === 'Ctrl-Alt-Digit3') {
+			let type: AnnotationType;
+			switch (code) {
+				case 'Ctrl-Alt-Digit1':
+					type = 'highlight';
+					break;
+				case 'Ctrl-Alt-Digit2':
+					type = 'underline';
+					break;
+				case 'Ctrl-Alt-Digit3':
+					type = 'note';
+					break;
+			}
+			let annotation = this._getAnnotationFromTextSelection(type, this._options.tools[type].color);
+			if (annotation) {
+				this._options.onAddAnnotation(annotation, true);
+				this._navigateToSelector(annotation.position, {
+					block: 'center',
+					behavior: 'smooth'
+				});
+				this._iframeWindow.getSelection()?.removeAllRanges();
+			}
+			event.preventDefault();
+			return;
 		}
 
 		// Pass keydown even to the main window where common keyboard
@@ -1468,6 +1560,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	primary?: boolean;
 	mobile?: boolean;
 	container: Element;
+	tools: Record<ToolType, Tool>;
 	tool: Tool;
 	platform: Platform;
 	selectedAnnotationIDs: string[];

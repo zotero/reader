@@ -17,7 +17,7 @@ class DefaultFindProcessor implements FindProcessor {
 
 	private _initialPos: number | null = null;
 
-	private readonly _onSetFindState?: (state?: FindState) => void;
+	private readonly _onSetFindState?: (result: ResultArg) => void;
 
 	private readonly _annotationKeyPrefix?: string;
 
@@ -27,7 +27,7 @@ class DefaultFindProcessor implements FindProcessor {
 
 	constructor(options: {
 		findState: FindState,
-		onSetFindState?: (state?: FindState) => void,
+		onSetFindState?: (result: ResultArg) => void,
 		annotationKeyPrefix?: string,
 	}) {
 		this.findState = options.findState;
@@ -254,12 +254,10 @@ class DefaultFindProcessor implements FindProcessor {
 		if (this._cancelled) return;
 		if (this._onSetFindState) {
 			this._onSetFindState({
-				...this.findState,
-				result: {
-					total: this._buf.length,
-					index: this._pos === null ? 0 : this._pos,
-					snippets: this.getSnippets(),
-				}
+				total: this._buf.length,
+				index: this._pos === null ? 0 : this._pos,
+				snippets: this.getSnippets(),
+				range: this.current?.range
 			});
 		}
 	}
@@ -288,6 +286,13 @@ function normalize(s: string) {
 }
 
 export type FindAnnotation = Omit<DisplayedAnnotation, 'range'> & { range: PersistentRange };
+
+export type ResultArg = {
+	total: number;
+	index: number;
+	snippets: string[];
+	range?: PersistentRange;
+};
 
 export type SearchContext = {
 	text: string;

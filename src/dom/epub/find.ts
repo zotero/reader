@@ -1,7 +1,7 @@
 import DefaultFindProcessor, {
 	FindAnnotation,
 	FindProcessor,
-	FindResult
+	FindResult, ResultArg
 } from "../common/lib/find";
 import EPUBView from "./epub-view";
 import SectionRenderer from "./section-renderer";
@@ -23,12 +23,12 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	private _cancelled = false;
 
-	private readonly _onSetFindState?: (state?: FindState) => void;
+	private readonly _onSetFindState?: (result: ResultArg) => void;
 
 	constructor(options: {
 		view: EPUBView,
 		findState: FindState,
-		onSetFindState?: (state?: FindState) => void,
+		onSetFindState?: (result: ResultArg) => void,
 	}) {
 		this.view = options.view;
 		this.findState = options.findState;
@@ -182,12 +182,9 @@ export class EPUBFindProcessor implements FindProcessor {
 				snippets.push(...processor.getSnippets());
 			}
 			this._onSetFindState({
-				...this.findState,
-				result: {
-					total: this._totalResults,
-					index,
-					snippets,
-				}
+				total: this._totalResults,
+				index,
+				snippets,
 			});
 		}
 	}
