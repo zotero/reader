@@ -119,7 +119,10 @@ class Reader {
 			eraser: {
 				type: 'eraser',
 				size: 16
-			}
+			},
+			zapper: {
+				type: 'zapper'
+			},
 		};
 
 		this._state = {
@@ -314,6 +317,7 @@ class Reader {
 							onChangeFindState={this._handleFindStateChange.bind(this)}
 							onFindNext={this.findNext.bind(this)}
 							onFindPrevious={this.findPrevious.bind(this)}
+							onRestoreAllZapped={this._handleRestoreAllZapped.bind(this)}
 							onToggleContextPane={this._onToggleContextPane}
 							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 							ref={this._readerRef}
@@ -667,6 +671,19 @@ class Reader {
 		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
 	}
 
+	_handleZap(selector) {
+		this._ensureType('snapshot');
+		this._primaryView?.zap(selector);
+		this._secondaryView?.zap(selector);
+	}
+
+	_handleRestoreAllZapped() {
+		this._ensureType('snapshot');
+		this._primaryView?.restoreAllZapped();
+		this._secondaryView?.restoreAllZapped();
+		this.setTool({ type: 'pointer' });
+	}
+
 	setTextSelectionAnnotationMode(mode) {
 		if (!['highlight', 'underline'].includes(mode)) {
 			throw new Error(`Invalid 'textSelectionAnnotationMode' value '${mode}'`);
@@ -882,6 +899,10 @@ class Reader {
 			this.setErrorMessage(this._getString('pdfReader.epubEncrypted'));
 		};
 
+		let onZap = (selector) => {
+			this._handleZap(selector);
+		};
+
 		let onFocusAnnotation = (annotation) => {
 			if (!annotation) return;
 			// Announce the current annotation to screen readers
@@ -892,7 +913,7 @@ class Reader {
 			let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
 			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
 			this.setA11yMessage(annotationContent);
-		}
+		};
 
 		let data;
 		if (this._type === 'pdf') {
@@ -976,7 +997,8 @@ class Reader {
 		} else if (this._type === 'snapshot') {
 			view = new SnapshotView({
 				...common,
-				onSetZoom
+				onSetZoom,
+				onZap,
 			});
 		}
 
