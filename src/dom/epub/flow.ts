@@ -383,6 +383,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.addEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.addEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.addEventListener('pointerup', this._handlePointerUp);
+		this._iframeDocument.addEventListener('pointerout', this._handlePointerCancel);
+		this._iframeDocument.addEventListener('pointercancel', this._handlePointerCancel);
 		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: false });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange);
 		this._iframe.classList.add('flow-mode-paginated');
@@ -395,6 +397,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.removeEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.removeEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.removeEventListener('pointerup', this._handlePointerUp);
+		this._iframeDocument.removeEventListener('pointerout', this._handlePointerCancel);
+		this._iframeDocument.removeEventListener('pointercancel', this._handlePointerCancel);
 		this._iframeDocument.removeEventListener('wheel', this._handleWheel);
 		this._iframeDocument.removeEventListener('selectionchange', this._handleSelectionChange);
 		this._iframe.classList.remove('flow-mode-paginated');
@@ -694,6 +698,13 @@ export class PaginatedFlow extends AbstractFlow {
 			else if (event.clientX <= PAGE_TURN_TAP_MARGIN_PX) {
 				this.navigateLeft();
 			}
+		}
+	};
+
+	private _handlePointerCancel = (event: PointerEvent) => {
+		if (this._touchStartID === event.pointerId) {
+			this._touchStartID = null;
+			this._swipeIndicators.style.setProperty('--swipe-amount', '0');
 		}
 	};
 
