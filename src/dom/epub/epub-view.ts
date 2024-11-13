@@ -681,22 +681,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
-				if (this.pageProgressionRTL) {
-					this.flow.navigateToNextPage();
-				}
-				else {
-					this.flow.navigateToPreviousPage();
-				}
+				this.flow.navigateLeft();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'ArrowRight') {
-				if (this.pageProgressionRTL) {
-					this.flow.navigateToPreviousPage();
-				}
-				else {
-					this.flow.navigateToNextPage();
-				}
+				this.flow.navigateRight();
 				event.preventDefault();
 				return;
 			}

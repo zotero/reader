@@ -34,6 +34,14 @@ export interface Flow {
 
 	navigateToLastPage(): void;
 
+	canNavigateLeft(): boolean;
+
+	canNavigateRight(): boolean;
+
+	navigateLeft(): void;
+
+	navigateRight(): void;
+
 	invalidate: ReturnType<typeof debounce<() => void>>;
 
 	setScale(scale: number): void;
@@ -148,6 +156,36 @@ abstract class AbstractFlow implements Flow {
 	abstract navigateToFirstPage(): void;
 
 	abstract navigateToLastPage(): void;
+
+	canNavigateLeft() {
+		return this._view.pageProgressionRTL
+			? this.canNavigateToNextPage()
+			: this.canNavigateToPreviousPage();
+	}
+
+	canNavigateRight() {
+		return this._view.pageProgressionRTL
+			? this.canNavigateToPreviousPage()
+			: this.canNavigateToNextPage();
+	}
+
+	navigateLeft() {
+		if (this._view.pageProgressionRTL) {
+			this.navigateToNextPage();
+		}
+		else {
+			this.navigateToPreviousPage();
+		}
+	}
+
+	navigateRight() {
+		if (this._view.pageProgressionRTL) {
+			this.navigateToPreviousPage();
+		}
+		else {
+			this.navigateToNextPage();
+		}
+	}
 
 	invalidate = debounce(
 		() => {
@@ -532,42 +570,6 @@ export class PaginatedFlow extends AbstractFlow {
 			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
 		});
 		this._onViewUpdate();
-	}
-
-	navigateLeft() {
-		if (this._view.pageProgressionRTL) {
-			this.navigateToNextPage();
-		}
-		else {
-			this.navigateToPreviousPage();
-		}
-	}
-
-	navigateRight() {
-		if (this._view.pageProgressionRTL) {
-			this.navigateToPreviousPage();
-		}
-		else {
-			this.navigateToNextPage();
-		}
-	}
-
-	canNavigateLeft() {
-		if (this._view.pageProgressionRTL) {
-			return this.canNavigateToNextPage();
-		}
-		else {
-			return this.canNavigateToPreviousPage();
-		}
-	}
-
-	canNavigateRight() {
-		if (this._view.pageProgressionRTL) {
-			return this.canNavigateToPreviousPage();
-		}
-		else {
-			return this.canNavigateToNextPage();
-		}
 	}
 
 	navigateToFirstPage(): void {
