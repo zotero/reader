@@ -781,6 +781,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected override _handleKeyDown(event: KeyboardEvent) {
 		let { key } = event;
 
+		super._handleKeyDown(event);
+		if (event.defaultPrevented) {
+			return;
+		}
+
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
 				this.flow.navigateLeft();
@@ -793,8 +798,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				return;
 			}
 		}
-
-		super._handleKeyDown(event);
 	}
 
 	protected override _updateViewState() {
