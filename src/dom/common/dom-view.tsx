@@ -47,7 +47,7 @@ import {
 } from "../../common/lib/utilities";
 import {
 	closestElement,
-	getContainingBlock
+	getContainingBlock, isBlock
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
@@ -869,41 +869,76 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._selectedAnnotationIDs.length === 1
 				&& (key.endsWith('Shift-ArrowLeft')
 					|| key.endsWith('Shift-ArrowRight'))) {
-			let resizeStart = key.startsWith('Cmd-') || key.startsWith('Ctrl-');
-			let granularity = event.altKey ? 'word' : 'character';
-
 			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0])!;
-			let selection = this._iframeDocument.getSelection()!;
-
 			let oldRange = this.toDisplayedRange(annotation.position)!;
-			selection.removeAllRanges();
-			selection.addRange(oldRange);
-			if (resizeStart) {
-				selection.collapseToStart();
+			if (annotation.type === 'note') {
+				let walker = this._iframeDocument.createTreeWalker(
+					this._iframeDocument.body,
+					NodeFilter.SHOW_ELEMENT,
+					node => (isBlock(node as Element) && !node.contains(oldRange.startContainer)
+						? NodeFilter.FILTER_ACCEPT
+						: NodeFilter.FILTER_SKIP),
+				);
+				walker.currentNode = oldRange.startContainer;
+
+				let range = this._iframeDocument.createRange();
+				if (key.endsWith('ArrowRight')) {
+					walker.nextNode();
+				}
+				else {
+					walker.previousNode();
+				}
+				range.selectNode(walker.currentNode);
+				let selector = this.toSelector(range);
+				if (selector) {
+					annotation.position = selector;
+					this._navigateToSelector(selector, { block: 'center', behavior: 'smooth' });
+				}
+				else {
+					console.warn('Invalid selector after resize');
+				}
+				this._options.onUpdateAnnotations([annotation]);
 			}
 			else {
-				selection.collapseToEnd();
-			}
-			selection.modify(
-				'move',
-				key.endsWith('ArrowRight') ? 'right' : 'left',
-				granularity
-			);
-			let newRange = selection.getRangeAt(0);
-			if (resizeStart) {
-				newRange.setEnd(oldRange.endContainer, oldRange.endOffset);
-			}
-			else {
-				newRange.setStart(oldRange.startContainer, oldRange.startOffset);
-			}
+				let resizeStart = key.startsWith('Cmd-') || key.startsWith('Ctrl-');
+				let granularity = event.altKey ? 'word' : 'character';
+				let selection = this._iframeDocument.getSelection()!;
 
-			if (newRange.collapsed) {
-				return;
-			}
+				selection.removeAllRanges();
+				selection.addRange(oldRange);
+				if (resizeStart) {
+					selection.collapseToStart();
+				}
+				else {
+					selection.collapseToEnd();
+				}
+				selection.modify(
+					'move',
+					key.endsWith('ArrowRight') ? 'right' : 'left',
+					granularity
+				);
+				let newRange = selection.getRangeAt(0);
+				if (resizeStart) {
+					newRange.setEnd(oldRange.endContainer, oldRange.endOffset);
+				}
+				else {
+					newRange.setStart(oldRange.startContainer, oldRange.startOffset);
+				}
 
-			annotation.position = this.toSelector(newRange)!;
-			this._options.onUpdateAnnotations([annotation]);
-			selection.removeAllRanges();
+				if (newRange.collapsed) {
+					return;
+				}
+
+				let selector = this.toSelector(newRange);
+				if (selector) {
+					annotation.position = selector;
+				}
+				else {
+					console.warn('Invalid selector after resize');
+				}
+				this._options.onUpdateAnnotations([annotation]);
+				selection.removeAllRanges();
+			}
 
 			event.preventDefault();
 			return;
