@@ -763,6 +763,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			...this._iframeDocument.querySelectorAll('a, area'),
 			...this._annotationShadowRoot.querySelectorAll('[tabindex="-1"]')
 		] as (HTMLElement | SVGElement)[];
+		focusableElements = focusableElements.filter(
+			el => isPageRectVisible(getBoundingPageRect(el), this._iframeWindow, 0)
+		);
 		focusableElements.sort((a, b) => {
 			let rangeA;
 			if (a.getRootNode() === this._annotationShadowRoot && a.hasAttribute('data-annotation-id')) {
@@ -819,7 +822,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (!focusedElement) {
 				// In PDF view the first visible object (annotation, overlay) is focused
 				if (focusableElements.length) {
-					focusableElements[0].focus();
+					focusableElements[0].focus({ preventScroll: true });
 				}
 				else {
 					this._options.onTabOut();
@@ -834,12 +837,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (focusedElement) {
 			if (!window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown') {
-				focusableElements[(focusedElementIndex + 1) % focusableElements.length]?.focus();
+				focusableElements[(focusedElementIndex + 1) % focusableElements.length]
+					?.focus({ preventScroll: true });
 				event.preventDefault();
 				return;
 			}
 			else if (!window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp') {
-				focusableElements[(focusedElementIndex - 1 + focusableElements.length) % focusableElements.length]?.focus();
+				focusableElements[(focusedElementIndex - 1 + focusableElements.length) % focusableElements.length]
+					?.focus({ preventScroll: true });
 				event.preventDefault();
 				return;
 			}
