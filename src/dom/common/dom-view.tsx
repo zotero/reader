@@ -366,6 +366,78 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _tryUseToolDebounced = debounce(this._tryUseTool.bind(this), 500);
 
+	protected _getFocusState() {
+		let getFocusedElement = () => {
+			let focusedElement = this._iframeDocument.activeElement as HTMLElement | SVGElement | null;
+			if (focusedElement === this._annotationShadowRoot.host) {
+				focusedElement = this._annotationShadowRoot.activeElement as HTMLElement | SVGElement | null;
+				if (!focusedElement?.matches('[tabindex="-1"]')) {
+					focusedElement = null;
+				}
+			}
+			else if (!focusedElement?.matches('a, area')) {
+				focusedElement = null;
+			}
+			return focusedElement;
+		};
+
+		let getFocusedElementIndex = () => {
+			return obj.focusedElement ? obj.focusableElements.indexOf(obj.focusedElement) : -1;
+		};
+
+		let getFocusableElements = () => {
+			let focusableElements = [
+				...this._iframeDocument.querySelectorAll('a, area'),
+				...this._annotationShadowRoot.querySelectorAll('[tabindex="-1"]')
+			] as (HTMLElement | SVGElement)[];
+			focusableElements = focusableElements.filter(
+				el => isPageRectVisible(getBoundingPageRect(el), this._iframeWindow, 0)
+			);
+			focusableElements.sort((a, b) => {
+				let rangeA;
+				if (a.getRootNode() === this._annotationShadowRoot && a.hasAttribute('data-annotation-id')) {
+					rangeA = this.toDisplayedRange(this._annotationsByID.get(a.getAttribute('data-annotation-id')!)!.position);
+				}
+				if (!rangeA) {
+					rangeA = this._iframeDocument.createRange();
+					rangeA.selectNode(a);
+				}
+				let rangeB;
+				if (b.getRootNode() === this._annotationShadowRoot && b.hasAttribute('data-annotation-id')) {
+					rangeB = this.toDisplayedRange(this._annotationsByID.get(b.getAttribute('data-annotation-id')!)!.position);
+				}
+				if (!rangeB) {
+					rangeB = this._iframeDocument.createRange();
+					rangeB.selectNode(b);
+				}
+				return rangeA.compareBoundaryPoints(Range.START_TO_START, rangeB);
+			});
+			return focusableElements;
+		};
+
+		let obj = {
+			get focusedElement() {
+				let value = getFocusedElement();
+				Object.defineProperty(this, 'focusedElement', { value });
+				return value;
+			},
+
+			get focusedElementIndex() {
+				let value = getFocusedElementIndex();
+				Object.defineProperty(this, 'focusedElementIndex', { value });
+				return value;
+			},
+
+			get focusableElements() {
+				let value = getFocusableElements();
+				Object.defineProperty(this, 'focusableElements', { value });
+				return value;
+			},
+		};
+
+		return obj;
+	}
+
 	protected _handleViewUpdate() {
 		this._updateViewState();
 		this._updateViewStats();
@@ -753,42 +825,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let key = getKeyCombination(event);
 		let code = getCodeCombination(event);
 
-		// Focusable elements in PDF view are annotations and overlays (links, citations, figures).
-		// Once TAB is pressed, arrows can be used to navigate between them
-		let focusedElement = this._iframeDocument.activeElement as HTMLElement | SVGElement | null;
-		if (focusedElement === this._annotationShadowRoot.host) {
-			focusedElement = this._annotationShadowRoot.activeElement as HTMLElement | SVGElement | null;
-		}
-		let focusableElements = [
-			...this._iframeDocument.querySelectorAll('a, area'),
-			...this._annotationShadowRoot.querySelectorAll('[tabindex="-1"]')
-		] as (HTMLElement | SVGElement)[];
-		focusableElements = focusableElements.filter(
-			el => isPageRectVisible(getBoundingPageRect(el), this._iframeWindow, 0)
-		);
-		focusableElements.sort((a, b) => {
-			let rangeA;
-			if (a.getRootNode() === this._annotationShadowRoot && a.hasAttribute('data-annotation-id')) {
-				rangeA = this.toDisplayedRange(this._annotationsByID.get(a.getAttribute('data-annotation-id')!)!.position);
-			}
-			if (!rangeA) {
-				rangeA = this._iframeDocument.createRange();
-				rangeA.selectNode(a);
-			}
-			let rangeB;
-			if (b.getRootNode() === this._annotationShadowRoot && b.hasAttribute('data-annotation-id')) {
-				rangeB = this.toDisplayedRange(this._annotationsByID.get(b.getAttribute('data-annotation-id')!)!.position);
-			}
-			if (!rangeB) {
-				rangeB = this._iframeDocument.createRange();
-				rangeB.selectNode(b);
-			}
-			return rangeA.compareBoundaryPoints(Range.START_TO_START, rangeB);
-		});
-		let focusedElementIndex = focusedElement ? focusableElements.indexOf(focusedElement) : -1;
-		if (focusedElementIndex === -1) {
-			focusedElement = null;
-		}
+		let f = this._getFocusState();
 
 		if (key === 'Escape' && !this._resizingAnnotationID) {
 			if (this._selectedAnnotationIDs.length) {
@@ -800,8 +837,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					?.focus();
 				}
 			}
-			else if (focusedElement) {
-				focusedElement.blur();
+			else if (f.focusedElement) {
+				f.focusedElement.blur();
 			}
 			this._iframeWindow.getSelection()?.removeAllRanges();
 			// The keyboard shortcut was handled here, therefore no need to
@@ -809,8 +846,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		else if (key === 'Shift-Tab') {
-			if (focusedElement) {
-				focusedElement.blur();
+			if (f.focusedElement) {
+				f.focusedElement.blur();
 			}
 			else {
 				this._options.onTabOut(true);
@@ -819,10 +856,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		else if (key === 'Tab') {
-			if (!focusedElement) {
+			if (!f.focusedElement) {
 				// In PDF view the first visible object (annotation, overlay) is focused
-				if (focusableElements.length) {
-					focusableElements[0].focus({ preventScroll: true });
+				if (f.focusableElements.length) {
+					f.focusableElements[0].focus({ preventScroll: true });
 				}
 				else {
 					this._options.onTabOut();
@@ -835,27 +872,27 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (focusedElement) {
+		if (f.focusedElement) {
 			if (!window.rtl && key === 'ArrowRight' || window.rtl && key === 'ArrowLeft' || key === 'ArrowDown') {
-				focusableElements[(focusedElementIndex + 1) % focusableElements.length]
+				f.focusableElements[(f.focusedElementIndex + 1) % f.focusableElements.length]
 					?.focus({ preventScroll: true });
 				event.preventDefault();
 				return;
 			}
 			else if (!window.rtl && key === 'ArrowLeft' || window.rtl && key === 'ArrowRight' || key === 'ArrowUp') {
-				focusableElements[(focusedElementIndex - 1 + focusableElements.length) % focusableElements.length]
+				f.focusableElements[(f.focusedElementIndex - 1 + f.focusableElements.length) % f.focusableElements.length]
 					?.focus({ preventScroll: true });
 				event.preventDefault();
 				return;
 			}
 			else if (['Enter', 'Space'].includes(key)) {
-				if (focusedElement.matches('a, area')) {
-					(focusedElement as HTMLElement).click();
+				if (f.focusedElement.matches('a, area')) {
+					(f.focusedElement as HTMLElement).click();
 					event.preventDefault();
 					return;
 				}
-				else if (focusedElement.hasAttribute('data-annotation-id')) {
-					let annotationID = focusedElement.getAttribute('data-annotation-id')!;
+				else if (f.focusedElement.hasAttribute('data-annotation-id')) {
+					let annotationID = f.focusedElement.getAttribute('data-annotation-id')!;
 					let annotation = this._annotationsByID.get(annotationID);
 					if (annotation) {
 						this._options.onSelectAnnotations([annotationID], event);
@@ -863,7 +900,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 							this._openAnnotationPopup(annotation);
 						}
 						this._lastKeyboardFocusedAnnotationID = annotationID;
-						focusedElement.blur();
+						f.focusedElement.blur();
 						event.preventDefault();
 						return;
 					}
