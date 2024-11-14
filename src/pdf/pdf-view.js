@@ -1806,7 +1806,10 @@ class PDFView {
 		else if (action.type === 'erase') {
 			let annotations = [];
 			for (let annotation of this._annotations) {
-				if (annotation.type === 'ink' && !action.annotations.has(annotation.id)) {
+				if (annotation.type === 'ink'
+					&& annotation.position.pageIndex === position.pageIndex
+					&& !action.annotations.has(annotation.id)
+				) {
 					annotations.push(annotation);
 				}
 			}
@@ -2224,7 +2227,9 @@ class PDFView {
 		else if (action.type === 'erase') {
 			let annotations = [];
 			for (let annotation of this._annotations) {
-				if (annotation.type === 'ink' && !action.annotations.has(annotation.id)) {
+				if (annotation.type === 'ink'
+					&& annotation.position.pageIndex === position.pageIndex
+					&& !action.annotations.has(annotation.id)) {
 					annotations.push(annotation);
 				}
 			}
