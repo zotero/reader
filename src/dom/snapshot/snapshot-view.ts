@@ -34,6 +34,7 @@ import injectCSS from './stylesheets/inject.scss';
 // @ts-expect-error
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import { DynamicThemeFix } from "darkreader";
+import { isPageRectVisible } from "../common/lib/rect";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -321,6 +322,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Non-element nodes and ranges don't have scrollIntoView(),
 		// so scroll using a temporary element, removed synchronously
 		let rect = getBoundingPageRect(range);
+		if (options.ifNeeded && isPageRectVisible(rect, this._iframeWindow, 0)) {
+			return;
+		}
+
 		let tempElem = this._iframeDocument.createElement('div');
 		tempElem.style.position = 'absolute';
 		tempElem.style.visibility = 'hidden';

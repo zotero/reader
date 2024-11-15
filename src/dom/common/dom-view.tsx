@@ -932,6 +932,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					block: 'center',
 					behavior: 'smooth',
 					skipHistory: true,
+					ifNeeded: true,
 				});
 			}
 			else {
@@ -1016,6 +1017,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					block: 'center',
 					behavior: 'smooth',
 					skipHistory: true,
+					ifNeeded: true,
 				});
 				this._iframeWindow.getSelection()?.removeAllRanges();
 			}
