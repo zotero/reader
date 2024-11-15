@@ -951,6 +951,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				else {
 					newRange.setStart(oldRange.startContainer, oldRange.startOffset);
 				}
+				selection.removeAllRanges();
 
 				if (newRange.collapsed) {
 					return;
@@ -964,7 +965,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					console.warn('Invalid selector after resize');
 				}
 				this._options.onUpdateAnnotations([annotation]);
-				selection.removeAllRanges();
 			}
 
 			event.preventDefault();
