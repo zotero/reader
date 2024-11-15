@@ -834,7 +834,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					(this._annotationRenderRootEl.querySelector(
 						`[tabindex="-1"][data-annotation-id="${this._lastKeyboardFocusedAnnotationID}"]`
 					) as HTMLElement | SVGElement | null)
-					?.focus();
+					?.focus({ preventScroll: true });
 				}
 			}
 			else if (f.focusedElement) {
