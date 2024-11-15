@@ -944,8 +944,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					walker.previousNode();
 				}
 				newRange.selectNode(walker.currentNode);
-				this._options.onUpdateAnnotations([this._updateAnnotationRange(annotation, newRange)]);
-				this._navigateToSelector(annotation.position, { block: 'center', behavior: 'smooth' });
+				annotation = this._updateAnnotationRange(annotation, newRange);
+				this._options.onUpdateAnnotations([annotation]);
+				this._navigateToSelector(annotation.position, {
+					block: 'center',
+					behavior: 'smooth',
+					skipHistory: true,
+				});
 			}
 			else {
 				let resizeStart = key.startsWith('Cmd-') || key.startsWith('Ctrl-');
@@ -1026,7 +1031,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._options.onAddAnnotation(annotation, true);
 				this._navigateToSelector(annotation.position, {
 					block: 'center',
-					behavior: 'smooth'
+					behavior: 'smooth',
+					skipHistory: true,
 				});
 				this._iframeWindow.getSelection()?.removeAllRanges();
 			}
