@@ -986,7 +986,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (code === 'Ctrl-Alt-Digit1' || code === 'Ctrl-Alt-Digit2' || code === 'Ctrl-Alt-Digit3') {
+		if (!this._selectedAnnotationIDs.length
+				&& (code === 'Ctrl-Alt-Digit1' || code === 'Ctrl-Alt-Digit2' || code === 'Ctrl-Alt-Digit3')) {
 			let type: AnnotationType;
 			switch (code) {
 				case 'Ctrl-Alt-Digit1':
