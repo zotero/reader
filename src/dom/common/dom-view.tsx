@@ -925,8 +925,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._selectedAnnotationIDs.length === 1
 				&& (key.endsWith('Shift-ArrowLeft')
 					|| key.endsWith('Shift-ArrowRight'))) {
-			event.preventDefault();
-
 			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0])!;
 			let oldRange = this.toDisplayedRange(annotation.position)!;
 			if (annotation.type === 'note') {
@@ -977,13 +975,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 				selection.removeAllRanges();
 
-				if (newRange.collapsed) {
-					return;
+				if (!newRange.collapsed) {
+					this._options.onUpdateAnnotations([this._updateAnnotationRange(annotation, newRange)]);
 				}
-
-				this._options.onUpdateAnnotations([this._updateAnnotationRange(annotation, newRange)]);
 			}
 
+			event.preventDefault();
 			return;
 		}
 
