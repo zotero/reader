@@ -1000,6 +1000,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					break;
 			}
 			let annotation = this._getAnnotationFromTextSelection(type, this._options.tools[type].color);
+			if (!annotation && type === 'note') {
+				let pos = caretPositionFromPoint(
+					this._iframeDocument,
+					this._iframeWindow.innerWidth / 2,
+					this._iframeWindow.innerHeight / 2
+				);
+				let elem = pos && closestElement(pos.offsetNode);
+				let block = elem && getContainingBlock(elem);
+				if (block) {
+					let range = this._iframeDocument.createRange();
+					range.selectNode(block);
+					annotation = this._getAnnotationFromRange(range, type, this._options.tools[type].color);
+				}
+			}
 			if (annotation) {
 				this._options.onAddAnnotation(annotation, true);
 				this._navigateToSelector(annotation.position, {
