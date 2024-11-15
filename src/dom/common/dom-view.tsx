@@ -922,9 +922,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		if (this._selectedAnnotationIDs.length === 1
-				&& (key.endsWith('Shift-ArrowLeft')
-					|| key.endsWith('Shift-ArrowRight'))) {
+		if (this._selectedAnnotationIDs.length === 1 && key.includes('Shift-Arrow')) {
 			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0])!;
 			let oldRange = this.toDisplayedRange(annotation.position)!;
 			if (annotation.type === 'note') {
@@ -938,7 +936,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				walker.currentNode = oldRange.startContainer;
 
 				let newRange = this._iframeDocument.createRange();
-				if (key.endsWith('ArrowRight')) {
+				if (key.endsWith('Arrow' + (window.rtl ? 'Left' : 'Right'))
+						|| key.endsWith('ArrowDown')) {
 					walker.nextNode();
 				}
 				else {
@@ -950,7 +949,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 			else {
 				let resizeStart = key.startsWith('Cmd-') || key.startsWith('Ctrl-');
-				let granularity = event.altKey ? 'word' : 'character';
+				let granularity;
+				// Up/down set via granularity, not direction
+				if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+					granularity = 'line';
+				}
+				else if (event.altKey) {
+					granularity = 'word';
+				}
+				else {
+					granularity = 'character';
+				}
 				let selection = this._iframeDocument.getSelection()!;
 
 				selection.removeAllRanges();
@@ -963,7 +972,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 				selection.modify(
 					'move',
-					key.endsWith('ArrowRight') ? 'right' : 'left',
+					event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 'right' : 'left',
 					granularity
 				);
 				let newRange = selection.getRangeAt(0);
