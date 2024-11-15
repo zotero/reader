@@ -438,6 +438,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return obj;
 	}
 
+	protected _updateAnnotationRange(annotation: WADMAnnotation, range: Range): WADMAnnotation {
+		let newAnnotation = this._getAnnotationFromRange(range, annotation.type);
+		if (!newAnnotation) {
+			throw new Error('Invalid updated range');
+		}
+		return {
+			...annotation,
+			position: newAnnotation.position,
+			pageLabel: newAnnotation.pageLabel,
+			sortIndex: newAnnotation.sortIndex,
+			text: newAnnotation.text,
+		};
+	}
+
 	protected _handleViewUpdate() {
 		this._updateViewState();
 		this._updateViewStats();
@@ -923,23 +937,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				);
 				walker.currentNode = oldRange.startContainer;
 
-				let range = this._iframeDocument.createRange();
+				let newRange = this._iframeDocument.createRange();
 				if (key.endsWith('ArrowRight')) {
 					walker.nextNode();
 				}
 				else {
 					walker.previousNode();
 				}
-				range.selectNode(walker.currentNode);
-				let selector = this.toSelector(range);
-				if (selector) {
-					annotation.position = selector;
-					this._navigateToSelector(selector, { block: 'center', behavior: 'smooth' });
-				}
-				else {
-					console.warn('Invalid selector after resize');
-				}
-				this._options.onUpdateAnnotations([annotation]);
+				newRange.selectNode(walker.currentNode);
+				this._options.onUpdateAnnotations([this._updateAnnotationRange(annotation, newRange)]);
+				this._navigateToSelector(annotation.position, { block: 'center', behavior: 'smooth' });
 			}
 			else {
 				let resizeStart = key.startsWith('Cmd-') || key.startsWith('Ctrl-');
@@ -972,14 +979,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					return;
 				}
 
-				let selector = this.toSelector(newRange);
-				if (selector) {
-					annotation.position = selector;
-				}
-				else {
-					console.warn('Invalid selector after resize');
-				}
-				this._options.onUpdateAnnotations([annotation]);
+				this._options.onUpdateAnnotations([this._updateAnnotationRange(annotation, newRange)]);
 			}
 
 			event.preventDefault();
@@ -1253,19 +1253,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		let annotation = this._annotationsByID.get(id)!;
-		let updatedAnnotation = this._getAnnotationFromRange(range, annotation.type);
-		if (!updatedAnnotation) {
-			throw new Error('Invalid resized range');
-		}
-
-		annotation = {
-			...annotation,
-			position: updatedAnnotation.position,
-			pageLabel: updatedAnnotation.pageLabel,
-			sortIndex: updatedAnnotation.sortIndex,
-			text: updatedAnnotation.text,
-		};
-		this._options.onUpdateAnnotations([annotation]);
+		this._options.onUpdateAnnotations([this._updateAnnotationRange(annotation, range)]);
 
 		// If the resize ends over a link, that somehow counts as a click in Fx
 		// (even though the mousedown wasn't over the link - weird). Prevent that.
