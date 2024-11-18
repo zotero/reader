@@ -143,6 +143,9 @@ class Reader {
 			hyphenate: options.hyphenate,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
 			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
+			autoDisableNoteTool: options.autoDisableNoteTool !== undefined ? options.autoDisableNoteTool : true,
+			autoDisableTextTool: options.autoDisableTextTool !== undefined ? options.autoDisableTextTool : true,
+			autoDisableImageTool: options.autoDisableImageTool !== undefined ? options.autoDisableImageTool : true,
 			textSelectionAnnotationMode: options.textSelectionAnnotationMode || 'highlight',
 			colorScheme: options.colorScheme,
 			tool: this._tools['pointer'], // Must always be a reference to one of this._tools objects
@@ -610,6 +613,18 @@ class Reader {
 		this._updateState({ useDarkModeForContent: use });
 	}
 
+	setAutoDisableNoteTool(autoDisable) {
+		this._updateState({ autoDisableNoteTool: autoDisable });
+	}
+
+	setAutoDisableTextTool(autoDisable) {
+		this._updateState({ autoDisableTextTool: autoDisable });
+	}
+
+	setAutoDisableImageTool(autoDisable) {
+		this._updateState({ autoDisableImageTool: autoDisable });
+	}
+
 	setColorScheme(colorScheme) {
 		this._updateState({ colorScheme });
 	}
@@ -803,7 +818,11 @@ class Reader {
 			if (select) {
 				this.setSelectedAnnotations([annotation.id], true);
 			}
-			if (['note', 'text'].includes(annotation.type)) {
+			if (
+				annotation.type === 'note' && this._state.autoDisableNoteTool
+				|| annotation.type === 'text' && this._state.autoDisableTextTool
+				|| annotation.type === 'image' && this._state.autoDisableImageTool
+			) {
 				this.setTool({ type: 'pointer' });
 			}
 			return annotation;
