@@ -35,6 +35,10 @@ function View(props) {
 		props.onFindPrevious(primary);
 	}
 
+	function handleOverlayPopupClose() {
+		props.onCloseOverlayPopup(primary);
+	}
+
 	return (
 		<div className={name}>
 			<div
@@ -71,6 +75,7 @@ function View(props) {
 					params={state[name + 'ViewOverlayPopup']}
 					onOpenLink={props.onOpenLink}
 					onNavigate={props.onNavigate}
+					onClose={handleOverlayPopupClose}
 				/>
 			}
 			{state[name + 'ViewFindState'].popupOpen &&

@@ -676,6 +676,26 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.navigate({ href });
 	}
 
+	protected override _handlePointerDown(event: PointerEvent) {
+		super._handlePointerDown(event);
+
+		if (event.defaultPrevented) {
+			return;
+		}
+
+		let target = event.target as Element;
+		if (target.tagName === 'IMG' && target.classList.contains('clickable-image')) {
+			let img = target as HTMLImageElement;
+			this._options.onSetOverlayPopup({
+				type: 'image',
+				src: img.currentSrc || img.src,
+				title: img.title,
+				alt: img.alt,
+			});
+			event.preventDefault();
+		}
+	}
+
 	protected override _handleKeyDown(event: KeyboardEvent) {
 		let { key } = event;
 
