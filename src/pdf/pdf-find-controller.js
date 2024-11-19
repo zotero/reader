@@ -864,7 +864,10 @@ class PDFFindController {
 						total++;
 					}
 					if (total >= matchPos && start === null) {
-						start = i + 1;
+						start = i;
+						if (i !== 0) {
+							start++;
+						}
 					}
 					if (total >= matchPos + matchLen) {
 						end = i;
