@@ -458,10 +458,10 @@ export default class Page {
 	}
 
 	_renderFindResults() {
-		if (!this.layer._findController) {
-			return;
-		}
-		if (!this.layer._findController.highlightMatches) {
+		if (!this.layer._findController
+			|| !this.layer._findController.highlightMatches
+			|| !this.layer._findController._matchesCountTotal
+		) {
 			return;
 		}
 		let { _pageMatchesPosition, selected } = this.layer._findController;
