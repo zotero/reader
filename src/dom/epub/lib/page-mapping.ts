@@ -46,7 +46,7 @@ class PageMapping {
 		return mapping;
 	}
 
-	static readonly VERSION = 11;
+	static readonly VERSION = 12;
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
@@ -75,6 +75,7 @@ class PageMapping {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
+		let sectionsWithLocations = 0;
 		for (let body of sectionBodies) {
 			for (let matcher of MATCHERS) {
 				let elems = body.querySelectorAll(matcher.selector);
@@ -92,11 +93,18 @@ class PageMapping {
 				}
 				if (successes) {
 					console.log(`Found ${successes} physical page numbers using selector '${matcher.selector}'`);
+					sectionsWithLocations++;
 				}
 			}
 		}
-		console.log(`Added ${this.tree.length} physical page mappings in ${
-			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
+		if (sectionsWithLocations >= sectionBodies.length / 2) {
+			console.log(`Added ${this.tree.length} physical page mappings in ${
+				((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
+		}
+		else {
+			console.log('Not enough page numbers to be confident -- reverting to EPUB locations');
+			this.tree.clear();
+		}
 		if (this.tree.length) {
 			this._isPhysical = true;
 		}
