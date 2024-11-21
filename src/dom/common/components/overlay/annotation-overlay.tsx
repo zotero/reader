@@ -774,6 +774,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
+			data-annotation-id={props.annotation?.id}
 			ref={ref}
 		>
 			<IconNoteLarge/>
