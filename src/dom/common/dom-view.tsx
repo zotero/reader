@@ -1041,6 +1041,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					ifNeeded: true,
 				});
 				this._iframeWindow.getSelection()?.removeAllRanges();
+				if (type === 'note') {
+					this._renderAnnotations(true);
+					this._openAnnotationPopup();
+				}
 			}
 			event.preventDefault();
 			return;
@@ -1716,7 +1720,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;
 	onSetDataTransferAnnotations: (dataTransfer: DataTransfer, annotation: NewAnnotation<WADMAnnotation> | NewAnnotation<WADMAnnotation>[], fromText?: boolean) => void;
-	onAddAnnotation: (annotation: NewAnnotation<WADMAnnotation>, select?: boolean) => void;
+	onAddAnnotation: (annotation: NewAnnotation<WADMAnnotation>, select?: boolean) => WADMAnnotation;
 	onUpdateAnnotations: (annotations: Annotation[]) => void;
 	onOpenLink: (url: string) => void;
 	onSelectAnnotations: (ids: string[], triggeringEvent?: KeyboardEvent | MouseEvent) => void;
