@@ -870,7 +870,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		else if (key === 'Tab') {
-			if (!f.focusedElement) {
+			if (!f.focusedElement && this._iframeDocument.getSelection()!.isCollapsed && !this._selectedAnnotationIDs.length) {
 				// In PDF view the first visible object (annotation, overlay) is focused
 				if (f.focusableElements.length) {
 					f.focusableElements[0].focus({ preventScroll: true });
