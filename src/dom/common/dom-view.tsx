@@ -995,6 +995,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 			}
 
+			this._options.onSetAnnotationPopup(null);
 			event.preventDefault();
 			return;
 		}
