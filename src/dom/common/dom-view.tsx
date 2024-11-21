@@ -921,6 +921,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 			}
 		}
+		else if (this._selectedAnnotationIDs.length === 1 && key === 'Enter') {
+			this._openAnnotationPopup(this._annotationsByID.get(this._selectedAnnotationIDs[0])!);
+		}
 
 		if (this._selectedAnnotationIDs.length === 1 && key.includes('Shift-Arrow')) {
 			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0])!;
