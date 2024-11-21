@@ -319,6 +319,7 @@ class Reader {
 							onFindPrevious={this.findPrevious.bind(this)}
 							onToggleContextPane={this._onToggleContextPane}
 							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
+							onCloseOverlayPopup={this._handleOverlayPopupClose.bind(this)}
 							ref={this._readerRef}
 							tools={this._tools}
 						/>
@@ -680,6 +681,10 @@ class Reader {
 
 	_handleFindStateChange(primary, params) {
 		this._updateState({ [primary ? 'primaryViewFindState' : 'secondaryViewFindState']: params });
+	}
+
+	_handleOverlayPopupClose(primary) {
+		this._updateState({ [primary ? 'primaryViewOverlayPopup' : 'secondaryViewOverlayPopup']: null });
 	}
 
 	setTextSelectionAnnotationMode(mode) {

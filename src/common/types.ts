@@ -122,15 +122,27 @@ export type SelectionPopupParams<A extends Annotation = Annotation> = {
 	annotation?: NewAnnotation<A> | null;
 }
 
-
-export type OverlayPopupParams = {
-	type: string;
-	url?: string;
-	css?: string;
-	content?: string;
+type FootnotePopupParams = {
+	type: 'footnote';
+	content: string;
+	css: string;
 	rect: ArrayRect;
 	ref: Node;
-};
+}
+
+type LinkPopupParams = {
+	type: 'link';
+	url: string;
+}
+
+type ImagePopupParams = {
+	type: 'image';
+	src: string;
+	title?: string;
+	alt?: string;
+}
+
+export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 
