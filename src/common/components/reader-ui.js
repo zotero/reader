@@ -187,6 +187,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							outlineView={
 								<OutlineView
 									outline={state.outline}
+									currentOutlinePath={viewStats.outlinePath}
 									onNavigate={props.onNavigate}
 									onOpenLink={props.onOpenLink}
 									onUpdate={props.onUpdateOutline}

@@ -31,7 +31,8 @@ import {
 	getRotationDegrees,
 	normalizeDegrees,
 	getRectsAreaSize,
-	getClosestObject
+	getClosestObject,
+	getOutlinePath
 } from './lib/utilities';
 import {
 	debounceUntilScrollFinishes,
@@ -72,6 +73,7 @@ class PDFView {
 		this._container = options.container;
 		this._password = options.password;
 		this._tools = options.tools;
+		this._outline = options.outline;
 		this._useDarkMode = options.useDarkMode;
 		this._colorScheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
@@ -122,8 +124,6 @@ class PDFView {
 		});
 
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
-
-		this._outlineLoaded = false;
 
 		this._selectionRanges = [];
 
@@ -2499,10 +2499,14 @@ class PDFView {
 		} = this._iframeWindow.PDFViewerApplication.pdfViewer;
 
 		let pageIndex = currentPageNumber - 1;
+
+		let outlinePath = this._outline && getOutlinePath(this._outline, pageIndex);
+
 		this._onChangeViewStats({
 			pageIndex,
 			pageLabel: this._getPageLabel(pageIndex),
 			pagesCount,
+			outlinePath,
 			canCopy: !this._isSelectionCollapsed() || this._selectedAnnotationIDs.length,
 			canZoomOut: true,
 			canZoomIn: true,
@@ -3307,7 +3311,11 @@ class PDFView {
 	}
 
 	async setSidebarView(sidebarView) {
-		if (sidebarView === 'outline' && !this._outlineLoaded) {
+		// Don't process outline in the secondary view. It will get outline using state over setOutline
+		if (!this._primary) {
+			return;
+		}
+		if (sidebarView === 'outline' && !this._outline) {
 			await this._iframeWindow.PDFViewerApplication.initializedPromise;
 			// TODO: Properly wait for pdfDocument initialization
 			if (!this._iframeWindow.PDFViewerApplication.pdfDocument) {
@@ -3315,9 +3323,12 @@ class PDFView {
 				return;
 			}
 			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2();
-			this._outlineLoaded = true;
 			this._onSetOutline(outline);
 		}
+	}
+
+	setOutline(outline) {
+		this._outline = outline;
 	}
 
 	async _getPositionFromDestination(dest) {

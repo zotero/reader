@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import cx from 'classnames';
 import IconChevronDown8 from '../../../../res/icons/8/chevron-8.svg';
 
@@ -9,6 +9,65 @@ function clearActive(items) {
 			clearActive(item.items);
 		}
 	}
+}
+
+function setActive(outline, path) {
+	let items = outline;
+	for (let i = 0; i < path.length; i++) {
+		const index = path[i];
+		const item = items[index];
+		if (!item) return;
+
+		// If the item is not expanded, set it as active and stop traversal
+		if (!item.expanded) {
+			item.active = true;
+			return;
+		}
+
+		// If we are at the last index, set the item as active
+		if (i === path.length - 1) {
+			item.active = true;
+			return;
+		}
+
+		// Move to the next level
+		items = item.items || [];
+	}
+}
+
+function needsActivation(outline, path) {
+	let items = outline;
+	let itemToActivate = null;
+
+	for (let i = 0; i < path.length; i++) {
+		const index = path[i];
+		const item = items[index];
+		// Invalid path
+		if (!item) {
+			return false;
+		}
+
+		// If the item is not expanded, it should be the active item
+		if (!item.expanded) {
+			itemToActivate = item;
+			break;
+		}
+
+		// If we are at the last index, this is the item to activate
+		if (i === path.length - 1) {
+			itemToActivate = item;
+			break;
+		}
+
+		// Move to the next level
+		items = item.items || [];
+	}
+
+	// If there's no item to activate, return false
+	if (!itemToActivate) return false;
+
+	// Return true if the item is already active, false otherwise
+	return !!itemToActivate.active;
 }
 
 function Item({ item, id, children, onOpenLink, onUpdate, onSelect }) {
@@ -60,8 +119,19 @@ function Item({ item, id, children, onOpenLink, onUpdate, onSelect }) {
 	);
 }
 
-function OutlineView({ outline, onNavigate, onOpenLink, onUpdate}) {
+function OutlineView({ outline, currentOutlinePath, onNavigate, onOpenLink, onUpdate}) {
 	let containerRef = useRef();
+
+	useEffect(() => {
+		if (currentOutlinePath && !needsActivation(outline, currentOutlinePath)) {
+			clearActive(outline);
+			setActive(outline, currentOutlinePath);
+			handleUpdate();
+			setTimeout(() => {
+				containerRef.current.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+			}, 200);
+		}
+	}, [currentOutlinePath]);
 
 	function handleUpdate() {
 		onUpdate([...outline]);

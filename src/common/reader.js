@@ -382,6 +382,11 @@ class Reader {
 			this._secondaryView?.setShowAnnotations(this._state.showAnnotations);
 		}
 
+		if (this._state.outline !== previousState.outline) {
+			this._primaryView?.setOutline(this._state.outline);
+			this._secondaryView?.setOutline(this._state.outline);
+		}
+
 		if (init || this._state.useDarkModeForContent !== previousState.useDarkModeForContent) {
 			document.body.classList.toggle(
 				'use-dark-mode-for-content',
@@ -941,6 +946,7 @@ class Reader {
 			tool: this._state.tool,
 			selectedAnnotationIDs: this._state.selectedAnnotationIDs,
 			annotations: this._state.annotations.filter(x => !x._hidden),
+			outline: this._state.outline,
 			showAnnotations: this._state.showAnnotations,
 			useDarkMode: this._state.useDarkModeForContent,
 			colorScheme: this._state.colorScheme,

@@ -608,3 +608,38 @@ export function getRangeRects(chars, offsetStart, offsetEnd) {
 	}
 	return rects;
 }
+
+export function getOutlinePath(outline, pageIndex) {
+	let bestMatch = {
+		path: null,
+		pageIndex: -Infinity
+	};
+
+	function helper(items, path) {
+		for (let i = 0; i < items.length; i++) {
+			let item = items[i];
+			let currentPath = path.concat(i);
+
+			// Check if the item's pageIndex is less than or equal to the target pageIndex
+			if (item.location?.position?.pageIndex <= pageIndex) {
+				// Update bestMatch if this item has a higher pageIndex than the current best
+				if (item.location?.position?.pageIndex > bestMatch.pageIndex) {
+					bestMatch = {
+						path: currentPath,
+						pageIndex: item.location?.position?.pageIndex
+					};
+				}
+			}
+
+			// Recursively search child items if they exist
+			if (item.items && item.items.length > 0) {
+				helper(item.items, currentPath);
+			}
+		}
+	}
+
+	// Start the recursive search from the top level
+	helper(outline, []);
+
+	return bestMatch.path;
+}
