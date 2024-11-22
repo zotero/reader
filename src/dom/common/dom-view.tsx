@@ -1317,6 +1317,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._overlayPopupDelayer.setOpen(!!popup);
 	}
 
+	setOutline() {
+		// No-op
+	}
+
 	// ***
 	// Public methods to control the view from the outside
 	// ***
