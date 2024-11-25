@@ -130,6 +130,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _touchAnnotationStartPosition: CaretPosition | null = null;
 
+	protected _touchAnnotationPointerID: number | null = null;
+
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
 	protected _resizingAnnotationID: string | null = null;
@@ -551,6 +553,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
 		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
+		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
 		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
@@ -1057,7 +1060,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
-		if (event.button == 0) {
+		if (event.button == 0 && !this._touchAnnotationPointerID) {
 			this._gotPointerUp = false;
 			this._pointerMovedWhileDown = false;
 
@@ -1065,6 +1068,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')
 					&& event.target !== this._annotationShadowRoot.host) {
 				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+				this._touchAnnotationPointerID = event.pointerId;
 				this._iframeDocument.body.classList.add('creating-touch-annotation');
 				event.stopPropagation();
 			}
@@ -1098,21 +1102,24 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerUp(event: PointerEvent) {
-		if (event.button !== 0) {
+		if (event.button !== 0 || event.pointerId !== this._touchAnnotationPointerID) {
 			return;
 		}
 
 		this._gotPointerUp = true;
-		// If we're using a tool that immediately creates an annotation based on the current selection, we want to use
-		// debounced _tryUseTool() in order to wait for double- and triple-clicks to complete. A multi-click is only
-		// possible if the pointer hasn't moved while down.
-		if (!this._pointerMovedWhileDown && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
-			this._tryUseToolDebounced();
-		}
-		else {
-			this._tryUseTool();
+		if (event.type !== 'pointercancel') {
+			// If we're using a tool that immediately creates an annotation based on the current selection, we want to use
+			// debounced _tryUseTool() in order to wait for double- and triple-clicks to complete. A multi-click is only
+			// possible if the pointer hasn't moved while down.
+			if (!this._pointerMovedWhileDown && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
+				this._tryUseToolDebounced();
+			}
+			else {
+				this._tryUseTool();
+			}
 		}
 		this._touchAnnotationStartPosition = null;
+		this._touchAnnotationPointerID = null;
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
 
@@ -1123,6 +1130,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (this._touchAnnotationStartPosition
 					&& (event.pointerType === 'touch' || event.pointerType === 'pen')
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+				if (event.pointerId !== this._touchAnnotationPointerID) {
+					return;
+				}
+
 				let endPos = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
 				if (endPos) {
 					let range = this._iframeDocument.createRange();
