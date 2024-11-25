@@ -1081,6 +1081,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// because this is what we do in PDF reader
 		if (event.button == 0 && this._tool.type == 'note' && this._previewAnnotation) {
 			this._options.onAddAnnotation(this._previewAnnotation!, true);
+			this._previewAnnotation = null;
 			this._renderAnnotations(true);
 			this._openAnnotationPopup();
 			event.preventDefault();
