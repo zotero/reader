@@ -1062,7 +1062,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._pointerMovedWhileDown = false;
 
 			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
-					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')
+					&& event.target !== this._annotationShadowRoot.host) {
 				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
 				this._iframeDocument.body.classList.add('creating-touch-annotation');
 				event.stopPropagation();
@@ -1088,7 +1089,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (!(event.target as Element).closest('#annotation-overlay')) {
+		if (event.target !== this._annotationShadowRoot.host) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
