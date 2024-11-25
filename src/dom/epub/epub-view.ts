@@ -281,16 +281,56 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (!this.book.navigation.toc.length) {
 			return;
 		}
-		let navPath = new Path(this.book.packaging.navPath || this.book.packaging.ncxPath || '');
+		let base = new Path(this.book.packaging.navPath || this.book.packaging.ncxPath || '');
 		let toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
 			title: navItem.label,
 			location: {
-				href: navPath.resolve(navItem.href).replace(/^\//, '')
+				href: base.resolve(navItem.href).replace(/^\//, '')
 			},
 			items: navItem.subitems?.map(toOutlineItem),
 			expanded: true,
 		});
 		this._options.onSetOutline(this.book.navigation.toc.map(toOutlineItem));
+	}
+
+	protected _getOutlinePath() {
+		let bestPath: number[] = [];
+		let bestTarget: HTMLElement | null = null;
+
+		if (!this.flow.startRange) {
+			return bestPath;
+		}
+
+		let helper = (item: OutlineItem, index: number, currentPath: number[]) => {
+			const newPath = [...currentPath, index];
+
+			let target = this._getHrefTarget(item.location.href!);
+			if (!target) {
+				return;
+			}
+
+			// Skip this item and all its children if we're earlier than it in the document
+			// Presumably child items will never come before their parent?
+			// I don't think anything in the EPUB spec prohibits that, though...
+			if (EPUBView.compareRangeToPoint(this.flow.startRange!, target, 0) < 0) {
+				return;
+			}
+			if (!bestTarget || EPUBView.compareDocumentPositions(target, bestTarget) >= 0) {
+				bestTarget = target;
+				bestPath = newPath;
+			}
+			if (item.items) {
+				for (let [i, child] of item.items.entries()) {
+					helper(child, i, newPath);
+				}
+			}
+		};
+
+		for (let [i, child] of this._outline.entries()) {
+			helper(child, i, []);
+		}
+
+		return bestPath;
 	}
 
 	getCFI(rangeOrNode: Range | Node): EpubCFI | null {
@@ -647,6 +687,30 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return [pathname, hash ?? null];
 	}
 
+	protected _getHrefTarget(href: string): HTMLElement | null {
+		let [pathname, hash] = this._splitHref(href);
+		let section = this.book.spine.get(pathname);
+		if (!section) {
+			console.error('Unable to find section for pathname', pathname);
+			return null;
+		}
+		let target = this._sectionRenderers[section.index].container;
+		if (!target) {
+			console.error('Unable to find view for section', section.index);
+			return null;
+		}
+		if (hash) {
+			let hashTarget = target.querySelector('[id="' + CSS.escape(hash) + '"]');
+			if (hashTarget) {
+				target = hashTarget as HTMLElement;
+			}
+			else {
+				console.warn('Unable to resolve hash', hashTarget);
+			}
+		}
+		return target;
+	}
+
 	protected override _handlePointerOverInternalLink(link: HTMLAnchorElement) {
 		let element = this._getFootnoteTargetElement(link);
 		if (element) {
@@ -761,6 +825,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			canNavigateToNextSection: this.canNavigateToNextSection(),
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,
+			outlinePath: this._getOutlinePath()
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -1101,36 +1166,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		else if (location.href) {
 			options.block ||= 'start';
 
-			let [pathname, hash] = location.href.split('#');
-			try {
-				pathname = decodeURIComponent(pathname);
-			}
-			catch (e) {
-				console.warn('Unable to decode pathname', pathname);
-			}
-			try {
-				hash = decodeURIComponent(hash);
-			}
-			catch (e) {
-				console.warn('Unable to decode hash', hash);
-			}
-			let section = this.book.spine.get(pathname);
-			if (!section) {
-				console.error('Unable to find section for pathname', pathname);
-				return;
-			}
-			let target = hash && this._sectionRenderers[section.index].container
-				.querySelector('[id="' + CSS.escape(hash) + '"]');
+			let target = this._getHrefTarget(location.href);
 			if (target) {
-				this.flow.scrollIntoView(target as HTMLElement, options);
-			}
-			else {
-				let view = this._sectionRenderers[section.index];
-				if (!view) {
-					console.error('Unable to find view for section', section.index);
-					return;
-				}
-				this.flow.scrollIntoView(view.container, options);
+				this.flow.scrollIntoView(target, options);
 			}
 		}
 		else {
@@ -1252,22 +1290,37 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return parseInt(elem.getAttribute('data-section-index')!);
 	}
 
+	private static _compareSectionIndices(a: Range | Node, b: Range | Node): number {
+		let aSectionIndex = this.getContainingSectionIndex(a);
+		if (aSectionIndex === null) {
+			throw new Error('a is not inside a section');
+		}
+		let bSectionIndex = this.getContainingSectionIndex(b);
+		if (bSectionIndex === null) {
+			throw new Error('b is not inside a section');
+		}
+		return aSectionIndex - bSectionIndex;
+	}
+
 	static compareBoundaryPoints(how: number, a: Range, b: Range): number {
 		if (a.startContainer.getRootNode() !== b.startContainer.getRootNode()) {
-			let aSectionIndex = this.getContainingSectionIndex(a);
-			if (aSectionIndex === null) {
-				throw new Error('a is not inside a section');
-			}
-			let bSectionIndex = this.getContainingSectionIndex(b);
-			if (bSectionIndex === null) {
-				throw new Error('b is not inside a section');
-			}
-			if (aSectionIndex === bSectionIndex) {
-				return -1;
-			}
-			return aSectionIndex - bSectionIndex;
+			return this._compareSectionIndices(a, b) || -1;
 		}
 		return a.compareBoundaryPoints(how, b);
+	}
+
+	static compareRangeToPoint(a: Range, b: Node, bOffset: number): number {
+		if (a.startContainer.getRootNode() !== b.getRootNode()) {
+			return this._compareSectionIndices(a, b) || -1;
+		}
+		return -a.comparePoint(b, bOffset);
+	}
+
+	static compareDocumentPositions(a: Node, b: Node): number {
+		if (a.getRootNode() !== b.getRootNode()) {
+			return this._compareSectionIndices(a, b) || -1;
+		}
+		return a.compareDocumentPosition(b);
 	}
 }
 

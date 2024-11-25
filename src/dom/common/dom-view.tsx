@@ -134,6 +134,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizingAnnotationID: string | null = null;
 
+	protected _outline!: OutlineItem[];
+
 	scale = 1;
 
 	protected constructor(options: DOMViewOptions<State, Data>) {
@@ -1317,8 +1319,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._overlayPopupDelayer.setOpen(!!popup);
 	}
 
-	setOutline() {
-		// No-op
+	setOutline(outline: OutlineItem[]) {
+		this._outline = outline;
 	}
 
 	// ***

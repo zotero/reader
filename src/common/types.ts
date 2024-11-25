@@ -110,6 +110,7 @@ export type ViewStats = {
 	spreadMode?: number;
 	flowMode?: string;
 	fontFamily?: string;
+	outlinePath?: number[];
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
