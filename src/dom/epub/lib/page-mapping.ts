@@ -50,8 +50,8 @@ class PageMapping {
 
 	readonly tree = new BTree<PersistentRange, string>(
 		undefined,
-		(a, b) => EPUBView.compareBoundaryPoints(Range.START_TO_START, a.toRange(), b.toRange())
-			|| EPUBView.compareBoundaryPoints(Range.END_TO_END, a.toRange(), b.toRange())
+		(a, b) => EPUBView.compareBoundaryPoints(Range.START_TO_START, a, b)
+			|| EPUBView.compareBoundaryPoints(Range.END_TO_END, a, b)
 	);
 
 	private _isPhysical = false;

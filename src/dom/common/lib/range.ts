@@ -22,6 +22,10 @@ export class PersistentRange {
 		this.endOffset = range.endOffset;
 	}
 
+	compareBoundaryPoints(how: number, other: Range | PersistentRange): number {
+		return this.toRange().compareBoundaryPoints(how, other instanceof PersistentRange ? other.toRange() : other);
+	}
+
 	toRange(): Range {
 		let range = new Range();
 		range.setStart(this.startContainer, this.startOffset);

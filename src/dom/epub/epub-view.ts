@@ -87,6 +87,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private readonly _rangeCache = new Map<string, PersistentRange>();
 
+	private readonly _hrefTargetCache = new Map<string, HTMLElement>();
+
 	private _pageMappingJSON!: string;
 
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
@@ -688,6 +690,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	protected _getHrefTarget(href: string): HTMLElement | null {
+		if (this._hrefTargetCache.has(href)) {
+			return this._hrefTargetCache.get(href)!;
+		}
+
 		let [pathname, hash] = this._splitHref(href);
 		let section = this.book.spine.get(pathname);
 		if (!section) {
@@ -708,6 +714,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				console.warn('Unable to resolve hash', hashTarget);
 			}
 		}
+		this._hrefTargetCache.set(href, target);
 		return target;
 	}
 
@@ -1290,7 +1297,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return parseInt(elem.getAttribute('data-section-index')!);
 	}
 
-	private static _compareSectionIndices(a: Range | Node, b: Range | Node): number {
+	private static _compareSectionIndices(a: Range | PersistentRange | Node, b: Range | PersistentRange | Node): number {
 		let aSectionIndex = this.getContainingSectionIndex(a);
 		if (aSectionIndex === null) {
 			throw new Error('a is not inside a section');
@@ -1302,11 +1309,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return aSectionIndex - bSectionIndex;
 	}
 
-	static compareBoundaryPoints(how: number, a: Range, b: Range): number {
+	static compareBoundaryPoints(how: number, a: Range | PersistentRange, b: Range | PersistentRange): number {
 		if (a.startContainer.getRootNode() !== b.startContainer.getRootNode()) {
 			return this._compareSectionIndices(a, b) || -1;
 		}
-		return a.compareBoundaryPoints(how, b);
+		return a.compareBoundaryPoints(how, b as Range);
 	}
 
 	static compareRangeToPoint(a: Range, b: Node, bOffset: number): number {
