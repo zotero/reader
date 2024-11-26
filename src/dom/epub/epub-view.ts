@@ -297,7 +297,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let bestPath: number[] = [];
 		let bestTarget: HTMLElement | null = null;
 
-		if (!this.flow.startRange) {
+		if (!this.flow.startRange || !this._outline) {
 			return bestPath;
 		}
 
