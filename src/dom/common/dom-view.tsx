@@ -130,8 +130,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _touchAnnotationStartPosition: CaretPosition | null = null;
 
-	protected _touchAnnotationPointerID: number | null = null;
-
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
 	protected _resizingAnnotationID: string | null = null;
@@ -1060,7 +1058,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
-		if (event.button == 0 && !this._touchAnnotationPointerID) {
+		if (event.button == 0 && event.isPrimary) {
 			this._gotPointerUp = false;
 			this._pointerMovedWhileDown = false;
 
@@ -1068,7 +1066,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')
 					&& event.target !== this._annotationShadowRoot.host) {
 				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-				this._touchAnnotationPointerID = event.pointerId;
 				this._iframeDocument.body.classList.add('creating-touch-annotation');
 				event.stopPropagation();
 			}
@@ -1103,7 +1100,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerUp(event: PointerEvent) {
-		if (event.button !== 0 || event.pointerId !== this._touchAnnotationPointerID) {
+		if (event.button !== 0 || !event.isPrimary) {
 			return;
 		}
 
@@ -1120,38 +1117,33 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 		this._touchAnnotationStartPosition = null;
-		this._touchAnnotationPointerID = null;
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
 
 	protected _handlePointerMove(event: PointerEvent) {
-		if (event.buttons % 1 == 0) {
-			this._pointerMovedWhileDown = true;
-
-			if (this._touchAnnotationStartPosition
-					&& (event.pointerType === 'touch' || event.pointerType === 'pen')
-					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
-				if (event.pointerId !== this._touchAnnotationPointerID) {
-					return;
+		if (event.buttons % 1 != 0 || !event.isPrimary) {
+			return;
+		}
+		this._pointerMovedWhileDown = true;
+		if (this._touchAnnotationStartPosition
+				&& (event.pointerType === 'touch' || event.pointerType === 'pen')
+				&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+			let endPos = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+			if (endPos) {
+				let range = this._iframeDocument.createRange();
+				range.setStart(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
+				range.setEnd(endPos.offsetNode, endPos.offset);
+				if (range.collapsed) {
+					range.setStart(endPos.offsetNode, endPos.offset);
+					range.setEnd(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
 				}
-
-				let endPos = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-				if (endPos) {
-					let range = this._iframeDocument.createRange();
-					range.setStart(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
-					range.setEnd(endPos.offsetNode, endPos.offset);
-					if (range.collapsed) {
-						range.setStart(endPos.offsetNode, endPos.offset);
-						range.setEnd(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
-					}
-					let annotation = this._getAnnotationFromRange(range, this._tool.type, this._tool.color);
-					if (annotation) {
-						this._previewAnnotation = annotation;
-						this._renderAnnotations();
-					}
+				let annotation = this._getAnnotationFromRange(range, this._tool.type, this._tool.color);
+				if (annotation) {
+					this._previewAnnotation = annotation;
+					this._renderAnnotations();
 				}
-				event.stopPropagation();
 			}
+			event.stopPropagation();
 		}
 	}
 
