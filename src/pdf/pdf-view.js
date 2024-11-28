@@ -116,6 +116,8 @@ class PDFView {
 		this._focusedObject = null;
 		this._lastFocusedObject = null;
 
+		this._lastNavigationTime = 0;
+
 		this._findState = options.findState;
 
 		this._history = new History({
@@ -889,6 +891,7 @@ class PDFView {
 	}
 
 	async navigate(location, skipHistory) {
+		this._lastNavigationTime = Date.now();
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
 			this.navigateToPosition(annotation.position);
@@ -2500,7 +2503,12 @@ class PDFView {
 
 		let pageIndex = currentPageNumber - 1;
 
-		let outlinePath = this._outline && getOutlinePath(this._outline, pageIndex);
+		let outlinePath = null;
+		// Do not set the outline path if navigation has just been triggered,
+		// because the actual location in the document can be different
+		if (this._outline && Date.now() - this._lastNavigationTime > 1500) {
+			outlinePath = getOutlinePath(this._outline, pageIndex);
+		}
 
 		this._onChangeViewStats({
 			pageIndex,
