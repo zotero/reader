@@ -101,7 +101,7 @@ export function parseAnnotationsFromKOReaderMetadata(metadata: BufferSource): KO
 	}
 
 	let annotations: KOReaderAnnotation[] = [];
-	for (let annotationTableField of annotationsTable.fields) {
+	fieldLoop: for (let annotationTableField of annotationsTable.fields) {
 		let annotationTable = annotationTableField.value;
 		if (annotationTable.type !== 'TableConstructorExpression') {
 			throw new Error('Invalid KOReader metadata: "annotations" entry is not a table');
@@ -113,12 +113,15 @@ export function parseAnnotationsFromKOReaderMetadata(metadata: BufferSource): KO
 			text: findField(annotationTable, 'text'),
 			datetime: findField(annotationTable, 'datetime'),
 		};
-		for (let [key, value] of Object.entries(annotationFields)) {
-			if (['pos0', 'pos1', 'text', 'datetime'].includes(key) && !value) {
-				throw new Error(`Invalid KOReader metadata: annotation is missing required field "${key}"`);
+		for (let key of ['pos0', 'pos1', 'text', 'datetime'] as const) {
+			let value = annotationFields[key];
+			if (!value) {
+				console.error(`Invalid KOReader metadata: annotation is missing required field "${key}"`);
+				continue fieldLoop;
 			}
 			if (value && value.type !== 'StringLiteral') {
-				throw new Error(`Invalid KOReader metadata: annotation field "${key}" is not a string`);
+				console.error(`Invalid KOReader metadata: annotation field "${key}" is not a string`);
+				continue fieldLoop;
 			}
 		}
 		annotations.push({
