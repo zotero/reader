@@ -278,8 +278,9 @@ class PDFView {
 
 		this._findController = new PDFFindController({
 			linkService: this._iframeWindow.PDFViewerApplication.pdfViewer.linkService,
-			onNavigate: (position) => {
-				this.navigateToPosition(position);
+			onNavigate: async (pageIndex, matchIndex) => {
+				let matchPositions = await this._findController.getMatchPositionsAsync(pageIndex);
+				this.navigateToPosition(matchPositions[matchIndex]);
 			},
 			onUpdateMatches: ({ matchesCount }) => {
 				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
@@ -455,7 +456,7 @@ class PDFView {
 		this._init2 && this._init2();
 
 		if (this._preview) {
-			this._detachPage(originalPage);
+			this._detachPage(originalPage, true);
 			let page = new Page(this, originalPage);
 			this._pages.push(page);
 			this._render();
@@ -466,7 +467,7 @@ class PDFView {
 			this._initThumbnails();
 		}
 
-		this._detachPage(originalPage);
+		this._detachPage(originalPage, true);
 
 		originalPage.textLayerPromise.then(() => {
 			// Text layer may no longer exist if it was detached in the meantime
@@ -492,8 +493,12 @@ class PDFView {
 		}
 	}
 
-	_detachPage(originalPage) {
+	_detachPage(originalPage, replacing) {
+		let pageIndex = originalPage.id - 1;
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
+		if (!replacing) {
+			delete this._pdfPages[pageIndex];
+		}
 	}
 
 	_getPageLabel(pageIndex, usePrevAnnotation) {

@@ -698,15 +698,62 @@ class PDFFindController {
 		});
 	}
 
+	getMatchPositions(pageIndex, pageData) {
+		let positions = [];
+		let pageMatches = this._pageMatches[pageIndex];
+		let pageMatchesLength = this._pageMatchesLength[pageIndex];
+		if (!pageMatches || !pageMatches.length) {
+			return [];
+		}
+		let chars = pageData.chars;
+		for (let j = 0; j < pageMatches.length; j++) {
+			let matchPos = pageMatches[j];
+			let matchLen = pageMatchesLength[j];
+			let start = null;
+			let end = null;
+			let total = 0;
+			for (let i = 0; i < chars.length; i++) {
+				let char = chars[i];
+				total++;
+				// For an unknown reason char.u can sometimes have decomposed ligatures instead of
+				// single ligature character
+				total += char.u.length - 1;
+				if (char.spaceAfter || char.lineBreakAfter || char.paragraphBreakAfter) {
+					total++;
+				}
+				if (total >= matchPos && start === null) {
+					start = i;
+					if (i !== 0) {
+						start++;
+					}
+				}
+				if (total >= matchPos + matchLen) {
+					end = i;
+					break;
+				}
+			}
+			let rects = getRangeRects(chars, start, end);
+			let position = { pageIndex, rects };
+			positions.push(position);
+		}
+		return positions;
+	}
+
+	async getMatchPositionsAsync(pageIndex) {
+		let pageMatches = this._pageMatches[pageIndex];
+		if (!pageMatches || !pageMatches.length) {
+			return [];
+		}
+		let pageData = await this._pdfDocument.getPageData({ pageIndex });
+		return this.getMatchPositions(pageIndex, pageData);
+	}
+
 	_reset() {
 		this._highlightMatches = false;
 		this._scrollMatches = false;
 		this._pdfDocument = null;
 		this._pageMatches = [];
 		this._pageMatchesLength = [];
-		this._pageMatchesPosition = [];
-		this._pageChars = [];
-		this._pageText = [];
 		this._visitedPagesCount = 0;
 		this._state = null;
 		// Currently selected match.
@@ -827,7 +874,6 @@ class PDFFindController {
 	_calculateRegExpMatch(query, entireWord, pageIndex, pageContent) {
 		const matches = (this._pageMatches[pageIndex] = []);
 		const matchesLength = (this._pageMatchesLength[pageIndex] = []);
-		const matchesPosition = (this._pageMatchesPosition[pageIndex] = []);
 		if (!query) {
 			// The query can be empty because some chars like diacritics could have
 			// been stripped out.
@@ -850,35 +896,8 @@ class PDFFindController {
 			);
 
 			if (matchLen) {
-				let chars = this._pageChars[pageIndex];
-				let start = null;
-				let end = null;
-				let total = 0;
-				for (let i = 0; i < chars.length; i++) {
-					let char = chars[i];
-					total++;
-					// For unknown reason char.u can sometimes have decomposed ligatures instead of
-					// single ligature character
-					total += char.u.length - 1;
-					if (char.spaceAfter || char.lineBreakAfter || char.paragraphBreakAfter) {
-						total++;
-					}
-					if (total >= matchPos && start === null) {
-						start = i;
-						if (i !== 0) {
-							start++;
-						}
-					}
-					if (total >= matchPos + matchLen) {
-						end = i;
-						break;
-					}
-				}
-				let rects = getRangeRects(chars, start, end);
-				let position = { pageIndex, rects };
-				matches.push(start);
-				matchesLength.push(end - start);
-				matchesPosition.push(position);
+				matches.push(matchPos);
+				matchesLength.push(matchLen);
 			}
 		}
 	}
@@ -953,7 +972,7 @@ class PDFFindController {
 		return [isUnicode, query];
 	}
 
-	_calculateMatch(pageIndex) {
+	async _calculateMatch(pageIndex) {
 		let query = this._query;
 		if (query.length === 0) {
 			return; // Do nothing: the matches should be wiped out already.
@@ -1016,33 +1035,23 @@ class PDFFindController {
 			for (let i = 0; i < resolvers.length; i++) {
 				let resolve = resolvers[i];
 
-				let text = '';
-				let chars = [];
+				let text = [];
 
 				try {
 					await new Promise(resolve => setTimeout(resolve));
 					let pageData = await this._pdfDocument.getPageData({ pageIndex: i });
-
-					function getTextFromChars(chars) {
-						let text = [];
-						for (let char of chars) {
-							text.push(char.u)
-							if (char.spaceAfter || char.lineBreakAfter || char.paragraphBreakAfter) {
-								text.push(' ');
-							}
+					for (let char of pageData.chars) {
+						text.push(char.u);
+						if (char.spaceAfter || char.lineBreakAfter || char.paragraphBreakAfter) {
+							text.push(' ');
 						}
-						return text.join('').trim();
 					}
-
-					chars = pageData.chars;
-					text = getTextFromChars(pageData.chars);
 				}
 				catch (e) {
 					console.log(e);
 				}
 
-				this._pageChars[i] = chars;
-				this._pageText[i] = text;
+				text = text.join('').trim();
 
 				[
 					this._pageContents[i],
@@ -1197,7 +1206,7 @@ class PDFFindController {
 
 		this._updateUIState(state, this._state.findPrevious);
 		if (this._selected.pageIdx !== -1) {
-			this._onNavigate(this._pageMatchesPosition[this._selected.pageIdx][this._selected.matchIdx]);
+			this._onNavigate(this._selected.pageIdx, this._selected.matchIdx);
 		}
 	}
 

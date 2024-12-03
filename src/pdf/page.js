@@ -461,11 +461,15 @@ export default class Page {
 		if (!this.layer._findController
 			|| !this.layer._findController.highlightMatches
 			|| !this.layer._findController._matchesCountTotal
+			|| !this.layer._pdfPages[this.pageIndex]
 		) {
 			return;
 		}
-		let { _pageMatchesPosition, selected } = this.layer._findController;
-		let positions = _pageMatchesPosition[this.pageIndex];
+		let { selected } = this.layer._findController;
+		let positions = this.layer._findController.getMatchPositions(
+			this.pageIndex,
+			this.layer._pdfPages[this.pageIndex]
+		);
 
 		if (!positions || !positions.length) {
 			return;
