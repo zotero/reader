@@ -545,7 +545,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				};
 			}
 		}
-		catch (e) {}
+		catch (e) {
+			console.error(e);
+		}
 		return { count: 0 };
 	}
 
@@ -584,7 +586,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				};
 			}
 		}
-		catch (e) {}
+		catch (e) {
+			console.error(e);
+		}
 		return { count: 0 };
 	}
 
