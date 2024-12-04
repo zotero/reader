@@ -1716,11 +1716,11 @@ class PDFView {
 					this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
 				}
 			}
-			else if (!selectedAnnotations.includes(selectableAnnotation)) {
+			else if (!selectedAnnotations.includes(selectableAnnotation) && !this.textAnnotationFocused()) {
 				this._onSelectAnnotations([selectableAnnotation.id], event);
 				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
-			else {
+			else if (!this.textAnnotationFocused()) {
 				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
 			this._render();
@@ -2551,7 +2551,7 @@ class PDFView {
 		if (event.mozInputSource === 5 || event.mozInputSource === 6) {
 			this._handlePointerDown(event);
 		}
-		if (this._options.platform !== 'web') {
+		if (this._options.platform !== 'web' && !this.textAnnotationFocused()) {
 			event.preventDefault();
 		}
 	}
