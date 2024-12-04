@@ -1434,6 +1434,14 @@ class PDFView {
 			}
 		}
 
+		let selectedTextAnnotation = selectableAnnotations.find(
+			x => x.type === 'text'
+			&& x.id === this._selectedAnnotationIDs[0]
+		);
+		if (selectedTextAnnotation) {
+			return [selectedTextAnnotation];
+		}
+
 		selectableAnnotations.sort((a, b) => {
 			let aSize, bSize;
 
