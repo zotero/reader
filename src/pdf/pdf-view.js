@@ -1341,16 +1341,18 @@ class PDFView {
 				inside = true;
 			}
 
-			if (inside) {
+			if (inside && !this._textAnnotationFocused()) {
 				let r = position.rects[0];
 				// let br = getBoundingBox(annotation.position.rects[0], tm);
 				let br = getPositionBoundingRect(annotation.position);
-				return { type: ['note', 'text', 'ink'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
+				return { type: ['text', 'ink'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 			}
 		}
 
-
-		if (intersectAnnotationWithPoint(annotation.position, position)) {
+		if (
+			['highlight', 'underline', 'note'].includes(annotation.type)
+			&& intersectAnnotationWithPoint(annotation.position, position)
+		) {
 			let r = position.rects[0];
 			let br = getPositionBoundingRect(annotation.position);
 			return { type: ['note', 'text', 'ink'].includes(annotation.type) ? 'moveAndDrag' : 'drag', annotation, x: r[0] - br[0], y: r[1] - br[1] };
@@ -1716,11 +1718,11 @@ class PDFView {
 					this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
 				}
 			}
-			else if (!selectedAnnotations.includes(selectableAnnotation) && !this.textAnnotationFocused()) {
+			else if (!selectedAnnotations.includes(selectableAnnotation) && !this._textAnnotationFocused()) {
 				this._onSelectAnnotations([selectableAnnotation.id], event);
 				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
-			else if (!this.textAnnotationFocused()) {
+			else if (!this._textAnnotationFocused()) {
 				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY, view: true });
 			}
 			this._render();
@@ -2551,7 +2553,7 @@ class PDFView {
 		if (event.mozInputSource === 5 || event.mozInputSource === 6) {
 			this._handlePointerDown(event);
 		}
-		if (this._options.platform !== 'web' && !this.textAnnotationFocused()) {
+		if (this._options.platform !== 'web' && !this._textAnnotationFocused()) {
 			event.preventDefault();
 		}
 	}
@@ -2559,7 +2561,7 @@ class PDFView {
 	_handleKeyDown(event) {
 		// TODO: Cursor should be updated on key down/up as well. I.e. for shift and text selection
 		// TODO: Arrows keys should modify selection range when holding shift
-		if (this.textAnnotationFocused()) {
+		if (this._textAnnotationFocused()) {
 			return;
 		}
 		let alt = event.altKey;
@@ -3162,7 +3164,7 @@ class PDFView {
 	}
 
 	_handleDragStart(event) {
-		if (this.textAnnotationFocused()) {
+		if (this._textAnnotationFocused()) {
 			return;
 		}
 		if (!this.action || !['moveAndDrag', 'drag'].includes(this.action.type)) {
@@ -3202,7 +3204,7 @@ class PDFView {
 	}
 
 	_handleDragOver(event) {
-		if (this.textAnnotationFocused()) {
+		if (this._textAnnotationFocused()) {
 			return;
 		}
 		event.preventDefault();
@@ -3221,9 +3223,12 @@ class PDFView {
 	}
 
 	_handleCopy(event) {
+		if (this._textAnnotationFocused()) {
+			return;
+		}
 		event.preventDefault();
 		event.stopPropagation();
-		if (!event.clipboardData || this.textAnnotationFocused()) {
+		if (!event.clipboardData) {
 			return;
 		}
 		// Copying annotation
@@ -3319,7 +3324,7 @@ class PDFView {
 		return { pageIndex, rects: [[x, y, x, y]] };
 	}
 
-	textAnnotationFocused() {
+	_textAnnotationFocused() {
 		return this._iframeWindow.document.activeElement.classList.contains('textAnnotation');
 	}
 
