@@ -95,15 +95,20 @@ abstract class AbstractFlow implements Flow {
 
 		this._iframeWindow.addEventListener('scroll', this._pushHistoryPoint);
 
-		let intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
+		this._intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
 			threshold: [0, 1]
 		});
 		for (let range of this._view.pageMapping.ranges()) {
 			let elem = closestElement(range.startContainer);
 			if (elem) {
-				intersectionObserver.observe(elem);
+				this._intersectionObserver.observe(elem);
 			}
 		}
+	}
+
+	destroy(): void {
+		this._iframeWindow.removeEventListener('scroll', this._pushHistoryPoint);
+		this._intersectionObserver.disconnect();
 	}
 
 	get startSection(): Section | null {
@@ -214,10 +219,6 @@ abstract class AbstractFlow implements Flow {
 	}
 
 	abstract setSpreadMode(spreadMode: SpreadMode): void;
-
-	destroy(): void {
-		this._iframeWindow.removeEventListener('scroll', this._pushHistoryPoint);
-	}
 }
 
 interface Options {
