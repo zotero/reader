@@ -253,6 +253,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _updateViewStats(): void;
 
+	protected _getContainingRoot(node: Node): HTMLElement | null {
+		return this._iframeDocument.body.contains(node)
+			? this._iframeDocument.body
+			: null;
+	}
+
 	// ***
 	// Utilities - called in appropriate event handlers
 	// ***
@@ -933,8 +939,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				return;
 			}
 			if (annotation.type === 'note') {
+				let root = this._getContainingRoot(oldRange.startContainer);
+				if (!root) {
+					throw new Error('Annotation is outside of root?');
+				}
 				let walker = this._iframeDocument.createTreeWalker(
-					this._iframeDocument.body,
+					root,
 					NodeFilter.SHOW_ELEMENT,
 					node => (isBlock(node as Element) && !node.contains(oldRange!.startContainer)
 						? NodeFilter.FILTER_ACCEPT
@@ -951,7 +961,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					walker.previousNode();
 				}
 				newRange.selectNode(walker.currentNode);
-				annotation = this._updateAnnotationRange(annotation, newRange);
+				try {
+					annotation = this._updateAnnotationRange(annotation, newRange);
+				}
+				catch (e) {
+					// Reached the end of the section (EPUB)
+					// TODO: Allow movement between sections
+					event.preventDefault();
+					return;
+				}
 				this._options.onUpdateAnnotations([annotation]);
 				this._navigateToSelector(annotation.position, {
 					block: 'center',

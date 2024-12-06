@@ -520,6 +520,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
+	protected override _getContainingRoot(node: Node) {
+		return this._sectionRenderers.find(r => r.container.contains(node))?.container
+			?? null;
+	}
+
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
 		let existingAnnotation = this._annotations.find(
 			existingAnnotation => existingAnnotation.text === annotation!.text
