@@ -59,6 +59,7 @@ import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
 import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
+import LRUCacheMap from "../common/lib/lru-cache-map";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -85,7 +86,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private readonly _sectionRenderers: SectionRenderer[] = [];
 
-	private readonly _rangeCache = new Map<string, PersistentRange>();
+	private readonly _rangeCache = new LRUCacheMap<string, PersistentRange>();
 
 	private readonly _hrefTargetCache = new Map<string, HTMLElement>();
 
