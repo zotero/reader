@@ -927,12 +927,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (this._selectedAnnotationIDs.length === 1 && key.includes('Shift-Arrow')) {
 			let annotation = this._annotationsByID.get(this._selectedAnnotationIDs[0])!;
-			let oldRange = this.toDisplayedRange(annotation.position)!;
+			let oldRange = this.toDisplayedRange(annotation.position);
+			if (!oldRange) {
+				event.preventDefault();
+				return;
+			}
 			if (annotation.type === 'note') {
 				let walker = this._iframeDocument.createTreeWalker(
 					this._iframeDocument.body,
 					NodeFilter.SHOW_ELEMENT,
-					node => (isBlock(node as Element) && !node.contains(oldRange.startContainer)
+					node => (isBlock(node as Element) && !node.contains(oldRange!.startContainer)
 						? NodeFilter.FILTER_ACCEPT
 						: NodeFilter.FILTER_SKIP),
 				);
