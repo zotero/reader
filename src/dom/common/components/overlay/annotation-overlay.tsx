@@ -787,7 +787,6 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			height={size}
 			className="needs-pointer-events"
 			tabIndex={props.tabIndex}
-			onPointerDown={e => e.preventDefault()}
 			data-annotation-id={props.annotation?.id}
 		>
 			<div
