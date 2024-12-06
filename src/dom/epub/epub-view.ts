@@ -1,10 +1,5 @@
-// @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';
-
-// The module resolver is incapable of understanding this
-// @ts-ignore
 import Path from "epubjs/src/utils/path";
-
 import {
 	AnnotationType,
 	ArrayRect,
@@ -223,7 +218,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		this._handleViewUpdate();
 
-		// @ts-ignore
 		this.book.archive.zip = null;
 	}
 

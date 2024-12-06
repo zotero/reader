@@ -8,13 +8,12 @@ declare interface Window {
 	zoteroPrint?: (options?: { overrideSettings?: Record<string, string> }) => Promise<void>;
 }
 
-declare interface Document {
-	// Firefox-only equivalent of caretRangeFromPoint
-	caretPositionFromPoint?: (x: number, y: number) => CaretPosition | null;
+declare module '*.scss' {
+	const scss: string;
+	export default scss;
 }
 
-declare interface CaretPosition {
-	offsetNode: Node;
-	offset: number;
-	getClientRect(): DOMRect;
+declare module '!!raw-loader!*' {
+	const raw: string;
+	export default raw;
 }

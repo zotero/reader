@@ -5,7 +5,8 @@
 		"allowJs": true,
 		"strict": true,
 		"target": "ES2022",
-		"moduleResolution": "Node",
+		"moduleResolution": "bundler",
+		"module": "esnext",
 		"allowSyntheticDefaultImports": true,
 		"noImplicitOverride": true
 	},

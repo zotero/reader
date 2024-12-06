@@ -28,10 +28,7 @@ import {
 	iterateWalker
 } from "../common/lib/nodes";
 import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
-
-// @ts-expect-error
 import injectCSS from './stylesheets/inject.scss';
-// @ts-expect-error
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import { DynamicThemeFix } from "darkreader";
 

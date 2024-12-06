@@ -20,7 +20,7 @@ export default class LRUCacheMap<K, V> extends Map<K, V> {
 			super.delete(key);
 		}
 		else if (super.size === this._capacity) {
-			super.delete(super.values().next().value);
+			super.delete(super.keys().next().value!);
 		}
 		super.set(key, value);
 		return this;

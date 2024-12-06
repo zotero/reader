@@ -228,7 +228,6 @@ class DefaultFindProcessor implements FindProcessor {
 		if (this._worker) {
 			throw new Error('Search is already running');
 		}
-		// @ts-ignore
 		let worker = new Worker(new URL('./worker.ts', import.meta.url));
 		let promise = new Promise<InternalOutputRange[]>((resolve, reject) => {
 			worker.onmessage = (event) => {

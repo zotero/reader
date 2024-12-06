@@ -1,8 +1,5 @@
-// @ts-ignore
 import injectCSS from './stylesheets/inject.scss';
-// @ts-ignore
 import annotationsCSS from './stylesheets/annotations.scss';
-
 import {
 	Annotation,
 	AnnotationPopupParams,
@@ -558,8 +555,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this));
-		// @ts-ignore
-		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this));
+		this._iframeDocument.addEventListener('copy', this._handleCopy.bind(this));
 		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
 		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
 		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
