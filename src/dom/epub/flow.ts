@@ -80,6 +80,8 @@ abstract class AbstractFlow implements Flow {
 
 	protected _nextHistoryPushIsFromNavigation = false;
 
+	protected _intersectionObserver: IntersectionObserver;
+
 	protected constructor(options: Options) {
 		this._view = options.view;
 		this._iframe = options.iframe;
@@ -96,7 +98,7 @@ abstract class AbstractFlow implements Flow {
 		let intersectionObserver = new IntersectionObserver(() => this.invalidate(), {
 			threshold: [0, 1]
 		});
-		for (let range of this._view.pageMapping.tree.keys()) {
+		for (let range of this._view.pageMapping.ranges()) {
 			let elem = closestElement(range.startContainer);
 			if (elem) {
 				intersectionObserver.observe(elem);

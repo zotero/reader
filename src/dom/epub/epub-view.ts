@@ -90,8 +90,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private readonly _hrefTargetCache = new Map<string, HTMLElement>();
 
-	private _pageMappingJSON!: string;
-
 	private _lastNavigationTime = 0;
 
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
@@ -268,17 +266,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		if (!json || !mapping) {
 			mapping = PageMapping.generate(this);
-			json = mapping.save();
 
 			if (window.dev) {
-				mapping = PageMapping.load(json, this);
+				mapping = PageMapping.load(mapping.toJSON(), this);
 				if (!mapping) {
 					throw new Error('Failed to round-trip page mapping');
 				}
 			}
 		}
 
-		this._pageMappingJSON = json;
 		return mapping;
 	}
 
@@ -805,7 +801,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			scale: Math.round(this.scale * 1000) / 1000, // Three decimal places
 			cfi,
 			cfiElementOffset: this.flow.startCFIOffsetY ?? undefined,
-			savedPageMapping: this._pageMappingJSON,
+			savedPageMapping: this.pageMapping.toJSON(),
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,
 			appearance: this.appearance,

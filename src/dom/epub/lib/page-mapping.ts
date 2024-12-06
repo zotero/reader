@@ -13,10 +13,10 @@ class PageMapping {
 		let mapping = new PageMapping(view);
 		let sectionBodies = view.renderers.map(renderer => renderer.body);
 		mapping._addPhysicalPages(sectionBodies);
-		if (!mapping.tree.length) {
+		if (!mapping._tree.length) {
 			mapping._addEPUBLocations(sectionBodies);
 		}
-		mapping.tree.freeze();
+		mapping._freeze();
 		return mapping;
 	}
 
@@ -37,22 +37,25 @@ class PageMapping {
 			console.error('Unable to load persisted page mapping', saved);
 			return null;
 		}
-		mapping.tree.setPairs(mappings
+		mapping._tree.setPairs(mappings
 			.map(([cfi, label]) => [view.getRange(lengthenCFI(cfi)), label])
 			.filter(([range, label]) => !!range && typeof label === 'string')
 			.map(([range, label]) => [new PersistentRange(range), label]) as [PersistentRange, string][]);
 		mapping._isPhysical = obj.isPhysical;
+		mapping._freeze();
 
 		return mapping;
 	}
 
 	static readonly VERSION = 12;
 
-	readonly tree = new BTree<PersistentRange, string>(
+	private readonly _tree = new BTree<PersistentRange, string>(
 		undefined,
 		(a, b) => EPUBView.compareBoundaryPoints(Range.START_TO_START, a, b)
 			|| EPUBView.compareBoundaryPoints(Range.END_TO_END, a, b)
 	);
+
+	private _json!: string;
 
 	private _isPhysical = false;
 
@@ -63,7 +66,7 @@ class PageMapping {
 	}
 
 	get length(): number {
-		return this.tree.length;
+		return this._tree.length;
 	}
 
 	get isPhysical(): boolean {
@@ -71,7 +74,7 @@ class PageMapping {
 	}
 
 	private _addPhysicalPages(sectionBodies: HTMLElement[]) {
-		if (this.tree.length) {
+		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
@@ -88,7 +91,7 @@ class PageMapping {
 					let range = elem.ownerDocument.createRange();
 					range.selectNode(elem);
 					range.collapse(true);
-					this.tree.set(new PersistentRange(range), pageNumber);
+					this._tree.set(new PersistentRange(range), pageNumber);
 					successes++;
 				}
 				if (successes) {
@@ -98,20 +101,20 @@ class PageMapping {
 			}
 		}
 		if (sectionsWithLocations >= sectionBodies.length / 2) {
-			console.log(`Added ${this.tree.length} physical page mappings in ${
+			console.log(`Added ${this._tree.length} physical page mappings in ${
 				((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 		}
 		else {
 			console.log('Not enough page numbers to be confident -- reverting to EPUB locations');
-			this.tree.clear();
+			this._tree.clear();
 		}
-		if (this.tree.length) {
+		if (this._tree.length) {
 			this._isPhysical = true;
 		}
 	}
 
 	private _addEPUBLocations(sectionBodies: HTMLElement[]) {
-		if (this.tree.length) {
+		if (this._tree.length) {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
@@ -135,47 +138,23 @@ class PageMapping {
 					let range = node.ownerDocument.createRange();
 					range.setStart(node, offset);
 					range.collapse(true);
-					this.tree.set(new PersistentRange(range), (locationNumber + 1).toString());
+					this._tree.set(new PersistentRange(range), (locationNumber + 1).toString());
 
 					remainingBeforeBreak = EPUB_LOCATION_BREAK_INTERVAL;
 					locationNumber++;
 				}
 			}
 		}
-		console.log(`Added ${this.tree.length} EPUB location mappings in ${
+		console.log(`Added ${this._tree.length} EPUB location mappings in ${
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 	}
 
-	getPageIndex(range: AbstractRange): number | null {
-		let pageStartRange = this.tree.getPairOrNextLower(new PersistentRange(range))?.[0];
-		if (!pageStartRange) {
-			return null;
-		}
-		return this.tree.keysArray().indexOf(pageStartRange);
-	}
+	private _freeze() {
+		this._tree.freeze();
 
-	getPageLabel(range: AbstractRange): string | null {
-		return this.tree.getPairOrNextLower(new PersistentRange(range))?.[1] ?? null;
-	}
-
-	get firstRange(): Range | null {
-		return this.tree.minKey()?.toRange() ?? null;
-	}
-
-	getRange(pageLabel: string): PersistentRange | null {
-		// This is slow, but only needs to be called when manually navigating to a physical page number
-		for (let [key, value] of this.tree.entries()) {
-			if (value === pageLabel) {
-				return key;
-			}
-		}
-		return null;
-	}
-
-	save(): string {
 		let version = PageMapping.VERSION;
 		let isPhysical = this._isPhysical;
-		let mappings = this.tree.toArray()
+		let mappings = this._tree.toArray()
 			.map(([range, label]) => {
 				let cfi = this._view.getCFI(range.toRange());
 				if (!cfi) {
@@ -184,11 +163,48 @@ class PageMapping {
 				return [shortenCFI(cfi.toString(true)), label];
 			})
 			.filter(Boolean);
-		return JSON.stringify({
+		this._json = JSON.stringify({
 			version,
 			isPhysical,
 			mappings,
 		});
+	}
+
+	getPageIndex(range: AbstractRange): number | null {
+		let pageStartRange = this._tree.getPairOrNextLower(new PersistentRange(range))?.[0];
+		if (!pageStartRange) {
+			return null;
+		}
+		return this._tree.keysArray().indexOf(pageStartRange);
+	}
+
+	getPageLabel(range: AbstractRange): string | null {
+		return this._tree.getPairOrNextLower(new PersistentRange(range))?.[1] ?? null;
+	}
+
+	get firstRange(): Range | null {
+		return this._tree.minKey()?.toRange() ?? null;
+	}
+
+	getRange(pageLabel: string): PersistentRange | null {
+		// This is slow, but only needs to be called when manually navigating to a physical page number
+		for (let [key, value] of this._tree.entries()) {
+			if (value === pageLabel) {
+				return key;
+			}
+		}
+		return null;
+	}
+
+	ranges(): IterableIterator<PersistentRange> {
+		return this._tree.keys();
+	}
+
+	toJSON() {
+		if (!this._json) {
+			throw new Error('Not yet frozen');
+		}
+		return this._json;
 	}
 }
 
