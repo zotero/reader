@@ -91,6 +91,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private _pageMappingJSON!: string;
 
+	private _lastNavigationTime = 0;
+
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
 		super(options);
 		if (options.data.buf) {
@@ -836,7 +838,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			canNavigateToNextSection: this.canNavigateToNextSection(),
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,
-			outlinePath: this._getOutlinePath()
+			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -1151,6 +1153,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {
 		console.log('Navigating to', location);
+		this._lastNavigationTime = Date.now();
+
 		options.behavior ||= 'smooth';
 
 		if (location.pageNumber) {
