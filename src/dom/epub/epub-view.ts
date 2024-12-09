@@ -753,7 +753,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected override _handlePointerDown(event: PointerEvent) {
 		super._handlePointerDown(event);
 
-		if (event.defaultPrevented) {
+		if (event.defaultPrevented || event.button !== 0) {
 			return;
 		}
 
