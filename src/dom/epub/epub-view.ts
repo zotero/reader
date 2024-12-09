@@ -729,6 +729,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
+	protected override _handlePointerLeftInternalLink() {
+		this._overlayPopupDelayer.close(() => {
+			this._options.onSetOverlayPopup();
+		});
+	}
+
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
 		// If link goes to footnote wrapped in an <aside>, open it in a popup instead of navigating
 		let element = this._getFootnoteTargetElement(link);

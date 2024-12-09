@@ -546,6 +546,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
 		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
+		this._iframeDocument.body.addEventListener('pointerout', this._handlePointerLeave.bind(this));
 		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
@@ -615,7 +616,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
+	protected _handlePointerLeave(event: PointerEvent) {
+		const link = (event.target as Element).closest('a');
+		if (link && !this._isExternalLink(link)) {
+			this._handlePointerLeftInternalLink();
+		}
+	}
+
 	protected _handlePointerOverInternalLink(link: HTMLAnchorElement) {
+		// Do nothing by default
+	}
+
+	protected _handlePointerLeftInternalLink() {
 		// Do nothing by default
 	}
 
