@@ -113,6 +113,10 @@ class DefaultFindProcessor implements FindProcessor {
 					this._pos = this._buf.length - 1;
 				}
 			}
+			else if (this._pos < 0) {
+				this._pos = 0;
+				return null;
+			}
 		}
 		this._setFindState();
 		return this.current;
@@ -132,6 +136,10 @@ class DefaultFindProcessor implements FindProcessor {
 			this._pos++;
 			if (loop) {
 				this._pos %= this._buf.length;
+			}
+			else if (this._pos >= this._buf.length) {
+				this._pos = this._buf.length - 1;
+				return null;
 			}
 		}
 		this._setFindState();

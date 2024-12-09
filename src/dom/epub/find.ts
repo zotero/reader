@@ -61,17 +61,19 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	async prev(): Promise<FindResult | null> {
 		if (this._selectedProcessor) {
-			this._selectedProcessor.prev(false);
-			this._setFindState();
-			if (this._selectedProcessor.current) {
+			if (this._selectedProcessor.prev(false)) {
+				this._setFindState();
 				return this._selectedProcessor.current;
 			}
+			this._setFindState();
+			this._selectedProcessor.position = null;
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) - 1 : -1;
 		if (nextIndex < 0) {
 			nextIndex += this.view.renderers.length;
 		}
 		this._selectedProcessor = await this._getOrCreateProcessor(this.view.renderers[nextIndex]);
+		this._selectedProcessor.position = null;
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
@@ -93,16 +95,17 @@ export class EPUBFindProcessor implements FindProcessor {
 
 	async next(): Promise<FindResult | null> {
 		if (this._selectedProcessor) {
-			this._selectedProcessor.next(false);
-			this._setFindState();
-			if (this._selectedProcessor.current) {
+			if (this._selectedProcessor.next(false)) {
+				this._setFindState();
 				return this._selectedProcessor.current;
 			}
+			this._setFindState();
+			this._selectedProcessor.position = null;
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) + 1 : 0;
 		nextIndex %= this.view.renderers.length;
-		if (this._selectedProcessor) this._selectedProcessor.position = null;
 		this._selectedProcessor = await this._getOrCreateProcessor(this.view.renderers[nextIndex]);
+		this._selectedProcessor.position = null;
 		let stop = this._selectedProcessor;
 		do {
 			if (this._selectedProcessor.getResults().length) {
