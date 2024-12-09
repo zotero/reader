@@ -78,8 +78,8 @@ export async function sanitizeAndRender(xhtml: string, options: {
 			default:
 				if (SANITIZER_REPLACE_TAGS.has(localName)) {
 					let newElem = doc.createElement('replaced-' + localName);
-					for (let attr of elem.getAttributeNames()) {
-						newElem.setAttribute(attr, elem.getAttribute(attr)!);
+					for (let attr of elem.attributes) {
+						newElem.setAttributeNode(attr.cloneNode() as Attr);
 					}
 					newElem.append(...elem.childNodes);
 					elem.replaceWith(newElem);
