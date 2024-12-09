@@ -1009,7 +1009,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 		}
 		else if (state.active) {
-			if (!previousState
+			if (!this._find
+					|| !previousState
 					|| previousState.query !== state.query
 					|| previousState.caseSensitive !== state.caseSensitive
 					|| previousState.entireWord !== state.entireWord
@@ -1026,7 +1027,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				await this._find.run(startRange, onFirstResult);
 			}
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {
-				this._find!.findState.highlightAll = state.highlightAll;
+				this._find.findState.highlightAll = state.highlightAll;
+				this._find.updateFindState();
 				this._renderAnnotations();
 			}
 		}

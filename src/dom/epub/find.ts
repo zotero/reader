@@ -62,10 +62,10 @@ export class EPUBFindProcessor implements FindProcessor {
 	async prev(): Promise<FindResult | null> {
 		if (this._selectedProcessor) {
 			if (this._selectedProcessor.prev(false)) {
-				this._setFindState();
+				this.updateFindState();
 				return this._selectedProcessor.current;
 			}
-			this._setFindState();
+			this.updateFindState();
 			this._selectedProcessor.position = null;
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) - 1 : -1;
@@ -78,7 +78,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		do {
 			if (this._selectedProcessor.getResults().length) {
 				let result = this._selectedProcessor.prev(false);
-				this._setFindState();
+				this.updateFindState();
 				return result;
 			}
 
@@ -96,10 +96,10 @@ export class EPUBFindProcessor implements FindProcessor {
 	async next(): Promise<FindResult | null> {
 		if (this._selectedProcessor) {
 			if (this._selectedProcessor.next(false)) {
-				this._setFindState();
+				this.updateFindState();
 				return this._selectedProcessor.current;
 			}
-			this._setFindState();
+			this.updateFindState();
 			this._selectedProcessor.position = null;
 		}
 		let nextIndex = this._selectedProcessor ? this._processors.indexOf(this._selectedProcessor) + 1 : 0;
@@ -110,7 +110,7 @@ export class EPUBFindProcessor implements FindProcessor {
 		do {
 			if (this._selectedProcessor.getResults().length) {
 				let result = this._selectedProcessor.next(false);
-				this._setFindState();
+				this.updateFindState();
 				return result;
 			}
 
@@ -157,12 +157,12 @@ export class EPUBFindProcessor implements FindProcessor {
 				this._selectedProcessor = processor;
 			}
 			this._totalResults += processor.getResults().length;
-			this._setFindState();
+			this.updateFindState();
 			return processor;
 		})();
 	}
 
-	private _setFindState() {
+	updateFindState() {
 		if (this._cancelled) return;
 		if (this._onSetFindState) {
 			let index = 0;
