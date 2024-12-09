@@ -68,7 +68,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 				let img = elem as HTMLImageElement;
 				img.loading = 'eager';
 				img.decoding = 'sync';
-				if (!img.closest('a')) {
+				if (!img.closest('a, [*|type="frontmatter"]')) {
 					// TODO: Localize? No access to strings here
 					img.setAttribute('aria-label', 'Zoom In');
 					img.classList.add('clickable-image');
