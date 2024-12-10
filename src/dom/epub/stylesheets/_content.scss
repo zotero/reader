@@ -98,6 +98,10 @@ replaced-html {
 	display: block;
 }
 
+replaced-head {
+	display: none !important;
+}
+
 replaced-body {
 	&::before, &::after {
 		content: unset !important;
@@ -208,4 +212,8 @@ body.footnote-popup-content {
 	.section-container {
 		padding: 16px;
 	}
+}
+
+#annotation-overlay {
+	display: contents;
 }

@@ -32,12 +32,14 @@
 }
 
 > .sections {
+	max-width: calc(100vw - 80px);
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
 	margin-inline: auto;
 	column-fill: auto;
 	-webkit-column-fill: auto;
 	column-gap: 60px;
+	column-width: 800px;
 	overflow: hidden;
 	overscroll-behavior: none;
 
@@ -47,22 +49,22 @@
 	}
 
 	&.spread-mode-none {
-		column-gap: 100vw;
+		column-gap: 100vw; // Just a big number, doesn't need to adjust for writing-mode
 		--media-max-width: calc(100vw - 80px);
 	}
 
 	:root[data-page-width="narrow"] &.spread-mode-none {
-		max-width: 650px;
+		max-inline-size: 650px;
 		column-width: 650px;
 	}
 
 	:root[data-page-width="normal"] &.spread-mode-none {
-		max-width: 800px;
+		max-inline-size: 800px;
 		column-width: 800px;
 	}
 
 	:root[data-page-width="full"] &.spread-mode-none {
-		max-width: calc(100vw - 80px);
+		max-inline-size: calc(100vw - 80px);
 		column-width: calc(100vw - 80px);
 	}
 
@@ -101,19 +103,20 @@ replaced-body {
 	}
 
 	div {
-		max-width: var(--media-max-width);
+		max-inline-size: var(--media-max-width);
 	}
 
 	.table-like {
 		display: block;
 		overflow: auto;
-		max-height: calc(100vh - 80px);
+		max-block-size: calc(100vh - 80px);
+		max-block-size: calc(100vb - 80px);
 		border: none !important;
 
 		// SageJournals: force role="list" tables to be normal
 		&:not(table)[role="list"] {
 			overflow: unset;
-			max-height: none;
+			max-block-size: none;
 
 			[role="listitem"] {
 				display: block;
@@ -123,7 +126,8 @@ replaced-body {
 
 	@media (max-width: 800px) {
 		* {
-			max-width: 100vw;
+			max-inline-size: 100vw;
+			max-inline-size: 100vi;
 		}
 	}
 }

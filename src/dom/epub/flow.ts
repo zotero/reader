@@ -1,13 +1,14 @@
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { NavigateOptions } from "../common/dom-view";
-import { closestElement } from "../common/lib/nodes";
+import { closestElement, iterateWalker } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
 import { PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
 import { getSelectionRanges } from "../common/lib/selection";
 import { rectContains } from "../common/lib/rect";
 import Section from "epubjs/types/section";
+import SectionRenderer from "./section-renderer";
 
 export interface Flow {
 	readonly startSection: Section | null;
@@ -148,6 +149,65 @@ abstract class AbstractFlow implements Flow {
 			return false;
 		}
 		return EPUBView.compareBoundaryPoints(Range.START_TO_START, this.startRange, firstMappedRange) < 0;
+	}
+
+	/**
+	 * Return a range before or at the top of the viewport.
+	 *
+	 * @param renderer
+	 * @param isHorizontal Whether the viewport is laid out horizontally (paginated mode)
+	 * @param textNodesOnly Return only text nodes, for constructing CFIs
+	 */
+	protected _getFirstVisibleRange(renderer: SectionRenderer, isHorizontal: boolean, textNodesOnly: boolean): Range | null {
+		if (!renderer.mounted) {
+			return null;
+		}
+		let mainAxisViewportEnd = isHorizontal ? this._iframe.clientWidth : this._iframe.clientHeight;
+		let crossAxisViewportEnd = isHorizontal ? this._iframe.clientHeight : this._iframe.clientWidth;
+		let filter = NodeFilter.SHOW_TEXT | (textNodesOnly ? 0 : NodeFilter.SHOW_ELEMENT);
+		let iter = this._iframeDocument.createNodeIterator(renderer.container, filter, (node) => {
+			return node.nodeType == Node.TEXT_NODE && node.nodeValue?.trim().length
+					|| (node as Element).tagName === 'IMG'
+				? NodeFilter.FILTER_ACCEPT
+				: NodeFilter.FILTER_SKIP;
+		});
+		let bestRange = null;
+		for (let node of iterateWalker(iter)) {
+			let range = this._iframeDocument.createRange();
+			if (node.nodeType == Node.ELEMENT_NODE) {
+				range.selectNode(node);
+			}
+			else {
+				range.selectNodeContents(node);
+			}
+
+			let rect = range.getBoundingClientRect();
+			// Skip invisible nodes
+			if (!(rect.width || rect.height)) {
+				continue;
+			}
+			let mainAxisRectStart = isHorizontal ? rect.left : rect.top;
+			let mainAxisRectEnd = isHorizontal ? rect.right : rect.bottom;
+			let crossAxisRectStart = isHorizontal ? rect.top : rect.left;
+			let crossAxisRectEnd = isHorizontal ? rect.bottom : rect.right;
+			// If the range starts past the end of the viewport, we've gone too far -- return our previous best guess
+			if (mainAxisRectStart > mainAxisViewportEnd || crossAxisRectStart > crossAxisViewportEnd) {
+				return bestRange;
+			}
+			// If it starts in the viewport, return it immediately
+			if (
+				(mainAxisRectStart >= 0 || mainAxisRectStart < 0 && mainAxisRectEnd > 0)
+				&& (crossAxisRectStart >= 0 || crossAxisRectStart < 0 && crossAxisRectEnd > 0)
+			) {
+				return range;
+			}
+			// Otherwise, it's above the start of the viewport -- save it as our best guess in case nothing within
+			// the viewport is usable, but keep going
+			else {
+				bestRange = range;
+			}
+		}
+		return null;
 	}
 
 	abstract scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void;
@@ -359,11 +419,13 @@ export class ScrolledFlow extends AbstractFlow {
 					continue;
 				}
 				this._cachedStartSection = renderer.section;
-				let startRange = renderer.getFirstVisibleRange(
+				let startRange = this._getFirstVisibleRange(
+					renderer,
 					false,
 					false
 				);
-				let startCFIRange = renderer.getFirstVisibleRange(
+				let startCFIRange = this._getFirstVisibleRange(
+					renderer,
 					false,
 					true
 				);
@@ -451,6 +513,11 @@ export class PaginatedFlow extends AbstractFlow {
 			+ parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
 	}
 
+	private get _spreadHeight(): number {
+		return this._sectionsContainer.offsetHeight
+			+ parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
+	}
+
 	get currentSectionIndex(): number {
 		return this._currentSectionIndex;
 	}
@@ -505,22 +572,24 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this.canNavigateToPreviousSection()) {
 			return true;
 		}
-		return this._sectionsContainer.scrollLeft > 0;
+		return this._sectionsContainer.scrollLeft > 0 || this._sectionsContainer.scrollTop > 0;
 	}
 
 	canNavigateToNextPage(): boolean {
 		if (this.canNavigateToNextSection()) {
 			return true;
 		}
-		return this._sectionsContainer.scrollLeft < this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth;
+		return this._sectionsContainer.scrollLeft < this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth
+			|| this._sectionsContainer.scrollTop < this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight;
 	}
 
 	atStartOfSection(): boolean {
-		return this._sectionsContainer.scrollLeft == 0;
+		return this._sectionsContainer.scrollLeft == 0 && this._sectionsContainer.scrollTop == 0;
 	}
 
 	atEndOfSection(): boolean {
-		return this._sectionsContainer.scrollLeft == this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth;
+		return this._sectionsContainer.scrollLeft == this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth
+			&& this._sectionsContainer.scrollTop == this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight;
 	}
 
 	canNavigateToPreviousSection(): boolean {
@@ -549,14 +618,26 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		if (this.atStartOfSection()) {
 			this.navigateToPreviousSection();
-			this._sectionsContainer.scrollTo({ left: this._sectionsContainer.scrollWidth, top: 0 });
+			this._sectionsContainer.scrollTo({
+				left: this._sectionsContainer.scrollWidth,
+				top: this._sectionsContainer.scrollHeight
+			});
 			this._onViewUpdate();
 			return;
 		}
-		this._sectionsContainer.scrollBy({
-			left: -this._spreadWidth,
-			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
-		});
+		if (this._sectionsContainer.scrollLeft === 0) {
+			this._sectionsContainer.scrollTo({
+				left: 0,
+				top: this._sectionsContainer.scrollTop - this._spreadHeight,
+				behavior: 'auto'
+			});
+		}
+		else {
+			this._sectionsContainer.scrollBy({
+				left: -this._spreadWidth,
+				behavior: 'auto'
+			});
+		}
 		this._onViewUpdate();
 	}
 
@@ -568,10 +649,19 @@ export class PaginatedFlow extends AbstractFlow {
 			this.navigateToNextSection();
 			return;
 		}
-		this._sectionsContainer.scrollBy({
-			left: this._spreadWidth,
-			behavior: 'auto' // TODO 'smooth' once annotation positioning is fixed
-		});
+		if (this._sectionsContainer.scrollLeft === this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth) {
+			this._sectionsContainer.scrollTo({
+				left: 0,
+				top: this._sectionsContainer.scrollTop + this._spreadHeight,
+				behavior: 'auto'
+			});
+		}
+		else {
+			this._sectionsContainer.scrollBy({
+				left: this._spreadWidth,
+				behavior: 'auto'
+			});
+		}
 		this._onViewUpdate();
 	}
 
@@ -747,11 +837,13 @@ export class PaginatedFlow extends AbstractFlow {
 					continue;
 				}
 				this._cachedStartSection = renderer.section;
-				let startRange = renderer.getFirstVisibleRange(
+				let startRange = this._getFirstVisibleRange(
+					renderer,
 					true,
 					false
 				);
-				let startCFIRange = renderer.getFirstVisibleRange(
+				let startCFIRange = this._getFirstVisibleRange(
+					renderer,
 					true,
 					true
 				);

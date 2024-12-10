@@ -16,7 +16,7 @@ import {
 import { AnnotationType } from "../../../../common/types";
 import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
-import { closestElement } from "../../lib/nodes";
+import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
 import { rectsEqual } from "../../lib/rect";
 import cx from "classnames";
@@ -307,14 +307,17 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		return { rects, interactiveRects, commentIconPosition };
 	}, [annotation, isResizing, resizedRange]);
 
+	let vert = isVertical(annotation.range.commonAncestorContainer);
+	let rtl = isRTL(annotation.range.commonAncestorContainer);
+	let underline = annotation.type === 'underline';
 	let rectGroup = useMemo(() => {
 		return <g ref={rectGroupRef}>
 			{[...rects.entries()].map(([key, rect]) => (
 				<rect
-					x={rect.x}
-					y={annotation.type == 'underline' ? rect.y + rect.height : rect.y}
-					width={rect.width}
-					height={annotation.type == 'underline' ? 3 : rect.height}
+					x={vert && underline ? rect.x + (rtl ? -3 : rect.width) : rect.x}
+					y={!vert && underline ? rect.y + rect.height : rect.y}
+					width={vert && underline ? 3 : rect.width}
+					height={!vert && underline ? 3 : rect.height}
 					opacity="50%"
 					key={key}
 				/>
@@ -334,9 +337,9 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				key={key + '-foreign'}
 			>
 				<div
-					// @ts-ignore
-					xmlns="http://www.w3.org/1999/xhtml"
 					className={cx('annotation-div', { 'disable-pointer-events': interactiveRects.has(rect) })}
+					// Safari needs position: absolute, which breaks all other browsers
+					style={isSafari ? { position: 'absolute', top: `${rect.y}px`, left: `${rect.x}px`, width: `${rect.width}px`, height: `${rect.height}px` } : undefined}
 					draggable={true}
 					onPointerDown={handlePointerDown}
 					onPointerUp={handlePointerUp}
@@ -431,7 +434,7 @@ const Note: React.FC<NoteProps> = (props) => {
 	let rect = annotation.range.getBoundingClientRect();
 	rect.x += doc.defaultView.scrollX;
 	rect.y += doc.defaultView.scrollY;
-	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction === 'rtl';
+	let rtl = isRTL(annotation.range.commonAncestorContainer);
 	let staggerOffset = (staggerIndex || 0) * 15;
 	let x = rect.left + (rtl ? -25 : rect.width + 25) + (rtl ? -1 : 1) * staggerOffset;
 	let y = rect.top + staggerOffset;
@@ -551,17 +554,12 @@ type SelectionBorderProps = {
 };
 
 const Resizer: React.FC<ResizerProps> = (props) => {
-	let WIDTH = 3;
+	const SIZE = 3;
 
 	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart } = props;
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	let [pointerCapture, setPointerCapture] = useState<{ elem: Element, pointerId: number } | null>(null);
 	let [lastPointerMove, setLastPointerMove] = useState<React.PointerEvent | null>(null);
-
-	let rtl = getComputedStyle(closestElement(annotation.range.commonAncestorContainer!)!).direction == 'rtl';
-
-	highlightRects = Array.from(highlightRects)
-		.sort((a, b) => (a.bottom - b.bottom) || (a.left - b.left));
 
 	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		if (event.button !== 0) {
@@ -618,7 +616,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 
 	let handlePointerMove = useCallback((event: React.PointerEvent) => {
 		let { clientX, clientY } = event;
-		let isStart = resizingSide === 'start' ? !rtl : rtl;
+		let isStart = resizingSide === 'start';
 		if (isSafari) {
 			let targetRect = (event.target as Element).getBoundingClientRect();
 			if (clientX >= targetRect.left && clientX <= targetRect.right) {
@@ -678,7 +676,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		if (win) {
 			setLastPointerMove(event);
 		}
-	}, [annotation, doc, onResize, resizingSide, rtl, win]);
+	}, [annotation, doc, onResize, resizingSide, win]);
 
 	useEffect(() => {
 		if (!win || !resizingSide || !lastPointerMove) {
@@ -711,17 +709,17 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		return null;
 	}
 
-	let topLeftRect = highlightRects[rtl ? highlightRects.length - 1 : 0];
-	let bottomRightRect = highlightRects[rtl ? 0 : highlightRects.length - 1];
-
+	let vert = isVertical(annotation.range.commonAncestorContainer);
+	let topLeftRect = highlightRects[0];
+	let bottomRightRect = highlightRects[highlightRects.length - 1];
 	return <>
 		<rect
-			x={topLeftRect.left - WIDTH}
-			y={topLeftRect.top}
-			width={WIDTH}
-			height={topLeftRect.height}
+			x={vert ? topLeftRect.left : topLeftRect.left - SIZE}
+			y={vert ? topLeftRect.top - SIZE : topLeftRect.top}
+			width={vert ? topLeftRect.width : SIZE}
+			height={vert ? SIZE : topLeftRect.height}
 			fill={annotation.color}
-			className="resizer inherit-pointer-events"
+			className={cx('resizer inherit-pointer-events', { 'resizer-vertical': vert })}
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}
@@ -730,12 +728,12 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			onLostPointerCapture={handleLostPointerCapture}
 		/>
 		<rect
-			x={bottomRightRect.right}
-			y={bottomRightRect.top}
-			width={WIDTH}
-			height={bottomRightRect.height}
+			x={vert ? bottomRightRect.left : bottomRightRect.right}
+			y={vert ? bottomRightRect.bottom : bottomRightRect.top}
+			width={vert ? bottomRightRect.width : SIZE}
+			height={vert ? SIZE : bottomRightRect.height}
 			fill={annotation.color}
-			className="resizer inherit-pointer-events"
+			className={cx("resizer inherit-pointer-events", { 'resizer-vertical': vert })}
 			onPointerDown={handlePointerDown}
 			onPointerUp={handlePointerUp}
 			onPointerCancel={handlePointerUp}

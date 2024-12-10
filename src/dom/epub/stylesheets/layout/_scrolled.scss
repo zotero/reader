@@ -7,18 +7,18 @@
 
 	> .section-container {
 		margin-inline: auto;
-		margin-bottom: 100px;
+		margin-block-end: 100px;
 
 		:root[data-page-width="narrow"] & {
-			max-width: 650px;
+			max-inline-size: 650px;
 		}
 
 		:root[data-page-width="normal"] & {
-			max-width: 800px;
+			max-inline-size: 800px;
 		}
 
 		:root[data-page-width="full"] & {
-			max-width: 100%;
+			max-inline-size: 100%;
 		}
 
 		// Try some different permutations of the 'contain' values that we want,
@@ -38,13 +38,14 @@
 
 replaced-body {
 	section {
-		margin-bottom: 100px;
+		margin-block-end: 100px;
 	}
 
 	img, svg, audio, video {
 		// Size the media element's box so it fits within one page
-		max-width: calc(min(100vw - 80px, 100%)) !important;
-		max-height: 100vh;
+		max-inline-size: calc(min(100vw - 80px, 100%)) !important;
+		max-inline-size: calc(min(100vi - 80px, 100%)) !important;
+		max-block-size: 100vh;
 		// Contain the content within the box so its aspect ratio doesn't change
 		object-fit: contain;
 	}

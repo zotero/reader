@@ -69,3 +69,19 @@ export function iterateWalker(walker: TreeWalker | NodeIterator): Iterable<Node>
 		}
 	};
 }
+
+export function isRTL(node: Node): boolean {
+	let el = closestElement(node);
+	if (!el) {
+		return false;
+	}
+	return getComputedStyle(el).direction === 'rtl' || getComputedStyle(el).writingMode.endsWith('-rl');
+}
+
+export function isVertical(node: Node): boolean {
+	let el = closestElement(node);
+	if (!el) {
+		return false;
+	}
+	return getComputedStyle(el).writingMode.startsWith('vertical-');
+}

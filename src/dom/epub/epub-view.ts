@@ -138,6 +138,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 		}
 
+		if (this.book.packaging.metadata.primary_writing_mode) {
+			this._iframeDocument.documentElement.style.writingMode = this.book.packaging.metadata.primary_writing_mode;
+		}
+
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
@@ -235,7 +239,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let renderer = new SectionRenderer({
 			section,
 			sectionsContainer: this._sectionsContainer,
-			window: this._iframeWindow,
 			document: this._iframeDocument,
 			styleScoper,
 		});
