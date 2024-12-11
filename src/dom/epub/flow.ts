@@ -606,8 +606,8 @@ export class PaginatedFlow extends AbstractFlow {
 	}
 
 	atEndOfSection(): boolean {
-		return this._sectionsContainer.scrollLeft == this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth
-			&& this._sectionsContainer.scrollTop == this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight;
+		return this._sectionsContainer.scrollLeft > this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth - this._spreadWidth
+			&& this._sectionsContainer.scrollTop > this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight - this._spreadHeight;
 	}
 
 	canNavigateToPreviousSection(): boolean {
