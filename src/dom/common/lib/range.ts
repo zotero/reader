@@ -211,9 +211,10 @@ export function getStartElement(range: Range | PersistentRange): Element | null 
 	return startContainer as Element | null;
 }
 
-export function getBoundingPageRect(range: Range) {
-	let rect = range.getBoundingClientRect();
-	let win = range.commonAncestorContainer.ownerDocument?.defaultView;
+export function getBoundingPageRect(rangeOrElem: Range | Element) {
+	let rect = rangeOrElem.getBoundingClientRect();
+	let win = ('ownerDocument' in rangeOrElem ? rangeOrElem : rangeOrElem.commonAncestorContainer)
+		.ownerDocument?.defaultView;
 	rect.x += win?.scrollX ?? 0;
 	rect.y += win?.scrollY ?? 0;
 	return rect;

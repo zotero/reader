@@ -1,12 +1,12 @@
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { NavigateOptions } from "../common/dom-view";
-import { closestElement, isVertical, iterateWalker } from "../common/lib/nodes";
+import { closestElement, isRTL, isVertical, iterateWalker } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
-import { PersistentRange } from "../common/lib/range";
+import { getBoundingPageRect, PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
 import { getSelectionRanges } from "../common/lib/selection";
-import { rectContains } from "../common/lib/rect";
+import { isPageRectVisible, rectContains } from "../common/lib/rect";
 import Section from "epubjs/types/section";
 import SectionRenderer from "./section-renderer";
 
@@ -71,6 +71,10 @@ abstract class AbstractFlow implements Flow {
 
 	protected _scale = 1;
 
+	protected _isRTL = false;
+
+	protected _isVertical = false;
+
 	protected _onUpdateViewState: () => void;
 
 	protected _onUpdateViewStats: () => void;
@@ -93,6 +97,8 @@ abstract class AbstractFlow implements Flow {
 		this._onUpdateViewStats = options.onUpdateViewStats;
 		this._onViewUpdate = options.onViewUpdate;
 		this._onPushHistoryPoint = options.onPushHistoryPoint;
+
+		this._isRTL = isRTL(this._iframeDocument.body);
 
 		this._iframeWindow.addEventListener('scroll', this._pushHistoryPoint);
 
@@ -155,15 +161,16 @@ abstract class AbstractFlow implements Flow {
 	 * Return a range before or at the top of the viewport.
 	 *
 	 * @param renderer
-	 * @param isHorizontal Whether the viewport is laid out horizontally (paginated mode)
 	 * @param textNodesOnly Return only text nodes, for constructing CFIs
 	 */
-	protected _getFirstVisibleRange(renderer: SectionRenderer, isHorizontal: boolean, textNodesOnly: boolean): Range | null {
+	protected _getFirstVisibleRange(renderer: SectionRenderer, textNodesOnly: boolean): Range | null {
 		if (!renderer.mounted) {
 			return null;
 		}
-		let mainAxisViewportEnd = isHorizontal ? this._iframe.clientWidth : this._iframe.clientHeight;
-		let crossAxisViewportEnd = isHorizontal ? this._iframe.clientHeight : this._iframe.clientWidth;
+		let isPaginated = this instanceof PaginatedFlow;
+		let isScrolledVerticalRTL = !isPaginated && this._isVertical && this._isRTL;
+		let mainAxisViewportEnd = isPaginated ? this._iframe.clientWidth : this._iframe.clientHeight;
+		let crossAxisViewportEnd = isPaginated ? this._iframe.clientHeight : this._iframe.clientWidth;
 		let filter = NodeFilter.SHOW_TEXT | (textNodesOnly ? 0 : NodeFilter.SHOW_ELEMENT);
 		let iter = this._iframeDocument.createNodeIterator(renderer.container, filter, (node) => {
 			return node.nodeType == Node.TEXT_NODE && node.nodeValue?.trim().length
@@ -186,10 +193,14 @@ abstract class AbstractFlow implements Flow {
 			if (!(rect.width || rect.height)) {
 				continue;
 			}
-			let mainAxisRectStart = isHorizontal ? rect.left : rect.top;
-			let mainAxisRectEnd = isHorizontal ? rect.right : rect.bottom;
-			let crossAxisRectStart = isHorizontal ? rect.top : rect.left;
-			let crossAxisRectEnd = isHorizontal ? rect.bottom : rect.right;
+			let mainAxisRectStart = isPaginated ? rect.left : rect.top;
+			let mainAxisRectEnd = isPaginated ? rect.right : rect.bottom;
+			let crossAxisRectStart = isPaginated ? rect.top : rect.left;
+			let crossAxisRectEnd = isPaginated ? rect.bottom : rect.right;
+			if (isScrolledVerticalRTL) {
+				crossAxisRectStart = this._iframe.clientWidth - crossAxisRectStart;
+				crossAxisRectEnd = this._iframe.clientHeight - crossAxisRectEnd;
+			}
 			// If the range starts past the end of the viewport, we've gone too far -- return our previous best guess
 			if (mainAxisRectStart > mainAxisViewportEnd || crossAxisRectStart > crossAxisViewportEnd) {
 				return bestRange;
@@ -201,7 +212,7 @@ abstract class AbstractFlow implements Flow {
 			) {
 				return range;
 			}
-			// Otherwise, it's above the start of the viewport -- save it as our best guess in case nothing within
+			// Otherwise, it's before the start of the viewport -- save it as our best guess in case nothing within
 			// the viewport is usable, but keep going
 			else {
 				bestRange = range;
@@ -299,6 +310,8 @@ export class ScrolledFlow extends AbstractFlow {
 		this._iframe.classList.add('flow-mode-scrolled');
 		this._iframeDocument.body.classList.add('flow-mode-scrolled');
 
+		this._isVertical = isVertical(this._iframeDocument.body);
+
 		for (let view of this._view.renderers) {
 			view.mount();
 		}
@@ -384,21 +397,39 @@ export class ScrolledFlow extends AbstractFlow {
 	}
 
 	canNavigateToPreviousPage() {
-		return this._iframeWindow.scrollY >= this._iframe.clientHeight
-			- this.scrollPadding;
+		if (this._isVertical) {
+			return Math.abs(this._iframeWindow.scrollX) >= this._iframe.clientWidth
+				- this.scrollPadding;
+		}
+		else {
+			return this._iframeWindow.scrollY >= this._iframe.clientHeight
+				- this.scrollPadding;
+		}
 	}
 
 	canNavigateToNextPage() {
-		return this._iframeWindow.scrollY <= this._iframeDocument.documentElement.scrollHeight
-			- this._iframe.clientHeight * 2
-			+ this.scrollPadding;
+		if (this._isVertical) {
+			return Math.abs(this._iframeWindow.scrollX) <= this._iframeDocument.documentElement.scrollWidth
+				- this._iframe.clientWidth * 2
+				+ this.scrollPadding;
+		}
+		else {
+			return this._iframeWindow.scrollY <= this._iframeDocument.documentElement.scrollHeight
+				- this._iframe.clientHeight * 2
+				+ this.scrollPadding;
+		}
 	}
 
 	navigateToPreviousPage() {
 		if (!this.canNavigateToPreviousPage()) {
 			return;
 		}
-		this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + this.scrollPadding });
+		if (this._isVertical) {
+			this._iframeWindow.scrollBy({ left: this._iframe.clientWidth + this.scrollPadding });
+		}
+		else {
+			this._iframeWindow.scrollBy({ top: -this._iframe.clientHeight + this.scrollPadding });
+		}
 		this._onViewUpdate();
 	}
 
@@ -406,17 +437,32 @@ export class ScrolledFlow extends AbstractFlow {
 		if (!this.canNavigateToNextPage()) {
 			return;
 		}
-		this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - this.scrollPadding });
+		if (this._isVertical) {
+			this._iframeWindow.scrollBy({ left: -this._iframe.clientWidth - this.scrollPadding });
+		}
+		else {
+			this._iframeWindow.scrollBy({ top: this._iframe.clientHeight - this.scrollPadding });
+		}
 		this._onViewUpdate();
 	}
 
 	navigateToFirstPage(): void {
-		this._iframeWindow.scrollTo({ top: 0 });
+		if (this._isVertical) {
+			this._iframeWindow.scrollTo({ left: 0 });
+		}
+		else {
+			this._iframeWindow.scrollTo({ top: 0 });
+		}
 		this._onViewUpdate();
 	}
 
 	navigateToLastPage(): void {
-		this._iframeWindow.scrollTo({ top: this._iframeDocument.documentElement.scrollHeight });
+		if (this._isVertical) {
+			this._iframeWindow.scrollTo({ left: this._iframeDocument.documentElement.scrollWidth });
+		}
+		else {
+			this._iframeWindow.scrollTo({ top: this._iframeDocument.documentElement.scrollHeight });
+		}
 		this._onViewUpdate();
 	}
 
@@ -426,9 +472,7 @@ export class ScrolledFlow extends AbstractFlow {
 			if (!renderer.mounted) {
 				continue;
 			}
-			// Avoid calling getBoundingClientRect() because that would force a layout, which is expensive
-			let visible = renderer.container.offsetTop < this._iframeWindow.scrollY + this._iframe.clientHeight
-				&& renderer.container.offsetTop + renderer.container.offsetHeight >= this._iframeWindow.scrollY;
+			let visible = isPageRectVisible(getBoundingPageRect(renderer.container), this._iframeWindow);
 			if (!foundStart) {
 				if (!visible) {
 					continue;
@@ -436,12 +480,10 @@ export class ScrolledFlow extends AbstractFlow {
 				this._cachedStartSection = renderer.section;
 				let startRange = this._getFirstVisibleRange(
 					renderer,
-					false,
 					false
 				);
 				let startCFIRange = this._getFirstVisibleRange(
 					renderer,
-					false,
 					true
 				);
 				if (startRange) {
@@ -857,12 +899,10 @@ export class PaginatedFlow extends AbstractFlow {
 				this._cachedStartSection = renderer.section;
 				let startRange = this._getFirstVisibleRange(
 					renderer,
-					true,
-					false
+					true
 				);
 				let startCFIRange = this._getFirstVisibleRange(
 					renderer,
-					true,
 					true
 				);
 				if (startRange) {
