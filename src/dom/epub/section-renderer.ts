@@ -2,7 +2,7 @@ import Section from "epubjs/types/section";
 import { getPotentiallyVisibleTextNodes } from "../common/lib/nodes";
 import {
 	sanitizeAndRender,
-	StyleScoper
+	CSSRewriter
 } from "./lib/sanitize-and-render";
 import { createSearchContext } from "../common/lib/find";
 
@@ -21,18 +21,14 @@ class SectionRenderer {
 
 	private readonly _sectionsContainer: HTMLElement;
 
-	private readonly _styleScoper: StyleScoper;
-
 	constructor(options: {
 		section: Section,
 		sectionsContainer: HTMLElement,
 		document: Document,
-		styleScoper: StyleScoper,
 	}) {
 		this.section = options.section;
 		this._sectionsContainer = options.sectionsContainer;
 		this._document = options.document;
-		this._styleScoper = options.styleScoper;
 
 		let container = this._document.createElement('div');
 		container.id = 'section-' + this.section.index;
@@ -63,7 +59,7 @@ class SectionRenderer {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/ban-types
-	async render(requestFn: Function): Promise<void> {
+	async render(requestFn: Function, cssRewriter: CSSRewriter): Promise<void> {
 		if (this.body) {
 			throw new Error('Already rendered');
 		}
@@ -75,8 +71,14 @@ class SectionRenderer {
 		let xhtml = await this.section.render(requestFn);
 
 		try {
-			this.body = await sanitizeAndRender(xhtml,
-				{ container: this.container, styleScoper: this._styleScoper });
+			await sanitizeAndRender(xhtml, { container: this.container, cssRewriter });
+			let body = this.container.querySelector('replaced-body') as HTMLElement | null;
+			if (!body) {
+				console.error('Section has no body', this.section);
+				this._displayError('Missing content');
+				return;
+			}
+			this.body = body;
 		}
 		catch (e) {
 			console.error('Error rendering section ' + this.section.index + ' (' + this.section.href + ')', e);

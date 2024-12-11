@@ -3,10 +3,10 @@ import parser from "postcss-selector-parser";
 export const SANITIZER_REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
 
 export async function sanitizeAndRender(xhtml: string, options: {
-	container: Element,
-	styleScoper: StyleScoper,
-}): Promise<HTMLElement> {
-	let { container, styleScoper } = options;
+	container: HTMLElement,
+	cssRewriter: CSSRewriter,
+}): Promise<void> {
+	let { container, cssRewriter } = options;
 
 	let doc = container.ownerDocument;
 	let sectionDoc = new DOMParser().parseFromString(xhtml, 'application/xhtml+xml');
@@ -25,7 +25,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 		switch (localName) {
 			case 'style':
 				container.classList.add(
-					await styleScoper.add(elem.innerHTML || '')
+					await cssRewriter.add(elem.innerHTML || '')
 				);
 				toRemove.push(elem);
 				break;
@@ -34,7 +34,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 				if (link.relList.contains('stylesheet')) {
 					try {
 						container.classList.add(
-							await styleScoper.addByURL(link.href)
+							await cssRewriter.addByURL(link.href)
 						);
 					}
 					catch (e) {
@@ -95,8 +95,8 @@ export async function sanitizeAndRender(xhtml: string, options: {
 
 	container.append(...sectionDoc.childNodes);
 
-	// Add classes to elements that emulate <table>, <sup>, and <sub>
-	for (let selector of styleScoper.tagEmulatingSelectors.table) {
+	// Add classes to elements with properties that we handle specially
+	for (let selector of cssRewriter.trackedSelectors.table) {
 		try {
 			for (let table of Array.from(container.querySelectorAll(selector))) {
 				table.classList.add('table-like');
@@ -109,7 +109,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 			// Ignore
 		}
 	}
-	for (let selector of styleScoper.tagEmulatingSelectors.supSub) {
+	for (let selector of cssRewriter.trackedSelectors.supSub) {
 		try {
 			for (let elem of Array.from(container.querySelectorAll(selector))) {
 				elem.classList.add('sup-sub-like');
@@ -120,13 +120,29 @@ export async function sanitizeAndRender(xhtml: string, options: {
 		}
 	}
 
-	return container.querySelector('replaced-body') as HTMLElement;
+	// Get the primary writing mode for this section
+	let documentElement = container.querySelector('replaced-html');
+	let body = container.querySelector('replaced-body');
+	let writingMode = '';
+	for (let [selector, writingModePropertyValue] of cssRewriter.trackedSelectors.writingMode) {
+		try {
+			if (documentElement?.matches(selector) || body?.matches(selector)) {
+				writingMode = writingModePropertyValue;
+				break;
+			}
+		}
+		catch (e) {
+			// Ignore
+		}
+	}
+	container.dataset.writingMode = writingMode;
 }
 
-export class StyleScoper {
-	tagEmulatingSelectors = {
-		table: new Set<string>(['table', 'mtable', 'pre']),
-		supSub: new Set<string>(['sup', 'sub']),
+export class CSSRewriter {
+	trackedSelectors = {
+		table: new Set(['table', 'mtable', 'pre']),
+		supSub: new Set(['sup', 'sub']),
+		writingMode: new Map<string, string>(),
 	};
 
 	private _document: Document;
@@ -238,23 +254,26 @@ export class StyleScoper {
 				});
 			}).processSync(styleRule.selectorText);
 
-			// Keep track of selectors that emulate <table>, <sup>, and <sub>, because we want to add classes
-			// to matching elements in sanitizeAndRender()
-			if (styleRule.style.display === 'table' || styleRule.style.display === 'inline-table') {
-				this.tagEmulatingSelectors.table.add(styleRule.selectorText);
+			let style = styleRule.style;
+
+			if (style.display === 'table' || style.display === 'inline-table') {
+				this.trackedSelectors.table.add(styleRule.selectorText);
 			}
-			if (styleRule.style.verticalAlign === 'super' || styleRule.style.verticalAlign === 'sub') {
-				this.tagEmulatingSelectors.supSub.add(styleRule.selectorText);
+			if (style.verticalAlign === 'super' || style.verticalAlign === 'sub') {
+				this.trackedSelectors.supSub.add(styleRule.selectorText);
+			}
+			if (style.writingMode) {
+				this.trackedSelectors.writingMode.set(styleRule.selectorText, style.writingMode);
 			}
 
 			// If this rule sets a monospace font, make it !important so that it overrides the default content font
-			if (styleRule.style.fontFamily && /\bmono(space)?\b/i.test(styleRule.style.fontFamily)) {
-				styleRule.style.setProperty('font-family', styleRule.style.fontFamily, 'important');
+			if (style.fontFamily && /\bmono(space)?\b/i.test(style.fontFamily)) {
+				style.setProperty('font-family', style.fontFamily, 'important');
 			}
 
 			// If this rule sets a font-size, rewrite it to be relative
-			if (styleRule.style.fontSize) {
-				styleRule.style.fontSize = rewriteFontSize(styleRule.style.fontSize);
+			if (style.fontSize) {
+				style.fontSize = rewriteFontSize(style.fontSize);
 			}
 		}
 		else if (rule.constructor.name === 'CSSImportRule') {

@@ -39,7 +39,7 @@ import {
 	closestElement,
 	getContainingBlock
 } from "../common/lib/nodes";
-import { StyleScoper } from "./lib/sanitize-and-render";
+import { CSSRewriter } from "./lib/sanitize-and-render";
 import PageMapping from "./lib/page-mapping";
 import {
 	lengthenCFI,
@@ -55,6 +55,7 @@ import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from 
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
 import LRUCacheMap from "../common/lib/lru-cache-map";
+import { mode } from "../common/lib/collection";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -138,10 +139,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 		}
 
-		if (this.book.packaging.metadata.primary_writing_mode) {
-			this._iframeDocument.documentElement.style.writingMode = this.book.packaging.metadata.primary_writing_mode;
-		}
-
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
@@ -165,8 +162,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._sectionsContainer.hidden = true;
 		this._iframeDocument.body.append(this._sectionsContainer);
 
-		let styleScoper = new StyleScoper(this._iframeDocument);
-		await this._displaySections(styleScoper);
+		await this._displaySections();
 
 		if (this._sectionRenderers.some(view => view.error) && await this._isEncrypted()) {
 			this._options.onEPUBEncrypted();
@@ -235,24 +231,28 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	private async _displaySection(section: Section, styleScoper: StyleScoper) {
+	private async _displaySection(section: Section, cssRewriter: CSSRewriter) {
 		let renderer = new SectionRenderer({
 			section,
 			sectionsContainer: this._sectionsContainer,
 			document: this._iframeDocument,
-			styleScoper,
 		});
-		await renderer.render(this.book.archive.request.bind(this.book.archive));
+		await renderer.render(this.book.archive.request.bind(this.book.archive), cssRewriter);
 		renderer.body.lang = this.book.packaging.metadata.language;
 		this._sectionRenderers[section.index] = renderer;
 	}
 
-	private _displaySections(styleScoper: StyleScoper) {
-		return Promise.all(this.book.spine.spineItems
+	private async _displaySections() {
+		let cssRewriter = new CSSRewriter(this._iframeDocument);
+		await Promise.all(this.book.spine.spineItems
 			// We should do this:
 			// .filter(section => section.linear)
 			// But we need to be sure it won't break anything
-			.map(section => this._displaySection(section, styleScoper)));
+			.map(section => this._displaySection(section, cssRewriter)));
+
+		this._iframeDocument.documentElement.style.writingMode = this.book.packaging.metadata.primary_writing_mode
+			|| mode(this._sectionRenderers.map(r => r.container.dataset.writingMode).filter(Boolean))
+			|| '';
 	}
 
 	private _initPageMapping(json?: string): PageMapping {
