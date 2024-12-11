@@ -1460,7 +1460,7 @@ export interface DOMViewState {
 export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
 	block?: 'center' | 'start';
 	ifNeeded?: boolean;
-	offsetY?: number;
+	offsetBlock?: number;
 }
 
 export interface NavigateOptions extends CustomScrollIntoViewOptions {

@@ -217,7 +217,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			// Perform the navigation on the next frame, because apparently the split view layout might not have
 			// settled yet
 			await new Promise(resolve => requestAnimationFrame(resolve));
-			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetY: viewState.cfiElementOffset });
+			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetBlock: viewState.cfiElementOffset });
 		}
 
 		this._lastResizeWidth = this._iframeWindow.innerWidth;
@@ -436,7 +436,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private _keepPosition<T>(block?: () => T) {
 		let cfiBefore = this.flow?.startCFI;
-		let offsetBefore = this.flow?.startCFIOffsetY;
+		let offsetBefore = this.flow?.startCFIOffset;
 		let result = block?.();
 		if (cfiBefore) {
 			this.navigate(
@@ -444,7 +444,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				{
 					skipHistory: true,
 					behavior: 'auto',
-					offsetY: offsetBefore ?? undefined
+					offsetBlock: offsetBefore ?? undefined
 				}
 			);
 		}
@@ -810,7 +810,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let viewState: EPUBViewState = {
 			scale: Math.round(this.scale * 1000) / 1000, // Three decimal places
 			cfi,
-			cfiElementOffset: this.flow.startCFIOffsetY ?? undefined,
+			cfiElementOffset: this.flow.startCFIOffset ?? undefined,
 			savedPageMapping: this.pageMapping.toJSON(),
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,

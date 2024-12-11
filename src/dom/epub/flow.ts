@@ -1,7 +1,7 @@
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { NavigateOptions } from "../common/dom-view";
-import { closestElement, iterateWalker } from "../common/lib/nodes";
+import { closestElement, isVertical, iterateWalker } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
 import { PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
@@ -17,7 +17,7 @@ export interface Flow {
 
 	readonly startCFI: EpubCFI | null;
 
-	readonly startCFIOffsetY: number | null;
+	readonly startCFIOffset: number | null;
 
 	readonly startRangeIsBeforeFirstMapping: boolean;
 
@@ -61,7 +61,7 @@ abstract class AbstractFlow implements Flow {
 
 	protected _cachedStartCFI: EpubCFI | null = null;
 
-	protected _cachedStartCFIOffsetY: number | null = null;
+	protected _cachedStartCFIOffset: number | null = null;
 
 	protected _iframe: HTMLIFrameElement;
 
@@ -133,11 +133,11 @@ abstract class AbstractFlow implements Flow {
 		return this._cachedStartCFI;
 	}
 
-	get startCFIOffsetY(): number | null {
-		if (this._cachedStartCFIOffsetY === null) {
+	get startCFIOffset(): number | null {
+		if (this._cachedStartCFIOffset === null) {
 			this.update();
 		}
-		return this._cachedStartCFIOffsetY;
+		return this._cachedStartCFIOffset;
 	}
 
 	get startRangeIsBeforeFirstMapping() {
@@ -257,7 +257,7 @@ abstract class AbstractFlow implements Flow {
 	invalidate = debounce(
 		() => {
 			this._cachedStartRange = null;
-			this._cachedStartCFIOffsetY = null;
+			this._cachedStartCFIOffset = null;
 			this._cachedStartCFI = null;
 			this.update();
 			this._onUpdateViewState();
@@ -327,7 +327,9 @@ export class ScrolledFlow extends AbstractFlow {
 	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void {
 		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
 
-		if (options?.ifNeeded && (rect.top >= 0 && rect.bottom < this._iframe.clientHeight)) {
+		if (options?.ifNeeded
+				&& (rect.top >= 0 && rect.bottom < this._iframe.clientHeight)
+				&& (rect.left >= 0 && rect.left < this._iframe.clientWidth)) {
 			return;
 		}
 
@@ -337,7 +339,8 @@ export class ScrolledFlow extends AbstractFlow {
 
 		// Disable smooth scrolling when target is too far away
 		if (options?.behavior == 'smooth'
-				&& Math.abs(rect.top + rect.bottom / 2) > this._iframe.clientHeight * 2) {
+				&& (Math.abs(rect.top + rect.bottom / 2) > this._iframe.clientHeight * 2
+					|| Math.abs(rect.left + rect.right / 2) > this._iframe.clientWidth * 2)) {
 			options.behavior = 'auto';
 		}
 
@@ -347,14 +350,26 @@ export class ScrolledFlow extends AbstractFlow {
 			return;
 		}
 
-		let x = rect.x + rect.width / 2;
+		let x = rect.x;
 		let y = rect.y;
-		if (options && options.block == 'center') {
-			y += rect.height / 2;
-			y -= this._iframe.clientHeight / 2;
+		if (isVertical(target.startContainer)) {
+			if (options && options.block == 'center') {
+				x += rect.width / 2;
+				x -= this._iframe.clientWidth / 2;
+			}
+			if (options && options.offsetBlock !== undefined) {
+				x -= options.offsetBlock;
+			}
 		}
-		if (options && options.offsetY !== undefined) {
-			y -= options.offsetY;
+		else {
+			x += rect.width / 2;
+			if (options && options.block == 'center') {
+				y += rect.height / 2;
+				y -= this._iframe.clientHeight / 2;
+			}
+			if (options && options.offsetBlock !== undefined) {
+				y -= options.offsetBlock;
+			}
 		}
 		this._iframeWindow.scrollBy({
 			...options,
@@ -443,7 +458,9 @@ export class ScrolledFlow extends AbstractFlow {
 					// But CFIs should be calculated based on the start of the range, so collapse to the start
 					startCFIRange.collapse(true);
 					this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
-					this._cachedStartCFIOffsetY = startCFIRange.getBoundingClientRect().top;
+
+					let rect = startCFIRange.getBoundingClientRect();
+					this._cachedStartCFIOffset = isVertical(renderer.body) ? rect.left : rect.top;
 				}
 				if (startRange && startCFIRange) {
 					foundStart = true;
@@ -554,16 +571,17 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 
 		this.currentSectionIndex = index;
-		// Otherwise, center the target horizontally
 		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
 		let x = rect.x + this._sectionsContainer.scrollLeft;
+		let y = rect.y + this._sectionsContainer.scrollTop;
 		if (options?.block === 'center') {
 			x += rect.width / 2;
 		}
 		let spreadWidth = this._spreadWidth;
+		let spreadHeight = this._spreadHeight;
 		this._sectionsContainer.scrollTo({
 			left: Math.floor(x / spreadWidth) * spreadWidth,
-			top: 0
+			top: Math.floor(y / spreadHeight) * spreadHeight,
 		});
 		this._onViewUpdate();
 	}
@@ -854,7 +872,7 @@ export class PaginatedFlow extends AbstractFlow {
 				if (startCFIRange) {
 					startCFIRange.collapse(false);
 					this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
-					this._cachedStartCFIOffsetY = 0;
+					this._cachedStartCFIOffset = 0;
 				}
 				if (startRange && startCFIRange) {
 					foundStart = true;
