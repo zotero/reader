@@ -125,20 +125,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		cspMeta.setAttribute('content', this._getCSP());
 		this._iframeDocument.head.prepend(cspMeta);
 
-		this.pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
-		if (!this.pageProgressionRTL) {
-			try {
-				let locale = new Intl.Locale(this.book.packaging.metadata.language).maximize();
-				this.pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
-				if (this.pageProgressionRTL) {
-					console.log('Guessed RTL page progression from maximized locale: ' + locale);
-				}
-			}
-			catch (e) {
-				// Ignore
-			}
-		}
-
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
@@ -168,6 +154,27 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this._options.onEPUBEncrypted();
 			this._sectionsContainer.remove();
 			return;
+		}
+
+		this.pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
+		if (!this.pageProgressionRTL) {
+			try {
+				let locale = new Intl.Locale(this.book.packaging.metadata.language).maximize();
+				this.pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
+				if (this.pageProgressionRTL) {
+					console.log('Guessed RTL page progression from maximized locale: ' + locale);
+				}
+			}
+			catch (e) {
+				// Ignore
+			}
+		}
+		if (!this.pageProgressionRTL) {
+			let writingMode = this._iframeDocument.documentElement.style.writingMode || '';
+			this.pageProgressionRTL = writingMode.endsWith('rl');
+			if (this.pageProgressionRTL) {
+				console.log('Guessed RTL page progression from writing mode: ' + writingMode);
+			}
 		}
 
 		if (this._options.fontFamily) {
