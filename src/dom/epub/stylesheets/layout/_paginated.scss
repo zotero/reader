@@ -88,9 +88,9 @@
 }
 
 replaced-body {
-	section {
+	section + section {
 		// It's like break-after, but Firefox supports it
-		margin-bottom: 100vh;
+		margin-block-start: 100vh;
 	}
 
 	img, svg, audio, video {
