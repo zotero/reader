@@ -876,7 +876,7 @@ export class PaginatedFlow extends AbstractFlow {
 			this.navigateToNextPage();
 			event.preventDefault();
 		}
-	}, 100);
+	}, 100, { leading: true, trailing: false, maxWait: 400 });
 
 	private _handleSelectionChange = () => {
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
