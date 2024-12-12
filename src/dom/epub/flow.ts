@@ -786,7 +786,7 @@ export class PaginatedFlow extends AbstractFlow {
 	private _handlePointerDown = (event: PointerEvent) => {
 		if (this._touchStartID !== null
 				|| (event.pointerType !== 'touch' && event.pointerType !== 'pen')
-				|| (event.target as Element).closest('#annotation-overlay')) {
+				|| (event.composedPath()[0] as Element).closest('.annotation-container')) {
 			return;
 		}
 		// Safari: Ignore touches near a selection, because Safari still sends pointer events

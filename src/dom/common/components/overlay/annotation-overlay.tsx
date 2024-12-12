@@ -50,7 +50,7 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 
 		let handleWindowPointerDown = (event: PointerEvent) => {
 			setAltDown(event.altKey);
-			if (event.button == 0 && !(event.target as Element).closest('#annotation-overlay')) {
+			if (event.button == 0 && !(event.composedPath()[0] as Element).closest('.annotation-container')) {
 				setPointerDownOutside(true);
 			}
 		};
