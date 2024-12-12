@@ -528,7 +528,7 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _swipeIndicators: HTMLElement;
 
-	private _touchStartID: number | null = null;
+	private _touchDown = false;
 
 	private _touchStartX = 0;
 
@@ -784,7 +784,7 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerDown = (event: PointerEvent) => {
-		if (this._touchStartID !== null
+		if (!event.isPrimary
 				|| (event.pointerType !== 'touch' && event.pointerType !== 'pen')
 				|| (event.composedPath()[0] as Element).closest('.annotation-container')) {
 			return;
@@ -806,13 +806,13 @@ export class PaginatedFlow extends AbstractFlow {
 			}
 		}
 
-		this._touchStartID = event.pointerId;
+		this._touchDown = true;
 		this._touchStartX = event.clientX;
 		this._touchStartY = event.clientY;
 	};
 
 	private _handlePointerMove = (event: PointerEvent) => {
-		if (this._touchStartID === null || event.pointerId !== this._touchStartID) {
+		if (!this._touchDown || !event.isPrimary || event.buttons % 1 !== 0) {
 			return;
 		}
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
@@ -827,12 +827,12 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerUp = (event: PointerEvent) => {
-		if (this._touchStartID === null || event.pointerId !== this._touchStartID) {
+		if (!this._touchDown || !event.isPrimary) {
 			return;
 		}
 		event.preventDefault();
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
-		this._touchStartID = null;
+		this._touchDown = false;
 
 		// Switch pages after swiping
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
@@ -846,7 +846,8 @@ export class PaginatedFlow extends AbstractFlow {
 		else if (this._iframeWindow.getSelection()!.isCollapsed
 				&& !this._view.selectedAnnotationIDs.length
 				&& Math.abs(event.clientX - this._touchStartX) < EPSILON_PX
-				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX) {
+				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX
+				&& !(event.target as Element).closest('a, .clickable-image')) {
 			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {
 				this.navigateRight();
 			}
@@ -857,10 +858,11 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerCancel = (event: PointerEvent) => {
-		if (this._touchStartID === event.pointerId) {
-			this._touchStartID = null;
-			this._swipeIndicators.style.setProperty('--swipe-amount', '0');
+		if (!this._touchDown || !event.isPrimary) {
+			return;
 		}
+		this._touchDown = false;
+		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
 	};
 
 	private _handleWheel = debounce((event: WheelEvent) => {
@@ -881,7 +883,7 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _handleSelectionChange = () => {
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
-		this._touchStartID = null;
+		this._touchDown = false;
 	};
 
 	update() {
