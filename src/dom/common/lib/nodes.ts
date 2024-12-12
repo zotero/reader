@@ -39,6 +39,18 @@ export function closestElement(node: Node): Element | null {
 	return currentNode;
 }
 
+export function* closestAll(element: Element, selector: string): Generator<Element> {
+	let current: Element | null = element;
+
+	while (current) {
+		current = current.closest(selector);
+		if (current) {
+			yield current;
+			current = current.parentElement;
+		}
+	}
+}
+
 const BLOCK_DISPLAYS = new Set(['block', 'list-item', 'table-cell', 'table', 'flex']);
 const BLOCK_ELEMENTS = new Set(['DIV', 'P', 'LI', 'OL', 'UL', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TD', 'TH', 'DL', 'DT', 'DD', 'FORM', 'FIELDSET', 'SECTION', 'HEADER', 'FOOTER', 'ASIDE', 'NAV', 'ARTICLE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'FOOTER', 'ASIDE', 'NAV', 'ARTICLE']);
 

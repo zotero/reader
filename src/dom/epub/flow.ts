@@ -1,7 +1,7 @@
 import { EpubCFI } from "epubjs";
 import { debounce } from "../../common/lib/debounce";
 import { NavigateOptions } from "../common/dom-view";
-import { closestElement, isRTL, isVertical, iterateWalker } from "../common/lib/nodes";
+import { closestAll, closestElement, isRTL, isVertical, iterateWalker } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
 import { getBoundingPageRect, PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
@@ -864,9 +864,10 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handleWheel = debounce((event: WheelEvent) => {
-		let tableParent = (event.target as Element).closest('table, .table-like');
-		if (tableParent && tableParent.clientHeight < tableParent.scrollHeight) {
-			return;
+		for (let tableParent of closestAll(event.target as Element, 'table, .table-like')) {
+			if (tableParent.clientHeight < tableParent.scrollHeight) {
+				return;
+			}
 		}
 		if (event.deltaY < 0) {
 			this.navigateToPreviousPage();
