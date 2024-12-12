@@ -760,8 +760,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.navigate({ href });
 	}
 
-	protected override _handlePointerDown(event: PointerEvent) {
-		super._handlePointerDown(event);
+	protected override _handleClick(event: PointerEvent) {
+		super._handleClick(event);
 
 		if (event.defaultPrevented || event.button !== 0) {
 			return;
