@@ -677,7 +677,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		// This is a hack - we're using the URL constructor to resolve the relative path based on the section's
 		// canonical URL, but it'll error without a host. So give it one!
 		let url = new URL(href, new URL(section.canonical, 'https://www.example.com/'));
-		return this.book.path.relative(url.pathname + url.hash);
+		let decodedURL = url.pathname + url.hash;
+		try {
+			decodedURL = decodeURIComponent(decodedURL);
+		}
+		catch (e) {}
+		return this.book.path.relative(decodedURL);
 	}
 
 	protected _splitHref(href: string): [string, string | null] {
