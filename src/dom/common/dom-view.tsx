@@ -1368,6 +1368,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _setScale(scale: number): void;
 
+	protected _setHighlight(selector: Selector) {
+		this._highlightedPosition = selector;
+		this._renderAnnotations(true);
+
+		setTimeout(() => {
+			if (this._highlightedPosition === selector) {
+				this._highlightedPosition = null;
+				this._renderAnnotations(true);
+			}
+		}, 2000);
+	}
+
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
 		if (location.annotationID) {
 			options.block ||= 'center';
@@ -1386,15 +1398,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
-			this._highlightedPosition = selector;
-			this._renderAnnotations(true);
-
-			setTimeout(() => {
-				if (this._highlightedPosition === selector) {
-					this._highlightedPosition = null;
-					this._renderAnnotations(true);
-				}
-			}, 2000);
+			this._setHighlight(selector);
 		}
 	}
 

@@ -718,7 +718,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			return null;
 		}
 		if (hash) {
-			let hashTarget = target.querySelector('[id="' + CSS.escape(hash) + '"]');
+			let hashTarget = target.querySelector('#' + CSS.escape(hash));
 			if (hashTarget) {
 				target = hashTarget as HTMLElement;
 			}
@@ -751,13 +751,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	protected _handleInternalLinkClick(link: HTMLAnchorElement) {
-		// If link goes to footnote wrapped in an <aside>, open it in a popup instead of navigating
-		let element = this._getFootnoteTargetElement(link);
-		if (element && element.closest('aside')) {
-			this._openFootnoteOverlayPopup(link, element!);
-			return;
-		}
-
 		let href = this._getInternalLinkHref(link);
 		if (!href) {
 			return;
@@ -1198,6 +1191,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			let target = this._getHrefTarget(location.href);
 			if (target) {
 				this.flow.scrollIntoView(target, options);
+				if (target !== target.closest('.section-container')) {
+					let range = this._iframeDocument.createRange();
+					range.selectNode(target);
+					let selector = this.toSelector(range);
+					if (selector) {
+						this._setHighlight(selector);
+					}
+				}
 			}
 		}
 		else {
