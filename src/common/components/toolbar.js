@@ -178,16 +178,14 @@ function Toolbar(props) {
 					onClick={() => handleToolClick('highlight')}
 					data-l10n-id="pdfReader-toolbar-highlight"
 				><IconHighlight/></button>
-				{ (platform !== 'web' || ['epub', 'snapshot'].includes(props.type)) && (
-					<button
-						tabIndex={-1}
-						className={cx('toolbar-button underline', { active: props.tool.type === 'underline' })}
-						title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
-						disabled={props.readOnly}
-						onClick={() => handleToolClick('underline')}
-						data-l10n-id="pdfReader-toolbar-underline"
-					><IconUnderline/></button>
-				)}
+				<button
+					tabIndex={-1}
+					className={cx('toolbar-button underline', { active: props.tool.type === 'underline' })}
+					title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
+					disabled={props.readOnly}
+					onClick={() => handleToolClick('underline')}
+					data-l10n-id="pdfReader-toolbar-underline"
+				><IconUnderline/></button>
 				<button
 					tabIndex={-1}
 					className={cx('toolbar-button note', {
@@ -198,7 +196,7 @@ function Toolbar(props) {
 					onClick={() => handleToolClick('note')}
 					data-l10n-id="pdfReader-toolbar-note"
 				><IconNote/></button>
-				{props.type === 'pdf' && platform !== 'web' && (
+				{props.type === 'pdf' && (
 					<button
 						tabIndex={-1}
 						className={cx('toolbar-button text', { active: props.tool.type === 'text' })}
