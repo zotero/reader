@@ -829,6 +829,13 @@ export function getReversedSelectionRanges(selectionRanges) {
 	return selectionRanges;
 }
 
+export function getTextFromSelectionRanges(selectionRanges) {
+	if (!selectionRanges.length || selectionRanges[0].collapsed) {
+		return '';
+	}
+	return selectionRanges.map(x => x.text).join('\n');
+}
+
 function getMostCommonValue(arr) {
 	let counts = arr.reduce((a, b) => ({ ...a, [b]: (a[b] || 0) + 1 }), {});
 	return +Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);

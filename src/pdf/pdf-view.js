@@ -8,6 +8,7 @@ import {
 	getSelectionRanges,
 	getSelectionRangesByPosition,
 	getSortIndex,
+	getTextFromSelectionRanges,
 	getWordSelectionRanges,
 	setTextLayerSelection
 } from './selection';
@@ -3200,7 +3201,16 @@ class PDFView {
 				event.dataTransfer.setDragImage(canvas, this.action.x * scale, (canvas.height / pixelRatio) - this.action.y * scale);
 			}
 		}
-		this._onSetDataTransferAnnotations(event.dataTransfer, this.action.annotation);
+
+		if (this._selectionRanges.length <= 2) {
+			this._onSetDataTransferAnnotations(event.dataTransfer, this.action.annotation);
+		}
+		else {
+			// Only drag text when selection spans over more than 2 pages
+			let fullText = getTextFromSelectionRanges(this._selectionRanges);
+			event.dataTransfer.clearData();
+			event.dataTransfer.setData('text/plain', fullText);
+		}
 	}
 
 	_handleDragOver(event) {
@@ -3241,11 +3251,18 @@ class PDFView {
 		}
 		// Copying text
 		else {
-			let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
-			if (!annotation) {
-				return;
+			if (this._selectionRanges.length <= 2) {
+				let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, 'highlight');
+				if (!annotation) {
+					return;
+				}
+				this._onSetDataTransferAnnotations(event.clipboardData, annotation, true);
 			}
-			this._onSetDataTransferAnnotations(event.clipboardData, annotation, true);
+			else {
+				// Only copy text when selection spans over more than 2 pages
+				let fullText = getTextFromSelectionRanges(this._selectionRanges);
+				event.clipboardData.setData('text/plain', fullText);
+			}
 		}
 	}
 
