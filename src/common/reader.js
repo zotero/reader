@@ -1133,9 +1133,9 @@ class Reader {
 		this._lastView.zoomPageHeight();
 	}
 
-	async navigate(location) {
+	async navigate(location, options) {
 		await this._lastView.initializedPromise;
-		this._lastView.navigate(location);
+		this._lastView.navigate(location, options);
 	}
 
 	navigateBack() {

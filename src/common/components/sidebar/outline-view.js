@@ -142,7 +142,7 @@ function OutlineView({ outline, currentOutlinePath, onNavigate, onOpenLink, onUp
 		item.active = true;
 		handleUpdate();
 		if (item.location) {
-			onNavigate(item.location);
+			onNavigate(item.location, { block: 'start' });
 		}
 	}
 
@@ -172,7 +172,7 @@ function OutlineView({ outline, currentOutlinePath, onNavigate, onOpenLink, onUp
 				clearActive(outline);
 				previousItem.active = true;
 				if (previousItem.location) {
-					onNavigate(previousItem.location);
+					onNavigate(previousItem.location, { block: 'start' });
 				}
 				let element = containerRef.current.querySelector(`[data-id="${currentIndex - 1}"]`);
 				if (element) {
@@ -186,7 +186,7 @@ function OutlineView({ outline, currentOutlinePath, onNavigate, onOpenLink, onUp
 				clearActive(outline);
 				nextItem.active = true;
 				if (nextItem.location) {
-					onNavigate(nextItem.location);
+					onNavigate(nextItem.location, { block: 'start' });
 				}
 				let element = containerRef.current.querySelector(`[data-id="${currentIndex + 1}"]`);
 				if (element) {

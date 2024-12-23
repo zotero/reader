@@ -123,7 +123,7 @@ class PDFView {
 
 		this._history = new History({
 			onUpdate: () => this._updateViewStats(),
-			onNavigate: location => this.navigate(location, true)
+			onNavigate: location => this.navigate(location, { skipHistory: true })
 		});
 
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
@@ -644,8 +644,7 @@ class PDFView {
 		drawAnnotationsOnCanvas(canvas, viewport, this._annotations, pageIndex, this._pdfPages);
 	}
 
-	navigateToPosition(position) {
-		let pageIndex = this._iframeWindow.PDFViewerApplication.pdfViewer.currentPageNumber - 1;
+	navigateToPosition(position, options = {}) {
 		let element = this._iframeWindow.document.getElementById('viewerContainer');
 
 		let rect = this.getPositionBoundingViewRect(position);
@@ -658,17 +657,24 @@ class PDFView {
 
 		// Calculate the new scroll position to center the bounding rectangle
 		let left = rectCenterX - (clientWidth / 2);
-		let top = rectCenterY - (clientHeight / 2);
+		let top = rectCenterY - (options.block === 'start' ? 0 : (clientHeight / 2));
 
 		// Ensure the new scroll position does not go out of bounds
 		left = Math.max(0, Math.min(left, scrollWidth - clientWidth));
 		top = Math.max(0, Math.min(top, scrollHeight - clientHeight));
 
-		// Scroll the element smoothly
+		let { first, last } = this._iframeWindow.PDFViewerApplication.pdfViewer._getVisiblePages();
+		let startPageIndex = first.id - 1;
+		let endPageIndex = last.id - 1;
+		startPageIndex--;
+		endPageIndex++;
+		let close = startPageIndex <= position.pageIndex && position.pageIndex <= endPageIndex;
+
+		// Scroll the element smoothly if it's close enough
 		element.scrollTo({
 			left,
 			top,
-			behavior: Math.abs(pageIndex - position.pageIndex) <= 1 ? 'smooth' : 'auto'
+			behavior: close ? 'smooth' : 'instant'
 		});
 	}
 
@@ -896,17 +902,18 @@ class PDFView {
 		}, 2000);
 	}
 
-	async navigate(location, skipHistory) {
+	async navigate(location, options = {}) {
+		options.block ||= 'center';
 		this._lastNavigationTime = Date.now();
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
-			this.navigateToPosition(annotation.position);
+			this.navigateToPosition(annotation.position, options);
 		}
 		else if (location.dest) {
 			this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
 		}
 		else if (location.position) {
-			this.navigateToPosition(location.position);
+			this.navigateToPosition(location.position, options);
 			this._highlightPosition(location.position);
 		}
 		else if (Number.isInteger(location.pageIndex)) {
@@ -934,7 +941,7 @@ class PDFView {
 				}
 			}
 		}
-		if (!skipHistory) {
+		if (!options.skipHistory) {
 			this._pushHistoryPoint();
 		}
 	}
