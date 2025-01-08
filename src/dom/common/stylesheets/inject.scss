@@ -1,5 +1,6 @@
 body {
 	-webkit-touch-callout: none !important;
+	touch-action: manipulation;
 }
 
 body.resizing-annotation, body.creating-touch-annotation {

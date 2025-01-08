@@ -550,7 +550,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
-		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
+		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this));
+		this._iframeDocument.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
@@ -1066,7 +1067,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
-		if (event.button == 0 && event.isPrimary) {
+		if ((event.buttons & 1) === 1 && event.isPrimary) {
 			this._gotPointerUp = false;
 			this._pointerMovedWhileDown = false;
 
@@ -1084,7 +1085,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
-		if (event.button == 0 && this._tool.type == 'note' && this._previewAnnotation) {
+		if ((event.buttons & 1) === 1 && this._tool.type == 'note' && this._previewAnnotation) {
 			this._options.onAddAnnotation(this._previewAnnotation!, true);
 			this._previewAnnotation = null;
 			this._renderAnnotations(true);
@@ -1108,28 +1109,30 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerUp(event: PointerEvent) {
-		if (event.button !== 0 || !event.isPrimary) {
+		if (!event.isPrimary) {
 			return;
 		}
 
 		this._gotPointerUp = true;
-		if (event.type !== 'pointercancel') {
-			// If we're using a tool that immediately creates an annotation based on the current selection, we want to use
-			// debounced _tryUseTool() in order to wait for double- and triple-clicks to complete. A multi-click is only
-			// possible if the pointer hasn't moved while down.
-			if (!this._pointerMovedWhileDown && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
-				this._tryUseToolDebounced();
-			}
-			else {
-				this._tryUseTool();
-			}
+		if (event.type === 'pointercancel') {
+			this._previewAnnotation = null;
+			this._renderAnnotations();
+		}
+		// If we're using a tool that immediately creates an annotation based on the current selection, we want to use
+		// debounced _tryUseTool() in order to wait for double- and triple-clicks to complete. A multi-click is only
+		// possible if the pointer hasn't moved while down.
+		else if (!this._pointerMovedWhileDown && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
+			this._tryUseToolDebounced();
+		}
+		else {
+			this._tryUseTool();
 		}
 		this._touchAnnotationStartPosition = null;
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
 
 	protected _handlePointerMove(event: PointerEvent) {
-		if (event.buttons % 1 != 0 || !event.isPrimary) {
+		if ((event.buttons & 1) !== 1 || !event.isPrimary) {
 			return;
 		}
 		this._pointerMovedWhileDown = true;
@@ -1152,6 +1155,24 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 			}
 			event.stopPropagation();
+		}
+	}
+
+	protected _handleTouchMove(event: TouchEvent) {
+		// We need to stop annotation-creating touches from scrolling the view.
+		// Unfortunately:
+		// 1. The recommended way to prevent touch scrolling is via the
+		//    touch-action CSS property, but a WebKit bug causes changes to
+		//    that property not to take effect in child nodes until they're
+		//    invalidated in some other way (text is selected, the web inspector
+		//    highlights them, ...).
+		// 2. A WebKit quirk (I think this is technically spec-compliant) makes
+		//    pointermove events non-cancellable, even when the listener is
+		//    initialized with { passive: false }.
+		// So we do it with a separate touchmove listener.
+		if (this._touchAnnotationStartPosition
+				&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+			event.preventDefault();
 		}
 	}
 
@@ -1262,9 +1283,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			selectionColor += '80';
 		}
 		this._iframeDocument.documentElement.style.setProperty('--selection-color', selectionColor);
-
-		// When using any tool besides pointer, touches should annotate but pinch-zoom should still be allowed
-		this._iframeDocument.documentElement.style.touchAction = tool.type != 'pointer' ? 'none' : 'auto';
 
 		if (this._previewAnnotation && tool.type !== 'note') {
 			this._previewAnnotation = null;
