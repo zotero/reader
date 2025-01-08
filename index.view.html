@@ -3,7 +3,16 @@
 <head>
 	<meta charset="UTF-8">
 	<title>Zotero Reader View</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
 	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			height: 100%;
+			touch-action: none;
+			pointer-events: none;
+		}
+
 		#view {
 			position: absolute;
 			top: 0;
@@ -17,6 +26,7 @@
 			border: 0;
 			width: 100%;
 			height: 100%;
+			pointer-events: auto;
 		}
 	</style>
 </head>
