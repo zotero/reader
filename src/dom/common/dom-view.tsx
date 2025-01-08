@@ -131,6 +131,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizingAnnotationID: string | null = null;
 
+	protected _lastPinchDistance = 0;
+
 	protected _outline!: OutlineItem[];
 
 	scale = 1;
@@ -551,6 +553,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
 		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this));
+		this._iframeDocument.addEventListener('touchstart', this._handleTouchStart.bind(this));
 		this._iframeDocument.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
@@ -1158,6 +1161,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
+	protected _handleTouchStart(event: TouchEvent) {
+		if (event.touches.length === 2) {
+			this._lastPinchDistance = Math.hypot(event.touches[0].pageX - event.touches[1].pageX, event.touches[0].pageY - event.touches[1].pageY);
+		}
+	}
+
 	protected _handleTouchMove(event: TouchEvent) {
 		// We need to stop annotation-creating touches from scrolling the view.
 		// Unfortunately:
@@ -1173,6 +1182,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._touchAnnotationStartPosition
 				&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
 			event.preventDefault();
+		}
+		// Handle pinch-to-zoom
+		else if (event.touches.length === 2) {
+			event.preventDefault();
+
+			let pinchDistance = Math.hypot(event.touches[0].pageX - event.touches[1].pageX, event.touches[0].pageY - event.touches[1].pageY);
+			this.zoomBy((pinchDistance / this._lastPinchDistance - 1) / 10);
+			this._lastPinchDistance = pinchDistance;
 		}
 	}
 
