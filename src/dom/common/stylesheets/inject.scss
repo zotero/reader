@@ -1,3 +1,7 @@
+body {
+	-webkit-touch-callout: none !important;
+}
+
 body.resizing-annotation, body.creating-touch-annotation {
 	&, & * {
 		user-select: none !important;
