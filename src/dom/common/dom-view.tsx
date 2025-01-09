@@ -1209,8 +1209,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// The annotation layer is positioned at the top-left of the document, so it moves along with the content when
 		// the document is scrolled. But scrollable sub-frames (e.g. elements with overflow: auto) don't have their own
 		// annotation layers. When one of them is scrolled, trigger a rerender so annotations get repositioned.
-		if (event.target !== this._iframeDocument) {
-			this._renderAnnotations(true);
+		let target = event.target as Node;
+		if (target !== this._iframeDocument) {
+			for (let annotation of this._annotations) {
+				if (this.toDisplayedRange(annotation.position)?.intersectsNode(target)) {
+					this._displayedAnnotationCache.delete(annotation);
+				}
+			}
+			requestAnimationFrame(() => {
+				this._renderAnnotations(true);
+				this._repositionPopups();
+			});
 		}
 	}
 
