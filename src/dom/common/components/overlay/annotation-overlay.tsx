@@ -323,7 +323,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				/>
 			))}
 		</g>;
-	}, [annotation, rects]);
+	}, [rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
 		return !isResizing && [...rects.entries()].map(([key, rect]) => (
