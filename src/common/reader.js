@@ -1178,6 +1178,11 @@ class Reader {
 
 	// Note: It's a bit weird, but this function is also used to deselect text in views, if an empty ids array is provided
 	setSelectedAnnotations(ids, triggeredFromView, triggeringEvent) {
+		// Temporary workaround for deselecting annotations
+		if (!ids.length && this._state.selectedAnnotationIDs.some(id => !this._state.annotations.find(x => x.id === id))) {
+			this._updateState({ selectedAnnotationIDs: [] });
+		}
+
 		let deleteIDs = [];
 		for (let annotation of this._state.annotations) {
 			if (annotation.type === 'text' && !annotation.comment && !ids.includes(annotation.id)) {

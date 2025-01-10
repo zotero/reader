@@ -1,7 +1,7 @@
 import { approximateMatch } from './lib/approximate-match';
 import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
 import { ANNOTATION_POSITION_MAX_SIZE } from './defines';
-import { sortTags } from './lib/utilities';
+import { basicDeepEqual, sortTags } from './lib/utilities';
 
 const DEBOUNCE_TIME = 1000; // 1s
 const DEBOUNCE_MAX_TIME = 10000; // 10s
@@ -25,8 +25,13 @@ class AnnotationManager {
 		};
 
 		this._unsavedAnnotations = new Map();
+		this._highVolatilityAnnotationIDs = new Set();
+
 		this._lastChangeTime = 0;
 		this._lastSaveTime = 0;
+
+		this._undoStack = [];
+		this._redoStack = [];
 
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 
@@ -46,6 +51,7 @@ class AnnotationManager {
 			this._annotations.push(annotation);
 		}
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		this._clearInterferingHistory(annotations.map(x => x.id));
 		this.render();
 	}
 
@@ -87,12 +93,14 @@ class AnnotationManager {
 				rect => rect.map(value => parseFloat(value.toFixed(3)))
 			);
 		}
-		this._save(annotation, !!annotation?.image);
-		this.render();
+
+		let changedAnnotations = new Map([[annotation.id, annotation]]);
+		this._applyChanges(changedAnnotations);
 		return annotation;
 	}
 
 	updateAnnotations(annotations) {
+		let changedAnnotations = new Map();
 		// Validate data
 		for (let annotation of annotations) {
 			if (annotation.position && !annotation.sortIndex) {
@@ -106,19 +114,25 @@ class AnnotationManager {
 			if (this._readOnly && !(annotation.image && Object.keys(annotation).length === 2)) {
 				throw new Error('Cannot update annotations for read-only file');
 			}
+
+			// A special case for for annotation image updating
+			if (annotation.image) {
+				if (annotations.length > 1) {
+					throw new Error('Only one image can be updated at the time');
+				}
+				if (Object.keys(annotation).length !== 2) {
+					throw new Error('Only image property can be updated at the time');
+				}
+				this._applyImageChange(annotation.id, annotation.image);
+				return;
+			}
 		}
+
 		for (let annotation of annotations) {
+			if (Object.keys(annotation).length === 2 && (annotation.text || annotation.comment)) {
+				this._highVolatilityAnnotationIDs.add(annotation.id);
+			}
 			let existingAnnotation = this._getAnnotationByID(annotation.id);
-			if (!annotation.onlyTextOrComment) {
-				delete existingAnnotation.onlyTextOrComment;
-			}
-			let includeImage = !!annotation.image;
-			// If only updating an image skip the code below together with dateModified updating
-			if (annotation.image && Object.keys(annotation).length === 2) {
-				let { image } = annotation;
-				this._save({ ...existingAnnotation, image }, includeImage);
-				continue;
-			}
 			if (annotation.position || annotation.color) {
 				annotation.image = undefined;
 			}
@@ -130,6 +144,9 @@ class AnnotationManager {
 				...annotation,
 				position: { ...existingAnnotation.position, ...annotation.position }
 			};
+			if (!annotation.image) {
+				delete annotation.image;
+			}
 			if (deleteNextPageRects) {
 				delete annotation.position.nextPageRects;
 			}
@@ -145,8 +162,9 @@ class AnnotationManager {
 					rect => rect.map(value => parseFloat(value.toFixed(3)))
 				);
 			}
-			this._save(annotation, includeImage);
+			changedAnnotations.set(annotation.id, annotation);
 		}
+		this._applyChanges(changedAnnotations);
 		this.render();
 	}
 
@@ -158,15 +176,12 @@ class AnnotationManager {
 		if (!ids.length || this._readOnly || someExternal) {
 			return;
 		}
-		this._annotations = this._annotations.filter(annotation => !ids.includes(annotation.id));
-		for (let id of ids) {
-			this._unsavedAnnotations.delete(id);
-		}
-		this._onDelete(ids);
-		this.render();
+		let changedAnnotations = new Map(ids.map(id => [id, null]));
+		this._applyChanges(changedAnnotations);
 	}
 
 	convertAnnotations(ids, type) {
+		let changedAnnotations = new Map();
 		let annotations = [];
 		for (let id of ids) {
 			let annotation = this._getAnnotationByID(id);
@@ -182,11 +197,13 @@ class AnnotationManager {
 		}
 		for (let annotation of annotations) {
 			let dateModified = (new Date()).toISOString();
+			// Delete existing
+			changedAnnotations.set(annotation.id, null);
+			// Create a new annotation with different type
 			annotation = { ...annotation, type, dateModified, id: this._generateObjectKey() };
-			this._save(annotation);
+			changedAnnotations.set(annotation.id, annotation);
 		}
-		this.deleteAnnotations(annotations.map(x => x.id));
-		this.render();
+		this._applyChanges(changedAnnotations);
 	}
 
 	mergeAnnotations(ids) {
@@ -264,9 +281,10 @@ class AnnotationManager {
 			throw new Error(`Merged annotation 'position' exceeds ${ANNOTATION_POSITION_MAX_SIZE}`);
 		}
 
-		this._save(annotation);
-		this.deleteAnnotations(annotations.map(x => x.id));
-		this.render();
+		let changedAnnotations = new Map(annotations.map(x => [x.id, null]));
+		changedAnnotations.set(annotation.id, annotation);
+		this._applyChanges(changedAnnotations);
+
 		return annotation;
 	}
 
@@ -283,28 +301,39 @@ class AnnotationManager {
 		return randomstring;
 	}
 
-	_save(annotation, includeImage) {
+	_applyChanges(changedAnnotations) {
+		if (!changedAnnotations.size) {
+			return;
+		}
 		this._lastChangeTime = Date.now();
-		let oldIndex = this._annotations.findIndex(x => x.id === annotation.id);
-		if (oldIndex !== -1) {
-			annotation = { ...annotation };
-			this._annotations.splice(oldIndex, 1, annotation);
+		let annotations = new Map(this._annotations.map(x => [x.id, x]));
+		for (let [id, changedAnnotation] of changedAnnotations) {
+			changedAnnotation = changedAnnotation && { ...changedAnnotation };
+			if (changedAnnotation && !this._unsavedAnnotations.get(id)?.image) {
+				delete changedAnnotation.image;
+			}
+			this._unsavedAnnotations.set(id, changedAnnotation);
 		}
-		else {
-			this._annotations.push(annotation);
-		}
+		this._historySave(changedAnnotations);
+		annotations = new Map([...annotations, ...changedAnnotations]);
+		this._annotations = [...annotations.values()].filter(x => x);
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
-		annotation = { ...annotation };
-
-		let existingUnsavedAnnotation = this._unsavedAnnotations.get(annotation.id);
-		if (existingUnsavedAnnotation?.image) {
-			includeImage = true;
-		}
-		if (!includeImage) {
-			delete annotation.image;
-		}
-		this._unsavedAnnotations.set(annotation.id, annotation);
 		this._triggerSaving();
+		this.render();
+	}
+
+	_applyImageChange(id, image) {
+		this._lastChangeTime = Date.now();
+		let idx = this._annotations.findIndex(x => x.id === id);
+		if (idx === -1) {
+			return;
+		}
+		let annotation = this._annotations[idx];
+		annotation = { ...annotation, image };
+		this._annotations.splice(idx, 1, annotation);
+		this._unsavedAnnotations.set(id, annotation);
+		this._triggerSaving();
+		this.render();
 	}
 
 	async _triggerSaving() {
@@ -319,10 +348,29 @@ class AnnotationManager {
 		}
 		this._lastSaveTime = Date.now();
 		this._savingInProgress = true;
-		let annotations = Array.from(this._unsavedAnnotations.values());
+
+		let saveAnnotations = [];
+		let deleteAnnotationIDs = [];
+		for (let [id, annotation] of this._unsavedAnnotations) {
+			if (annotation) {
+				saveAnnotations.push(annotation);
+			}
+			else {
+				deleteAnnotationIDs.push(id);
+			}
+		}
+
 		this._unsavedAnnotations.clear();
-		let clonedAnnotations = annotations.map(x => JSON.parse(JSON.stringify(x)));
-		annotations.forEach(x => delete x.onlyTextOrComment);
+
+		this._onDelete(deleteAnnotationIDs);
+
+		let clonedAnnotations = saveAnnotations.map(x => JSON.parse(JSON.stringify(x)));
+		for (let clonedAnnotation of clonedAnnotations) {
+			if (this._highVolatilityAnnotationIDs.has(clonedAnnotation.id)) {
+				clonedAnnotation.onlyTextOrComment = true;
+			}
+		}
+		this._highVolatilityAnnotationIDs.clear();
 		await this._onSave(clonedAnnotations);
 		this._savingInProgress = false;
 		this._triggerSaving();
@@ -390,6 +438,172 @@ class AnnotationManager {
 		}
 		annotations.forEach(x => delete x._hidden);
 		this.render();
+	}
+
+	_historySave(changedAnnotations) {
+		if (!changedAnnotations.size) {
+			return;
+		}
+
+		let annotations = new Map(this._annotations.map(x => [x.id, x]));
+
+		let oldAnnotations = new Map();
+		for (let [id, changedAnnotation] of changedAnnotations) {
+			let existingAnnotation = annotations.get(id);
+			oldAnnotations.set(id, existingAnnotation);
+		}
+
+		let point = this._undoStack[this._undoStack.length - 1];
+		let prevPoint = this._undoStack[this._undoStack.length - 2];
+
+		let disableJoin = true;
+		let disableTextualJoin = true;
+		if (
+			prevPoint && point
+			&& prevPoint.size === 1 && point.size === 1 && oldAnnotations.size === 1
+		) {
+			let [id1, annotation1] = [...prevPoint][0];
+			let [id2, annotation2] = [...point][0];
+			let [id3, annotation3] = [...oldAnnotations][0];
+			if (id1 === id2 && id2 === id3) {
+				disableJoin = false;
+			}
+			let a = { ...annotation2 };
+			let b = { ...annotation3 };
+			delete a.text;
+			delete b.text;
+			delete a.comment;
+			delete b.comment;
+			delete a.dateModified;
+			delete b.dateModified;
+			delete a.image;
+			delete b.image;
+			if (basicDeepEqual(a, b)) {
+				disableTextualJoin = false;
+			}
+		}
+
+		if (!point || disableJoin || Date.now() - this._lastChange > 500 && disableTextualJoin) {
+			point = new Map();
+			this._undoStack.push(point);
+		}
+		for (let [id, annotation] of oldAnnotations) {
+			if (annotation) {
+				annotation = JSON.parse(JSON.stringify(annotation));
+				delete annotation.image;
+			}
+			point.set(id, annotation);
+		}
+
+		this._lastChange = Date.now();
+		this._redoStack = [];
+	}
+
+	remapHistory(mapping) {
+		for (let [oldID, newID] of mapping) {
+			for (let point of this._undoStack) {
+				if (point.has(oldID)) {
+					let annotation = point.get(oldID);
+					if (annotation) {
+						annotation.id = newID;
+					}
+					point.delete(oldID);
+					point.set(newID, annotation);
+				}
+			}
+
+			for (let point of this._redoStack) {
+				if (point.has(oldID)) {
+					let annotation = point.get(oldID);
+					if (annotation) {
+						annotation.id = newID;
+					}
+					point.delete(oldID);
+					point.set(newID, annotation);
+				}
+			}
+		}
+	}
+
+	undo() {
+		let undoPoint = this._undoStack.pop();
+		if (!undoPoint) {
+			return false;
+		}
+		let mapping = new Map();
+		let redoPoint = new Map();
+		let allAnnotations = new Map(this._annotations.map(x => [x.id, x]));
+		for (let [id, annotation] of undoPoint) {
+			annotation = annotation && { ...annotation };
+			let prevAnnotation = allAnnotations.get(id);
+			redoPoint.set(id, prevAnnotation);
+			if (annotation) {
+				annotation.dateModified = (new Date()).toISOString();
+			}
+			// Assign new id when undeleting to reduce sync conflicts
+			if (!prevAnnotation) {
+				let newID = this._generateObjectKey();
+				mapping.set(annotation.id, newID);
+				annotation.id = newID;
+			}
+			allAnnotations.set(id, annotation);
+			this._unsavedAnnotations.set(id, annotation);
+		}
+		this._redoStack.push(redoPoint);
+		this.remapHistory(mapping);
+		this._annotations = [...allAnnotations.values()].filter(x => x);
+		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		this._triggerSaving();
+		this.render();
+		return true;
+	}
+
+	redo() {
+		let redoPoint = this._redoStack.pop();
+		if (!redoPoint) {
+			return false;
+		}
+		let mapping = new Map();
+		let undoPoint = new Map();
+		let allAnnotations = new Map(this._annotations.map(x => [x.id, x]));
+		for (let [id, annotation] of redoPoint) {
+			annotation = annotation && { ...annotation };
+			let prevAnnotation = allAnnotations.get(id);
+			undoPoint.set(id, prevAnnotation);
+			if (annotation) {
+				annotation.dateModified = (new Date()).toISOString();
+			}
+			// Assign new id when undeleting to reduce sync conflicts
+			if (!prevAnnotation) {
+				let newID = this._generateObjectKey();
+				mapping.set(annotation.id, newID);
+				annotation.id = newID;
+			}
+			allAnnotations.set(id, annotation);
+			this._unsavedAnnotations.set(id, annotation);
+		}
+		this._undoStack.push(undoPoint);
+		this.remapHistory(mapping);
+		this._annotations = [...allAnnotations.values()].filter(x => x);
+		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		this._triggerSaving();
+		this.render();
+		return true;
+	}
+
+	_clearInterferingHistory(affectedAnnotationIDs) {
+		for (let i = this._undoStack.length - 1; i >= 0; i--) {
+			if (affectedAnnotationIDs.some(id => this._undoStack[i].has(id))) {
+				this._undoStack = this._undoStack.slice(i + 1);
+				break;
+			}
+		}
+		for (let i = 0; i < this._redoStack.length; i++) {
+			if (affectedAnnotationIDs.some(id => this._redoStack[i].has(id))) {
+				this._redoStack = this._redoStack.slice(0, Math.max(0, i - 1));
+				break;
+			}
+		}
 	}
 }
 

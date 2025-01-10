@@ -129,23 +129,23 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 		if (!annotation) {
 			return;
 		}
+		annotation = { ...annotation };
 		let pageIndex = annotation.position.pageIndex;
 
 		let isNumeric = parseInt(pageLabel) == pageLabel;
 
 		if (type === 'page') {
 			let annotations = params.allAnnotations.filter(x => !x.readOnly);
-			annotationsToUpdate = annotations.filter(x => x.position.pageIndex === pageIndex);
+			annotationsToUpdate = annotations.filter(x => x.position.pageIndex === pageIndex).map(({ id }) => ({ id }));
 			annotationsToUpdate.forEach(x => x.pageLabel = pageLabel);
 		}
 		else if (type === 'selected' && !isNumeric) {
-			annotationsToUpdate = params.selectedAnnotations.filter(x => !x.readOnly);
+			annotationsToUpdate = params.selectedAnnotations.filter(x => !x.readOnly).map(({ id }) => ({ id }));
 			annotationsToUpdate.forEach(x => x.pageLabel = pageLabel);
 		}
 		else if (type === 'single' || !isNumeric && type !== 'selected') {
 			if (!annotation.readOnly) {
-				annotation.pageLabel = pageLabel;
-				annotationsToUpdate = [annotation];
+				annotationsToUpdate = [{ id: annotation.id, pageLabel }];
 			}
 		}
 		else {
@@ -167,6 +167,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 
 			pageLabel = parseInt(pageLabel);
 
+			annotationsToUpdate = annotationsToUpdate.map(x => ({ ...x }));
 			for (let annotation of annotationsToUpdate) {
 				let newPageLabel = pageLabel + (annotation.position.pageIndex - pageIndex);
 				if (newPageLabel < 1) {
@@ -174,6 +175,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 				}
 				annotation.pageLabel = newPageLabel.toString();
 			}
+			annotationsToUpdate = annotationsToUpdate.map(({ id }) => ({ id }));
 		}
 
 		onClose();

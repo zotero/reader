@@ -167,6 +167,16 @@ export class KeyboardManager {
 				}
 			}
 		}
+		else if (view && ['Cmd-z', 'Ctrl-z'].includes(key)) {
+			event.preventDefault();
+			this._reader._annotationManager.undo();
+			this._reader.setSelectedAnnotations([]);
+		}
+		else if (view && ['Cmd-Shift-z', 'Ctrl-Shift-z'].includes(key)) {
+			event.preventDefault();
+			this._reader._annotationManager.redo();
+			this._reader.setSelectedAnnotations([]);
+		}
 		else if (['Cmd-f', 'Ctrl-f'].includes(key)) {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
