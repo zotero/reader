@@ -651,13 +651,14 @@ class PDFView {
 
 		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
 
-		// Calculate the center of the bounding rectangle
-		let rectCenterX = (rect[0] + rect[2]) / 2;
-		let rectCenterY = (rect[1] + rect[3]) / 2;
+		let verticalPadding = 5;
+
+		let x = rect[0];
+		let y = rect[1];
 
 		// Calculate the new scroll position to center the bounding rectangle
-		let left = rectCenterX - (clientWidth / 2);
-		let top = rectCenterY - (options.block === 'start' ? 0 : (clientHeight / 2));
+		let left = x - (clientWidth / 2);
+		let top = y - (options.block === 'start' ? 0 : (clientHeight / 2)) - verticalPadding;
 
 		// Ensure the new scroll position does not go out of bounds
 		left = Math.max(0, Math.min(left, scrollWidth - clientWidth));
