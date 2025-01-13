@@ -503,6 +503,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!domRect) {
 			let range = this.toDisplayedRange(annotation.position);
 			if (!range) {
+				this._options.onSetAnnotationPopup();
 				return;
 			}
 			domRect = this._getViewportBoundingRect(range);
