@@ -658,12 +658,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!this._draggingNoteAnnotation || !this._previewAnnotation) {
 			return;
 		}
-		this._draggingNoteAnnotation.position = this._previewAnnotation.position;
-		this._draggingNoteAnnotation.pageLabel = this._previewAnnotation.pageLabel;
-		this._draggingNoteAnnotation.sortIndex = this._previewAnnotation.sortIndex;
-		this._draggingNoteAnnotation.text = this._previewAnnotation.text;
+		let newAnnotation: WADMAnnotation = {
+			...this._draggingNoteAnnotation,
+			position: this._previewAnnotation.position,
+			pageLabel: this._previewAnnotation.pageLabel,
+			sortIndex: this._previewAnnotation.sortIndex,
+			text: this._previewAnnotation.text,
+		};
 		this._previewAnnotation = null;
-		this._options.onUpdateAnnotations([this._draggingNoteAnnotation]);
+		this._options.onUpdateAnnotations([newAnnotation]);
 	}
 
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent): Range | null {
