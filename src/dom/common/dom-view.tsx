@@ -1232,6 +1232,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handleWheelCapture(event: WheelEvent) {
 		if (!event.ctrlKey && !(event.metaKey && isMac())) {
+			this._lastScrollTime = event.timeStamp;
 			return;
 		}
 
