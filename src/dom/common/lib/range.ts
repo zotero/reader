@@ -220,9 +220,10 @@ export function getBoundingPageRect(rangeOrElem: Range | Element) {
 	return rect;
 }
 
-export function getPageRects(range: Range): DOMRectList {
-	let rects = range.getClientRects();
-	let win = range.commonAncestorContainer.ownerDocument?.defaultView;
+export function getPageRects(rangeOrElem: Range | Element): DOMRectList {
+	let rects = rangeOrElem.getClientRects();
+	let win = ('ownerDocument' in rangeOrElem ? rangeOrElem : rangeOrElem.commonAncestorContainer)
+		.ownerDocument?.defaultView;
 	for (let rect of rects) {
 		rect.x += win?.scrollX ?? 0;
 		rect.y += win?.scrollY ?? 0;

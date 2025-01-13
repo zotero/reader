@@ -18,7 +18,7 @@ import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
-import { rectsEqual } from "../../lib/rect";
+import { rectsEqual, rectIntersects, getBoundingRect, isPageRectVisible } from "../../lib/rect";
 import cx from "classnames";
 
 export type DisplayedAnnotation = {
@@ -384,7 +384,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		{widgetContainer && ((selected && !isResizing) || commentIconPosition) && ReactDOM.createPortal(
 			<>
 				{selected && !isResizing && (
-					<SelectionBorder rect={getBoundingPageRect(annotation.range)}/>
+					<SplitSelectionBorder range={annotation.range}/>
 				)}
 				{commentIconPosition && (
 					<CommentIcon {...commentIconPosition} color={annotation.color!}/>
@@ -551,6 +551,35 @@ SelectionBorder = memo(SelectionBorder, (prev, next) => {
 type SelectionBorderProps = {
 	rect: DOMRect;
 	preview?: boolean;
+};
+
+let SplitSelectionBorder: React.FC<SplitSelectionBorderProps> = (props) => {
+	let { range } = props;
+	let section = closestElement(range.commonAncestorContainer)?.closest('[data-section-index]');
+	if (section) {
+		let sectionRects = Array.from(getPageRects(section));
+		let rangeRects = Array.from(getPageRects(range));
+		return <>
+			{sectionRects
+				.filter(sectionRect => isPageRectVisible(sectionRect, section.ownerDocument.defaultView!))
+				.map((sectionRect, i) => {
+					let rangeRectsWithinSection = rangeRects
+						.filter(rangeRect => rectIntersects(rangeRect, sectionRect));
+					if (!rangeRectsWithinSection.length) {
+						return null;
+					}
+					return <SelectionBorder rect={getBoundingRect(rangeRectsWithinSection)} key={i}/>;
+				})
+			}
+		</>;
+	}
+	else {
+		return <SelectionBorder rect={getBoundingPageRect(range)} />;
+	}
+};
+SplitSelectionBorder.displayName = 'SelectionBorder';
+type SplitSelectionBorderProps = {
+	range: Range;
 };
 
 const Resizer: React.FC<ResizerProps> = (props) => {
