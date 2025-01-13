@@ -1033,10 +1033,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!updatedAnnotation) {
 			throw new Error('Invalid resized range');
 		}
-		annotation.position = updatedAnnotation.position;
-		annotation.pageLabel = updatedAnnotation.pageLabel;
-		annotation.sortIndex = updatedAnnotation.sortIndex;
-		annotation.text = updatedAnnotation.text;
+
+		annotation = {
+			...annotation,
+			position: updatedAnnotation.position,
+			pageLabel: updatedAnnotation.pageLabel,
+			sortIndex: updatedAnnotation.sortIndex,
+			text: updatedAnnotation.text,
+		};
 		this._options.onUpdateAnnotations([annotation]);
 
 		// If the resize ends over a link, that somehow counts as a click in Fx
