@@ -34,6 +34,11 @@ jobs:
         env:
           NODE_OPTIONS: --openssl-legacy-provider
 
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+          bundler-cache: true
+
       - name: Upload pre-build ZIP
         if: |
           env.ACT != 'true'
@@ -48,8 +53,8 @@ jobs:
           cd build
           zip -r ../build-zip/$GITHUB_SHA.zip *
           cd ..
-          sudo gem install --no-document dpl dpl-s3
-          dpl --provider=s3 --bucket=zotero-download --local-dir=build-zip --upload-dir=ci/client-reader --acl=public-read --skip_cleanup=true
+          gem install --no-document dpl -v '>= 2.0'
+          dpl s3 --bucket zotero-download --local_dir build-zip --upload_dir ci/client-reader --acl public_read
 
       - name: Run tests
         run: npm run test
