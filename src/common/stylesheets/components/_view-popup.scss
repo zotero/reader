@@ -309,6 +309,7 @@
 	inset: 0;
 	background: var(--color-background);
 	cursor: zoom-out;
+	user-select: none;
 
 	img {
 		object-fit: contain;
