@@ -110,22 +110,17 @@ replaced-body {
 		max-inline-size: var(--media-max-width);
 	}
 
-	.table-like {
+	table, mtable {
 		display: block;
 		overflow: auto;
 		max-block-size: calc(100vh - 80px);
 		max-block-size: calc(100vb - 80px);
 		border: none !important;
+	}
 
-		// SageJournals: force role="list" tables to be normal
-		&:not(table)[role="list"] {
-			overflow: unset;
-			max-block-size: none;
-
-			[role="listitem"] {
-				display: block;
-			}
-		}
+	.table-like:not(table, mtable) {
+		display: flex;
+		flex-direction: column;
 	}
 
 	@media (max-width: 800px) {
