@@ -187,8 +187,20 @@ replaced-body {
 		color: var(--visited-link-color) !important;
 	}
 
-	.sup-sub-like {
-		line-height: 0 !important;
+	.sup-like, .sub-like {
+		line-height: 1 !important;
+		position: relative !important;
+		font-size: 66.6% !important;
+	}
+
+	.sup-like {
+		vertical-align: super !important;
+		bottom: 0 !important;
+	}
+
+	.sub-like {
+		vertical-align: sub !important;
+		bottom: -0.2ex;
 	}
 
 	body:not(.footnote-popup-content) & {

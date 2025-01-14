@@ -105,19 +105,23 @@ export async function sanitizeAndRender(xhtml: string, options: {
 				}
 			}
 		}
-		catch (e) {
-			// Ignore
-		}
+		catch (e) {}
 	}
-	for (let selector of cssRewriter.trackedSelectors.supSub) {
+	for (let selector of cssRewriter.trackedSelectors.sup) {
 		try {
 			for (let elem of Array.from(container.querySelectorAll(selector))) {
-				elem.classList.add('sup-sub-like');
+				elem.classList.add('sup-like');
 			}
 		}
-		catch (e) {
-			// Ignore
+		catch (e) {}
+	}
+	for (let selector of cssRewriter.trackedSelectors.sub) {
+		try {
+			for (let elem of Array.from(container.querySelectorAll(selector))) {
+				elem.classList.add('sub-like');
+			}
 		}
+		catch (e) {}
 	}
 
 	// Get the primary writing mode for this section
@@ -141,7 +145,8 @@ export async function sanitizeAndRender(xhtml: string, options: {
 export class CSSRewriter {
 	trackedSelectors = {
 		table: new Set(['table', 'mtable', 'pre']),
-		supSub: new Set(['sup', 'sub']),
+		sup: new Set(['sup']),
+		sub: new Set(['sub']),
 		writingMode: new Map<string, string>(),
 	};
 
@@ -259,8 +264,11 @@ export class CSSRewriter {
 			if (style.display === 'table' || style.display === 'inline-table') {
 				this.trackedSelectors.table.add(styleRule.selectorText);
 			}
-			if (style.verticalAlign === 'super' || style.verticalAlign === 'sub') {
-				this.trackedSelectors.supSub.add(styleRule.selectorText);
+			if (style.verticalAlign === 'super') {
+				this.trackedSelectors.sup.add(styleRule.selectorText);
+			}
+			else if (style.verticalAlign === 'sub') {
+				this.trackedSelectors.sub.add(styleRule.selectorText);
 			}
 			if (style.writingMode) {
 				this.trackedSelectors.writingMode.set(styleRule.selectorText, style.writingMode);
