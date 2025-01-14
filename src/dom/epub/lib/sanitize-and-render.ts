@@ -31,7 +31,7 @@ export async function sanitizeAndRender(xhtml: string, options: {
 				break;
 			case 'link': {
 				let link = elem as HTMLLinkElement;
-				if (link.relList.contains('stylesheet')) {
+				if (/\bstylesheet\b/i.test(link.rel)) {
 					try {
 						container.classList.add(
 							await cssRewriter.addByURL(link.href)
