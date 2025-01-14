@@ -1,4 +1,4 @@
-import parser from "postcss-selector-parser";
+import parser, { isSelector, isTag } from "postcss-selector-parser";
 
 export const SANITIZER_REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
 
@@ -233,29 +233,25 @@ export class CSSRewriter {
 		if (rule.constructor.name === 'CSSStyleRule') {
 			let styleRule = rule as CSSStyleRule;
 			styleRule.selectorText = parser((selectors) => {
-				selectors.each((selector) => {
-					selector.replaceWith(
-						parser.selector({
-							value: '',
-							nodes: [
-								parser.className({ value: scopeClass }),
-								parser.combinator({ value: ' ' }),
-								parser.selector({
-									...selector,
-									nodes: selector.nodes.map((node) => {
-										if (node.type === 'tag' && SANITIZER_REPLACE_TAGS.has(node.value.toLowerCase())) {
-											return parser.tag({
-												...node,
-												value: 'replaced-' + node.value
-											});
-										}
-										return node;
-									})
-								})
-							],
-							spaces: selector.spaces
-						})
-					);
+				selectors.walk((node) => {
+					if (isSelector(node)) {
+						node.replaceWith(
+							parser.selector({
+								value: '',
+								nodes: [
+									parser.className({ value: scopeClass }),
+									parser.combinator({ value: ' ' }),
+									parser.selector({ ...node }),
+								],
+							})
+						);
+					}
+					else if (isTag(node) && SANITIZER_REPLACE_TAGS.has(node.value.toLowerCase())) {
+						node.replaceWith(parser.tag({
+							...node,
+							value: 'replaced-' + node.value
+						}));
+					}
 				});
 			}).processSync(styleRule.selectorText);
 
