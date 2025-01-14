@@ -1195,7 +1195,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				this.flow.scrollIntoView(target, options);
 				if (target !== target.closest('.section-container')) {
 					let range = this._iframeDocument.createRange();
-					range.selectNode(target);
+					// Rough, but try not to highlight a huge area
+					if (target.firstElementChild && target.innerHTML.length > 1000) {
+						range.selectNode(target.firstElementChild || target.firstChild);
+					}
+					else {
+						range.selectNode(target);
+					}
 					let selector = this.toSelector(range);
 					if (selector) {
 						this._setHighlight(selector);
