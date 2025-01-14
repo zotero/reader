@@ -876,9 +876,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		container.appendChild(currentClone);
 
-		container.querySelectorAll('a').forEach((link) => {
-			link.removeAttribute('href');
-		});
+		for (let link of container.querySelectorAll('a')) {
+			if (!this._isExternalLink(link)) {
+				link.removeAttribute('href');
+			}
+		}
 
 		doc.body.append(container);
 		let content = new XMLSerializer().serializeToString(doc);
