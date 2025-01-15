@@ -520,6 +520,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
+	protected override _getContainingRoot(node: Node) {
+		return this._sectionRenderers.find(r => r.container.contains(node))?.container
+			?? null;
+	}
+
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
 		let existingAnnotation = this._annotations.find(
 			existingAnnotation => existingAnnotation.text === annotation!.text
@@ -781,6 +786,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected override _handleKeyDown(event: KeyboardEvent) {
 		let { key } = event;
 
+		super._handleKeyDown(event);
+		if (event.defaultPrevented) {
+			return;
+		}
+
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
 				this.flow.navigateLeft();
@@ -793,8 +803,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				return;
 			}
 		}
-
-		super._handleKeyDown(event);
 	}
 
 	protected override _updateViewState() {
@@ -1030,7 +1038,20 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				this._find = new EPUBFindProcessor({
 					view: this,
 					findState: { ...state },
-					onSetFindState: this._options.onSetFindState,
+					onSetFindState: (result) => {
+						this._options.onSetFindState({
+							...state,
+							result: {
+								total: result.total,
+								index: result.index,
+								snippets: result.snippets,
+								annotation: (
+									result.range
+									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
+								) ?? undefined
+							}
+						});
+					},
 				});
 				let startRange = (this.flow.startRange && new PersistentRange(this.flow.startRange)) ?? undefined;
 				let onFirstResult = () => this.findNext();

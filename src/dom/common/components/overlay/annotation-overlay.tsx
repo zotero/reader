@@ -376,7 +376,13 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	// the whole outer <g> containing the underline/highlight (potentially small) and the interactive <foreignObject>s
 	// (big) so that we get all the highlighted text to render in the drag image.
 	return <>
-		<g fill={annotation.color} ref={outerGroupRef}>
+		<g
+			tabIndex={-1}
+			onPointerDown={e => e.preventDefault()}
+			data-annotation-id={annotation.id}
+			fill={annotation.color}
+			ref={outerGroupRef}
+		>
 			{rectGroup}
 			{foreignObjects}
 			{resizer}
@@ -448,6 +454,7 @@ const Note: React.FC<NoteProps> = (props) => {
 			opacity={annotation.id ? '100%' : '50%'}
 			selected={selected}
 			large={true}
+			tabIndex={-1}
 			onPointerDown={onPointerDown && (event => onPointerDown!(annotation, event))}
 			onPointerUp={onPointerUp && (event => onPointerUp!(annotation, event))}
 			onContextMenu={onContextMenu && (event => onContextMenu!(annotation, event))}
@@ -794,6 +801,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			width={size}
 			height={size}
 			viewBox="0 0 24 24"
+			data-annotation-id={props.annotation?.id}
 			ref={ref}
 		>
 			<IconNoteLarge/>
@@ -807,6 +815,8 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 			width={size}
 			height={size}
 			className="needs-pointer-events"
+			tabIndex={props.tabIndex}
+			data-annotation-id={props.annotation?.id}
 		>
 			<div
 				// @ts-ignore
@@ -833,6 +843,7 @@ type CommentIconProps = {
 	opacity?: string | number;
 	selected?: boolean;
 	large?: boolean;
+	tabIndex?: number;
 	onPointerDown?: (event: React.PointerEvent) => void;
 	onPointerUp?: (event: React.PointerEvent) => void;
 	onContextMenu?: (event: React.MouseEvent) => void;

@@ -55,7 +55,11 @@ export function normalizeKey(key, code) {
 	return key;
 }
 
-// Key combination taking into account layout and modifier keys
+/**
+ * Key combination taking into account layout and modifier keys
+ * @param {KeyboardEvent} event
+ * @returns {string}
+ */
 export function getKeyCombination(event) {
 	let modifiers = [];
 	if (event.metaKey && isMac()) {
@@ -86,7 +90,11 @@ export function getKeyCombination(event) {
 	return modifiers.join('-');
 }
 
-// Physical key combination
+/**
+ * Physical key combination
+ * @param {KeyboardEvent} event
+ * @returns {string}
+ */
 export function getCodeCombination(event) {
 	let modifiers = [];
 	if (event.metaKey && isMac()) {

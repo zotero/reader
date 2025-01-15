@@ -54,16 +54,15 @@ export function* closestAll(element: Element, selector: string): Generator<Eleme
 const BLOCK_DISPLAYS = new Set(['block', 'list-item', 'table-cell', 'table', 'flex']);
 const BLOCK_ELEMENTS = new Set(['DIV', 'P', 'LI', 'OL', 'UL', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TD', 'TH', 'DL', 'DT', 'DD', 'FORM', 'FIELDSET', 'SECTION', 'HEADER', 'FOOTER', 'ASIDE', 'NAV', 'ARTICLE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'HEADER', 'FOOTER', 'ASIDE', 'NAV', 'ARTICLE']);
 
+export function isBlock(element: Element) {
+	let display = getComputedStyle(element).display;
+	return (display && BLOCK_DISPLAYS.has(display)) || BLOCK_ELEMENTS.has(element.tagName);
+}
+
 export function getContainingBlock(element: Element): Element | null {
 	let el: Element | null = element;
 	while (el) {
-		let display = getComputedStyle(el).display;
-		if (display) {
-			if (BLOCK_DISPLAYS.has(display)) {
-				return el;
-			}
-		}
-		else if (BLOCK_ELEMENTS.has(el.tagName)) {
+		if (isBlock(el)) {
 			return el;
 		}
 		el = el.parentElement;
