@@ -4,8 +4,7 @@ import { iterateWalker } from "./nodes";
 // We generate and support a very limited subset of the Web Annotation Data Model:
 // https://www.w3.org/TR/annotation-model/#selectors
 // Specifically, EPUB annotations are expressed in terms of FragmentSelectors with epubcfi values,
-// and snapshot annotations are CssSelectors refined by TextQuoteSelectors, or simply TextQuoteSelectors
-// if no good CSS selector base can be found.
+// and snapshot annotations are CssSelectors, possibly refined by TextPositionSelectors.
 
 // https://www.w3.org/TR/annotation-model/#fragment-selector
 export type FragmentSelector = {
