@@ -46,6 +46,15 @@ export class PersistentRange {
 export function moveRangeEndsIntoTextNodes(range: Range): Range {
 	let doc = range.commonAncestorContainer.ownerDocument!;
 	range = range.cloneRange();
+
+	// If the range selects a single <img>, leave it be
+	if (range.startContainer === range.endContainer
+			&& range.startOffset === range.endOffset - 1
+			&& range.startContainer.nodeType === Node.ELEMENT_NODE
+			&& (range.startContainer as Element).childNodes[range.startOffset].nodeName === 'IMG') {
+		return range;
+	}
+
 	if (range.startContainer.nodeType !== Node.TEXT_NODE) {
 		// The startContainer isn't a text node, so the range's start needs to be moved
 		// First see if range.startOffset points to a child of the startContainer
