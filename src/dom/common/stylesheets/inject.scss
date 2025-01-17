@@ -16,3 +16,9 @@ body.force-enable-selection-everywhere {
 		-webkit-user-select: auto !important;
 	}
 }
+
+body[data-tool="note"] {
+	&, * {
+		cursor: default !important;
+	}
+}

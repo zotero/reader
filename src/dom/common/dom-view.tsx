@@ -1565,6 +1565,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	setTool(tool: Tool) {
 		this._tool = tool;
 
+		this._iframeDocument.body.dataset.tool = tool.type;
+
 		// When highlighting or underlining, we draw a preview annotation during selection, so set the browser's
 		// selection highlight color to transparent. Otherwise, use the default selection color.
 		let selectionColor = tool.type == 'highlight' || tool.type == 'underline' ? 'transparent' : SELECTION_COLOR;
