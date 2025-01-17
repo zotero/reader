@@ -105,6 +105,8 @@
 	&.expanded {
 		.content {
 			display: block;
+			-webkit-line-clamp: unset;
+			-webkit-box-orient: unset;
 		}
 	}
 }
