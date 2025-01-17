@@ -141,6 +141,7 @@ type ImagePopupParams = {
 	src: string;
 	title?: string;
 	alt?: string;
+	rect: ArrayRect;
 }
 
 export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams

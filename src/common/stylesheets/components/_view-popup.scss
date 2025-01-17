@@ -304,16 +304,48 @@
 
 .image-popup {
 	z-index: 1;
-	padding: 5px;
 	position: absolute;
 	inset: 0;
-	background: var(--color-background);
 	cursor: zoom-out;
 	user-select: none;
 
+	& {
+		background: transparent;
+		transition: background-color 0.2s ease-out;
+	}
+
+	&.show {
+		background: var(--color-background);
+		transition: background-color 0.1s ease-out;
+	}
+
 	img {
+		position: absolute;
 		object-fit: contain;
+		font-size: 0; // Hide alt text while loading
+
+		top: var(--rect-top);
+		left: var(--rect-left);
+		width: calc(var(--rect-right) - var(--rect-left));
+		height: calc(var(--rect-bottom) - var(--rect-top));
+		padding: 0;
+		transition: all 0.2s ease-in-out;
+	}
+
+	&.show img {
+		top: 0;
+		left: 0;
 		width: 100%;
 		height: 100%;
+		padding: 5px;
+		font-size: inherit;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		&, &.show {
+			&, & img {
+				transition: none;
+			}
+		}
 	}
 }

@@ -773,11 +773,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let target = event.target as Element;
 		if (target.tagName === 'IMG' && target.classList.contains('clickable-image')) {
 			let img = target as HTMLImageElement;
+			let rect = img.getBoundingClientRect();
 			this._options.onSetOverlayPopup({
 				type: 'image',
 				src: img.currentSrc || img.src,
 				title: img.title,
 				alt: img.alt,
+				rect: [rect.left, rect.top, rect.right, rect.bottom],
 			});
 			event.preventDefault();
 		}
