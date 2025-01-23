@@ -7,7 +7,7 @@
 	bottom: var(--bottom-placeholder-height);
 	display: flex;
 
-	.primary, .secondary {
+	.primary-view, .secondary-view {
 		display: flex;
 		position: relative;
 		overflow: hidden;
@@ -25,35 +25,35 @@
 		}
 	}
 
-	.primary {
+	.primary-view {
 		flex-grow: 1;
 	}
 
-	.secondary {
+	.secondary-view {
 		display: none;
 	}
 }
 
 body.enable-vertical-split-view {
-	.primary {
+	.primary-view {
 		width: 0;
 	}
 
-	.secondary {
+	.secondary-view {
 		display: flex !important;
 		width: var(--split-view-size);
 	}
 }
 
 body.enable-horizontal-split-view {
-	.primary {
+	.primary-view {
 		height: 0;
 	}
 
 	#split-view, .split-view {
 		flex-direction: column;
 
-		.secondary {
+		.secondary-view {
 			display: flex !important;
 			height: var(--split-view-size);
 		}

@@ -367,3 +367,8 @@ export function sortTags(tags) {
 	});
 	return tags;
 }
+
+export function getCurrentColorScheme(colorScheme) {
+	let darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+	return (darkModeMediaQuery.matches || colorScheme === 'dark') ? 'dark' : 'light';
+}

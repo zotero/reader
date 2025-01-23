@@ -223,12 +223,28 @@
 @mixin pdf-page-image-dark-light {
 	$selector: &;
 	@at-root {
+		:root[data-color-scheme="dark"] #{$selector} {
+			filter: brightness(0.8);
+		}
+
 		@media (prefers-color-scheme: dark) {
-			body.use-dark-mode-for-content {
+			:root:not([data-color-scheme]) {
 				#{$selector} {
-					filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
+					filter: brightness(0.8);
 				}
 			}
 		}
 	}
+}
+
+@mixin popup {
+	position: absolute;
+	z-index: $z-index-find-popup;
+	background: var(--material-toolbar);
+	border-radius: 6px;
+	box-shadow: 0 0   3px  0 rgba(0, 0, 0, 0.55),
+				0 8px 40px 0 rgba(0, 0, 0, 0.25),
+				0 0   3px  0 rgba(255, 255, 255, 0.1) inset;
+	display: flex;
+	flex-direction: column;
 }

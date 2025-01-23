@@ -643,3 +643,38 @@ export function getOutlinePath(outline, pageIndex) {
 
 	return bestMatch.path;
 }
+
+/**
+ * Determines whether to use dark or light mode based on background and foreground colors.
+ * @param {string} bgColor - Hex color code for the background (e.g., "#FFFFFF").
+ * @param {string} fgColor - Hex color code for the foreground (e.g., "#000000").
+ * @returns {string} - "dark" if dark mode is recommended, "light" otherwise.
+ */
+export function getModeBasedOnColors(bgColor, fgColor) {
+	// Helper to convert a hex color code to an array of RGB values
+	function hexToRgbArray(hex) {
+		const bigint = parseInt(hex.replace("#", ""), 16);
+		return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+	}
+
+	// Helper to calculate luminance directly from RGB values
+	function calculateLuminance([r, g, b]) {
+		return [r, g, b].map(value => {
+			const normalized = value / 255;
+			return normalized <= 0.03928
+				? normalized / 12.92
+				: Math.pow((normalized + 0.055) / 1.055, 2.4);
+		}).reduce((luminance, channel, index) => {
+			// Combine weighted luminance values
+			const weights = [0.2126, 0.7152, 0.0722];
+			return luminance + channel * weights[index];
+		}, 0);
+	}
+
+	// Convert hex colors to RGB arrays and calculate their luminance
+	const bgLuminance = calculateLuminance(hexToRgbArray(bgColor));
+	const fgLuminance = calculateLuminance(hexToRgbArray(fgColor));
+
+	// Determine and return mode based on luminance comparison
+	return bgLuminance > fgLuminance ? "light" : "dark";
+}

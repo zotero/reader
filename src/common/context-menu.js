@@ -1,5 +1,6 @@
 import {
 	ANNOTATION_COLORS,
+	DEFAULT_THEMES,
 	EXTRA_INK_AND_TEXT_COLORS,
 	INK_ANNOTATION_WIDTH_STEPS,
 	TEXT_ANNOTATION_FONT_SIZE_STEPS
@@ -363,6 +364,35 @@ export function createSelectorContextMenu(reader, params) {
 					disabled: !params.enableClearSelection,
 					persistent: true,
 					onCommand: () => reader.setFilter({ colors: [], tags: [], authors: [] })
+				}
+			],
+			...appendCustomItemGroups('createSelectorContextMenu', reader, params)
+		])
+	};
+}
+
+export function createThemeContextMenu(reader, params) {
+	let readOnly = DEFAULT_THEMES.some(x => x.id === params.theme.id);
+	return {
+		x: params.x,
+		y: params.y,
+		itemGroups: createItemGroup([
+			[
+				{
+					label: reader._getString('general.edit'),
+					disabled: readOnly,
+					persistent: true,
+					onCommand: () => reader._updateState({ themePopup: { theme: params.theme } })
+				},
+				{
+					label: reader._getString('general.delete'),
+					disabled: readOnly,
+					persistent: true,
+					onCommand: () => {
+						let { customThemes } = reader._state;
+						customThemes = customThemes.filter(x => x.id !== params.theme.id);
+						reader._onSaveCustomThemes(customThemes);
+					}
 				}
 			],
 			...appendCustomItemGroups('createSelectorContextMenu', reader, params)

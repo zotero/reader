@@ -98,6 +98,7 @@ class PDFRenderer {
 		canvas.style.width = canvasWidth + 'px';
 		canvas.style.height = canvasHeight + 'px';
 
+		ctx.skipBlender = true;
 		let renderContext = {
 			canvasContext: ctx,
 			viewport: viewport
@@ -145,17 +146,12 @@ class PDFRenderer {
 		let minX = width, minY = height, maxX = 0, maxY = 0;
 		let foundNonWhitePixel = false;
 
-		// Function to check if a pixel is white
-		function isWhite(pixel) {
-			// A white pixel will have all 8-bit components set to 255 (0xFFFFFFFF)
-			return (pixel & 0xFFFFFF) === 0xFFFFFF && (pixel >>> 24) === 255;
-		}
-
 		// Scan for non-white, non-transparent pixels
 		for (let y = 0; y < height; y++) {
 			for (let x = 0; x < width; x++) {
 				const index = y * width + x;
-				if (!isWhite(data[index])) {
+				// Use the first pixel as reference for the background color
+				if (data[index] !== data[0]) {
 					if (x < minX) minX = x;
 					if (x > maxX) maxX = x;
 					if (y < minY) minY = y;

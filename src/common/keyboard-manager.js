@@ -124,6 +124,17 @@ export class KeyboardManager {
 				});
 				setTimeout(() => this._reader._lastView.focus());
 			}
+			// Close theme popup
+			else if (this._reader._state.themePopup) {
+				event.preventDefault();
+				this._reader._updateState({ themePopup: null });
+			}
+			// Close appearance popup
+			else if (this._reader._state.appearancePopup) {
+				event.preventDefault();
+				this._reader._updateState({ appearancePopup: null });
+				setTimeout(() => this._reader._lastView.focus());
+			}
 			// Deselect annotations
 			else if (this._reader._state.selectedAnnotationIDs.length) {
 				event.preventDefault();

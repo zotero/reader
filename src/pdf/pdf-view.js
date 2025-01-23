@@ -33,7 +33,8 @@ import {
 	normalizeDegrees,
 	getRectsAreaSize,
 	getClosestObject,
-	getOutlinePath
+	getOutlinePath,
+	getModeBasedOnColors
 } from './lib/utilities';
 import {
 	debounceUntilScrollFinishes,
@@ -75,8 +76,9 @@ class PDFView {
 		this._password = options.password;
 		this._tools = options.tools;
 		this._outline = options.outline;
-		this._useDarkMode = options.useDarkMode;
-		this._colorScheme = options.colorScheme;
+		this._lightTheme = options.lightTheme;
+		this._darkTheme = options.darkTheme;
+		this._preferedColorTheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
 		this._onSetThumbnails = options.onSetThumbnails;
 		this._onSetOutline = options.onSetOutline;
@@ -121,6 +123,21 @@ class PDFView {
 
 		this._findState = options.findState;
 
+
+		// Create a MediaQueryList object
+		let darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+		// Initial check
+		this._preferedColorTheme = darkModeMediaQuery.matches ? 'dark' : 'light';
+
+		// Listen for changes
+		darkModeMediaQuery.addEventListener('change', event => {
+			this._preferedColorTheme = event.matches ? 'dark' : 'light';
+			this._updateColorScheme();
+		});
+
+		this._updateColorScheme();
+
 		this._history = new History({
 			onUpdate: () => this._updateViewStats(),
 			onNavigate: location => this.navigate(location, { skipHistory: true })
@@ -163,7 +180,8 @@ class PDFView {
 		});
 
 		this._iframe.addEventListener('load', () => {
-			// This is necessar to make sure this is called after webviewerloaded
+			this._updateColorScheme();
+			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
 				// Delete existing local history data
 				// TODO: This can be removed in future
@@ -178,12 +196,6 @@ class PDFView {
 				catch (e) {
 				}
 				setOptions();
-				if (!this._useDarkMode) {
-					this._iframeWindow.document.body.classList.add('disableDarkMode');
-				}
-				if (this._colorScheme) {
-					this._iframeWindow.document.documentElement.dataset.colorScheme = this._colorScheme;
-				}
 				this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 				this._iframeWindow.onDetachPage = this._detachPage.bind(this);
 				if (!this._preview) {
@@ -428,6 +440,46 @@ class PDFView {
 				this._onSetThumbnails(thumbnails);
 			}
 		});
+	}
+
+	_updateColorScheme() {
+		if (this._forcedColorScheme === 'light') {
+			this._colorScheme = 'light';
+		}
+		else if (this._forcedColorScheme === 'dark') {
+			this._colorScheme = 'dark';
+		}
+		else {
+			this._colorScheme = this._preferedColorTheme;
+		}
+
+		if (this._iframeWindow) {
+			this._iframeWindow.document.documentElement.dataset.colorScheme = this._colorScheme;
+
+			let root = this._iframeWindow.document.documentElement;
+
+			if (this._colorScheme === 'light' && this._lightTheme) {
+				this._iframeWindow.theme = this._lightTheme;
+				root.style.setProperty('--background-color', this._lightTheme.background);
+				this._themeColorScheme = getModeBasedOnColors(this._lightTheme.background, this._lightTheme.foreground);
+			}
+			else if (this._colorScheme === 'dark' && this._darkTheme) {
+				this._iframeWindow.theme = this._darkTheme;
+				root.style.setProperty('--background-color', this._darkTheme.background);
+				this._themeColorScheme = getModeBasedOnColors(this._darkTheme.background, this._darkTheme.foreground);
+			}
+			else {
+				this._iframeWindow.theme = null;
+				root.style.setProperty('--background-color', '#FFFFFF');
+				this._themeColorScheme = 'light';
+			}
+
+			for (let page of this._pages) {
+				page.originalPage.reset();
+			}
+			this._iframeWindow.PDFViewerApplication.pdfViewer.update();
+			this._pdfThumbnails?.clear();
+		}
 	}
 
 	async _initProcessedData() {
@@ -730,23 +782,19 @@ class PDFView {
 		}
 	}
 
-	setUseDarkMode(use) {
-		this._useDarkMode = use;
-		if (use) {
-			this._iframeWindow.document.body.classList.remove('disableDarkMode');
-		}
-		else {
-			this._iframeWindow.document.body.classList.add('disableDarkMode');
-		}
+	setLightTheme(theme) {
+		this._lightTheme = theme;
+		this._updateColorScheme();
+	}
+
+	setDarkTheme(theme) {
+		this._darkTheme = theme;
+		this._updateColorScheme();
 	}
 
 	setColorScheme(colorScheme) {
-		if (colorScheme) {
-			this._iframeWindow.document.documentElement.dataset.colorScheme = colorScheme;
-		}
-		else {
-			delete this._iframeWindow.document.documentElement.dataset.colorScheme;
-		}
+		this._forcedColorScheme = colorScheme;
+		this._updateColorScheme();
 	}
 
 	setAnnotationPopup(popup) {
