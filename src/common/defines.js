@@ -43,3 +43,9 @@ export const INK_ANNOTATION_WIDTH_STEPS = [
 ];
 
 export const TEXT_ANNOTATION_FONT_SIZE_STEPS = [10, 12, 14, 18, 24, 36, 48, 64, 72, 96, 144, 192];
+
+export const DEFAULT_THEMES = [
+	{ id: 'dark', label: 'Dark', background: "#2E3440", foreground: "#D8DEE9" },
+	{ id: 'snow', label: 'Snow', background: "#ECEFF4", foreground: "#3B4252" },
+	{ id: 'sepia', label: 'Sepia', background: "#F4ECD8", foreground: "#5B4636" }
+];

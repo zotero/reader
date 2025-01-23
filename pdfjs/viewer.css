@@ -392,58 +392,15 @@ body, #viewerContainer {
 }
 
 .pdfViewer .page {
-	background-color: #FFFFFF;
-}
-
-@media (prefers-color-scheme: dark) {
-	body, body #viewerContainer {
-		background-color: #272727; /* --color-toolbar */
-	}
-
-	body:not(.disableDarkMode) canvas, body:not(.disableDarkMode) .textAnnotation {
-		filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
-	}
-
-	body:not(.disableDarkMode) .pdfViewer .page {
-		background-color: #000000;
-	}
-
-	.textLayer {
-		opacity: 0.5;
-	}
-
-	.textLayer .highlight.selected {
-		background-color: #00FF00;
-	}
-
-	.textLayer .highlight {
-		background-color: #FF00F1;
-	}
+	background-color: var(--background-color);
 }
 
 :root[data-color-scheme=dark] body,
 :root[data-color-scheme=dark] body #viewerContainer {
-	background-color: #272727;
-	/* --color-toolbar */
+	color-scheme: dark;
+	background-color: #272727; /* --color-toolbar */
 }
 
-:root[data-color-scheme=dark] body:not(.disableDarkMode) canvas,
-:root[data-color-scheme=dark] body:not(.disableDarkMode) .textAnnotation {
-	filter: invert(90%) saturate(100%) hue-rotate(180deg) brightness(100%) contrast(125%)
-}
-
-:root[data-color-scheme=dark] body:not(.disableDarkMode) .pdfViewer .page {
-	background-color: #000000;
-}
-
-:root[data-color-scheme=dark] .textLayer {
-	opacity: 0.5;
-}
-
-:root[data-color-scheme=dark] .textLayer .highlight.selected {
-	background-color: #00FF00;
-}
-
-:root[data-color-scheme=dark] .textLayer .highlight {
-	background-color: #FF00F1;
+:root[data-color-scheme=dark] .pdfViewer .page {
+	background-color: var(--background-color);
 }

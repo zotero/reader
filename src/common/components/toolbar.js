@@ -24,7 +24,6 @@ import IconEraser from '../../../res/icons/20/annotate-eraser.svg';
 import IconFind from '../../../res/icons/20/magnifier.svg';
 import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
 
-
 function Toolbar(props) {
 	const intl = useIntl();
 	const pageInputRef = useRef();
@@ -106,15 +105,13 @@ function Toolbar(props) {
 					disabled={!props.enableZoomReset}
 					onClick={props.onZoomReset}
 				><IconAutoWidth/></button>
-				{props.type === 'epub' && (
-					<button
-						id="epubAppearance"
-						className={cx('toolbar-button epubFormattingOptions', { active: props.epubAppearancePopup })}
-						title={intl.formatMessage({ id: 'pdfReader.epubAppearance' })}
-						tabIndex={-1}
-						onClick={props.onToggleEPUBAppearance}
-					><IconFormatText/></button>
-				)}
+				<button
+					id="appearance"
+					className={cx('toolbar-button', { active: props.appearancePopup })}
+					title={intl.formatMessage({ id: 'pdfReader.appearance' })}
+					tabIndex={-1}
+					onClick={props.onToggleAppearancePopup}
+				><IconFormatText/></button>
 				<div className="divider"/>
 				<button
 					id="navigateBack"

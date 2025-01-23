@@ -69,7 +69,7 @@ export class FocusManager {
 
 	_handleFocus(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .label-popup, .context-menu, iframe')) {
+			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .label-popup, .appearance-popup, .context-menu, iframe')) {
 				this._onDeselectAnnotations();
 			}
 			// Close find popup on blur if search query is empty
@@ -81,7 +81,7 @@ export class FocusManager {
 
 	_handlePointerDown(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row, .preview-popup')) {
+			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row, .preview-popup, #appearance')) {
 				// Note: Doing event.preventDefault() also prevents :active class on Firefox
 				event.preventDefault();
 			}
@@ -159,11 +159,12 @@ export class FocusManager {
 		let group = item.closest('[data-tabstop]') || item;
 
 		let scope = document;
-		let overlay = document.querySelector('.overlay');
+		let overlay = Array.from(document.querySelectorAll('.overlay')).at(-1);
 		if (overlay) {
 			scope = overlay;
 		}
-		let groups = Array.from(scope.querySelectorAll('[data-tabstop]'));
+
+		let groups = Array.from(scope.querySelectorAll('[data-tabstop]:not(.hidden)'));
 
 		groups = groups.map((x) => {
 			let proxy = x.getAttribute('data-proxy');
@@ -226,7 +227,7 @@ export class FocusManager {
 				item = focusableParent;
 			}
 			else {
-				item = group.querySelector('[tabindex="-1"]:not(:disabled)');
+				item = group.querySelector('[tabindex="-1"]:not(:disabled):not(.hidden)');
 			}
 		}
 
@@ -257,7 +258,7 @@ export class FocusManager {
 			return;
 		}
 
-		let items = Array.from(group.querySelectorAll('[tabindex="-1"]:not(:disabled):not([data-tabstop])'));
+		let items = Array.from(group.querySelectorAll('[tabindex="-1"]:not(:disabled):not([data-tabstop]):not(.hidden)'));
 
 		if (!items) {
 			return;

@@ -21,7 +21,7 @@ function DialogPopup({ className, children, onClose }) {
 	}
 
 	return (
-		<div ref={overlayRef} className="dialog-popup-overlay" onPointerDown={handlePointerDown}>
+		<div ref={overlayRef} className="overlay dialog-popup-overlay" onPointerDown={handlePointerDown}>
 			<div className={cx('modal-popup', className)}>
 				{children}
 			</div>

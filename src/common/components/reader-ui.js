@@ -15,7 +15,8 @@ import ContextMenu from './context-menu';
 import LabelPopup from './modal-popup/label-popup';
 import PasswordPopup from './modal-popup/password-popup';
 import PrintPopup from './modal-popup/print-popup';
-import EPUBAppearancePopup from "./view-popup/epub-appearance-popup";
+import AppearancePopup from "./modal-popup/appearance-popup";
+import ThemePopup from './modal-popup/theme-popup';
 
 
 function View(props) {
@@ -40,7 +41,7 @@ function View(props) {
 	}
 
 	return (
-		<div className={name}>
+		<div className={name + '-view'}>
 			<div
 				data-tabstop={1}
 				tabIndex={-1}
@@ -123,8 +124,10 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					enableNavigateBack={viewStats.canNavigateBack}
 					enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 					enableNavigateToNextPage={viewStats.canNavigateToNextPage}
-					epubAppearancePopup={state.epubAppearancePopup}
+					appearancePopup={state.appearancePopup}
 					findPopupOpen={findState.popupOpen}
+					themes={state.themes}
+					onChangeTheme={props.onChangeTheme}
 					tool={state.tool}
 					readOnly={state.readOnly}
 					stackedView={state.bottomPlaceholderHeight !== null}
@@ -139,7 +142,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onChangePageNumber={props.onChangePageNumber}
 					onChangeTool={props.onChangeTool}
 					onOpenColorContextMenu={props.onOpenColorContextMenu}
-					onToggleEPUBAppearance={props.onToggleEPUBAppearance}
+					onToggleAppearancePopup={props.onToggleAppearancePopup}
 					onToggleFind={props.onToggleFind}
 					onToggleContextPane={props.onToggleContextPane}
 				/>
@@ -209,13 +212,35 @@ const ReaderUI = React.forwardRef((props, ref) => {
 			{state.passwordPopup && <PasswordPopup params={state.passwordPopup} onEnterPassword={props.onEnterPassword}/>}
 			{state.printPopup && <PrintPopup params={state.printPopup}/>}
 			{state.errorMessage && <div className="error-bar" tabIndex={-1}>{state.errorMessage}</div>}
-			{props.type === 'epub' && state.epubAppearancePopup && (
+			{state.appearancePopup && (
 				// We always read the primaryViewState, but we write both view states
-				<EPUBAppearancePopup
-					params={state.primaryViewState.appearance}
-					enablePageWidth={state.primaryViewState.flowMode !== 'paginated' || state.primaryViewState.spreadMode === 0 }
-					onChange={props.onChangeEPUBAppearance}
-					onClose={() => props.onToggleEPUBAppearance({ open: false })}
+				<AppearancePopup
+					customThemes={state.customThemes}
+					colorScheme={state.colorScheme}
+					lightTheme={state.lightTheme}
+					darkTheme={state.darkTheme}
+					splitType={state.splitType}
+					viewStats={viewStats}
+					onChangeSplitType={props.onChangeSplitType}
+					onChangeScrollMode={props.onChangeScrollMode}
+					onChangeSpreadMode={props.onChangeSpreadMode}
+					onChangeFlowMode={props.onChangeFlowMode}
+					onChangeAppearance={props.onChangeAppearance}
+					onAddTheme={props.onAddTheme}
+					onChangeTheme={props.onChangeTheme}
+					onOpenThemeContextMenu={props.onOpenThemeContextMenu}
+					onClose={() => props.onToggleAppearancePopup(false)}
+				/>
+			)}
+			{state.themePopup && (
+				<ThemePopup
+					params={state.themePopup}
+					customThemes={state.customThemes}
+					colorScheme={state.colorScheme}
+					lightTheme={state.lightTheme}
+					darkTheme={state.darkTheme}
+					onSaveCustomThemes={props.onSaveCustomThemes}
+					onClose={props.onCloseThemePopup}
 				/>
 			)}
 			<div id="a11yAnnouncement" aria-live="polite"></div>

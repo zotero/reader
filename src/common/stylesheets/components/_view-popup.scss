@@ -1,16 +1,19 @@
-@mixin -control-popup {
-	position: absolute;
-	z-index: $z-index-find-popup;
-	padding: 8px;
-	background: var(--material-toolbar);
-	border-radius: 6px;
-	box-shadow: 0 0   3px  0 rgba(0, 0, 0, 0.55),
-				0 8px 40px 0 rgba(0, 0, 0, 0.25),
-				0 0   3px  0 rgba(255, 255, 255, 0.1) inset;
+.view-popup {
+	/*! rtl:begin:ignore */
+	left: 0;
+	/*! rtl:end:ignore */
+	@include popover-pointer($width: 16px, $height: 8px);
+	@include popup;
+	z-index: 1;
+}
 
+.find-popup {
+	@include popup;
 	gap: 12px;
-	display: flex;
-	flex-direction: column;
+	padding: 8px;
+
+	inset-inline-end: 15px;
+	top: 15px;
 
 	.row {
 		display: flex;
@@ -51,13 +54,6 @@
 			gap: 4px;
 		}
 	}
-}
-
-.find-popup {
-	@include -control-popup;
-
-	inset-inline-end: 15px;
-	top: 15px;
 
 	.row.options {
 		height: 16px;
@@ -90,51 +86,9 @@
 	}
 }
 
-.epub-appearance-popup {
-	@include -control-popup;
-
-	inset-inline-start: 15px;
-	top: $height-toolbar + 15px;
-	padding-block: 0;
-	gap: 0;
-
-	.row {
-		display: grid;
-		grid-template-columns: 1fr minmax(3.2em, max-content) max-content;
-		align-items: center;
-		gap: 4px 8px;
-		padding-block: 8px;
-
-		&:not(:last-child) {
-			border-bottom: var(--material-border-quarternary);
-		}
-
-		label {
-			grid-column: span 3;
-		}
-
-		.value {
-			user-select: none;
-		}
-	}
-
-	.checkbox-row {
-		display: flex;
-		align-items: center;
-		gap: 4px 8px;
-		padding-block: 8px;
-	}
-
-	.hidden {
-		visibility: hidden;
-	}
-}
-
 .selection-popup {
 	max-width: 198px;
 	padding: 8px;
-	display: flex;
-	flex-direction: column;
 	gap: 8px;
 
 	.colors {
@@ -199,31 +153,18 @@
 	}
 }
 
-.view-popup {
-	/*! rtl:begin:ignore */
-	left: 0;
-	/*! rtl:end:ignore */
-	position: absolute;
-	@include popover-pointer($width: 16px, $height: 8px);
-	z-index: 1;
-	background: var(--material-background);
-	border: var(--material-panedivider);
-	border-radius: 5px;
-	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1), 0 5px 10px rgba(0, 0, 0, 0.6);
-}
-
 .preview-popup {
 	display: flex;
 	max-height: 60%;
 	max-width: 60%;
 
 	.inner {
+		border-radius: inherit;
 		max-height: 60%;
 		overflow-y: auto;
 
 		img {
 			pointer-events: none;
-			@include pdf-page-image-dark-light;
 		}
 	}
 }

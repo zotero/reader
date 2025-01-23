@@ -1,4 +1,5 @@
 import { Selector } from "../dom/common/lib/selector";
+import { EPUBAppearance } from "../dom/epub/epub-view";
 
 export type ToolType =
 	| 'highlight'
@@ -109,6 +110,7 @@ export type ViewStats = {
 	scrollMode?: number;
 	spreadMode?: number;
 	flowMode?: string;
+	appearance?: Partial<EPUBAppearance>;
 	fontFamily?: string;
 	outlinePath?: number[];
 };

@@ -40,14 +40,6 @@ export default class Page {
 		this.actualContext = this.originalPage.canvas.getContext('2d');
 	}
 
-	get usingDarkMode() {
-		return (
-			window.matchMedia
-			&& window.matchMedia('(prefers-color-scheme: dark)').matches
-			&& this.layer._useDarkMode
-		);
-	}
-
 	getSortedObjects() {
 		let annotations = this.layer._getPageAnnotations(this.pageIndex);
 		let objects = [...annotations, ...this.overlays];
@@ -185,10 +177,16 @@ export default class Page {
 			return;
 		}
 		let color = '#46b1ff';
-		let alpha = 0.1;
 		this.actualContext.save();
-		this.actualContext.globalAlpha = alpha;
-		this.actualContext.globalCompositeOperation = 'multiply';
+		if (this.layer._themeColorScheme === 'light') {
+			this.actualContext.globalAlpha = 0.1;
+			this.actualContext.globalCompositeOperation = 'multiply';
+		}
+		else {
+			this.actualContext.globalAlpha = 0.5;
+			this.actualContext.globalCompositeOperation = 'lighten';
+
+		}
 		this.actualContext.fillStyle = color;
 
 		let position = this.layer._hover;
@@ -215,10 +213,16 @@ export default class Page {
 			return;
 		}
 		let color = '#76c6ff';
-		let alpha = 0.1;
 		this.actualContext.save();
-		this.actualContext.globalAlpha = alpha;
-		this.actualContext.globalCompositeOperation = 'multiply';
+		if (this.layer._themeColorScheme === 'light') {
+			this.actualContext.globalAlpha = 0.1;
+			this.actualContext.globalCompositeOperation = 'multiply';
+		}
+		else {
+			this.actualContext.globalAlpha = 0.4;
+			this.actualContext.globalCompositeOperation = 'lighten';
+
+		}
 		this.actualContext.fillStyle = color;
 
 		for (let overlay of this.layer._pdfPages[this.pageIndex].overlays) {
@@ -335,17 +339,17 @@ export default class Page {
 
 	_renderHighlight(annotation) {
 		let color = annotation.color;
-		let alpha = 0.4;
-		if (this.usingDarkMode) {
-			if (annotation.color === '#ffd400') {
-				color = darkenHex(annotation.color, 20);
-			}
-			alpha = 0.6;
-		}
+
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
-		this.actualContext.globalAlpha = alpha;
-		this.actualContext.globalCompositeOperation = 'multiply';
+		if (this.layer._themeColorScheme === 'light') {
+			this.actualContext.globalCompositeOperation = 'multiply';
+			this.actualContext.globalAlpha = 0.4;
+		}
+		else {
+			this.actualContext.globalCompositeOperation = 'lighter';
+			this.actualContext.globalAlpha = 0.3;
+		}
 		this.actualContext.fillStyle = color;
 
 		let rects = position.rects;
@@ -361,11 +365,6 @@ export default class Page {
 
 	_renderUnderline(annotation) {
 		let color = annotation.color;
-		if (this.usingDarkMode) {
-			if (annotation.color === '#ffd400') {
-				color = darkenHex(annotation.color, 20);
-			}
-		}
 		let pageData = this.layer._pdfPages[this.pageIndex];
 		if (!pageData) {
 			return;
@@ -373,8 +372,12 @@ export default class Page {
 		let { chars } = pageData;
 		let position = this.p2v(annotation.position);
 		this.actualContext.save();
-		// this.actualContext.globalAlpha = 0;
-		this.actualContext.globalCompositeOperation = 'multiply';
+		if (this.layer._themeColorScheme === 'light') {
+			this.actualContext.globalCompositeOperation = 'multiply';
+		}
+		else {
+			this.actualContext.globalAlpha = 0.9;
+		}
 		this.actualContext.fillStyle = color;
 		let rects;
 		let pdfRect;
@@ -480,7 +483,7 @@ export default class Page {
 		for (let i = 0; i < positions.length; i++) {
 			let position = positions[i];
 			if (selected.pageIdx === this.pageIndex && i === selected.matchIdx) {
-				this.actualContext.fillStyle = this.usingDarkMode
+				this.actualContext.fillStyle = this.layer._themeColorScheme === 'dark'
 					? FIND_RESULT_COLOR_CURRENT_DARK
 					: FIND_RESULT_COLOR_CURRENT_LIGHT;
 			}
@@ -488,7 +491,7 @@ export default class Page {
 				if (!this.layer._findController.state.highlightAll) {
 					continue;
 				}
-				this.actualContext.fillStyle = this.usingDarkMode
+				this.actualContext.fillStyle = this.layer._themeColorScheme === 'dark'
 					? FIND_RESULT_COLOR_ALL_DARK
 					: FIND_RESULT_COLOR_ALL_LIGHT;
 			}
@@ -864,7 +867,10 @@ export default class Page {
 				let { chars } = this.layer._pdfPages[this.pageIndex];
 				let position = this.p2v(annotation2.position);
 				this.actualContext.save();
-				this.actualContext.globalCompositeOperation = 'multiply';
+				if (this.layer._themeColorScheme === 'light') {
+					this.actualContext.globalCompositeOperation = 'multiply';
+				}
+
 				this.actualContext.fillStyle = annotation2.color;
 				let startRect;
 				let endRect;
@@ -936,7 +942,6 @@ export default class Page {
 
 
 		this.actualContext.save();
-		this.actualContext.globalCompositeOperation = 'multiply';
 		if (selectionRanges.length && !selectionRanges[0].collapsed && ['highlight', 'underline'].includes(this.layer._tool.type)) {
 			let annotation = this.layer._getAnnotationFromSelectionRanges(selectionRanges, this.layer._tool.type, this.layer._tool.color);
 			if (annotation.position.pageIndex === this.pageIndex
@@ -957,6 +962,17 @@ export default class Page {
 				}
 				position = this.p2v(position);
 				this.actualContext.fillStyle = SELECTION_COLOR;
+
+				if (this.layer._themeColorScheme === 'light') {
+					this.actualContext.globalCompositeOperation = 'multiply';
+					this.actualContext.globalAlpha = 0.4;
+				}
+				else {
+					this.actualContext.globalCompositeOperation = 'lighten';
+					this.actualContext.globalAlpha = 0.7;
+				}
+
+
 				for (let rect of position.rects) {
 					this.actualContext.fillRect(rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]);
 				}

@@ -322,7 +322,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 				<button
 					tabIndex={-1}
 					data-tabstop={1}
-					className="primary"
+					className="form-button primary"
 					disabled={disabled}
 					onClick={handleUpdateClick}
 				><FormattedMessage id="general.update"/></button>

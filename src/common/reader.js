@@ -9,14 +9,17 @@ import AnnotationManager from './annotation-manager';
 import {
 	createAnnotationContextMenu,
 	createColorContextMenu,
-	createSelectorContextMenu, createThumbnailContextMenu,
+	createSelectorContextMenu,
+	createThemeContextMenu,
+	createThumbnailContextMenu,
 	createViewContextMenu
 } from './context-menu';
 import { initPDFPrintService } from '../pdf/pdf-print-service';
-import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE } from './defines';
+import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES } from './defines';
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
+	getCurrentColorScheme,
 	getImageDataURL, isMac,
 	setMultiDragPreview,
 } from './lib/utilities';
@@ -62,6 +65,9 @@ class Reader {
 		this._onIframeTab = options.onIframeTab;
 		this._onBringReaderToFront = options.onBringReaderToFront;
 		this._onTextSelectionAnnotationModeChange = options.onTextSelectionAnnotationModeChange;
+		this._onSaveCustomThemes = options.onSaveCustomThemes;
+		this._onSetLightTheme = options.onSetLightTheme;
+		this._onSetDarkTheme = options.onSetDarkTheme;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
@@ -122,6 +128,13 @@ class Reader {
 			}
 		};
 
+		let themes = [...DEFAULT_THEMES, ...(options.customThemes || [])];
+		themes = new Map(themes.map(theme => [theme.id, theme]));
+		let lightTheme = options.lightTheme && themes.get(options.lightTheme) || null;
+		let darkTheme = options.darkTheme === undefined
+			? DEFAULT_THEMES.find(x => x.id === 'dark')
+			: themes.get(options.darkTheme) || null;
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -142,7 +155,9 @@ class Reader {
 			fontFamily: options.fontFamily,
 			hyphenate: options.hyphenate,
 			showAnnotations: options.showAnnotations !== undefined ? options.showAnnotations : true, // show/hide annotations in views
-			useDarkModeForContent: options.useDarkModeForContent !== undefined ? options.useDarkModeForContent : true,
+			customThemes: options.customThemes || [],
+			lightTheme,
+			darkTheme,
 			autoDisableNoteTool: options.autoDisableNoteTool !== undefined ? options.autoDisableNoteTool : true,
 			autoDisableTextTool: options.autoDisableTextTool !== undefined ? options.autoDisableTextTool : true,
 			autoDisableImageTool: options.autoDisableImageTool !== undefined ? options.autoDisableImageTool : true,
@@ -163,13 +178,14 @@ class Reader {
 			labelPopup: null,
 			passwordPopup: null,
 			printPopup: null,
+			appearancePopup: null,
+			themePopup: null,
 			contextMenu: null,
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
 			primaryViewSelectionPopup: null,
 			primaryViewOverlayPopup: null,
-			primaryViewEPUBAppearancePopup: null,
 			primaryViewFindState: {
 				popupOpen: false,
 				active: false,
@@ -184,7 +200,6 @@ class Reader {
 			secondaryViewAnnotationPopup: null,
 			secondaryViewSelectionPopup: null,
 			secondaryViewOverlayPopup: null,
-			secondaryViewEPUBAppearancePopup: null,
 			secondaryViewFindState: {
 				popupOpen: false,
 				active: false,
@@ -211,10 +226,10 @@ class Reader {
 				this.setSelectedAnnotations([]);
 			},
 			onToolbarShiftTab: () => {
-				this._onToolbarShiftTab();
+				this._onToolbarShiftTab?.();
 			},
 			onIframeTab: () => {
-				this._onIframeTab();
+				this._onIframeTab?.();
 			}
 		});
 
@@ -251,6 +266,8 @@ class Reader {
 						<ReaderUI
 							type={this._type}
 							state={this._state}
+							ref={this._readerRef}
+							tools={this._tools}
 							onSelectAnnotations={this.setSelectedAnnotations.bind(this)}
 							onZoomIn={this.zoomIn.bind(this)}
 							onZoomOut={this.zoomOut.bind(this)}
@@ -260,7 +277,7 @@ class Reader {
 							onNavigateToNextPage={this.navigateToNextPage.bind(this)}
 							onChangePageNumber={pageNumber => this.navigate({ pageNumber })}
 							onChangeTool={this.setTool.bind(this)}
-							onToggleEPUBAppearance={this.toggleEPUBAppearancePopup.bind(this)}
+							onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 							onToggleFind={this.toggleFindPopup.bind(this)}
 							onChangeFilter={this.setFilter.bind(this)}
 							onChangeSidebarView={this.setSidebarView.bind(this)}
@@ -271,6 +288,25 @@ class Reader {
 							onResizeSidebar={(width) => {
 								this.setSidebarWidth(width);
 								this._onChangeSidebarWidth(width);
+							}}
+							onChangeTheme={(theme) => {
+								if (getCurrentColorScheme(this._state.colorScheme) === 'dark') {
+									// For Zotero client use prefs to change theme
+									if (this._onSetDarkTheme) {
+										this._onSetDarkTheme(theme);
+									}
+									else {
+										this.setDarkTheme(theme);
+									}
+								}
+								else {
+									if (this._onSetLightTheme) {
+										this._onSetLightTheme(theme);
+									}
+									else {
+										this.setLightTheme(theme);
+									}
+								}
 							}}
 							onResizeSplitView={this.setSplitViewSize.bind(this)}
 							onAddAnnotation={(annotation, select) => {
@@ -313,15 +349,43 @@ class Reader {
 							onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 							onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 							onOpenLink={this._onOpenLink}
-							onChangeEPUBAppearance={this._handleEPUBAppearanceChange.bind(this)}
+							onChangeAppearance={this._handleAppearanceChange.bind(this)}
 							onChangeFindState={this._handleFindStateChange.bind(this)}
 							onFindNext={this.findNext.bind(this)}
 							onFindPrevious={this.findPrevious.bind(this)}
 							onToggleContextPane={this._onToggleContextPane}
 							onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 							onCloseOverlayPopup={this._handleOverlayPopupClose.bind(this)}
-							ref={this._readerRef}
-							tools={this._tools}
+							onChangeSplitType={(type) => {
+								if (type === 'horizontal') {
+									this.toggleHorizontalSplit(true);
+								}
+								else if (type === 'vertical') {
+									this.toggleVerticalSplit(true);
+								}
+								else {
+									this.disableSplitView();
+								}
+							}}
+							onChangeScrollMode={(mode) => this.scrollMode = mode}
+							onChangeSpreadMode={(mode) => this.spreadMode = mode}
+							onChangeFlowMode={(mode) => this.flowMode = mode}
+							onAddTheme={() => this._updateState({ themePopup: {} })}
+							onOpenThemeContextMenu={params => this._onOpenContextMenu(createThemeContextMenu(this, params))}
+							onCloseThemePopup={() => this._updateState({ themePopup: null })}
+							onSaveCustomThemes={(customThemes) => {
+								this._onSaveCustomThemes(customThemes);
+								let themes = [...DEFAULT_THEMES, ...(customThemes || [])];
+								let map = new Map(themes.map(theme => [theme.id, theme]));
+								let { lightTheme, darkTheme } = this._state;
+								if (lightTheme && !map.has(lightTheme.id)) {
+									lightTheme = null;
+								}
+								if (darkTheme && !map.has(darkTheme.id)) {
+									darkTheme = null;
+								}
+								this._updateState({ themePopup: null, customThemes, lightTheme, darkTheme });
+							}}
 						/>
 					</ReaderContext.Provider>
 				</IntlProvider>
@@ -387,15 +451,17 @@ class Reader {
 			this._secondaryView?.setOutline(this._state.outline);
 		}
 
-		if (init || this._state.useDarkModeForContent !== previousState.useDarkModeForContent) {
-			document.body.classList.toggle(
-				'use-dark-mode-for-content',
-				this._state.useDarkModeForContent
-			);
-
+		if (init || this._state.lightTheme !== previousState.lightTheme) {
 			if (!init) {
-				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
-				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
+				this._primaryView?.setLightTheme(this._state.lightTheme);
+				this._secondaryView?.setLightTheme(this._state.lightTheme);
+			}
+		}
+
+		if (init || this._state.darkTheme !== previousState.darkTheme) {
+			if (!init) {
+				this._primaryView?.setDarkTheme(this._state.darkTheme);
+				this._secondaryView?.setDarkTheme(this._state.darkTheme);
 			}
 		}
 
@@ -409,9 +475,6 @@ class Reader {
 			if (!init) {
 				this._primaryView?.setColorScheme(this._state.colorScheme);
 				this._secondaryView?.setColorScheme(this._state.colorScheme);
-				// also update useDarkModeForContent as it depends on colorScheme
-				this._primaryView?.setUseDarkMode(this._state.useDarkModeForContent);
-				this._secondaryView?.setUseDarkMode(this._state.useDarkModeForContent);
 			}
 		}
 
@@ -615,10 +678,6 @@ class Reader {
 		this._updateState({ showAnnotations: enable });
 	}
 
-	useDarkModeForContent(use) {
-		this._updateState({ useDarkModeForContent: use });
-	}
-
 	setAutoDisableNoteTool(autoDisable) {
 		this._updateState({ autoDisableNoteTool: autoDisable });
 	}
@@ -678,7 +737,7 @@ class Reader {
 		this._onBringReaderToFront?.(false);
 	}
 
-	_handleEPUBAppearanceChange(params) {
+	_handleAppearanceChange(params) {
 		this._ensureType('epub');
 		this._primaryView?.setAppearance(params);
 		this._secondaryView?.setAppearance(params);
@@ -729,8 +788,8 @@ class Reader {
 		});
 	}
 
-	toggleEPUBAppearancePopup({ open }) {
-		let key = 'epubAppearancePopup';
+	toggleAppearancePopup(open) {
+		let key = 'appearancePopup';
 		if (open === undefined) {
 			open = !this._state[key];
 		}
@@ -739,14 +798,8 @@ class Reader {
 			this.toggleFindPopup({ primary: false, open: false });
 		}
 		this._updateState({ [key]: open });
-		if (open) {
-			setTimeout(() => {
-				let selector = '.epub-appearance-popup input';
-				document.querySelector(selector)?.focus();
-			}, 100);
-		}
-		else {
-			this._focusManager.restoreFocus();
+		if (!open) {
+			this._lastView.focus();
 		}
 	}
 
@@ -758,9 +811,6 @@ class Reader {
 		let findState = this._state[key];
 		if (open === undefined) {
 			open = !findState.popupOpen;
-		}
-		if (open) {
-			this.toggleEPUBAppearancePopup({ primary, open: false });
 		}
 		findState = { ...findState, popupOpen: open, active: false, result: null };
 		this._updateState({ [key]: findState });
@@ -948,7 +998,8 @@ class Reader {
 			annotations: this._state.annotations.filter(x => !x._hidden),
 			outline: this._state.outline,
 			showAnnotations: this._state.showAnnotations,
-			useDarkMode: this._state.useDarkModeForContent,
+			lightTheme: this._state.lightTheme,
+			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
@@ -1349,6 +1400,39 @@ class Reader {
 
 	setSidebarView(view) {
 		this._updateState({ sidebarView: view });
+	}
+
+	setCustomThemes(customThemes) {
+		this._updateState({ customThemes });
+
+		let themes = [...DEFAULT_THEMES, ...(customThemes || [])];
+		themes = new Map(themes.map(theme => [theme.id, theme]));
+
+		let lightThemeID = this._state.lightTheme?.id;
+		if (lightThemeID) {
+			let lightTheme = themes.get(lightThemeID) || null;
+			this._updateState({ lightTheme });
+		}
+
+		let darkThemeID = this._state.darkTheme?.id;
+		if (darkThemeID) {
+			let darkTheme = themes.get(darkThemeID) || null;
+			this._updateState({ darkTheme });
+		}
+	}
+
+	setLightTheme(themeName) {
+		let themes = [...DEFAULT_THEMES, ...(this._state.customThemes || [])];
+		themes = new Map(themes.map(theme => [theme.id, theme]));
+		let lightTheme = themes.get(themeName) || null;
+		this._updateState({ lightTheme });
+	}
+
+	setDarkTheme(themeName) {
+		let themes = [...DEFAULT_THEMES, ...(this._state.customThemes || [])];
+		themes = new Map(themes.map(theme => [theme.id, theme]));
+		let darkTheme = themes.get(themeName) || null;
+		this._updateState({ darkTheme });
 	}
 
 	toggleSidebar(open) {

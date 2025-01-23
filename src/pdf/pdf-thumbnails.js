@@ -244,6 +244,12 @@ class PDFThumbnails {
 		}
 	}
 
+	clear() {
+		this._renderQueue.end();
+		this._thumbnails = this._thumbnails.map(x => ({ ...x, image: undefined }));
+		this._onUpdate(this._thumbnails);
+	}
+
 	_getPageDrawContext(upscaleFactor = 1, canvasWidth, canvasHeight) {
 		// Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
 		// until rendering/image conversion is complete, to avoid display issues.

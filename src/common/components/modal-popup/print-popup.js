@@ -35,13 +35,13 @@ function PrintPopup({ params }) {
 					<div className="row buttons" data-tabstop={1}>
 						<button
 							tabIndex={-1}
-							className=""
+							className="form-button"
 							onClick={handleCancel}
 						><FormattedMessage id="general.cancel"/></button>
 						<button
 							tabIndex={-1}
 							data-default-focus={true}
-							className="primary"
+							className="form-button primary"
 							onClick={handlePrint}
 						><FormattedMessage id="general.print"/></button>
 					</div>
@@ -57,7 +57,7 @@ function PrintPopup({ params }) {
 					<div className="row buttons" data-tabstop={1}>
 						<button
 							tabIndex={-1}
-							className="overlayButton"
+							className="form-button"
 							onClick={handleCancel}
 						><FormattedMessage id="general.cancel"/></button>
 					</div>

@@ -57,6 +57,14 @@
 		}
 	}
 
+	.divider {
+		width: 1px;
+		height: 20px;
+		border-radius: 0.5px;
+		background: var(--fill-quinary);
+		margin: 0 4px;
+	}
+
 	@include macOS-inactive-opacity;
 }
 
@@ -70,14 +78,6 @@
 	.context-pane-toggle .standard-view {
 		transform: scaleX(-1);
 	}
-}
-
-.divider {
-	width: 1px;
-	height: 20px;
-	border-radius: 0.5px;
-	background: var(--fill-quinary);
-	margin: 0 4px;
 }
 
 .toolbar-button {
