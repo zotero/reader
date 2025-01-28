@@ -42,23 +42,10 @@
 }
 
 :root {
-	--background-color: #ffffff;
-	--text-color: #121212;
 	--link-color: #0000ee;
 	--visited-link-color: #551a8b;
 
-	@media (prefers-color-scheme: dark) {
-		&:not(.disable-dark-mode) {
-			--background-color: #121212;
-			--text-color: #fefefe;
-			--link-color: #63caff;
-			--visited-link-color: #0099e5;
-		}
-	}
-
-	&[data-color-scheme=dark]:not(.disable-dark-mode) {
-		--background-color: #121212;
-		--text-color: #fefefe;
+	&[data-color-scheme="dark"] {
 		--link-color: #63caff;
 		--visited-link-color: #0099e5;
 	}
@@ -73,17 +60,8 @@
 		hyphens: none !important;
 	}
 
-	@media (prefers-color-scheme: dark) {
-		&:not(.disable-dark-mode) {
-			* {
-				color: inherit !important;
-				background: transparent !important;
-			}
-		}
-	}
-
-	&[data-color-scheme=dark]:not(.disable-dark-mode) {
-		* {
+	&[data-color-scheme="dark"] {
+		:not(:link):not(:visited) {
 			color: inherit !important;
 			background: transparent !important;
 		}

@@ -34,7 +34,6 @@ import {
 	getRectsAreaSize,
 	getClosestObject,
 	getOutlinePath,
-	getModeBasedOnColors
 } from './lib/utilities';
 import {
 	debounceUntilScrollFinishes,
@@ -46,7 +45,8 @@ import {
 	isWin,
 	isFirefox,
 	isSafari,
-	throttle
+	throttle,
+	getModeBasedOnColors
 } from '../common/lib/utilities';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';

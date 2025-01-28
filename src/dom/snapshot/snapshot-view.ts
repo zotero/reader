@@ -113,12 +113,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			});
 		}
 
-		let url = this._getSnapshotLocation() || 'about:blank';
-		// Dark Reader gets the page location by accessing the global property 'location'
-		// Horrifying, but it works
-		this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
-		this.setUseDarkMode(this._useDarkMode);
-
 		this._initOutline();
 	}
 
@@ -367,6 +361,35 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._options.onChangeViewStats(viewStats);
 	}
 
+	protected override _updateColorScheme() {
+		super._updateColorScheme();
+		if (!('DarkReader' in this._iframeWindow)) {
+			let url = this._getSnapshotLocation() || 'about:blank';
+			// Dark Reader gets the page location by accessing the global property 'location'
+			// Horrifying, but it works
+			this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
+		}
+		let DarkReader = this._iframeWindow.DarkReader!;
+		// Stock light theme: Just let the page use its default styles
+		if (this._themeColorScheme === 'light' && this._theme.id === 'light') {
+			DarkReader.disable();
+		}
+		else {
+			DarkReader.enable({
+				mode: this._themeColorScheme === 'light' ? 0 : 1,
+				darkSchemeBackgroundColor: this._theme.background,
+				darkSchemeTextColor: this._theme.foreground,
+				lightSchemeBackgroundColor: this._theme.background,
+				lightSchemeTextColor: this._theme.foreground,
+			}, {
+				invert: [
+					// Invert Mediawiki equations
+					'.mw-invert'
+				]
+			} satisfies Partial<DynamicThemeFix> as DynamicThemeFix);
+		}
+	}
+
 	// ***
 	// Event handlers
 	// ***
@@ -431,25 +454,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			else if (previousState && previousState.highlightAll !== state.highlightAll) {
 				this._find!.findState.highlightAll = state.highlightAll;
 				this._renderAnnotations();
-			}
-		}
-	}
-
-	override setUseDarkMode(use: boolean) {
-		super.setUseDarkMode(use);
-		// Run Dark Reader now if it's been loaded
-		if (this._iframeWindow.DarkReader) {
-			if (use) {
-				const mode = this._colorScheme === 'dark' ? 'enable' : 'auto';
-				this._iframeWindow.DarkReader[mode]({}, {
-					invert: [
-						// Invert Mediawiki equations
-						'.mw-invert'
-					]
-				} as DynamicThemeFix);
-			}
-			else {
-				this._iframeWindow.DarkReader.auto(false);
 			}
 		}
 	}
