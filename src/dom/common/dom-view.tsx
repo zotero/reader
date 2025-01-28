@@ -4,7 +4,7 @@ import {
 	Annotation,
 	AnnotationPopupParams,
 	AnnotationType,
-	ArrayRect,
+	ArrayRect, ColorScheme,
 	FindState,
 	MaybePromise,
 	NavLocation,
@@ -12,7 +12,7 @@ import {
 	OutlineItem,
 	OverlayPopupParams,
 	Platform,
-	SelectionPopupParams,
+	SelectionPopupParams, Theme,
 	Tool,
 	ToolType,
 	ViewStats,
@@ -40,8 +40,8 @@ import { FindProcessor } from "./lib/find";
 import { SELECTION_COLOR } from "../../common/defines";
 import {
 	debounceUntilScrollFinishes,
-	getCodeCombination,
-	getKeyCombination,
+	getCodeCombination, getCurrentColorScheme,
+	getKeyCombination, getModeBasedOnColors,
 	isMac,
 	isSafari
 } from "../../common/lib/utilities";
@@ -92,9 +92,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _annotationRenderRoot!: Root;
 
-	protected _useDarkMode: boolean;
+	protected _lightTheme: Theme | null;
 
-	protected _colorScheme: string | null;
+	protected _darkTheme: Theme | null;
+
+	protected _colorScheme: ColorScheme | null;
+
+	protected _theme!: Theme;
+
+	protected _themeColorScheme!: ColorScheme;
 
 	protected _annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 
@@ -153,7 +159,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._selectedAnnotationIDs = options.selectedAnnotationIDs;
 		// Don't show annotations if this is false
 		this._showAnnotations = options.showAnnotations;
-		this._useDarkMode = options.useDarkMode;
+		this._lightTheme = options.lightTheme;
+		this._darkTheme = options.darkTheme;
 		this._colorScheme = options.colorScheme;
 		this._annotationPopup = options.annotationPopup;
 		this._selectionPopup = options.selectionPopup;
@@ -655,6 +662,36 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}));
 	}
 
+	protected _updateColorScheme() {
+		let colorScheme = getCurrentColorScheme(this._colorScheme);
+		let theme: Theme;
+		if (colorScheme === 'light' && this._lightTheme) {
+			theme = this._lightTheme;
+		}
+		else if (colorScheme === 'dark' && this._darkTheme) {
+			theme = this._darkTheme;
+		}
+		else {
+			theme = {
+				id: 'none',
+				label: '',
+				background: '#ffffff',
+				foreground: '#121212'
+			};
+		}
+		let themeColorScheme = getModeBasedOnColors(theme.background, theme.foreground);
+
+		let roots = [this._iframeDocument.documentElement, this._annotationRenderRootEl];
+		for (let root of roots) {
+			root.dataset.colorScheme = themeColorScheme;
+			root.style.setProperty('--background-color', theme.background);
+			root.style.setProperty('--text-color', theme.foreground);
+		}
+
+		this._theme = theme;
+		this._themeColorScheme = themeColorScheme;
+	}
+
 	// ***
 	// Event handlers
 	// ***
@@ -711,8 +748,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Pass options to setters that were delayed until iframe initialization
 		this.setAnnotations(this._options.annotations);
 		this.setTool(this._options.tool);
-		this.setUseDarkMode(this._options.useDarkMode);
-		this.setColorScheme(this._options.colorScheme);
+
+		this._updateColorScheme();
+		this._iframeWindow.matchMedia('(prefers-color-scheme: dark)')
+			.addEventListener('change', () => this._updateColorScheme());
 
 		await this._onInitialDisplay(this._options.viewState || {});
 		setTimeout(() => {
@@ -1596,22 +1635,19 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations();
 	}
 
-	setUseDarkMode(use: boolean) {
-		this._useDarkMode = use;
-		this._iframeDocument.documentElement.classList.toggle('disable-dark-mode', !use);
-		this._annotationRenderRootEl.classList.toggle('disable-dark-mode', !use);
+	setLightTheme(theme: Theme | null) {
+		this._lightTheme = theme;
+		this._updateColorScheme();
 	}
 
-	setColorScheme(colorScheme: string | null) {
+	setDarkTheme(theme: Theme | null) {
+		this._darkTheme = theme;
+		this._updateColorScheme();
+	}
+
+	setColorScheme(colorScheme: ColorScheme | null) {
 		this._colorScheme = colorScheme;
-		if (colorScheme) {
-			this._iframeDocument.documentElement.dataset.colorScheme = colorScheme;
-			this._annotationRenderRootEl.dataset.colorScheme = colorScheme;
-		}
-		else {
-			delete this._iframeDocument.documentElement.dataset.colorScheme;
-			delete this._annotationRenderRootEl.dataset.colorScheme;
-		}
+		this._updateColorScheme();
 	}
 
 	setSelectedAnnotationIDs(ids: string[]) {
@@ -1733,8 +1769,9 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	selectedAnnotationIDs: string[];
 	annotations: WADMAnnotation[];
 	showAnnotations: boolean;
-	useDarkMode: boolean;
-	colorScheme: string | null;
+	lightTheme: Theme | null;
+	darkTheme: Theme | null;
+	colorScheme: ColorScheme | null;
 	annotationPopup: AnnotationPopupParams<WADMAnnotation> | null;
 	selectionPopup: SelectionPopupParams<WADMAnnotation> | null;
 	overlayPopup: OverlayPopupParams | null;

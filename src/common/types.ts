@@ -169,3 +169,12 @@ export type FindState = {
 };
 
 export type MaybePromise<T> = Promise<T> | T;
+
+export type ColorScheme = 'light' | 'dark';
+
+export type Theme = {
+	id: string;
+	label: string;
+	background: string;
+	foreground: string;
+};

@@ -69,13 +69,7 @@
 	}
 }
 
-@media (prefers-color-scheme: dark) {
-	#annotation-render-root:not(.disable-dark-mode) {
-		@include -dark-rules();
-	}
-}
-
-#annotation-render-root[data-color-scheme=dark]:not(.disable-dark-mode) {
+#annotation-render-root[data-color-scheme=dark] {
 	@include -dark-rules();
 }
 

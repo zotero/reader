@@ -3,7 +3,7 @@ declare interface Window {
 
 	dev?: boolean;
 
-	DarkReader: typeof import('darkreader');
+	DarkReader?: typeof import('darkreader');
 
 	zoteroPrint?: (options?: { overrideSettings?: Record<string, string> }) => Promise<void>;
 }
