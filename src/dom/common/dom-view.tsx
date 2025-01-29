@@ -673,7 +673,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		else {
 			theme = {
-				id: 'none',
+				id: 'light',
 				label: '',
 				background: '#ffffff',
 				foreground: '#121212'
