@@ -30,7 +30,7 @@ import {
 import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import injectCSS from './stylesheets/inject.scss';
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
-import { DynamicThemeFix } from "darkreader";
+import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
