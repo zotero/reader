@@ -584,6 +584,7 @@ class PDFFindController {
 		this._onNavigate = onNavigate;
 		this._onUpdateMatches = onUpdateMatches;
 		this._onUpdateState = onUpdateState;
+		this._charMapping = [];
 
 		/**
 		 * Callback used to check if a `pageNumber` is currently visible.
@@ -1040,10 +1041,18 @@ class PDFFindController {
 				try {
 					await new Promise(resolve => setTimeout(resolve));
 					let pageData = await this._pdfDocument.getPageData({ pageIndex: i });
-					for (let char of pageData.chars) {
+					if (!this._charMapping[i]) {
+						this._charMapping[i] = [];
+					}
+					for (let j = 0; j < pageData.chars.length; j++) {
+						let char = pageData.chars[j];
 						text.push(char.u);
+						for (let k = 0; k < char.u.length; k++) {
+							this._charMapping[i].push(j);
+						}
 						if (char.spaceAfter || char.lineBreakAfter || char.paragraphBreakAfter) {
 							text.push(' ');
+							this._charMapping[i].push(j);
 						}
 					}
 				}
@@ -1271,6 +1280,13 @@ class PDFFindController {
 				currentOffsetEnd = currentOffsetStart + this._pageMatchesLength[pageIdx][matchIdx];
 				currentPageIndex = pageIdx;
 			}
+		}
+
+		// Adjust offset positions to account for virtual spaces and characters that
+		// consist of multiple decomposed characters
+		if (currentOffsetStart >= 0) {
+			currentOffsetStart = this._charMapping[pageIdx][currentOffsetStart];
+			currentOffsetEnd = this._charMapping[pageIdx][currentOffsetEnd - 1];
 		}
 
 		return { current, total, currentPageIndex, currentOffsetStart, currentOffsetEnd };
