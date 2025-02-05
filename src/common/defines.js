@@ -50,4 +50,4 @@ export const DEFAULT_THEMES = [
 	{ id: 'sepia', label: 'Sepia', background: "#F4ECD8", foreground: "#5B4636" }
 ];
 
-export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 100; // ms
+export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 500; // ms

@@ -153,6 +153,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _a11yVirtualCursorTarget: Node | null;
 
+	protected _a11yShouldFocusVirtualCursorTarget: boolean;
+
 	scale = 1;
 
 	protected constructor(options: DOMViewOptions<State, Data>) {
@@ -175,6 +177,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			onNavigate: location => this.navigate(location, { skipHistory: true, behavior: 'auto' }),
 		});
 		this._a11yVirtualCursorTarget = null;
+		this._a11yShouldFocusVirtualCursorTarget = false;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');

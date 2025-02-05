@@ -161,6 +161,7 @@ class PDFView {
 		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
 
 		this._a11yVirtualCursorTarget = null;
+		this._a11yShouldFocusVirtualCursorTarget = false;
 
 		let setOptions = () => {
 			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
@@ -931,6 +932,10 @@ class PDFView {
 		// If the target were to be set on anything inside of page.div, JAWS would loose its virtual
 		// cursor if the page is unloaded.
 		this._a11yVirtualCursorTarget = page.div;
+		if (this._a11yShouldFocusVirtualCursorTarget) {
+			this._a11yShouldFocusVirtualCursorTarget = false;
+			placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+		}
 	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	setSelectedAnnotationIDs(ids) {
@@ -3285,6 +3290,10 @@ class PDFView {
 					}, 100);
 				}
 			}
+		}
+		// These keypresses scroll the content and should change focus for screen readers
+		if (!event.shiftKey && ["PageUp", "PageDown", "Home", "End"].includes(key)) {
+			this._a11yShouldFocusVirtualCursorTarget = true;
 		}
 
 		this._onKeyDown(event);

@@ -58,6 +58,7 @@ import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from ".
 import LRUCacheMap from "../common/lib/lru-cache-map";
 import { mode } from "../common/lib/collection";
 import { debounce } from '../../common/lib/debounce';
+import { placeA11yVirtualCursor } from '../../common/lib/utilities';
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -818,6 +819,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			return;
 		}
 
+		// These keypresses scroll the content and should change focus for screen readers
+		if (!event.shiftKey && ["ArrowLeft", "ArrowRight", "PageUp", "PageDown", "Home", "End"].includes(key)) {
+			this._a11yShouldFocusVirtualCursorTarget = true;
+		}
+
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
 				this.flow.navigateLeft();
@@ -1217,6 +1223,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		let node = this.flow.startRange.startContainer;
 		let containingElement = closestElement(node);
 		this._a11yVirtualCursorTarget = containingElement;
+		if (this._a11yShouldFocusVirtualCursorTarget) {
+			this._a11yShouldFocusVirtualCursorTarget = false;
+			placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+		}
 	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	protected _setScale(scale: number) {
