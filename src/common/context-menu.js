@@ -395,7 +395,7 @@ export function createThemeContextMenu(reader, params) {
 					}
 				}
 			],
-			...appendCustomItemGroups('createSelectorContextMenu', reader, params)
+			...appendCustomItemGroups('createThemeContextMenu', reader, params)
 		])
 	};
 }

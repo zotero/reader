@@ -175,7 +175,7 @@ function Theme({ theme, active, onSet, onOpenContextMenu }) {
 		event.stopPropagation();
 		event.preventDefault();
 		let { x, y } = getPopupCoordinatesFromClickEvent(event);
-		onOpenContextMenu({ theme, x, y, popup: true });
+		onOpenContextMenu({ theme, x, y });
 	}
 
 	let titleString = `pdfReader.theme.${theme.id}`;
