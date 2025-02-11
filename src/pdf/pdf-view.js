@@ -296,7 +296,12 @@ class PDFView {
 				this.navigateToPosition(matchPositions[matchIndex]);
 			},
 			onUpdateMatches: ({ matchesCount }) => {
-				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+				let result = {
+					total: matchesCount.total,
+					index: matchesCount.current - 1,
+					pageIndex: matchesCount.currentPageIndex,
+					snippets: matchesCount.snippets,
+				};
 				if (this._pdfjsFindState === FindState.PENDING) {
 					result = null;
 				}

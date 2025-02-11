@@ -563,6 +563,64 @@ function getOriginalIndex(diffs, pos, len) {
 	return [oldStart, oldLen];
 }
 
+function getSnippet(text, phraseStart, phraseEnd, numWordsAround) {
+	if (phraseStart < 0 || phraseEnd > text.length || phraseStart >= phraseEnd) {
+		return '';
+	}
+
+	let phrase = text.substring(phraseStart, phraseEnd);
+
+	let leftText = text.substring(0, phraseStart).trim();
+	let rightText = text.substring(phraseEnd).trim();
+
+	let leftWords = leftText ? leftText.split(/\s+/) : [];
+	let rightWords = rightText ? rightText.split(/\s+/) : [];
+
+	let leftSnippetWords = leftWords.slice(-numWordsAround);
+	let rightSnippetWords = rightWords.slice(0, numWordsAround);
+
+	let leftSnippet = leftSnippetWords.join(' ');
+	let rightSnippet = rightSnippetWords.join(' ');
+
+	// Optionally add ellipses if there are more words that we didn't include.
+	let prefix = leftWords.length > numWordsAround ? '…' : '';
+	let suffix = rightWords.length > numWordsAround ? '…' : '';
+
+	// Determine if the phrase starts or ends mid-word.
+	// If phraseStart is in the middle of a word (i.e. the character immediately before is not whitespace)
+	// then we should not add a space between the left snippet and the phrase.
+	let leftPartial = phraseStart > 0 && !/\s/.test(text.charAt(phraseStart - 1));
+	// Similarly, if phraseEnd is in the middle of a word (i.e. the character at phraseEnd is not whitespace),
+	// then we should not add a space between the phrase and the right snippet.
+	let rightPartial = phraseEnd < text.length && !/\s/.test(text.charAt(phraseEnd));
+
+	// Combine the parts into one snippet.
+	let snippet = "";
+	if (prefix) {
+		snippet += prefix;
+	}
+	if (leftSnippet) {
+		snippet += leftSnippet;
+		// Only add a space if the phrase does not start in the middle of a word.
+		if (!leftPartial) {
+			snippet += " ";
+		}
+	}
+	snippet += phrase;
+	if (rightSnippet) {
+		// Only add a space before the right snippet if the phrase does not end in the middle of a word.
+		if (!rightPartial) {
+			snippet += " ";
+		}
+		snippet += rightSnippet;
+	}
+	if (suffix) {
+		snippet += suffix;
+	}
+
+	return snippet;
+}
+
 /**
  * @typedef {Object} PDFFindControllerOptions
  * @property {IPDFLinkService} linkService - The navigation/linking service.
@@ -1263,6 +1321,20 @@ class PDFFindController {
 			}
 			current += matchIdx + 1;
 		}
+
+		let snippets = [];
+		for (let i = 0; i < this._pageMatches.length; i++) {
+			let pageMatches = this._pageMatches[i];
+			if (pageMatches) {
+				for (let j = 0; j < pageMatches.length; j++) {
+					let offsetStart = this._pageMatches[i][j];
+					let offsetEnd = offsetStart + this._pageMatchesLength[i][j];
+					let snippet = getSnippet(this._pageContents[i], offsetStart, offsetEnd, 5, 5);
+					snippets.push(snippet);
+				}
+			}
+		}
+
 		// When searching starts, this method may be called before the `pageMatches`
 		// have been counted (in `_calculateMatch`). Ensure that the UI won't show
 		// temporarily broken state when the active find result doesn't make sense.
@@ -1289,7 +1361,7 @@ class PDFFindController {
 			currentOffsetEnd = this._charMapping[pageIdx][currentOffsetEnd - 1];
 		}
 
-		return { current, total, currentPageIndex, currentOffsetStart, currentOffsetEnd };
+		return { current, total, currentPageIndex, currentOffsetStart, currentOffsetEnd, snippets };
 	}
 
 	_updateUIState(state, previous = false) {
