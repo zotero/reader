@@ -738,6 +738,17 @@ class PDFView {
 
 	setPageLabels(pageLabels) {
 		this._pageLabels = pageLabels;
+
+		for (let i = 0; i < this._iframeWindow.PDFViewerApplication.pdfViewer._pages.length; i++) {
+			let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[i];
+			let label = pageLabels[i];
+			if (label != i + 1) {
+				page.div.setAttribute('aria-label', `Page: ${label}. Index: ${i + 1}`);
+			}
+			else {
+				page.div.setAttribute('aria-label', `Page: cd ${i + 1}`);
+			}
+		}
 	}
 
 	setReadOnly(readOnly) {
