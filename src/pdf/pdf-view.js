@@ -327,6 +327,7 @@ class PDFView {
 						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
 						// For a11y announcement in a11yAnnounceSearchMessage
 						result.currentPageLabel = result.annotation.pageLabel;
+						result.currentSnippet = result.snippets[matchesCount.current - 1];
 					})();
 				}
 				this._onSetFindState({ ...this._findState, result });
@@ -334,7 +335,7 @@ class PDFView {
 			},
 			onUpdateState: ({ matchesCount, state, rawQuery }) => {
 				this._pdfjsFindState = state;
-				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+				let result = { total: matchesCount.total, index: matchesCount.current - 1, snippets: matchesCount.snippets };
 				if (this._pdfjsFindState === FindState.PENDING || !rawQuery.length) {
 					result = null;
 				}
@@ -351,6 +352,7 @@ class PDFView {
 						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
 						// For a11y announcement in a11yAnnounceSearchMessage
 						result.currentPageLabel = result.annotation.pageLabel;
+						result.currentSnippet = result.snippets[matchesCount.current - 1];
 					})();
 				}
 				this._onSetFindState({ ...this._findState, result });
