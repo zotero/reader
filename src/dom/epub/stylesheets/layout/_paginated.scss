@@ -98,7 +98,7 @@ replaced-body {
 	}
 
 	img, svg, audio, video {
-		max-width: calc(0.98 * var(--media-max-width)) !important;
+		max-width: calc(min(0.98 * var(--media-max-width), 100%)) !important;
 		max-height: calc(0.98 * (100vh - 80px)) !important;
 		object-fit: contain;
 		position: static !important;
