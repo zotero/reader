@@ -2,7 +2,7 @@ import EPUBView from '../dom/epub/epub-view';
 import SnapshotView from '../dom/snapshot/snapshot-view';
 import { debounce } from './lib/debounce';
 import AnnotationManager from './annotation-manager';
-import { DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE } from './defines';
+import { DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES } from './defines';
 
 let nop = () => undefined;
 
@@ -194,6 +194,31 @@ class View {
 	setFlowMode(mode) {
 		this._ensureType('epub');
 		this._view.setFlowMode(mode);
+	}
+
+	/**
+	 * @param {string} themeName
+	 */
+	setLightTheme(themeName) {
+		let themes = new Map(DEFAULT_THEMES.map(theme => [theme.id, theme]));
+		let lightTheme = themes.get(themeName) || null;
+		this._view.setLightTheme(lightTheme);
+	}
+
+	/**
+	 * @param {string} themeName
+	 */
+	setDarkTheme(themeName) {
+		let themes = new Map(DEFAULT_THEMES.map(theme => [theme.id, theme]));
+		let darkTheme = themes.get(themeName) || null;
+		this._view.setDarkTheme(darkTheme);
+	}
+
+	/**
+	 * @param {'light' | 'dark'} colorScheme
+	 */
+	setColorScheme(colorScheme) {
+		this._view.setColorScheme(colorScheme);
 	}
 }
 
