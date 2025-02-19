@@ -215,7 +215,7 @@ class View {
 	}
 
 	/**
-	 * @param {'light' | 'dark'} colorScheme
+	 * @param {'light' | 'dark' | null} colorScheme
 	 */
 	setColorScheme(colorScheme) {
 		this._view.setColorScheme(colorScheme);
