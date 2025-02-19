@@ -252,7 +252,7 @@
 			box-shadow: none;
 			position: relative;
 
-			&.active, &:active, &.active-pseudo-class-fix {
+			&.active, &:active:not(:disabled), &.active-pseudo-class-fix:not(:disabled) {
 				background: var(--material-button, #FFFFFF);
 				border: 0.5px solid var(--fill-senary, #00000005);
 				box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
@@ -266,7 +266,7 @@
 				}
 			}
 
-			&:active:not(.active), &.active-pseudo-class-fix:not(.active) {
+			&:active:not(.active):not(:disabled), &.active-pseudo-class-fix:not(.active):not(:disabled) {
 				background-color: var(--color-button50);
 				z-index: 1;
 			}

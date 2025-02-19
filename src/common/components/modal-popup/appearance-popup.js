@@ -295,12 +295,14 @@ function AppearancePopup(props) {
 									className={cx({ active: props.viewStats.spreadMode === 0 })}
 									title={intl.formatMessage({ id: 'pdfReader.single' })}
 									onClick={() => props.onChangeSpreadMode(0)}
+									disabled={props.viewStats.flowMode === 'scrolled'}
 								><IconColumnSingle/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.spreadMode === 1 })}
 									title={intl.formatMessage({ id: 'pdfReader.double' })}
 									onClick={() => props.onChangeSpreadMode(1)}
+									disabled={props.viewStats.flowMode === 'scrolled'}
 								><IconColumnDouble/></button>
 							</div>
 						</div>
