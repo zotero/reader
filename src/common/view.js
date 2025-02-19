@@ -3,6 +3,7 @@ import SnapshotView from '../dom/snapshot/snapshot-view';
 import { debounce } from './lib/debounce';
 import AnnotationManager from './annotation-manager';
 import { DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES } from './defines';
+import { getCurrentColorScheme } from './lib/utilities';
 
 let nop = () => undefined;
 
@@ -10,6 +11,14 @@ class View {
 	constructor(options) {
 		this._type = options.type;
 		this._options = options;
+
+		this._lightTheme = (options.lightTheme && DEFAULT_THEMES.find(x => x.id === options.lightTheme))
+			?? null;
+		this._darkTheme = options.darkTheme
+			? DEFAULT_THEMES.find(x => x.id === options.darkTheme) ?? null
+			: DEFAULT_THEMES.find(x => x.id === 'dark');
+		this._colorScheme = options.colorScheme;
+
 		this._view = this._createView();
 		this._annotationManager = new AnnotationManager({
 			readOnly: options.readOnly,
@@ -68,6 +77,9 @@ class View {
 			findState,
 			viewState: this._options.viewState || null,
 			location: this._options.location || null,
+			lightTheme: this._lightTheme,
+			darkTheme: this._darkTheme,
+			colorScheme: this._colorScheme,
 			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
 			onChangeViewStats: debounce(this._options.onChangeViewStats, DEBOUNCE_STATS_CHANGE),
 			onAddAnnotation,
@@ -197,28 +209,44 @@ class View {
 	}
 
 	/**
-	 * @param {string} themeName
+	 * @returns {string} Theme ID
 	 */
-	setLightTheme(themeName) {
-		let themes = new Map(DEFAULT_THEMES.map(theme => [theme.id, theme]));
-		let lightTheme = themes.get(themeName) || null;
-		this._view.setLightTheme(lightTheme);
+	getTheme() {
+		let theme = getCurrentColorScheme(null) === 'dark'
+			? this._darkTheme
+			: this._lightTheme;
+		return theme?.id ?? 'light';
 	}
 
 	/**
-	 * @param {string} themeName
+	 * @param {string} themeID
 	 */
-	setDarkTheme(themeName) {
+	setTheme(themeID) {
 		let themes = new Map(DEFAULT_THEMES.map(theme => [theme.id, theme]));
-		let darkTheme = themes.get(themeName) || null;
-		this._view.setDarkTheme(darkTheme);
+		let theme = themes.get(themeID) || null;
+		if (getCurrentColorScheme(this._colorScheme) === 'dark') {
+			this._darkTheme = theme;
+			this._view.setDarkTheme(theme);
+		}
+		else {
+			this._lightTheme = theme;
+			this._view.setLightTheme(theme);
+		}
 	}
 
 	/**
-	 * @param {'light' | 'dark' | null} colorScheme
+	 * @returns {'light' | 'dark' | null}
 	 */
-	setColorScheme(colorScheme) {
-		this._view.setColorScheme(colorScheme);
+	getColorScheme() {
+		return this._colorScheme;
+	}
+
+	/**
+	 * @param {'light' | 'dark' | null} scheme
+	 */
+	setColorScheme(scheme) {
+		this._colorScheme = scheme;
+		this._view.setColorScheme(scheme);
 	}
 }
 
