@@ -387,6 +387,10 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	pointer-events: unset;
 }
 
+.a11y-cursor-target {
+	outline: none;
+}
+
 body, #viewerContainer {
 	background-color: #f2f2f2; /* --color-toolbar */
 }

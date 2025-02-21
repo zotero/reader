@@ -43,7 +43,8 @@ import {
 	getCodeCombination, getCurrentColorScheme,
 	getKeyCombination, getModeBasedOnColors,
 	isMac,
-	isSafari
+	isSafari,
+	placeA11yVirtualCursor
 } from "../../common/lib/utilities";
 import {
 	closestElement,
@@ -150,6 +151,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _lastKeyboardFocusedAnnotationID: string | null = null;
 
+	protected _a11yVirtualCursorTarget: Node | null;
+
+	protected _a11yShouldFocusVirtualCursorTarget: boolean;
+
 	scale = 1;
 
 	protected constructor(options: DOMViewOptions<State, Data>) {
@@ -171,6 +176,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			onUpdate: () => this._updateViewStats(),
 			onNavigate: location => this.navigate(location, { skipHistory: true, behavior: 'auto' }),
 		});
+		this._a11yVirtualCursorTarget = null;
+		this._a11yShouldFocusVirtualCursorTarget = false;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');
@@ -742,6 +749,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let annotationsStyle = this._iframeDocument.createElement('style');
 		annotationsStyle.innerHTML = annotationsCSS;
 		this._annotationShadowRoot.append(annotationsStyle);
+		this._annotationShadowRoot.addEventListener("focusin", this._handleAnnotationFocus.bind(this));
 
 		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
 
@@ -1387,6 +1395,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		this._options.onSetOverlayPopup();
 
+		// If we marked a node as future focus target for screen readers, clear it to not interfere with focus
+		this._a11yVirtualCursorTarget = null;
+
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
@@ -1571,6 +1582,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	private _handleFocus() {
 		this._options.onFocus();
+
+		// Help screen readers understand where to place virtual cursor
+		placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+	}
+
+	private _handleAnnotationFocus(event: Event) {
+		let annotationID = (event.target as HTMLElement).dataset.annotationId;
+		let annotation = annotationID ? this._annotations.find(ann => ann.id == annotationID) : null;
+		if (annotation) {
+			this._options.onFocusAnnotation(annotation);
+		}
 	}
 
 	private _preventNextClickEvent() {
@@ -1799,6 +1821,8 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyUp: (event: KeyboardEvent) => void;
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
+	onFocusAnnotation: (annotation: WADMAnnotation) => void;
+	getLocalizedString: (name: string) => string;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string

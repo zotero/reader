@@ -165,6 +165,9 @@ export type FindState = {
 		// Mobile app lists all results in a popup
 		snippets: string[],
 		annotation?: NewAnnotation
+		// Used for a11y notifications
+		currentSnippet: string,
+		currentPageLabel: string | null
 	} | null;
 };
 
