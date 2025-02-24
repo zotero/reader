@@ -39,12 +39,16 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 	}, [params.query]);
 
 	function handleInputChange(event) {
+		let value = event.target.value;
+		setQuery(value);
+		if (!value.trim()) {
+			onChange({ ...currentParamsRef.current, query: '', result: null });
+			return;
+		}
 		if (preventInputRef.current) {
 			preventInputRef.current = false;
 			return;
 		}
-		let value = event.target.value;
-		setQuery(value);
 		debounceInputChange();
 	}
 
