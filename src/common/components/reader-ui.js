@@ -57,8 +57,12 @@ function View(props) {
 					onChangeTextSelectionAnnotationMode={props.onChangeTextSelectionAnnotationMode}
 				/>
 			}
-			{state[name + 'ViewAnnotationPopup'] && (!state.sidebarOpen || state.sidebarView !== 'annotations') &&
-				<AnnotationPopup
+			{state[name + 'ViewAnnotationPopup']
+				&& (
+					(!state.sidebarOpen || state.sidebarView !== 'annotations')
+					&& state.annotations.find(x => x.id === state[name + 'ViewAnnotationPopup'].annotation.id)
+				)
+				&& <AnnotationPopup
 					type={props.type}
 					readOnly={state.readOnly}
 					params={state[name + 'ViewAnnotationPopup']}
