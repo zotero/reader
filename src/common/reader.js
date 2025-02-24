@@ -808,15 +808,19 @@ class Reader {
 			primary = this._lastViewPrimary;
 		}
 		let key = primary ? 'primaryViewFindState' : 'secondaryViewFindState';
-		let findState = this._state[key];
+		let prevFindState = this._state[key];
 		if (open === undefined) {
-			open = !findState.popupOpen;
+			open = !prevFindState.popupOpen;
 		}
-		findState = { ...findState, popupOpen: open, active: false, result: null };
+		let findState = { ...prevFindState, popupOpen: open };
+		if (!prevFindState.popupOpen) {
+			findState.active = false;
+			findState.result = null;
+		}
 		this._updateState({ [key]: findState });
 		if (open) {
 			setTimeout(() => {
-				let selector = (primary ? '.primary' : '.secondary') + ' .find-popup input';
+				let selector = (primary ? '.primary-view' : '.secondary-view') + ' .find-popup input';
 				document.querySelector(selector)?.select();
 				document.querySelector(selector)?.focus();
 			}, 100);
