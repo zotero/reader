@@ -793,10 +793,6 @@ class Reader {
 		if (open === undefined) {
 			open = !this._state[key];
 		}
-		if (open) {
-			this.toggleFindPopup({ primary: true, open: false });
-			this.toggleFindPopup({ primary: false, open: false });
-		}
 		this._updateState({ [key]: open });
 		if (!open) {
 			this._lastView.focus();
