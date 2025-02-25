@@ -173,15 +173,17 @@ export class EPUBFindProcessor implements FindProcessor {
 				if (!processor) {
 					continue;
 				}
-				if (this._selectedProcessor == processor) {
-					let position = processor.position ?? 0;
-					index += position;
-					foundSelected = true;
-					// TODO: Expose this in a nicer way
-					range = processor.getAnnotations()[position]?.range;
-				}
-				else if (!foundSelected) {
-					index += processor.getResults().length;
+				if (this._selectedProcessor) {
+					if (this._selectedProcessor == processor) {
+						let position = processor.position ?? 0;
+						index += position;
+						foundSelected = true;
+						// TODO: Expose this in a nicer way
+						range = processor.getAnnotations()[position]?.range;
+					}
+					else if (!foundSelected) {
+						index += processor.getResults().length;
+					}
 				}
 				snippets.push(...processor.getSnippets());
 			}
