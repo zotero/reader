@@ -203,7 +203,7 @@ class DefaultFindProcessor implements FindProcessor {
 			let snippet = range.toString();
 			if (range.startContainer.nodeValue && range.startOffset > 0) {
 				let textBeforeRange = range.startContainer.nodeValue.substring(0, range.startOffset);
-				let beforeContext = textBeforeRange.match(/\b([\w\W]){1,20}$/);
+				let beforeContext = textBeforeRange.match(/\b([\w\W]){1,40}$/);
 				if (beforeContext) {
 					snippet = beforeContext[0].trimStart() + snippet;
 					if (beforeContext[0] != textBeforeRange) {
@@ -213,7 +213,7 @@ class DefaultFindProcessor implements FindProcessor {
 			}
 			if (range.endContainer.nodeValue && range.endOffset < range.endContainer.nodeValue.length) {
 				let textAfterRange = range.endContainer.nodeValue.substring(range.endOffset);
-				let afterContext = textAfterRange.match(/^([\w\W]){1,20}\b/);
+				let afterContext = textAfterRange.match(/^([\w\W]){1,40}\b/);
 				if (afterContext) {
 					snippet += afterContext[0].trimEnd();
 					if (afterContext[0] != textAfterRange) {
