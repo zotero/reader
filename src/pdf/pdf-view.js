@@ -447,7 +447,7 @@ class PDFView {
 		});
 	}
 
-	_updateColorScheme() {
+	async _updateColorScheme() {
 		if (this._forcedColorScheme === 'light') {
 			this._colorScheme = 'light';
 		}
@@ -482,6 +482,7 @@ class PDFView {
 			for (let page of this._pages) {
 				page.originalPage.reset();
 			}
+			await this._iframeWindow.PDFViewerApplication.initializedPromise;
 			this._iframeWindow.PDFViewerApplication.pdfViewer.update();
 			this._pdfThumbnails?.clear();
 		}
