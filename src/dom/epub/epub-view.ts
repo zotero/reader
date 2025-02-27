@@ -117,7 +117,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected async _onInitialDisplay(viewState: Partial<Readonly<EPUBViewState>>) {
+	protected async _handleViewCreated(viewState: Partial<Readonly<EPUBViewState>>) {
 		await this.book.opened;
 
 		let cspMeta = this._iframeDocument.createElement('meta');

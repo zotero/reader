@@ -36,6 +36,8 @@ import { isPageRectVisible } from "../common/lib/rect";
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
 
+	private _isThemingSupported = true;
+
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
 		Object.defineProperty(this, '_searchContext', { value: searchContext });
@@ -97,7 +99,20 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		};
 	}
 
-	protected _onInitialDisplay(viewState: Partial<Readonly<SnapshotViewState>>) {
+	protected override _handleIFrameLoaded() {
+		let sheetLengthTotal = 0;
+		for (let sheet of this._iframeDocument.styleSheets) {
+			sheetLengthTotal += sheet.ownerNode?.textContent?.length ?? 0;
+			if (sheetLengthTotal > 50_000) {
+				this._isThemingSupported = false;
+				break;
+			}
+		}
+
+		return super._handleIFrameLoaded();
+	}
+
+	protected _handleViewCreated(viewState: Partial<Readonly<SnapshotViewState>>) {
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
@@ -357,36 +372,55 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
+			disableTheming: !this._isThemingSupported,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
 
 	protected override _updateColorScheme() {
-		super._updateColorScheme();
-		if (!('DarkReader' in this._iframeWindow)) {
-			let url = this._getSnapshotLocation() || 'about:blank';
-			// Dark Reader gets the page location by accessing the global property 'location'
-			// Horrifying, but it works
-			this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
-		}
-		let DarkReader = this._iframeWindow.DarkReader!;
-		// Stock light theme: Just let the page use its default styles
-		if (this._themeColorScheme === 'light' && this._theme.id === 'light') {
-			DarkReader.disable();
+		if (this._isThemingSupported) {
+			// Pages with a reasonable amount of CSS: Use Dark Reader
+			super._updateColorScheme();
+			if (!('DarkReader' in this._iframeWindow)) {
+				let url = this._getSnapshotLocation() || 'about:blank';
+				// Dark Reader gets the page location by accessing the global property 'location'
+				// Horrifying, but it works
+				this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
+			}
+			let DarkReader = this._iframeWindow.DarkReader!;
+			// Stock light theme: Just let the page use its default styles
+			if (this._themeColorScheme === 'light' && this._theme.id === 'light') {
+				DarkReader.disable();
+			}
+			else {
+				DarkReader.enable({
+					mode: this._themeColorScheme === 'light' ? 0 : 1,
+					darkSchemeBackgroundColor: this._theme.background,
+					darkSchemeTextColor: this._theme.foreground,
+					lightSchemeBackgroundColor: this._theme.background,
+					lightSchemeTextColor: this._theme.foreground,
+				}, {
+					invert: [
+						// Invert Mediawiki equations
+						'.mw-invert'
+					]
+				} satisfies Partial<DynamicThemeFix> as DynamicThemeFix);
+			}
 		}
 		else {
-			DarkReader.enable({
-				mode: this._themeColorScheme === 'light' ? 0 : 1,
-				darkSchemeBackgroundColor: this._theme.background,
-				darkSchemeTextColor: this._theme.foreground,
-				lightSchemeBackgroundColor: this._theme.background,
-				lightSchemeTextColor: this._theme.foreground,
-			}, {
-				invert: [
-					// Invert Mediawiki equations
-					'.mw-invert'
-				]
-			} satisfies Partial<DynamicThemeFix> as DynamicThemeFix);
+			// Pages with a *lot* of CSS: Just use the page's color scheme
+			switch (getComputedStyle(this._iframeDocument.body).colorScheme) {
+				case 'light':
+					this._colorScheme = 'light';
+					break;
+				case 'dark':
+					this._colorScheme = 'dark';
+					break;
+				default:
+					this._colorScheme = null;
+					break;
+			}
+			super._updateColorScheme();
 		}
 	}
 

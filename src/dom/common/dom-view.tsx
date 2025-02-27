@@ -197,7 +197,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframe.srcdoc = await this._getSrcDoc();
 		return new Promise<void>((resolve, reject) => {
 			this._iframe.addEventListener('load', () => {
-				this._handleIFrameLoad()
+				this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
+				this._iframeDocument = this._iframe.contentDocument!;
+				Promise.resolve(this._handleIFrameLoaded())
 					.then(() => this._iframe.classList.add('loaded'))
 					.then(resolve, reject);
 			}, { once: true });
@@ -236,7 +238,67 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract getData(): Data;
 
-	protected abstract _onInitialDisplay(viewState: Partial<Readonly<State>>): MaybePromise<void>;
+	protected async _handleIFrameLoaded(): Promise<void> {
+		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
+		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
+		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
+		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
+		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
+		this._iframeDocument.body.addEventListener('pointerout', this._handlePointerLeave.bind(this));
+		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
+		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
+		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
+		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this));
+		this._iframeDocument.addEventListener('touchstart', this._handleTouchStart.bind(this));
+		this._iframeDocument.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
+		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
+		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
+		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
+		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
+		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this));
+		this._iframeDocument.addEventListener('copy', this._handleCopy.bind(this));
+		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
+		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
+		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
+		this._iframeDocument.addEventListener('scroll', this._handleScrollCapture.bind(this), { passive: true, capture: true });
+		this._iframeDocument.addEventListener('wheel', this._handleWheelCapture.bind(this), { passive: false, capture: true });
+		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
+
+		let injectStyle = this._iframeDocument.createElement('style');
+		injectStyle.innerHTML = injectCSS;
+		this._iframeDocument.head.append(injectStyle);
+
+		let annotationOverlay = this._iframeDocument.createElement('div');
+		annotationOverlay.id = 'annotation-overlay';
+		this._annotationShadowRoot = annotationOverlay.attachShadow({ mode: 'open' });
+		this._iframeDocument.body.append(annotationOverlay);
+
+		this._annotationRenderRootEl = this._iframeDocument.createElement('div');
+		this._annotationRenderRootEl.id = 'annotation-render-root';
+		this._annotationShadowRoot.append(this._annotationRenderRootEl);
+		this._annotationRenderRoot = createRoot(this._annotationRenderRootEl);
+
+		let annotationsStyle = this._iframeDocument.createElement('style');
+		annotationsStyle.innerHTML = annotationsCSS;
+		this._annotationShadowRoot.append(annotationsStyle);
+
+		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
+
+		// Pass options to setters that were delayed until iframe initialization
+		this.setAnnotations(this._options.annotations);
+		this.setTool(this._options.tool);
+
+		this._updateColorScheme();
+		this._iframeWindow.matchMedia('(prefers-color-scheme: dark)')
+			.addEventListener('change', () => this._updateColorScheme());
+
+		await this._handleViewCreated(this._options.viewState || {});
+		setTimeout(() => {
+			this._handleViewUpdate();
+		});
+	}
+
+	protected abstract _handleViewCreated(viewState: Partial<Readonly<State>>): MaybePromise<void>;
 
 	// ***
 	// Utilities for annotations - abstractions over the specific types of selectors used by the two views
@@ -695,69 +757,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// ***
 	// Event handlers
 	// ***
-
-	protected async _handleIFrameLoad() {
-		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
-		this._iframeDocument = this._iframe.contentDocument!;
-
-		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
-		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
-		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
-		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
-		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
-		this._iframeDocument.body.addEventListener('pointerout', this._handlePointerLeave.bind(this));
-		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
-		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
-		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
-		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this));
-		this._iframeDocument.addEventListener('touchstart', this._handleTouchStart.bind(this));
-		this._iframeDocument.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
-		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
-		this._iframeWindow.addEventListener('dragenter', this._handleDragEnter.bind(this));
-		this._iframeWindow.addEventListener('dragover', this._handleDragOver.bind(this));
-		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
-		this._iframeWindow.addEventListener('drop', this._handleDrop.bind(this));
-		this._iframeDocument.addEventListener('copy', this._handleCopy.bind(this));
-		this._iframeWindow.addEventListener('resize', this._handleResize.bind(this));
-		this._iframeWindow.addEventListener('focus', this._handleFocus.bind(this));
-		this._iframeDocument.addEventListener('scroll', this._handleScroll.bind(this), { passive: true });
-		this._iframeDocument.addEventListener('scroll', this._handleScrollCapture.bind(this), { passive: true, capture: true });
-		this._iframeDocument.addEventListener('wheel', this._handleWheelCapture.bind(this), { passive: false, capture: true });
-		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
-
-		let injectStyle = this._iframeDocument.createElement('style');
-		injectStyle.innerHTML = injectCSS;
-		this._iframeDocument.head.append(injectStyle);
-
-		let annotationOverlay = this._iframeDocument.createElement('div');
-		annotationOverlay.id = 'annotation-overlay';
-		this._annotationShadowRoot = annotationOverlay.attachShadow({ mode: 'open' });
-		this._iframeDocument.body.append(annotationOverlay);
-
-		this._annotationRenderRootEl = this._iframeDocument.createElement('div');
-		this._annotationRenderRootEl.id = 'annotation-render-root';
-		this._annotationShadowRoot.append(this._annotationRenderRootEl);
-		this._annotationRenderRoot = createRoot(this._annotationRenderRootEl);
-
-		let annotationsStyle = this._iframeDocument.createElement('style');
-		annotationsStyle.innerHTML = annotationsCSS;
-		this._annotationShadowRoot.append(annotationsStyle);
-
-		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
-
-		// Pass options to setters that were delayed until iframe initialization
-		this.setAnnotations(this._options.annotations);
-		this.setTool(this._options.tool);
-
-		this._updateColorScheme();
-		this._iframeWindow.matchMedia('(prefers-color-scheme: dark)')
-			.addEventListener('change', () => this._updateColorScheme());
-
-		await this._onInitialDisplay(this._options.viewState || {});
-		setTimeout(() => {
-			this._handleViewUpdate();
-		});
-	}
 
 	protected _handlePointerOver(event: PointerEvent) {
 		const link = (event.target as Element).closest('a');
