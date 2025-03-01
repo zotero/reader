@@ -175,7 +175,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 				}
 				annotation.pageLabel = newPageLabel.toString();
 			}
-			annotationsToUpdate = annotationsToUpdate.map(({ id }) => ({ id }));
+			annotationsToUpdate = annotationsToUpdate.map(({ id, pageLabel }) => ({ id, pageLabel }));
 		}
 
 		onClose();
