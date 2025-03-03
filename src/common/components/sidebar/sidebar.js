@@ -105,7 +105,7 @@ function Sidebar(props) {
 	}
 
 	return (
-		<div id="sidebarContainer" className="sidebarOpen">
+		<div id="sidebarContainer" className="sidebarOpen" role="application">
 			<div className="sidebar-toolbar">
 				<div className="start" data-tabstop={1} role="tablist">
 					{props.type === 'pdf' &&
@@ -166,7 +166,7 @@ function Sidebar(props) {
 				<div id="annotationsView" role="tabpanel" aria-labelledby="viewAnnotations" className={cx("viewWrapper", { hidden: props.view !== 'annotations'})}>
 					{props.annotationsView}
 				</div>
-				<div className={cx("viewWrapper", { hidden: props.view !== 'outline'})}>
+				<div className={cx("viewWrapper", { hidden: props.view !== 'outline'})} role="tabpanel">
 					{props.outlineView}
 				</div>
 			</div>

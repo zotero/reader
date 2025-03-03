@@ -28,3 +28,5 @@ export const DEFAULT_EPUB_APPEARANCE: EPUBAppearance = Object.freeze({
 	pageWidth: PageWidth.Normal,
 	useOriginalFont: false,
 });
+
+export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 500;

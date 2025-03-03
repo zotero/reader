@@ -17,6 +17,7 @@ import Epub, {
 	NavItem,
 } from "epubjs";
 import {
+	getStartElement,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
 	splitRangeToTextNodes
@@ -50,12 +51,14 @@ import {
 	PaginatedFlow,
 	ScrolledFlow
 } from "./flow";
-import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
+import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
 import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
 import LRUCacheMap from "../common/lib/lru-cache-map";
 import { mode } from "../common/lib/collection";
+import { debounce } from '../../common/lib/debounce';
+import { placeA11yVirtualCursor } from '../../common/lib/utilities';
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -185,6 +188,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._sectionsContainer.hidden = false;
 		this.pageMapping = this._initPageMapping(viewState.savedPageMapping);
 		this._initOutline();
+		this._addAriaNavigationLandmarks();
 
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
@@ -387,6 +391,25 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		catch (e) {
 			console.error('Unable to get range for CFI', cfiString, e);
 			return null;
+		}
+	}
+
+	// Add landmarks with page labels for screen reader navigation
+	private async _addAriaNavigationLandmarks() {
+		for (let key of this.pageMapping.ranges()) {
+			let node = key.startContainer;
+			let containingElement = closestElement(node);
+
+			if (!containingElement) continue;
+
+			// This is semantically not correct, as we are assigning
+			// navigation role to <p> and <h> nodes but this is the
+			// best solution to avoid adding nodes into the DOM, which
+			// will break CFIs.
+			containingElement.setAttribute('role', 'navigation');
+			let label = this.pageMapping.getPageLabel(key.toRange());
+			let localizedLabel = `${this._options.getLocalizedString('pdfReader.page')}: ${label}`;
+			containingElement.setAttribute('aria-label', localizedLabel);
 		}
 	}
 
@@ -796,6 +819,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			return;
 		}
 
+		// These keypresses scroll the content and should change focus for screen readers
+		if (!event.shiftKey && ['ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End'].includes(key)) {
+			this._a11yShouldFocusVirtualCursorTarget = true;
+		}
+
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
 				this.flow.navigateLeft();
@@ -860,6 +888,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
 		};
 		this._options.onChangeViewStats(viewStats);
+		this.a11yRecordCurrentPage();
 	}
 
 	protected override _handleViewUpdate() {
@@ -1054,9 +1083,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 								annotation: (
 									result.range
 									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
-								) ?? undefined
+								) ?? undefined,
+								currentPageLabel: result.range ? this.pageMapping.getPageLabel(result.range.toRange()) : null,
+								currentSnippet: result.snippets[result.index]
 							}
 						});
+						if (result.range) {
+							// Record the result that sceen readers should focus on after search popup is closed
+							this._a11yVirtualCursorTarget = getStartElement(result.range);
+						}
 					},
 				});
 				let startRange = (this.flow.startRange && new PersistentRange(this.flow.startRange)) ?? undefined;
@@ -1178,6 +1213,21 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this._renderAnnotations();
 		}
 	}
+
+	// Place virtual cursor to the top of the current page.
+	// Debounce to not run this on every view stats update.
+	protected a11yRecordCurrentPage = debounce(() => {
+		if (!this.flow.startRange) return;
+		// Do not interfere with marking search results as virtual cursor targets
+		if (this._findState?.active) return;
+		let node = this.flow.startRange.startContainer;
+		let containingElement = closestElement(node);
+		this._a11yVirtualCursorTarget = containingElement;
+		if (this._a11yShouldFocusVirtualCursorTarget) {
+			this._a11yShouldFocusVirtualCursorTarget = false;
+			placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+		}
+	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	protected _setScale(scale: number) {
 		this._keepPosition(() => {

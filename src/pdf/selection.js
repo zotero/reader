@@ -857,7 +857,7 @@ export function getRectRotationOnText(chars, rect) {
 
 // Based on https://stackoverflow.com/a/16100733
 
-function getNodeOffset(container, offset) {
+export function getNodeOffset(container, offset) {
 	let charIndex = 0;
 	let charIndex2 = 0;
 	let nodeStack = [container];
