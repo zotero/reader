@@ -198,8 +198,13 @@ replaced-body {
 }
 
 body.footnote-popup-content {
+	replaced-body {
+		text-align: start;
+	}
+
 	* {
 		list-style-type: none !important;
+		border: 0 !important;
 	}
 
 	.section-container {
