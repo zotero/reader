@@ -200,6 +200,14 @@ class PageMapping {
 		return this._tree.keys();
 	}
 
+	pageLabels(): IterableIterator<string> {
+		return this._tree.values();
+	}
+
+	entries(): IterableIterator<[PersistentRange, string]> {
+		return this._tree.entries();
+	}
+
 	toJSON() {
 		if (!this._json) {
 			throw new Error('Not yet frozen');

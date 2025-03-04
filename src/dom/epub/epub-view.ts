@@ -396,10 +396,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	// Add landmarks with page labels for screen reader navigation
 	private async _addAriaNavigationLandmarks() {
-		for (let key of this.pageMapping.ranges()) {
-			let node = key.startContainer;
-			let containingElement = closestElement(node);
+		let locator = this._options.getLocalizedString(
+			this.pageMapping.isPhysical ? 'pdfReader.page' : 'pdfReader.location'
+		);
 
+		for (let [range, pageLabel] of this.pageMapping.entries()) {
+			let node = range.startContainer;
+			let containingElement = closestElement(node);
 			if (!containingElement) continue;
 
 			// This is semantically not correct, as we are assigning
@@ -407,9 +410,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			// best solution to avoid adding nodes into the DOM, which
 			// will break CFIs.
 			containingElement.setAttribute('role', 'navigation');
-			let label = this.pageMapping.getPageLabel(key.toRange());
-			let localizedLabel = `${this._options.getLocalizedString('pdfReader.page')}: ${label}`;
-			containingElement.setAttribute('aria-label', localizedLabel);
+			containingElement.setAttribute('aria-label', `${locator}: ${pageLabel}`);
 		}
 	}
 
