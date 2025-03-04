@@ -179,3 +179,13 @@ export type Theme = {
 	background: string;
 	foreground: string;
 };
+
+export type ViewContextMenuOverlay =
+	| {
+		type: 'external-link';
+		url: string;
+	}
+	| {
+		type: 'math';
+		tex: string;
+	};
