@@ -118,7 +118,7 @@ replaced-body {
 		border: none !important;
 	}
 
-	.table-like:not(table, mtable) {
+	.table-like:not(table, mtable), ol, ul {
 		display: flex;
 		flex-direction: column;
 	}
