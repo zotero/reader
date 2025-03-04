@@ -231,6 +231,8 @@
 }
 
 .footnote-popup {
+	border: 1px solid var(--color-background);
+
 	&.loading {
 		visibility: hidden;
 	}
@@ -239,6 +241,7 @@
 		display: flex;
 		width: 100%;
 		border: 0;
+		border-radius: inherit;
 		max-height: 300px;
 	}
 }
