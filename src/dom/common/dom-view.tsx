@@ -465,9 +465,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				...this._iframeDocument.querySelectorAll('a, area'),
 				...this._annotationShadowRoot.querySelectorAll('[tabindex="-1"]')
 			] as (HTMLElement | SVGElement)[];
-			focusableElements = focusableElements.filter(
-				el => isPageRectVisible(getBoundingPageRect(el), this._iframeWindow, 0)
-			);
+			focusableElements = focusableElements.filter((el) => {
+				let style = getComputedStyle(el);
+				// Only include visible/focusable elements that are scrolled into view
+				return style.visibility === 'visible'
+					&& style.display !== 'none'
+					&& isPageRectVisible(getBoundingPageRect(el), this._iframeWindow, 0);
+			});
 			focusableElements.sort((a, b) => {
 				let rangeA;
 				if (a.getRootNode() === this._annotationShadowRoot && a.hasAttribute('data-annotation-id')) {
