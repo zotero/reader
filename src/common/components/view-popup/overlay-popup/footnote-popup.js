@@ -2,7 +2,7 @@ import React from 'react';
 import ViewPopup from '../common/view-popup';
 import cx from 'classnames';
 
-function LinkPopup({ params, onOpenLink }) {
+function FootnotePopup({ params, onOpenLink }) {
 	let iframeRef = React.useRef(null);
 	let [loading, setLoading] = React.useState(true);
 
@@ -61,4 +61,4 @@ function LinkPopup({ params, onOpenLink }) {
 	);
 }
 
-export default LinkPopup;
+export default FootnotePopup;
