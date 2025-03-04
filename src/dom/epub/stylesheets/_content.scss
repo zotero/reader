@@ -63,7 +63,8 @@
 	&[data-color-scheme="dark"] {
 		:not(:link):not(:visited) {
 			color: inherit !important;
-			background: transparent !important;
+			// Keep background-image, because some EPUBs use it for image links
+			background-color: transparent !important;
 		}
 	}
 }
