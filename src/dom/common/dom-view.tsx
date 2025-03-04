@@ -405,7 +405,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			] as (HTMLElement | SVGElement)[];
 			focusableElements = focusableElements.filter((el) => {
 				let style = getComputedStyle(el);
-				// only include visible/focusable elements on this page
+				// Only include visible/focusable elements that are scrolled into view
 				return style.visibility === 'visible'
 					&& style.display !== 'none'
 					&& isPageRectVisible(getBoundingPageRect(el), this._iframeWindow, 0);
