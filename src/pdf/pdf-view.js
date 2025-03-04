@@ -10,7 +10,8 @@ import {
 	getSortIndex,
 	getTextFromSelectionRanges,
 	getWordSelectionRanges,
-	setTextLayerSelection
+	setTextLayerSelection,
+	getNodeOffset
 } from './selection';
 import {
 	applyInverseTransform,
@@ -46,13 +47,16 @@ import {
 	isFirefox,
 	isSafari,
 	throttle,
-	getModeBasedOnColors
+	getModeBasedOnColors,
+	placeA11yVirtualCursor
 } from '../common/lib/utilities';
+import { debounce } from '../common/lib/debounce';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
 import {
 	MIN_IMAGE_ANNOTATION_SIZE,
-	PDF_NOTE_DIMENSIONS
+	PDF_NOTE_DIMENSIONS,
+	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH
 } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
@@ -156,6 +160,9 @@ class PDFView {
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
 
+		this._a11yVirtualCursorTarget = null;
+		this._a11yShouldFocusVirtualCursorTarget = false;
+
 		let setOptions = () => {
 			if (!this._iframeWindow?.PDFViewerApplicationOptions) {
 				return;
@@ -243,6 +250,8 @@ class PDFView {
 
 				this._iframeWindow.addEventListener('focus', (event) => {
 					options.onFocus();
+					// Help screen readers understand where to place virtual cursor
+					placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
 				});
 			});
 		});
@@ -316,6 +325,9 @@ class PDFView {
 							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
 						);
 						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+						// For a11y announcement in a11yAnnounceSearchMessage
+						result.currentPageLabel = result.annotation.pageLabel;
+						result.currentSnippet = result.snippets[matchesCount.current - 1];
 					})();
 				}
 				this._onSetFindState({ ...this._findState, result });
@@ -323,7 +335,7 @@ class PDFView {
 			},
 			onUpdateState: ({ matchesCount, state, rawQuery }) => {
 				this._pdfjsFindState = state;
-				let result = { total: matchesCount.total, index: matchesCount.current - 1 };
+				let result = { total: matchesCount.total, index: matchesCount.current - 1, snippets: matchesCount.snippets };
 				if (this._pdfjsFindState === FindState.PENDING || !rawQuery.length) {
 					result = null;
 				}
@@ -338,6 +350,9 @@ class PDFView {
 							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
 						);
 						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
+						// For a11y announcement in a11yAnnounceSearchMessage
+						result.currentPageLabel = result.annotation.pageLabel;
+						result.currentSnippet = result.snippets[matchesCount.current - 1];
 					})();
 				}
 				this._onSetFindState({ ...this._findState, result });
@@ -852,6 +867,9 @@ class PDFView {
 					findPrevious: false
 				});
 			}
+			// Make sure the state is updated regardless to have last _findState.result value
+			this._findState = state;
+			this.a11yWillPlaceVirtCursorOnSearchResult();
 		}
 		else {
 			this._findState = state;
@@ -882,6 +900,46 @@ class PDFView {
 			findPrevious: true
 		});
 	}
+
+
+	// After the search result is switched to, record which node the
+	// search result is in to place screen readers' virtual cursor on it.
+	a11yWillPlaceVirtCursorOnSearchResult = debounce(async () => {
+		if (!this._findState.result?.annotation) return;
+		let { position } = this._findState.result.annotation;
+		let range = getSelectionRangesByPosition(this._pdfPages, position);
+		let page = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(position.pageIndex);
+		// The page may have been unloaded, in which case we need to wait for it to be rendered
+		let waitCounter = 0;
+		while (!page.div.querySelector('.textLayer') && waitCounter < 5) {
+			await new Promise(resolve => setTimeout(resolve, 250));
+			waitCounter += 1;
+		}
+		let container = page.div.querySelector('.textLayer');
+		if (!container) return;
+		let startNode = getNodeOffset(container, range[0].anchorOffset)?.node;
+		let endNode = getNodeOffset(container, range[0].to)?.node;
+		// pick node corresponding to the range that actually contains the query
+		let node = endNode.textContent.includes(this._findState.query) ? endNode : startNode;
+		this._a11yVirtualCursorTarget = node.parentNode;
+	  }, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
+
+	// Record the current page that the virtual cursor enter when focus enters the content.
+	// Debounce to not run this on every view stats update.
+	a11yRecordCurrentPage = debounce(() => {
+		// Do not interfere with marking search results as virtual cursor targets
+		if (this._findState?.active) return;
+		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let page = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(currentPageNumber - 1);
+		// Mark the current page. Note: page.div is never removed but its content can be.
+		// If the target were to be set on anything inside of page.div, JAWS would loose its virtual
+		// cursor if the page is unloaded.
+		this._a11yVirtualCursorTarget = page.div;
+		if (this._a11yShouldFocusVirtualCursorTarget) {
+			this._a11yShouldFocusVirtualCursorTarget = false;
+			placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
+		}
+	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
@@ -1749,6 +1807,8 @@ class PDFView {
 		// Prevents showing focus box after pressing Enter and de-selecting annotation which was select with mouse
 		this._lastFocusedObject = null;
 
+		// If we marked a node as future focus target for screen readers, clear it to avoid scrolling to it
+		this._a11yVirtualCursorTarget = null;
 		if (!event.target.closest('#viewerContainer')) {
 			return;
 		}
@@ -2620,6 +2680,7 @@ class PDFView {
 			scrollMode,
 			spreadMode
 		});
+		this.a11yRecordCurrentPage();
 	}
 
 	_handleContextMenu(event) {
@@ -3232,6 +3293,10 @@ class PDFView {
 					}, 100);
 				}
 			}
+		}
+		// These keypresses scroll the content and should change focus for screen readers
+		if (!event.shiftKey && ['PageUp', 'PageDown', 'Home', 'End'].includes(key)) {
+			this._a11yShouldFocusVirtualCursorTarget = true;
 		}
 
 		this._onKeyDown(event);

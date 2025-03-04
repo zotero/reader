@@ -1,3 +1,7 @@
 ::selection {
     background-color: var(--selection-color);
 }
+
+.a11y-cursor-target {
+	outline: none;
+}

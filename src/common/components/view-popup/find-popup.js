@@ -111,7 +111,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 	}
 
 	return (
-		<div className="find-popup">
+		<div className="find-popup" role="application">
 			<div className="row input">
 				<div className={cx('input-box', { loading: !params.result && params.active && params.query })}>
 					<input

@@ -412,3 +412,43 @@ export function getModeBasedOnColors(bgColor, fgColor) {
 	// Determine and return mode based on luminance comparison
 	return bgLuminance > fgLuminance ? "light" : "dark";
 }
+
+/**
+ * Explicitly focus a given node within the view to force screen readers to move
+ * their virtual cursors to that element. Screen readers just look at rendered content
+ * so without this any navigation done via outline/Find in/page input in toolbar gets
+ * undone by virtual cursor either remaining where it was or even jumping to the beginning of content.
+ * @param target - node to focus from the view. Views keep track of it in  _a11yVirtualCursorTarget obj.
+ */
+export async function placeA11yVirtualCursor(target) {
+	// Can't focus a textnode, so grab its parent (e.g. <p>)
+	if (target?.nodeType === Node.TEXT_NODE) {
+		target = target.parentNode;
+	}
+	if (!target) return;
+	let doc = target.ownerDocument;
+	let previousTarget =  doc.querySelector('.a11y-cursor-target');
+	// if the target did not change, do nothing
+	if (target == previousTarget && doc.activeElement == target) return;
+	let oldTabIndex = target.getAttribute('tabindex');
+	function blurHandler() {
+		if (oldTabIndex) {
+			target.setAttribute('tabindex', oldTabIndex);
+		}
+		else {
+			target.removeAttribute('tabindex');
+		}
+		target.classList.remove('a11y-cursor-target');
+	}
+	// Make it temporarily focusable
+	target.setAttribute('tabindex', '-1');
+	target.classList.add('a11y-cursor-target');
+	target.focus({ preventScroll: true });
+	// Remove all a11y props if the element is blurred
+	target.addEventListener('blur', blurHandler, { once: true });
+	// Cleanup if the focus did not take
+	if (doc.activeElement != target) {
+		blurHandler({ target });
+		return;
+	}
+}

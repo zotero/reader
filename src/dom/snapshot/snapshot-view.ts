@@ -32,6 +32,7 @@ import injectCSS from './stylesheets/inject.scss';
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
+import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -324,6 +325,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			console.warn('Not a valid snapshot selector', selector);
 			return;
 		}
+		let elem = getStartElement(range);
+		if (elem) {
+			elem.scrollIntoView(options);
+			// Remember which node was navigated to for screen readers to place
+			// virtual cursor on it later. Used for navigating between sections in the outline.
+			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
+				this._a11yVirtualCursorTarget = elem;
+			});
+		}
 
 		// Non-element nodes and ranges don't have scrollIntoView(),
 		// so scroll using a temporary element, removed synchronously
@@ -474,9 +484,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 								annotation: (
 									result.range
 									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
-								) ?? undefined
+								) ?? undefined,
+								currentPageLabel: null,
+								currentSnippet: result.snippets[result.index]
 							}
 						});
+						if (result.range) {
+							// Record the result that sceen readers should focus on after search popup is closed
+							this._a11yVirtualCursorTarget = getStartElement(result.range);
+						}
 					},
 				});
 				await this._find.run(
