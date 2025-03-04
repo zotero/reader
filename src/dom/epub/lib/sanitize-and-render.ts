@@ -96,33 +96,27 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	container.append(...sectionDoc.childNodes);
 
 	// Add classes to elements with properties that we handle specially
-	for (let selector of cssRewriter.trackedSelectors.table) {
-		try {
-			for (let table of Array.from(container.querySelectorAll(selector))) {
-				table.classList.add('table-like');
-				if (!table.hasAttribute('role')) {
-					table.setAttribute('role', 'table');
+	let process = (selectors: Iterable<string>, fn: (el: Element) => void) => {
+		for (let selector of selectors) {
+			for (let el of Array.from(container.querySelectorAll(selector))) {
+				try {
+					fn(el);
+				}
+				catch (e) {
 				}
 			}
 		}
-		catch (e) {}
-	}
-	for (let selector of cssRewriter.trackedSelectors.sup) {
-		try {
-			for (let elem of Array.from(container.querySelectorAll(selector))) {
-				elem.classList.add('sup-like');
-			}
+	};
+	process(cssRewriter.trackedSelectors.table, (el) => {
+		el.classList.add('table-like');
+		if (!el.hasAttribute('role')) {
+			el.setAttribute('role', 'table');
 		}
-		catch (e) {}
-	}
-	for (let selector of cssRewriter.trackedSelectors.sub) {
-		try {
-			for (let elem of Array.from(container.querySelectorAll(selector))) {
-				elem.classList.add('sub-like');
-			}
-		}
-		catch (e) {}
-	}
+	});
+	process(cssRewriter.trackedSelectors.sup, el => el.classList.add('sup-like'));
+	process(cssRewriter.trackedSelectors.sub, el => el.classList.add('sub-like'));
+	process(cssRewriter.trackedSelectors.breakBefore, el => el.classList.add('break-before'));
+	process(cssRewriter.trackedSelectors.breakAfter, el => el.classList.add('break-after'));
 
 	// Get the primary writing mode for this section
 	let documentElement = container.querySelector('replaced-html');
@@ -148,6 +142,8 @@ export class CSSRewriter {
 		sup: new Set(['sup']),
 		sub: new Set(['sub']),
 		writingMode: new Map<string, string>(),
+		breakBefore: new Set<string>(),
+		breakAfter: new Set<string>(),
 	};
 
 	private _document: Document;
@@ -268,6 +264,12 @@ export class CSSRewriter {
 			}
 			if (style.writingMode) {
 				this.trackedSelectors.writingMode.set(styleRule.selectorText, style.writingMode);
+			}
+			if (style.breakBefore === 'page' || style.pageBreakBefore === 'always') {
+				this.trackedSelectors.breakBefore.add(styleRule.selectorText);
+			}
+			if (style.breakAfter === 'page' || style.pageBreakAfter === 'always') {
+				this.trackedSelectors.breakAfter.add(styleRule.selectorText);
 			}
 
 			// If this rule sets a monospace font, make it !important so that it overrides the default content font
