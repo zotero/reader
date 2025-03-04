@@ -898,12 +898,31 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	protected _openFootnoteOverlayPopup(link: HTMLAnchorElement, element: Element) {
 		let doc = document.implementation.createHTMLDocument();
-		let cspMeta = this._iframeDocument.createElement('meta');
+
+		doc.documentElement.dataset.colorScheme = this._iframeDocument.documentElement.dataset.colorScheme;
+
+		let css = '';
+		for (let sheet of [...this._iframeDocument.styleSheets, ...this._iframeDocument.adoptedStyleSheets]) {
+			for (let rule of sheet.cssRules) {
+				css += rule.cssText + '\n\n';
+			}
+		}
+		css += `
+			:root {
+				--content-scale: ${this.scale};
+				--content-font-family: ${this._iframeDocument.documentElement.style.getPropertyValue('--content-font-family')};
+				--selection-color: ${this._iframeDocument.documentElement.style.getPropertyValue('--selection-color')};
+				--background-color: ${this._iframeDocument.documentElement.style.getPropertyValue('--background-color')};
+				--text-color: ${this._iframeDocument.documentElement.style.getPropertyValue('--text-color')};
+			}
+		`;
+
+		let cspMeta = doc.createElement('meta');
 		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
 		cspMeta.setAttribute('content', this._getCSP());
 		doc.head.prepend(cspMeta);
 
-		let container = document.createElement('div');
+		let container = doc.createElement('div');
 
 		let current = element;
 		let currentClone = current.cloneNode(true) as HTMLElement;
@@ -917,7 +936,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			currentClone = parentClone;
 			current = parent;
 		}
-		container.appendChild(currentClone);
+		container.append(currentClone);
 
 		for (let link of container.querySelectorAll('a')) {
 			if (!this._isExternalLink(link)) {
@@ -928,22 +947,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		doc.body.append(container);
 		let content = new XMLSerializer().serializeToString(doc);
 
-		let range = link.ownerDocument.createRange();
-		range.selectNode(link);
-		let domRect = range.getBoundingClientRect();
+		let domRect = link.getBoundingClientRect();
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-		let css = '';
-		for (let sheet of [...this._iframeDocument.styleSheets, ...this._iframeDocument.adoptedStyleSheets]) {
-			for (let rule of sheet.cssRules) {
-				css += rule.cssText + '\n\n';
-			}
-		}
-		css += `
-			:root {
-				--content-scale: ${this.scale};
-				--content-font-family: ${this._iframeDocument.documentElement.style.getPropertyValue('--content-font-family')};
-			}
-		`;
+
 		let overlayPopup = {
 			type: 'footnote',
 			content,
