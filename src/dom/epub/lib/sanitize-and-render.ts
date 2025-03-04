@@ -100,8 +100,8 @@ export async function sanitizeAndRender(xhtml: string, options: {
 		try {
 			for (let table of Array.from(container.querySelectorAll(selector))) {
 				table.classList.add('table-like');
-				if (!table.role) {
-					table.role = 'table';
+				if (!table.hasAttribute('role')) {
+					table.setAttribute('role', 'table');
 				}
 			}
 		}
