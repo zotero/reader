@@ -10,18 +10,18 @@ import { PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
 	static generate(view: EPUBView): PageMapping {
-		let mapping = new PageMapping(view);
+		let mapping = new PageMapping();
 		let sectionBodies = view.renderers.map(renderer => renderer.body);
 		mapping._addPhysicalPages(sectionBodies);
 		if (!mapping._tree.length) {
 			mapping._addEPUBLocations(sectionBodies);
 		}
-		mapping._freeze();
+		mapping._freeze(view);
 		return mapping;
 	}
 
 	static load(saved: string, view: EPUBView): PageMapping | null {
-		let mapping = new PageMapping(view);
+		let mapping = new PageMapping();
 
 		let obj = JSON.parse(saved);
 		if (!obj) {
@@ -42,7 +42,7 @@ class PageMapping {
 			.filter(([range, label]) => !!range && typeof label === 'string')
 			.map(([range, label]) => [new PersistentRange(range), label]) as [PersistentRange, string][]);
 		mapping._isPhysical = obj.isPhysical;
-		mapping._freeze();
+		mapping._freeze(view);
 
 		return mapping;
 	}
@@ -59,10 +59,9 @@ class PageMapping {
 
 	private _isPhysical = false;
 
-	private _view: EPUBView;
-
-	private constructor(view: EPUBView) {
-		this._view = view;
+	// eslint-disable-next-line no-useless-constructor
+	private constructor() {
+		// Prevent construction from outside
 	}
 
 	get length(): number {
@@ -149,14 +148,14 @@ class PageMapping {
 			((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
 	}
 
-	private _freeze() {
+	private _freeze(view: EPUBView) {
 		this._tree.freeze();
 
 		let version = PageMapping.VERSION;
 		let isPhysical = this._isPhysical;
 		let mappings = this._tree.toArray()
 			.map(([range, label]) => {
-				let cfi = this._view.getCFI(range.toRange());
+				let cfi = view.getCFI(range.toRange());
 				if (!cfi) {
 					return null;
 				}
