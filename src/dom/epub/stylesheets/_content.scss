@@ -105,9 +105,6 @@ replaced-body {
 	:root:not(.use-original-font) & {
 		font-family: var(--content-font-family, "Georgia", serif);
 	}
-	line-height: var(--content-line-height) !important;
-	word-spacing: var(--content-word-spacing) !important;
-	letter-spacing: var(--content-letter-spacing) !important;
 	text-align: justify;
 	text-rendering: optimizeLegibility;
 
@@ -135,6 +132,12 @@ replaced-body {
 	&:lang(si),
 	&:lang(zh) {
 		--content-line-height-compensation: 1.167;
+	}
+
+	&, * {
+		line-height: var(--content-line-height) !important;
+		word-spacing: var(--content-word-spacing) !important;
+		letter-spacing: var(--content-letter-spacing) !important;
 	}
 
 	p, [role="paragraph"] {
