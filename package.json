@@ -26,6 +26,7 @@
 		"queue": "^6.0.2",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
+		"react-intersection-observer": "^9.15.1",
 		"react-intl": "^7.0.1",
 		"sorted-btree": "^1.8.1"
 	},
