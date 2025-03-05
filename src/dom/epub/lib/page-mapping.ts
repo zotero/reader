@@ -6,7 +6,7 @@ import {
 	lengthenCFI,
 	shortenCFI
 } from "../cfi";
-import { PersistentRange } from "../../common/lib/range";
+import { moveRangeEndsIntoTextNodes, PersistentRange } from "../../common/lib/range";
 
 class PageMapping {
 	static generate(view: EPUBView): PageMapping {
@@ -94,6 +94,7 @@ class PageMapping {
 					}
 					let range = elem.ownerDocument.createRange();
 					range.selectNode(elem);
+					range = moveRangeEndsIntoTextNodes(range);
 					range.collapse(true);
 					mapping.push([new PersistentRange(range), pageNumber]);
 					successes++;
