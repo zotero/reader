@@ -47,7 +47,7 @@ class PageMapping {
 		return mapping;
 	}
 
-	static readonly VERSION = 12;
+	static readonly VERSION = 13;
 
 	private readonly _tree = new BTree<PersistentRange, string>(
 		undefined,
@@ -77,11 +77,16 @@ class PageMapping {
 			throw new Error('Page mapping already populated');
 		}
 		let startTime = new Date().getTime();
-		let sectionsWithLocations = 0;
-		for (let body of sectionBodies) {
-			for (let matcher of MATCHERS) {
+		let potentialMappings = MATCHERS.map((matcher) => {
+			console.log('Trying matcher', matcher.selector);
+
+			let mapping: [PersistentRange, string][] = [];
+			let score = 0;
+			let sectionsWithMatches = 0;
+			for (let body of sectionBodies) {
 				let elems = body.querySelectorAll(matcher.selector);
 				let successes = 0;
+
 				for (let elem of elems) {
 					let pageNumber = matcher.extract(elem);
 					if (!pageNumber) {
@@ -90,25 +95,76 @@ class PageMapping {
 					let range = elem.ownerDocument.createRange();
 					range.selectNode(elem);
 					range.collapse(true);
-					this._tree.set(new PersistentRange(range), pageNumber);
+					mapping.push([new PersistentRange(range), pageNumber]);
 					successes++;
 				}
+
 				if (successes) {
-					console.log(`Found ${successes} physical page numbers using selector '${matcher.selector}'`);
-					sectionsWithLocations++;
+					score += successes;
+					sectionsWithMatches++;
 				}
 			}
-		}
-		if (sectionsWithLocations >= sectionBodies.length / 2) {
+
+			// If less than half of all sections have locations, the mapping is bad
+			if (sectionsWithMatches < sectionBodies.length / 2) {
+				console.log(`Aborting due to insufficient sections with page numbers (${sectionsWithMatches}/${sectionBodies.length})`);
+				return { mapping: [], score: 0, matcher };
+			}
+
+			let previous: string | null = null;
+			for (let [, pageNumber] of mapping) {
+				if (previous !== null) {
+					let previousInt = parseInt(previous);
+					let thisInt = parseInt(pageNumber);
+					if (!Number.isNaN(previousInt) && !Number.isNaN(thisInt)) {
+						// If page numbers are decreasing, dock three-quarters of the points
+						if (thisInt < previousInt) {
+							console.log(`Decreasing page numbers: ${previous} -> ${pageNumber}`);
+							score /= 4;
+							break;
+						}
+						// And if they skip more than two pages, dock half
+						if (thisInt > previousInt + 3) {
+							console.log(`Non-continuous page numbers: ${previous} -> ${pageNumber}`);
+							score /= 2;
+							break;
+						}
+					}
+				}
+				previous = pageNumber;
+			}
+
+			let seen = new Set<string>();
+			for (let [, pageNumber] of mapping) {
+				if (seen.has(pageNumber)) {
+					// Non-numeric duplicates: We're matching something that isn't page numbers, so abort
+					if (/^\D{2,}$/.test(pageNumber)) {
+						console.log('Aborting due to non-numeric duplicate page number', pageNumber);
+						return { mapping: [], score: 0, matcher };
+					}
+					// Numeric duplicates: Dock half the points, but potentially still use the mapping
+					console.log('Duplicate page number', pageNumber);
+					score /= 2;
+					break;
+				}
+				seen.add(pageNumber);
+			}
+
+			console.log(`Score: ${score} (${mapping.length} matches)`);
+			return { mapping, score, matcher };
+		});
+		potentialMappings = potentialMappings
+			.filter(({ score }) => score > 0)
+			.sort((a, b) => b.mapping.length - a.mapping.length);
+		let mapping = potentialMappings[0];
+		if (mapping) {
+			this._tree.setPairs(mapping.mapping);
+			this._isPhysical = true;
 			console.log(`Added ${this._tree.length} physical page mappings in ${
-				((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
+				((new Date().getTime() - startTime) / 1000).toFixed(2)}s using ${mapping.matcher.selector}`);
 		}
 		else {
 			console.log('Not enough page numbers to be confident -- reverting to EPUB locations');
-			this._tree.clear();
-		}
-		if (this._tree.length) {
-			this._isPhysical = true;
 		}
 	}
 
@@ -223,6 +279,11 @@ type Matcher = {
 const MATCHERS: Matcher[] = [
 	{
 		selector: '[id*="page" i]:not(#pagetop):not(#pagebottom):empty',
+		extract: el => el.id.replace(/page[-_]?/i, '').replace(/^(.*_)+/, '')
+	},
+
+	{
+		selector: '[id*="page" i]:not(#pagetop):not(#pagebottom)',
 		extract: el => el.id.replace(/page[-_]?/i, '').replace(/^(.*_)+/, '')
 	},
 
