@@ -925,6 +925,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		let container = doc.createElement('div');
 
+		let handledIbid = false;
+		let ibidRe = /\bIbid\b/;
+
 		let current = element;
 		let currentClone = current.cloneNode(true) as HTMLElement;
 		while (!current.classList.contains('section-container')) {
@@ -934,6 +937,23 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 			let parentClone = parent.cloneNode(false) as HTMLElement;
 			parentClone.appendChild(currentClone);
+
+			// If the current footnote contains "Ibid", keep prepending previous siblings
+			// until we find one that doesn't
+			if (!handledIbid
+					&& current.previousElementSibling
+					&& current.textContent
+					&& ibidRe.test(current.textContent)) {
+				do {
+					current = current.previousElementSibling;
+					let currentClone = current.cloneNode(true) as HTMLElement;
+					parentClone.prepend(currentClone);
+				}
+				while (current.previousElementSibling?.textContent
+					&& ibidRe.test(current.previousElementSibling.textContent));
+				handledIbid = true;
+			}
+
 			currentClone = parentClone;
 			current = parent;
 		}
