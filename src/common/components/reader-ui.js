@@ -80,6 +80,10 @@ function View(props) {
 					params={state[name + 'ViewOverlayPopup']}
 					onOpenLink={props.onOpenLink}
 					onNavigate={props.onNavigate}
+					onRecognizeReference={props.onRecognizeReference}
+					onAddToLibrary={props.onAddToLibrary}
+					onShowInLibrary={props.onShowInLibrary}
+					onOpenInReader={props.onOpenInReader}
 					onClose={handleOverlayPopupClose}
 				/>
 			}

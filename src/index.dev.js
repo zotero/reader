@@ -89,6 +89,29 @@ async function createReader() {
 		},
 		onTextSelectionAnnotationModeChange(mode) {
 			console.log(`Change text selection annotation mode to '${mode}'`);
+		},
+		onRecognizeReference(reference, callback) {
+			console.log('Resolving reference', reference);
+			let object = {
+				"title": "Plasma proteins present in osteoarthritic synovial fluid can stimulate cytokine production via Toll-like receptor 4",
+				"creator": "Sohn et al.",
+				"year": "2012",
+				"url": "https://doi.org/10.1186/ar3555",
+				"abstract": "Osteoarthritis (OA) is a degenerative disease characterized by cartilage breakdown in the synovial joints. The presence of low-grade inflammation in OA joints is receiving increasing attention, with synovitis shown to be present even in the early stages of the disease. How the synovial inflammation arises is unclear, but proteins in the synovial fluid of affected joints could conceivably contribute. We therefore surveyed the proteins present in OA synovial fluid and assessed their immunostimulatory properties."
+			};
+			// object = null;
+			setTimeout(() => callback(object), 1000);
+		},
+		onAddToLibrary(url, callback) {
+			let object = {
+				"itemID": 55390,
+				"title": "Plasma proteins present in osteoarthritic synovial fluid can stimulate cytokine production via Toll-like receptor 4",
+				"creator": "Sohn et al.",
+				"year": "2012",
+				"url": "https://doi.org/10.1186/ar3555",
+				"abstract": "Osteoarthritis (OA) is a degenerative disease characterized by cartilage breakdown in the synovial joints. The presence of low-grade inflammation in OA joints is receiving increasing attention, with synovitis shown to be present even in the early stages of the disease. How the synovial inflammation arises is unclear, but proteins in the synovial fluid of affected joints could conceivably contribute. We therefore surveyed the proteins present in OA synovial fluid and assessed their immunostimulatory properties."
+			};
+			setTimeout(() => callback(object), 1000);
 		}
 	});
 	reader.enableAddToNote(true);

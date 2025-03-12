@@ -71,6 +71,10 @@ class Reader {
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
+		this._onRecognizeReference = options.onRecognizeReference;
+		this._onAddToLibrary = options.onAddToLibrary;
+		this._onShowInLibrary = options.onShowInLibrary;
+		this._onOpenInReader = options.onOpenInReader;
 
 		this._localizedStrings = options.localizedStrings;
 
@@ -386,6 +390,10 @@ class Reader {
 								}
 								this._updateState({ themePopup: null, customThemes, lightTheme, darkTheme });
 							}}
+							onRecognizeReference={this._onRecognizeReference}
+							onAddToLibrary={this._onAddToLibrary}
+							onShowInLibrary={this._onShowInLibrary}
+							onOpenInReader={this._onOpenInReader}
 						/>
 					</ReaderContext.Provider>
 				</IntlProvider>
