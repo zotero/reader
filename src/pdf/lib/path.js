@@ -117,7 +117,7 @@ export function eraseInk(circleCenterX, circleCenterY, circleWidth, annotations)
 		const newTotalPoints = position.paths.reduce((total, path) => total + path.length, 0);
 
 		if (newTotalPoints !== originalTotalPoints) {
-			modifiedAnnotations.push({ ...annotation, position });
+			modifiedAnnotations.push({ ...annotation, position, image: undefined });
 		}
 	});
 
