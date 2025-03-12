@@ -251,24 +251,23 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		selectedAnnotations = selectedAnnotations.filter(x => !x.readOnly);
 		let annotations = [];
 		for (let annotation of selectedAnnotations) {
+			let updatedAnnotation = { id: annotation.id };
 			if (tag) {
 				if (remove) {
 					if (annotation.tags.find(x => x.name === tag.name)) {
-						annotation.tags = annotation.tags.filter(x => x.name !== tag.name);
-						annotations.push(annotation);
+						updatedAnnotation.tags = annotation.tags.filter(x => x.name !== tag.name);
+						annotations.push(updatedAnnotation);
 					}
 				}
-				else {
-					if (!annotation.tags.find(x => x.name === tag.name)) {
-						annotation.tags.push(tag);
-						annotations.push(annotation);
-					}
+				else if (!annotation.tags.find(x => x.name === tag.name)) {
+					updatedAnnotation.tags = [...annotation.tags, tag];
+					annotations.push(updatedAnnotation);
 				}
 			}
 			else if (color) {
 				if (annotation.color !== color) {
-					annotation.color = color;
-					annotations.push(annotation);
+					updatedAnnotation.color = color;
+					annotations.push(updatedAnnotation);
 				}
 			}
 		}
