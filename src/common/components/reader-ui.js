@@ -78,8 +78,14 @@ function View(props) {
 			{state[name + 'ViewOverlayPopup'] &&
 				<OverlayPopup
 					params={state[name + 'ViewOverlayPopup']}
+					previewedReferences={state.previewedReferences}
+					onPreviewReference={props.onPreviewReference}
 					onOpenLink={props.onOpenLink}
 					onNavigate={props.onNavigate}
+					onRecognizeReference={props.onRecognizeReference}
+					onAddToLibrary={props.onAddToLibrary}
+					onShowInLibrary={props.onShowInLibrary}
+					onOpenInReader={props.onOpenInReader}
 					onClose={handleOverlayPopupClose}
 				/>
 			}
