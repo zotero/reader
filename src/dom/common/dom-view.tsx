@@ -792,7 +792,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handlePointerLeave(event: PointerEvent) {
 		const link = (event.target as Element).closest('a');
-		if (link && !this._isExternalLink(link)) {
+		if (link && !this._isExternalLink(link) && event.relatedTarget) {
 			this._handlePointerLeftInternalLink();
 		}
 	}
