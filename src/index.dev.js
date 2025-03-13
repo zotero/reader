@@ -89,6 +89,9 @@ async function createReader() {
 		},
 		onTextSelectionAnnotationModeChange(mode) {
 			console.log(`Change text selection annotation mode to '${mode}'`);
+		},
+		onSaveCustomThemes(customThemes) {
+			console.log('Save custom themes', customThemes);
 		}
 	});
 	reader.enableAddToNote(true);
