@@ -287,9 +287,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	private _initOutline() {
-		if (!this.book.navigation.toc.length) {
-			return;
-		}
 		let base = new Path(this.book.packaging.navPath || this.book.packaging.ncxPath || '');
 		let toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
 			title: navItem.label,
