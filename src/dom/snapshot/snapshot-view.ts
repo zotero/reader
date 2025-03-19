@@ -103,8 +103,17 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected override _handleIFrameLoaded() {
 		let sheetLengthTotal = 0;
 		for (let sheet of this._iframeDocument.styleSheets) {
+			// Ignore SingleFile font-face stylesheet
+			if (
+				Array.prototype.every.call(
+					sheet.cssRules,
+					rule => rule.constructor.name === 'CSSFontFaceRule'
+				)
+			) {
+				continue;
+			}
 			sheetLengthTotal += sheet.ownerNode?.textContent?.length ?? 0;
-			if (sheetLengthTotal > 50_000) {
+			if (sheetLengthTotal > 100_000) {
 				this._isThemingSupported = false;
 				break;
 			}
