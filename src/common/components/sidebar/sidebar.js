@@ -50,11 +50,11 @@ function Sidebar(props) {
 	function handleOutlineSearchInput(query) {
 		function recursiveSearch(items, queryString) {
 			let containActive = false;
-			const isMatch = (sourceString) => { 
+			const isMatch = (sourceString) => {
 				sourceString = sourceString.toLowerCase();
 				queryString = queryString.toLowerCase();
 				return sourceString.includes(queryString);
-			}
+			};
 			items.forEach((item) => {
 				if (queryString == '') {
 					if ('expandedBak' in item) {
@@ -69,7 +69,7 @@ function Sidebar(props) {
 					delete item.childMatched;
 					delete item.expandedBak;
 
-					if (item.items?.length) {	
+					if (item.items?.length) {
 						if (recursiveSearch(item.items, query).containActive) {
 							item.expanded = true;
 							containActive = true;
@@ -83,7 +83,7 @@ function Sidebar(props) {
 					item.matched = isMatch(item.title);
 					item.childMatched = false;
 					item.expandedBak = ('expandedBak' in item) ? item.expandedBak : item.expanded;
-					if (item.items?.length) {	
+					if (item.items?.length) {
 						delete item.expanded;
 						recursiveSearch(item.items, query);
 						item.items.forEach((iitem) => {
@@ -98,10 +98,10 @@ function Sidebar(props) {
 			return {
 				items: items,
 				containActive: containActive
-			}
+			};
 		}
 		props.onUpdateOutlineQuery(query);
-    	props.onUpdateOutline([...recursiveSearch(props.outline, query).items]);
+		props.onUpdateOutline([...recursiveSearch(props.outline, query).items]);
 	}
 
 	return (
