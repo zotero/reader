@@ -217,6 +217,7 @@ export default {
 	'pdfReader.single': 'Single',
 	'pdfReader.double': 'Double',
 	'pdfReader.themeName': 'Theme Name:',
+	'pdfReader.themeOptions': 'Theme Options',
 	'pdfReader.background': 'Background:',
 	'pdfReader.foreground': 'Foreground:',
 };

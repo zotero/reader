@@ -219,6 +219,7 @@
 			display: flex;
 			justify-content: center;
 			align-items: center;
+			position: relative;
 
 			&:active, &.active, &.active-pseudo-class-fix {
 				outline: 3px solid var(--accent-blue50);
@@ -226,6 +227,42 @@
 
 			&.add {
 				color: var(--fill-secondary);
+			}
+
+			> button {
+				width: 100%;
+				height: 100%;
+				text-align: center;
+			}
+
+			.theme-context-menu {
+				height: 18px;
+				opacity: 0;
+				position: absolute;
+				right: 2px;
+				top: 7px;
+				width: 18px;
+				border-radius: 4px;
+				padding: 1px;
+
+				svg {
+					transform: rotate(90deg);
+				}
+			}
+
+			&:hover, &:focus, &:focus-within {
+				.theme-context-menu {
+					opacity: 1;
+
+					&:focus {
+						background-color: rgba(0, 0, 0, .2);
+					}
+				}
+			}
+
+			.theme-context-menu.context-menu-open {
+				opacity: 1;
+				background-color: rgba(0, 0, 0, .2);
 			}
 		}
 	}

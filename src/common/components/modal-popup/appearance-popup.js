@@ -18,6 +18,7 @@ import IconSplitVertical from '../../../../res/icons/16/split-vertical.svg';
 import IconSpreadEven from '../../../../res/icons/16/spread-even.svg';
 import IconSpreadNone from '../../../../res/icons/16/spread-none.svg';
 import IconSpreadOdd from '../../../../res/icons/16/spread-odd.svg';
+import IconOptions from '../../../../res/icons/16/options.svg';
 import IconPlus from '../../../../res/icons/20/plus.svg';
 import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
@@ -165,6 +166,8 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 
 function Theme({ theme, active, onSet, onOpenContextMenu }) {
 	let intl = useIntl();
+	const isReadOnly = DEFAULT_THEMES.some(t => t.id === theme.id);
+	const { platform } = useContext(ReaderContext);
 
 	function handleClick(e) {
 		onSet(theme.id);
@@ -176,21 +179,47 @@ function Theme({ theme, active, onSet, onOpenContextMenu }) {
 		event.preventDefault();
 		let { x, y } = getPopupCoordinatesFromClickEvent(event);
 		onOpenContextMenu({ theme, x, y });
+
+		if(event.type === 'click') {
+			event.currentTarget.classList.add('context-menu-open');
+		}
 	}
 
 	let titleString = `pdfReader.theme.${theme.id}`;
 	let name = intl.messages[titleString] ? intl.formatMessage({ id: titleString }) : theme.label;
 
-	return (
-		<button
-			tabIndex={-1}
-			className={cx('theme', { active })}
-			style={{ backgroundColor: theme.background || '#ffffff', color: theme.foreground || '#000000' }}
-			title={name}
-			onClick={handleClick}
-			onContextMenu={handleContextMenu}
-		>{name}</button>
-	);
+	return platform === 'web'
+		? (
+			<div className={cx('theme', { active })} style={{ backgroundColor: theme.background || '#ffffff', color: theme.foreground || '#000000' }}>
+				<button
+					tabIndex={-1}
+					title={name}
+					onClick={handleClick}
+				>
+					{name}
+				</button>
+				{!isReadOnly && (
+					<button
+						title={intl.formatMessage({ id: 'pdfReader.themeOptions' }) }
+						tabIndex={-1}
+						className="theme-context-menu"
+						onClick={handleContextMenu}
+					>
+						<IconOptions />
+					</button>
+				)}
+			</div>
+		)
+		: (
+			<button
+				tabIndex={-1}
+				className={cx('theme', { active })}
+				style={{ backgroundColor: theme.background || '#ffffff', color: theme.foreground || '#000000' }}
+				title={name}
+				onClick={handleClick}
+				onContextMenu={handleContextMenu}
+			>{name}</button>
+		);
 }
 
 function AppearancePopup(props) {
@@ -363,15 +392,13 @@ function AppearancePopup(props) {
 										onOpenContextMenu={props.onOpenThemeContextMenu}
 									/>
 								))}
-								{platform !== 'web' && (
 									<button
-										tabIndex={-1}
-										className="theme add"
-										onClick={props.onAddTheme}
-										title={intl.formatMessage({ id: "pdfReader.addTheme" })}
-									><IconPlus/></button>
-								)}
-							</div>
+									tabIndex={-1}
+									className="theme add"
+									onClick={props.onAddTheme}
+									title={intl.formatMessage({ id: "pdfReader.addTheme" })}
+								><IconPlus/></button>
+								</div>
 						</div>
 					</div>
 				)}

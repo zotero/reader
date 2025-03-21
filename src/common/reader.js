@@ -735,6 +735,7 @@ class Reader {
 		this._updateState({ contextMenu: null });
 		this._focusManager.restoreFocus();
 		this._onBringReaderToFront?.(false);
+		document.querySelectorAll('.context-menu-open').forEach(x => x.classList.remove('context-menu-open'));
 	}
 
 	_handleAppearanceChange(params) {
