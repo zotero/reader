@@ -1436,18 +1436,14 @@ class Reader {
 	setLightTheme(themeName) {
 		let themes = [...DEFAULT_THEMES, ...(this._state.customThemes || [])];
 		themes = new Map(themes.map(theme => [theme.id, theme]));
-		let lightTheme = themeName === undefined
-			? DEFAULT_THEMES.find(x => x.id === 'light')
-			: themes.get(themeName) || null;
+		let lightTheme = themes.get(themeName) || null;
 		this._updateState({ lightTheme });
 	}
 
 	setDarkTheme(themeName) {
 		let themes = [...DEFAULT_THEMES, ...(this._state.customThemes || [])];
 		themes = new Map(themes.map(theme => [theme.id, theme]));
-		let darkTheme = themeName === undefined
-			? DEFAULT_THEMES.find(x => x.id === 'dark')
-			: themes.get(themeName) || null;
+		let darkTheme = themes.get(themeName) || null;
 		this._updateState({ darkTheme });
 	}
 
