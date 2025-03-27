@@ -33,6 +33,7 @@ import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
+import { DEFAULT_THEMES } from "../../common/defines";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -439,6 +440,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					this._colorScheme = null;
 					break;
 			}
+			// Reset themes to their default values in case the user forced a dark theme
+			// in light mode, or vice versa
+			this._lightTheme = null;
+			this._darkTheme = DEFAULT_THEMES.find(t => t.id === 'dark')!;
 			super._updateColorScheme();
 		}
 	}
