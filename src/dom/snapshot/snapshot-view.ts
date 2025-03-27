@@ -103,14 +103,25 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	protected override _handleIFrameLoaded() {
 		let sheetLengthTotal = 0;
+
+		let foundSFImg = false;
+		let foundFontFace = false;
 		for (let sheet of this._iframeDocument.styleSheets) {
+			// Ignore SingleFile embedded image stylesheet
+			// https://github.com/gildas-lormeau/single-file-core/blob/1b6cecbe0/core/index.js#L1548-L1560
+			if (!foundSFImg && sheet.ownerNode?.textContent?.startsWith(':root{--sf-img-')) {
+				foundSFImg = true;
+				continue;
+			}
 			// Ignore SingleFile font-face stylesheet
-			if (
-				Array.prototype.every.call(
+			// https://github.com/gildas-lormeau/single-file-core/blob/1b6cecbe0/core/index.js#L1047-L1055
+			if (!foundFontFace && sheet.ownerNode?.textContent?.startsWith('@font-face{')
+				&& Array.prototype.every.call(
 					sheet.cssRules,
 					rule => rule.constructor.name === 'CSSFontFaceRule'
 				)
 			) {
+				foundFontFace = true;
 				continue;
 			}
 			sheetLengthTotal += sheet.ownerNode?.textContent?.length ?? 0;
