@@ -42,7 +42,7 @@ export const INK_ANNOTATION_WIDTH_STEPS = [
 	19.5, 20, 20.5, 21, 21.5, 22, 22.5, 23, 23.5, 24, 24.5, 25
 ];
 
-export const TEXT_ANNOTATION_FONT_SIZE_STEPS = [10, 12, 14, 18, 24, 36, 48, 64, 72, 96, 144, 192];
+export const TEXT_ANNOTATION_FONT_SIZE_STEPS = [6, 7, 8, 9, 10, 12, 14, 18, 24, 36, 48, 64, 72, 96, 144, 192];
 
 export const DEFAULT_THEMES = [
 	{ id: 'dark', label: 'Dark', background: "#2E3440", foreground: "#D8DEE9" },
