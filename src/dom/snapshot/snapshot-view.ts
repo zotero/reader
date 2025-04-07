@@ -34,6 +34,7 @@ import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { DEFAULT_THEMES } from "../../common/defines";
+import { scrollIntoView } from "../common/lib/scroll-into-view";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -356,24 +357,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			});
 		}
 
-		// Non-element nodes and ranges don't have scrollIntoView(),
-		// so scroll using a temporary element, removed synchronously
-		let rect = getBoundingPageRect(range);
-		if (options.ifNeeded && isPageRectVisible(rect, this._iframeWindow, 0)) {
+		if (options.ifNeeded && isPageRectVisible(getBoundingPageRect(range), this._iframeWindow, 0)) {
 			return;
 		}
 
-		let tempElem = this._iframeDocument.createElement('div');
-		tempElem.style.position = 'absolute';
-		tempElem.style.visibility = 'hidden';
-		tempElem.style.left = rect.left + 'px';
-		tempElem.style.top = rect.top + 'px';
-		tempElem.style.width = rect.width + 'px';
-		tempElem.style.height = rect.height + 'px';
-
-		this._annotationShadowRoot.append(tempElem);
-		tempElem.scrollIntoView(options);
-		tempElem.remove();
+		scrollIntoView(range, options);
 	}
 
 	protected override _updateViewState() {
@@ -542,7 +530,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (this._find) {
 			let result = this._find.next();
 			if (result) {
-				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
+				scrollIntoView(result.range.toRange(), { block: 'center' });
 			}
 			this._renderAnnotations();
 		}
@@ -553,7 +541,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (this._find) {
 			let result = this._find.prev();
 			if (result) {
-				getStartElement(result.range)?.scrollIntoView({ block: 'center' });
+				scrollIntoView(result.range.toRange(), { block: 'center' });
 			}
 			this._renderAnnotations();
 		}

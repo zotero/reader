@@ -27,8 +27,11 @@ export function getPotentiallyVisibleTextNodes(root: Node): Text[] {
 	});
 }
 
-export function isElement(node: Node): node is Element {
-	return node.nodeType === Node.ELEMENT_NODE;
+export function isElement(node: unknown): node is Element {
+	return !!node
+		&& typeof node === 'object'
+		&& 'nodeType' in node
+		&& node.nodeType === Node.ELEMENT_NODE;
 }
 
 export function closestElement(node: Node): Element | null {

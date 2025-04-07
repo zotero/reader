@@ -26,6 +26,14 @@ export class PersistentRange {
 		return this.toRange().compareBoundaryPoints(how, other instanceof PersistentRange ? other.toRange() : other);
 	}
 
+	getClientRects(): DOMRectList {
+		return this.toRange().getClientRects();
+	}
+
+	getBoundingClientRect(): DOMRect {
+		return this.toRange().getBoundingClientRect();
+	}
+
 	toRange(): Range {
 		let range = new Range();
 		range.setStart(this.startContainer, this.startOffset);
@@ -220,18 +228,18 @@ export function getStartElement(range: Range | PersistentRange): Element | null 
 	return startContainer as Element | null;
 }
 
-export function getBoundingPageRect(rangeOrElem: Range | Element) {
+export function getBoundingPageRect(rangeOrElem: Range | PersistentRange | Element) {
 	let rect = rangeOrElem.getBoundingClientRect();
-	let win = ('ownerDocument' in rangeOrElem ? rangeOrElem : rangeOrElem.commonAncestorContainer)
+	let win = ('ownerDocument' in rangeOrElem ? rangeOrElem : rangeOrElem.startContainer)
 		.ownerDocument?.defaultView;
 	rect.x += win?.scrollX ?? 0;
 	rect.y += win?.scrollY ?? 0;
 	return rect;
 }
 
-export function getPageRects(rangeOrElem: Range | Element): DOMRectList {
+export function getPageRects(rangeOrElem: Range | PersistentRange | Element): DOMRectList {
 	let rects = rangeOrElem.getClientRects();
-	let win = ('ownerDocument' in rangeOrElem ? rangeOrElem : rangeOrElem.commonAncestorContainer)
+	let win = ('ownerDocument' in rangeOrElem ? rangeOrElem : rangeOrElem.startContainer)
 		.ownerDocument?.defaultView;
 	for (let rect of rects) {
 		rect.x += win?.scrollX ?? 0;
