@@ -1113,7 +1113,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 							}
 						});
 						if (result.range) {
-							// Record the result that sceen readers should focus on after search popup is closed
+							// Record the result that screen readers should focus on after search popup is closed
 							this._a11yVirtualCursorTarget = getStartElement(result.range);
 						}
 					},
