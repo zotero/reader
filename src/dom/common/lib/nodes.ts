@@ -73,15 +73,27 @@ export function getContainingBlock(element: Element): Element | null {
 	return null;
 }
 
-export function iterateWalker(walker: TreeWalker | NodeIterator): Iterable<Node> {
-	return {
-		[Symbol.iterator]: function* () {
-			let node: Node | null;
-			while ((node = walker.nextNode())) {
-				yield node;
+export function iterateWalker(walker: TreeWalker | NodeIterator, direction: 'forward' | 'backward' = 'forward'): Iterable<Node> {
+	if (direction === 'forward') {
+		return {
+			[Symbol.iterator]: function* () {
+				let node: Node | null;
+				while ((node = walker.nextNode())) {
+					yield node;
+				}
 			}
-		}
-	};
+		};
+	}
+	else {
+		return {
+			[Symbol.iterator]: function* () {
+				let node: Node | null;
+				while ((node = walker.previousNode())) {
+					yield node;
+				}
+			}
+		};
+	}
 }
 
 export function isRTL(node: Node): boolean {

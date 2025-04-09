@@ -230,6 +230,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onChangeSpreadMode={props.onChangeSpreadMode}
 					onChangeFlowMode={props.onChangeFlowMode}
 					onChangeAppearance={props.onChangeAppearance}
+					onChangeFocusModeEnabled={props.onChangeFocusModeEnabled}
 					onAddTheme={props.onAddTheme}
 					onChangeTheme={props.onChangeTheme}
 					onOpenThemeContextMenu={props.onOpenThemeContextMenu}

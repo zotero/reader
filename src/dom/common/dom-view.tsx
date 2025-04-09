@@ -63,6 +63,7 @@ import {
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
+import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
@@ -162,6 +163,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _a11yVirtualCursorTarget: Node | null;
 
 	protected _a11yShouldFocusVirtualCursorTarget: boolean;
+
+	appearance?: ReflowableAppearance;
 
 	scale = 1;
 
@@ -315,7 +318,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 	}
 
-	protected abstract _handleViewCreated(viewState: Partial<Readonly<State>>): MaybePromise<void>;
+	protected async _handleViewCreated(viewState: Partial<Readonly<State>>): Promise<void> {
+		this.setHyphenate(this._options.hyphenate ?? true);
+
+		if (viewState.appearance) {
+			this.setAppearance(viewState.appearance);
+		}
+		else {
+			this.setAppearance(DEFAULT_REFLOWABLE_APPEARANCE);
+		}
+	}
 
 	// ***
 	// Utilities for annotations - abstractions over the specific types of selectors used by the two views
@@ -1750,6 +1762,43 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._outline = outline;
 	}
 
+	setAppearance(partialAppearance: Partial<ReflowableAppearance>) {
+		let appearance = {
+			...DEFAULT_REFLOWABLE_APPEARANCE,
+			...partialAppearance
+		};
+		this.appearance = appearance;
+		this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
+		this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
+		this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
+		this._iframeDocument.documentElement.classList.toggle('use-original-font', appearance.useOriginalFont);
+
+		let pageWidth;
+		switch (appearance.pageWidth) {
+			case PageWidth.Narrow:
+				pageWidth = 'narrow';
+				break;
+			case PageWidth.Normal:
+				pageWidth = 'normal';
+				break;
+			case PageWidth.Full:
+				pageWidth = 'full';
+				break;
+		}
+		this._iframeDocument.documentElement.dataset.pageWidth = pageWidth;
+		this._handleViewUpdate();
+	}
+
+	setFontFamily(fontFamily: string) {
+		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
+		this._renderAnnotations(true);
+	}
+
+	setHyphenate(hyphenate: boolean) {
+		this._iframeDocument.documentElement.classList.toggle('hyphenate', hyphenate);
+		this._renderAnnotations(true);
+	}
+
 	// ***
 	// Public methods to control the view from the outside
 	// ***
@@ -1871,6 +1920,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
 	onFocusAnnotation: (annotation: WADMAnnotation) => void;
+	onSetHiddenAnnotations: (ids: string[]) => void;
 	getLocalizedString: (name: string) => string;
 	data: Data & {
 		buf?: Uint8Array,
@@ -1880,6 +1930,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 
 export interface DOMViewState {
 	scale?: number;
+	appearance?: Partial<ReflowableAppearance>;
 }
 
 export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
@@ -1890,6 +1941,20 @@ export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions,
 
 export interface NavigateOptions extends CustomScrollIntoViewOptions {
 	skipHistory?: boolean;
+}
+
+export interface ReflowableAppearance {
+	lineHeight: number;
+	wordSpacing: number;
+	letterSpacing: number;
+	pageWidth: PageWidth;
+	useOriginalFont: boolean;
+}
+
+export const enum PageWidth {
+	Narrow = -1,
+	Normal = 0,
+	Full = 1
 }
 
 export default DOMView;

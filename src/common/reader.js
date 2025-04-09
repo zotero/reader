@@ -367,6 +367,7 @@ class Reader {
 							onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 							onOpenLink={this._onOpenLink}
 							onChangeAppearance={this._handleAppearanceChange.bind(this)}
+							onChangeFocusModeEnabled={this._handleFocusModeEnabledChange.bind(this)}
 							onChangeFindState={this._handleFindStateChange.bind(this)}
 							onFindNext={this.findNext.bind(this)}
 							onFindPrevious={this.findPrevious.bind(this)}
@@ -534,7 +535,7 @@ class Reader {
 			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
 		}
 
-		if (this._type === 'epub') {
+		if (this._type === 'epub' || this._type === 'snapshot') {
 			if (this._state.fontFamily !== previousState.fontFamily) {
 				this._primaryView?.setFontFamily(this._state.fontFamily);
 				this._secondaryView?.setFontFamily(this._state.fontFamily);
@@ -756,9 +757,24 @@ class Reader {
 	}
 
 	_handleAppearanceChange(params) {
-		this._ensureType('epub');
+		this._ensureType('epub', 'snapshot');
 		this._primaryView?.setAppearance(params);
 		this._secondaryView?.setAppearance(params);
+	}
+
+	_handleFocusModeEnabledChange(enabled) {
+		this._ensureType('snapshot');
+		try {
+			this._primaryView?.setFocusModeEnabled(enabled);
+			this._secondaryView?.setFocusModeEnabled(enabled);
+		}
+		catch (e) {
+			console.error(e);
+			this.setErrorMessage(this._getString('pdfReader.focusMode.notSupported'));
+			setTimeout(() => {
+				this.setErrorMessage(null);
+			}, 5000);
+		}
 	}
 
 	_handleFindStateChange(primary, params) {
@@ -997,7 +1013,11 @@ class Reader {
 			let annotationType = this._getString(`pdfReader.${annotation.type}Annotation`);
 			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
 			this.setA11yMessage(annotationContent);
-		}
+		};
+
+		let onSetHiddenAnnotations = (ids) => {
+			this._annotationManager.setFilter({ hiddenIDs: ids });
+		};
 
 		let getLocalizedString = (name) => this._getString(name);
 
@@ -1051,6 +1071,7 @@ class Reader {
 			onKeyDown,
 			onKeyUp,
 			onFocusAnnotation,
+			onSetHiddenAnnotations,
 			getLocalizedString
 		};
 
