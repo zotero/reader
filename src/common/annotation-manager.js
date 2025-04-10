@@ -2,6 +2,7 @@ import { approximateMatch } from './lib/approximate-match';
 import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
 import { ANNOTATION_POSITION_MAX_SIZE } from './defines';
 import { basicDeepEqual, sortTags } from './lib/utilities';
+import { isSelector } from "../dom/common/lib/selector";
 
 const DEBOUNCE_TIME = 1000; // 1s
 const DEBOUNCE_MAX_TIME = 10000; // 10s
@@ -136,24 +137,34 @@ class AnnotationManager {
 			if (annotation.position || annotation.color) {
 				annotation.image = undefined;
 			}
-			// All properties in the existing annotation position are preserved except nextPageRects,
-			// which isn't preserved only when a new rects property is given
-			let deleteNextPageRects = annotation.position?.rects && !annotation.position?.nextPageRects;
-			annotation = {
-				...existingAnnotation,
-				...annotation,
-				position: { ...existingAnnotation.position, ...annotation.position }
-			};
-			if (!annotation.image) {
-				delete annotation.image;
-			}
-			if (deleteNextPageRects) {
-				delete annotation.position.nextPageRects;
-			}
 
-			// Updating annotation position when editing comment
-			if (annotation.type === 'text' && existingAnnotation.comment !== annotation.comment) {
-				annotation.position = measureTextAnnotationDimensions(annotation, { adjustSingleLineWidth: true, enableSingleLineMaxWidth: true });
+			if (existingAnnotation.position && isSelector(existingAnnotation.position)) {
+				// EPUB/Snapshot: Just merge top-level properties
+				annotation = {
+					...existingAnnotation,
+					...annotation,
+				};
+			}
+			else if (existingAnnotation.position?.rects) {
+				// PDF: All properties in the existing annotation position are preserved except nextPageRects,
+				// which isn't preserved only when a new rects property is given
+				let deleteNextPageRects = annotation.position?.rects && !annotation.position?.nextPageRects;
+				annotation = {
+					...existingAnnotation,
+					...annotation,
+					position: { ...existingAnnotation.position, ...annotation.position }
+				};
+				if (!annotation.image) {
+					delete annotation.image;
+				}
+				if (deleteNextPageRects) {
+					delete annotation.position.nextPageRects;
+				}
+
+				// Updating annotation position when editing comment
+				if (annotation.type === 'text' && existingAnnotation.comment !== annotation.comment) {
+					annotation.position = measureTextAnnotationDimensions(annotation, { adjustSingleLineWidth: true, enableSingleLineMaxWidth: true });
+				}
 			}
 
 			annotation.dateModified = (new Date()).toISOString();
