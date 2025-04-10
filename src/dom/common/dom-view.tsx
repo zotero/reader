@@ -1831,6 +1831,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	primary?: boolean;
 	mobile?: boolean;
 	preview?: boolean;
+	readOnly?: boolean;
 	container: Element;
 	tools: Record<ToolType, Tool>;
 	tool: Tool;
@@ -1854,7 +1855,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onChangeViewStats: (stats: ViewStats) => void;
 	onSetDataTransferAnnotations: (dataTransfer: DataTransfer, annotation: NewAnnotation<WADMAnnotation> | NewAnnotation<WADMAnnotation>[], fromText?: boolean) => void;
 	onAddAnnotation: (annotation: NewAnnotation<WADMAnnotation>, select?: boolean) => WADMAnnotation;
-	onUpdateAnnotations: (annotations: Annotation[]) => void;
+	onUpdateAnnotations: (annotations: Partial<Annotation>[]) => void;
 	onOpenLink: (url: string) => void;
 	onSelectAnnotations: (ids: string[], triggeringEvent?: KeyboardEvent | MouseEvent) => void;
 	onSetSelectionPopup: (params?: SelectionPopupParams<WADMAnnotation> | null) => void;

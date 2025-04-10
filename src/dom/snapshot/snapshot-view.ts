@@ -34,6 +34,7 @@ import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
+import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -157,6 +158,28 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 
 		this._initOutline();
+
+		try {
+			// Update old sortIndexes (determined based on length)
+			// We used to count characters from <html>, which was volatile and led
+			// to unnecessarily large sortIndexes. Now we count from <body>.
+			if (!this._options.readOnly) {
+				this._options.onUpdateAnnotations(this._annotations
+					.filter(a => !a.readOnly && a.sortIndex && a.sortIndex.length === SORT_INDEX_LENGTH_OLD)
+					.map((a) => {
+						let range = this.toDisplayedRange(a.position);
+						if (!range) {
+							return null;
+						}
+						return { id: a.id, sortIndex: this._getSortIndex(range) };
+					})
+					.filter(Boolean) as Partial<WADMAnnotation>[]
+				);
+			}
+		}
+		catch (e) {
+			console.warn('Failed to update sortIndexes', e);
+		}
 	}
 
 	private _getSnapshotLocation() {
@@ -247,15 +270,38 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	private _getSortIndex(range: Range) {
-		let iter = this._iframeDocument.createNodeIterator(this._iframeDocument.documentElement, NodeFilter.SHOW_TEXT);
-		let count = 0;
-		for (let node of iterateWalker(iter)) {
-			if (range.startContainer.contains(node)) {
-				return String(count + range.startOffset).padStart(8, '0');
+		let getCount = (root: Node, stopContainer?: Node, stopOffset?: number) => {
+			let iter = this._iframeDocument.createNodeIterator(root, NodeFilter.SHOW_TEXT);
+			let count = 0;
+			for (let node of iterateWalker(iter)) {
+				if (stopContainer?.contains(node)) {
+					return count + stopOffset!;
+				}
+				count += node.nodeValue!.trim().length;
 			}
-			count += node.nodeValue!.trim().length;
+			// If we never terminated, just return 0
+			return 0;
+		};
+
+		let count: number;
+		if (this._focusMode.enabled) {
+			let newRange = this._focusMode.mapRangeFromFocus(range);
+			if (newRange) {
+				count = getCount(this._focusMode.originalRoot, newRange.startContainer, newRange.startOffset);
+			}
+			else {
+				count = 0;
+			}
 		}
-		return '00000000';
+		else {
+			count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
+		}
+
+		let result = String(count).padStart(SORT_INDEX_LENGTH, '0');
+		if (result.length > SORT_INDEX_LENGTH) {
+			result = result.substring(0, SORT_INDEX_LENGTH);
+		}
+		return result;
 	}
 
 	toSelector(range: Range): Selector | null {
