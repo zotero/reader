@@ -71,6 +71,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	initializedPromise: Promise<void>;
 
+	initialized = false;
+
 	protected readonly _container: Element;
 
 	protected readonly _iframe: HTMLIFrameElement;
@@ -203,6 +205,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// support the csp attribute (currently all browsers besides Chrome derivatives)
 		this._iframe.setAttribute('csp', this._getCSP());
 		this.initializedPromise = this._initialize();
+		this.initializedPromise.then(() => this.initialized = true);
 		options.container.append(this._iframe);
 	}
 
@@ -545,6 +548,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handleViewUpdate() {
+		if (!this.initialized) {
+			return;
+		}
 		this._updateViewState();
 		this._updateViewStats();
 		this._displayedAnnotationCache = new WeakMap();

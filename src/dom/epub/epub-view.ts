@@ -921,6 +921,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	protected override _handleViewUpdate() {
+		if (!this.initialized) {
+			return;
+		}
 		super._handleViewUpdate();
 		this.flow.invalidate();
 	}
