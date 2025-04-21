@@ -588,10 +588,45 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				continue;
 			}
 
+			let colorName;
+			// https://github.com/koreader/koreader/blob/15995650e/frontend/apps/reader/modules/readerhighlight.lua#L31-L39
+			switch (koReaderAnnotation.color) {
+				case 'red':
+				case 'orange':
+				case 'yellow':
+				case 'green':
+				case 'blue':
+				case 'purple':
+				case 'gray':
+					colorName = koReaderAnnotation.color;
+					break;
+
+				// Use similar fallbacks for colors we don't support
+				case 'olive':
+					colorName = 'green';
+					break;
+				case 'cyan':
+					colorName = 'blue';
+					break;
+
+				default:
+					if (koReaderAnnotation.color) {
+						console.warn('Unknown KOReader color', koReaderAnnotation.color);
+					}
+					colorName = 'yellow';
+					break;
+			}
+
+			let color = ANNOTATION_COLORS
+				.find(([name]) => name === `general.${colorName}`)
+				?.[1];
+			if (!color) {
+				throw new Error('Missing color: ' + color);
+			}
 			let annotation = this._getAnnotationFromRange(
 				range,
 				'highlight',
-				ANNOTATION_COLORS[0][1] // Yellow
+				color,
 			);
 			if (!annotation) {
 				console.warn('Unable to resolve range', koReaderAnnotation);

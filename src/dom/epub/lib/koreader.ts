@@ -112,6 +112,7 @@ export function parseAnnotationsFromKOReaderMetadata(metadata: BufferSource): KO
 			pos1: findField(annotationTable, 'pos1'),
 			text: findField(annotationTable, 'text'),
 			datetime: findField(annotationTable, 'datetime'),
+			color: findField(annotationTable, 'color'),
 		};
 		for (let key of ['pos0', 'pos1', 'text', 'datetime'] as const) {
 			let value = annotationFields[key];
@@ -130,6 +131,7 @@ export function parseAnnotationsFromKOReaderMetadata(metadata: BufferSource): KO
 			pos1: parseKOReaderPosition((annotationFields.pos1 as StringLiteral).value),
 			text: (annotationFields.text as StringLiteral).value,
 			datetime: (annotationFields.datetime as StringLiteral).value,
+			color: (annotationFields.color as StringLiteral | null)?.value,
 		});
 	}
 	return annotations;
@@ -142,6 +144,7 @@ export type KOReaderAnnotation = {
 	pos1: KOReaderPosition;
 	text: string;
 	datetime: string;
+	color?: string;
 };
 
 export type KOReaderPosition = {
