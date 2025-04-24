@@ -104,5 +104,11 @@ window.select = options => {
 	window._view.navigate({annotationID: options.key});
 }
 
+window.navigate = options => {
+	const decodedLocation = JSON.parse(decodeBase64(options.location));
+	log("Show location: " + JSON.stringify(decodedLocation));
+	window._view.navigate(decodedLocation);
+}
+
 // Notify when iframe is loaded
 postMessage('onInitialized');
