@@ -199,7 +199,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.setFlowMode(viewState.flowMode);
 		}
 		else {
-			this.setFlowMode('paginated');
+			this.setFlowMode('scrolled');
 		}
 		if (viewState.spreadMode) {
 			this.setSpreadMode(viewState.spreadMode);
@@ -213,7 +213,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		else {
 			this.setAppearance(DEFAULT_EPUB_APPEARANCE);
 		}
-		if (!viewState.cfi || viewState.cfi === '_start') {
+
+		if (this._options.location) {
+			this.navigate(this._options.location, { behavior: 'instant' });
+		}
+		else if (!viewState.cfi || viewState.cfi === '_start') {
 			this.navigateToFirstPage();
 		}
 		else {

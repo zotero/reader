@@ -143,7 +143,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Validate viewState and its properties
 		// Also make sure this doesn't trigger _updateViewState
 		this._setScale(viewState.scale ?? 1);
-		if (viewState.scrollYPercent !== undefined) {
+		if (this._options.location) {
+			this.navigate(this._options.location, { behavior: 'instant' });
+		}
+		else if (viewState.scrollYPercent !== undefined) {
 			this._iframeWindow.scrollTo({
 				top: viewState.scrollYPercent
 					/ 100

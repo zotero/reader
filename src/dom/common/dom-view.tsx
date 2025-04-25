@@ -1790,6 +1790,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	tools: Record<ToolType, Tool>;
 	tool: Tool;
 	platform: Platform;
+	location?: NavLocation;
 	selectedAnnotationIDs: string[];
 	annotations: WADMAnnotation[];
 	showAnnotations: boolean;
