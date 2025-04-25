@@ -95,6 +95,20 @@ export async function sanitizeAndRender(xhtml: string, options: {
 
 	container.append(...sectionDoc.childNodes);
 
+	let documentElement = container.querySelector('replaced-html');
+	if (!documentElement) {
+		// Something is probably very wrong, but we'll try to continue
+		documentElement = container.firstElementChild;
+		if (!documentElement) {
+			throw new Error('Missing documentElement');
+		}
+	}
+	let body = container.querySelector('replaced-body');
+	if (!body) {
+		// As above...
+		body = documentElement;
+	}
+
 	// Add classes to elements with properties that we handle specially
 	let process = (selectors: Iterable<string>, fn: (el: Element) => void) => {
 		for (let selector of selectors) {
@@ -118,13 +132,24 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	process(cssRewriter.trackedSelectors.breakBefore, el => el.classList.add('break-before'));
 	process(cssRewriter.trackedSelectors.breakAfter, el => el.classList.add('break-after'));
 
+	// Remove break-before from the first element at every level
+	let firstElementChild: Element | null = body;
+	while (firstElementChild) {
+		firstElementChild.classList.remove('break-before');
+		firstElementChild = firstElementChild.firstElementChild;
+	}
+	// And remove break-after from the last element at every level
+	let lastElementChild: Element | null = body;
+	while (lastElementChild) {
+		lastElementChild.classList.remove('break-after');
+		lastElementChild = lastElementChild.lastElementChild;
+	}
+
 	// Get the primary writing mode for this section
-	let documentElement = container.querySelector('replaced-html');
-	let body = container.querySelector('replaced-body');
 	let writingMode = '';
 	for (let [selector, writingModePropertyValue] of cssRewriter.trackedSelectors.writingMode) {
 		try {
-			if (documentElement?.matches(selector) || body?.matches(selector)) {
+			if (documentElement.matches(selector) || body.matches(selector)) {
 				writingMode = writingModePropertyValue;
 				break;
 			}
