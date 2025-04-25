@@ -120,6 +120,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
+	protected override async _handleIFrameLoaded() {
+		await super._handleIFrameLoaded();
+		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
+	}
+
 	protected async _handleViewCreated(viewState: Partial<Readonly<EPUBViewState>>) {
 		await this.book.opened;
 
@@ -716,6 +721,14 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	// ***
 	// Event handlers
 	// ***
+
+	protected _handleVisibilityChange() {
+		if (this._iframeDocument.visibilityState !== 'visible') {
+			return;
+		}
+		this._keepPosition();
+		this._handleViewUpdate();
+	}
 
 	protected override _handleResize() {
 		if (!this.flow || document.hidden
