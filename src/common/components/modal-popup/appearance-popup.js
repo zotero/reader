@@ -371,37 +371,35 @@ function AppearancePopup(props) {
 						/>
 					</div>
 				)}
-				{!props.viewStats.disableTheming && (
-					<div className="group">
-						<div className="option themes">
-							<label><FormattedMessage id="pdfReader.themes"/></label>
-							<div className="themes" data-tabstop={1}>
+				<div className="group">
+					<div className="option themes">
+						<label><FormattedMessage id="pdfReader.themes"/></label>
+						<div className="themes" data-tabstop={1}>
+							<button
+								tabIndex={-1}
+								className={cx('theme original', { active: !currentTheme })}
+								style={{ backgroundColor: '#ffffff', color: '#000000' }}
+								title={intl.formatMessage({ id: "pdfReader.theme.original" })}
+								onClick={() => props.onChangeTheme()}
+							><FormattedMessage id="pdfReader.theme.original"/></button>
+							{themes.map((theme, i) => (
+								<Theme
+									key={i}
+									theme={theme}
+									active={currentTheme && theme.id === currentTheme.id}
+									onSet={props.onChangeTheme}
+									onOpenContextMenu={props.onOpenThemeContextMenu}
+								/>
+							))}
 								<button
-									tabIndex={-1}
-									className={cx('theme original', { active: !currentTheme })}
-									style={{ backgroundColor: '#ffffff', color: '#000000' }}
-									title={intl.formatMessage({ id: "pdfReader.theme.original" })}
-									onClick={() => props.onChangeTheme()}
-								><FormattedMessage id="pdfReader.theme.original"/></button>
-								{themes.map((theme, i) => (
-									<Theme
-										key={i}
-										theme={theme}
-										active={currentTheme && theme.id === currentTheme.id}
-										onSet={props.onChangeTheme}
-										onOpenContextMenu={props.onOpenThemeContextMenu}
-									/>
-								))}
-									<button
-									tabIndex={-1}
-									className="theme add"
-									onClick={props.onAddTheme}
-									title={intl.formatMessage({ id: "pdfReader.addTheme" })}
-								><IconPlus/></button>
-								</div>
-						</div>
+								tabIndex={-1}
+								className="theme add"
+								onClick={props.onAddTheme}
+								title={intl.formatMessage({ id: "pdfReader.addTheme" })}
+							><IconPlus/></button>
+							</div>
 					</div>
-				)}
+				</div>
 			</div>
 		</div>
 	);

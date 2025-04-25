@@ -33,13 +33,12 @@ import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
-import { DEFAULT_THEMES } from "../../common/defines";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
 
-	private _isThemingSupported = true;
+	private _isDynamicThemeSupported = true;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -103,7 +102,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	protected override _handleIFrameLoaded() {
-		let sheetLengthTotal = 0;
+		let maxRules = this._options.preview ? 100 : 500;
+		let numRules = 0;
 
 		let foundSFImg = false;
 		let foundFontFace = false;
@@ -125,9 +125,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				foundFontFace = true;
 				continue;
 			}
-			sheetLengthTotal += sheet.ownerNode?.textContent?.length ?? 0;
-			if (sheetLengthTotal > 100_000) {
-				this._isThemingSupported = false;
+			numRules += sheet.cssRules.length;
+			if (numRules > maxRules) {
+				this._isDynamicThemeSupported = false;
 				break;
 			}
 		}
@@ -394,15 +394,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
-			disableTheming: !this._isThemingSupported,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
 
 	protected override _updateColorScheme() {
-		if (this._isThemingSupported) {
+		super._updateColorScheme();
+		if (this._isDynamicThemeSupported) {
 			// Pages with a reasonable amount of CSS: Use Dark Reader
-			super._updateColorScheme();
+			this._iframeDocument.body.classList.remove('force-static-theme');
 			if (!('DarkReader' in this._iframeWindow)) {
 				let url = this._getSnapshotLocation() || 'about:blank';
 				// Dark Reader gets the page location by accessing the global property 'location'
@@ -430,23 +430,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 		else {
-			// Pages with a *lot* of CSS: Just use the page's color scheme
-			switch (getComputedStyle(this._iframeDocument.body).colorScheme) {
-				case 'light':
-					this._colorScheme = 'light';
-					break;
-				case 'dark':
-					this._colorScheme = 'dark';
-					break;
-				default:
-					this._colorScheme = null;
-					break;
-			}
-			// Reset themes to their default values in case the user forced a dark theme
-			// in light mode, or vice versa
-			this._lightTheme = null;
-			this._darkTheme = DEFAULT_THEMES.find(t => t.id === 'dark')!;
-			super._updateColorScheme();
+			this._iframeDocument.body.classList.toggle('force-static-theme', this._theme?.id !== 'light');
 		}
 	}
 

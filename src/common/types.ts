@@ -113,7 +113,6 @@ export type ViewStats = {
 	appearance?: Partial<EPUBAppearance>;
 	fontFamily?: string;
 	outlinePath?: number[];
-	disableTheming?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {

@@ -5,3 +5,14 @@
 .a11y-cursor-target {
 	outline: none;
 }
+
+body.force-static-theme {
+	background: var(--background-color) !important;
+	color: var(--text-color) !important;
+
+	* {
+		// Don't override background images
+		background-color: transparent !important;
+		color: var(--text-color);
+	}
+}

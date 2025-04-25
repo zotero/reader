@@ -758,6 +758,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let roots = [this._iframeDocument.documentElement, this._annotationRenderRootEl];
 		for (let root of roots) {
 			root.dataset.colorScheme = themeColorScheme;
+			root.style.colorScheme = themeColorScheme;
 			root.style.setProperty('--background-color', theme.background);
 			root.style.setProperty('--text-color', theme.foreground);
 		}
@@ -1786,6 +1787,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 export type DOMViewOptions<State extends DOMViewState, Data> = {
 	primary?: boolean;
 	mobile?: boolean;
+	preview?: boolean;
 	container: Element;
 	tools: Record<ToolType, Tool>;
 	tool: Tool;
