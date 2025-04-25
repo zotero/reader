@@ -216,7 +216,6 @@ class PDFView {
 				}
 				window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 				window.if = this._iframeWindow;
-				this._resolveInitializedPromise();
 
 				this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
 					let x = event.target.scrollLeft;
@@ -389,6 +388,8 @@ class PDFView {
 		if (this._location) {
 			this.navigate(this._location);
 		}
+
+		this._resolveInitializedPromise();
 
 		await this._initProcessedData();
 		this._findController.setDocument(this._iframeWindow.PDFViewerApplication.pdfDocument);

@@ -252,7 +252,24 @@ class Reader {
 			}
 		});
 
+		// Select the annotation instead of just navigating when to it when the location is provided externally
+		let selectAnnotationID;
+		if (
+			options.location?.annotationID
+			&& options.annotations.find(x => x.id === options.location.annotationID)
+		) {
+			selectAnnotationID = options.location.annotationID;
+			delete options.location;
+		}
+
 		this._primaryView = this._createView(true, options.location);
+
+		if (selectAnnotationID) {
+			(async () => {
+				await this._primaryView.initializedPromise;
+				this.setSelectedAnnotations([selectAnnotationID]);
+			})();
+		}
 
 		if (!this._preview) {
 			createRoot(document.getElementById('reader-ui')).render(
@@ -275,7 +292,7 @@ class Reader {
 							onNavigateBack={this.navigateBack.bind(this)}
 							onNavigateToPreviousPage={this.navigateToPreviousPage.bind(this)}
 							onNavigateToNextPage={this.navigateToNextPage.bind(this)}
-							onChangePageNumber={pageNumber => this.navigate({ pageNumber })}
+							onChangePageNumber={pageNumber => this._lastView.navigate({ pageNumber })}
 							onChangeTool={this.setTool.bind(this)}
 							onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 							onToggleFind={this.toggleFindPopup.bind(this)}
@@ -1198,7 +1215,16 @@ class Reader {
 
 	async navigate(location, options) {
 		await this._lastView.initializedPromise;
-		this._lastView.navigate(location, options);
+		// Select the annotation instead of just navigating when navigation is triggered externally
+		if (
+			location.annotationID
+			&& this._state.annotations.find(x => x.id === location.annotationID)
+		) {
+			this.setSelectedAnnotations([location.annotationID]);
+		}
+		else {
+			this._lastView.navigate(location, options);
+		}
 	}
 
 	navigateBack() {
