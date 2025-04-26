@@ -205,7 +205,10 @@ class PDFView {
 				setOptions();
 				this._iframeWindow.onAttachPage = this._attachPage.bind(this);
 				this._iframeWindow.onDetachPage = this._detachPage.bind(this);
-				if (!this._preview) {
+				if (this._preview) {
+					setTimeout(this._resolveInitializedPromise);
+				}
+				else {
 					this._init();
 				}
 				if (options.data.buf) {
