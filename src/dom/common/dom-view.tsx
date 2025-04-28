@@ -880,6 +880,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		event.preventDefault();
+		if (event.altKey) {
+			return;
+		}
 		if (this._isExternalLink(link)) {
 			this._options.onOpenLink(link.href);
 		}
