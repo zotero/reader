@@ -120,9 +120,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected override async _handleIFrameLoaded() {
-		await super._handleIFrameLoaded();
+	protected override _handleIFrameLoaded() {
 		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
+
+		return super._handleIFrameLoaded();
 	}
 
 	protected async _handleViewCreated(viewState: Partial<Readonly<EPUBViewState>>) {

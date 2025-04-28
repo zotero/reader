@@ -132,6 +132,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 
+		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
+
 		return super._handleIFrameLoaded();
 	}
 
@@ -448,6 +450,14 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._updateViewState();
 		this._pushHistoryPoint(true);
 	}
+
+	protected _handleVisibilityChange() {
+		if (this._iframeDocument.visibilityState !== 'visible') {
+			return;
+		}
+		this._handleViewUpdate();
+	}
+
 
 	// ***
 	// Setters that get called once there are changes in reader._state
