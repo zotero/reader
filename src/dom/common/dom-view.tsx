@@ -670,12 +670,19 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
+		// Split the selection into its column-separated parts and get the
+		// bounding rect encompassing the visible ones. This gives us a more
+		// accurate anchor for the popup.
+		let columnSeparatedPageRects = getColumnSeparatedPageRects(range);
+		// If no column rects were visible, just use the bounding rect. This
+		// essentially serves as a placeholder until the selection comes back
+		// into view.
+		if (!columnSeparatedPageRects.length) {
+			columnSeparatedPageRects = [getBoundingPageRect(range)];
+		}
 		let domRect = this._clientRectToViewportRect(
 			pageRectToClientRect(
-				// Split the selection into its column-separated parts
-				// and get the bounding rect encompassing the visible ones.
-				// This gives us a more accurate anchor for the popup.
-				getBoundingRect(getColumnSeparatedPageRects(range)),
+				getBoundingRect(columnSeparatedPageRects),
 				this._iframeWindow
 			)
 		);
