@@ -427,9 +427,16 @@ export async function placeA11yVirtualCursor(target) {
 	}
 	if (!target) return;
 	let doc = target.ownerDocument;
+	if (!doc.defaultView.frameElement || doc.defaultView.frameElement.ownerDocument !== document) {
+		throw new Error('Virtual cursor target must be inside view iframe');
+	}
 	let previousTarget = doc.querySelector('.a11y-cursor-target');
 	// if the target did not change, do nothing
 	if (target == previousTarget && doc.activeElement == target) return;
+	// If focus is outside the iframe (e.g. in the Find popup), leave it alone
+	if (document.activeElement !== doc.defaultView.frameElement) {
+		return;
+	}
 	let oldTabIndex = target.getAttribute('tabindex');
 	function blurHandler() {
 		if (oldTabIndex) {
