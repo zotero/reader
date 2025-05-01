@@ -418,7 +418,7 @@ export function getModeBasedOnColors(bgColor, fgColor) {
  * their virtual cursors to that element. Screen readers just look at rendered content
  * so without this any navigation done via outline/Find in/page input in toolbar gets
  * undone by virtual cursor either remaining where it was or even jumping to the beginning of content.
- * @param target - node to focus from the view. Views keep track of it in  _a11yVirtualCursorTarget obj.
+ * @param target - node to focus from the view. Views keep track of it in _a11yVirtualCursorTarget obj.
  */
 export async function placeA11yVirtualCursor(target) {
 	// Can't focus a textnode, so grab its parent (e.g. <p>)
@@ -427,7 +427,7 @@ export async function placeA11yVirtualCursor(target) {
 	}
 	if (!target) return;
 	let doc = target.ownerDocument;
-	let previousTarget =  doc.querySelector('.a11y-cursor-target');
+	let previousTarget = doc.querySelector('.a11y-cursor-target');
 	// if the target did not change, do nothing
 	if (target == previousTarget && doc.activeElement == target) return;
 	let oldTabIndex = target.getAttribute('tabindex');
@@ -449,6 +449,5 @@ export async function placeA11yVirtualCursor(target) {
 	// Cleanup if the focus did not take
 	if (doc.activeElement != target) {
 		blurHandler({ target });
-		return;
 	}
 }

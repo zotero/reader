@@ -11,48 +11,25 @@ import {
 	ViewStats,
 	WADMAnnotation
 } from "../../common/types";
-import Epub, {
-	Book,
-	EpubCFI,
-	NavItem,
-} from "epubjs";
+import Epub, { Book, EpubCFI, NavItem } from "epubjs";
 import {
 	getStartElement,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
 	splitRangeToTextNodes
 } from "../common/lib/range";
-import {
-	FragmentSelector,
-	FragmentSelectorConformsTo,
-	isFragment,
-	Selector
-} from "../common/lib/selector";
+import { FragmentSelector, FragmentSelectorConformsTo, isFragment, Selector } from "../common/lib/selector";
 import { EPUBFindProcessor } from "./find";
-import DOMView, {
-	DOMViewOptions,
-	DOMViewState,
-	NavigateOptions
-} from "../common/dom-view";
+import DOMView, { DOMViewOptions, DOMViewState, NavigateOptions } from "../common/dom-view";
 import SectionRenderer from "./section-renderer";
 import Section from "epubjs/types/section";
-import {
-	closestElement,
-	getContainingBlock
-} from "../common/lib/nodes";
+import { closestElement, getContainingBlock } from "../common/lib/nodes";
 import { CSSRewriter } from "./lib/sanitize-and-render";
 import PageMapping from "./lib/page-mapping";
-import {
-	lengthenCFI,
-	shortenCFI
-} from "./cfi";
-import {
-	Flow,
-	PaginatedFlow,
-	ScrolledFlow
-} from "./flow";
-import { DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
-import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
+import { lengthenCFI, shortenCFI } from "./cfi";
+import { Flow, PaginatedFlow, ScrolledFlow } from "./flow";
+import { A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH, DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
+import { koReaderAnnotationToRange, parseAnnotationsFromKOReaderMetadata } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
 import LRUCacheMap from "../common/lib/lru-cache-map";
@@ -884,6 +861,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			if (key == 'ArrowRight') {
 				this.flow.navigateRight();
 				event.preventDefault();
+				// eslint-disable-next-line no-useless-return
 				return;
 			}
 		}
@@ -1298,8 +1276,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		// Do not interfere with marking search results as virtual cursor targets
 		if (this._findState?.active) return;
 		let node = this.flow.startRange.startContainer;
-		let containingElement = closestElement(node);
-		this._a11yVirtualCursorTarget = containingElement;
+		this._a11yVirtualCursorTarget = closestElement(node);
 		if (this._a11yShouldFocusVirtualCursorTarget) {
 			this._a11yShouldFocusVirtualCursorTarget = false;
 			placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
