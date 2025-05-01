@@ -30,6 +30,7 @@ import { Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
 	getBoundingPageRect,
+	getColumnSeparatedPageRects,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
@@ -54,6 +55,7 @@ import { debounce } from "../../common/lib/debounce";
 import {
 	getBoundingRect,
 	isPageRectVisible,
+	pageRectToClientRect,
 	rectContains
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
@@ -360,14 +362,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('tel:');
 	}
 
-	protected _getViewportBoundingRect(range: Range): DOMRect {
-		let rect = range.getBoundingClientRect();
-		return new DOMRect(
+	protected _clientRectToViewportRect(rect: DOMRect): DOMRect {
+		return this._scaleDOMRect(new DOMRect(
 			rect.x + this._iframe.getBoundingClientRect().x - this._container.getBoundingClientRect().x,
 			rect.y + this._iframe.getBoundingClientRect().y - this._container.getBoundingClientRect().y,
 			rect.width,
 			rect.height
-		);
+		));
 	}
 
 	protected _getBoundingPageRectCached(range: Range): DOMRectReadOnly {
@@ -669,10 +670,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
-		let domRect = this._scaleDOMRect(this._getViewportBoundingRect(range));
-		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
+		let domRect = this._clientRectToViewportRect(
+			pageRectToClientRect(
+				// Split the selection into its column-separated parts
+				// and get the bounding rect encompassing the visible ones.
+				// This gives us a more accurate anchor for the popup.
+				getBoundingRect(getColumnSeparatedPageRects(range)),
+				this._iframeWindow
+			)
+		);
 		let annotation = this._getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
+			let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 			this._options.onSetSelectionPopup({ rect, annotation });
 		}
 		else {
@@ -697,8 +706,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Note: Popup won't be visible if sidebar is opened
 		let domRect;
 		if (annotation.type == 'note') {
-			domRect = this._annotationRenderRootEl.querySelector(`[data-annotation-id="${annotation.id}"]`)
-				?.getBoundingClientRect();
+			let noteElem = this._annotationRenderRootEl.querySelector(`[data-annotation-id="${annotation.id}"]`);
+			if (noteElem) {
+				domRect = this._scaleDOMRect(noteElem.getBoundingClientRect());
+			}
 		}
 		if (!domRect) {
 			let range = this.toDisplayedRange(annotation.position);
@@ -706,9 +717,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._options.onSetAnnotationPopup();
 				return;
 			}
-			domRect = this._getViewportBoundingRect(range);
+			domRect = this._clientRectToViewportRect(range.getBoundingClientRect());
 		}
-		domRect = this._scaleDOMRect(domRect);
 		let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 		this._options.onSetAnnotationPopup({ rect, annotation });
 	}

@@ -1,5 +1,6 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
-import { iterateWalker } from "./nodes";
+import { closestElement, iterateWalker } from "./nodes";
+import { getBoundingRect, isPageRectVisible, rectIntersects } from "./rect";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
@@ -246,6 +247,42 @@ export function getPageRects(rangeOrElem: Range | PersistentRange | Element): DO
 		rect.y += win?.scrollY ?? 0;
 	}
 	return rects;
+}
+
+/**
+ * Get the range's bounding rects, split by columns. This is useful for
+ * showing borders and popups relative to the range without positioning
+ * based on offscreen content.
+ */
+export function getColumnSeparatedPageRects(range: Range, visibleOnly = true): DOMRect[] {
+	let columnElement = closestElement(range.commonAncestorContainer)
+		?.closest('[data-section-index]');
+	if (!columnElement) {
+		return [getBoundingPageRect(range)];
+	}
+
+	let rangeRects = new Set(getPageRects(range));
+	let columnSeparatedPageRects = [];
+	for (let columnRect of getPageRects(columnElement)) {
+		// If the column is out of view, skip it
+		if (visibleOnly && !isPageRectVisible(columnRect, columnElement.ownerDocument.defaultView!)) {
+			continue;
+		}
+
+		// Get the bounding rect encompassing all the parts of the range that
+		// are within this column
+		let rangeRectsWithinColumn = [];
+		for (let rangeRect of rangeRects) {
+			if (rectIntersects(rangeRect, columnRect)) {
+				rangeRectsWithinColumn.push(rangeRect);
+				rangeRects.delete(rangeRect);
+			}
+		}
+		if (rangeRectsWithinColumn.length) {
+			columnSeparatedPageRects.push(getBoundingRect(rangeRectsWithinColumn));
+		}
+	}
+	return columnSeparatedPageRects;
 }
 
 export function getInnerText(range: Range): string {

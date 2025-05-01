@@ -39,3 +39,12 @@ export function isPageRectVisible(rect: DOMRectLike, win: Window, margin = 50) {
 	};
 	return rectIntersects(rect, winRect);
 }
+
+export function pageRectToClientRect(pageRect: DOMRectLike, win: Window) {
+	return new DOMRect(
+		pageRect.left - win.scrollX,
+		pageRect.top - win.scrollY,
+		pageRect.right - pageRect.left,
+		pageRect.bottom - pageRect.top
+	);
+}

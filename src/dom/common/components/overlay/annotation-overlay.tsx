@@ -9,7 +9,9 @@ import React, {
 import {
 	caretPositionFromPoint,
 	collapseToOneCharacterAtStart,
-	getBoundingPageRect, getPageRects,
+	getBoundingPageRect,
+	getColumnSeparatedPageRects,
+	getPageRects,
 	splitRangeToTextNodes,
 	supportsCaretPositionFromPoint
 } from "../../lib/range";
@@ -561,27 +563,12 @@ type SelectionBorderProps = {
 
 let SplitSelectionBorder: React.FC<SplitSelectionBorderProps> = (props) => {
 	let { range } = props;
-	let section = closestElement(range.commonAncestorContainer)?.closest('[data-section-index]');
-	if (section) {
-		let sectionRects = Array.from(getPageRects(section));
-		let rangeRects = Array.from(getPageRects(range));
-		return <>
-			{sectionRects
-				.filter(sectionRect => isPageRectVisible(sectionRect, section.ownerDocument.defaultView!))
-				.map((sectionRect, i) => {
-					let rangeRectsWithinSection = rangeRects
-						.filter(rangeRect => rectIntersects(rangeRect, sectionRect));
-					if (!rangeRectsWithinSection.length) {
-						return null;
-					}
-					return <SelectionBorder rect={getBoundingRect(rangeRectsWithinSection)} key={i}/>;
-				})
-			}
-		</>;
-	}
-	else {
-		return <SelectionBorder rect={getBoundingPageRect(range)} />;
-	}
+	return (
+		<>
+			{getColumnSeparatedPageRects(range)
+				.map((sectionRect, i) => <SelectionBorder rect={sectionRect} key={i}/>)}
+		</>
+	);
 };
 SplitSelectionBorder.displayName = 'SelectionBorder';
 type SplitSelectionBorderProps = {
