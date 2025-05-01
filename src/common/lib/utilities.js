@@ -431,12 +431,18 @@ export async function placeA11yVirtualCursor(target) {
 		throw new Error('Virtual cursor target must be inside view iframe');
 	}
 	let previousTarget = doc.querySelector('.a11y-cursor-target');
+
 	// if the target did not change, do nothing
 	if (target == previousTarget && doc.activeElement == target) return;
 	// If focus is outside the iframe (e.g. in the Find popup), leave it alone
 	if (document.activeElement !== doc.defaultView.frameElement) {
 		return;
 	}
+	// If text is selected, abort so we don't deselect it
+	if (doc.getSelection() && !doc.getSelection().isCollapsed) {
+		return;
+	}
+
 	let oldTabIndex = target.getAttribute('tabindex');
 	function blurHandler() {
 		if (oldTabIndex) {
