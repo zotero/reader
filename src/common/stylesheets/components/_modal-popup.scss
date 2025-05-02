@@ -321,6 +321,73 @@
 		}
 	}
 
+	.switch {
+		$width: 26px;
+		$height: 15px;
+		$knob-size: $height - 2px;
+		$transition: 0.15s ease-in-out;
+
+		appearance: none;
+		width: $width;
+		height: $height;
+		border-radius: 11px;
+
+		background: rgba(0, 0, 0, 0.09);
+		box-shadow: 0 0.5px 1.5px 0 rgba(0, 0, 0, 0.12) inset,
+					0 0 1px 0 rgba(0, 0, 0, 0.02) inset;
+
+		position: relative;
+		overflow: hidden;
+
+		&::before {
+			content: '';
+			display: block;
+			inset: 0;
+			width: $width;
+			height: $height;
+
+			background-color: var(--accent-blue);
+			background-image: linear-gradient(180deg, rgba(102, 102, 102, 0.75) 0%, rgba(102, 102, 102, 0) 67.71%);
+			background-blend-mode: overlay;
+
+			opacity: 0;
+			transition: opacity $transition;
+		}
+
+		&:active::before {
+			opacity: 0.4;
+		}
+
+		&:checked::before {
+			opacity: 1;
+		}
+
+		&:checked:active::before {
+			opacity: 0.6;
+		}
+
+		&::after {
+			content: '';
+			display: block;
+			position: absolute;
+			width: $knob-size;
+			height: $knob-size;
+			top: 1px;
+			inset-inline-start: 1px;
+
+			background: var(--accent-white);
+			border: 0.5px solid rgba(0, 0, 0, 0.02);
+			border-radius: 100px;
+			box-shadow: 0 0.2px 0.25px 0 rgba(0, 0, 0, 0.12);
+
+			transition: inset-inline-start $transition;
+		}
+
+		&:checked::after {
+			inset-inline-start: $width - $knob-size - 1px;
+		}
+	}
+
 	.epub-appearance {
 		display: flex;
 		flex-direction: column;

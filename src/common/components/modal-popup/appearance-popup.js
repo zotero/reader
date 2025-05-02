@@ -147,18 +147,19 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 				><IconRevert/></button>
 			</div>
 
-			<div className="checkbox-row">
-				<input
-					data-tabstop={1}
-					tabIndex={-1}
-					type="checkbox"
-					id="use-original-font"
-					name="useOriginalFont"
-					checked={params.useOriginalFont}
-					onChange={handleChange}
-				/>
-				<label htmlFor="use-original-font"><FormattedMessage
-					id="pdfReader.epubAppearance.useOriginalFont"/></label>
+			<div className="option">
+					<label htmlFor="use-original-font"><FormattedMessage
+						id="pdfReader.epubAppearance.useOriginalFont"/></label>
+					<input
+						data-tabstop={1}
+						tabIndex={-1}
+						className="switch"
+						type="checkbox"
+						id="use-original-font"
+						name="useOriginalFont"
+						checked={params.useOriginalFont}
+						onChange={handleChange}
+					/>
 			</div>
 		</div>
 	);
