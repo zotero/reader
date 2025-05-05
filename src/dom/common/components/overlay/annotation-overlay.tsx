@@ -306,7 +306,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			commentIconPosition = null;
 		}
 
-		return { rects, interactiveRects, commentIconPosition };
+		return { rects: Array.from(rects.values()), interactiveRects, commentIconPosition };
 	}, [annotation, isResizing, resizedRange]);
 
 	let vert = isVertical(annotation.range.commonAncestorContainer);
@@ -314,21 +314,21 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let underline = annotation.type === 'underline';
 	let rectGroup = useMemo(() => {
 		return <g ref={rectGroupRef}>
-			{[...rects.entries()].map(([key, rect]) => (
+			{rects.map((rect, i) => (
 				<rect
 					x={vert && underline ? rect.x + (rtl ? -3 : rect.width) : rect.x}
 					y={!vert && underline ? rect.y + rect.height : rect.y}
 					width={vert && underline ? 3 : rect.width}
 					height={!vert && underline ? 3 : rect.height}
 					opacity="50%"
-					key={key}
+					key={i}
 				/>
 			))}
 		</g>;
 	}, [rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
-		return !isResizing && [...rects.entries()].map(([key, rect]) => (
+		return !isResizing && rects.map((rect, i) => (
 			// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 			<foreignObject
 				x={rect.x}
@@ -336,7 +336,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				width={rect.width}
 				height={rect.height}
 				className="needs-pointer-events"
-				key={key + '-foreign'}
+				key={i + '-foreign'}
 			>
 				<div
 					className={cx('annotation-div', { 'disable-pointer-events': interactiveRects.has(rect) })}
@@ -357,7 +357,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		return allowResize && (
 			<Resizer
 				annotation={annotation}
-				highlightRects={[...rects.values()]}
+				highlightRects={rects}
 				onResizeStart={handleResizeStart}
 				onResizeEnd={handleResizeEnd}
 				onResize={handleResize}
@@ -365,7 +365,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		);
 	}, [allowResize, annotation, handleResize, handleResizeEnd, handleResizeStart, rects]);
 
-	if (!rects.size) {
+	if (!rects.length) {
 		return null;
 	}
 
