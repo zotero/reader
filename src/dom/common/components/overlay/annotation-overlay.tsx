@@ -19,8 +19,8 @@ import { AnnotationType } from "../../../../common/types";
 import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement, isRTL, isVertical } from "../../lib/nodes";
-import { isSafari } from "../../../../common/lib/utilities";
-import { rectsEqual, rectIntersects, getBoundingRect, isPageRectVisible } from "../../lib/rect";
+import { isFirefox, isSafari } from "../../../../common/lib/utilities";
+import { rectsEqual } from "../../lib/rect";
 import cx from "classnames";
 
 export type DisplayedAnnotation = {
@@ -380,6 +380,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	return <>
 		<g
 			tabIndex={-1}
+			onPointerDown={isFirefox ? undefined : (e => e.preventDefault())}
 			data-annotation-id={annotation.id}
 			fill={annotation.color}
 			ref={outerGroupRef}
