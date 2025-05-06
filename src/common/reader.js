@@ -24,6 +24,7 @@ import {
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
+import { flushSync } from 'react-dom';
 
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
@@ -171,6 +172,7 @@ class Reader {
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
 			sidebarView: 'annotations',
+			contextPaneOpen: options.contextPaneOpen !== undefined ? options.contextPaneOpen : false,
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight || null,
 			toolbarPlaceholderWidth: options.toolbarPlaceholderWidth || 0,
 			showContextPaneToggle: options.showContextPaneToggle,
@@ -552,16 +554,10 @@ class Reader {
 		}
 
 		if (init || this._state.sidebarOpen !== previousState.sidebarOpen) {
-			if (this._state.sidebarOpen) {
-				document.body.classList.add('sidebar-open');
-			}
-			else {
-				document.body.classList.remove('sidebar-open');
-			}
+			document.body.classList.toggle('sidebar-open', this._state.sidebarOpen);
 			this._primaryView?.setSidebarOpen(this._state.sidebarOpen);
 			this._secondaryView?.setSidebarOpen(this._state.sidebarOpen);
 		}
-
 
 		if (init || this._state.splitType !== previousState.splitType) {
 			document.body.classList.remove('enable-horizontal-split-view');
@@ -1478,6 +1474,14 @@ class Reader {
 			open = !this._state.sidebarOpen;
 		}
 		this._updateState({ sidebarOpen: open });
+	}
+
+	setContextPaneOpen(open) {
+		// Our context pane toggle will replace the sidenav context pane toggle,
+		// so we need to be sure that this update renders synchronously
+		flushSync(() => {
+			this._updateState({ contextPaneOpen: open });
+		});
 	}
 
 	setSidebarWidth(width) {
