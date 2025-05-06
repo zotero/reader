@@ -1,4 +1,5 @@
 import parser, { isSelector, isTag } from "postcss-selector-parser";
+import { renderMath } from "../../common/lib/math";
 
 export const SANITIZER_REPLACE_TAGS = new Set(['html', 'head', 'body', 'base', 'meta']);
 
@@ -14,6 +15,8 @@ export async function sanitizeAndRender(xhtml: string, options: {
 	if (sectionDoc.getElementsByTagName('parsererror').length) {
 		throw new Error('Invalid XHTML');
 	}
+
+	await renderMath(sectionDoc);
 
 	let walker = sectionDoc.createTreeWalker(sectionDoc, NodeFilter.SHOW_ELEMENT);
 	let toRemove = [];

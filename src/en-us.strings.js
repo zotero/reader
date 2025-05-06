@@ -195,6 +195,7 @@ export default {
 	'pdfReader.size': 'Size',
 	'pdfReader.merge': 'Merge',
 	'pdfReader.copyLink': 'Copy Link',
+	'pdfReader.copyTeX': 'Copy TeX',
 	'pdfReader.theme.original': 'Original',
 	'pdfReader.theme.snow': 'Snow',
 	'pdfReader.theme.sepia': 'Sepia',

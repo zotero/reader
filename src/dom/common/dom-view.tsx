@@ -4,7 +4,8 @@ import {
 	Annotation,
 	AnnotationPopupParams,
 	AnnotationType,
-	ArrayRect, ColorScheme,
+	ArrayRect,
+	ColorScheme,
 	FindState,
 	MaybePromise,
 	NavLocation,
@@ -12,9 +13,11 @@ import {
 	OutlineItem,
 	OverlayPopupParams,
 	Platform,
-	SelectionPopupParams, Theme,
+	SelectionPopupParams,
+	Theme,
 	Tool,
 	ToolType,
+	ViewContextMenuOverlay,
 	ViewStats,
 	WADMAnnotation,
 } from "../../common/types";
@@ -59,6 +62,7 @@ import {
 	rectContains
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
+import { closestMathTeX } from "./lib/math";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
@@ -231,8 +235,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let imgSrc = (origin || '') + ' data: blob:';
 		// Allow styles from data: URIs, inline, and from that origin
 		let styleSrc = (origin || '') + " data: 'unsafe-inline'";
-		// Allow fonts from data: and blob: URIs and from that origin
-		let fontSrc = (origin || '') + ' data: blob:';
+		// Allow fonts from resource: (for TeX fonts), data:, and blob: URIs and from that origin
+		let fontSrc = (origin || '') + ' resource: data: blob:';
 		// Don't allow any scripts
 		let scriptSrc = "'unsafe-eval'";
 		// Don't allow any child frames
@@ -1183,19 +1187,32 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Prevent native context menu
 		event.preventDefault();
 		let br = this._iframe.getBoundingClientRect();
-		let overlay;
-		let a = (event.target as Element).closest('a');
-		if (a && this._isExternalLink(a)) {
-			overlay = {
-				type: 'external-link' as const,
-				url: a.href,
-			};
-		}
+		let overlay = this._getContextMenuOverlay(event.target as Element);
 		this._options.onOpenViewContextMenu({
 			x: br.x + event.clientX * this._iframeCoordScaleFactor,
 			y: br.y + event.clientY * this._iframeCoordScaleFactor,
 			overlay,
 		});
+	}
+
+	private _getContextMenuOverlay(el: Element): ViewContextMenuOverlay | undefined {
+		let a = el.closest('a');
+		if (a && this._isExternalLink(a)) {
+			return {
+				type: 'external-link',
+				url: a.href,
+			};
+		}
+
+		let math = closestMathTeX(el);
+		if (math) {
+			return {
+				type: 'math',
+				tex: math,
+			};
+		}
+
+		return undefined;
 	}
 
 	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
@@ -1839,7 +1856,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
 	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
-	onOpenViewContextMenu: (params: { x: number, y: number, overlay?: { type: 'external-link', url: string } }) => void;
+	onOpenViewContextMenu: (params: { x: number, y: number, overlay?: ViewContextMenuOverlay }) => void;
 	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
 	onFocus: () => void;
 	onTabOut: (isShiftTab?: boolean) => void;
