@@ -113,6 +113,14 @@ function generateReaderConfig(build) {
 					build
 				},
 			}),
+			new CopyWebpackPlugin({
+				patterns: [
+					{
+						from: 'node_modules/mathjax-full/ts/output/chtml/fonts/tex-woff-v2/*.woff',
+						to: './mathjax-fonts/[name].woff'
+					}
+				],
+			}),
 		],
 	};
 

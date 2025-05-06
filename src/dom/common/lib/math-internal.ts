@@ -3,7 +3,7 @@ import { mathjax } from "mathjax-full/js/mathjax";
 import { TeX } from "mathjax-full/js/input/tex";
 import { AllPackages } from "mathjax-full/js/input/tex/AllPackages";
 import { HTMLDocument } from "mathjax-full/js/handlers/html/HTMLDocument";
-import { SVG } from "mathjax-full/js/output/svg";
+import { CHTML } from "mathjax-full/js/output/chtml";
 import { HTMLAdaptor } from "mathjax-full/js/adaptors/HTMLAdaptor";
 
 let registered = false;
@@ -17,7 +17,7 @@ export function renderMathInternal(doc: Document) {
 
 	let mjDoc = mathjax.document(doc, {
 		InputJax: new TeX({ packages: AllPackages }),
-		OutputJax: new SVG({ fontCache: 'global' })
+		OutputJax: new CHTML({ fontURL: new URL('mathjax-fonts', document.location.href).toString() })
 	}) as HTMLDocument<Node, Text, Document>;
 	mjDoc.render();
 	for (let item of mjDoc.math) {

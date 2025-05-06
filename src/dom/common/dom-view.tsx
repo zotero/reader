@@ -224,8 +224,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let imgSrc = (origin || '') + ' data: blob:';
 		// Allow styles from data: URIs, inline, and from that origin
 		let styleSrc = (origin || '') + " data: 'unsafe-inline'";
-		// Allow fonts from data: and blob: URIs and from that origin
-		let fontSrc = (origin || '') + ' data: blob:';
+		// Allow fonts from resource: (for TeX fonts), data:, and blob: URIs and from that origin
+		let fontSrc = (origin || '') + ' resource: data: blob:';
 		// Don't allow any scripts
 		let scriptSrc = "'unsafe-eval'";
 		// Don't allow any child frames
