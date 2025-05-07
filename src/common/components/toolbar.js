@@ -251,7 +251,6 @@ function Toolbar(props) {
 				><IconFind/></button>
 				{platform === 'zotero' && props.showContextPaneToggle && (
 					<Fragment>
-						<div className="divider"/>
 						<button
 							className="toolbar-button context-pane-toggle"
 							title={intl.formatMessage({ id: 'pdfReader.toggleContextPane' })}
