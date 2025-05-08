@@ -283,25 +283,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return 0;
 		};
 
-		let count: number;
-		if (this._focusMode.enabled) {
-			let newRange = this._focusMode.mapRangeFromFocus(range);
-			if (newRange) {
-				count = getCount(this._focusMode.originalRoot, newRange.startContainer, newRange.startOffset);
-			}
-			else {
-				count = 0;
-			}
+		let count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
+		let countString = String(count).padStart(SORT_INDEX_LENGTH, '0');
+		if (countString.length > SORT_INDEX_LENGTH) {
+			countString = countString.substring(0, SORT_INDEX_LENGTH);
 		}
-		else {
-			count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
-		}
-
-		let result = String(count).padStart(SORT_INDEX_LENGTH, '0');
-		if (result.length > SORT_INDEX_LENGTH) {
-			result = result.substring(0, SORT_INDEX_LENGTH);
-		}
-		return result;
+		return countString;
 	}
 
 	toSelector(range: Range): Selector | null {
