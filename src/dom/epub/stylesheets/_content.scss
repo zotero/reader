@@ -196,6 +196,13 @@ replaced-body {
 	img.clickable-image {
 		cursor: zoom-in;
 	}
+
+	section, div, p, [role="paragraph"], h1, h2, h3, h4, h5, h6, [role="heading"] {
+		&:focus {
+			// Prevent focus ring from appearing on non-interactive virtual cursor targets
+			outline: none;
+		}
+	}
 }
 
 body.footnote-popup-content {
