@@ -456,7 +456,7 @@ export async function placeA11yVirtualCursor(target) {
 	// Make it temporarily focusable
 	target.setAttribute('tabindex', '-1');
 	target.classList.add('a11y-cursor-target');
-	target.focus({ preventScroll: true });
+	target.focus({ preventScroll: true, focusVisible: false });
 	// Remove all a11y props if the element is blurred
 	target.addEventListener('blur', blurHandler, { once: true });
 	// Cleanup if the focus did not take
