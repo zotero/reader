@@ -111,6 +111,9 @@ const ReaderUI = React.forwardRef((props, ref) => {
 	let findState = state.primary ? state.primaryViewFindState : state.secondaryViewFindState;
 	let viewStats = state.primary ? state.primaryViewStats : state.secondaryViewStats;
 
+	let stackedView = state.bottomPlaceholderHeight !== null;
+	let showContextPaneToggle = state.showContextPaneToggle && (stackedView || !state.contextPaneOpen);
+
 	return (
 		<Fragment>
 			<div>
@@ -134,8 +137,8 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					onChangeTheme={props.onChangeTheme}
 					tool={state.tool}
 					readOnly={state.readOnly}
-					stackedView={state.bottomPlaceholderHeight !== null}
-					showContextPaneToggle={state.showContextPaneToggle}
+					stackedView={stackedView}
+					showContextPaneToggle={showContextPaneToggle}
 					onToggleSidebar={props.onToggleSidebar}
 					onZoomIn={props.onZoomIn}
 					onZoomOut={props.onZoomOut}

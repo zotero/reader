@@ -13,7 +13,8 @@
 	height: $height-toolbar !important;
 	min-height: 41px;
 	margin: 0;
-	padding: 0px 8px;
+	padding-inline: 8px 4px;
+	padding-block: 0;
 	min-width: 1px;
 	background: var(--material-toolbar);
 	border-bottom: var(--material-panedivider);
@@ -23,13 +24,17 @@
 	.end {
 		display: flex;
 		align-items: center;
+	}
+
+	.start,
+	.center {
 		gap: 4px;
 	}
 
 	.end {
 		justify-content: flex-end;
 		padding-inline-end: var(--toolbar-placeholder-width);
-
+		gap: 9px;
 	}
 
 	.custom-sections {
