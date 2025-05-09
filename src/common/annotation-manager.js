@@ -145,7 +145,7 @@ class AnnotationManager {
 					...annotation,
 				};
 			}
-			else if (existingAnnotation.position?.rects) {
+			else {
 				// PDF: All properties in the existing annotation position are preserved except nextPageRects,
 				// which isn't preserved only when a new rects property is given
 				let deleteNextPageRects = annotation.position?.rects && !annotation.position?.nextPageRects;
