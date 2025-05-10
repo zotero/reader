@@ -13,7 +13,8 @@ class AnnotationManager {
 			query: '',
 			colors: [],
 			tags: [],
-			authors: []
+			authors: [],
+			hiddenIDs: [],
 		};
 		this._readOnly = options.readOnly;
 		this._authorName = options.authorName;
@@ -398,7 +399,12 @@ class AnnotationManager {
 		this._annotations.forEach(x => delete x._score);
 
 		let annotations = this._annotations.slice();
-		let { tags, colors, authors } = this._filter;
+		let { tags, colors, authors, query, hiddenIDs } = this._filter;
+
+		if (hiddenIDs.length) {
+			annotations = annotations.filter(x => !hiddenIDs.includes(x.id));
+		}
+
 		if (tags.length || colors.length || authors.length) {
 			annotations = annotations.filter(x => (
 				tags && x.tags.some(t => tags.includes(t.name))
@@ -407,9 +413,9 @@ class AnnotationManager {
 			));
 		}
 
-		if (this._filter.query) {
+		if (query) {
 			annotations = annotations.slice();
-			let query = this._filter.query.toLowerCase();
+			let query = query.toLowerCase();
 			let results = [];
 			for (let annotation of annotations) {
 				let errors = null;

@@ -1,5 +1,5 @@
 import { Selector } from "../dom/common/lib/selector";
-import { EPUBAppearance } from "../dom/epub/epub-view";
+import { ReflowableAppearance } from "../dom/common/dom-view";
 
 export type ToolType =
 	| 'highlight'
@@ -110,9 +110,10 @@ export type ViewStats = {
 	scrollMode?: number;
 	spreadMode?: number;
 	flowMode?: string;
-	appearance?: Partial<EPUBAppearance>;
+	appearance?: Partial<ReflowableAppearance>;
 	fontFamily?: string;
 	outlinePath?: number[];
+	focusModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -146,7 +147,11 @@ type ImagePopupParams = {
 	rect: ArrayRect;
 }
 
-export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams
+type HiddenInFocusModeParams = {
+	type: 'hiddenInFocusMode';
+}
+
+export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams | HiddenInFocusModeParams;
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 

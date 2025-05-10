@@ -3,7 +3,7 @@ import cx from 'classnames';
 
 import IconRevert from '../../../../res/icons/16/revert.svg';
 import { FormattedMessage, useIntl } from 'react-intl';
-import { DEFAULT_EPUB_APPEARANCE } from '../../../dom/epub/defines';
+import { DEFAULT_REFLOWABLE_APPEARANCE } from '../../../dom/common/defines';
 
 import IconColumnDouble from '../../../../res/icons/16/column-double.svg';
 import IconColumnSingle from '../../../../res/icons/16/column-single.svg';
@@ -18,14 +18,17 @@ import IconSplitVertical from '../../../../res/icons/16/split-vertical.svg';
 import IconSpreadEven from '../../../../res/icons/16/spread-even.svg';
 import IconSpreadNone from '../../../../res/icons/16/spread-none.svg';
 import IconSpreadOdd from '../../../../res/icons/16/spread-odd.svg';
+import IconX from '../../../../res/icons/16/x-8.svg';
 import IconOptions from '../../../../res/icons/16/options.svg';
 import IconPlus from '../../../../res/icons/20/plus.svg';
 import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
 
-function EPUBAppearance({ params, enablePageWidth, onChange }) {
+function ReflowableAppearanceSection({ params, enablePageWidth, onChange }) {
 	const intl = useIntl();
+
+	const { type } = useContext(ReaderContext);
 
 	if (!params) {
 		// Not initialized yet - wait
@@ -43,12 +46,12 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 	}
 
 	function handleRevert(name) {
-		params[name] = DEFAULT_EPUB_APPEARANCE[name];
+		params[name] = DEFAULT_REFLOWABLE_APPEARANCE[name];
 		onChange(params);
 	}
 
 	return (
-		<div className="epub-appearance">
+		<div className="reflowable-appearance">
 			<div className="row">
 				<label htmlFor="line-height"><FormattedMessage id="pdfReader.epubAppearance.lineHeight"/></label>
 				<input
@@ -67,7 +70,7 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 				<button
 					data-tabstop={1}
 					tabIndex={-1}
-					className={cx('toolbar-button', { hidden: params.lineHeight === DEFAULT_EPUB_APPEARANCE.lineHeight })}
+					className={cx('toolbar-button', { hidden: params.lineHeight === DEFAULT_REFLOWABLE_APPEARANCE.lineHeight })}
 					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.lineHeight.revert' })}
 					onClick={() => handleRevert('lineHeight')}
 				><IconRevert/></button>
@@ -91,7 +94,7 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 				<button
 					data-tabstop={1}
 					tabIndex={-1}
-					className={cx('toolbar-button', { hidden: params.wordSpacing === DEFAULT_EPUB_APPEARANCE.wordSpacing })}
+					className={cx('toolbar-button', { hidden: params.wordSpacing === DEFAULT_REFLOWABLE_APPEARANCE.wordSpacing })}
 					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.wordSpacing.revert' })}
 					onClick={() => handleRevert('wordSpacing')}
 				><IconRevert/></button>
@@ -115,7 +118,7 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 				<button
 					data-tabstop={1}
 					tabIndex={-1}
-					className={cx('toolbar-button', { hidden: params.letterSpacing === DEFAULT_EPUB_APPEARANCE.letterSpacing })}
+					className={cx('toolbar-button', { hidden: params.letterSpacing === DEFAULT_REFLOWABLE_APPEARANCE.letterSpacing })}
 					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.letterSpacing.revert' })}
 					onClick={() => handleRevert('letterSpacing')}
 				><IconRevert/></button>
@@ -140,27 +143,29 @@ function EPUBAppearance({ params, enablePageWidth, onChange }) {
 				<button
 					data-tabstop={1}
 					tabIndex={-1}
-					className={cx('toolbar-button', { hidden: params.pageWidth === DEFAULT_EPUB_APPEARANCE.pageWidth })}
+					className={cx('toolbar-button', { hidden: params.pageWidth === DEFAULT_REFLOWABLE_APPEARANCE.pageWidth })}
 					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.pageWidth.revert' })}
 					onClick={() => handleRevert('pageWidth')}
 					disabled={!enablePageWidth}
 				><IconRevert/></button>
 			</div>
 
-			<div className="option">
+			{type === 'epub' && (
+				<div className="option">
 					<label htmlFor="use-original-font"><FormattedMessage
 						id="pdfReader.epubAppearance.useOriginalFont"/></label>
 					<input
 						data-tabstop={1}
-						tabIndex={-1}
-						className="switch"
+						tabIndex={-1}className="switch"
 						type="checkbox"
 						id="use-original-font"
 						name="useOriginalFont"
 						checked={params.useOriginalFont}
 						onChange={handleChange}
 					/>
-			</div>
+
+				</div>
+			)}
 		</div>
 	);
 }
@@ -363,11 +368,28 @@ function AppearancePopup(props) {
 						</div>
 					</div>
 				</div>
-				{type === 'epub' && (
+				{type === 'snapshot' && (
 					<div className="group">
-						<EPUBAppearance
+						<div className="option">
+							<label htmlFor="focus-mode-enabled"><FormattedMessage id="pdfReader.focusMode"/></label>
+							<input
+								data-tabstop={1}
+								tabIndex={-1}
+								className="switch"
+								type="checkbox"
+								id="focus-mode-enabled"
+								checked={props.viewStats.focusModeEnabled}
+								onChange={e => props.onChangeFocusModeEnabled(e.target.checked)}
+							/>
+						</div>
+					</div>
+				)}
+				{(type === 'epub' || type === 'snapshot' && props.viewStats.focusModeEnabled) && (
+					<div className="group">
+						<ReflowableAppearanceSection
 							params={props.viewStats.appearance}
-							enablePageWidth={props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
+							enablePageWidth={type === 'snapshot'
+								|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
 							onChange={props.onChangeAppearance}
 						/>
 					</div>

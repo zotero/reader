@@ -221,4 +221,6 @@ export default {
 	'pdfReader.themeOptions': 'Theme Options',
 	'pdfReader.background': 'Background:',
 	'pdfReader.foreground': 'Foreground:',
+	'pdfReader.focusMode': 'Focus Mode',
+	'pdfReader.focusMode.notSupported': 'Focus Mode is not supported for this snapshot.',
 };

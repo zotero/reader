@@ -24,6 +24,7 @@ import DOMView, {
 } from "../common/dom-view";
 import { getUniqueSelectorContaining } from "../common/lib/unique-selector";
 import {
+	closestElement,
 	getVisibleTextNodes,
 	iterateWalker
 } from "../common/lib/nodes";
@@ -35,11 +36,14 @@ import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
+import { FocusMode } from "./focus-mode";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
 
 	private _isDynamicThemeSupported = true;
+
+	protected _focusMode!: FocusMode;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -133,12 +137,16 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 
+		this._focusMode = new FocusMode(this._iframeDocument);
+
 		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
 
 		return super._handleIFrameLoaded();
 	}
 
-	protected _handleViewCreated(viewState: Partial<Readonly<SnapshotViewState>>) {
+	protected override async _handleViewCreated(viewState: Partial<Readonly<SnapshotViewState>>) {
+		await super._handleViewCreated(viewState);
+
 		let style = this._iframeDocument.createElement('style');
 		style.innerHTML = injectCSS;
 		this._iframeDocument.head.append(style);
@@ -283,7 +291,19 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return 0;
 		};
 
-		let count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
+		let count: number;
+		if (this._focusMode.enabled) {
+			let newRange = this._focusMode.mapRangeFromFocus(range);
+			if (newRange) {
+				count = getCount(this._focusMode.originalRoot, newRange.startContainer, newRange.startOffset);
+			}
+			else {
+				count = 0;
+			}
+		}
+		else {
+			count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
+		}
 		let countString = String(count).padStart(SORT_INDEX_LENGTH, '0');
 		if (countString.length > SORT_INDEX_LENGTH) {
 			countString = countString.substring(0, SORT_INDEX_LENGTH);
@@ -292,34 +312,42 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	toSelector(range: Range): Selector | null {
+		if (this._focusMode.enabled) {
+			let newRange = this._focusMode.mapRangeFromFocus(range);
+			if (!newRange) {
+				return null;
+			}
+			range = newRange;
+		}
+
 		let doc = range.commonAncestorContainer.ownerDocument;
 		if (!doc) return null;
-		let targetElement;
+		let targetNode;
 		// In most cases, the range will wrap a single child of the
 		// commonAncestorContainer. Build a selector targeting that element,
 		// not the container.
 		if (range.startContainer === range.endContainer
-			&& range.startOffset == range.endOffset - 1
-			&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
-			targetElement = range.startContainer.childNodes[range.startOffset];
+				&& range.startOffset == range.endOffset - 1
+				&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
+			targetNode = range.startContainer.childNodes[range.startOffset];
 		}
 		else {
-			targetElement = range.commonAncestorContainer;
+			targetNode = range.commonAncestorContainer;
 		}
-		let targetElementQuery = getUniqueSelectorContaining(targetElement, doc.body);
+		let targetElement = closestElement(targetNode);
+		if (!targetElement) {
+			return null;
+		}
+		let targetElementQuery = getUniqueSelectorContaining(targetElement);
 		if (targetElementQuery) {
-			let newCommonAncestor = doc.body.querySelector(targetElementQuery);
-			if (!newCommonAncestor) {
-				return null;
-			}
 			let selector: CssSelector = {
 				type: 'CssSelector',
 				value: targetElementQuery
 			};
 			// If the user has highlighted the full text content of the element, no need to add a
 			// TextPositionSelector.
-			if (range.toString().trim() !== (newCommonAncestor.textContent || '').trim()) {
-				selector.refinedBy = textPositionFromRange(range, newCommonAncestor) || undefined;
+			if (range.toString().trim() !== (targetElement.textContent || '').trim()) {
+				selector.refinedBy = textPositionFromRange(range, targetElement) || undefined;
 			}
 			return selector;
 		}
@@ -334,8 +362,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				if (selector.refinedBy && selector.refinedBy.type != 'TextPositionSelector') {
 					throw new Error('CssSelectors can only be refined by TextPositionSelectors');
 				}
-				let root = this._iframeDocument.querySelector(selector.value);
+				let root = (this._focusMode.enabled ? this._focusMode.originalRoot : this._iframeDocument)
+					.querySelector(selector.value);
 				if (!root) {
+					console.error(`Unable to locate selector root for selector '${selector.value}' (focus mode: ${this._focusMode.enabled})`);
 					return null;
 				}
 				let range;
@@ -345,6 +375,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				else {
 					range = this._iframeDocument.createRange();
 					range.selectNodeContents(root);
+				}
+				if (this._focusMode.enabled) {
+					let newRange = this._focusMode.mapRangeToFocus(range);
+					if (!newRange) {
+						return null;
+					}
+					range = newRange;
 				}
 				if (!range.getClientRects().length) {
 					try {
@@ -371,18 +408,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		return { scrollCoords: [this._iframeWindow.scrollX, this._iframeWindow.scrollY] };
 	}
 
-	// Popups:
-	// - For each popup (except find popup) 'rect' bounding box has to be provided.
-	// 	 The popup is then automatically positioned around this rect.
-	// - If popup needs to be updated (i.e. its position), just reopen it.
-	// - Popup has to be updated (reopened) each time when the view is scrolled or resized.
-	// - annotation, selection and overlay popups are closed by calling this._onSetSomePopup()
-	//   with no arguments
-
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
 		if (!range) {
-			console.warn('Not a valid snapshot selector', selector);
+			// Suppress log when failure is likely just due to focus mode
+			if (!this._focusMode.enabled) {
+				console.warn('Unable to resolve selector to range', selector);
+			}
 			return;
 		}
 		let elem = getStartElement(range);
@@ -417,6 +449,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		let viewState: SnapshotViewState = {
 			scale,
 			scrollYPercent,
+			appearance: this.appearance,
 		};
 		this._options.onChangeViewState(viewState);
 	}
@@ -429,13 +462,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
+			appearance: this.appearance,
+			focusModeEnabled: this._focusMode.enabled,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
 
 	protected override _updateColorScheme() {
 		super._updateColorScheme();
-		if (this._isDynamicThemeSupported) {
+		if (this._isDynamicThemeSupported || this._focusMode.enabled) {
 			// Pages with a reasonable amount of CSS: Use Dark Reader
 			this._iframeDocument.body.classList.remove('force-static-theme');
 			if (!('DarkReader' in this._iframeWindow)) {
@@ -465,6 +500,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 		else {
+			// Pages with a *lot* of CSS: Use static theme
+			if ('DarkReader' in this._iframeWindow) {
+				this._iframeWindow.DarkReader!.disable();
+			}
 			this._iframeDocument.body.classList.toggle('force-static-theme', this._theme?.id !== 'light');
 		}
 	}
@@ -632,6 +671,24 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	setSidebarOpen(_sidebarOpen: boolean) {
 		// Ignore
+	}
+
+	setFocusModeEnabled(enabled: boolean) {
+		this._focusMode.enabled = enabled;
+		// Hide inaccessible annotations
+		if (enabled) {
+			this._options.onSetHiddenAnnotations(
+				this._annotations
+					.filter(a => !this.toDisplayedRange(a.position))
+					.map(a => a.id)
+			);
+		}
+		else {
+			this._options.onSetHiddenAnnotations([]);
+		}
+		// Reinitialize outline to remove inaccessible sections
+		this._initOutline();
+		this._handleViewUpdate();
 	}
 }
 

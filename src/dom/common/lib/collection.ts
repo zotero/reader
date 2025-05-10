@@ -12,3 +12,10 @@ export function mode<T>(iter: Iterable<T>): T | undefined {
 	}
 	return maxValue;
 }
+
+export function* enumerate<T>(iter: Iterable<T>): Iterable<[number, T]> {
+	let i = 0;
+	for (let value of iter) {
+		yield [i++, value];
+	}
+}
