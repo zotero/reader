@@ -17,6 +17,7 @@
 		"ff >= 60.9.0"
 	],
 	"dependencies": {
+		"@abejellinek/readability-keep-nodes": "^1.0.0",
 		"classnames": "^2.3.1",
 		"darkreader": "^4.9.83",
 		"epubjs": "file:epubjs/epub.js",

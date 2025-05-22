@@ -1,0 +1,75 @@
+:root {
+	&:not(.use-original-font) {
+		font-family: var(--content-font-family, "Georgia", serif);
+	}
+	text-align: justify;
+	text-rendering: optimizeLegibility;
+
+	// https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height
+	--content-line-height-compensation: 1;
+	--content-line-height: calc(
+		(1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667))
+		* var(--content-line-height-compensation)
+		* var(--content-line-height-adjust, 1.2)
+	);
+	--content-word-spacing: calc(var(--content-word-spacing-adjust, 0) * 1%);
+	--content-letter-spacing: calc(var(--content-letter-spacing-adjust, 0) * 1em);
+
+	font-size: 1.1rem;
+	font-family: Georgia, serif;
+	background-color: var(--background-color);
+	color: var(--text-color);
+
+	--link-color: #0000ee;
+	--visited-link-color: #551a8b;
+
+	&[data-color-scheme="dark"] {
+		--link-color: #63caff;
+		--visited-link-color: #0099e5;
+	}
+}
+
+body {
+	margin-inline: auto;
+	padding: 3rem;
+
+	:root[data-page-width="narrow"] & {
+		max-inline-size: 650px;
+	}
+
+	:root[data-page-width="normal"] & {
+		max-inline-size: 800px;
+	}
+
+	:root[data-page-width="full"] & {
+		max-inline-size: 100%;
+	}
+
+	:root.hyphenate & {
+		hyphens: auto;
+	}
+
+	&, * {
+		line-height: var(--content-line-height);
+		word-spacing: var(--content-word-spacing);
+		letter-spacing: var(--content-letter-spacing);
+	}
+}
+
+img, svg {
+	max-width: 100%;
+}
+
+:link {
+	color: var(--link-color);
+}
+
+:visited {
+	color: var(--visited-link-color);
+}
+
+h1, h2, h3, h4, h5, h6 {
+	text-align: start;
+	text-wrap: balance;
+	hyphens: none !important;
+}

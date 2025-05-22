@@ -20,22 +20,32 @@ import {
 } from "../common/lib/range";
 import { FragmentSelector, FragmentSelectorConformsTo, isFragment, Selector } from "../common/lib/selector";
 import { EPUBFindProcessor } from "./find";
-import DOMView, { DOMViewOptions, DOMViewState, NavigateOptions } from "../common/dom-view";
+import DOMView, {
+	DOMViewOptions,
+	DOMViewState,
+	NavigateOptions,
+	ReflowableAppearance
+} from "../common/dom-view";
 import SectionRenderer from "./section-renderer";
 import Section from "epubjs/types/section";
 import { closestElement, getContainingBlock } from "../common/lib/nodes";
 import { CSSRewriter } from "./lib/sanitize-and-render";
 import PageMapping from "./lib/page-mapping";
 import { lengthenCFI, shortenCFI } from "./cfi";
-import { Flow, PaginatedFlow, ScrolledFlow } from "./flow";
-import { A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH, DEFAULT_EPUB_APPEARANCE, RTL_SCRIPTS } from "./defines";
-import { koReaderAnnotationToRange, parseAnnotationsFromKOReaderMetadata } from "./lib/koreader";
+import {
+	Flow,
+	PaginatedFlow,
+	ScrolledFlow
+} from "./flow";
+import { RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
+import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
 import LRUCacheMap from "../common/lib/lru-cache-map";
 import { mode } from "../common/lib/collection";
 import { debounce } from '../../common/lib/debounce';
 import { placeA11yVirtualCursor } from '../../common/lib/utilities';
+import { DEFAULT_REFLOWABLE_APPEARANCE } from "../common/defines";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
@@ -49,8 +59,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	spreadMode!: SpreadMode.None | SpreadMode.Odd;
 
 	pageMapping!: PageMapping;
-
-	appearance?: EPUBAppearance;
 
 	pageProgressionRTL!: boolean;
 
@@ -103,7 +111,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return super._handleIFrameLoaded();
 	}
 
-	protected async _handleViewCreated(viewState: Partial<Readonly<EPUBViewState>>) {
+	protected override async _handleViewCreated(viewState: Partial<Readonly<EPUBViewState>>) {
+		await super._handleViewCreated(viewState);
 		await this.book.opened;
 
 		let cspMeta = this._iframeDocument.createElement('meta');
@@ -166,7 +175,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (this._options.fontFamily) {
 			this.setFontFamily(this._options.fontFamily);
 		}
-		this.setHyphenate(this._options.hyphenate ?? true);
 
 		this._sectionsContainer.hidden = false;
 		this.pageMapping = this._initPageMapping(viewState.savedPageMapping);
@@ -194,7 +202,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.setAppearance(viewState.appearance);
 		}
 		else {
-			this.setAppearance(DEFAULT_EPUB_APPEARANCE);
+			this.setAppearance(DEFAULT_REFLOWABLE_APPEARANCE);
 		}
 
 		if (this._options.location) {
@@ -1205,43 +1213,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._handleViewUpdate();
 	}
 
-	setAppearance(partialAppearance: Partial<EPUBAppearance>) {
+	override setAppearance(partialAppearance: Partial<ReflowableAppearance>) {
 		this._keepPosition(() => {
-			let appearance = {
-				...DEFAULT_EPUB_APPEARANCE,
-				...partialAppearance
-			};
-			this.appearance = appearance;
-			this._iframeDocument.documentElement.style.setProperty('--content-line-height-adjust', String(appearance.lineHeight));
-			this._iframeDocument.documentElement.style.setProperty('--content-word-spacing-adjust', String(appearance.wordSpacing));
-			this._iframeDocument.documentElement.style.setProperty('--content-letter-spacing-adjust', String(appearance.letterSpacing));
-			this._iframeDocument.documentElement.classList.toggle('use-original-font', appearance.useOriginalFont);
-
-			let pageWidth;
-			switch (appearance.pageWidth) {
-				case PageWidth.Narrow:
-					pageWidth = 'narrow';
-					break;
-				case PageWidth.Normal:
-					pageWidth = 'normal';
-					break;
-				case PageWidth.Full:
-					pageWidth = 'full';
-					break;
-			}
-			this._iframeDocument.documentElement.dataset.pageWidth = pageWidth;
+			super.setAppearance(partialAppearance);
 		});
-		this._handleViewUpdate();
-	}
-
-	setFontFamily(fontFamily: string) {
-		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
-		this._renderAnnotations(true);
-	}
-
-	setHyphenate(hyphenate: boolean) {
-		this._iframeDocument.documentElement.classList.toggle('hyphenate', hyphenate);
-		this._renderAnnotations(true);
 	}
 
 	// ***
@@ -1511,21 +1486,6 @@ export interface EPUBViewState extends DOMViewState {
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
 	spreadMode?: SpreadMode;
-	appearance?: Partial<EPUBAppearance>;
-}
-
-export interface EPUBAppearance {
-	lineHeight: number;
-	wordSpacing: number;
-	letterSpacing: number;
-	pageWidth: PageWidth;
-	useOriginalFont: boolean;
-}
-
-export const enum PageWidth {
-	Narrow = -1,
-	Normal = 0,
-	Full = 1
 }
 
 export interface EPUBViewData {
