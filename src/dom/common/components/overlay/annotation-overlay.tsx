@@ -20,7 +20,7 @@ import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
-import { rectsEqual } from "../../lib/rect";
+import { expandRect, getBoundingRect, rectsEqual } from "../../lib/rect";
 import cx from "classnames";
 
 export type DisplayedAnnotation = {
@@ -328,7 +328,43 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	}, [rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
-		return !isResizing && rects.map((rect, i) => (
+		if (isResizing) {
+			return [];
+		}
+
+		let isCoarsePointer = window.matchMedia('(pointer: coarse').matches;
+
+		if (isCoarsePointer && isSafari) {
+			// If the user is using a coarse pointer (touch device) on Safari:
+			//  - Use the entire bounding rect as the tap target, with a 10px margin
+			//  - Don't use a foreignObject, just a normal rect, because Safari
+			//    makes foreignObjects eat all pointer events within their bounds
+			//    with no regard for Z ordering. The foreignObject isn't necessary
+			//    on mobile anyway because we don't support dragging.
+			let rect = expandRect(getBoundingRect(rects), 10);
+			return (
+				<rect
+					fill="transparent"
+					x={rect.x}
+					y={rect.y}
+					width={rect.width}
+					height={rect.height}
+					className="needs-pointer-events annotation-div"
+					onPointerDown={handlePointerDown}
+					onPointerUp={handlePointerUp}
+					onContextMenu={handleContextMenu}
+					data-annotation-id={annotation.id}
+				/>
+			);
+		}
+
+		let clickTargetRects = isCoarsePointer
+			// As in the Safari case above, use the full bounding rect as the tap
+			// target if the user is using a touch device
+			? [expandRect(getBoundingRect(rects), 10)]
+			: rects;
+
+		return clickTargetRects.map((rect, i) => (
 			// Yes, this is horrible, but SVGs don't support drag events without embedding HTML in a <foreignObject>
 			<foreignObject
 				x={rect.x}
