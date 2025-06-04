@@ -96,7 +96,10 @@ class View {
 			onSetOverlayPopup: nop,
 			onSetOutline: this._options.onSetOutline,
 			onTabOut: nop,
-			onKeyDown: nop
+			onKeyDown: nop,
+			onKeyUp: nop,
+			onFocusAnnotation: nop,
+			onSetHiddenAnnotations: nop,
 		};
 
 		if (this._type === 'epub') {
