@@ -617,12 +617,14 @@ type SplitSelectionBorderProps = {
 };
 
 const Resizer: React.FC<ResizerProps> = (props) => {
-	const SIZE = 3;
-
 	let { annotation, highlightRects, onResize, onResizeEnd, onResizeStart } = props;
+
 	let [resizingSide, setResizingSide] = useState<false | 'start' | 'end'>(false);
 	let [pointerCapture, setPointerCapture] = useState<{ elem: Element, pointerId: number } | null>(null);
 	let [lastPointerMove, setLastPointerMove] = useState<React.PointerEvent | null>(null);
+
+	let isCoarsePointer = window.matchMedia('(pointer: coarse').matches;
+	let size = isCoarsePointer ? 6 : 3;
 
 	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		if (event.button !== 0) {
@@ -777,10 +779,10 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	let bottomRightRect = highlightRects[highlightRects.length - 1];
 	return <>
 		<rect
-			x={vert ? topLeftRect.left : topLeftRect.left - SIZE}
-			y={vert ? topLeftRect.top - SIZE : topLeftRect.top}
-			width={vert ? topLeftRect.width : SIZE}
-			height={vert ? SIZE : topLeftRect.height}
+			x={vert ? topLeftRect.left : topLeftRect.left - size}
+			y={vert ? topLeftRect.top - size : topLeftRect.top}
+			width={vert ? topLeftRect.width : size}
+			height={vert ? size : topLeftRect.height}
 			fill={annotation.color}
 			className={cx('resizer inherit-pointer-events', { 'resizer-vertical': vert })}
 			onPointerDown={handlePointerDown}
@@ -793,8 +795,8 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 		<rect
 			x={vert ? bottomRightRect.left : bottomRightRect.right}
 			y={vert ? bottomRightRect.bottom : bottomRightRect.top}
-			width={vert ? bottomRightRect.width : SIZE}
-			height={vert ? SIZE : bottomRightRect.height}
+			width={vert ? bottomRightRect.width : size}
+			height={vert ? size : bottomRightRect.height}
 			fill={annotation.color}
 			className={cx("resizer inherit-pointer-events", { 'resizer-vertical': vert })}
 			onPointerDown={handlePointerDown}
