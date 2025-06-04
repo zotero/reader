@@ -388,9 +388,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	// Add landmarks with page labels for screen reader navigation
 	private async _addAriaNavigationLandmarks() {
-		let locator = this._options.getLocalizedString(
-			this.pageMapping.isPhysical ? 'pdfReader.page' : 'pdfReader.location'
-		);
+		let locator = this._options.getLocalizedString
+			? this._options.getLocalizedString(
+				this.pageMapping.isPhysical ? 'pdfReader.page' : 'pdfReader.location'
+			)
+			: (this.pageMapping.isPhysical ? 'Page' : 'Location');
 
 		for (let [range, pageLabel] of this.pageMapping.entries()) {
 			let node = range.startContainer;
