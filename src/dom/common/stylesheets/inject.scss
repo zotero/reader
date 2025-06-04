@@ -22,3 +22,7 @@ body[data-tool="note"] {
 		cursor: default !important;
 	}
 }
+
+#annotation-overlay {
+	user-select: none;
+}

@@ -1263,6 +1263,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	private _handleSelectionChange() {
 		let selection = this._iframeDocument.getSelection();
+
+		// Safari fails to follow user-select: none, so manually collapse
+		// the selection if it's on the annotation overlay
+		if (selection && isSafari
+				&& selection.rangeCount > 0
+				&& selection.getRangeAt(0).startContainer.childNodes[selection.getRangeAt(0).startOffset]
+					=== this._annotationShadowRoot.host) {
+			selection.collapseToStart();
+			return;
+		}
+
 		if (!selection || selection.isCollapsed) {
 			this._options.onSetSelectionPopup(null);
 		}
