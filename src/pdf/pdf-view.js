@@ -127,6 +127,8 @@ class PDFView {
 
 		this._findState = options.findState;
 
+		this._scrolling = false;
+
 
 		// Create a MediaQueryList object
 		let darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -221,6 +223,13 @@ class PDFView {
 				window.if = this._iframeWindow;
 
 				this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
+					this._scrolling = true;
+					clearTimeout(this._scrollTimeout);
+					this._scrollTimeout = setTimeout(() => {
+						this._scrolling = false;
+					}, 100);
+
+
 					let x = event.target.scrollLeft;
 					let y = event.target.scrollTop;
 
@@ -2049,6 +2058,10 @@ class PDFView {
 	}
 
 	_handlePointerMove = throttle((event) => {
+		if (this._scrolling) {
+			return;
+		}
+
 		let dragging = !!event.dataTransfer;
 		// Set action cursor on hover
 		if (!this.pointerDownPosition) {
