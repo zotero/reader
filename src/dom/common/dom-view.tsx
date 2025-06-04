@@ -1551,8 +1551,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handleTouchMove(event: TouchEvent) {
-		// We need to stop annotation-creating touches from scrolling the view.
-		// Unfortunately:
+		// We need to stop annotation-creating/resizing touches from scrolling
+		// the view. Unfortunately:
 		// 1. The recommended way to prevent touch scrolling is via the
 		//    touch-action CSS property, but a WebKit bug causes changes to
 		//    that property not to take effect in child nodes until they're
@@ -1562,8 +1562,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		//    pointermove events non-cancellable, even when the listener is
 		//    initialized with { passive: false }.
 		// So we do it with a separate touchmove listener.
-		if (this._touchAnnotationStartPosition
-				&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+		if (this._touchAnnotationStartPosition && (this._tool.type === 'highlight' || this._tool.type === 'underline')
+				|| this._resizingAnnotationID) {
 			event.preventDefault();
 		}
 		// Handle pinch-to-zoom
@@ -1932,7 +1932,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onEPUBEncrypted: () => void;
 	onFocusAnnotation: (annotation: WADMAnnotation) => void;
 	onSetHiddenAnnotations: (ids: string[]) => void;
-	getLocalizedString: (name: string) => string;
+	getLocalizedString?: (name: string) => string;
 	data: Data & {
 		buf?: Uint8Array,
 		url?: string
