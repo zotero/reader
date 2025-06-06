@@ -62,8 +62,8 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					name="lineHeight"
 					value={params.lineHeight}
 					min="0.80"
-					max="2.50"
-					step="0.05"
+					max="2.00"
+					step="0.40"
 					onChange={handleChange}
 				/>
 				<span className="value">{params.lineHeight}</span>
@@ -86,7 +86,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					value={params.wordSpacing}
 					min="-100"
 					max="100"
-					step="5"
+					step="20"
 					onChange={handleChange}
 				/>
 				<span className="value">{params.wordSpacing}%</span>
@@ -109,7 +109,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					value={params.letterSpacing}
 					min="-0.1"
 					max="0.1"
-					step="0.005"
+					step="0.020"
 					onChange={handleChange}
 				/>
 				<span className="value">{params.letterSpacing * 1000}%</span>
