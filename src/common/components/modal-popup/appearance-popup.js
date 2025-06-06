@@ -25,7 +25,7 @@ import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../
 import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
 
-function ReflowableAppearanceSection({ params, enablePageWidth, onChange }) {
+function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent }) {
 	const intl = useIntl();
 
 	const { type } = useContext(ReaderContext);
@@ -51,7 +51,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange }) {
 	}
 
 	return (
-		<div className="reflowable-appearance">
+		<div className={cx('reflowable-appearance', { indent })}>
 			<div className="row">
 				<label htmlFor="line-height"><FormattedMessage id="pdfReader.epubAppearance.lineHeight"/></label>
 				<input
@@ -368,30 +368,31 @@ function AppearancePopup(props) {
 						</div>
 					</div>
 				</div>
-				{type === 'snapshot' && (
+				{(type === 'epub' || type === 'snapshot') && (
 					<div className="group">
-						<div className="option">
-							<label htmlFor="focus-mode-enabled"><FormattedMessage id="pdfReader.focusMode"/></label>
-							<input
-								data-tabstop={1}
-								tabIndex={-1}
-								className="switch"
-								type="checkbox"
-								id="focus-mode-enabled"
-								checked={props.viewStats.focusModeEnabled}
-								onChange={e => props.onChangeFocusModeEnabled(e.target.checked)}
+						{type === 'snapshot' && (
+							<div className="option">
+								<label htmlFor="focus-mode-enabled"><FormattedMessage id="pdfReader.focusMode"/></label>
+								<input
+									data-tabstop={1}
+									tabIndex={-1}
+									className="switch"
+									type="checkbox"
+									id="focus-mode-enabled"
+									checked={props.viewStats.focusModeEnabled}
+									onChange={e => props.onChangeFocusModeEnabled(e.target.checked)}
+								/>
+							</div>
+						)}
+						{(type === 'epub' || props.viewStats.focusModeEnabled) && (
+							<ReflowableAppearanceSection
+								params={props.viewStats.appearance}
+								enablePageWidth={type === 'snapshot'
+									|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
+								onChange={props.onChangeAppearance}
+								indent={type === 'snapshot'}
 							/>
-						</div>
-					</div>
-				)}
-				{(type === 'epub' || type === 'snapshot' && props.viewStats.focusModeEnabled) && (
-					<div className="group">
-						<ReflowableAppearanceSection
-							params={props.viewStats.appearance}
-							enablePageWidth={type === 'snapshot'
-								|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
-							onChange={props.onChangeAppearance}
-						/>
+						)}
 					</div>
 				)}
 				<div className="group">

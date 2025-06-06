@@ -394,6 +394,11 @@
 		flex-direction: column;
 		gap: 12px;
 
+		&.indent {
+			margin-top: 5px;
+			margin-inline-start: 10px;
+		}
+
 		.row {
 			display: grid;
 			grid-template-columns: 1fr minmax(3.2em, max-content) max-content;
