@@ -24,6 +24,7 @@ import IconPlus from '../../../../res/icons/20/plus.svg';
 import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
+import TickedRangeInput from "../common/ticked-range-input";
 
 function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent }) {
 	const intl = useIntl();
@@ -54,10 +55,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 		<div className={cx('reflowable-appearance', { indent })}>
 			<div className="row">
 				<label htmlFor="line-height"><FormattedMessage id="pdfReader.epubAppearance.lineHeight"/></label>
-				<input
+				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
-					type="range"
 					id="line-height"
 					name="lineHeight"
 					value={params.lineHeight}
@@ -78,10 +78,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 
 			<div className="row">
 				<label htmlFor="word-spacing"><FormattedMessage id="pdfReader.epubAppearance.wordSpacing"/></label>
-				<input
+				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
-					type="range"
 					id="word-spacing"
 					name="wordSpacing"
 					value={params.wordSpacing}
@@ -102,10 +101,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 
 			<div className="row">
 				<label htmlFor="letter-spacing"><FormattedMessage id="pdfReader.epubAppearance.letterSpacing"/></label>
-				<input
+				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
-					type="range"
 					id="letter-spacing"
 					name="letterSpacing"
 					value={params.letterSpacing}
@@ -126,10 +124,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 
 			<div className="row">
 				<label htmlFor="page-width"><FormattedMessage id="pdfReader.epubAppearance.pageWidth"/></label>
-				<input
+				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
-					type="range"
 					id="page-width"
 					name="pageWidth"
 					value={params.pageWidth}

@@ -1,0 +1,17 @@
+.ticked-range-input {
+	position: relative;
+
+	.tick-bar {
+		position: absolute;
+		inset: 0 calc($range-input-thumb-size / 2);
+
+		.tick {
+			position: absolute;
+			inset-inline-start: calc(var(--position) - 1px);
+			bottom: 0;
+			width: 2px;
+			height: 33%;
+			background: var(--fill-quarternary);
+		}
+	}
+}

@@ -138,8 +138,8 @@ input[type="range"] {
 
 	&::-moz-range-thumb {
 		appearance: none;
-		width: 16px;
-		height: 16px;
+		width: $range-input-thumb-size;
+		height: $range-input-thumb-size;
 		border-radius: 50%;
 		background: var(--material-control);
 		border: 0.5px var(--fill-senary);
