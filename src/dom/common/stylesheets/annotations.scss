@@ -1,6 +1,7 @@
 :host, #annotation-render-root {
-	position: absolute;
-	inset: 0;
+	position: absolute !important;
+	z-index: 2147483647 !important;
+	inset: 0 !important;
 	writing-mode: horizontal-tb;
 	pointer-events: none;
 	user-select: none;
