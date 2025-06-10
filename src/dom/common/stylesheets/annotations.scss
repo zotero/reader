@@ -14,9 +14,15 @@
 	background: transparent;
 	overflow: visible;
 
-	&:focus-visible {
+	&:focus {
 		outline: none;
 	}
+}
+
+// :focus instead of :focus-visible because Chromium doesn't support :focus-visible
+// on SVG elements
+#annotation-render-root:not(.keyboard-focus) *:focus {
+	outline: none;
 }
 
 .annotation-container.blended {

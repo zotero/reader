@@ -474,7 +474,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			let focusedElement = this._iframeDocument.activeElement as HTMLElement | SVGElement | null;
 			if (focusedElement === this._annotationShadowRoot.host) {
 				focusedElement = this._annotationShadowRoot.activeElement as HTMLElement | SVGElement | null;
-				if (!focusedElement?.matches('[tabindex="-1"]')) {
+				if (!focusedElement?.matches('[tabindex="-1"]')
+						|| !this._annotationRenderRootEl.classList.contains('keyboard-focus')) {
 					focusedElement = null;
 				}
 			}
@@ -933,6 +934,23 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected abstract _handleInternalLinkClick(link: HTMLAnchorElement): void;
 
 	protected _handleKeyDown(event: KeyboardEvent) {
+		let activeElementBefore = !!this._iframeDocument.activeElement
+			&& this._iframeDocument.activeElement !== this._iframeDocument.body;
+		this._handleKeyDownInternal(event);
+		let activeElementAfter = !!this._iframeDocument.activeElement
+			&& this._iframeDocument.activeElement !== this._iframeDocument.body;
+
+		// If focus was gained via keyboard (e.g. Tab), show focus rings
+		if (!activeElementBefore && activeElementAfter) {
+			this._annotationRenderRootEl.classList.add('keyboard-focus');
+		}
+		// If focus was lost via keyboard (e.g. Escape), hide focus rings
+		else if (activeElementBefore && !activeElementAfter) {
+			this._annotationRenderRootEl.classList.remove('keyboard-focus');
+		}
+	}
+
+	private _handleKeyDownInternal(event: KeyboardEvent) {
 		// To figure out if wheel events are pinch-to-zoom
 		this._isCtrlKeyDown = event.key === 'Control';
 
@@ -1467,6 +1485,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		// If we marked a node as future focus target for screen readers, clear it to not interfere with focus
 		this._a11yVirtualCursorTarget = null;
+
+		// Hide focus rings
+		this._annotationRenderRootEl.classList.remove('keyboard-focus');
 
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
