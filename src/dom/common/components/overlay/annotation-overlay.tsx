@@ -378,7 +378,6 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	return <>
 		<g
 			tabIndex={-1}
-			onPointerDown={e => e.preventDefault()}
 			data-annotation-id={annotation.id}
 			fill={annotation.color}
 			ref={outerGroupRef}
