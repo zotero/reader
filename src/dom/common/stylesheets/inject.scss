@@ -26,3 +26,7 @@ body[data-tool="note"] {
 #annotation-overlay {
 	user-select: none;
 }
+
+:focus-visible {
+	outline: 1px auto;
+}
