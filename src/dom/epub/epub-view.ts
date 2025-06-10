@@ -141,7 +141,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._sectionsContainer.classList.add('sections');
 		this._sectionsContainer.lang = this.book.packaging.metadata.language;
 		this._sectionsContainer.hidden = true;
-		this._iframeDocument.body.append(this._sectionsContainer);
+		this._iframeDocument.body.prepend(this._sectionsContainer);
 
 		await this._displaySections();
 
