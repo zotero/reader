@@ -434,8 +434,12 @@ export async function placeA11yVirtualCursor(target) {
 
 	// if the target did not change, do nothing
 	if (target == previousTarget && doc.activeElement == target) return;
-	// If focus is outside the iframe (e.g. in the Find popup), leave it alone
+	// If focus is outside the iframe (e.g. in the Find popup), abort
 	if (document.activeElement !== doc.defaultView.frameElement) {
+		return;
+	}
+	// If something within the iframe is focused, abort
+	if (doc.activeElement && doc.activeElement !== doc.body) {
 		return;
 	}
 	// If text is selected, abort so we don't deselect it
