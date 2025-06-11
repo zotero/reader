@@ -1,5 +1,6 @@
 import React, { useContext, useRef } from 'react';
 import { FormattedMessage, useIntl } from 'react-intl';
+import { useInView } from 'react-intersection-observer';
 import cx from 'classnames';
 import Editor from './editor';
 import ExpandableEditor from './expandable-editor';
@@ -137,6 +138,17 @@ export function SidebarPreview(props) {
 	const intl = useIntl();
 	const { platform } = useContext(ReaderContext);
 	const lastImageRef = useRef();
+
+	// Set up intersection observer
+	const { ref, inView } = useInView({
+		triggerOnce: true, // Only trigger once when the element comes into view.
+		threshold: 0,      // As soon as one pixel is visible.
+	});
+
+	// If the component is not in view on mount, render a placeholder.
+	if (!inView) {
+		return <div ref={ref} style={{ minHeight: '100px' }} />;
+	}
 
 	// Store and render the last image to avoid flickering when annotation manager removes
 	// old image, but the new one isn't generated yet
@@ -287,6 +299,7 @@ export function SidebarPreview(props) {
 
 	return (
 		<div
+			ref={ref}
 			onContextMenu={handleContextMenu}
 			className={cx('preview', {
 				'read-only': props.readOnly, ...expandedState
