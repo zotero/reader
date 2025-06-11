@@ -282,7 +282,6 @@ export class CSSRewriter {
 			let style = styleRule.style;
 
 			if (style.display === 'table' || style.display === 'inline-table') {
-				console.log(styleRule.selectorText)
 				this.trackedSelectors.table.add(styleRule.selectorText);
 			}
 			if (style.verticalAlign === 'super') {
