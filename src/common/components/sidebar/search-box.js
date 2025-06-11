@@ -1,12 +1,11 @@
-import { useIntl } from 'react-intl';
-import React, { useState, useRef, useEffect } from 'react';
-import cx from 'classnames';
+import React, { useState, useRef } from 'react';
+import { useLocalization } from '@fluent/react';
 import IconMagnifier16 from '../../../../res/icons/16/magnifier-2.svg';
 import IconMagnifier20 from '../../../../res/icons/20/magnifier.svg';
 import IconSearchCancel from '../../../../res/icons/14/searchfield-cancel.svg';
 
 function SearchBox({ query, placeholder, onInput }) {
-	const intl = useIntl();
+	const { l10n } = useLocalization();
 	const [expanded, setExpanded] = useState(!!query.length);
 	const inputRef = useRef(null);
 	const inputRef2 = useRef(null);
@@ -61,7 +60,11 @@ function SearchBox({ query, placeholder, onInput }) {
 
 	return (
 		<div ref={inputRef2} className={`search-box ${expanded ? 'expanded' : ''}`}>
-			<div className="btn magnifier" onClick={handleMagnifierClick} aria-hidden="true">{expanded ? <IconMagnifier16/> : <IconMagnifier20/>}</div>
+			<div
+				className="btn magnifier"
+				onClick={handleMagnifierClick}
+				aria-hidden="true"
+			>{expanded ? <IconMagnifier16/> : <IconMagnifier20/>}</div>
 			<input
 				ref={inputRef}
 				id="searchInput"
@@ -75,7 +78,12 @@ function SearchBox({ query, placeholder, onInput }) {
 				onFocus={handleFocus}
 				onBlur={handleBlur}
 			/>
-			{query.length !== 0 && <div className="btn clear" role="button" aria-label={intl.formatMessage({ id: 'general.clear' })} onClick={handleClearButton}><IconSearchCancel/></div>}
+			{query.length !== 0 && <div
+				className="btn clear"
+				role="button"
+				aria-label={l10n.getString('general-clear')}
+				onClick={handleClearButton}
+			><IconSearchCancel/></div>}
 		</div>
 	);
 }

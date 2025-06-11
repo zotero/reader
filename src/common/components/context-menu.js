@@ -1,5 +1,5 @@
-import React, { Fragment, useState, useCallback, useEffect, useLayoutEffect, useRef, useImperativeHandle } from 'react';
-import { FormattedMessage, useIntl } from 'react-intl';
+import React, { useState, useCallback, useEffect, useLayoutEffect, useRef } from 'react';
+import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
 import { IconColor16 } from './common/icons';
 import { debounce } from '../lib/debounce';
@@ -32,20 +32,20 @@ function BasicRow({ item, onClose }) {
 }
 
 function SliderRow({ item }) {
+	let { l10n } = useLocalization();
 	let [size, setSize] = useState(item.size);
 	let inputRef = useRef();
+
+	let debounceInputChange = useCallback(debounce(() => {
+		item.onCommand(sliderValueTransform(inputRef.current.value));
+	}, 300), []);
+
+	let { steps } = item;
 
 	function handleChange(event) {
 		setSize(sliderValueTransform(event.target.value));
 		debounceInputChange();
 	}
-
-	const debounceInputChange = useCallback(debounce(() => {
-		item.onCommand(sliderValueTransform(inputRef.current.value));
-	}, 300), []);
-
-
-	let { steps } = item;
 
 	function findClosest(value) {
 		let closestIndex = 0;
@@ -72,7 +72,7 @@ function SliderRow({ item }) {
 
 	return (
 		<div className={cx('row slider', { checked: item.checked }, { center: isFirefox || isSafari })}>
-			<div>{<FormattedMessage id="pdfReader.size"/>}:</div>
+			<div>{l10n.getString('reader-size')}:</div>
 			<input
 				ref={inputRef}
 				tabIndex={-1}
@@ -91,8 +91,6 @@ function SliderRow({ item }) {
 }
 
 function ContextMenu({ params, onClose }) {
-	const intl = useIntl();
-
 	const [position, setPosition] = useState({ style: {} });
 	const [update, setUpdate] = useState();
 	const containerRef = useRef();
@@ -157,7 +155,7 @@ function ContextMenu({ params, onClose }) {
 		// Find all buttons with text that start with what has been typed
 		let menuOptions = [...document.querySelectorAll(".context-menu button:not([disabled])")];
 		let candidates = menuOptions.filter(option => option.textContent.toLowerCase().startsWith(searchStringRef.current));
-		
+
 		// Focus the first match
 		if (candidates.length) {
 			candidates[0].focus();

@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { useLocalization } from '@fluent/react';
 import TooltipPopup from './common/tooltip-popup';
-
 
 function getData(params) {
 	let annotations = [];
@@ -71,7 +69,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 	let [checked, setChecked] = useState(data.checked);
 	let [auto, setAuto] = useState(false);
 	let inputRef = useRef();
-	const intl = useIntl();
+	let { l10n } = useLocalization();
 
 	useEffect(() => {
 		inputRef.current.focus();
@@ -233,7 +231,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						maxLength={32}
 						onChange={handleChange}
 						onKeyDown={handleInputKeydown}
-						aria-label={intl.formatMessage({ id: "pdfReader.editPageNumber"})}
+						aria-label={l10n.getString('reader-edit-page-number')}
 					/>
 				</div>
 				<div className="column second">
@@ -245,11 +243,11 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						checked={auto}
 						onChange={handleCheckboxChange}
 					/>
-					<label htmlFor="renumber-auto-detect"><FormattedMessage id="pdfReader.autoDetect"/></label>
+					<label htmlFor="renumber-auto-detect">{l10n.getString('reader-auto-detect')}</label>
 				</div>
 			</div>
 			<fieldset className="radio row" data-tabstop={1}>
-				<legend><FormattedMessage id="pdfReader.pageNumberPopupHeader"/></legend>
+				<legend>{l10n.getString('reader-page-number-popup-header')}</legend>
 				{data.single && <div className="choice">
 					<input
 						type="radio"
@@ -261,7 +259,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						disabled={disabled || auto}
 						onChange={handleRadioChange}
 					/>
-					<label htmlFor="renumber-selected"><FormattedMessage id="pdfReader.thisAnnotation"/></label>
+					<label htmlFor="renumber-selected">{l10n.getString('reader-this-annotation')}</label>
 				</div>}
 				{data.selected && <div className="choice">
 					<input
@@ -274,8 +272,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						disabled={disabled || auto}
 						onChange={handleRadioChange}
 					/>
-					<label htmlFor="renumber-selected"><FormattedMessage
-						id="pdfReader.selectedAnnotations"/></label>
+					<label htmlFor="renumber-selected">{l10n.getString('reader-selected-annotations')}</label>
 				</div>}
 				{data.page && <div className="choice">
 					<input
@@ -288,7 +285,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						disabled={disabled || auto}
 						onChange={handleRadioChange}
 					/>
-					<label htmlFor="renumber-page"><FormattedMessage id="pdfReader.thisPage"/></label>
+					<label htmlFor="renumber-page">{l10n.getString('reader-this-page')}</label>
 				</div>}
 				{data.from && <div className="choice">
 					<input
@@ -301,8 +298,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						disabled={forceSingle || disabled || auto}
 						onChange={handleRadioChange}
 					/>
-					<label htmlFor="renumber-from-page"><FormattedMessage
-						id="pdfReader.thisPageAndLaterPages"/></label>
+					<label htmlFor="renumber-from-page">{l10n.getString('reader-this-page-and-later-pages')}</label>
 				</div>}
 				{(data.all) && <div className="choice">
 					<input
@@ -315,7 +311,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 						disabled={forceSingle || disabled || auto}
 						onChange={handleRadioChange}
 					/>
-					<label htmlFor="renumber-all"><FormattedMessage id="pdfReader.allPages"/></label>
+					<label htmlFor="renumber-all">{l10n.getString('reader-all-pages')}</label>
 				</div>}
 			</fieldset>
 			<div className="row buttons">
@@ -325,7 +321,7 @@ function LabelPopup({ params, onUpdateAnnotations, onClose }) {
 					className="form-button primary"
 					disabled={disabled}
 					onClick={handleUpdateClick}
-				><FormattedMessage id="general.update"/></button>
+				>{l10n.getString('general-update')}</button>
 			</div>
 		</TooltipPopup>
 	);

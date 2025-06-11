@@ -4,6 +4,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const ZoteroLocalePlugin = require('./webpack.zotero-locale-plugin');
 
 function generateReaderConfig(build) {
 	let config = {
@@ -94,12 +95,21 @@ function generateReaderConfig(build) {
 					issuer: /\.[jt]sx?$/,
 					use: ['@svgr/webpack'],
 				},
-			],
+				{
+					test: /\.ftl$/,
+					type: 'asset/source'
+				}
+			].filter(Boolean)
 		},
 		resolve: {
 			extensions: ['.js', '.ts', '.tsx']
 		},
 		plugins: [
+			new ZoteroLocalePlugin({
+				files: ['zotero.ftl', 'reader.ftl'],
+				locales: ['en-US'],
+				commitHash: '3f84856e1e4bb5ce6b0c372f3570b12f6fc3df2e',
+			}),
 			new CleanWebpackPlugin({
 				cleanOnceBeforeBuildPatterns: ['**/*', '!pdf/**']
 			}),
@@ -128,7 +138,6 @@ function generateReaderConfig(build) {
 		config.externals = {
 			react: 'React',
 			'react-dom': 'ReactDOM',
-			'react-intl': 'ReactIntl',
 			'prop-types': 'PropTypes'
 		};
 	}

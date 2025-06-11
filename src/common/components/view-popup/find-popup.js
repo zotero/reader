@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { Localized, useLocalization } from '@fluent/react';
 import cx from 'classnames';
 import { debounce } from '../../lib/debounce';
 import { DEBOUNCE_FIND_POPUP_INPUT } from '../../defines';
@@ -10,7 +10,7 @@ import IconClose from '../../../../res/icons/20/x.svg';
 import { getCodeCombination, getKeyCombination } from '../../lib/utilities';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation, tools }) {
-	const intl = useIntl();
+	const { l10n } = useLocalization();
 	const inputRef = useRef();
 	const preventInputRef = useRef(false);
 	const [query, setQuery] = useState(params.query);
@@ -114,20 +114,19 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 		<div className="find-popup" role="application">
 			<div className="row input">
 				<div className={cx('input-box', { loading: !params.result && params.active && params.query })}>
-					<input
-						ref={inputRef}
-						type="text"
-						title={intl.formatMessage({ id: 'pdfReader.find' })}
-						className="toolbar-text-input"
-						placeholder="Find in document…"
-						data-l10n-id="pdfReader-findInDocumentInput"
-						value={query !== null ? query : params.query}
-						tabIndex="-1"
-						data-tabstop={1}
-						autoComplete="off"
-						onChange={handleInputChange}
-						onKeyDown={handleInputKeyDown}
-					/>
+					<Localized id="reader-find-in-document-input" attrs={{ title: true, placeholder: true, 'aria-description': true }}>
+						<input
+							ref={inputRef}
+							type="text"
+							className="toolbar-text-input"
+							value={query !== null ? query : params.query}
+							tabIndex="-1"
+							data-tabstop={1}
+							autoComplete="off"
+							onChange={handleInputChange}
+							onKeyDown={handleInputKeyDown}
+						/>
+					</Localized>
 					<div className="spinner-container">
 						<div className="spinner"></div>
 					</div>
@@ -135,21 +134,21 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 				<div className="group" data-tabstop={1}>
 					<button
 						className="previous toolbar-button"
-						title={intl.formatMessage({ id: 'pdfReader.findPrevious' })}
+						title={l10n.getString('reader-find-previous')}
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindPrevious}
 					><IconChevronUp/></button>
 					<button
 						className="next toolbar-button"
-						title={intl.formatMessage({ id: 'pdfReader.findNext' })}
+						title={l10n.getString('reader-find-next')}
 						tabIndex="-1"
 						disabled={params.result?.total <= 1}
 						onClick={onFindNext}
 					><IconChevronDown/></button>
 					<button
 						className="close toolbar-button"
-						title={intl.formatMessage({ id: 'pdfReader.close' })}
+						title={l10n.getString('reader-close')}
 						tabIndex="-1"
 						onClick={handleCloseClick}
 					><IconClose/></button>
@@ -164,7 +163,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						checked={params.highlightAll}
 						onChange={handleHighlightAllChange}
 					/>
-					<label htmlFor="highlight-all"><FormattedMessage id="pdfReader.highlightAll"/></label>
+					<label htmlFor="highlight-all">{l10n.getString('reader-highlight-all')}</label>
 				</div>
 				<div className="option">
 					<input
@@ -174,7 +173,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						checked={params.caseSensitive}
 						onChange={handleMatchCaseChange}
 					/>
-					<label htmlFor="case-sensitive"><FormattedMessage id="pdfReader.matchCase"/></label>
+					<label htmlFor="case-sensitive">{l10n.getString('reader-match-case')}</label>
 				</div>
 				<div className="option">
 					<input
@@ -184,7 +183,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						checked={params.entireWord}
 						onChange={handleWholeWordsChange}
 					/>
-					<label htmlFor="entire-word"><FormattedMessage id="pdfReader.wholeWords"/></label>
+					<label htmlFor="entire-word">{l10n.getString('reader-whole-words')}</label>
 				</div>
 			</div>
 			{params.result &&
@@ -192,7 +191,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 					{
 						params.result.total > 0
 							? (params.result.index + 1 + ' / ' + params.result.total)
-							: (<FormattedMessage id="pdfReader.phraseNotFound"/>)
+							: l10n.getString('reader-phrase-not-found')
 					}
 				</div>
 			}

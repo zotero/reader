@@ -390,7 +390,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	private async _addAriaNavigationLandmarks() {
 		let locator = this._options.getLocalizedString
 			? this._options.getLocalizedString(
-				this.pageMapping.isPhysical ? 'pdfReader.page' : 'pdfReader.location'
+				this.pageMapping.isPhysical ? 'reader-page' : 'reader-location'
 			)
 			: (this.pageMapping.isPhysical ? 'Page' : 'Location');
 
@@ -615,7 +615,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 
 			let color = ANNOTATION_COLORS
-				.find(([name]) => name === `general.${colorName}`)
+				.find(([name]) => name === `general-${colorName}`)
 				?.[1];
 			if (!color) {
 				throw new Error('Missing color: ' + color);

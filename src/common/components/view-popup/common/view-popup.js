@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
 import cx from 'classnames';
 
 // TODO: Resizing window doesn't properly reposition annotation popup on x axis, in EPUB view

@@ -56,7 +56,7 @@ export function createColorContextMenu(reader, params) {
 			[
 				['ink', 'eraser'].includes(reader._state.tool.type) && {
 					eraser: true,
-					label: reader._getString('pdfReader.eraser'),
+					label: reader._getString('reader-eraser'),
 					disabled: reader._state.readOnly,
 					checked: reader._state.tool.type === 'eraser',
 					onCommand: () => reader._state.tool.type === 'ink' ? reader.setTool({ type: 'eraser' }) : reader.setTool({ type: 'ink' })
@@ -94,7 +94,7 @@ export function createViewContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			[
 				{
-					label: reader._getString('pdfReader.copyLink'),
+					label: reader._getString('reader-copy-link'),
 					disabled: !(params.overlay && params.overlay.type === 'external-link' && !reader.canCopy),
 					onCommand: () => {
 						navigator.clipboard.writeText(params.overlay.url);
@@ -103,7 +103,7 @@ export function createViewContextMenu(reader, params) {
 			],
 			[
 				{
-					label: reader._getString('pdfReader.copyTeX'),
+					label: reader._getString('reader-copy-tex'),
 					disabled: !(params.overlay && params.overlay.type === 'math' && !reader.canCopy),
 					onCommand: () => {
 						navigator.clipboard.writeText(params.overlay.tex);
@@ -112,67 +112,67 @@ export function createViewContextMenu(reader, params) {
 			],
 			[
 				{
-					label: reader._getString('general.copy'),
+					label: reader._getString('general-copy'),
 					disabled: !reader.canCopy,
 					onCommand: () => reader.copy()
 				}
 			],
 			[
 				{
-					label: reader._getString('pdfReader.zoomIn'),
+					label: reader._getString('reader-zoom-in'),
 					disabled: !reader.canZoomIn,
 					persistent: true,
 					onCommand: () => reader.zoomIn()
 				},
 				{
-					label: reader._getString('pdfReader.zoomOut'),
+					label: reader._getString('reader-zoom-out'),
 					disabled: !reader.canZoomOut,
 					persistent: true,
 					onCommand: () => reader.zoomOut()
 				},
 				['epub', 'snapshot'].includes(reader._type) && {
-					label: reader._getString('pdfReader.zoomReset'),
+					label: reader._getString('reader-zoom-reset'),
 					disabled: !reader.canZoomReset,
 					persistent: true,
 					onCommand: () => reader.zoomReset()
 				},
 				reader._type === 'pdf' && {
-					label: reader._getString('pdfReader.zoomAuto'),
+					label: reader._getString('reader-zoom-auto'),
 					checked: reader.zoomAutoEnabled,
 					onCommand: () => reader.zoomAuto()
 				},
 				reader._type === 'pdf' && {
-					label: reader._getString('pdfReader.zoomPageWidth'),
+					label: reader._getString('reader-zoom-page-width'),
 					checked: reader.zoomPageWidthEnabled,
 					onCommand: () => reader.zoomPageWidth()
 				},
 				reader._type === 'pdf' && {
-					label: reader._getString('pdfReader.zoomPageHeight'),
+					label: reader._getString('reader-zoom-page-height'),
 					checked: reader.zoomPageHeightEnabled,
 					onCommand: () => reader.zoomPageHeight()
 				},
 			],
 			[
 				{
-					label: reader._getString('pdfReader.splitHorizontally'),
+					label: reader._getString('reader-split-horizontally'),
 					checked: reader._state.splitType === 'horizontal',
 					onCommand: () => reader.toggleHorizontalSplit()
 				},
 				{
-					label: reader._getString('pdfReader.splitVertically'),
+					label: reader._getString('reader-split-vertically'),
 					checked: reader._state.splitType === 'vertical',
 					onCommand: () => reader.toggleVerticalSplit()
 				}
 			],
 			[
 				{
-					label: reader._getString('pdfReader.nextPage'),
+					label: reader._getString('reader-next-page'),
 					disabled: !reader.canNavigateToNextPage,
 					persistent: true,
 					onCommand: () => reader.navigateToNextPage()
 				},
 				{
-					label: reader._getString('pdfReader.previousPage'),
+					label: reader._getString('reader-previous-page'),
 					disabled: !reader.canNavigateToPreviousPage,
 					persistent: true,
 					onCommand: () => reader.navigateToPreviousPage()
@@ -198,7 +198,7 @@ export function createAnnotationContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			[
 				(reader._platform === 'zotero' || window.dev) && {
-					label: reader._getString('pdfReader.addToNote'),
+					label: reader._getString('reader-add-to-note'),
 					disabled: !reader._state.enableAddToNote,
 					persistent: true,
 					onCommand: () => reader._onAddToNote(annotations)
@@ -246,13 +246,13 @@ export function createAnnotationContextMenu(reader, params) {
 			[
 				// If context menu was triggered not from a view and, unless it was annotation popup
 				(!params.view || params.popup) && {
-					label: reader._getString('pdfReader.editPageNumber'),
+					label: reader._getString('reader-edit-page-number'),
 					disabled: readOnly || reader._type !== 'pdf',
 					persistent: reader._type === 'pdf',
 					onCommand: () => reader._handleOpenPageLabelPopup(params.currentID)
 				},
 				!params.view && {
-					label: reader._getString('pdfReader.editAnnotationText'),
+					label: reader._getString('reader-edit-annotation-text'),
 					disabled: readOnly || !(
 						params.ids.length === 1
 						&& reader._state.annotations.find(x => x.id === params.ids[0] && ['highlight', 'underline'].includes(x.type))
@@ -264,7 +264,7 @@ export function createAnnotationContextMenu(reader, params) {
 			],
 			[
 				(reader._platform === 'zotero' || window.dev) && {
-					label: reader._getString('pdfReader.copyImage'),
+					label: reader._getString('reader-copy-image'),
 					disabled: !(params.ids.length === 1 && reader._state.annotations.find(x => x.id === params.ids[0] && x.type === 'image')),
 					onCommand: () => {
 						let annotation = reader._state.annotations.find(x => params.ids.includes(x.id));
@@ -274,7 +274,7 @@ export function createAnnotationContextMenu(reader, params) {
 					}
 				},
 				(reader._platform === 'zotero' || window.dev) && {
-					label: reader._getString('pdfReader.saveImageAs'),
+					label: reader._getString('reader-save-image-as'),
 					disabled: !(params.ids.length === 1 && reader._state.annotations.find(x => x.id === params.ids[0] && x.type === 'image')),
 					onCommand: () => {
 						let annotation = reader._state.annotations.find(x => params.ids.includes(x.id));
@@ -288,7 +288,7 @@ export function createAnnotationContextMenu(reader, params) {
 				annotations.every(x => ['highlight', 'underline'].includes(x.type))
 				&& annotations.some(x => x.type === 'underline')
 				&& {
-					label: reader._getString('pdfReader.convertToHighlight'),
+					label: reader._getString('reader-convert-to-highlight'),
 					disabled: readOnly,
 					persistent: true,
 					onCommand: () => reader.convertAnnotations(params.ids, 'highlight')
@@ -296,7 +296,7 @@ export function createAnnotationContextMenu(reader, params) {
 				annotations.every(x => ['highlight', 'underline'].includes(x.type))
 				&& annotations.some(x => x.type === 'highlight')
 				&& {
-					label: reader._getString('pdfReader.convertToUnderline'),
+					label: reader._getString('reader-convert-to-underline'),
 					disabled: readOnly,
 					persistent: true,
 					onCommand: () => reader.convertAnnotations(params.ids, 'underline')
@@ -304,7 +304,7 @@ export function createAnnotationContextMenu(reader, params) {
 			],
 			[
 				annotations.length >= 2 && annotations.every(x => x.type === 'ink') && {
-					label: reader._getString('pdfReader.merge'),
+					label: reader._getString('reader-merge'),
 					disabled: readOnly
 						|| (new Set(annotations.map(x => x.color))).size !== 1
 						|| (new Set(annotations.map(x => x.position.pageIndex))).size !== 1,
@@ -319,7 +319,7 @@ export function createAnnotationContextMenu(reader, params) {
 			],
 			[
 				{
-					label: reader._getString('general.delete'),
+					label: reader._getString('general-delete'),
 					disabled: readOnly,
 					persistent: true,
 					onCommand: () => reader.deleteAnnotations(params.ids)
@@ -337,13 +337,13 @@ export function createThumbnailContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			[
 				{
-					label: reader._getString('pdfReader.rotateLeft'),
+					label: reader._getString('reader-rotate-left'),
 					disabled: reader._state.readOnly,
 					persistent: true,
 					onCommand: () => reader.rotatePages(params.pageIndexes, 270)
 				},
 				{
-					label: reader._getString('pdfReader.rotateRight'),
+					label: reader._getString('reader-rotate-right'),
 					disabled: reader._state.readOnly,
 					persistent: true,
 					onCommand: () => reader.rotatePages(params.pageIndexes, 90)
@@ -351,7 +351,7 @@ export function createThumbnailContextMenu(reader, params) {
 			],
 			[
 				reader._platform === 'zotero' && {
-					label: reader._getString('general.delete'),
+					label: reader._getString('general-delete'),
 					disabled: reader._state.readOnly,
 					persistent: true,
 					onCommand: () => reader.deletePages(params.pageIndexes)
@@ -369,7 +369,7 @@ export function createSelectorContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			[
 				{
-					label: reader._getString('general.clearSelection'),
+					label: reader._getString('reader-clear-selection'),
 					disabled: !params.enableClearSelection,
 					persistent: true,
 					onCommand: () => reader.setFilter({ colors: [], tags: [], authors: [] })
@@ -388,13 +388,13 @@ export function createThemeContextMenu(reader, params) {
 		itemGroups: createItemGroup([
 			[
 				{
-					label: reader._getString('general.edit'),
+					label: reader._getString('general-edit'),
 					disabled: readOnly,
 					persistent: true,
 					onCommand: () => reader._updateState({ themePopup: { theme: params.theme } })
 				},
 				{
-					label: reader._getString('general.delete'),
+					label: reader._getString('general-delete'),
 					disabled: readOnly,
 					persistent: true,
 					onCommand: () => {

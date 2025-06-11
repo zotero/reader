@@ -1,9 +1,6 @@
-import { FormattedMessage } from 'react-intl';
 import React, { useLayoutEffect, useRef, useState } from 'react';
-import cx from 'classnames';
-
+import { useLocalization } from '@fluent/react';
 import DialogPopup from './common/dialog-popup';
-import { DEFAULT_THEMES } from '../../defines';
 import { getCurrentColorScheme } from '../../lib/utilities';
 
 function isValidHexColor(value) {
@@ -60,6 +57,8 @@ function ColorPicker({ color, onChange }) {
 }
 
 function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, onSaveCustomThemes, onClose }) {
+	let { l10n } = useLocalization();
+
 	let currentColorScheme = getCurrentColorScheme(colorScheme);
 	let currentTheme = currentColorScheme === 'light' ? lightTheme : darkTheme;
 	let bg = '#FFFFFF';
@@ -140,7 +139,7 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 		<DialogPopup className="theme-popup">
 			<form onSubmit={handleSubmit}>
 				<div className="grid">
-					<label><FormattedMessage id="pdfReader.themeName"/></label>
+					<label>{l10n.getString('reader-theme-name')}</label>
 					<div className="input">
 						<input
 							type="text"
@@ -151,9 +150,9 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 							onInput={handleInput}
 						/>
 					</div>
-					<label><FormattedMessage id="pdfReader.background"/></label>
+					<label>{l10n.getString('reader-background')}</label>
 					<div className="input"><ColorPicker color={background} onChange={handleBackgroundChange}/></div>
-					<label><FormattedMessage id="pdfReader.foreground"/></label>
+					<label>{l10n.getString('reader-foreground')}</label>
 					<div className="input"><ColorPicker color={foreground} onChange={handleForegroundChange}/></div>
 				</div>
 				<div className="row buttons">
@@ -163,14 +162,14 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 						className="form-button"
 						type="button"
 						onClick={onClose}
-					><FormattedMessage id="general.cancel"/></button>
+					>{l10n.getString('general-cancel')}</button>
 					<button
 						tabIndex={-1}
 						data-tabstop={1}
 						type="submit"
 						className="form-button primary"
 						disabled={!canSave}
-					><FormattedMessage id="general.save"/></button>
+					>{l10n.getString('general-save')}</button>
 				</div>
 			</form>
 		</DialogPopup>

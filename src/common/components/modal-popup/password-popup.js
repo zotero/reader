@@ -1,8 +1,9 @@
-import DialogPopup from './common/dialog-popup';
-import { FormattedMessage } from 'react-intl';
 import React, { useRef } from 'react';
+import { useLocalization } from '@fluent/react';
+import DialogPopup from './common/dialog-popup';
 
 function PasswordPopup({ params, onEnterPassword }) {
+	let { l10n } = useLocalization();
 	let inputRef = useRef();
 	function handleSubmit(event) {
 		event.preventDefault();
@@ -12,7 +13,7 @@ function PasswordPopup({ params, onEnterPassword }) {
 	return (
 		<DialogPopup className="password-popup">
 			<form onSubmit={handleSubmit}>
-				<div className="row description"><FormattedMessage id="pdfReader.enterPassword"/></div>
+				<div className="row description">{l10n.getString('reader-enter-password')}</div>
 				<div className="row"><input type="password" ref={inputRef}/></div>
 			</form>
 		</DialogPopup>

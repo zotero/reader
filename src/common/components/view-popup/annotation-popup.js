@@ -1,6 +1,4 @@
-import React, { Fragment, useState, useCallback, useEffect, useRef, useImperativeHandle } from 'react';
-import { ANNOTATION_COLORS } from '../../defines';
-import { FormattedMessage } from 'react-intl';
+import React from 'react';
 import ViewPopup from './common/view-popup';
 import { PopupPreview } from '../common/preview';
 

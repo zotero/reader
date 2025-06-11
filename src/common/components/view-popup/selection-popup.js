@@ -1,5 +1,5 @@
 import React from 'react';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
 import { ANNOTATION_COLORS } from '../../defines';
 import ViewPopup from './common/view-popup';
@@ -11,7 +11,7 @@ import IconHighlight from '../../../../res/icons/16/annotate-highlight.svg';
 import IconUnderline from '../../../../res/icons/16/annotate-underline.svg';
 
 function SelectionPopup(props) {
-	const intl = useIntl();
+	const { l10n } = useLocalization();
 
 	function handleColorPick(color) {
 		let type = props.textSelectionAnnotationMode;
@@ -34,7 +34,7 @@ function SelectionPopup(props) {
 					key={index}
 					tabIndex={-1}
 					className="toolbar-button color-button"
-					title={intl.formatMessage({ id: color[0] })}
+					title={l10n.getString(color[0])}
 					onClick={() => handleColorPick(color[1])}
 				><IconColor16 color={color[1]}/></button>))}
 			</div>
@@ -42,19 +42,19 @@ function SelectionPopup(props) {
 				<button
 					tabIndex={-1}
 					className={cx('highlight', { active: props.textSelectionAnnotationMode === 'highlight' })}
-					title={intl.formatMessage({ id: 'pdfReader.highlightText' })}
+					title={l10n.getString('reader-highlight-text')}
 					onClick={() => props.onChangeTextSelectionAnnotationMode('highlight')}
 				><IconHighlight/></button>
 				<button
 					tabIndex={-1}
 					className={cx('underline', { active: props.textSelectionAnnotationMode === 'underline' })}
-					title={intl.formatMessage({ id: 'pdfReader.underlineText' })}
+					title={l10n.getString('reader-underline-text')}
 					onClick={() => props.onChangeTextSelectionAnnotationMode('underline')}
 				><IconUnderline/></button>
 			</div>
 			{props.enableAddToNote &&
 				<button className="toolbar-button wide-button" data-tabstop={1} onClick={handleAddToNote}>
-					<FormattedMessage id="pdfReader.addToNote"/>
+					{l10n.getString('reader-add-to-note')}
 				</button>}
 			<CustomSections type="TextSelectionPopup" annotation={props.params.annotation}/>
 		</ViewPopup>

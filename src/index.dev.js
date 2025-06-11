@@ -1,8 +1,8 @@
 import Reader from './common/reader';
-import strings from '../src/en-us.strings';
 import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
+import './fluent';
 
 window.dev = true;
 
@@ -26,7 +26,6 @@ async function createReader() {
 	let res = await fetch(demo.fileName);
 	let reader = new Reader({
 		type,
-		localizedStrings: strings,
 		readOnly: false,
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),

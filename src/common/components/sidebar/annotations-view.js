@@ -1,6 +1,5 @@
-import React, { forwardRef, memo, useCallback, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import ReactDOM from 'react-dom';
-import { FormattedMessage, useIntl } from 'react-intl';
+import React, { memo, useCallback, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
 import { SidebarPreview } from '../common/preview';
 import { IconColor16, IconTagCircle, IconUser } from "../common/icons";
@@ -10,7 +9,7 @@ import { ReaderContext } from '../../reader';
 
 
 function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickColor, onClickAuthor, onChange }) {
-	const intl = useIntl();
+	let { l10n } = useLocalization();
 
 	function handleDragOver(event) {
 		event.preventDefault();
@@ -37,14 +36,14 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 						key={index}
 						tabIndex={-1}
 						className={cx('color', { selected: color.selected, inactive: color.inactive })}
-						title={color.name ? intl.formatMessage({ id: color.name }) : null}
+						title={color.name ? l10n.getString(color.name) : null}
 						onClick={() => onClickColor(color.color)}
 						onDragOver={handleDragOver}
 						onDragLeave={handleDragLeave}
 						onDrop={(event) => handleDrop(event, null, color.color)}
 						role="checkbox"
 						aria-checked={color.selected}
-						aria-description={intl.formatMessage({ id: "pdfReader.tagSelectorMessage" })}
+						aria-description={l10n.getString('reader-tag-selector-message')}
 					><IconColor16 color={color.color}/></button>
 				))}
 			</div>}
@@ -60,7 +59,7 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 						onDrop={(event) => handleDrop(event, { name: tag.name, color: tag.color })}
 						role="checkbox"
 						aria-checked={tag.selected}
-						aria-description={intl.formatMessage({ id: "pdfReader.tagSelectorMessage" })}
+						aria-description={l10n.getString('reader-tag-selector-message')}
 					>{!!tag.color && <span className="icon"><IconTagCircle color={tag.color}/></span>}{tag.name}</button>
 				))}
 			</div>}
@@ -110,6 +109,7 @@ const Annotation = React.memo((props) => {
 });
 
 const AnnotationsView = memo(React.forwardRef((props, ref) => {
+	let { l10n } = useLocalization();
 	// Expansion state:
 	// 0 - None or multiple annotations are selected
 	// 1 - Single annotation selected, comment expanded
@@ -477,7 +477,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 							onSetDataTransferAnnotations={props.onSetDataTransferAnnotations}
 						/>
 					))
-					: !props.filter.query.length && !props.readOnly && !window.isWeb && <div><FormattedMessage id="pdfReader.noAnnotations"/></div>}
+					: !props.filter.query.length && !props.readOnly && !window.isWeb && <div>{l10n.getString('reader-no-annotations')}</div>}
 			</div>
 			{(!!tags.length || colors.length > 1 || authors.length > 1) && (
 				<Selector

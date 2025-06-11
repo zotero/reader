@@ -1,11 +1,7 @@
-import React, { useLayoutEffect, useRef } from 'react';
-import { FormattedMessage, useIntl } from 'react-intl';
+import React from 'react';
 import ViewPopup from '../common/view-popup';
 
 function LinkPopup(props) {
-	const intl = useIntl();
-	const containerRef = useRef();
-
 	function handleLinkClick(event) {
 		event.preventDefault();
 		props.onOpenLink(event.target.href);

@@ -1,6 +1,6 @@
 import React from 'react';
-import ViewPopup from '../common/view-popup';
 import cx from 'classnames';
+import ViewPopup from '../common/view-popup';
 
 function FootnotePopup({ params, onOpenLink }) {
 	let iframeRef = React.useRef(null);

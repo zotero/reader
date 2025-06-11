@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
 import cx from 'classnames';
 
 const LEFT_OR_RIGHT_TOOLTIP_CENTER = 20;

@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useLayoutEffect, useRef } from 'react';
 import cx from 'classnames';
 
 function DialogPopup({ className, children, onClose }) {

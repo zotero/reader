@@ -2,7 +2,7 @@ import React, { useContext, useLayoutEffect, useRef } from 'react';
 import cx from 'classnames';
 
 import IconRevert from '../../../../res/icons/16/revert.svg';
-import { FormattedMessage, useIntl } from 'react-intl';
+import { useLocalization } from '@fluent/react';
 import { DEFAULT_REFLOWABLE_APPEARANCE } from '../../../dom/common/defines';
 
 import IconColumnDouble from '../../../../res/icons/16/column-double.svg';
@@ -27,7 +27,7 @@ import { DEFAULT_THEMES } from '../../defines';
 import TickedRangeInput from "../common/ticked-range-input";
 
 function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent }) {
-	const intl = useIntl();
+	const { l10n } = useLocalization();
 
 	const { type } = useContext(ReaderContext);
 
@@ -54,7 +54,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 	return (
 		<div className={cx('reflowable-appearance', { indent })}>
 			<div className="row">
-				<label htmlFor="line-height"><FormattedMessage id="pdfReader.epubAppearance.lineHeight"/></label>
+				<label htmlFor="line-height">{l10n.getString('reader-epub-appearance-line-height')}</label>
 				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
@@ -71,13 +71,13 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					data-tabstop={1}
 					tabIndex={-1}
 					className={cx('toolbar-button', { hidden: params.lineHeight === DEFAULT_REFLOWABLE_APPEARANCE.lineHeight })}
-					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.lineHeight.revert' })}
+					aria-label={l10n.getString('reader-epub-appearance-line-height-revert')}
 					onClick={() => handleRevert('lineHeight')}
 				><IconRevert/></button>
 			</div>
 
 			<div className="row">
-				<label htmlFor="word-spacing"><FormattedMessage id="pdfReader.epubAppearance.wordSpacing"/></label>
+				<label htmlFor="word-spacing">{l10n.getString('reader-epub-appearance-word-spacing')}</label>
 				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
@@ -94,13 +94,13 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					data-tabstop={1}
 					tabIndex={-1}
 					className={cx('toolbar-button', { hidden: params.wordSpacing === DEFAULT_REFLOWABLE_APPEARANCE.wordSpacing })}
-					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.wordSpacing.revert' })}
+					aria-label={l10n.getString('reader-epub-appearance-word-spacing-revert')}
 					onClick={() => handleRevert('wordSpacing')}
 				><IconRevert/></button>
 			</div>
 
 			<div className="row">
-				<label htmlFor="letter-spacing"><FormattedMessage id="pdfReader.epubAppearance.letterSpacing"/></label>
+				<label htmlFor="letter-spacing">{l10n.getString('reader-epub-appearance-letter-spacing')}</label>
 				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
@@ -117,13 +117,13 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					data-tabstop={1}
 					tabIndex={-1}
 					className={cx('toolbar-button', { hidden: params.letterSpacing === DEFAULT_REFLOWABLE_APPEARANCE.letterSpacing })}
-					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.letterSpacing.revert' })}
+					aria-label={l10n.getString('reader-epub-appearance-letter-spacing-revert')}
 					onClick={() => handleRevert('letterSpacing')}
 				><IconRevert/></button>
 			</div>
 
 			<div className="row">
-				<label htmlFor="page-width"><FormattedMessage id="pdfReader.epubAppearance.pageWidth"/></label>
+				<label htmlFor="page-width">{l10n.getString('reader-epub-appearance-page-width')}</label>
 				<TickedRangeInput
 					data-tabstop={1}
 					tabIndex={-1}
@@ -141,7 +141,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					data-tabstop={1}
 					tabIndex={-1}
 					className={cx('toolbar-button', { hidden: params.pageWidth === DEFAULT_REFLOWABLE_APPEARANCE.pageWidth })}
-					aria-label={intl.formatMessage({ id: 'pdfReader.epubAppearance.pageWidth.revert' })}
+					aria-label={l10n.getString('reader-epub-appearance-page-width-revert')}
 					onClick={() => handleRevert('pageWidth')}
 					disabled={!enablePageWidth}
 				><IconRevert/></button>
@@ -149,8 +149,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 
 			{type === 'epub' && (
 				<div className="option">
-					<label htmlFor="use-original-font"><FormattedMessage
-						id="pdfReader.epubAppearance.useOriginalFont"/></label>
+					<label htmlFor="use-original-font">
+						{l10n.getString('reader-epub-appearance-use-original-font')}
+					</label>
 					<input
 						data-tabstop={1}
 						tabIndex={-1}className="switch"
@@ -168,7 +169,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 }
 
 function Theme({ theme, active, onSet, onOpenContextMenu }) {
-	let intl = useIntl();
+	const { l10n } = useLocalization();
 	const isReadOnly = DEFAULT_THEMES.some(t => t.id === theme.id);
 	const { platform } = useContext(ReaderContext);
 
@@ -188,8 +189,17 @@ function Theme({ theme, active, onSet, onOpenContextMenu }) {
 		}
 	}
 
-	let titleString = `pdfReader.theme.${theme.id}`;
-	let name = intl.messages[titleString] ? intl.formatMessage({ id: titleString }) : theme.label;
+	const titleId = `reader-theme-${theme.id}`;
+	let name;
+	try {
+		name = l10n.getString(titleId);
+		// Some implementations return the ID itself when missing
+		if (name === titleId) {
+			name = theme.label;
+		}
+	} catch {
+		name = theme.label;
+	}
 
 	return platform === 'web'
 		? (
@@ -203,7 +213,7 @@ function Theme({ theme, active, onSet, onOpenContextMenu }) {
 				</button>
 				{!isReadOnly && (
 					<button
-						title={intl.formatMessage({ id: 'pdfReader.themeOptions' }) }
+						title={l10n.getString('reader-theme-options') }
 						tabIndex={-1}
 						className="theme-context-menu"
 						onClick={handleContextMenu}
@@ -227,7 +237,7 @@ function Theme({ theme, active, onSet, onOpenContextMenu }) {
 
 function AppearancePopup(props) {
 	let overlayRef = useRef();
-	let intl = useIntl();
+	let { l10n } = useLocalization();
 
 	const { type, platform } = useContext(ReaderContext);
 
@@ -253,47 +263,47 @@ function AppearancePopup(props) {
 				{type === 'pdf' && (
 					<div className="group">
 						<div className="option">
-							<label><FormattedMessage id="pdfReader.scrollMode"/></label>
+							<label>{l10n.getString('reader-scroll-mode')}</label>
 							<div className="split-toggle" data-tabstop={1}>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.scrollMode === 0 })}
-									title={intl.formatMessage({ id: 'pdfReader.vertical' })}
+									title={l10n.getString('reader-vertical')}
 									onClick={() => props.onChangeScrollMode(0)}
 								><IconScrollVertical/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.scrollMode === 1 })}
-									title={intl.formatMessage({ id: 'pdfReader.horizontal' })}
+									title={l10n.getString('reader-horizontal')}
 									onClick={() => props.onChangeScrollMode(1)}
 								><IconScrollHorizontal/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.scrollMode === 2 })}
-									title={intl.formatMessage({ id: 'pdfReader.wrapped' })}
+									title={l10n.getString('reader-wrapped')}
 									onClick={() => props.onChangeScrollMode(2)}
 								><IconScrollWrapped/></button>
 							</div>
 						</div>
 						<div className="option">
-							<label><FormattedMessage id="pdfReader.spreadMode"/></label>
+							<label>{l10n.getString('reader-spread-mode')}</label>
 							<div className="split-toggle" data-tabstop={1}>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.spreadMode === 0 })}
-									title={intl.formatMessage({ id: 'pdfReader.none' })}
+									title={l10n.getString('reader-none')}
 									onClick={() => props.onChangeSpreadMode(0)}
 								><IconSpreadNone/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.spreadMode === 1 })}
-									title={intl.formatMessage({ id: 'pdfReader.odd' })}
+									title={l10n.getString('reader-odd')}
 									onClick={() => props.onChangeSpreadMode(1)}
 								><IconSpreadOdd/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.spreadMode === 2 })}
-									title={intl.formatMessage({ id: 'pdfReader.even' })}
+									title={l10n.getString('reader-even')}
 									onClick={() => props.onChangeSpreadMode(2)}
 								><IconSpreadEven/></button>
 							</div>
@@ -303,36 +313,36 @@ function AppearancePopup(props) {
 				{type === 'epub' && (
 					<div className="group">
 						<div className="option">
-							<label><FormattedMessage id="pdfReader.flowMode"/></label>
+							<label>{l10n.getString('reader-flow-mode')}</label>
 							<div className="split-toggle" data-tabstop={1}>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.flowMode === 'paginated' })}
-									title={intl.formatMessage({ id: 'pdfReader.paginated' })}
+									title={l10n.getString('reader-paginated')}
 									onClick={() => props.onChangeFlowMode('paginated')}
 								><IconFlowPaginated/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.flowMode === 'scrolled' })}
-									title={intl.formatMessage({ id: 'pdfReader.scrolled' })}
+									title={l10n.getString('reader-scrolled')}
 									onClick={() => props.onChangeFlowMode('scrolled')}
 								><IconFlowScrolled/></button>
 							</div>
 						</div>
 						<div className="option">
-							<label><FormattedMessage id="pdfReader.columns"/></label>
+							<label>{l10n.getString('reader-columns')}</label>
 							<div className="split-toggle" data-tabstop={1}>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.spreadMode === 0 })}
-									title={intl.formatMessage({ id: 'pdfReader.single' })}
+									title={l10n.getString('reader-single')}
 									onClick={() => props.onChangeSpreadMode(0)}
 									disabled={props.viewStats.flowMode === 'scrolled'}
 								><IconColumnSingle/></button>
 								<button
 									tabIndex={-1}
 									className={cx({ active: props.viewStats.spreadMode === 1 })}
-									title={intl.formatMessage({ id: 'pdfReader.double' })}
+									title={l10n.getString('reader-double')}
 									onClick={() => props.onChangeSpreadMode(1)}
 									disabled={props.viewStats.flowMode === 'scrolled'}
 								><IconColumnDouble/></button>
@@ -342,24 +352,24 @@ function AppearancePopup(props) {
 				)}
 				<div className="group">
 					<div className="option">
-						<label><FormattedMessage id="pdfReader.splitView"/></label>
+						<label>{l10n.getString('reader-split-view')}</label>
 						<div className="split-toggle" data-tabstop={1}>
 							<button
 								tabIndex={-1}
 								className={cx({ active: !props.splitType })}
-								title={intl.formatMessage({ id: 'pdfReader.none' })}
+								title={l10n.getString('reader-none')}
 								onClick={() => props.onChangeSplitType()}
 							><IconSplitNone/></button>
 							<button
 								tabIndex={-1}
 								className={cx({ active: props.splitType === 'vertical' })}
-								title={intl.formatMessage({ id: 'pdfReader.vertical' })}
+								title={l10n.getString('reader-vertical')}
 								onClick={() => props.onChangeSplitType('vertical')}
 							><IconSplitHorizontal/></button>
 							<button
 								tabIndex={-1}
 								className={cx({ active: props.splitType === 'horizontal' })}
-								title={intl.formatMessage({ id: 'pdfReader.horizontal' })}
+								title={l10n.getString('reader-horizontal')}
 								onClick={() => props.onChangeSplitType('horizontal')}
 							><IconSplitVertical/></button>
 						</div>
@@ -369,7 +379,7 @@ function AppearancePopup(props) {
 					<div className="group">
 						{type === 'snapshot' && (
 							<div className="option">
-								<label htmlFor="focus-mode-enabled"><FormattedMessage id="pdfReader.focusMode"/></label>
+								<label htmlFor="focus-mode-enabled">{l10n.getString('reader-focus-mode')}</label>
 								<input
 									data-tabstop={1}
 									tabIndex={-1}
@@ -394,15 +404,15 @@ function AppearancePopup(props) {
 				)}
 				<div className="group">
 					<div className="option themes">
-						<label><FormattedMessage id="pdfReader.themes"/></label>
+						<label>{l10n.getString('reader-themes')}</label>
 						<div className="themes" data-tabstop={1}>
 							<button
 								tabIndex={-1}
 								className={cx('theme original', { active: !currentTheme })}
 								style={{ backgroundColor: '#ffffff', color: '#000000' }}
-								title={intl.formatMessage({ id: "pdfReader.theme.original" })}
+								title={l10n.getString('reader-theme-original')}
 								onClick={() => props.onChangeTheme()}
-							><FormattedMessage id="pdfReader.theme.original"/></button>
+							>{l10n.getString('reader-theme-original')}</button>
 							{themes.map((theme, i) => (
 								<Theme
 									key={i}
@@ -412,11 +422,11 @@ function AppearancePopup(props) {
 									onOpenContextMenu={props.onOpenThemeContextMenu}
 								/>
 							))}
-								<button
+							<button
 								tabIndex={-1}
 								className="theme add"
 								onClick={props.onAddTheme}
-								title={intl.formatMessage({ id: "pdfReader.addTheme" })}
+								title={l10n.getString('reader-add-theme')}
 							><IconPlus/></button>
 							</div>
 					</div>

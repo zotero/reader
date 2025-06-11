@@ -1,18 +1,13 @@
-import React, { useImperativeHandle } from 'react';
-import ReactDOM from 'react-dom';
+import React from 'react';
+import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
-import AnnotationsView from './annotations-view';
-// import { cleanFilter, filterAnnotations } from '../../../src/lib/search';
-import { useIntl } from 'react-intl';
-
-
 import IconThumbnails from '../../../../res/icons/20/thumbnail.svg';
 import IconAnnotations from '../../../../res/icons/20/annotation.svg';
 import IconOutline from '../../../../res/icons/20/outline.svg';
 import SearchBox from './search-box';
 
 function Sidebar(props) {
-	const intl = useIntl();
+	let { l10n } = useLocalization();
 
 	function handleOutlineDoubleClick() {
 		if (props.view !== 'outline' || props.outlineQuery !== '') {
@@ -113,7 +108,7 @@ function Sidebar(props) {
 							id="viewThumbnail"
 							className={cx('toolbar-button', { active: props.view === 'thumbnails' })}
 							tabIndex={-1}
-							title={intl.formatMessage({ id: 'pdfReader.showThumbnails' })}
+							title={l10n.getString('reader-show-thumbnails')}
 							role="tab"
 							aria-selected={props.view === 'thumbnails' }
 							aria-controls="thumbnailsView"
@@ -124,7 +119,7 @@ function Sidebar(props) {
 						id="viewAnnotations"
 						className={cx('toolbar-button', { active: props.view === 'annotations' })}
 						tabIndex={-1}
-						title={intl.formatMessage({ id: 'pdfReader.showAnnotations' })}
+						title={l10n.getString('reader-show-annotations')}
 						role="tab"
 						aria-selected={props.view === 'annotations' }
 						aria-controls="annotationsView"
@@ -134,7 +129,7 @@ function Sidebar(props) {
 						id="viewOutline"
 						className={cx('toolbar-button', { active: props.view === 'outline' })}
 						tabIndex={-1}
-						title={intl.formatMessage({ id: 'pdfReader.showOutline' })}
+						title={l10n.getString('reader-show-outline')}
 						role="tab"
 						aria-selected={props.view === 'outline' }
 						aria-controls="outlineView"
@@ -147,14 +142,14 @@ function Sidebar(props) {
 						<SearchBox
 							query={props.filter.query}
 							onInput={handleSearchInput}
-							placeholder={intl.formatMessage({ id: 'pdfReader.searchAnnotations' })}
+							placeholder={l10n.getString('reader-search-annotations')}
 						/>
 					}
 					{props.view === 'outline' &&
 						<SearchBox
 							query={props.outlineQuery}
 							onInput={handleOutlineSearchInput}
-							placeholder={intl.formatMessage({ id: 'pdfReader.searchOutline' })}
+							placeholder={l10n.getString('reader-search-outline')}
 						/>
 					}
 				</div>

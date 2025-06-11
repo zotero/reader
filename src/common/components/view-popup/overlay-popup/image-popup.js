@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { useIntl } from 'react-intl';
+import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
 
 function ImagePopup({ params, onClose }) {
-	let { src, title, alt, rect } = params;
-
-	const intl = useIntl();
+	let { l10n } = useLocalization();
 	let [show, setShow] = useState(false);
+
+	let { src, title, alt, rect } = params;
 
 	function handleLoad() {
 		setShow(true);
@@ -29,7 +29,7 @@ function ImagePopup({ params, onClose }) {
 		<div
 			className={cx('image-popup', { show })}
 			role="button"
-			aria-label={intl.formatMessage({ id: 'pdfReader.zoomOut' })}
+			aria-label={l10n.getString('reader-zoom-out')}
 			style={{ '--rect-left': rect[0] + 'px', '--rect-top': rect[1] + 'px', '--rect-right': rect[2] + 'px', '--rect-bottom': rect[3] + 'px' }}
 			onClick={handleClose}
 		>

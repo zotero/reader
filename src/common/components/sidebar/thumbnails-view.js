@@ -1,19 +1,20 @@
-import React, { Fragment, useState, useCallback, useContext, useEffect, useRef, useImperativeHandle, memo } from 'react';
-import { useIntl, FormattedMessage } from 'react-intl';
+import React, { useState, useCallback, useContext, useEffect, useRef, memo } from 'react';
+import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
 import { pressedNextKey, pressedPreviousKey } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import IconOptions from '../../../../res/icons/16/options.svg';
 
 const Thumbnail = memo(({ thumbnail, selected, pageLabel, onContextMenu }) => {
-	const intl = useIntl();
+	const { l10n } = useLocalization();
+
 	return (
 		<div
 			className={cx('thumbnail', { selected })}
 			data-page-index={thumbnail.pageIndex}
 			onContextMenu={onContextMenu}
 			role="option"
-			aria-label={intl.formatMessage({ id: 'pdfReader.page' }) + `${pageLabel}`}
+			aria-label={l10n.getString('reader-page') + pageLabel}
 			aria-selected={selected}
 			id={`thumbnail_${thumbnail.pageIndex}`}
 		>
@@ -33,7 +34,7 @@ Thumbnail.displayName = 'Thumbnail';
 
 
 function ThumbnailsView(props) {
-	const intl = useIntl();
+	const { l10n } = useLocalization();
 	const [selected, setSelected] = useState([0]);
 	const containerRef = useRef();
 	const { onOpenThumbnailContextMenu } = props;
@@ -207,12 +208,12 @@ function ThumbnailsView(props) {
 		<div id="thumbnailsView" className="thumbnails-view" role="tabpanel" aria-labelledby="viewThumbnail">
 			{platform === 'web' && (
 				<div className="thumbnails-header">
-					<FormattedMessage id="pdfReader.selectedPages" values={ { count: selected.length }} />
+					<FormattedMessage id="reader-selected-pages" values={ { count: selected.length }} />
 					<button
 						tabIndex={-1}
 						data-tabstop={1}
 						className="toolbar-button"
-						title={intl.formatMessage({ id: 'pdfReader.pageOptions' })}
+						title={l10n.getString('reader-page-options')}
 						onClick={handleMoreClick}
 					><IconOptions/></button>
 				</div>
@@ -225,8 +226,8 @@ function ThumbnailsView(props) {
 				ref={containerRef}
 				tabIndex={-1}
 				role="listbox"
-				aria-label={intl.formatMessage({ id: "pdfReader.thumbnails" })}
-				aria-activedescendant={`thumbnail_${selected[selected.length-1]}`}
+				aria-label={l10n.getString('reader-thumbnails')}
+				aria-activedescendant={`thumbnail_${selected[selected.length - 1]}`}
 				aria-multiselectable="true"
 			>
 				{props.thumbnails.map((thumbnail, index) => {

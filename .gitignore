@@ -3,3 +3,4 @@
 !.editorconfig
 /node_modules/
 /build/
+/locales/

@@ -1,8 +1,9 @@
+import React, { Fragment, useState } from 'react';
+import { useLocalization } from '@fluent/react';
 import DialogPopup from './common/dialog-popup';
-import { FormattedMessage } from 'react-intl';
-import React, { Fragment, useRef, useState } from 'react';
 
 function PrintPopup({ params }) {
+	let { l10n } = useLocalization();
 	let [includeAnnotations, setIncludeAnnotations] = useState(true);
 
 	function handleIncludeAnnotationsCheckboxChange(event) {
@@ -30,27 +31,26 @@ function PrintPopup({ params }) {
 							checked={includeAnnotations}
 							onChange={handleIncludeAnnotationsCheckboxChange}
 						/>
-						<label htmlFor="renumber-auto-detect"><FormattedMessage id="pdfReader.includeAnnotations"/></label>
+						<label htmlFor="renumber-auto-detect">{l10n.getString('reader-include-annotations')}</label>
 					</div>
 					<div className="row buttons" data-tabstop={1}>
 						<button
 							tabIndex={-1}
 							className="form-button"
 							onClick={handleCancel}
-						><FormattedMessage id="general.cancel"/></button>
+						>{l10n.getString('general-cancel')}</button>
 						<button
 							tabIndex={-1}
 							data-default-focus={true}
 							className="form-button primary"
 							onClick={handlePrint}
-						><FormattedMessage id="general.print"/></button>
+						>{l10n.getString('general-print')}</button>
 					</div>
 				</Fragment>
 			)}
 			{params.percent !== undefined && (
 				<Fragment>
-					<div className="row description"><FormattedMessage id="pdfReader.preparingDocumentForPrinting"/>
-					</div>
+					<div className="row description">{l10n.getString('reader-preparing-document-for-printing')}</div>
 					<div className="row progress">
 						<progress max="100" value={params.percent}>{params.percent}%</progress>
 					</div>
@@ -59,7 +59,7 @@ function PrintPopup({ params }) {
 							tabIndex={-1}
 							className="form-button"
 							onClick={handleCancel}
-						><FormattedMessage id="general.cancel"/></button>
+						>{l10n.getString('general-cancel')}</button>
 					</div>
 				</Fragment>
 			)}
