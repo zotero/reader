@@ -84,9 +84,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					id="word-spacing"
 					name="wordSpacing"
 					value={params.wordSpacing}
-					min="-100"
-					max="100"
-					step="20"
+					min="0"
+					max="150"
+					step="25"
 					onChange={handleChange}
 				/>
 				<span className="value">{params.wordSpacing}%</span>
@@ -107,9 +107,9 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 					id="letter-spacing"
 					name="letterSpacing"
 					value={params.letterSpacing}
-					min="-0.1"
-					max="0.1"
-					step="0.020"
+					min="0"
+					max="0.15"
+					step="0.025"
 					onChange={handleChange}
 				/>
 				<span className="value">{params.letterSpacing * 1000}%</span>
