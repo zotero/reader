@@ -22,6 +22,7 @@ import IconImage from '../../../res/icons/20/annotate-area.svg';
 import IconInk from '../../../res/icons/20/annotate-ink.svg';
 import IconEraser from '../../../res/icons/20/annotate-eraser.svg';
 import IconFind from '../../../res/icons/20/magnifier.svg';
+import IconReadAloud from '../../../res/icons/20/read-aloud.svg';
 import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
 import IconGoBack from '../../../res/icons/20/go-back.svg';
 
@@ -114,6 +115,15 @@ function Toolbar(props) {
 					tabIndex={-1}
 					onClick={() => props.onToggleAppearancePopup()}
 				>{props.readingModeEnabled ? <IconFormatTextReadingMode/> : <IconFormatText/>}</button>
+				{['epub', 'snapshot'].includes(props.type) && (
+					<button
+						id="read-aloud"
+						className={cx('toolbar-button', { active: props.readAloudState.active })}
+						title={l10n.getString('reader-read-aloud')}
+						tabIndex={-1}
+						onClick={() => props.onToggleReadAloud()}
+					><IconReadAloud/></button>
+				)}
 				<div className="divider"/>
 				<button
 					id="navigateBack"
