@@ -1,0 +1,137 @@
+import React, { useEffect, useState } from 'react';
+import cx from 'classnames';
+
+import UtilityPopup from './common/utility-popup';
+import IconAdvancedOptions from '../../../../res/icons/20/advanced-options.svg';
+import IconSkipBack from '../../../../res/icons/20/skip-back.svg';
+import IconPlay from '../../../../res/icons/20/play.svg';
+import IconPause from '../../../../res/icons/20/pause.svg';
+import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
+import IconClose from '../../../../res/icons/20/x.svg';
+import { useLocalization } from '@fluent/react';
+import SpeechController from "../../speech-controller";
+
+function ReadAloudPopup(props) {
+	const { l10n } = useLocalization();
+
+	let { params, onChange, onClose } = props;
+
+	let [showOptions, setShowOptions] = useState(false);
+	let [speechController, setSpeechController] = useState(null);
+
+	useEffect(() => {
+		if (params.segments) {
+			let speechController = new SpeechController({
+				segments: params.segments,
+				lang: params.lang,
+			});
+			speechController.addEventListener('ActiveSegmentChange', (event) => {
+				onChange({ activeSegment: event.segment });
+			});
+			setSpeechController(speechController);
+
+			return () => {
+				speechController.dispose();
+			};
+		}
+		return undefined;
+	}, [params.segments, params.lang, onChange]);
+
+	useEffect(() => {
+		if (!speechController) return;
+		speechController.speed = params.speed;
+	}, [params.speed, speechController]);
+
+	useEffect(() => {
+		if (!speechController) return;
+		speechController.paused = params.paused;
+	}, [params.paused, speechController]);
+
+	useEffect(() => {
+		if (!speechController) return;
+		speechController.voice = params.voice;
+	}, [params.voice, speechController]);
+
+	function handleSpeedChange(event) {
+		let input = event.target;
+		onChange({ speed: parseFloat(input.value) });
+	}
+
+	let displayNames = new Intl.DisplayNames(undefined, {
+		type: 'language',
+		languageDisplay: 'standard'
+	});
+
+	return (
+		<UtilityPopup className="read-aloud-popup">
+			<div className="row buttons" data-tabstop={1}>
+				<div className="group">
+					<button
+						className={cx('toolbar-button', { active: showOptions })}
+						title={l10n.getString('reader-read-aloud-options')}
+						tabIndex="-1"
+						onClick={() => setShowOptions(!showOptions)}
+					><IconAdvancedOptions/></button>
+				</div>
+				<div className="group">
+					<button
+						className="toolbar-button"
+						title={l10n.getString('reader-read-aloud-skip-back')}
+						tabIndex="-1"
+						onClick={() => speechController?.skipBack()}
+					><IconSkipBack/></button>
+					<button
+						className="toolbar-button"
+						title={l10n.getString(`reader-read-aloud-${params.paused ? 'play' : 'pause'}`)}
+						tabIndex="-1"
+						onClick={() => onChange({ paused: !params.paused })}
+					>{params.paused ? <IconPlay/> : <IconPause/>}</button>
+					<button
+						className="toolbar-button"
+						title={l10n.getString('reader-read-aloud-skip-ahead')}
+						tabIndex="-1"
+						onClick={() => speechController?.skipAhead()}
+					><IconSkipAhead/></button>
+				</div>
+				<div className="group">
+					<button
+						className="toolbar-button"
+						title={l10n.getString('reader-close')}
+						tabIndex="-1"
+						onClick={onClose}
+					><IconClose/></button>
+				</div>
+			</div>
+			{speechController && showOptions && <>
+				<div className="row speed" data-tabstop={1}>
+					<input
+						id="read-aloud-speed"
+						type="range"
+						min="0.50"
+						max="2.00"
+						step="0.25"
+						value={params.speed}
+						tabIndex="-1"
+						onChange={handleSpeedChange}
+					/>
+					<label htmlFor="read-aloud-speed">{params.speed.toFixed(2)}x</label>
+				</div>
+				<select
+					value={params.voice || speechController.voice || ''}
+					tabIndex="-1"
+					onChange={(event) => onChange({ voice: event.target.value })}
+				>
+					{Array.from(speechController.voices).map(([locale, voices]) => (
+						<optgroup key={locale} label={displayNames.of(locale)}>
+							{voices.map(([id, label], i) => (
+								<option key={i} value={id}>{label}</option>
+							))}
+						</optgroup>
+					))}
+				</select>
+			</>}
+		</UtilityPopup>
+	);
+}
+
+export default ReadAloudPopup;

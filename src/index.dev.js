@@ -91,6 +91,9 @@ async function createReader() {
 		},
 		onSaveCustomThemes(customThemes) {
 			console.log('Save custom themes', customThemes);
+		},
+		onSetReadAloudVoice(lang, voice) {
+			console.log('Set read aloud voice', voice, 'for lang', lang);
 		}
 	});
 	reader.enableAddToNote(true);

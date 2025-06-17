@@ -539,9 +539,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected override _getContainingRoot(node: Node) {
-		return this._sectionRenderers.find(r => r.container.contains(node))?.container
-			?? null;
+	protected override _getRoots(includeUnmounted = false): HTMLElement[] {
+		return this._sectionRenderers.map(includeUnmounted
+			? (r => r.body)
+			: (r => r.container)
+		);
 	}
 
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {

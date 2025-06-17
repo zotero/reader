@@ -5,12 +5,13 @@ import {
 	NavLocation,
 	NewAnnotation,
 	ViewStats,
-	OutlineItem
+	OutlineItem,
+	ReadAloudState
 } from "../../common/types";
 import {
 	getBoundingPageRect,
 	getInnerText,
-	getStartElement
+	getStartElement, moveRangeEndsIntoTextNodes
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -291,19 +292,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return 0;
 		};
 
-		let count: number;
-		if (this._readingMode.enabled) {
-			let newRange = this._readingMode.mapRangeFromFocus(range);
-			if (newRange) {
-				count = getCount(this._readingMode.originalRoot, newRange.startContainer, newRange.startOffset);
-			}
-			else {
-				count = 0;
-			}
-		}
-		else {
-			count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
-		}
+		let mappedRange = this._readingMode.enabled ? this._readingMode.mapRangeFromFocus(range) : range;
+		let count = mappedRange
+			? getCount(this._readingMode.preBody, mappedRange.startContainer, mappedRange.startOffset)
+			: 0;
 		let countString = String(count).padStart(SORT_INDEX_LENGTH, '0');
 		if (countString.length > SORT_INDEX_LENGTH) {
 			countString = countString.substring(0, SORT_INDEX_LENGTH);
@@ -362,8 +354,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				if (selector.refinedBy && selector.refinedBy.type != 'TextPositionSelector') {
 					throw new Error('CssSelectors can only be refined by TextPositionSelectors');
 				}
-				let root = (this._readingMode.enabled ? this._focusMode.originalRoot : this._iframeDocument)
-					.querySelector(selector.value);
+				let root = this._readingMode.preBody.querySelector(selector.value);
 				if (!root) {
 					console.error(`Unable to locate selector root for selector '${selector.value}' (reading mode: ${this._readingMode.enabled})`);
 					return null;
@@ -378,6 +369,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				}
 				if (this._readingMode.enabled) {
 					let newRange = this._readingMode.mapRangeToFocus(range);
+					if (!newRange) {
+						newRange = this._readingMode.mapRangeToFocus(moveRangeEndsIntoTextNodes(range));
+					}
 					if (!newRange) {
 						return null;
 					}
@@ -466,6 +460,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			readingModeEnabled: this._readingMode.enabled,
 		};
 		this._options.onChangeViewStats(viewStats);
+	}
+
+	protected _getRoots(): HTMLElement[] {
+		return [this._iframeDocument.body];
 	}
 
 	protected override _updateColorScheme() {
@@ -590,10 +588,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	// ***
-	// Public methods to control the view from the outside
-	// ***
-
 	findNext() {
 		console.log('Find next');
 		if (this._find) {
@@ -613,6 +607,25 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				scrollIntoView(result.range.toRange(), { block: 'center' });
 			}
 			this._renderAnnotations();
+		}
+	}
+
+	override setReadAloudState(state: ReadAloudState) {
+		super.setReadAloudState(state);
+
+		if (this._readingMode.enabled
+				|| (this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed)) {
+			super.setReadAloudState(state);
+			return;
+		}
+
+		try {
+			this._readingMode.enabled = true;
+			super.setReadAloudState(state);
+		}
+		finally {
+			this._readingMode.enabled = false;
+			this._handleViewUpdate();
 		}
 	}
 

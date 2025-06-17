@@ -1,5 +1,6 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/dom-view";
+import { Segment } from "./speech-controller";
 
 export type ToolType =
 	| 'highlight'
@@ -170,6 +171,16 @@ export type FindState = {
 		currentSnippet: string,
 		currentPageLabel: string | null
 	} | null;
+};
+
+export type ReadAloudState = {
+	active: boolean;
+	paused: boolean;
+	segments?: Segment[];
+	activeSegment: Segment | null;
+	lang?: string;
+	speed: number;
+	voice: string | null;
 };
 
 export type MaybePromise<T> = Promise<T> | T;

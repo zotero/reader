@@ -1,0 +1,37 @@
+.utility-popup {
+	@include control-popup;
+	z-index: $z-index-popup;
+	position: fixed; // Don't overflow the body
+}
+
+.read-aloud-popup {
+	top: $height-toolbar + 10px;
+	inset-inline-start: calc(var(--sidebar-width) + 10px);
+	width: 250px;
+
+	.row {
+		display: flex;
+
+		&.buttons {
+			justify-content: space-between;
+
+			.group {
+				display: flex;
+				gap: 4px;
+			}
+		}
+
+		&.speed {
+			gap: 8px;
+
+			input {
+				flex: 1;
+			}
+
+			label {
+				flex-shrink: 0;
+				font-variant: tabular-nums;
+			}
+		}
+	}
+}

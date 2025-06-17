@@ -127,17 +127,28 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 }
 
 /**
+ * Create a TreeWalker that walks only the nodes intersecting a range.
+ */
+export function createRangeWalker(
+	range: Range,
+	whatToShow?: number,
+	filter: ((node: Node) => number) = () => NodeFilter.FILTER_ACCEPT
+): TreeWalker {
+	let doc = range.commonAncestorContainer.ownerDocument!;
+	return doc.createTreeWalker(
+		range.commonAncestorContainer,
+		whatToShow,
+		node => (range.intersectsNode(node) ? filter(node) : NodeFilter.FILTER_SKIP)
+	);
+}
+
+/**
  * Given a range, return an array of ranges spanning the selected portions of the text nodes it contains.
  * This ensures that the rects returned from {@link Range#getClientRects} will include a rect per line of text
  * instead of one rect for the entire block element.
  */
 export function splitRangeToTextNodes(range: Range): Range[] {
-	let doc = range.commonAncestorContainer.ownerDocument;
-	if (!doc) {
-		return [];
-	}
-	let treeWalker = doc.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT,
-		node => (range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP));
+	let treeWalker = createRangeWalker(range, NodeFilter.SHOW_TEXT);
 	let ranges = [];
 	let node: Node | null = treeWalker.currentNode;
 	while (node) {

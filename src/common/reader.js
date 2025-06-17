@@ -72,6 +72,7 @@ class Reader {
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
+		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
 
 		this._readerRef = React.createRef();
 		this._primaryView = null;
@@ -134,6 +135,8 @@ class Reader {
 			? DEFAULT_THEMES.find(x => x.id === 'dark')
 			: themes.get(options.darkTheme) || null;
 
+		this._readAloudVoices = new Map(Object.entries(options.readAloudVoices || {}));
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -181,6 +184,13 @@ class Reader {
 			appearancePopup: null,
 			themePopup: null,
 			contextMenu: null,
+			readAloudState: {
+				active: false,
+				paused: true,
+				activeSegment: null,
+				speed: 1,
+				voice: null,
+			},
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -289,6 +299,8 @@ class Reader {
 						onChangePageNumber={pageNumber => this._lastView.navigate({ pageNumber })}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
+						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
 						onChangeSidebarView={this.setSidebarView.bind(this)}
@@ -485,6 +497,11 @@ class Reader {
 				this._primaryView?.setColorScheme(this._state.colorScheme);
 				this._secondaryView?.setColorScheme(this._state.colorScheme);
 			}
+		}
+
+		if (this._state.readAloudState !== previousState.readAloudState) {
+			this._primaryView?.setReadAloudState(this._state.readAloudState);
+			this._secondaryView?.setReadAloudState(this._state.readAloudState);
 		}
 
 		if (this._state.readOnly !== previousState.readOnly) {
@@ -819,6 +836,33 @@ class Reader {
 		}
 	}
 
+	_handleReadAloudStateChange(state) {
+		state = { ...this._state.readAloudState, ...state };
+		if (state.voice !== this._state.readAloudState.voice) {
+			this._onSetReadAloudVoice(state.lang, state.voice);
+		}
+
+		this._updateState({ readAloudState: state });
+	}
+
+	toggleReadAloudPopup(active) {
+		if (active === undefined) {
+			active = !this._state.readAloudState.active;
+		}
+		if (active) {
+			this._handleReadAloudStateChange({
+				active: true,
+			});
+		}
+		else {
+			this._handleReadAloudStateChange({
+				active: false,
+				paused: true,
+				activeSegment: null,
+			});
+		}
+	}
+
 	toggleFindPopup({ primary, open } = {}) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
@@ -956,6 +1000,10 @@ class Reader {
 			this.a11yAnnounceSearchMessage(params.result);
 		};
 
+		let onSetReadAloudState = (params) => {
+			this._updateState({ readAloudState: params });
+		};
+
 		let onSelectAnnotations = (ids, triggeringEvent) => {
 			this.setSelectedAnnotations(ids, true, triggeringEvent);
 		};
@@ -1030,6 +1078,8 @@ class Reader {
 			lightTheme: this._state.lightTheme,
 			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
+			readAloudState: this._state.readAloudState,
+			readAloudVoices: this._readAloudVoices,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
@@ -1046,6 +1096,7 @@ class Reader {
 			onSetAnnotationPopup,
 			onSetOverlayPopup,
 			onSetFindState,
+			onSetReadAloudState,
 			onSetOutline,
 			onSelectAnnotations,
 			onTabOut,

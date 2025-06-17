@@ -17,6 +17,7 @@ import PasswordPopup from './modal-popup/password-popup';
 import PrintPopup from './modal-popup/print-popup';
 import AppearancePopup from "./modal-popup/appearance-popup";
 import ThemePopup from './modal-popup/theme-popup';
+import ReadAloudPopup from "./utility-popup/read-aloud-popup";
 import { bundle } from '../../fluent';
 
 function View(props) {
@@ -134,6 +135,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						enableNavigateToNextPage={viewStats.canNavigateToNextPage}
 						readingModeEnabled={viewStats.readingModeEnabled}
 						appearancePopup={state.appearancePopup}
+						readAloudState={state.readAloudState}
 						findPopupOpen={findState.popupOpen}
 						themes={state.themes}
 						onChangeTheme={props.onChangeTheme}
@@ -152,6 +154,8 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeTool={props.onChangeTool}
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
 						onToggleAppearancePopup={props.onToggleAppearancePopup}
+						onChangeReadAloudState={props.onChangeReadAloudState}
+						onToggleReadAloud={props.onToggleReadAloud}
 						onToggleFind={props.onToggleFind}
 						onToggleContextPane={props.onToggleContextPane}
 					/>
@@ -251,6 +255,13 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						darkTheme={state.darkTheme}
 						onSaveCustomThemes={props.onSaveCustomThemes}
 						onClose={props.onCloseThemePopup}
+					/>
+				)}
+				{state.readAloudState.active && (
+					<ReadAloudPopup
+						params={state.readAloudState}
+						onChange={props.onChangeReadAloudState}
+						onClose={() => props.onToggleReadAloud(false)}
 					/>
 				)}
 				<div id="a11yAnnouncement" aria-live="polite"></div>

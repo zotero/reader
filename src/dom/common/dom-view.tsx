@@ -13,6 +13,7 @@ import {
 	OutlineItem,
 	OverlayPopupParams,
 	Platform,
+	ReadAloudState,
 	SelectionPopupParams,
 	Theme,
 	Tool,
@@ -29,9 +30,10 @@ import {
 	DisplayedAnnotation
 } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { Selector } from "./lib/selector";
+import { isSelector, Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
+	createRangeWalker,
 	getBoundingPageRect,
 	getColumnSeparatedPageRects,
 	makeRangeSpanning,
@@ -52,7 +54,9 @@ import {
 } from "../../common/lib/utilities";
 import {
 	closestElement,
-	getContainingBlock, isBlock
+	getContainingBlock,
+	isBlock,
+	iterateWalker
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
@@ -64,6 +68,7 @@ import {
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
+import { Segment } from "../../common/speech-controller";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
@@ -351,10 +356,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _updateViewStats(): void;
 
-	protected _getContainingRoot(node: Node): HTMLElement | null {
-		return this._iframeDocument.body.contains(node)
-			? this._iframeDocument.body
-			: null;
+	protected abstract _getRoots(includeUnmounted?: boolean): HTMLElement[];
+
+	protected _getContainingRoot(node: Node, includeUnmounted = false): HTMLElement | null {
+		return this._getRoots(includeUnmounted).find(root => root.contains(node))
+			?? null;
 	}
 
 	// ***
@@ -1831,6 +1837,78 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations(true);
 	}
 
+	setReadAloudState(state: ReadAloudState): void {
+		if (!state.active) {
+			this._setHighlight(null);
+			return;
+		}
+
+		let position = state.activeSegment?.position;
+		if (isSelector(position)) {
+			this._setHighlight(position, null);
+			setTimeout(() => {
+				this._navigateToSelector(position, { block: 'center', behavior: 'smooth' });
+			});
+		}
+		else {
+			this._setHighlight(null);
+		}
+
+		if (state.segments !== undefined) {
+			return;
+		}
+
+		let segments: Segment[] = [];
+
+		let roots = this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed
+			? [this._iframeDocument.getSelection()!.getRangeAt(0)]
+			: this._getRoots(true);
+
+		for (let root of roots) {
+			// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
+			let matches = new Set();
+			let filter = (node: Node) => {
+				if (matches.has(node.parentNode)) {
+					// Reject sub-trees of accepted nodes.
+					return NodeFilter.FILTER_REJECT;
+				}
+				if (!/\S/.test(node.textContent!)) {
+					// Reject nodes with no text.
+					return NodeFilter.FILTER_REJECT;
+				}
+				for (let c = node.firstChild; c; c = c.nextSibling) {
+					if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
+						// If node has a non-empty text child accept it.
+						matches.add(node);
+						return NodeFilter.FILTER_ACCEPT;
+					}
+				}
+				return NodeFilter.FILTER_SKIP;
+			};
+
+			let walker = 'nodeType' in root
+				? document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, filter)
+				: createRangeWalker(root, NodeFilter.SHOW_ELEMENT, filter);
+
+			for (let element of iterateWalker(walker)) {
+				let elementRange = this._iframeDocument.createRange();
+				elementRange.selectNodeContents(element);
+
+				let text = element.textContent;
+				if (!text) continue;
+				let position = this.toSelector(elementRange);
+				if (!position) continue;
+
+				segments.push({ text, position });
+			}
+		}
+
+		let lang = this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		let voice = this._options.readAloudVoices.get(lang) || null;
+
+		this._options.onSetReadAloudState({ ...state, segments, lang, voice });
+	}
+
 	// ***
 	// Public methods to control the view from the outside
 	// ***
@@ -1863,16 +1941,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _setScale(scale: number): void;
 
-	protected _setHighlight(selector: Selector) {
+	protected _setHighlight(selector: Selector | null, timeout: number | null = 2000) {
 		this._highlightedPosition = selector;
 		this._renderAnnotations(true);
+
+		if (selector === null || timeout === null) return;
 
 		setTimeout(() => {
 			if (this._highlightedPosition === selector) {
 				this._highlightedPosition = null;
 				this._renderAnnotations(true);
 			}
-		}, 2000);
+		}, timeout);
 	}
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
@@ -1931,6 +2011,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	viewState?: State;
 	fontFamily?: string;
 	hyphenate?: boolean;
+	readAloudVoices: Map<string, string>,
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;
@@ -1943,6 +2024,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
+	onSetReadAloudState: (state?: ReadAloudState) => void;
 	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
 	onOpenViewContextMenu: (params: { x: number, y: number, overlay?: ViewContextMenuOverlay }) => void;
 	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
