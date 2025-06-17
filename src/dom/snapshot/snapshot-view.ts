@@ -10,7 +10,9 @@ import {
 import {
 	getBoundingPageRect,
 	getInnerText,
-	getStartElement
+	getStartElement,
+	moveRangeEndsIntoTextNodes,
+	PersistentRange
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -31,7 +33,7 @@ import {
 import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import injectCSS from './stylesheets/inject.scss';
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
-import type { DynamicThemeFix } from "darkreader";
+import { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
@@ -291,19 +293,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return 0;
 		};
 
-		let count: number;
-		if (this._readingMode.enabled) {
-			let newRange = this._readingMode.mapRangeFromFocus(range);
-			if (newRange) {
-				count = getCount(this._readingMode.originalRoot, newRange.startContainer, newRange.startOffset);
-			}
-			else {
-				count = 0;
-			}
-		}
-		else {
-			count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
-		}
+		let mappedRange = this._readingMode.enabled ? this._readingMode.mapRangeFromFocus(range) : range;
+		let count = mappedRange
+			? getCount(this._readingMode.preBody, mappedRange.startContainer, mappedRange.startOffset)
+			: 0;
 		let countString = String(count).padStart(SORT_INDEX_LENGTH, '0');
 		if (countString.length > SORT_INDEX_LENGTH) {
 			countString = countString.substring(0, SORT_INDEX_LENGTH);
@@ -362,8 +355,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				if (selector.refinedBy && selector.refinedBy.type != 'TextPositionSelector') {
 					throw new Error('CssSelectors can only be refined by TextPositionSelectors');
 				}
-				let root = (this._readingMode.enabled ? this._focusMode.originalRoot : this._iframeDocument)
-					.querySelector(selector.value);
+				let root = this._readingMode.preBody.querySelector(selector.value);
 				if (!root) {
 					console.error(`Unable to locate selector root for selector '${selector.value}' (reading mode: ${this._readingMode.enabled})`);
 					return null;
@@ -378,6 +370,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				}
 				if (this._readingMode.enabled) {
 					let newRange = this._readingMode.mapRangeToFocus(range);
+					if (!newRange) {
+						newRange = this._readingMode.mapRangeToFocus(moveRangeEndsIntoTextNodes(range));
+					}
 					if (!newRange) {
 						return null;
 					}
@@ -417,7 +412,17 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 			return;
 		}
+
 		let elem = getStartElement(range);
+
+		if (options.ifNeeded && isPageRectVisible(
+			getBoundingPageRect(elem ?? range),
+			this._iframeWindow,
+			options.visibilityMargin ?? 0
+		)) {
+			return;
+		}
+
 		if (elem) {
 			elem.scrollIntoView(options);
 			// Remember which node was navigated to for screen readers to place
@@ -425,10 +430,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
 				this._a11yVirtualCursorTarget = elem;
 			});
-		}
-
-		if (options.ifNeeded && isPageRectVisible(getBoundingPageRect(range), this._iframeWindow, 0)) {
-			return;
 		}
 
 		scrollIntoView(range, options);
@@ -466,6 +467,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			readingModeEnabled: this._readingMode.enabled,
 		};
 		this._options.onChangeViewStats(viewStats);
+	}
+
+	protected _getRoots(): HTMLElement[] {
+		return [this._iframeDocument.body];
 	}
 
 	protected override _updateColorScheme() {
@@ -590,10 +595,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	// ***
-	// Public methods to control the view from the outside
-	// ***
-
 	findNext() {
 		console.log('Find next');
 		if (this._find) {
@@ -614,6 +615,33 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 			this._renderAnnotations();
 		}
+	}
+
+	protected override _getAllReadAloudRanges(): Range[] {
+		if (this._readingMode.enabled) {
+			return super._getAllReadAloudRanges();
+		}
+
+		let segmentsWithReadingModeEnabled = this._keepSelection(() => {
+			try {
+				this._readingMode.enabled = true;
+				return super._getAllReadAloudRanges().map((range) => {
+					let mappedRange = this._readingMode.mapRangeFromFocus(range);
+					if (!mappedRange) return null;
+					return new PersistentRange(mappedRange);
+				}).filter(Boolean) as PersistentRange[];
+			}
+			finally {
+				this._readingMode.enabled = false;
+			}
+		});
+		this._handleViewUpdate();
+
+		if (segmentsWithReadingModeEnabled.length) {
+			return segmentsWithReadingModeEnabled.map(r => r.toRange());
+		}
+
+		return super._getAllReadAloudRanges();
 	}
 
 	protected _setScale(scale: number) {

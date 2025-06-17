@@ -1,5 +1,6 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/dom-view";
+import { PersistentRange } from '../dom/common/lib/range';
 
 export type ToolType =
 	| 'highlight'
@@ -60,12 +61,16 @@ export type NavLocation = {
 	scrollCoords?: [number, number];
 };
 
-export type Position = PDFPosition | Selector;
+export type Position = PDFPosition | Selector | RangeRef;
 
 export type PDFPosition = {
 	pageIndex: number;
 	rects?: number[][];
 	paths?: number[][];
+};
+
+export type RangeRef = {
+	range: PersistentRange;
 };
 
 type NewAnnotationOptionalFields =
@@ -172,6 +177,24 @@ export type FindState = {
 	} | null;
 };
 
+export type ReadAloudState = {
+	active: boolean;
+	paused: boolean;
+	segments: ReadAloudSegment[] | null;
+	activeSegment: ReadAloudSegment | null;
+	backwardStopIndex: number | null;
+	forwardStopIndex: number | null;
+	targetPosition?: Position;
+	lang?: string;
+	speed: number;
+	voice: string | null;
+};
+
+export type ReadAloudSegment = {
+	position: Position;
+	text: string;
+};
+
 export type MaybePromise<T> = Promise<T> | T;
 
 export type ColorScheme = 'light' | 'dark';
@@ -191,4 +214,8 @@ export type ViewContextMenuOverlay =
 	| {
 		type: 'math';
 		tex: string;
+	}
+	| {
+		type: 'read-aloud';
+		position?: Position;
 	};
