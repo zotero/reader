@@ -1,6 +1,6 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
 import { closestElement, iterateWalker } from "./nodes";
-import { getBoundingRect, isPageRectVisible, rectIntersects } from "./rect";
+import { getBoundingRect, isPageRectVisible, rectsIntersect } from "./rect";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
@@ -127,17 +127,28 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 }
 
 /**
+ * Create a TreeWalker that walks only the nodes intersecting a range.
+ */
+export function createRangeWalker(
+	range: Range,
+	whatToShow?: number,
+	filter: ((node: Node) => number) = () => NodeFilter.FILTER_ACCEPT
+): TreeWalker {
+	let doc = range.commonAncestorContainer.ownerDocument!;
+	return doc.createTreeWalker(
+		range.commonAncestorContainer,
+		whatToShow,
+		node => (range.intersectsNode(node) ? filter(node) : NodeFilter.FILTER_SKIP)
+	);
+}
+
+/**
  * Given a range, return an array of ranges spanning the selected portions of the text nodes it contains.
  * This ensures that the rects returned from {@link Range#getClientRects} will include a rect per line of text
  * instead of one rect for the entire block element.
  */
 export function splitRangeToTextNodes(range: Range): Range[] {
-	let doc = range.commonAncestorContainer.ownerDocument;
-	if (!doc) {
-		return [];
-	}
-	let treeWalker = doc.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT,
-		node => (range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP));
+	let treeWalker = createRangeWalker(range, NodeFilter.SHOW_TEXT);
 	let ranges = [];
 	let node: Node | null = treeWalker.currentNode;
 	while (node) {
@@ -152,6 +163,117 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 		node = treeWalker.nextNode();
 	}
 	return ranges;
+}
+
+export function splitRanges(
+	ranges: Range[],
+	splitAtRange: Range
+): { ranges: Range[]; startIndex: number; endIndex: number } | null {
+	let newRanges: Range[] = [];
+	let startIndex = -1;
+	let endIndex = -1;
+
+	let lastStartToStart: number | null = null;
+	let lastStartToEnd: number | null = null;
+	let lastEndToStart: number | null = null;
+	let lastEndToEnd: number | null = null;
+
+	for (let range of ranges) {
+		if (startIndex !== -1 && endIndex !== -1) {
+			newRanges.push(range);
+			continue;
+		}
+		// If these ranges aren't comparable, we can't split
+		if (range.commonAncestorContainer.getRootNode() !== splitAtRange.commonAncestorContainer.getRootNode()) {
+			newRanges.push(range);
+			continue;
+		}
+
+		let splitRanges: Range[] = [];
+		let containedStart = false;
+		let containedEnd = false;
+		let splitIndex = -1;
+
+		if (startIndex === -1) {
+			let startToStart = range.compareBoundaryPoints(Range.START_TO_START, splitAtRange);
+			let startToEnd = range.compareBoundaryPoints(Range.START_TO_END, splitAtRange);
+			if (
+				// If the start point of splitAtRange is somewhere within range,
+				// or it was somewhere between the last range and this range
+				(startToStart <= 0 || lastStartToStart === -1 && startToStart === 1)
+				&& (startToEnd >= 0 || lastStartToEnd === -1 && startToEnd === 1)
+			) {
+				containedStart = true;
+			}
+			lastStartToStart = startToStart;
+			lastStartToEnd = startToEnd;
+		}
+
+		if (endIndex === -1) {
+			let endToStart = range.compareBoundaryPoints(Range.END_TO_START, splitAtRange);
+			let endToEnd = range.compareBoundaryPoints(Range.END_TO_END, splitAtRange);
+			if (
+				// If the end point of splitAtRange is somewhere within range,
+				// or it was somewhere between the last range and this range
+				(endToStart <= 0 || lastEndToStart === -1 && endToStart === 1)
+				&& (endToEnd >= 0 || lastEndToEnd === -1 && endToEnd === 1)
+			) {
+				containedEnd = true;
+			}
+			lastEndToStart = endToStart;
+			lastEndToEnd = endToEnd;
+		}
+
+		if (containedStart) {
+			let before = range.cloneRange();
+			before.setEnd(splitAtRange.startContainer, splitAtRange.startOffset);
+			if (!before.collapsed) splitRanges.push(before);
+		}
+
+		if (containedStart || containedEnd) {
+			let middle = range.cloneRange();
+			let start = (containedStart ? splitAtRange : range).startContainer;
+			let startOffset = (containedStart ? splitAtRange : range).startOffset;
+			let end = (containedEnd ? splitAtRange : range).endContainer;
+			let endOffset = (containedEnd ? splitAtRange : range).endOffset;
+
+			middle.setStart(start, startOffset);
+			middle.setEnd(end, endOffset);
+
+			if (!middle.collapsed) {
+				splitRanges.push(middle);
+				splitIndex = splitRanges.length - 1;
+			}
+		}
+		else if (!range.collapsed) {
+			splitRanges.push(range);
+			splitIndex = splitRanges.length - 1;
+		}
+
+		if (containedEnd) {
+			let after = range.cloneRange();
+			after.setStart(splitAtRange.endContainer, splitAtRange.endOffset);
+			if (!after.collapsed) splitRanges.push(after);
+		}
+
+		if (containedStart) {
+			startIndex = newRanges.length + splitIndex;
+		}
+		if (containedEnd) {
+			endIndex = newRanges.length + splitIndex + 1;
+		}
+		newRanges.push(...splitRanges);
+	}
+
+	if (startIndex === -1 || endIndex === -1) {
+		return null;
+	}
+
+	return {
+		ranges: newRanges,
+		startIndex,
+		endIndex
+	};
 }
 
 /**
@@ -279,7 +401,7 @@ export function getColumnSeparatedPageRects(range: Range, visibleOnly = true): D
 		// are within this column
 		let rangeRectsWithinColumn = [];
 		for (let rangeRect of rangeRects) {
-			if (rectIntersects(rangeRect, columnRect)) {
+			if (rectsIntersect(rangeRect, columnRect)) {
 				rangeRectsWithinColumn.push(rangeRect);
 				rangeRects.delete(rangeRect);
 			}
