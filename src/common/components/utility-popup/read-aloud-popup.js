@@ -115,14 +115,14 @@ function ReadAloudPopup(props) {
 					<input
 						id="read-aloud-speed"
 						type="range"
-						min="0.50"
-						max="2.00"
-						step="0.25"
+						min="0.5"
+						max="2.0"
+						step="0.1"
 						value={params.speed}
 						tabIndex="-1"
 						onChange={handleSpeedChange}
 					/>
-					<label htmlFor="read-aloud-speed">{params.speed.toFixed(2)}x</label>
+					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}x</label>
 				</div>
 				<select
 					value={params.voice || speechController.voice || ''}
