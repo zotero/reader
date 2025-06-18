@@ -129,7 +129,7 @@ function ReadAloudPopup(props) {
 						onPointerUp={handleSpeedPointerUp}
 						onPointerCancel={handleSpeedPointerUp}
 					/>
-					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}x</label>
+					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
 				</div>
 				<select
 					value={params.voice || speechController.voice || ''}
