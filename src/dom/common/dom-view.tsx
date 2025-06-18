@@ -79,6 +79,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	initialized = false;
 
+	protected readonly _options: DOMViewOptions<State, Data>;
+
 	protected readonly _container: Element;
 
 	protected readonly _iframe: HTMLIFrameElement;
@@ -127,8 +129,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _find: FindProcessor | null;
 
-	protected readonly _options: DOMViewOptions<State, Data>;
-
 	protected _overlayPopupDelayer: PopupDelayer;
 
 	protected readonly _history: History;
@@ -148,6 +148,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _isCtrlKeyDown = false;
 
 	protected _lastSelectionRange: PersistentRange | null = null;
+
+	protected _readAloudState: ReadAloudState | null = null;
+
+	protected _readAloudUsingSelection = false;
 
 	protected _iframeCoordScaleFactor = 1;
 
@@ -1310,6 +1314,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (selection?.rangeCount) {
 			this._lastSelectionRange = new PersistentRange(selection.getRangeAt(0));
 		}
+
+		// If Read Aloud is paused, reinitialize with the selected text
+		if (this._readAloudState?.paused) {
+			if (selection && !selection.isCollapsed || this._readAloudUsingSelection) {
+				this.setReadAloudState({
+					...this._readAloudState,
+					segments: undefined,
+					activeSegment: null,
+				});
+			}
+		}
 	}
 
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
@@ -1838,22 +1853,24 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	setReadAloudState(state: ReadAloudState): void {
-		const HIGHLIGHT_KEY = SpotlightKey.ReadAloudActiveSegment;
+		this._readAloudState = state;
 
 		if (!state.active) {
-			this._setSpotlight(HIGHLIGHT_KEY, null);
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
 			return;
 		}
 
 		let position = state.activeSegment?.position;
 		if (isSelector(position)) {
-			this._setSpotlight(HIGHLIGHT_KEY, position, null);
-			setTimeout(() => {
-				this._navigateToSelector(position, { ifNeeded: true, block: 'center', behavior: 'smooth' });
-			});
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, position, null);
+			if (!state.paused) {
+				setTimeout(() => {
+					this._navigateToSelector(position, { ifNeeded: true, block: 'center', behavior: 'smooth' });
+				});
+			}
 		}
 		else {
-			this._setSpotlight(HIGHLIGHT_KEY, null);
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
 		}
 
 		if (state.segments !== undefined) {
@@ -1862,11 +1879,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		let segments: Segment[] = [];
 
-		let roots = this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed
+		this._readAloudUsingSelection = this._iframeDocument.getSelection() !== null
+			&& !this._iframeDocument.getSelection()!.isCollapsed;
+		let rootRanges = this._readAloudUsingSelection
 			? [this._iframeDocument.getSelection()!.getRangeAt(0)]
-			: this._getRoots(true);
+			: this._getRoots(true).map((root) => {
+				let range = this._iframeDocument.createRange();
+				range.selectNodeContents(root);
+				return range;
+			});
 
-		for (let root of roots) {
+		for (let rootRange of rootRanges) {
 			// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
 			let matches = new Set();
 			let filter = (node: Node) => {
@@ -1888,15 +1911,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				return NodeFilter.FILTER_SKIP;
 			};
 
-			let walker = 'nodeType' in root
-				? document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, filter)
-				: createRangeWalker(root, NodeFilter.SHOW_ELEMENT, filter);
+			let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
+			let elementRanges = [...iterateWalker(walker)].map((el) => {
+				let range = this._iframeDocument.createRange();
+				range.selectNodeContents(el);
+				return range;
+			});
 
-			for (let element of iterateWalker(walker)) {
-				let elementRange = this._iframeDocument.createRange();
-				elementRange.selectNodeContents(element);
+			// If there weren't any element children, just use the whole root range
+			if (!elementRanges.length) {
+				elementRanges = [rootRange];
+			}
 
-				let text = element.textContent;
+			for (let elementRange of elementRanges) {
+				let text = elementRange.toString();
 				if (!text) continue;
 				let position = this.toSelector(elementRange);
 				if (!position) continue;
