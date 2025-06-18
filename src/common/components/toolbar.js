@@ -111,8 +111,8 @@ function Toolbar(props) {
 					className={cx('toolbar-button', { active: props.appearancePopup })}
 					title={l10n.getString('reader-appearance')}
 					tabIndex={-1}
-					onClick={props.onToggleAppearancePopup}
-				><IconFormatText/></button>
+					onClick={() => props.onToggleAppearancePopup()}
+				>{props.readingModeEnabled ? <IconFormatTextFocus/> : <IconFormatText/>}</button>
 				<div className="divider"/>
 				<button
 					id="navigateBack"
