@@ -81,23 +81,23 @@ class SpeechController extends EventTarget {
 		this._paused = paused;
 	}
 
-	get voices(): Map<string, [string, string][]> {
-		let voices = window.speechSynthesis.getVoices()
-			.sort((v1, v2) => (this._getScore(v2) - this._getScore(v1)));
-		let seenVoiceURIs = new Set<string>(); // Safari returns duplicates
-		let groups = new Map<string, [string, string][]>();
-		for (let voice of voices) {
-			if (seenVoiceURIs.has(voice.voiceURI)) {
-				continue;
-			}
-			seenVoiceURIs.add(voice.voiceURI);
-
-			if (!groups.has(voice.lang)) {
-				groups.set(voice.lang, []);
-			}
-			groups.get(voice.lang)!.push([voice.voiceURI, voice.name]);
+	get languages(): string[] {
+		let languages = new Set<string>();
+		for (let voice of window.speechSynthesis.getVoices()) {
+			languages.add(voice.lang);
 		}
-		return groups;
+		return [...languages];
+	}
+
+	getVoices(lang: string): Map<string, string> {
+		let voices = window.speechSynthesis.getVoices()
+			.filter(voice => voice.lang === lang)
+			.sort((v1, v2) => (this._getScore(v2) - this._getScore(v1)));
+		let idsToNames = new Map<string, string>(); // Safari returns duplicates
+		for (let voice of voices) {
+			idsToNames.set(voice.voiceURI, voice.name);
+		}
+		return idsToNames;
 	}
 
 	get voice() {

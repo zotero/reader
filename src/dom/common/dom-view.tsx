@@ -1933,8 +1933,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		let lang = this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
-		let voice = this._options.readAloudVoices.get(lang) || null;
+		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
 
 		this._options.onSetReadAloudState({ ...state, segments, lang, voice });
 	}

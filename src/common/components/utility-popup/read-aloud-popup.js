@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import cx from 'classnames';
 
 import UtilityPopup from './common/utility-popup';
@@ -64,6 +64,10 @@ function ReadAloudPopup(props) {
 		onChange({ paused: wasPausedBeforeChangingSpeed });
 	}
 
+	function handleLangChange(event) {
+		onChange({ lang: event.target.value });
+	}
+
 	function handleVoiceChange(event) {
 		if (event.target.value === 'more-voices') {
 			onOpenVoicePreferences();
@@ -71,6 +75,13 @@ function ReadAloudPopup(props) {
 		}
 		onChange({ voice: event.target.value });
 	}
+
+	let resolvedLang = useMemo(() => {
+		if (!speechController) {
+			return undefined;
+		}
+		return resolveLocale(params.lang, speechController.languages);
+	}, [params.lang, speechController]);
 
 	let displayNames = new Intl.DisplayNames(undefined, {
 		type: 'language',
@@ -135,22 +146,69 @@ function ReadAloudPopup(props) {
 					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
 				</div>
 				<select
+					value={resolvedLang}
+					tabIndex="-1"
+					onChange={handleLangChange}
+				>
+					{[...speechController.languages].map(language => (
+						<option key={language} value={language}>{displayNames.of(language)}</option>
+					))}
+				</select>
+				<select
 					value={params.voice || speechController.voice || ''}
 					tabIndex="-1"
 					onChange={handleVoiceChange}
 				>
-					{Array.from(speechController.voices).map(([locale, voices]) => (
-						<optgroup key={locale} label={displayNames.of(locale)}>
-							{voices.map(([id, label], i) => (
-								<option key={i} value={id}>{label}</option>
-							))}
-						</optgroup>
+					{[...speechController.getVoices(resolvedLang)].map(([id, name], i) => (
+						<option key={i} value={id}>{name}</option>
 					))}
 					<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
 				</select>
 			</>}
 		</UtilityPopup>
 	);
+}
+
+function resolveLocale(locale, locales) {
+	// Based on Zotero.Utilities.Internal.resolveLocale()
+
+	// If the locale exists as-is, use it
+	if (locales.includes(locale)) {
+		return locale;
+	}
+
+	// If there's a locale with just the language, use that
+	let langCode = locale.substr(0, 2);
+	if (locales.includes(langCode)) {
+		return langCode;
+	}
+
+	// Find locales matching language
+	let possibleLocales = locales.filter(x => x.substring(0, 2) === langCode);
+
+	// If none, use en-US
+	if (!possibleLocales.length) {
+		if (!locales.includes('en-US')) {
+			throw new Error("Locales not available");
+		}
+		return 'en-US';
+	}
+
+	possibleLocales.sort((a, b) => {
+		if (a === 'en-US') return -1;
+		if (b === 'en-US') return 1;
+
+		// Prefer canonical country (e.g., pt-PT over pt-BR)
+		if (a.substring(0, 2) === a.substring(3, 2).toLowerCase()) {
+			return -1;
+		}
+		if (b.substring(0, 2) === b.substring(3, 2).toLowerCase()) {
+			return 1;
+		}
+
+		return a.substring(3, 2).localeCompare(b.substring(3, 2));
+	});
+	return possibleLocales[0];
 }
 
 export default ReadAloudPopup;
