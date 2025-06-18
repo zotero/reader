@@ -115,6 +115,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		await super._handleViewCreated(viewState);
 		await this.book.opened;
 
+		this._iframeDocument.documentElement.lang = this.book.packaging.metadata.language;
+
 		let cspMeta = this._iframeDocument.createElement('meta');
 		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
 		cspMeta.setAttribute('content', this._getCSP());
@@ -139,7 +141,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		this._sectionsContainer = this._iframeDocument.createElement('div');
 		this._sectionsContainer.classList.add('sections');
-		this._sectionsContainer.lang = this.book.packaging.metadata.language;
 		this._sectionsContainer.hidden = true;
 		this._iframeDocument.body.prepend(this._sectionsContainer);
 
