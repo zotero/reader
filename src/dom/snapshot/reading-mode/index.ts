@@ -1,10 +1,10 @@
-import focusSCSS from '../stylesheets/focus.scss';
+import readingModeSCSS from '../stylesheets/reading-mode.scss';
 import { Readability } from "@abejellinek/readability-keep-nodes";
 import { iterateWalker } from "../../common/lib/nodes";
 import { enumerate } from "../../common/lib/collection";
 import { NodeMapping } from "./node-mapping";
 
-export class FocusMode {
+export class ReadingMode {
 	private readonly _doc: Document;
 
 	private readonly _mapping = new NodeMapping();
@@ -13,15 +13,15 @@ export class FocusMode {
 
 	private readonly _originalStyleSheets = new Map<CSSStyleSheet, Element | ProcessingInstruction | null>;
 
-	private readonly _focusStyle: HTMLStyleElement;
+	private readonly _style: HTMLStyleElement;
 
 	private _enabled = false;
 
 	constructor(doc: Document) {
 		this._doc = doc;
 		this._fragment = doc.createDocumentFragment();
-		this._focusStyle = doc.createElement('style');
-		this._focusStyle.textContent = focusSCSS;
+		this._style = doc.createElement('style');
+		this._style.textContent = readingModeSCSS;
 
 		for (let styleSheet of [...this._doc.styleSheets, ...this._doc.adoptedStyleSheets]) {
 			if (styleSheet.disabled) {
@@ -153,7 +153,7 @@ export class FocusMode {
 			styleSheet.disabled = true;
 			ownerNode?.remove();
 		}
-		this._doc.head.append(this._focusStyle);
+		this._doc.head.append(this._style);
 	}
 
 	private _disable() {
@@ -168,7 +168,7 @@ export class FocusMode {
 				this._doc.head.append(ownerNode);
 			}
 		}
-		this._focusStyle.remove();
+		this._style.remove();
 		this._mapping.clear();
 		this._fragment.replaceChildren();
 	}
