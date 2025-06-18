@@ -18,6 +18,7 @@ function ReadAloudPopup(props) {
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speechController, setSpeechController] = useState(null);
+	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
 
 	useEffect(() => {
 		if (params.segments) {
@@ -48,6 +49,16 @@ function ReadAloudPopup(props) {
 	function handleSpeedChange(event) {
 		let input = event.target;
 		onChange({ speed: parseFloat(input.value) });
+	}
+
+	// Pause while actively changing speed to avoid audio jank
+	function handleSpeedPointerDown() {
+		setWasPausedBeforeChangingSpeed(params.paused);
+		onChange({ paused: true });
+	}
+
+	function handleSpeedPointerUp() {
+		onChange({ paused: wasPausedBeforeChangingSpeed });
 	}
 
 	function handleVoiceChange(event) {
@@ -114,6 +125,9 @@ function ReadAloudPopup(props) {
 						value={params.speed}
 						tabIndex="-1"
 						onChange={handleSpeedChange}
+						onPointerDown={handleSpeedPointerDown}
+						onPointerUp={handleSpeedPointerUp}
+						onPointerCancel={handleSpeedPointerUp}
 					/>
 					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}x</label>
 				</div>
