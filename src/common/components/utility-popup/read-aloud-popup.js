@@ -154,16 +154,19 @@ function ReadAloudPopup(props) {
 						<option key={language} value={language}>{displayNames.of(language)}</option>
 					))}
 				</select>
-				<select
-					value={params.voice || speechController.voice || ''}
-					tabIndex="-1"
-					onChange={handleVoiceChange}
-				>
-					{[...speechController.getVoices(resolvedLang)].map(([id, name], i) => (
-						<option key={i} value={id}>{name}</option>
-					))}
-					<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
-				</select>
+				<div className="row voices">
+					<select
+						value={params.voice || speechController.voice || ''}
+						tabIndex="-1"
+						onChange={handleVoiceChange}
+					>
+						{[...speechController.getVoices(resolvedLang)].map(([id, name], i) => (
+							<option key={i} value={id}>{name}</option>
+						))}
+						<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
+					</select>
+					<button className="help-button">?</button>
+				</div>
 			</>}
 		</UtilityPopup>
 	);

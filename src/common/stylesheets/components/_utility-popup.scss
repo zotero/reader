@@ -13,6 +13,7 @@
 
 	.row {
 		display: flex;
+		gap: 8px;
 
 		&.buttons {
 			justify-content: space-between;
@@ -24,8 +25,6 @@
 		}
 
 		&.speed {
-			gap: 8px;
-
 			input {
 				flex: 1;
 			}
@@ -33,6 +32,29 @@
 			label {
 				flex-shrink: 0;
 				font-variant: tabular-nums;
+			}
+		}
+
+		&.voices {
+			select {
+				flex: 1;
+			}
+
+			.help-button {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 20px;
+				height: 20px;
+				border-radius: 100px;
+				background: var(--material-button);
+				box-shadow: $shadow-button;
+				font-size: 15px;
+				font-weight: 500;
+
+				&:active:not(.active):not(:disabled), &.active-pseudo-class-fix:not(.active):not(:disabled) {
+					background: var(--fill-quinary);
+				}
 			}
 		}
 	}
