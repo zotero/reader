@@ -36,6 +36,11 @@ class SpeechController extends EventTarget {
 					// Don't dispatch ActiveSegmentChange if segment ended due to pause
 					if (this._paused) return;
 					this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', null));
+
+					if (i === this._segments.length - 1) {
+						this._position = 0;
+						this.dispatchEvent(new SpeechControllerEvent('Complete', null));
+					}
 				};
 				return utterance;
 			});

@@ -29,6 +29,9 @@ function ReadAloudPopup(props) {
 			speechController.addEventListener('ActiveSegmentChange', (event) => {
 				onChange({ activeSegment: event.segment });
 			});
+			speechController.addEventListener('Complete', () => {
+				onChange({ paused: true, activeSegment: null });
+			});
 			setSpeechController(speechController);
 
 			return () => {
