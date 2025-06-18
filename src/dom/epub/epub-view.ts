@@ -23,6 +23,7 @@ import { EPUBFindProcessor } from "./find";
 import DOMView, {
 	DOMViewOptions,
 	DOMViewState,
+	SpotlightKey,
 	NavigateOptions,
 	ReflowableAppearance
 } from "../common/dom-view";
@@ -1318,7 +1319,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					}
 					let selector = this.toSelector(range);
 					if (selector) {
-						this._setHighlight(selector);
+						this._setSpotlight(SpotlightKey.Navigation, selector);
 					}
 				}
 			}

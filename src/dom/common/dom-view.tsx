@@ -135,7 +135,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _suspendHistorySaving = false;
 
-	protected _highlightedPosition: Selector | null = null;
+	protected _spotlights = new Map<SpotlightKey, Selector>();
 
 	protected _pointerMovedWhileDown = false;
 
@@ -637,13 +637,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: a.range.toRange(),
 			})));
 		}
-		if (this._highlightedPosition) {
-			let range = this.toDisplayedRange(this._highlightedPosition);
+		for (let [key, selector] of this._spotlights) {
+			let range = this.toDisplayedRange(selector);
 			if (range) {
 				displayedAnnotations.push({
 					type: 'highlight',
-					color: SELECTION_COLOR,
-					key: '_highlightedPosition',
+					color: this._getSpotlightColor(key),
+					key,
 					range,
 				});
 			}
@@ -1838,20 +1838,22 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	setReadAloudState(state: ReadAloudState): void {
+		const HIGHLIGHT_KEY = SpotlightKey.ReadAloudActiveSegment;
+
 		if (!state.active) {
-			this._setHighlight(null);
+			this._setSpotlight(HIGHLIGHT_KEY, null);
 			return;
 		}
 
 		let position = state.activeSegment?.position;
 		if (isSelector(position)) {
-			this._setHighlight(position, null);
+			this._setSpotlight(HIGHLIGHT_KEY, position, null);
 			setTimeout(() => {
-				this._navigateToSelector(position, { block: 'center', behavior: 'smooth' });
+				this._navigateToSelector(position, { ifNeeded: true, block: 'center', behavior: 'smooth' });
 			});
 		}
 		else {
-			this._setHighlight(null);
+			this._setSpotlight(HIGHLIGHT_KEY, null);
 		}
 
 		if (state.segments !== undefined) {
@@ -1941,18 +1943,34 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _setScale(scale: number): void;
 
-	protected _setHighlight(selector: Selector | null, timeout: number | null = 2000) {
-		this._highlightedPosition = selector;
+	protected _setSpotlight(key: SpotlightKey, selector: Selector | null, timeout: number | null = 2000) {
+		if (selector) {
+			this._spotlights.set(key, selector);
+		}
+		else {
+			this._spotlights.delete(key);
+		}
 		this._renderAnnotations(true);
 
 		if (selector === null || timeout === null) return;
 
 		setTimeout(() => {
-			if (this._highlightedPosition === selector) {
-				this._highlightedPosition = null;
+			if (this._spotlights.get(key) === selector) {
+				this._spotlights.delete(key);
 				this._renderAnnotations(true);
 			}
 		}, timeout);
+	}
+
+	protected _getSpotlightColor(key: SpotlightKey): string {
+		switch (key) {
+			case SpotlightKey.Navigation:
+				return SELECTION_COLOR;
+			case SpotlightKey.ReadAloudActiveSegment:
+				return '#4072e5';
+			default:
+				throw new Error('Unknown highlight key: ' + key);
+		}
 	}
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
@@ -1973,7 +1991,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
-			this._setHighlight(selector);
+			this._setSpotlight(SpotlightKey.Navigation, selector);
 		}
 	}
 
@@ -2069,6 +2087,11 @@ export const enum PageWidth {
 	Narrow = -1,
 	Normal = 0,
 	Full = 1
+}
+
+export const enum SpotlightKey {
+	Navigation = 'Navigation',
+	ReadAloudActiveSegment = 'ReadAloudActiveSegment',
 }
 
 export default DOMView;
