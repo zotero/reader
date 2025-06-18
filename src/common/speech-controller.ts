@@ -19,7 +19,7 @@ class SpeechController extends EventTarget {
 	constructor(options: { segments: Segment[], lang?: string }) {
 		super();
 
-		this._segments = options.segments.filter(segment => segment.text.trim());
+		this._segments = options.segments;
 		this._lang = options.lang;
 
 		this._utterances = this._segments

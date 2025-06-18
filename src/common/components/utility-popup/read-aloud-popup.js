@@ -44,13 +44,13 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		if (!speechController) return;
-		speechController.paused = params.paused;
-	}, [params.paused, speechController]);
+		speechController.voice = params.voice;
+	}, [params.voice, speechController]);
 
 	useEffect(() => {
 		if (!speechController) return;
-		speechController.voice = params.voice;
-	}, [params.voice, speechController]);
+		speechController.paused = params.paused;
+	}, [params.paused, speechController]);
 
 	function handleSpeedChange(event) {
 		let input = event.target;

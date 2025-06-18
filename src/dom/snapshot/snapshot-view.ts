@@ -611,8 +611,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	override setReadAloudState(state: ReadAloudState) {
-		super.setReadAloudState(state);
-
 		if (this._readingMode.enabled
 				|| (this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed)) {
 			super.setReadAloudState(state);

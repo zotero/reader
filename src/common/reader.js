@@ -189,7 +189,7 @@ class Reader {
 			contextMenu: null,
 			readAloudState: {
 				active: false,
-				paused: true,
+				paused: false,
 				activeSegment: null,
 				speed: 1,
 				voice: null,
@@ -873,7 +873,7 @@ class Reader {
 		else {
 			this._handleReadAloudStateChange({
 				active: false,
-				paused: true,
+				paused: false,
 				activeSegment: null,
 			});
 		}
