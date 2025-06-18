@@ -113,7 +113,7 @@ export type ViewStats = {
 	appearance?: Partial<ReflowableAppearance>;
 	fontFamily?: string;
 	outlinePath?: number[];
-	focusModeEnabled?: boolean;
+	readingModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -147,11 +147,7 @@ type ImagePopupParams = {
 	rect: ArrayRect;
 }
 
-type HiddenInFocusModeParams = {
-	type: 'hiddenInFocusMode';
-}
-
-export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams | HiddenInFocusModeParams;
+export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams;
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 

@@ -132,6 +132,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						enableNavigateBack={viewStats.canNavigateBack}
 						enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 						enableNavigateToNextPage={viewStats.canNavigateToNextPage}
+						readingModeEnabled={viewStats.readingModeEnabled}
 						appearancePopup={state.appearancePopup}
 						findPopupOpen={findState.popupOpen}
 						themes={state.themes}
@@ -234,7 +235,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeSpreadMode={props.onChangeSpreadMode}
 						onChangeFlowMode={props.onChangeFlowMode}
 						onChangeAppearance={props.onChangeAppearance}
-						onChangeFocusModeEnabled={props.onChangeFocusModeEnabled}
+						onChangeReadingModeEnabled={props.onChangeReadingModeEnabled}
 						onAddTheme={props.onAddTheme}
 						onChangeTheme={props.onChangeTheme}
 						onOpenThemeContextMenu={props.onOpenThemeContextMenu}
