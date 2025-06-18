@@ -2,6 +2,8 @@
 	@include control-popup;
 	z-index: $z-index-popup;
 	position: fixed; // Don't overflow the body
+	padding: 8px;
+	gap: 8px;
 }
 
 .read-aloud-popup {
