@@ -40,17 +40,10 @@ function ReadAloudPopup(props) {
 	useEffect(() => {
 		if (!speechController) return;
 		speechController.speed = params.speed;
-	}, [params.speed, speechController]);
-
-	useEffect(() => {
-		if (!speechController) return;
 		speechController.voice = params.voice;
-	}, [params.voice, speechController]);
-
-	useEffect(() => {
-		if (!speechController) return;
 		speechController.paused = params.paused;
-	}, [params.paused, speechController]);
+		speechController.update();
+	}, [params.speed, params.voice, params.paused, speechController]);
 
 	function handleSpeedChange(event) {
 		let input = event.target;

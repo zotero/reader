@@ -41,7 +41,7 @@ class SpeechController extends EventTarget {
 			});
 	}
 
-	private _update() {
+	update() {
 		if (this._voice === null) {
 			this._voice = this._getDefaultVoice();
 		}
@@ -66,7 +66,6 @@ class SpeechController extends EventTarget {
 
 	set speed(speed) {
 		this._speed = speed;
-		this._update();
 	}
 
 	get paused() {
@@ -75,7 +74,6 @@ class SpeechController extends EventTarget {
 
 	set paused(paused) {
 		this._paused = paused;
-		this._update();
 	}
 
 	get voices(): Map<string, [string, string][]> {
@@ -105,12 +103,11 @@ class SpeechController extends EventTarget {
 		this._voice = voiceURI && window.speechSynthesis.getVoices().find(
 			voice => voice.voiceURI === voiceURI
 		) || null;
-		this._update();
 	}
 
 	skipBack() {
 		this._position = Math.max(this._position - 1, 0);
-		this._update();
+		this.update();
 		if (this._paused) {
 			this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', this._segments[this._position]));
 		}
@@ -118,7 +115,7 @@ class SpeechController extends EventTarget {
 
 	skipAhead() {
 		this._position = Math.min(this._position + 1, this._utterances.length - 1);
-		this._update();
+		this.update();
 		if (this._paused) {
 			this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', this._segments[this._position]));
 		}
