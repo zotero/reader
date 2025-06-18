@@ -261,6 +261,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					<ReadAloudPopup
 						params={state.readAloudState}
 						onChange={props.onChangeReadAloudState}
+						onOpenVoicePreferences={props.onOpenVoicePreferences}
 						onClose={() => props.onToggleReadAloud(false)}
 					/>
 				)}

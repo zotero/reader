@@ -19,7 +19,10 @@ import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
 	getCurrentColorScheme,
-	getImageDataURL, isMac,
+	getImageDataURL,
+	isLinux,
+	isMac,
+	isWin,
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
@@ -300,6 +303,7 @@ class Reader {
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
@@ -843,6 +847,18 @@ class Reader {
 		}
 
 		this._updateState({ readAloudState: state });
+	}
+
+	openVoicePreferences() {
+		if (isMac()) {
+			this._onOpenLink('x-apple.systempreferences:com.apple.preference.universalaccess?SpokenContent');
+		}
+		else if (isWin()) {
+			this._onOpenLink('ms-settings:speech');
+		}
+		else if (isLinux()) {
+			this._onOpenLink('https://github.com/brailcom/speechd'); // Sorry!
+		}
 	}
 
 	toggleReadAloudPopup(active) {

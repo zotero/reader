@@ -14,7 +14,7 @@ import SpeechController from "../../speech-controller";
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
-	let { params, onChange, onClose } = props;
+	let { params, onChange, onOpenVoicePreferences, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speechController, setSpeechController] = useState(null);
@@ -55,6 +55,14 @@ function ReadAloudPopup(props) {
 	function handleSpeedChange(event) {
 		let input = event.target;
 		onChange({ speed: parseFloat(input.value) });
+	}
+
+	function handleVoiceChange(event) {
+		if (event.target.value === 'more-voices') {
+			onOpenVoicePreferences();
+			return;
+		}
+		onChange({ voice: event.target.value });
 	}
 
 	let displayNames = new Intl.DisplayNames(undefined, {
@@ -119,7 +127,7 @@ function ReadAloudPopup(props) {
 				<select
 					value={params.voice || speechController.voice || ''}
 					tabIndex="-1"
-					onChange={(event) => onChange({ voice: event.target.value })}
+					onChange={handleVoiceChange}
 				>
 					{Array.from(speechController.voices).map(([locale, voices]) => (
 						<optgroup key={locale} label={displayNames.of(locale)}>
@@ -128,6 +136,7 @@ function ReadAloudPopup(props) {
 							))}
 						</optgroup>
 					))}
+					<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
 				</select>
 			</>}
 		</UtilityPopup>
