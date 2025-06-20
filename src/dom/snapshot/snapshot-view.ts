@@ -688,7 +688,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 		// Reinitialize outline to remove inaccessible sections
 		this._initOutline();
-		this._handleViewUpdate();
+		// Wait a frame due to layout not updating synchronously after <body>
+		// is replaced in Firefox
+		requestAnimationFrame(() => {
+			this._handleViewUpdate();
+		});
 	}
 }
 
