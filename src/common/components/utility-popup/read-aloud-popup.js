@@ -19,7 +19,6 @@ function ReadAloudPopup(props) {
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speechController, setSpeechController] = useState(null);
-	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
 
 	useEffect(() => {
 		if (params.segments) {
@@ -49,45 +48,6 @@ function ReadAloudPopup(props) {
 		speechController.paused = params.paused;
 		speechController.update();
 	}, [params.speed, params.voice, params.paused, speechController]);
-
-	function handleSpeedChange(event) {
-		let input = event.target;
-		onChange({ speed: parseFloat(input.value) });
-	}
-
-	// Pause while actively changing speed to avoid audio jank
-	function handleSpeedPointerDown() {
-		setWasPausedBeforeChangingSpeed(params.paused);
-		onChange({ paused: true });
-	}
-
-	function handleSpeedPointerUp() {
-		onChange({ paused: wasPausedBeforeChangingSpeed });
-	}
-
-	function handleLangChange(event) {
-		onChange({ lang: event.target.value });
-	}
-
-	function handleVoiceChange(event) {
-		if (event.target.value === 'more-voices') {
-			onOpenVoicePreferences();
-			return;
-		}
-		onChange({ voice: event.target.value });
-	}
-
-	let resolvedLang = useMemo(() => {
-		if (!speechController || !speechController.languages.length) {
-			return undefined;
-		}
-		return resolveLocale(params.lang, speechController.languages);
-	}, [params.lang, speechController]);
-
-	let displayNames = new Intl.DisplayNames(undefined, {
-		type: 'language',
-		languageDisplay: 'standard'
-	});
 
 	return (
 		<UtilityPopup className="read-aloud-popup">
@@ -129,48 +89,102 @@ function ReadAloudPopup(props) {
 					><IconClose/></button>
 				</div>
 			</div>
-			{speechController && showOptions && <>
-				<div className="row speed" data-tabstop={1}>
-					<input
-						id="read-aloud-speed"
-						type="range"
-						min="0.5"
-						max="2.0"
-						step="0.1"
-						value={params.speed}
-						tabIndex="-1"
-						onChange={handleSpeedChange}
-						onPointerDown={handleSpeedPointerDown}
-						onPointerUp={handleSpeedPointerUp}
-						onPointerCancel={handleSpeedPointerUp}
-					/>
-					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
-				</div>
-				<Select
-					value={resolvedLang}
-					tabIndex="-1"
-					onChange={handleLangChange}
-				>
-					{[...speechController.languages].map(language => (
-						<option key={language} value={language}>{displayNames.of(language)}</option>
-					))}
-				</Select>
-				<div className="row voices" data-tabstop={1}>
-					<Select
-						value={params.voice || speechController.voice || ''}
-						tabIndex="-1"
-						onChange={handleVoiceChange}
-					>
-						{[...speechController.getVoices(resolvedLang)].map(([id, name], i) => (
-							<option key={i} value={id}>{name}</option>
-						))}
-						<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
-					</Select>
-					<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
-				</div>
-			</>}
+			{speechController && showOptions && (
+				<ReadAloudOptions
+					params={params}
+					speechController={speechController}
+					onChange={onChange}
+					onOpenVoicePreferences={onOpenVoicePreferences}
+				/>
+			)}
 		</UtilityPopup>
 	);
+}
+
+function ReadAloudOptions({ params, speechController, onChange, onOpenVoicePreferences }) {
+	const { l10n } = useLocalization();
+
+	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
+
+	function handleSpeedChange(event) {
+		let input = event.target;
+		onChange({ speed: parseFloat(input.value) });
+	}
+
+	// Pause while actively changing speed to avoid audio jank
+	function handleSpeedPointerDown() {
+		setWasPausedBeforeChangingSpeed(params.paused);
+		onChange({ paused: true });
+	}
+
+	function handleSpeedPointerUp() {
+		onChange({ paused: wasPausedBeforeChangingSpeed });
+	}
+
+	function handleLangChange(event) {
+		onChange({ lang: event.target.value });
+	}
+
+	function handleVoiceChange(event) {
+		if (event.target.value === 'more-voices') {
+			onOpenVoicePreferences();
+			return;
+		}
+		onChange({ voice: event.target.value });
+	}
+
+	let resolvedLang = useMemo(() => {
+		if (!speechController || !speechController.languages.length) {
+			return undefined;
+		}
+		return resolveLocale(params.lang, speechController.languages);
+	}, [params.lang, speechController]);
+
+	let displayNames = new Intl.DisplayNames(undefined, {
+		type: 'language',
+		languageDisplay: 'standard'
+	});
+
+	return <>
+		<div className="row speed" data-tabstop={1}>
+			<input
+				id="read-aloud-speed"
+				type="range"
+				min="0.5"
+				max="2.0"
+				step="0.1"
+				value={params.speed}
+				tabIndex="-1"
+				onChange={handleSpeedChange}
+				onPointerDown={handleSpeedPointerDown}
+				onPointerUp={handleSpeedPointerUp}
+				onPointerCancel={handleSpeedPointerUp}
+			/>
+			<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
+		</div>
+		<Select
+			value={resolvedLang}
+			tabIndex="-1"
+			onChange={handleLangChange}
+		>
+			{[...speechController.languages].map(language => (
+				<option key={language} value={language}>{displayNames.of(language)}</option>
+			))}
+		</Select>
+		<div className="row voices" data-tabstop={1}>
+			<Select
+				value={params.voice || speechController.voice || ''}
+				tabIndex="-1"
+				onChange={handleVoiceChange}
+			>
+				{[...speechController.getVoices(resolvedLang)].map(([id, name], i) => (
+					<option key={i} value={id}>{name}</option>
+				))}
+				<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
+			</Select>
+			<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
+		</div>
+	</>;
 }
 
 function resolveLocale(locale, locales) {
