@@ -166,7 +166,7 @@ function ReadAloudPopup(props) {
 						))}
 						<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
 					</Select>
-					<button className="help-button">?</button>
+					<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
 				</div>
 			</>}
 		</UtilityPopup>
