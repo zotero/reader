@@ -22,6 +22,7 @@ import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
 import { expandRect, getBoundingRect, rectsEqual } from "../../lib/rect";
 import cx from "classnames";
+import { SpotlightKey } from "../../dom-view";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -313,6 +314,20 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let rtl = isRTL(annotation.range.commonAncestorContainer);
 	let underline = annotation.type === 'underline';
 	let rectGroup = useMemo(() => {
+		if (annotation.key === SpotlightKey.ReadAloudActiveSegment) {
+			let rect = expandRect(getBoundingRect(rects), 6);
+			return <g ref={rectGroupRef}>
+				<rect
+					x={rect.x}
+					y={rect.y}
+					width={rect.width}
+					height={rect.height}
+					rx={5}
+					opacity="20%"
+				/>
+			</g>;
+		}
+
 		return <g ref={rectGroupRef}>
 			{rects.map((rect, i) => (
 				<rect
@@ -325,7 +340,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				/>
 			))}
 		</g>;
-	}, [rects, rtl, underline, vert]);
+	}, [annotation.key, rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
 		if (isResizing) {
