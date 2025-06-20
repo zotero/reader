@@ -182,7 +182,7 @@ function resolveLocale(locale, locales) {
 	}
 
 	// If there's a locale with just the language, use that
-	let langCode = locale.substr(0, 2);
+	let langCode = locale.substring(0, 2);
 	if (locales.includes(langCode)) {
 		return langCode;
 	}
