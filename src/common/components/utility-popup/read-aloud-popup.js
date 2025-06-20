@@ -78,7 +78,7 @@ function ReadAloudPopup(props) {
 	}
 
 	let resolvedLang = useMemo(() => {
-		if (!speechController) {
+		if (!speechController || !speechController.languages) {
 			return undefined;
 		}
 		return resolveLocale(params.lang, speechController.languages);
