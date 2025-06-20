@@ -10,6 +10,7 @@ import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import { useLocalization } from '@fluent/react';
 import SpeechController from "../../speech-controller";
+import Select from "../common/select";
 
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
@@ -145,7 +146,7 @@ function ReadAloudPopup(props) {
 					/>
 					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
 				</div>
-				<select
+				<Select
 					value={resolvedLang}
 					tabIndex="-1"
 					onChange={handleLangChange}
@@ -153,9 +154,9 @@ function ReadAloudPopup(props) {
 					{[...speechController.languages].map(language => (
 						<option key={language} value={language}>{displayNames.of(language)}</option>
 					))}
-				</select>
-				<div className="row voices">
-					<select
+				</Select>
+				<div className="row voices" data-tabstop={1}>
+					<Select
 						value={params.voice || speechController.voice || ''}
 						tabIndex="-1"
 						onChange={handleVoiceChange}
@@ -164,7 +165,7 @@ function ReadAloudPopup(props) {
 							<option key={i} value={id}>{name}</option>
 						))}
 						<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
-					</select>
+					</Select>
 					<button className="help-button">?</button>
 				</div>
 			</>}
