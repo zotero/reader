@@ -151,6 +151,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangePageNumber={props.onChangePageNumber}
 						onChangeTool={props.onChangeTool}
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
+						onToggleReadingMode={props.onToggleReadingMode}
 						onToggleAppearancePopup={props.onToggleAppearancePopup}
 						onToggleFind={props.onToggleFind}
 						onToggleContextPane={props.onToggleContextPane}
@@ -235,7 +236,6 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeSpreadMode={props.onChangeSpreadMode}
 						onChangeFlowMode={props.onChangeFlowMode}
 						onChangeAppearance={props.onChangeAppearance}
-						onChangeReadingModeEnabled={props.onChangeReadingModeEnabled}
 						onAddTheme={props.onAddTheme}
 						onChangeTheme={props.onChangeTheme}
 						onOpenThemeContextMenu={props.onOpenThemeContextMenu}

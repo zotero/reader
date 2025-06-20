@@ -358,8 +358,8 @@ class Reader {
 						onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 						onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 						onOpenLink={this._onOpenLink}
+						onToggleReadingMode={this._onToggleReadingMode.bind(this)}
 						onChangeAppearance={this._handleAppearanceChange.bind(this)}
-						onChangeReadingModeEnabled={this._handleReadingModeEnabledChange.bind(this)}
 						onChangeFindState={this._handleFindStateChange.bind(this)}
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
@@ -747,8 +747,11 @@ class Reader {
 		this._secondaryView?.setAppearance(params);
 	}
 
-	_handleReadingModeEnabledChange(enabled) {
+	_onToggleReadingMode(enabled) {
 		this._ensureType('snapshot');
+		if (enabled === undefined) {
+			enabled = !this._state.primaryViewStats.readingModeEnabled;
+		}
 		try {
 			this._primaryView?.setReadingModeEnabled(enabled);
 			this._secondaryView?.setReadingModeEnabled(enabled);

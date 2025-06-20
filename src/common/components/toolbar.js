@@ -13,6 +13,8 @@ import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
 import IconChevronLeft from '../../../res/icons/20/chevron-left.svg';
 import IconChevronUp from '../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../res/icons/20/chevron-down.svg';
+import IconReadingModeEnabled from '../../../res/icons/20/reading-mode-enabled.svg';
+import IconReadingMode from '../../../res/icons/20/reading-mode.svg';
 import IconFormatText from '../../../res/icons/20/format-text.svg';
 import IconHighlight from '../../../res/icons/20/annotate-highlight.svg';
 import IconUnderline from '../../../res/icons/20/annotate-underline.svg';
@@ -106,13 +108,22 @@ function Toolbar(props) {
 					disabled={!props.enableZoomReset}
 					onClick={props.onZoomReset}
 				><IconAutoWidth/></button>
+				{props.type === 'snapshot' && (
+					<button
+						id="reading-mode"
+						className={cx('toolbar-button', { active: props.readingModeEnabled })}
+						title={l10n.getString('reader-reading-mode')}
+						tabIndex={-1}
+						onClick={() => props.onToggleReadingMode()}
+					>{props.readingModeEnabled ? <IconReadingModeEnabled/> : <IconReadingMode/>}</button>
+				)}
 				<button
 					id="appearance"
 					className={cx('toolbar-button', { active: props.appearancePopup })}
 					title={l10n.getString('reader-appearance')}
 					tabIndex={-1}
 					onClick={() => props.onToggleAppearancePopup()}
-				>{props.readingModeEnabled ? <IconFormatTextFocus/> : <IconFormatText/>}</button>
+				><IconFormatText/></button>
 				<div className="divider"/>
 				<button
 					id="navigateBack"
