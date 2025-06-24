@@ -1117,8 +1117,8 @@ class Reader {
 	deleteAnnotations(ids) {
 		if (ids.length > 1) {
 			if (!this._onConfirm(
-				'',
-				this._getString('reader-delete-annotation', { count: ids.length }),
+				this._getString('reader-prompt-delete-annotations-title'),
+				this._getString('reader-prompt-delete-annotations-text', { count: ids.length }),
 				this._getString('general-delete')
 			)) {
 				return;
