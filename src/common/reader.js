@@ -24,7 +24,7 @@ import {
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
 import { flushSync } from 'react-dom';
-import { getLocalizedString } from '../fluent';
+import { addFTL, getLocalizedString } from '../fluent';
 
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
@@ -72,6 +72,12 @@ class Reader {
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
+
+		if (Array.isArray(options.ftl)) {
+			for (let ftl of options.ftl) {
+				addFTL(ftl);
+			}
+		}
 
 		this._readerRef = React.createRef();
 		this._primaryView = null;
@@ -851,8 +857,8 @@ class Reader {
 		this._readerRef.current.sidebarEditAnnotationText(id);
 	}
 
-	_getString(name) {
-		return getLocalizedString(name);
+	_getString(name, args) {
+		return getLocalizedString(name, args);
 	}
 
 	_createView(primary, location) {

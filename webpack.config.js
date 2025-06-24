@@ -102,13 +102,19 @@ function generateReaderConfig(build) {
 			].filter(Boolean)
 		},
 		resolve: {
-			extensions: ['.js', '.ts', '.tsx']
+			extensions: ['.js', '.ts', '.tsx'],
+			...(build === 'zotero' && {
+				alias: {
+					'../locales/en-US/zotero.ftl': false,
+					'../locales/en-US/reader.ftl': false,
+				},
+			})
 		},
 		plugins: [
 			new ZoteroLocalePlugin({
 				files: ['zotero.ftl', 'reader.ftl'],
 				locales: ['en-US'],
-				commitHash: '3f84856e1e4bb5ce6b0c372f3570b12f6fc3df2e',
+				commitHash: '37f8c4d4f425244b5ead77bb7e129d828f62fb43',
 			}),
 			new CleanWebpackPlugin({
 				cleanOnceBeforeBuildPatterns: ['**/*', '!pdf/**']

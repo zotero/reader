@@ -9,8 +9,14 @@ export let bundle = new FluentBundle('en-US', {
 	},
 });
 
-bundle.addResource(new FluentResource(zotero));
-bundle.addResource(new FluentResource(reader));
+function isString(x) {
+	return typeof x === 'string' && x.trim().length > 0;
+}
+
+if (isString(zotero) && isString(reader)) {
+	bundle.addResource(new FluentResource(zotero));
+	bundle.addResource(new FluentResource(reader));
+}
 
 export function getLocalizedString(key, args = {}) {
 	const message = bundle.getMessage(key);
@@ -20,4 +26,8 @@ export function getLocalizedString(key, args = {}) {
 		console.warn(`Localization key '${key}' not found`);
 		return key;
 	}
+}
+
+export function addFTL(ftl) {
+	bundle.addResource(new FluentResource(ftl));
 }

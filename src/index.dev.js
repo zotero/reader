@@ -2,7 +2,6 @@ import Reader from './common/reader';
 import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
-import './fluent';
 
 window.dev = true;
 

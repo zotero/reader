@@ -1,5 +1,4 @@
 import Reader from './common/reader';
-import './fluent';
 
 window.createReader = (options) => {
 	if (window._reader) {
