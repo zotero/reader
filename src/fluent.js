@@ -1,7 +1,7 @@
 import { FluentBundle, FluentResource } from '@fluent/bundle';
 
-import zotero from '../locales/en-US/zotero.ftl';
-import reader from '../locales/en-US/reader.ftl';
+import zoteroFTL from '../locales/en-US/zotero.ftl';
+import readerFTL from '../locales/en-US/reader.ftl';
 
 export let bundle = new FluentBundle('en-US', {
 	functions: {
@@ -9,14 +9,8 @@ export let bundle = new FluentBundle('en-US', {
 	},
 });
 
-function isString(x) {
-	return typeof x === 'string' && x.trim().length > 0;
-}
-
-if (isString(zotero) && isString(reader)) {
-	bundle.addResource(new FluentResource(zotero));
-	bundle.addResource(new FluentResource(reader));
-}
+bundle.addResource(new FluentResource(zoteroFTL));
+bundle.addResource(new FluentResource(readerFTL));
 
 export function getLocalizedString(key, args = {}) {
 	const message = bundle.getMessage(key);
@@ -29,5 +23,5 @@ export function getLocalizedString(key, args = {}) {
 }
 
 export function addFTL(ftl) {
-	bundle.addResource(new FluentResource(ftl));
+	bundle.addResource(new FluentResource(ftl), { allowOverrides: true });
 }

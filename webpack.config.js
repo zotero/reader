@@ -103,12 +103,6 @@ function generateReaderConfig(build) {
 		},
 		resolve: {
 			extensions: ['.js', '.ts', '.tsx'],
-			...(build === 'zotero' && {
-				alias: {
-					'../locales/en-US/zotero.ftl': false,
-					'../locales/en-US/reader.ftl': false,
-				},
-			})
 		},
 		plugins: [
 			new ZoteroLocalePlugin({
