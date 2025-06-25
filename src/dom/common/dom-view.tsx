@@ -1879,16 +1879,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let position = state.activeSegment?.position;
 		if (isSelector(position)) {
 			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, position, null);
-			if (!state.paused) {
-				setTimeout(() => {
-					this._navigateToSelector(position, {
-						ifNeeded: true,
-						visibilityMargin: -this._iframeWindow.innerHeight / 3, // Scroll early, scroll not quite as often
-						block: 'center',
-						behavior: 'smooth'
-					});
+			setTimeout(() => {
+				this._navigateToSelector(position, {
+					ifNeeded: true,
+					visibilityMargin: -this._iframeWindow.innerHeight / 3, // Scroll early, scroll not quite as often
+					block: 'center',
+					behavior: 'smooth'
 				});
-			}
+			});
 		}
 		else {
 			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
