@@ -14,34 +14,37 @@ class SpeechController extends EventTarget {
 
 	private _position = 0;
 
+	private _backwardStopPosition: number | null;
+
+	private _forwardStopPosition: number | null;
+
 	private _paused = true;
 
-	constructor(options: { segments: Segment[], lang?: string }) {
+	constructor(options: {
+		segments: Segment[],
+		lang?: string,
+		backwardStopPosition: number | null,
+		forwardStopPosition: number | null,
+	}) {
 		super();
 
 		this._segments = options.segments;
 		this._lang = options.lang;
+		this._backwardStopPosition = options.backwardStopPosition;
+		this._forwardStopPosition = options.forwardStopPosition;
+
+		if (this._backwardStopPosition !== null) {
+			this._position = this._backwardStopPosition;
+		}
 
 		this._utterances = this._segments
-			.map((segment, i) => {
+			.map((segment, index) => {
 				let utterance = new SpeechSynthesisUtterance(segment.text);
 				if (this._lang !== undefined) {
 					utterance.lang = this._lang;
 				}
-				utterance.onstart = () => {
-					this._position = i;
-					this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', segment));
-				};
-				utterance.onend = () => {
-					// Don't dispatch ActiveSegmentChange if segment ended due to pause
-					if (this._paused) return;
-					this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', null));
-
-					if (i === this._segments.length - 1) {
-						this._position = 0;
-						this.dispatchEvent(new SpeechControllerEvent('Complete', null));
-					}
-				};
+				utterance.onstart = () => this._handleSegmentStart(segment, index);
+				utterance.onend = () => this._handleSegmentEnd(segment, index);
 				return utterance;
 			});
 	}
@@ -57,7 +60,7 @@ class SpeechController extends EventTarget {
 		// (waking from sleep will unpause in Firefox, pausing before .speak()
 		// has no effect in Chrome, ...)
 		if (!this._paused) {
-			for (let utterance of this._utterances.slice(this._position)) {
+			for (let utterance of this._buildUtteranceQueue()) {
 				utterance.rate = this._speed;
 				utterance.voice = this._voice;
 				window.speechSynthesis.speak(utterance);
@@ -128,6 +131,45 @@ class SpeechController extends EventTarget {
 
 	dispose() {
 		window.speechSynthesis.cancel();
+	}
+
+	private _handleSegmentStart(segment: Segment, index: number) {
+		this._position = index;
+		this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', segment));
+	}
+
+	private _handleSegmentEnd(_segment: Segment, _index: number) {
+		// Don't dispatch ActiveSegmentChange if segment ended due to pause
+		if (this._paused) {
+			return;
+		}
+		this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', null));
+
+		if (!window.speechSynthesis.pending) {
+			if (this._position === this._segments.length - 1) {
+				this._position = 0;
+			}
+			else {
+				this._position++;
+			}
+			this.dispatchEvent(new SpeechControllerEvent('Complete', null));
+		}
+	}
+
+	private _buildUtteranceQueue() {
+		// If we're within the stops, return the utterances up to the forward stop
+		if (this._backwardStopPosition !== null
+				&& this._forwardStopPosition !== null
+				&& this._position >= this._backwardStopPosition
+				&& this._position < this._forwardStopPosition) {
+			return this._utterances.slice(this._position, this._forwardStopPosition);
+		}
+		else {
+			// Otherwise, return everything after our current position, and clear the stops
+			this._backwardStopPosition = null;
+			this._forwardStopPosition = null;
+			return this._utterances.slice(this._position);
+		}
 	}
 
 	private _getDefaultVoice() {

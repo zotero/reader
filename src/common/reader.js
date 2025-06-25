@@ -190,6 +190,9 @@ class Reader {
 			readAloudState: {
 				active: false,
 				paused: false,
+				segments: null,
+				backwardStopPosition: null,
+				forwardStopPosition: null,
 				activeSegment: null,
 				speed: 1,
 				voice: null,
@@ -841,6 +844,10 @@ class Reader {
 	}
 
 	_handleReadAloudStateChange(state) {
+		// Ignore late changes due to event handlers after popup has closed
+		if (!this._state.readAloudState.active && !state.active) {
+			return;
+		}
 		state = { ...this._state.readAloudState, ...state };
 		if (state.voice !== this._state.readAloudState.voice) {
 			this._onSetReadAloudVoice(state.lang, state.voice);
@@ -874,6 +881,9 @@ class Reader {
 			this._handleReadAloudStateChange({
 				active: false,
 				paused: false,
+				segments: null,
+				backwardStopPosition: null,
+				forwardStopPosition: null,
 				activeSegment: null,
 			});
 		}

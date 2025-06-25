@@ -176,8 +176,10 @@ export type FindState = {
 export type ReadAloudState = {
 	active: boolean;
 	paused: boolean;
-	segments?: Segment[];
+	segments: Segment[] | null;
 	activeSegment: Segment | null;
+	backwardStopPosition: number | null;
+	forwardStopPosition: number | null;
 	lang?: string;
 	speed: number;
 	voice: string | null;

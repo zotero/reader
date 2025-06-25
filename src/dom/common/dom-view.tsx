@@ -61,9 +61,10 @@ import {
 import { debounce } from "../../common/lib/debounce";
 import {
 	getBoundingRect,
+	isPageRectFullyContained,
 	isPageRectVisible,
 	pageRectToClientRect,
-	rectContains
+	rectContainsPoint
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
@@ -1320,7 +1321,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (selection && !selection.isCollapsed || this._readAloudUsingSelection) {
 				this.setReadAloudState({
 					...this._readAloudState,
-					segments: undefined,
+					segments: null,
 					activeSegment: null,
 				});
 			}
@@ -1723,7 +1724,22 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let selectionBoundingRect = getBoundingRect(
 			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
 		);
-		return rectContains(selectionBoundingRect, x, y);
+		return rectContainsPoint(selectionBoundingRect, x, y);
+	}
+
+	protected _keepSelection<T>(block: () => T): T {
+		let selection = this._iframeDocument.getSelection();
+		if (!selection || selection.isCollapsed) {
+			return block();
+		}
+
+		let rangesBefore = getSelectionRanges(selection).map(r => new PersistentRange(r));
+		let result = block();
+		selection.removeAllRanges();
+		for (let range of rangesBefore) {
+			selection.addRange(range.toRange());
+		}
+		return result;
 	}
 
 	destroy() {
@@ -1865,7 +1881,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, position, null);
 			if (!state.paused) {
 				setTimeout(() => {
-					this._navigateToSelector(position, { ifNeeded: true, block: 'center', behavior: 'smooth' });
+					this._navigateToSelector(position, {
+						ifNeeded: true,
+						visibilityMargin: -this._iframeWindow.innerHeight / 3, // Scroll early, scroll not quite as often
+						block: 'center',
+						behavior: 'smooth'
+					});
 				});
 			}
 		}
@@ -1873,21 +1894,78 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
 		}
 
-		if (state.segments !== undefined) {
+		if (state.segments !== null) {
 			return;
 		}
 
+		let selection = (
+			!this._iframeDocument.getSelection()?.isCollapsed && this._iframeDocument.getSelection()
+		) || null;
+		this._readAloudUsingSelection = !!selection;
+
+		let segments = this._getReadAloudSegments();
+		let backwardStopPosition: number | null = null;
+		let forwardStopPosition: number | null = null;
+		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
+
+		// Figure out where to put the stop positions
+		// If there's a selection, we start at the start of the selection and stop at the end
+		// If there's no selection, we read from the first visible block of text
+		for (let [i, segment] of segments.entries()) {
+			let range = this.toDisplayedRange(segment.position as Selector);
+
+			let isContained: boolean;
+			if (!range) {
+				isContained = false;
+			}
+			else if (selection) {
+				isContained
+					// If the selection fully contains this segment...
+					= (range.compareBoundaryPoints(Range.START_TO_START, selection.getRangeAt(0)) >= 0
+						&& range.compareBoundaryPoints(Range.END_TO_END, selection.getRangeAt(0)) <= 0)
+					// ...Or this segment fully contains the selection
+					|| (selection.getRangeAt(0).compareBoundaryPoints(Range.START_TO_START, range) >= 0
+						&& selection.getRangeAt(0).compareBoundaryPoints(Range.END_TO_END, range) <= 0);
+			}
+			else {
+				isContained = isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow);
+				console.log(getBoundingPageRect(range))
+			}
+
+			if (isContained) {
+				if (backwardStopPosition === null) {
+					backwardStopPosition = i;
+				}
+				// If we're reading the selection, stop at the end
+				// Otherwise (when we're using visibility), continue below the fold
+				if (selection) {
+					forwardStopPosition = i + 1;
+				}
+				else {
+					break;
+				}
+			}
+		}
+
+		this._options.onSetReadAloudState({
+			...state,
+			segments,
+			backwardStopPosition,
+			forwardStopPosition,
+			lang,
+			voice,
+		});
+	}
+
+	protected _getReadAloudSegments(): Segment[] {
 		let segments: Segment[] = [];
 
-		this._readAloudUsingSelection = this._iframeDocument.getSelection() !== null
-			&& !this._iframeDocument.getSelection()!.isCollapsed;
-		let rootRanges = this._readAloudUsingSelection
-			? [this._iframeDocument.getSelection()!.getRangeAt(0)]
-			: this._getRoots(true).map((root) => {
-				let range = this._iframeDocument.createRange();
-				range.selectNodeContents(root);
-				return range;
-			});
+		let rootRanges = this._getRoots(true).map((root) => {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(root);
+			return range;
+		});
 
 		for (let rootRange of rootRanges) {
 			// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
@@ -1928,15 +2006,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				if (!text) continue;
 				let position = this.toSelector(elementRange);
 				if (!position) continue;
-
 				segments.push({ text, position });
 			}
 		}
 
-		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
-		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
-
-		this._options.onSetReadAloudState({ ...state, segments, lang, voice });
+		return segments;
 	}
 
 	// ***
@@ -2096,6 +2170,7 @@ export interface DOMViewState {
 export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
 	block?: 'center' | 'start';
 	ifNeeded?: boolean;
+	visibilityMargin?: number;
 	offsetBlock?: number;
 }
 

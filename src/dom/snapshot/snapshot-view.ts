@@ -5,8 +5,7 @@ import {
 	NavLocation,
 	NewAnnotation,
 	ViewStats,
-	OutlineItem,
-	ReadAloudState
+	OutlineItem
 } from "../../common/types";
 import {
 	getBoundingPageRect,
@@ -32,12 +31,13 @@ import {
 import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import injectCSS from './stylesheets/inject.scss';
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
-import type { DynamicThemeFix } from "darkreader";
+import { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
 import { ReadingMode } from "./reading-mode";
+import { Segment } from "../../common/speech-controller";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -413,6 +413,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 		let elem = getStartElement(range);
 		if (elem) {
+			if (options.ifNeeded && isPageRectVisible(
+				getBoundingPageRect(elem),
+				this._iframeWindow,
+				options.visibilityMargin ?? 0
+			)) {
+				return;
+			}
 			elem.scrollIntoView(options);
 			// Remember which node was navigated to for screen readers to place
 			// virtual cursor on it later. Used for navigating between sections in the outline.
@@ -421,7 +428,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			});
 		}
 
-		if (options.ifNeeded && isPageRectVisible(getBoundingPageRect(range), this._iframeWindow, 0)) {
+		if (options.ifNeeded && isPageRectVisible(
+			getBoundingPageRect(range),
+			this._iframeWindow,
+			options.visibilityMargin ?? 0
+		)) {
 			return;
 		}
 
@@ -610,21 +621,21 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	override setReadAloudState(state: ReadAloudState) {
-		if (this._readingMode.enabled
-				|| (this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed)) {
-			super.setReadAloudState(state);
-			return;
+	protected override _getReadAloudSegments(): Segment[] {
+		if (this._readingMode.enabled) {
+			return super._getReadAloudSegments();
 		}
 
-		try {
-			this._readingMode.enabled = true;
-			super.setReadAloudState(state);
-		}
-		finally {
-			this._readingMode.enabled = false;
-			this._handleViewUpdate();
-		}
+		return this._keepSelection(() => {
+			try {
+				this._readingMode.enabled = true;
+				return super._getReadAloudSegments();
+			}
+			finally {
+				this._readingMode.enabled = false;
+				this._handleViewUpdate();
+			}
+		});
 	}
 
 	protected _setScale(scale: number) {

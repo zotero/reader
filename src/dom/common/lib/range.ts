@@ -1,6 +1,6 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
 import { closestElement, iterateWalker } from "./nodes";
-import { getBoundingRect, isPageRectVisible, rectIntersects } from "./rect";
+import { getBoundingRect, isPageRectVisible, rectsIntersect } from "./rect";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
@@ -284,7 +284,7 @@ export function getColumnSeparatedPageRects(range: Range, visibleOnly = true): D
 		// are within this column
 		let rangeRectsWithinColumn = [];
 		for (let rangeRect of rangeRects) {
-			if (rectIntersects(rangeRect, columnRect)) {
+			if (rectsIntersect(rangeRect, columnRect)) {
 				rangeRectsWithinColumn.push(rangeRect);
 				rangeRects.delete(rangeRect);
 			}

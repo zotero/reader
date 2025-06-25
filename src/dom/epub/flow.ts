@@ -6,7 +6,7 @@ import EPUBView, { SpreadMode } from "./epub-view";
 import { getBoundingPageRect, PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
 import { getSelectionRanges } from "../common/lib/selection";
-import { isPageRectVisible, rectContains } from "../common/lib/rect";
+import { isPageRectVisible, rectContainsPoint } from "../common/lib/rect";
 import Section from "epubjs/types/section";
 import SectionRenderer from "./section-renderer";
 
@@ -340,9 +340,11 @@ export class ScrolledFlow extends AbstractFlow {
 	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void {
 		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
 
-		if (options?.ifNeeded
-				&& (rect.top >= 0 && rect.bottom < this._iframe.clientHeight)
-				&& (rect.left >= 0 && rect.left < this._iframe.clientWidth)) {
+		if (options?.ifNeeded && isPageRectVisible(
+			getBoundingPageRect(target),
+			this._iframeWindow,
+			options.visibilityMargin ?? 0
+		)) {
 			return;
 		}
 
@@ -614,7 +616,11 @@ export class PaginatedFlow extends AbstractFlow {
 
 		this.currentSectionIndex = index;
 
-		if (options?.ifNeeded && isPageRectVisible(getBoundingPageRect(target), this._iframeWindow, 0)) {
+		if (options?.ifNeeded && isPageRectVisible(
+			getBoundingPageRect(target),
+			this._iframeWindow,
+			options.visibilityMargin ?? 0
+		)) {
 			return;
 		}
 
@@ -807,7 +813,7 @@ export class PaginatedFlow extends AbstractFlow {
 				selectionRect.y -= 40;
 				selectionRect.width += 80;
 				selectionRect.height += 80;
-				if (rectContains(selectionRect, event.clientX, event.clientY)) {
+				if (rectContainsPoint(selectionRect, event.clientX, event.clientY)) {
 					console.log('Ignoring pointerdown near selection');
 					return;
 				}
