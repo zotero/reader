@@ -680,7 +680,7 @@ export class PaginatedFlow extends AbstractFlow {
 			this.navigateToPreviousSection();
 			this._sectionsContainer.scrollTo({
 				left: this._sectionsContainer.scrollWidth,
-				top: this._sectionsContainer.scrollHeight
+				top: this._sectionsContainer.offsetHeight - this._spreadHeight - this._sectionsContainer.scrollHeight
 			});
 			this._onViewUpdate();
 			return;
