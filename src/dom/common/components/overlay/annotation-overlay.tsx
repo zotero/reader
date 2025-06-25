@@ -22,6 +22,7 @@ import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
 import { expandRect, getBoundingRect, rectsEqual } from "../../lib/rect";
 import cx from "classnames";
+import { SpotlightKey } from "../../dom-view";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -269,6 +270,8 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 
 	let allowResize = selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint();
 
+	let isSpotlight = annotation.key === SpotlightKey.ReadAloudActiveSegment;
+
 	useEffect(() => {
 		if (!allowResize && isResizing) {
 			handleResizeEnd(annotation, true);
@@ -276,14 +279,17 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	}, [allowResize, annotation, handleResizeEnd, isResizing]);
 
 	let { rects, interactiveRects, commentIconPosition } = useMemo(() => {
-		let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
+		let ranges = isSpotlight ? [annotation.range] : splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
 		let rects = new Map<string, DOMRect>();
 		let interactiveRects = new Set<DOMRect>();
 		for (let range of ranges) {
 			let closestInteractiveElement = range.startContainer.parentElement?.closest('a, area');
-			for (let rect of getPageRects(range)) {
+			for (let rect of isSpotlight ? getColumnSeparatedPageRects(range) : getPageRects(range)) {
 				if (rect.width == 0 || rect.height == 0) {
 					continue;
+				}
+				if (isSpotlight) {
+					rect = expandRect(rect, 6);
 				}
 				let key = JSON.stringify(rect);
 				if (!rects.has(key)) {
@@ -307,7 +313,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		}
 
 		return { rects: Array.from(rects.values()), interactiveRects, commentIconPosition };
-	}, [annotation, isResizing, resizedRange]);
+	}, [annotation.comment, annotation.range, isResizing, isSpotlight, resizedRange]);
 
 	let vert = isVertical(annotation.range.commonAncestorContainer);
 	let rtl = isRTL(annotation.range.commonAncestorContainer);
@@ -320,12 +326,13 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					y={!vert && underline ? rect.y + rect.height : rect.y}
 					width={vert && underline ? 3 : rect.width}
 					height={!vert && underline ? 3 : rect.height}
+					rx={isSpotlight ? 5 : undefined}
 					opacity="50%"
 					key={i}
 				/>
 			))}
 		</g>;
-	}, [rects, rtl, underline, vert]);
+	}, [isSpotlight, rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
 		if (isResizing) {

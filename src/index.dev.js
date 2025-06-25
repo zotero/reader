@@ -63,6 +63,7 @@ async function createReader() {
 		},
 		onOpenLink(url) {
 			alert('Navigating to an external link: ' + url);
+			window.open(url, /^(https?|file):\/\//.test(url) ? '_blank' : '_self');
 		},
 		onToggleSidebar: (open) => {
 			console.log('Sidebar toggled', open);
@@ -90,6 +91,9 @@ async function createReader() {
 		},
 		onSaveCustomThemes(customThemes) {
 			console.log('Save custom themes', customThemes);
+		},
+		onSetReadAloudVoice(lang, voice) {
+			console.log('Set read aloud voice', voice, 'for lang', lang);
 		}
 	});
 	reader.enableAddToNote(true);

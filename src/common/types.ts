@@ -1,5 +1,6 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/dom-view";
+import { Segment } from "./speech-controller";
 
 export type ToolType =
 	| 'highlight'
@@ -113,7 +114,7 @@ export type ViewStats = {
 	appearance?: Partial<ReflowableAppearance>;
 	fontFamily?: string;
 	outlinePath?: number[];
-	focusModeEnabled?: boolean;
+	readingModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -147,11 +148,7 @@ type ImagePopupParams = {
 	rect: ArrayRect;
 }
 
-type HiddenInFocusModeParams = {
-	type: 'hiddenInFocusMode';
-}
-
-export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams | HiddenInFocusModeParams;
+export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams;
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 
@@ -174,6 +171,18 @@ export type FindState = {
 		currentSnippet: string,
 		currentPageLabel: string | null
 	} | null;
+};
+
+export type ReadAloudState = {
+	active: boolean;
+	paused: boolean;
+	segments: Segment[] | null;
+	activeSegment: Segment | null;
+	backwardStopPosition: number | null;
+	forwardStopPosition: number | null;
+	lang?: string;
+	speed: number;
+	voice: string | null;
 };
 
 export type MaybePromise<T> = Promise<T> | T;
