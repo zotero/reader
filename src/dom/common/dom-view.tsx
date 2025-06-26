@@ -152,8 +152,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _readAloudState: ReadAloudState | null = null;
 
-	protected _readAloudUsingSelection = false;
-
 	protected _iframeCoordScaleFactor = 1;
 
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
@@ -1315,17 +1313,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (selection?.rangeCount) {
 			this._lastSelectionRange = new PersistentRange(selection.getRangeAt(0));
 		}
-
-		// If Read Aloud is paused, reinitialize with the selected text
-		if (this._readAloudState?.paused) {
-			if (selection && !selection.isCollapsed || this._readAloudUsingSelection) {
-				this.setReadAloudState({
-					...this._readAloudState,
-					segments: null,
-					activeSegment: null,
-				});
-			}
-		}
 	}
 
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
@@ -1899,7 +1886,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let selection = (
 			!this._iframeDocument.getSelection()?.isCollapsed && this._iframeDocument.getSelection()
 		) || null;
-		this._readAloudUsingSelection = !!selection;
 
 		let segments = this._getReadAloudSegments();
 		let backwardStopPosition: number | null = null;
@@ -1948,6 +1934,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._options.onSetReadAloudState({
 			...state,
 			segments,
+			activeSegment: null,
 			backwardStopPosition,
 			forwardStopPosition,
 			lang,
