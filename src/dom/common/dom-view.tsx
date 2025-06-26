@@ -1928,7 +1928,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 			else {
 				isContained = isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow);
-				console.log(getBoundingPageRect(range))
 			}
 
 			if (isContained) {
