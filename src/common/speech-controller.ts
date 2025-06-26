@@ -12,29 +12,29 @@ class SpeechController extends EventTarget {
 
 	private _voice: SpeechSynthesisVoice | null = null;
 
-	private _position = 0;
+	private _index = 0;
 
-	private _backwardStopPosition: number | null;
+	private _backwardStopIndex: number | null;
 
-	private _forwardStopPosition: number | null;
+	private _forwardStopIndex: number | null;
 
 	private _paused = true;
 
 	constructor(options: {
 		segments: Segment[],
 		lang?: string,
-		backwardStopPosition: number | null,
-		forwardStopPosition: number | null,
+		backwardStopIndex: number | null,
+		forwardStopIndex: number | null,
 	}) {
 		super();
 
 		this._segments = options.segments;
 		this._lang = options.lang;
-		this._backwardStopPosition = options.backwardStopPosition;
-		this._forwardStopPosition = options.forwardStopPosition;
+		this._backwardStopIndex = options.backwardStopIndex;
+		this._forwardStopIndex = options.forwardStopIndex;
 
-		if (this._backwardStopPosition !== null) {
-			this._position = this._backwardStopPosition;
+		if (this._backwardStopIndex !== null) {
+			this._index = this._backwardStopIndex;
 		}
 
 		this._utterances = this._segments
@@ -114,18 +114,18 @@ class SpeechController extends EventTarget {
 	}
 
 	skipBack() {
-		this._position = Math.max(this._position - 1, 0);
+		this._index = Math.max(this._index - 1, 0);
 		this.update();
 		if (this._paused) {
-			this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', this._segments[this._position]));
+			this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', this._segments[this._index]));
 		}
 	}
 
 	skipAhead() {
-		this._position = Math.min(this._position + 1, this._utterances.length - 1);
+		this._index = Math.min(this._index + 1, this._utterances.length - 1);
 		this.update();
 		if (this._paused) {
-			this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', this._segments[this._position]));
+			this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', this._segments[this._index]));
 		}
 	}
 
@@ -134,7 +134,7 @@ class SpeechController extends EventTarget {
 	}
 
 	private _handleSegmentStart(segment: Segment, index: number) {
-		this._position = index;
+		this._index = index;
 		this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', segment));
 	}
 
@@ -146,11 +146,11 @@ class SpeechController extends EventTarget {
 		this.dispatchEvent(new SpeechControllerEvent('ActiveSegmentChange', null));
 
 		if (!window.speechSynthesis.pending) {
-			if (this._position === this._segments.length - 1) {
-				this._position = 0;
+			if (this._index === this._segments.length - 1) {
+				this._index = 0;
 			}
 			else {
-				this._position++;
+				this._index++;
 			}
 			this.dispatchEvent(new SpeechControllerEvent('Complete', null));
 		}
@@ -158,17 +158,17 @@ class SpeechController extends EventTarget {
 
 	private _buildUtteranceQueue() {
 		// If we're within the stops, return the utterances up to the forward stop
-		if (this._backwardStopPosition !== null
-				&& this._forwardStopPosition !== null
-				&& this._position >= this._backwardStopPosition
-				&& this._position < this._forwardStopPosition) {
-			return this._utterances.slice(this._position, this._forwardStopPosition);
+		if (this._backwardStopIndex !== null
+				&& this._forwardStopIndex !== null
+				&& this._index >= this._backwardStopIndex
+				&& this._index < this._forwardStopIndex) {
+			return this._utterances.slice(this._index, this._forwardStopIndex);
 		}
 		else {
 			// Otherwise, return everything after our current position, and clear the stops
-			this._backwardStopPosition = null;
-			this._forwardStopPosition = null;
-			return this._utterances.slice(this._position);
+			this._backwardStopIndex = null;
+			this._forwardStopIndex = null;
+			return this._utterances.slice(this._index);
 		}
 	}
 

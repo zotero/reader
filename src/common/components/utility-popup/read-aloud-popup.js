@@ -24,8 +24,8 @@ function ReadAloudPopup(props) {
 		if (params.segments) {
 			let speechController = new SpeechController({
 				segments: params.segments,
-				backwardStopPosition: params.backwardStopPosition,
-				forwardStopPosition: params.forwardStopPosition,
+				backwardStopIndex: params.backwardStopIndex,
+				forwardStopIndex: params.forwardStopIndex,
 				lang: params.lang,
 			});
 			speechController.addEventListener('ActiveSegmentChange', (event) => {
@@ -41,7 +41,7 @@ function ReadAloudPopup(props) {
 			};
 		}
 		return undefined;
-	}, [params.segments, params.backwardStopPosition, params.forwardStopPosition, params.lang, onChange]);
+	}, [params.segments, params.backwardStopIndex, params.forwardStopIndex, params.lang, onChange]);
 
 	useEffect(() => {
 		if (!speechController) return;

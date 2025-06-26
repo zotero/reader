@@ -191,8 +191,8 @@ class Reader {
 				active: false,
 				paused: false,
 				segments: null,
-				backwardStopPosition: null,
-				forwardStopPosition: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
 				activeSegment: null,
 				speed: 1,
 				voice: null,
@@ -882,11 +882,24 @@ class Reader {
 				active: false,
 				paused: false,
 				segments: null,
-				backwardStopPosition: null,
-				forwardStopPosition: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
 				activeSegment: null,
 			});
 		}
+	}
+
+	startReadAloudAtPosition(position) {
+		this._ensureType('epub', 'snapshot');
+		this._handleReadAloudStateChange({
+			active: true,
+			paused: false,
+			segments: null,
+			backwardStopIndex: null,
+			forwardStopIndex: null,
+			targetPosition: position,
+			activeSegment: null,
+		});
 	}
 
 	toggleFindPopup({ primary, open } = {}) {

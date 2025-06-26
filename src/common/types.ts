@@ -178,8 +178,9 @@ export type ReadAloudState = {
 	paused: boolean;
 	segments: Segment[] | null;
 	activeSegment: Segment | null;
-	backwardStopPosition: number | null;
-	forwardStopPosition: number | null;
+	backwardStopIndex: number | null;
+	forwardStopIndex: number | null;
+	targetPosition?: Position;
 	lang?: string;
 	speed: number;
 	voice: string | null;
@@ -204,4 +205,8 @@ export type ViewContextMenuOverlay =
 	| {
 		type: 'math';
 		tex: string;
+	}
+	| {
+		type: 'read-aloud';
+		position: Position;
 	};
