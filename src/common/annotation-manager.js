@@ -415,7 +415,7 @@ class AnnotationManager {
 
 		if (query) {
 			annotations = annotations.slice();
-			let query = query.toLowerCase();
+			query = query.toLowerCase();
 			let results = [];
 			for (let annotation of annotations) {
 				let errors = null;
