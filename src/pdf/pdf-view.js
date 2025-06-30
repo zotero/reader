@@ -1831,48 +1831,8 @@ class PDFView {
 		let shift = event.shiftKey;
 		let position = this.pointerEventToPosition(event);
 
-		if (this._options.platform !== 'web' && event.button === 2) {
-			// Clear pointer down because pointer up event won't be received in this iframe
-			// when opening a native context menu
-			this._pointerDownTriggered = false;
-			let br = this._iframe.getBoundingClientRect();
-			let selectableAnnotation;
-			if (position) {
-				selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
-			}
-			let selectedAnnotations = this.getSelectedAnnotations();
-			if (!selectableAnnotation) {
-				if (this._selectedAnnotationIDs.length !== 0) {
-					this._onSelectAnnotations([], event);
-				}
-				let overlay;
-				if (position) {
-					overlay = this._getSelectableOverlay(position);
-				}
-				// If this is a keyboard contextmenu event, its position won't take our
-				// text selection into account since we don't use browser selection APIs.
-				// Position the menu manually.
-				if (event.mozInputSource === 6 && this._selectionRanges.length) {
-					const EXTRA_VERTICAL_PADDING = 10;
-					let selectionBoundingRect = this.getClientRectForPopup(this._selectionRanges[0].position);
-					this._onOpenViewContextMenu({
-						x: br.x + selectionBoundingRect[0],
-						y: br.y + selectionBoundingRect[3] + EXTRA_VERTICAL_PADDING,
-						overlay
-					});
-				}
-				else {
-					this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
-				}
-			}
-			else if (!selectedAnnotations.includes(selectableAnnotation) && !this._textAnnotationFocused()) {
-				this._onSelectAnnotations([selectableAnnotation.id], event);
-				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY, view: true });
-			}
-			else if (!this._textAnnotationFocused()) {
-				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY, view: true });
-			}
-			this._render();
+		if (event.button === 2) {
+			// Right click will be handled in the contextmenu event
 			return;
 		}
 
@@ -2701,11 +2661,61 @@ class PDFView {
 	}
 
 	_handleContextMenu(event) {
+		if (this._options.platform === 'web') {
+			return;
+		}
+
+		let position = this.pointerEventToPosition(event);
+		if (this._options.platform !== 'web' && event.button === 2) {
+			// Clear pointer down because the pointer up event won't be received in this iframe
+			// when opening a native context menu
+			this._pointerDownTriggered = false;
+			let br = this._iframe.getBoundingClientRect();
+			let selectableAnnotation;
+			if (position) {
+				selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
+			}
+			let selectedAnnotations = this.getSelectedAnnotations();
+			if (!selectableAnnotation) {
+				if (this._selectedAnnotationIDs.length !== 0) {
+					this._onSelectAnnotations([], event);
+				}
+				let overlay;
+				if (position) {
+					overlay = this._getSelectableOverlay(position);
+				}
+				// If this is a keyboard contextmenu event, its position won't take our
+				// text selection into account since we don't use browser selection APIs.
+				// Position the menu manually.
+				if (event.mozInputSource === 6 && this._selectionRanges.length) {
+					const EXTRA_VERTICAL_PADDING = 10;
+					let selectionBoundingRect = this.getClientRectForPopup(this._selectionRanges[0].position);
+					this._onOpenViewContextMenu({
+						x: br.x + selectionBoundingRect[0],
+						y: br.y + selectionBoundingRect[3] + EXTRA_VERTICAL_PADDING,
+						overlay
+					});
+				}
+				else {
+					this._onOpenViewContextMenu({ x: br.x + event.clientX, y: br.y + event.clientY, overlay });
+				}
+			}
+			else if (!selectedAnnotations.includes(selectableAnnotation) && !this._textAnnotationFocused()) {
+				this._onSelectAnnotations([selectableAnnotation.id], event);
+				this._onOpenAnnotationContextMenu({ ids: [selectableAnnotation.id], x: br.x + event.clientX, y: br.y + event.clientY, view: true });
+			}
+			else if (!this._textAnnotationFocused()) {
+				this._onOpenAnnotationContextMenu({ ids: selectedAnnotations.map(x => x.id), x: br.x + event.clientX, y: br.y + event.clientY, view: true });
+			}
+			this._render();
+		}
+
+
 		// Open context menu due to touchscreen long press or context menu key press
 		if (event.mozInputSource === 5 || event.mozInputSource === 6) {
 			this._handlePointerDown(event);
 		}
-		if (this._options.platform !== 'web' && !this._textAnnotationFocused()) {
+		if (!this._textAnnotationFocused()) {
 			event.preventDefault();
 		}
 	}
