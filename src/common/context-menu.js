@@ -103,7 +103,7 @@ export function createViewContextMenu(reader, params) {
 			],
 			[
 				{
-					label: reader._getString('reader-copy-tex'),
+					label: reader._getString('general-copy'),
 					disabled: !(params.overlay && params.overlay.type === 'math' && !reader.canCopy),
 					onCommand: () => {
 						navigator.clipboard.writeText(params.overlay.tex);
