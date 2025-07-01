@@ -2584,11 +2584,6 @@ class PDFView {
 		else {
 			this.updateCursor();
 		}
-		// Clear collapsed selection range on pointer up. Otherwise, holding shift
-		// key for another selection anchor will start unexpected offset
-		if (this._selectionRanges.length === 1 && this._selectionRanges[0].collapsed) {
-			this._selectionRanges = [];
-		}
 		this._render();
 		this._updateViewStats();
 	}
