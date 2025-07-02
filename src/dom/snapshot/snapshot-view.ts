@@ -10,7 +10,7 @@ import {
 import {
 	getBoundingPageRect,
 	getInnerText,
-	getStartElement
+	getStartElement, moveRangeEndsIntoTextNodes
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -31,19 +31,20 @@ import {
 import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import injectCSS from './stylesheets/inject.scss';
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
-import type { DynamicThemeFix } from "darkreader";
+import { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
-import { FocusMode } from "./focus-mode";
+import { ReadingMode } from "./reading-mode";
+import { Segment } from "../../common/speech-controller";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
 
 	private _isDynamicThemeSupported = true;
 
-	protected _focusMode!: FocusMode;
+	protected _readingMode!: ReadingMode;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -137,7 +138,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 
-		this._focusMode = new FocusMode(this._iframeDocument);
+		this._readingMode = new ReadingMode(this._iframeDocument);
 
 		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
 
@@ -291,19 +292,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return 0;
 		};
 
-		let count: number;
-		if (this._focusMode.enabled) {
-			let newRange = this._focusMode.mapRangeFromFocus(range);
-			if (newRange) {
-				count = getCount(this._focusMode.originalRoot, newRange.startContainer, newRange.startOffset);
-			}
-			else {
-				count = 0;
-			}
-		}
-		else {
-			count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
-		}
+		let mappedRange = this._readingMode.enabled ? this._readingMode.mapRangeFromFocus(range) : range;
+		let count = mappedRange
+			? getCount(this._readingMode.preBody, mappedRange.startContainer, mappedRange.startOffset)
+			: 0;
 		let countString = String(count).padStart(SORT_INDEX_LENGTH, '0');
 		if (countString.length > SORT_INDEX_LENGTH) {
 			countString = countString.substring(0, SORT_INDEX_LENGTH);
@@ -312,8 +304,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	toSelector(range: Range): Selector | null {
-		if (this._focusMode.enabled) {
-			let newRange = this._focusMode.mapRangeFromFocus(range);
+		if (this._readingMode.enabled) {
+			let newRange = this._readingMode.mapRangeFromFocus(range);
 			if (!newRange) {
 				return null;
 			}
@@ -362,10 +354,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				if (selector.refinedBy && selector.refinedBy.type != 'TextPositionSelector') {
 					throw new Error('CssSelectors can only be refined by TextPositionSelectors');
 				}
-				let root = (this._focusMode.enabled ? this._focusMode.originalRoot : this._iframeDocument)
-					.querySelector(selector.value);
+				let root = this._readingMode.preBody.querySelector(selector.value);
 				if (!root) {
-					console.error(`Unable to locate selector root for selector '${selector.value}' (focus mode: ${this._focusMode.enabled})`);
+					console.error(`Unable to locate selector root for selector '${selector.value}' (reading mode: ${this._readingMode.enabled})`);
 					return null;
 				}
 				let range;
@@ -376,8 +367,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					range = this._iframeDocument.createRange();
 					range.selectNodeContents(root);
 				}
-				if (this._focusMode.enabled) {
-					let newRange = this._focusMode.mapRangeToFocus(range);
+				if (this._readingMode.enabled) {
+					let newRange = this._readingMode.mapRangeToFocus(range);
+					if (!newRange) {
+						newRange = this._readingMode.mapRangeToFocus(moveRangeEndsIntoTextNodes(range));
+					}
 					if (!newRange) {
 						return null;
 					}
@@ -411,14 +405,21 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
 		if (!range) {
-			// Suppress log when failure is likely just due to focus mode
-			if (!this._focusMode.enabled) {
+			// Suppress log when failure is likely just due to reading mode
+			if (!this._readingMode.enabled) {
 				console.warn('Unable to resolve selector to range', selector);
 			}
 			return;
 		}
 		let elem = getStartElement(range);
 		if (elem) {
+			if (options.ifNeeded && isPageRectVisible(
+				getBoundingPageRect(elem),
+				this._iframeWindow,
+				options.visibilityMargin ?? 0
+			)) {
+				return;
+			}
 			elem.scrollIntoView(options);
 			// Remember which node was navigated to for screen readers to place
 			// virtual cursor on it later. Used for navigating between sections in the outline.
@@ -427,7 +428,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			});
 		}
 
-		if (options.ifNeeded && isPageRectVisible(getBoundingPageRect(range), this._iframeWindow, 0)) {
+		if (options.ifNeeded && isPageRectVisible(
+			getBoundingPageRect(range),
+			this._iframeWindow,
+			options.visibilityMargin ?? 0
+		)) {
 			return;
 		}
 
@@ -463,14 +468,18 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
 			appearance: this.appearance,
-			focusModeEnabled: this._focusMode.enabled,
+			readingModeEnabled: this._readingMode.enabled,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
 
+	protected _getRoots(): HTMLElement[] {
+		return [this._iframeDocument.body];
+	}
+
 	protected override _updateColorScheme() {
 		super._updateColorScheme();
-		if (this._isDynamicThemeSupported || this._focusMode.enabled) {
+		if (this._isDynamicThemeSupported || this._readingMode.enabled) {
 			// Pages with a reasonable amount of CSS: Use Dark Reader
 			this._iframeDocument.body.classList.remove('force-static-theme');
 			if (!('DarkReader' in this._iframeWindow)) {
@@ -590,10 +599,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	// ***
-	// Public methods to control the view from the outside
-	// ***
-
 	findNext() {
 		console.log('Find next');
 		if (this._find) {
@@ -614,6 +619,23 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 			this._renderAnnotations();
 		}
+	}
+
+	protected override _getReadAloudSegments(): Segment[] {
+		if (this._readingMode.enabled) {
+			return super._getReadAloudSegments();
+		}
+
+		return this._keepSelection(() => {
+			try {
+				this._readingMode.enabled = true;
+				return super._getReadAloudSegments();
+			}
+			finally {
+				this._readingMode.enabled = false;
+				this._handleViewUpdate();
+			}
+		});
 	}
 
 	protected _setScale(scale: number) {
@@ -673,8 +695,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Ignore
 	}
 
-	setFocusModeEnabled(enabled: boolean) {
-		this._focusMode.enabled = enabled;
+	setReadingModeEnabled(enabled: boolean) {
+		this._readingMode.enabled = enabled;
 		// Hide inaccessible annotations
 		if (enabled) {
 			this._options.onSetHiddenAnnotations(

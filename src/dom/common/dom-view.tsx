@@ -13,6 +13,7 @@ import {
 	OutlineItem,
 	OverlayPopupParams,
 	Platform,
+	ReadAloudState,
 	SelectionPopupParams,
 	Theme,
 	Tool,
@@ -29,9 +30,10 @@ import {
 	DisplayedAnnotation
 } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { Selector } from "./lib/selector";
+import { isSelector, Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
+	createRangeWalker,
 	getBoundingPageRect,
 	getColumnSeparatedPageRects,
 	makeRangeSpanning,
@@ -52,18 +54,22 @@ import {
 } from "../../common/lib/utilities";
 import {
 	closestElement,
-	getContainingBlock, isBlock
+	getContainingBlock,
+	isBlock,
+	iterateWalker
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
 	getBoundingRect,
+	isPageRectFullyContained,
 	isPageRectVisible,
 	pageRectToClientRect,
-	rectContains
+	rectContainsPoint
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
+import { Segment } from "../../common/speech-controller";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
@@ -73,6 +79,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	initializedPromise: Promise<void>;
 
 	initialized = false;
+
+	protected readonly _options: DOMViewOptions<State, Data>;
 
 	protected readonly _container: Element;
 
@@ -122,15 +130,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _find: FindProcessor | null;
 
-	protected readonly _options: DOMViewOptions<State, Data>;
-
 	protected _overlayPopupDelayer: PopupDelayer;
 
 	protected readonly _history: History;
 
 	protected _suspendHistorySaving = false;
 
-	protected _highlightedPosition: Selector | null = null;
+	protected _spotlights = new Map<SpotlightKey, Selector>();
 
 	protected _pointerMovedWhileDown = false;
 
@@ -143,6 +149,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _isCtrlKeyDown = false;
 
 	protected _lastSelectionRange: PersistentRange | null = null;
+
+	protected _readAloudState: ReadAloudState | null = null;
+
+	protected _readAloudUsingSelection = false;
 
 	protected _iframeCoordScaleFactor = 1;
 
@@ -351,10 +361,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _updateViewStats(): void;
 
-	protected _getContainingRoot(node: Node): HTMLElement | null {
-		return this._iframeDocument.body.contains(node)
-			? this._iframeDocument.body
-			: null;
+	protected abstract _getRoots(includeUnmounted?: boolean): HTMLElement[];
+
+	protected _getContainingRoot(node: Node, includeUnmounted = false): HTMLElement | null {
+		return this._getRoots(includeUnmounted).find(root => root.contains(node))
+			?? null;
 	}
 
 	// ***
@@ -631,13 +642,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: a.range.toRange(),
 			})));
 		}
-		if (this._highlightedPosition) {
-			let range = this.toDisplayedRange(this._highlightedPosition);
+		for (let [key, selector] of this._spotlights) {
+			let range = this.toDisplayedRange(selector);
 			if (range) {
 				displayedAnnotations.push({
 					type: 'highlight',
-					color: SELECTION_COLOR,
-					key: '_highlightedPosition',
+					color: this._getSpotlightColor(key),
+					key,
 					range,
 				});
 			}
@@ -1304,6 +1315,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (selection?.rangeCount) {
 			this._lastSelectionRange = new PersistentRange(selection.getRangeAt(0));
 		}
+
+		// If Read Aloud is paused, reinitialize with the selected text
+		if (this._readAloudState?.paused) {
+			if (selection && !selection.isCollapsed || this._readAloudUsingSelection) {
+				this.setReadAloudState({
+					...this._readAloudState,
+					segments: null,
+					activeSegment: null,
+				});
+			}
+		}
 	}
 
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
@@ -1702,7 +1724,22 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let selectionBoundingRect = getBoundingRect(
 			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
 		);
-		return rectContains(selectionBoundingRect, x, y);
+		return rectContainsPoint(selectionBoundingRect, x, y);
+	}
+
+	protected _keepSelection<T>(block: () => T): T {
+		let selection = this._iframeDocument.getSelection();
+		if (!selection || selection.isCollapsed) {
+			return block();
+		}
+
+		let rangesBefore = getSelectionRanges(selection).map(r => new PersistentRange(r));
+		let result = block();
+		selection.removeAllRanges();
+		for (let range of rangesBefore) {
+			selection.addRange(range.toRange());
+		}
+		return result;
 	}
 
 	destroy() {
@@ -1831,6 +1868,149 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations(true);
 	}
 
+	setReadAloudState(state: ReadAloudState): void {
+		this._readAloudState = state;
+
+		if (!state.active) {
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
+			return;
+		}
+
+		let position = state.activeSegment?.position;
+		if (isSelector(position)) {
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, position, null);
+			setTimeout(() => {
+				this._navigateToSelector(position, {
+					ifNeeded: true,
+					visibilityMargin: -this._iframeWindow.innerHeight / 3, // Scroll early, scroll not quite as often
+					block: 'center',
+					behavior: 'smooth'
+				});
+			});
+		}
+		else {
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
+		}
+
+		if (state.segments !== null) {
+			return;
+		}
+
+		let selection = (
+			!this._iframeDocument.getSelection()?.isCollapsed && this._iframeDocument.getSelection()
+		) || null;
+		this._readAloudUsingSelection = !!selection;
+
+		let segments = this._getReadAloudSegments();
+		let backwardStopPosition: number | null = null;
+		let forwardStopPosition: number | null = null;
+		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
+
+		// Figure out where to put the stop positions
+		// If there's a selection, we start at the start of the selection and stop at the end
+		// If there's no selection, we read from the first visible block of text
+		for (let [i, segment] of segments.entries()) {
+			let range = this.toDisplayedRange(segment.position as Selector);
+
+			let isContained: boolean;
+			if (!range) {
+				isContained = false;
+			}
+			else if (selection) {
+				isContained
+					// If the selection fully contains this segment...
+					= (range.compareBoundaryPoints(Range.START_TO_START, selection.getRangeAt(0)) >= 0
+						&& range.compareBoundaryPoints(Range.END_TO_END, selection.getRangeAt(0)) <= 0)
+					// ...Or this segment fully contains the selection
+					|| (selection.getRangeAt(0).compareBoundaryPoints(Range.START_TO_START, range) >= 0
+						&& selection.getRangeAt(0).compareBoundaryPoints(Range.END_TO_END, range) <= 0);
+			}
+			else {
+				isContained = isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow);
+				console.log(getBoundingPageRect(range))
+			}
+
+			if (isContained) {
+				if (backwardStopPosition === null) {
+					backwardStopPosition = i;
+				}
+				// If we're reading the selection, stop at the end
+				// Otherwise (when we're using visibility), continue below the fold
+				if (selection) {
+					forwardStopPosition = i + 1;
+				}
+				else {
+					break;
+				}
+			}
+		}
+
+		this._options.onSetReadAloudState({
+			...state,
+			segments,
+			backwardStopPosition,
+			forwardStopPosition,
+			lang,
+			voice,
+		});
+	}
+
+	protected _getReadAloudSegments(): Segment[] {
+		let segments: Segment[] = [];
+
+		let rootRanges = this._getRoots(true).map((root) => {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(root);
+			return range;
+		});
+
+		for (let rootRange of rootRanges) {
+			// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
+			let matches = new Set();
+			let filter = (node: Node) => {
+				if (matches.has(node.parentNode)) {
+					// Reject sub-trees of accepted nodes.
+					return NodeFilter.FILTER_REJECT;
+				}
+				if (!/\S/.test(node.textContent!)) {
+					// Reject nodes with no text.
+					return NodeFilter.FILTER_REJECT;
+				}
+				for (let c = node.firstChild; c; c = c.nextSibling) {
+					if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
+						// If node has a non-empty text child accept it.
+						matches.add(node);
+						return NodeFilter.FILTER_ACCEPT;
+					}
+				}
+				return NodeFilter.FILTER_SKIP;
+			};
+
+			let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
+			let elementRanges = [...iterateWalker(walker)].map((el) => {
+				let range = this._iframeDocument.createRange();
+				range.selectNodeContents(el);
+				return range;
+			});
+
+			// If there weren't any element children, just use the whole root range
+			if (!elementRanges.length) {
+				elementRanges = [rootRange];
+			}
+
+			for (let elementRange of elementRanges) {
+				let text = elementRange.toString();
+				if (!text) continue;
+				let position = this.toSelector(elementRange);
+				if (!position) continue;
+				segments.push({ text, position });
+			}
+		}
+
+		return segments;
+	}
+
 	// ***
 	// Public methods to control the view from the outside
 	// ***
@@ -1863,16 +2043,34 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _setScale(scale: number): void;
 
-	protected _setHighlight(selector: Selector) {
-		this._highlightedPosition = selector;
+	protected _setSpotlight(key: SpotlightKey, selector: Selector | null, timeout: number | null = 2000) {
+		if (selector) {
+			this._spotlights.set(key, selector);
+		}
+		else {
+			this._spotlights.delete(key);
+		}
 		this._renderAnnotations(true);
 
+		if (selector === null || timeout === null) return;
+
 		setTimeout(() => {
-			if (this._highlightedPosition === selector) {
-				this._highlightedPosition = null;
+			if (this._spotlights.get(key) === selector) {
+				this._spotlights.delete(key);
 				this._renderAnnotations(true);
 			}
-		}, 2000);
+		}, timeout);
+	}
+
+	protected _getSpotlightColor(key: SpotlightKey): string {
+		switch (key) {
+			case SpotlightKey.Navigation:
+				return SELECTION_COLOR;
+			case SpotlightKey.ReadAloudActiveSegment:
+				return '#4072e5';
+			default:
+				throw new Error('Unknown highlight key: ' + key);
+		}
 	}
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
@@ -1893,7 +2091,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
-			this._setHighlight(selector);
+			this._setSpotlight(SpotlightKey.Navigation, selector);
 		}
 	}
 
@@ -1931,6 +2129,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	viewState?: State;
 	fontFamily?: string;
 	hyphenate?: boolean;
+	readAloudVoices: Map<string, string>,
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;
@@ -1943,6 +2142,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
+	onSetReadAloudState: (state?: ReadAloudState) => void;
 	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
 	onOpenViewContextMenu: (params: { x: number, y: number, overlay?: ViewContextMenuOverlay }) => void;
 	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
@@ -1968,6 +2168,7 @@ export interface DOMViewState {
 export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
 	block?: 'center' | 'start';
 	ifNeeded?: boolean;
+	visibilityMargin?: number;
 	offsetBlock?: number;
 }
 
@@ -1987,6 +2188,11 @@ export const enum PageWidth {
 	Narrow = -1,
 	Normal = 0,
 	Full = 1
+}
+
+export const enum SpotlightKey {
+	Navigation = 'Navigation',
+	ReadAloudActiveSegment = 'ReadAloudActiveSegment',
 }
 
 export default DOMView;
