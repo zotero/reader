@@ -111,6 +111,19 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 			}
 		}
 
+		if (left + width > viewRect[2] - padding) {
+			left = viewRect[2] - width - padding;
+		}
+		if (left < padding) {
+			left = padding;
+		}
+		if (top + height > viewRect[3] - padding) {
+			top = viewRect[3] - height - padding;
+		}
+		if (top < padding) {
+			top = padding;
+		}
+
 		xrect.current = rect;
 		pos.current = { top, left, side };
 

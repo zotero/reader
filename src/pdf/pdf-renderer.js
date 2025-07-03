@@ -197,7 +197,6 @@ class PDFRenderer {
 	}
 
 	async renderPreviewPage(position) {
-		let SCALE = window.devicePixelRatio;
 		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
 
 		// Create a new position that just contains single rect that is a bounding
@@ -208,12 +207,24 @@ class PDFRenderer {
 		expandedPosition.rects = position.rects;
 
 		let rect = expandedPosition.rects[0];
-		let maxScale = Math.sqrt(
-			this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.maxCanvasPixels
-			/ ((rect[2] - rect[0]) * (rect[3] - rect[1]))
-		);
-		let scale = Math.min(SCALE, maxScale);
 
+		let dpr = window.devicePixelRatio;
+		let viewer = this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer;
+
+
+		let currentScale = viewer._currentScale;
+
+		// Only boost when zooming in
+		let extraScale = currentScale > 1 ? 1 + (currentScale - 1) * 1.8 : currentScale;
+
+		let scale = dpr * extraScale; // actual render scale
+
+		// Honour max-canvas-pixel limit
+		let { width: viewportWidth, height: viewportHeight } = page.getViewport({ scale: 1 });
+		let maxScale = Math.sqrt(viewer.maxCanvasPixels / (viewportWidth * viewportHeight));
+		if (scale > maxScale) {
+			scale = maxScale;
+		}
 
 		let viewport = page.getViewport({ scale });
 		let position2 = p2v(position, viewport);
@@ -272,16 +283,16 @@ class PDFRenderer {
 			ctx.fillRect(x, y, rect[2] - rect[0], rect[3] - rect[1]);
 		}
 
-		let width = canvas2.width / scale;
-		let height = canvas2.height / scale;
+		let width = canvas2.width / dpr;
+		let height = canvas2.height / dpr;
 
 		let rect3 = position2.rects[0].slice();
 		let x = (rect3[0] + rect3[2]) / 2;
 		let y = (rect3[1] + rect3[3]) / 2;
 		x -= rect2[0];
 		y -= rect2[1];
-		x /= scale;
-		y /= scale;
+		x /= dpr;
+		y /= dpr;
 
 		let image = canvas2.toDataURL('image/png', 1);
 
