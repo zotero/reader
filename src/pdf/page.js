@@ -26,7 +26,7 @@ export default class Page {
 		this.layer = layer;
 		this.originalPage = originalPage;
 		this.pageIndex = originalPage.id - 1;
-		this.overlays = [];
+		// this.overlays = [];
 		this.chars = [];
 		this.selectionColor = '#bad6fb';
 		this.previouslyAffected = false;
@@ -40,12 +40,12 @@ export default class Page {
 		this.actualContext = this.originalPage.canvas.getContext('2d');
 	}
 
-	getSortedObjects() {
-		let annotations = this.layer._getPageAnnotations(this.pageIndex);
-		let objects = [...annotations, ...this.overlays];
-		objects.sort((a, b) => a.sortIndex < b.sortIndex);
-		return objects;
-	}
+	// getSortedObjects() {
+	// 	let annotations = this.layer._getPageAnnotations(this.pageIndex);
+	// 	let objects = [...annotations, ...this.overlays];
+	// 	objects.sort((a, b) => a.sortIndex < b.sortIndex);
+	// 	return objects;
+	// }
 
 	async redrawOriginalPage() {
 		const { viewport, outputScale, pdfPage } = this.originalPage;

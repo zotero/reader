@@ -556,6 +556,12 @@ class PDFView {
 
 		this._detachPage(originalPage, true);
 
+		// When actively changing zoom sometimes the PageView that was just attached no longer has canvas
+		// which probably means that it is being destroyed
+		if (!originalPage.canvas) {
+			return;
+		}
+
 		originalPage.textLayerPromise.then(() => {
 			// Text layer may no longer exist if it was detached in the meantime
 			let textLayer = originalPage.div.querySelector('.textLayer');
@@ -631,7 +637,7 @@ class PDFView {
 			let overlays = [];
 			let pdfPage = this._pdfPages[pageIndex];
 			if (pdfPage) {
-				overlays = pdfPage.overlays;
+				overlays = pdfPage.overlays.filter(x => x.type !== 'reference');
 			}
 
 			let objects = [];
@@ -1522,6 +1528,9 @@ class PDFView {
 		}
 		let selectableOverlays = [];
 		for (let overlay of pdfPage.overlays) {
+			if (overlay.type === 'reference') {
+				continue;
+			}
 			if (intersectAnnotationWithPoint(overlay.position, position)) {
 				selectableOverlays.push(overlay);
 			}
