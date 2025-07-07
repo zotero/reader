@@ -266,8 +266,8 @@ export class KeyboardManager {
 				if (firstIndex - 1 >= 0) {
 					id = annotations[firstIndex - 1].id;
 				}
-				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
-				if (id) {
+				let deletedNum = this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
+				if (deletedNum && id) {
 					let sidebarItem = document.querySelector(`[data-sidebar-annotation-id="${id}"]`);
 					if (sidebarItem) {
 						setTimeout(() => sidebarItem.focus());
@@ -275,8 +275,10 @@ export class KeyboardManager {
 				}
 			}
 			else {
-				this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
-				this._reader._lastView.focus();
+				let deletedNum = this._reader.deleteAnnotations(this._reader._state.selectedAnnotationIDs);
+				if (deletedNum) {
+					this._reader._lastView.focus();
+				}
 			}
 		}
 

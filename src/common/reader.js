@@ -1127,7 +1127,7 @@ class Reader {
 				this._getString('reader-prompt-delete-annotations-text', { count: ids.length }),
 				this._getString('general-delete')
 			)) {
-				return;
+				return 0;
 			}
 		}
 		let selectedAnnotationIDs = this._state.selectedAnnotationIDs.filter(id => !ids.includes(id));
@@ -1136,7 +1136,7 @@ class Reader {
 			primaryViewAnnotationPopup: null,
 			secondaryViewAnnotationPopup: null,
 		});
-		this._annotationManager.deleteAnnotations(ids);
+		return this._annotationManager.deleteAnnotations(ids);
 	}
 
 	convertAnnotations(ids, type) {

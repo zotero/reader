@@ -186,10 +186,11 @@ class AnnotationManager {
 		);
 		// Don't delete anything if the PDF file is read-only, or at least one provided annotation is external
 		if (!ids.length || this._readOnly || someExternal) {
-			return;
+			return 0;
 		}
 		let changedAnnotations = new Map(ids.map(id => [id, null]));
 		this._applyChanges(changedAnnotations);
+		return changedAnnotations.size;
 	}
 
 	convertAnnotations(ids, type) {
