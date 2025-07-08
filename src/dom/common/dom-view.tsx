@@ -14,6 +14,7 @@ import {
 	OverlayPopupParams,
 	Platform,
 	ReadAloudState,
+	ReadAloudSegment,
 	SelectionPopupParams,
 	Theme,
 	Tool,
@@ -69,7 +70,6 @@ import {
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
-import { Segment } from "../../common/speech-controller";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
@@ -1257,17 +1257,21 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			};
 		}
 
-		let range = this._iframeDocument.createRange();
-		range.selectNodeContents(el);
-		let selector = this.toSelector(range);
-		if (selector) {
-			return {
-				type: 'read-aloud',
-				position: selector,
-			};
+		if (this._iframeDocument.getSelection()!.isCollapsed) {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(el);
+			let selector = this.toSelector(range);
+			if (selector) {
+				return {
+					type: 'read-aloud',
+					position: selector,
+				};
+			}
 		}
 
-		return undefined;
+		return {
+			type: 'read-aloud',
+		};
 	}
 
 	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
@@ -1949,6 +1953,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		this._options.onSetReadAloudState({
 			...state,
+			paused: false,
 			segments,
 			activeSegment: null,
 			backwardStopIndex,
@@ -1959,8 +1964,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 	}
 
-	protected _getReadAloudSegments(): Segment[] {
-		let segments: Segment[] = [];
+	protected _getReadAloudSegments(): ReadAloudSegment[] {
+		let segments: ReadAloudSegment[] = [];
 
 		let rootRanges = this._getRoots(true).map((root) => {
 			let range = this._iframeDocument.createRange();

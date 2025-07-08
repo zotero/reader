@@ -1,6 +1,5 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/dom-view";
-import { Segment } from "./speech-controller";
 
 export type ToolType =
 	| 'highlight'
@@ -176,14 +175,19 @@ export type FindState = {
 export type ReadAloudState = {
 	active: boolean;
 	paused: boolean;
-	segments: Segment[] | null;
-	activeSegment: Segment | null;
+	segments: ReadAloudSegment[] | null;
+	activeSegment: ReadAloudSegment | null;
 	backwardStopIndex: number | null;
 	forwardStopIndex: number | null;
 	targetPosition?: Position;
 	lang?: string;
 	speed: number;
 	voice: string | null;
+};
+
+export type ReadAloudSegment = {
+	position: Position;
+	text: string;
 };
 
 export type MaybePromise<T> = Promise<T> | T;
@@ -208,5 +212,5 @@ export type ViewContextMenuOverlay =
 	}
 	| {
 		type: 'read-aloud';
-		position: Position;
+		position?: Position;
 	};

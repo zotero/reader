@@ -9,8 +9,8 @@ import IconPause from '../../../../res/icons/20/pause.svg';
 import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import { useLocalization } from '@fluent/react';
-import SpeechController from "../../speech-controller";
 import Select from "../common/select";
+import { getAvailableProviders } from "../../read-aloud-provider";
 
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
@@ -18,95 +18,39 @@ function ReadAloudPopup(props) {
 	let { params, onChange, onOpenVoicePreferences, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
-	let [speechController, setSpeechController] = useState(null);
-
-	useEffect(() => {
-		if (params.segments) {
-			let speechController = new SpeechController({
-				segments: params.segments,
-				backwardStopIndex: params.backwardStopIndex,
-				forwardStopIndex: params.forwardStopIndex,
-				lang: params.lang,
-			});
-			speechController.addEventListener('ActiveSegmentChange', (event) => {
-				onChange({ activeSegment: event.segment });
-			});
-			speechController.addEventListener('Complete', () => {
-				onChange({ paused: true, activeSegment: null });
-			});
-			setSpeechController(speechController);
-
-			return () => {
-				speechController.dispose();
-			};
-		}
-		return undefined;
-	}, [params.segments, params.backwardStopIndex, params.forwardStopIndex, params.lang, onChange]);
-
-	useEffect(() => {
-		if (!speechController) return;
-		speechController.speed = params.speed;
-		speechController.voice = params.voice;
-		speechController.paused = params.paused;
-		speechController.update();
-	}, [params.speed, params.voice, params.paused, speechController]);
-
-	return (
-		<UtilityPopup className="read-aloud-popup">
-			<div className="row buttons" data-tabstop={1}>
-				<div className="group">
-					<button
-						className={cx('toolbar-button', { active: showOptions })}
-						title={l10n.getString('reader-read-aloud-options')}
-						tabIndex="-1"
-						onClick={() => setShowOptions(!showOptions)}
-					><IconAdvancedOptions/></button>
-				</div>
-				<div className="group">
-					<button
-						className="toolbar-button"
-						title={l10n.getString('reader-read-aloud-skip-back')}
-						tabIndex="-1"
-						onClick={() => speechController?.skipBack()}
-					><IconSkipBack/></button>
-					<button
-						className="toolbar-button"
-						title={l10n.getString(`reader-read-aloud-${params.paused ? 'play' : 'pause'}`)}
-						tabIndex="-1"
-						onClick={() => onChange({ paused: !params.paused })}
-					>{params.paused ? <IconPlay/> : <IconPause/>}</button>
-					<button
-						className="toolbar-button"
-						title={l10n.getString('reader-read-aloud-skip-ahead')}
-						tabIndex="-1"
-						onClick={() => speechController?.skipAhead()}
-					><IconSkipAhead/></button>
-				</div>
-				<div className="group">
-					<button
-						className="toolbar-button"
-						title={l10n.getString('reader-close')}
-						tabIndex="-1"
-						onClick={onClose}
-					><IconClose/></button>
-				</div>
-			</div>
-			{speechController && showOptions && (
-				<ReadAloudOptions
-					params={params}
-					speechController={speechController}
-					onChange={onChange}
-					onOpenVoicePreferences={onOpenVoicePreferences}
-				/>
-			)}
-		</UtilityPopup>
-	);
-}
-
-function ReadAloudOptions({ params, speechController, onChange, onOpenVoicePreferences }) {
-	const { l10n } = useLocalization();
-
 	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
+
+	let controller = useMemo(() => {
+		if (!params.segments) {
+			return null;
+		}
+		return getAvailableProviders().find(p => p.id === params.voice)
+				?.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex)
+			?? null;
+	}, [params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
+
+	useEffect(() => {
+		if (!controller) return;
+		controller.speed = params.speed;
+	}, [controller, params.speed]);
+
+	useEffect(() => {
+		return () => {
+			controller?.destroy();
+		};
+	}, [controller]);
+
+	let languages = useMemo(() => [...new Set(
+		getAvailableProviders().map(provider => provider.lang)
+	)], []);
+
+	let resolvedLang = useMemo(() => {
+		return resolveLocale(params.lang || 'en-US', languages);
+	}, [params.lang, languages]);
+
+	let providers = useMemo(() => {
+		return getAvailableProviders().filter(p => p.lang.startsWith(resolvedLang));
+	}, [resolvedLang]);
 
 	function handleSpeedChange(event) {
 		let input = event.target;
@@ -124,7 +68,7 @@ function ReadAloudOptions({ params, speechController, onChange, onOpenVoicePrefe
 	}
 
 	function handleLangChange(event) {
-		onChange({ lang: event.target.value });
+		onChange({ lang: event.target.value, voice: null });
 	}
 
 	function handleVoiceChange(event) {
@@ -135,58 +79,111 @@ function ReadAloudOptions({ params, speechController, onChange, onOpenVoicePrefe
 		onChange({ voice: event.target.value });
 	}
 
-	let resolvedLang = useMemo(() => {
-		if (!speechController || !speechController.languages.length) {
-			return undefined;
+	useEffect(() => {
+		if (controller) {
+			controller.paused = params.paused;
+			controller.addEventListener('ActiveSegmentChange', (event) => {
+				onChange({ activeSegment: event.segment });
+			});
+			controller.addEventListener('Complete', () => {
+				onChange({ paused: true, activeSegment: null });
+			});
 		}
-		return resolveLocale(params.lang, speechController.languages);
-	}, [params.lang, speechController]);
+	}, [controller, onChange, params.paused]);
+
+	if (!params.voice) {
+		setTimeout(() => {
+			onChange({ voice: providers[0].id });
+		});
+	}
 
 	let displayNames = new Intl.DisplayNames(undefined, {
 		type: 'language',
 		languageDisplay: 'standard'
 	});
 
-	return <>
-		<div className="row speed" data-tabstop={1}>
-			<input
-				id="read-aloud-speed"
-				type="range"
-				min="0.5"
-				max="2.0"
-				step="0.1"
-				value={params.speed}
-				tabIndex="-1"
-				onChange={handleSpeedChange}
-				onPointerDown={handleSpeedPointerDown}
-				onPointerUp={handleSpeedPointerUp}
-				onPointerCancel={handleSpeedPointerUp}
-			/>
-			<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
-		</div>
-		<Select
-			value={resolvedLang}
-			tabIndex="-1"
-			onChange={handleLangChange}
-		>
-			{[...speechController.languages].map(language => (
-				<option key={language} value={language}>{displayNames.of(language)}</option>
-			))}
-		</Select>
-		<div className="row voices" data-tabstop={1}>
-			<Select
-				value={params.voice || speechController.voice || ''}
-				tabIndex="-1"
-				onChange={handleVoiceChange}
-			>
-				{[...speechController.getVoices(resolvedLang)].map(([id, name], i) => (
-					<option key={i} value={id}>{name}</option>
-				))}
-				<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
-			</Select>
-			<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
-		</div>
-	</>;
+	return (
+		<UtilityPopup className="read-aloud-popup">
+			<div className="row buttons" data-tabstop={1}>
+				<div className="group">
+					<button
+						className={cx('toolbar-button', { active: showOptions })}
+						title={l10n.getString('reader-read-aloud-options')}
+						tabIndex="-1"
+						onClick={() => setShowOptions(!showOptions)}
+					><IconAdvancedOptions/></button>
+				</div>
+				<div className="group">
+					<button
+						className="toolbar-button"
+						title={l10n.getString('reader-read-aloud-skip-back')}
+						tabIndex="-1"
+						onClick={() => controller?.skipBack()}
+					><IconSkipBack/></button>
+					<button
+						className="toolbar-button"
+						title={l10n.getString(`reader-read-aloud-${params.paused ? 'play' : 'pause'}`)}
+						tabIndex="-1"
+						onClick={() => onChange({ paused: !params.paused })}
+					>{params.paused ? <IconPlay/> : <IconPause/>}</button>
+					<button
+						className="toolbar-button"
+						title={l10n.getString('reader-read-aloud-skip-ahead')}
+						tabIndex="-1"
+						onClick={() => controller?.skipAhead()}
+					><IconSkipAhead/></button>
+				</div>
+				<div className="group">
+					<button
+						className="toolbar-button"
+						title={l10n.getString('reader-close')}
+						tabIndex="-1"
+						onClick={onClose}
+					><IconClose/></button>
+				</div>
+			</div>
+			{showOptions && <>
+				<div className="row speed" data-tabstop={1}>
+					<input
+						id="read-aloud-speed"
+						type="range"
+						min="0.5"
+						max="2.0"
+						step="0.1"
+						value={params.speed}
+						tabIndex="-1"
+						onChange={handleSpeedChange}
+						onPointerDown={handleSpeedPointerDown}
+						onPointerUp={handleSpeedPointerUp}
+						onPointerCancel={handleSpeedPointerUp}
+					/>
+					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
+				</div>
+				<Select
+					value={resolvedLang}
+					tabIndex="-1"
+					onChange={handleLangChange}
+				>
+					{languages.map(language => (
+						<option key={language} value={language}>{displayNames.of(language)}</option>
+					))}
+				</Select>
+				<div className="row voices" data-tabstop={1}>
+					<Select
+						value={params.voice || ''}
+						tabIndex="-1"
+						onChange={handleVoiceChange}
+					>
+						{providers.map((provider, i) => (
+							<option key={i} value={provider.id}>{provider.label}</option>
+						))}
+						<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
+					</Select>
+					<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
+				</div>
+			</>}
+		</UtilityPopup>
+	);
 }
 
 function resolveLocale(locale, locales) {

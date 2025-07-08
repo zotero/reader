@@ -4,13 +4,15 @@ import {
 	FindState,
 	NavLocation,
 	NewAnnotation,
+	ReadAloudSegment,
 	ViewStats,
 	OutlineItem
 } from "../../common/types";
 import {
 	getBoundingPageRect,
 	getInnerText,
-	getStartElement, moveRangeEndsIntoTextNodes
+	getStartElement,
+	moveRangeEndsIntoTextNodes
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -37,7 +39,6 @@ import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
 import { ReadingMode } from "./reading-mode";
-import { Segment } from "../../common/speech-controller";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -621,7 +622,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	protected override _getReadAloudSegments(): Segment[] {
+	protected override _getReadAloudSegments(): ReadAloudSegment[] {
 		if (this._readingMode.enabled) {
 			return super._getReadAloudSegments();
 		}
