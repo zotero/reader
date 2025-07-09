@@ -61,7 +61,7 @@ import {
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
-import { measureTextAnnotationDimensions } from './lib/text-annotation';
+import { adjustTextAnnotationPosition } from './lib/text-annotation';
 import {
 	applyTransformationMatrixToInkPosition,
 	eraseInk,
@@ -2252,7 +2252,7 @@ class PDFView {
 					action.position.fontSize = fontSize;
 				}
 				if (action.dir.length !== 2) {
-					action.position = measureTextAnnotationDimensions({
+					action.position = this.adjustTextAnnotationPosition({
 						...action.annotation,
 						position: action.position
 					});
@@ -2455,7 +2455,7 @@ class PDFView {
 					}
 					else if (action.type === 'resize') {
 						if (action.annotation.type === 'text' && action.dir.length !== 2) {
-							action.position = measureTextAnnotationDimensions({ ...action.annotation, position: action.position }, { adjustSingleLineWidth: true });
+							action.position = this.adjustTextAnnotationPosition({ ...action.annotation, position: action.position }, { adjustSingleLineWidth: true });
 						}
 
 						let sortIndex = getSortIndex(this._pdfPages, action.position);
@@ -3052,7 +3052,7 @@ class PDFView {
 						}
 
 						if (dir.length !== 2) {
-							position = measureTextAnnotationDimensions({
+							position = this.adjustTextAnnotationPosition({
 								...annotation,
 								position
 							});
@@ -3442,6 +3442,7 @@ class PDFView {
 			let comment = target.value;
 			target.setAttribute('data-comment', comment);
 			this._onUpdateAnnotations([{ id, comment }]);
+
 		}
 	}
 
@@ -3605,6 +3606,13 @@ class PDFView {
 			x,
 			y,
 		};
+	}
+
+	adjustTextAnnotationPosition(annotation, options) {
+		let { pageIndex } = annotation.position;
+		let originalPage = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
+		let { viewBox } = originalPage.viewport;
+		return adjustTextAnnotationPosition(annotation, viewBox, options);
 	}
 }
 

@@ -255,6 +255,9 @@ class Reader {
 			},
 			onChangeFilter: (filter) => {
 				this._updateState({ filter });
+			},
+			adjustTextAnnotationPosition: (annotation, option) => {
+				return this._primaryView.adjustTextAnnotationPosition(annotation, option);
 			}
 		});
 

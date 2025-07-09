@@ -1,5 +1,4 @@
 import { approximateMatch } from './lib/approximate-match';
-import { measureTextAnnotationDimensions } from '../pdf/lib/text-annotation';
 import { ANNOTATION_POSITION_MAX_SIZE } from './defines';
 import { basicDeepEqual, sortTags } from './lib/utilities';
 import { isSelector } from "../dom/common/lib/selector";
@@ -22,6 +21,7 @@ class AnnotationManager {
 		this._onChangeFilter = options.onChangeFilter;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
+		this._adjustTextAnnotationPosition = options.adjustTextAnnotationPosition;
 		this.render = () => {
 			options.onRender([...this._annotations]);
 		};
@@ -164,7 +164,7 @@ class AnnotationManager {
 
 				// Updating annotation position when editing comment
 				if (annotation.type === 'text' && existingAnnotation.comment !== annotation.comment) {
-					annotation.position = measureTextAnnotationDimensions(annotation, { adjustSingleLineWidth: true, enableSingleLineMaxWidth: true });
+					annotation.position = this._adjustTextAnnotationPosition(annotation, { adjustSingleLineWidth: true, enableSingleLineMaxWidth: true });
 				}
 			}
 
