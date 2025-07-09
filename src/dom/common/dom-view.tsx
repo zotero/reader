@@ -1878,7 +1878,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		if (isSelector(state.activeSegment?.position)) {
-			let selector = state.activeSegment?.position;
+			let selector = state.activeSegment.position;
 			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
 			setTimeout(() => {
 				this._navigateToSelector(selector, {
@@ -1897,57 +1897,45 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		let segments = this._getReadAloudSegments();
-		let backwardStopIndex: number | null = null;
-		let forwardStopIndex: number | null = null;
-		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
-		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
-
 		let targetRange: Range | null = null;
-		let isSelection = false;
 		if (state.targetPosition) {
 			targetRange = this.toDisplayedRange(state.targetPosition as Selector);
 		}
 		else if (!this._iframeDocument.getSelection()!.isCollapsed) {
 			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
-			isSelection = true;
 		}
+
+		let segments: ReadAloudSegment[];
+		if (targetRange) {
+			let selector = this.toSelector(targetRange);
+			if (selector) {
+				segments = [{
+					position: selector,
+					text: targetRange.toString(),
+				}];
+			}
+			else {
+				segments = [];
+			}
+		}
+		else {
+			segments = this._getReadAloudSegments();
+		}
+
+		let backwardStopIndex: number | null = null;
+		let forwardStopIndex: number | null = null;
+		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
 
 		// Figure out where to put the stop positions
 		// If there's a selection, we start at the start of the selection and stop at the end
-		// If there's no selection, we read from the first visible block of text
-		for (let [i, segment] of segments.entries()) {
-			let range = this.toDisplayedRange(segment.position as Selector);
-
-			let isContained: boolean;
-			if (!range) {
-				isContained = false;
-			}
-			else if (targetRange) {
-				isContained
-					// If the selection fully contains this segment...
-					= (range.compareBoundaryPoints(Range.START_TO_START, targetRange) >= 0
-						&& range.compareBoundaryPoints(Range.END_TO_END, targetRange) <= 0)
-					// ...Or this segment fully contains the selection
-					|| (targetRange.compareBoundaryPoints(Range.START_TO_START, range) >= 0
-						&& targetRange.compareBoundaryPoints(Range.END_TO_END, range) <= 0);
-			}
-			else {
-				isContained = isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow);
-			}
-
-			if (isContained) {
-				if (backwardStopIndex === null) {
-					backwardStopIndex = i;
-				}
-				// If we're reading the selection, stop at the end
-				// Otherwise (when we're using visibility), continue below the fold
-				if (isSelection) {
-					forwardStopIndex = i + 1;
-				}
-				else {
-					break;
-				}
+		if (!targetRange) {
+			backwardStopIndex = segments.findIndex((segment) => {
+				let range = this.toDisplayedRange(segment.position as Selector);
+				return range && isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow);
+			});
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = null;
 			}
 		}
 
