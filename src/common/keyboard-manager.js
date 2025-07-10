@@ -235,6 +235,9 @@ export class KeyboardManager {
 			if (event.target.closest('input, .label-popup')) {
 				return;
 			}
+			if (this._reader._state.readOnly) {
+				return;
+			}
 			let selectedIDs = this._reader._state.selectedAnnotationIDs;
 			// Don't delete if some selected annotations are read-only
 			let hasReadOnly = !!this._reader._state.annotations.find(x => selectedIDs.includes(x.id) && x.readOnly);
