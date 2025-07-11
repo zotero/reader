@@ -2718,11 +2718,6 @@ class PDFView {
 			this._render();
 		}
 
-
-		// Open context menu due to touchscreen long press or context menu key press
-		if (event.mozInputSource === 5 || event.mozInputSource === 6) {
-			this._handlePointerDown(event);
-		}
 		if (!this._textAnnotationFocused()) {
 			event.preventDefault();
 		}
