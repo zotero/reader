@@ -136,14 +136,14 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						className="previous toolbar-button"
 						title={l10n.getString('reader-find-previous')}
 						tabIndex="-1"
-						disabled={params.result?.total <= 1}
+						disabled={!params.active || params.result?.total <= 1}
 						onClick={onFindPrevious}
 					><IconChevronUp/></button>
 					<button
 						className="next toolbar-button"
 						title={l10n.getString('reader-find-next')}
 						tabIndex="-1"
-						disabled={params.result?.total <= 1}
+						disabled={!params.active || params.result?.total <= 1}
 						onClick={onFindNext}
 					><IconChevronDown/></button>
 					<button
