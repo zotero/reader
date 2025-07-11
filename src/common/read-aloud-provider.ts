@@ -238,38 +238,64 @@ class RemoteReadAloudProvider implements ReadAloudProvider {
 }
 
 class RemoteReadAloudController extends ReadAloudController {
-	private _audio = document.createElement('audio');
+	private readonly _audios: HTMLAudioElement[];
+
+	constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(provider, segments, backwardStopIndex, forwardStopIndex);
+
+		// Create elements now, but only set src later, when we want to load a segment
+		this._audios = segments.map((segment, index) => {
+			let audio = document.createElement('audio');
+			audio.onplaying = () => this._handleSegmentStart(segment, index);
+			audio.onended = () => this._handleSegmentEnd(segment, index);
+			return audio;
+		});
+	}
 
 	protected _speak(): void {
-		this._audio.pause();
+		for (let audio of this._audios) {
+			audio.pause();
+		}
 
 		if (!this._paused) {
-			let songs = [
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sergio%27s Magic Dustbin.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Mesmerizing Galaxy Loop.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Lord of the Rangs.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Galactic Rap.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Equatorial Complex.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cloud Dancer.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Brain Dance.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Vibing Over Venus.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Southern Gothic.mp3",
-				"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Morning.mp3",
-			];
+			for (let index = this._position; index < this._segments.length && index < this._position + 3; index++) {
+				let segment = this._segments[index];
+				let audio = this._audios[index];
 
-			let index = this._position;
-			let segment = this._segments[index];
+				if (!audio.src) {
+					audio.src = this._getAudioURL(segment);
+				}
 
-			this._audio.src = songs[index % songs.length];
-			this._audio.currentTime = 0;
-			this._audio.onplaying = () => this._handleSegmentStart(segment, index);
-			this._audio.onended = () => this._handleSegmentEnd(segment, index);
-			this._audio.play();
+				if (index === this._position) {
+					audio.currentTime = 0;
+					audio.play();
+				}
+			}
 		}
 	}
 
+	protected _getAudioURL(segment: ReadAloudSegment) {
+		// Mock using random CC music
+		// In reality, we want to call a TTS API here
+		let songs = [
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sergio%27s Magic Dustbin.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Mesmerizing Galaxy Loop.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Lord of the Rangs.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Galactic Rap.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Equatorial Complex.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cloud Dancer.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Brain Dance.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Vibing Over Venus.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Southern Gothic.mp3",
+			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Morning.mp3",
+		];
+		return songs[segment.text.charCodeAt(0) % songs.length];
+	}
+
 	destroy(): void {
-		this._audio.pause();
+		for (let audio of this._audios) {
+			audio.pause();
+		}
 	}
 }
 
