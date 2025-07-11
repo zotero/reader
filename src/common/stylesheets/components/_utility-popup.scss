@@ -1,0 +1,61 @@
+.utility-popup {
+	@include control-popup;
+	z-index: $z-index-popup;
+	position: fixed; // Don't overflow the body
+	padding: 8px;
+	gap: 8px;
+}
+
+.read-aloud-popup {
+	top: $height-toolbar + 10px;
+	inset-inline-start: calc(var(--sidebar-width) + 10px);
+	width: 250px;
+
+	.row {
+		display: flex;
+		gap: 8px;
+
+		&.buttons {
+			justify-content: space-between;
+
+			.group {
+				display: flex;
+				gap: 4px;
+			}
+		}
+
+		&.speed {
+			input {
+				flex: 1;
+			}
+
+			label {
+				flex-shrink: 0;
+				font-variant: tabular-nums;
+			}
+		}
+
+		&.voices {
+			.select {
+				flex: 1;
+			}
+
+			.help-button {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 20px;
+				height: 20px;
+				border-radius: 100px;
+				background: var(--material-button);
+				box-shadow: $shadow-button;
+				font-size: 15px;
+				font-weight: 500;
+
+				&:active:not(.active):not(:disabled), &.active-pseudo-class-fix:not(.active):not(:disabled) {
+					background: var(--fill-quinary);
+				}
+			}
+		}
+	}
+}

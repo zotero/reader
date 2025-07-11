@@ -113,7 +113,7 @@ export type ViewStats = {
 	appearance?: Partial<ReflowableAppearance>;
 	fontFamily?: string;
 	outlinePath?: number[];
-	focusModeEnabled?: boolean;
+	readingModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -147,11 +147,7 @@ type ImagePopupParams = {
 	rect: ArrayRect;
 }
 
-type HiddenInFocusModeParams = {
-	type: 'hiddenInFocusMode';
-}
-
-export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams | HiddenInFocusModeParams;
+export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams;
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 
@@ -176,6 +172,24 @@ export type FindState = {
 	} | null;
 };
 
+export type ReadAloudState = {
+	active: boolean;
+	paused: boolean;
+	segments: ReadAloudSegment[] | null;
+	activeSegment: ReadAloudSegment | null;
+	backwardStopIndex: number | null;
+	forwardStopIndex: number | null;
+	targetPosition?: Position;
+	lang?: string;
+	speed: number;
+	voice: string | null;
+};
+
+export type ReadAloudSegment = {
+	position: Position;
+	text: string;
+};
+
 export type MaybePromise<T> = Promise<T> | T;
 
 export type ColorScheme = 'light' | 'dark';
@@ -195,4 +209,8 @@ export type ViewContextMenuOverlay =
 	| {
 		type: 'math';
 		tex: string;
+	}
+	| {
+		type: 'read-aloud';
+		position?: Position;
 	};
