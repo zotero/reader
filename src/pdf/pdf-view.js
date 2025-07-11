@@ -896,28 +896,32 @@ class PDFView {
 	}
 
 	findNext() {
-		this._findController.find({
-			type: 'again',
-			query: this._findState.query,
-			phraseSearch: true,
-			caseSensitive: this._findState.caseSensitive,
-			entireWord: this._findState.entireWord,
-			highlightAll: this._findState.highlightAll,
-			findPrevious: false
-		});
+		if (this._findState.active) {
+			this._findController.find({
+				type: 'again',
+				query: this._findState.query,
+				phraseSearch: true,
+				caseSensitive: this._findState.caseSensitive,
+				entireWord: this._findState.entireWord,
+				highlightAll: this._findState.highlightAll,
+				findPrevious: false
+			});
+		}
 	}
 
 	findPrevious() {
-		this._findController.find({
-			source: this._iframeWindow,
-			type: 'again',
-			query: this._findState.query,
-			phraseSearch: true,
-			caseSensitive: this._findState.caseSensitive,
-			entireWord: this._findState.entireWord,
-			highlightAll: this._findState.highlightAll,
-			findPrevious: true
-		});
+		if (this._findState.active) {
+			this._findController.find({
+				source: this._iframeWindow,
+				type: 'again',
+				query: this._findState.query,
+				phraseSearch: true,
+				caseSensitive: this._findState.caseSensitive,
+				entireWord: this._findState.entireWord,
+				highlightAll: this._findState.highlightAll,
+				findPrevious: true
+			});
+		}
 	}
 
 
