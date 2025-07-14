@@ -200,8 +200,10 @@ class BrowserReadAloudController extends ReadAloudController {
 		// has no effect in Chrome, ...)
 		if (!this._paused) {
 			let utterance = this._utterances[this._position];
-			utterance.rate = this._speed;
-			if (utterance) window.speechSynthesis.speak(utterance);
+			if (utterance) {
+				utterance.rate = this._speed;
+				window.speechSynthesis.speak(utterance);
+			}
 		}
 	});
 
