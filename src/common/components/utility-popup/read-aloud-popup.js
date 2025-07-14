@@ -19,6 +19,7 @@ function ReadAloudPopup(props) {
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
+	let [allProviders, setAllProviders] = useState(() => getAvailableProviders());
 
 	let controller = useMemo(() => {
 		if (!params.segments) {
@@ -40,6 +41,14 @@ function ReadAloudPopup(props) {
 		};
 	}, [controller]);
 
+	useEffect(() => {
+		let handleVoicesChanged = () => {
+			setAllProviders(getAvailableProviders());
+		};
+		window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
+		return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+	});
+
 	let languages = useMemo(() => [...new Set(
 		getAvailableProviders().map(provider => provider.lang)
 	)], []);
@@ -48,9 +57,10 @@ function ReadAloudPopup(props) {
 		return resolveLocale(params.lang || 'en', languages);
 	}, [params.lang, languages]);
 
-	let providers = useMemo(() => {
-		return getAvailableProviders().filter(p => p.lang.startsWith(resolvedLang));
-	}, [resolvedLang]);
+	let providers = useMemo(
+		() => allProviders.filter(p => p.lang.startsWith(resolvedLang)),
+		[allProviders, resolvedLang]
+	);
 
 	function handleSpeedChange(event) {
 		let input = event.target;
