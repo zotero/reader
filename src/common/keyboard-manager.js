@@ -33,11 +33,11 @@ export class KeyboardManager {
 	_handleKeyDown(event, view) {
 		let ctrl = event.ctrlKey;
 		let cmd = event.metaKey && isMac();
-		let mod = ctrl || cmd;
-		let shift = event.shiftKey;
+		// Primary modifier
+		let pm = isMac() ? 'Cmd' : 'Ctrl';
 
-		this.shift = shift;
-		this.mod = mod;
+		this.shift = event.shiftKey;
+		this.mod = ctrl || cmd;
 
 		if (event.repeat) {
 			return;
@@ -165,7 +165,7 @@ export class KeyboardManager {
 			}
 		}
 
-		if (['Cmd-a', 'Ctrl-a'].includes(key)) {
+		if (key === `${pm}-a`) {
 			// Prevent text selection if not inside a text box
 			if (!isTextBox(event.target)) {
 				event.preventDefault();
@@ -178,52 +178,52 @@ export class KeyboardManager {
 				}
 			}
 		}
-		else if (view && ['Cmd-z', 'Ctrl-z'].includes(key)) {
+		else if (view && key === `${pm}-z`) {
 			event.preventDefault();
 			this._reader._annotationManager.undo();
 			this._reader.setSelectedAnnotations([]);
 		}
-		else if (view && ['Cmd-Shift-z', 'Ctrl-Shift-z'].includes(key)) {
+		else if (view && key === `${pm}-Shift-z`) {
 			event.preventDefault();
 			this._reader._annotationManager.redo();
 			this._reader.setSelectedAnnotations([]);
 		}
-		else if (['Cmd-f', 'Ctrl-f'].includes(key)) {
+		else if (key === `${pm}-f`) {
 			event.preventDefault();
 			this._reader.toggleFindPopup({ open: true });
 		}
-		else if (['Cmd-Shift-g', 'Ctrl-Shift-g'].includes(key)) {
+		else if (key === `${pm}-Shift-g`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.findPrevious();
 		}
-		else if (['Cmd-g', 'Ctrl-g'].includes(key)) {
+		else if (key === `${pm}-g`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.findNext();
 		}
-		else if (['Cmd-Alt-g', 'Ctrl-Alt-g'].includes(key)) {
+		else if (key === `${pm}Alt-g`) {
 			event.preventDefault();
 			let pageNumberInput = document.getElementById('pageNumber');
 			pageNumberInput.focus();
 			pageNumberInput.select();
 		}
-		else if (['Cmd-p', 'Ctrl-p'].includes(key)) {
+		else if (key === `${pm}-p`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.print();
 		}
-		else if (['Cmd-=', 'Ctrl-='].includes(key)) {
+		else if (key === `${pm}-=`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.zoomIn();
 		}
-		else if (['Cmd--', 'Ctrl--'].includes(key)) {
+		else if (key === `${pm}--`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.zoomOut();
 		}
-		else if (['Cmd-0', 'Ctrl-0'].includes(key) || ['Cmd-Digit0', 'Ctrl-Digit0'].includes(code)) {
+		else if (key === `${pm}-0` || code === `${pm}-Digit0`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.zoomReset();
