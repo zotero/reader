@@ -1893,9 +1893,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				});
 			});
 		}
-		else {
-			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
-		}
 
 		if (state.segments !== null) {
 			return;
