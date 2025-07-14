@@ -213,12 +213,12 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.print();
 		}
-		else if (key === `${pm}-=`) {
+		else if (key === `${pm}-=` || key === `${pm}-+` || code === `${pm}-NumpadAdd`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.zoomIn();
 		}
-		else if (key === `${pm}--`) {
+		else if (key === `${pm}--` || code === `${pm}-NumpadSubtract`) {
 			event.preventDefault();
 			event.stopPropagation();
 			this._reader.zoomOut();
