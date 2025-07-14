@@ -48,20 +48,26 @@ export class KeyboardManager {
 
 		if (!isTextBox(event.target)) {
 			if (
-				key === 'Cmd-['
-				|| key === 'Cmd-ArrowLeft'
-				|| isLinux() && key === 'Ctrl-['
-				|| (isLinux() || isWin()) && key == 'Alt-ArrowLeft'
+				// macOS (ANSI/ISO)
+				(isMac() && ['Cmd-BracketLeft', 'Cmd-ArrowLeft'].includes(code))
+				// Windows / Linux
+				|| (isLinux() && code === 'Ctrl-BracketLeft')
+				|| ((isLinux() || isWin()) && code === 'Alt-ArrowLeft')
+				// Dedicated mouse / keyboard button
+				|| code === 'BrowserBack'
 			) {
 				this._reader.navigateBack();
 				event.preventDefault();
 				return;
 			}
 			if (
-				key === 'Cmd-]'
-				|| key === 'Cmd-ArrowRight'
-				|| isLinux() && key === 'Ctrl-]'
-				|| (isLinux() || isWin()) && key == 'Alt-ArrowRight'
+				// macOS (ANSI/ISO)
+				(isMac() && ['Cmd-BracketRight', 'Cmd-ArrowRight'].includes(code))
+				// Windows / Linux
+				|| (isLinux() && code === 'Ctrl-BracketRight')
+				|| ((isLinux() || isWin()) && code === 'Alt-ArrowRight')
+				// Dedicated mouse / keyboard button
+				|| code === 'BrowserForward'
 			) {
 				this._reader.navigateForward();
 				event.preventDefault();
