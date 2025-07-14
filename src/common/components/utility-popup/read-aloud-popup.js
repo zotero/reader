@@ -45,7 +45,7 @@ function ReadAloudPopup(props) {
 	)], []);
 
 	let resolvedLang = useMemo(() => {
-		return resolveLocale(params.lang || 'en-US', languages);
+		return resolveLocale(params.lang || 'en', languages);
 	}, [params.lang, languages]);
 
 	let providers = useMemo(() => {
