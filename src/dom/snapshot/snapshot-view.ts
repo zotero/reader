@@ -622,9 +622,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	protected override _getReadAloudSegments(): ReadAloudSegment[] {
-		if (this._readingMode.enabled) {
-			return super._getReadAloudSegments();
+	protected override _getReadAloudSegments(rootRanges?: Range[]): ReadAloudSegment[] {
+		if (rootRanges || this._readingMode.enabled) {
+			return super._getReadAloudSegments(rootRanges);
 		}
 
 		let segmentsWithReadingModeEnabled = this._keepSelection(() => {

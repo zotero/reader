@@ -1906,22 +1906,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
 		}
 
-		let segments: ReadAloudSegment[];
-		if (targetRange) {
-			let selector = this.toSelector(targetRange);
-			if (selector) {
-				segments = [{
-					position: selector,
-					text: targetRange.toString(),
-				}];
-			}
-			else {
-				segments = [];
-			}
-		}
-		else {
-			segments = this._getReadAloudSegments();
-		}
+		let segments = this._getReadAloudSegments(targetRange ? [targetRange] : undefined);
 
 		let backwardStopIndex: number | null = null;
 		let forwardStopIndex: number | null = null;
@@ -1953,10 +1938,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 	}
 
-	protected _getReadAloudSegments(): ReadAloudSegment[] {
+	protected _getReadAloudSegments(rootRanges?: Range[]): ReadAloudSegment[] {
 		let segments: ReadAloudSegment[] = [];
 
-		let rootRanges = this._getRoots(true).map((root) => {
+		rootRanges ??= this._getRoots(true).map((root) => {
 			let range = this._iframeDocument.createRange();
 			range.selectNodeContents(root);
 			return range;
