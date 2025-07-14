@@ -627,7 +627,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return super._getReadAloudSegments();
 		}
 
-		return this._keepSelection(() => {
+		let segmentsWithReadingModeEnabled = this._keepSelection(() => {
 			try {
 				this._readingMode.enabled = true;
 				return super._getReadAloudSegments();
@@ -637,6 +637,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				this._handleViewUpdate();
 			}
 		});
+
+		if (segmentsWithReadingModeEnabled.length) {
+			return segmentsWithReadingModeEnabled;
+		}
+
+		return super._getReadAloudSegments();
 	}
 
 	protected _setScale(scale: number) {
