@@ -46,8 +46,38 @@ function ReadAloudPopup(props) {
 	)], []);
 
 	let resolvedLang = useMemo(() => {
-		return resolveLocale(params.lang || 'en', languages);
+		let contentLanguageCode;
+		try {
+			contentLanguageCode = new Intl.Locale(params.lang).language;
+		}
+		catch (e) {
+			console.warn(`Invalid locale: ${params.lang}`);
+			contentLanguageCode = 'en';
+		}
+
+		let userLocale = navigator.languages[0];
+
+		// If the user's locale has the same language as the content locale
+		// (but possibly a different region), use the user's locale
+		if (userLocale.startsWith(contentLanguageCode) && languages.includes(userLocale)) {
+			return userLocale;
+		}
+		// Otherwise, if we know how to read the content locale, use that
+		if (languages.includes(params.lang)) {
+			return params.lang;
+		}
+		// Fall back to US English
+		if (languages.includes('en-US')) {
+			return 'en-US';
+		}
+		// Or, in the rare situation where the system can't read US English,
+		// whatever the first locale it can read is
+		return languages[0];
 	}, [params.lang, languages]);
+
+	useEffect(() => {
+		console.log(`Resolved ${params.lang} to ${resolvedLang}`);
+	}, [params.lang, resolvedLang]);
 
 	let providers = useMemo(
 		() => allProviders.filter(p => p.lang.startsWith(resolvedLang)),
@@ -197,48 +227,6 @@ function ReadAloudPopup(props) {
 			</>}
 		</UtilityPopup>
 	);
-}
-
-function resolveLocale(locale, locales) {
-	// Based on Zotero.Utilities.Internal.resolveLocale()
-
-	// If the locale exists as-is, use it
-	if (locales.includes(locale)) {
-		return locale;
-	}
-
-	// If there's a locale with just the language, use that
-	let langCode = locale.substring(0, 2);
-	if (locales.includes(langCode)) {
-		return langCode;
-	}
-
-	// Find locales matching language
-	let possibleLocales = locales.filter(x => x.substring(0, 2) === langCode);
-
-	// If none, use en-US
-	if (!possibleLocales.length) {
-		if (!locales.includes('en-US')) {
-			throw new Error("Locales not available");
-		}
-		return 'en-US';
-	}
-
-	possibleLocales.sort((a, b) => {
-		if (a === 'en-US') return -1;
-		if (b === 'en-US') return 1;
-
-		// Prefer canonical country (e.g., pt-PT over pt-BR)
-		if (a.substring(0, 2) === a.substring(3, 2).toLowerCase()) {
-			return -1;
-		}
-		if (b.substring(0, 2) === b.substring(3, 2).toLowerCase()) {
-			return 1;
-		}
-
-		return a.substring(3, 2).localeCompare(b.substring(3, 2));
-	});
-	return possibleLocales[0];
 }
 
 export default ReadAloudPopup;
