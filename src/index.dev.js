@@ -93,8 +93,8 @@ async function createReader() {
 		onSaveCustomThemes(customThemes) {
 			console.log('Save custom themes', customThemes);
 		},
-		onSetReadAloudVoice(lang, voice) {
-			console.log('Set read aloud voice', voice, 'for lang', lang);
+		onSetReadAloudVoice(lang, voice, speed) {
+			console.log('Set read aloud voice', voice, 'for lang', lang, 'with speed', speed);
 		}
 	});
 	reader.enableAddToNote(true);

@@ -85,8 +85,9 @@ function ReadAloudPopup(props) {
 	);
 
 	function handleSpeedChange(event) {
-		let input = event.target;
-		onChange({ speed: parseFloat(input.value) });
+		let speed = parseFloat(event.target.value);
+		onChange({ speed });
+		onSetVoice(resolvedLang, params.voice, speed);
 	}
 
 	// Pause while actively changing speed to avoid audio jank
@@ -108,8 +109,9 @@ function ReadAloudPopup(props) {
 			onOpenVoicePreferences();
 			return;
 		}
-		onChange({ voice: event.target.value });
-		onSetVoice(resolvedLang, event.target.value);
+		let voice = event.target.value;
+		onChange({ voice });
+		onSetVoice(resolvedLang, voice, params.speed);
 	}
 
 	useEffect(() => {
@@ -134,11 +136,11 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		if (!params.voice) {
-			onChange({
-				voice: voices.get(resolvedLang) || providers[0].id,
-			});
+			let { voice, speed } = voices.get(resolvedLang)
+				?? { voice: providers[0].id, speed: params.speed };
+			onChange({ voice, speed });
 		}
-	}, [onChange, params.voice, providers, resolvedLang, voices]);
+	}, [onChange, params.speed, params.voice, providers, resolvedLang, voices]);
 
 	let displayNames = new Intl.DisplayNames(undefined, {
 		type: 'language',
