@@ -10,12 +10,12 @@ import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import { useLocalization } from '@fluent/react';
 import Select from "../common/select";
-import { getAvailableProviders } from "../../read-aloud-provider";
+import { getAvailableProviders, waitForProviders } from '../../read-aloud-provider';
 
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
-	let { params, onChange, onOpenVoicePreferences, onClose } = props;
+	let { params, voices, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
@@ -40,14 +40,6 @@ function ReadAloudPopup(props) {
 			controller?.destroy();
 		};
 	}, [controller]);
-
-	useEffect(() => {
-		let handleVoicesChanged = () => {
-			setAllProviders(getAvailableProviders());
-		};
-		window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-		return () => window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-	});
 
 	let languages = useMemo(() => [...new Set(
 		getAvailableProviders().map(provider => provider.lang)
@@ -87,6 +79,7 @@ function ReadAloudPopup(props) {
 			return;
 		}
 		onChange({ voice: event.target.value });
+		onSetVoice(resolvedLang, event.target.value);
 	}
 
 	useEffect(() => {
@@ -101,11 +94,21 @@ function ReadAloudPopup(props) {
 		}
 	}, [controller, onChange, params.paused]);
 
-	if (!params.voice) {
-		setTimeout(() => {
-			onChange({ voice: providers[0].id });
-		});
-	}
+	useEffect(() => {
+		let waitForProvidersAndSet = async () => {
+			await waitForProviders();
+			setAllProviders(getAvailableProviders());
+		};
+		waitForProvidersAndSet();
+	}, []);
+
+	useEffect(() => {
+		if (!params.voice) {
+			onChange({
+				voice: voices.get(resolvedLang) || providers[0].id,
+			});
+		}
+	}, [onChange, params.voice, providers, resolvedLang, voices]);
 
 	let displayNames = new Intl.DisplayNames(undefined, {
 		type: 'language',

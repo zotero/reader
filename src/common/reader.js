@@ -306,6 +306,8 @@ class Reader {
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						readAloudVoices={this._readAloudVoices}
+						onSetReadAloudVoice={this._onSetReadAloudVoice}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
@@ -848,12 +850,7 @@ class Reader {
 		if (!this._state.readAloudState.active && !state.active) {
 			return;
 		}
-		state = { ...this._state.readAloudState, ...state };
-		if (state.voice !== this._state.readAloudState.voice) {
-			this._onSetReadAloudVoice(state.lang, state.voice);
-		}
-
-		this._updateState({ readAloudState: state });
+		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
 	}
 
 	openVoicePreferences() {
@@ -1118,7 +1115,6 @@ class Reader {
 			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
 			readAloudState: this._state.readAloudState,
-			readAloudVoices: this._readAloudVoices,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,

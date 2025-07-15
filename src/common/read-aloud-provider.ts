@@ -163,6 +163,14 @@ class BrowserReadAloudProvider implements ReadAloudProvider {
 		return new BrowserReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
+	static async waitForProviders(): Promise<void> {
+		if (!this.getAvailableProviders().length) {
+			await new Promise(
+				resolve => window.speechSynthesis.addEventListener('voiceschanged', resolve)
+			);
+		}
+	}
+
 	static getAvailableProviders(): BrowserReadAloudProvider[] {
 		let voices = window.speechSynthesis.getVoices();
 		let idsToNames = new Map<string, string>(); // Safari returns duplicates
@@ -234,6 +242,10 @@ class RemoteReadAloudProvider implements ReadAloudProvider {
 		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
+	static async waitForProviders(): Promise<void> {
+		// Nothing to do for now
+	}
+
 	static getAvailableProviders(): RemoteReadAloudProvider[] {
 		return [new RemoteReadAloudProvider()];
 	}
@@ -299,6 +311,13 @@ class RemoteReadAloudController extends ReadAloudController {
 			audio.pause();
 		}
 	}
+}
+
+export async function waitForProviders(): Promise<void> {
+	await Promise.all(
+		[BrowserReadAloudProvider, RemoteReadAloudProvider]
+			.map(providerClass => providerClass.waitForProviders())
+	);
 }
 
 export function getAvailableProviders(): ReadAloudProvider[] {

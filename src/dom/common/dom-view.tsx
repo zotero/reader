@@ -1911,7 +1911,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let backwardStopIndex: number | null = null;
 		let forwardStopIndex: number | null = null;
 		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
-		let voice = state.voice || this._options.readAloudVoices.get(lang) || null;
 
 		// Figure out where to put the stop positions
 		// If there's a selection, we start at the start of the selection and stop at the end
@@ -1934,7 +1933,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			forwardStopIndex,
 			targetPosition: undefined,
 			lang,
-			voice,
 		});
 	}
 
@@ -2032,7 +2030,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		else {
 			this._spotlights.delete(key);
 		}
-		this._renderAnnotations(true);
+		this._renderAnnotations();
 
 		if (selector === null || timeout === null) return;
 

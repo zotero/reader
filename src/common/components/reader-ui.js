@@ -155,6 +155,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
 						onToggleAppearancePopup={props.onToggleAppearancePopup}
 						onChangeReadAloudState={props.onChangeReadAloudState}
+						onSetReadAloudVoice={props.onSetReadAloudVoice}
 						onToggleReadAloud={props.onToggleReadAloud}
 						onToggleFind={props.onToggleFind}
 						onToggleContextPane={props.onToggleContextPane}
@@ -257,10 +258,12 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onClose={props.onCloseThemePopup}
 					/>
 				)}
-				{state.readAloudState.active && (
+				{state.readAloudState.active && state.readAloudState.segments && (
 					<ReadAloudPopup
 						params={state.readAloudState}
+						voices={props.readAloudVoices}
 						onChange={props.onChangeReadAloudState}
+						onSetVoice={props.onSetReadAloudVoice}
 						onOpenVoicePreferences={props.onOpenVoicePreferences}
 						onClose={() => props.onToggleReadAloud(false)}
 					/>
