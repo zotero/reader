@@ -1887,7 +1887,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			setTimeout(() => {
 				this._navigateToSelector(selector, {
 					ifNeeded: true,
-					visibilityMargin: -this._iframeWindow.innerHeight / 3, // Scroll early, scroll not quite as often
+					visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
 					block: 'center',
 					behavior: 'smooth'
 				});
