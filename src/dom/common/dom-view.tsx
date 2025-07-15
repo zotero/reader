@@ -2049,7 +2049,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			case SpotlightKey.Navigation:
 				return SELECTION_COLOR;
 			case SpotlightKey.ReadAloudActiveSegment:
-				return '#4072e5';
+				return '#4072e573';
 			default:
 				throw new Error('Unknown highlight key: ' + key);
 		}
