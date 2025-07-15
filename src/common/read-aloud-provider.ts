@@ -27,7 +27,7 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected readonly _backwardStopIndex: number | null;
 
-	protected readonly _forwardStopIndex: number | null;
+	protected _forwardStopIndex: number | null;
 
 	protected _paused = false;
 
@@ -98,7 +98,13 @@ export abstract class ReadAloudController extends EventTarget {
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', null));
 
 		if (this._position === index) {
-			if (this._position === (this._forwardStopIndex ?? this._segments.length) - 1) {
+			if (this._forwardStopIndex !== null && this._position === this._forwardStopIndex - 1) {
+				this._position = Math.min(this._position + 1, this._segments.length - 1);
+				this._forwardStopIndex = null;
+				this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._segments[this._position]));
+				this.dispatchEvent(new ReadAloudEvent('Complete', null));
+			}
+			else if (this._position === this._segments.length - 1) {
 				this._position = this._backwardStopIndex ?? 0;
 				this.dispatchEvent(new ReadAloudEvent('Complete', null));
 			}
