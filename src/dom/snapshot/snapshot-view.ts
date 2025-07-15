@@ -412,29 +412,24 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 			return;
 		}
+
 		let elem = getStartElement(range);
+
+		if (options.ifNeeded && isPageRectVisible(
+			getBoundingPageRect(elem ?? range),
+			this._iframeWindow,
+			options.visibilityMargin ?? 0
+		)) {
+			return;
+		}
+
 		if (elem) {
-			if (options.ifNeeded && isPageRectVisible(
-				getBoundingPageRect(elem),
-				this._iframeWindow,
-				options.visibilityMargin ?? 0
-			)) {
-				return;
-			}
 			elem.scrollIntoView(options);
 			// Remember which node was navigated to for screen readers to place
 			// virtual cursor on it later. Used for navigating between sections in the outline.
 			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
 				this._a11yVirtualCursorTarget = elem;
 			});
-		}
-
-		if (options.ifNeeded && isPageRectVisible(
-			getBoundingPageRect(range),
-			this._iframeWindow,
-			options.visibilityMargin ?? 0
-		)) {
-			return;
 		}
 
 		scrollIntoView(range, options);
@@ -634,9 +629,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 			finally {
 				this._readingMode.enabled = false;
-				this._handleViewUpdate();
 			}
 		});
+		this._handleViewUpdate();
 
 		if (segmentsWithReadingModeEnabled.length) {
 			return segmentsWithReadingModeEnabled;
