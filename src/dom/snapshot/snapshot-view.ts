@@ -12,7 +12,8 @@ import {
 	getBoundingPageRect,
 	getInnerText,
 	getStartElement,
-	moveRangeEndsIntoTextNodes
+	moveRangeEndsIntoTextNodes,
+	PersistentRange
 } from "../common/lib/range";
 import {
 	CssSelector,
@@ -617,15 +618,19 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	protected override _getReadAloudSegments(rootRanges?: Range[]): ReadAloudSegment[] {
-		if (rootRanges || this._readingMode.enabled) {
-			return super._getReadAloudSegments(rootRanges);
+	protected override _getAllReadAloudRanges(): Range[] {
+		if (this._readingMode.enabled) {
+			return super._getAllReadAloudRanges();
 		}
 
 		let segmentsWithReadingModeEnabled = this._keepSelection(() => {
 			try {
 				this._readingMode.enabled = true;
-				return super._getReadAloudSegments();
+				return super._getAllReadAloudRanges().map((range) => {
+					let mappedRange = this._readingMode.mapRangeFromFocus(range);
+					if (!mappedRange) return null;
+					return new PersistentRange(mappedRange);
+				}).filter(Boolean) as PersistentRange[];
 			}
 			finally {
 				this._readingMode.enabled = false;
@@ -634,10 +639,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._handleViewUpdate();
 
 		if (segmentsWithReadingModeEnabled.length) {
-			return segmentsWithReadingModeEnabled;
+			return segmentsWithReadingModeEnabled.map(r => r.toRange());
 		}
 
-		return super._getReadAloudSegments();
+		return super._getAllReadAloudRanges();
 	}
 
 	protected _setScale(scale: number) {

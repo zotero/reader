@@ -165,6 +165,114 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 	return ranges;
 }
 
+function splitRangeAtContainedPoints(
+	range: Range,
+	splitAtRange: Range
+): {
+	ranges: Range[];
+	containedStart: boolean;
+	containedEnd: boolean;
+	splitIndex: number;
+} {
+	let ranges: Range[] = [];
+	let containedStart = false;
+	let containedEnd = false;
+	let splitIndex = -1;
+
+	if (
+		range.compareBoundaryPoints(Range.START_TO_START, splitAtRange) <= 0
+		&& range.compareBoundaryPoints(Range.START_TO_END, splitAtRange) >= 0
+	) {
+		containedStart = true;
+	}
+
+	if (
+		range.compareBoundaryPoints(Range.END_TO_START, splitAtRange) <= 0
+		&& range.compareBoundaryPoints(Range.END_TO_END, splitAtRange) >= 0
+	) {
+		containedEnd = true;
+	}
+
+	if (containedStart) {
+		let before = range.cloneRange();
+		before.setEnd(splitAtRange.startContainer, splitAtRange.startOffset);
+		if (!before.collapsed) ranges.push(before);
+	}
+
+	if (containedStart || containedEnd) {
+		let middle = range.cloneRange();
+		let start = containedStart
+			? splitAtRange.startContainer
+			: range.startContainer;
+		let startOffset = containedStart
+			? splitAtRange.startOffset
+			: range.startOffset;
+		let end = containedEnd
+			? splitAtRange.endContainer
+			: range.endContainer;
+		let endOffset = containedEnd
+			? splitAtRange.endOffset
+			: range.endOffset;
+
+		middle.setStart(start, startOffset);
+		middle.setEnd(end, endOffset);
+
+		if (!middle.collapsed) {
+			ranges.push(middle);
+			splitIndex = ranges.length - 1;
+		}
+	}
+	else if (!range.collapsed) {
+		ranges.push(range);
+		splitIndex = ranges.length - 1;
+	}
+
+	if (containedEnd) {
+		let after = range.cloneRange();
+		after.setStart(splitAtRange.endContainer, splitAtRange.endOffset);
+		if (!after.collapsed) ranges.push(after);
+	}
+
+	return {
+		ranges,
+		containedStart,
+		containedEnd,
+		splitIndex,
+	};
+}
+
+export function splitRanges(
+	ranges: Range[],
+	splitAtRange: Range
+): { ranges: Range[]; startIndex: number; endIndex: number } | null {
+	let newRanges: Range[] = [];
+	let startIndex = -1;
+	let endIndex = -1;
+
+	for (let i = 0; i < ranges.length; i++) {
+		let range = ranges[i];
+		if (range === splitAtRange) continue;
+		let { ranges: splitRanges, containedStart, containedEnd, splitIndex } = splitRangeAtContainedPoints(range, splitAtRange);
+		if (containedStart) {
+			startIndex = newRanges.length + splitIndex;
+		}
+		if (containedEnd) {
+			endIndex = newRanges.length + splitIndex + 1;
+		}
+		newRanges.push(...splitRanges);
+	}
+
+	if (startIndex === -1 || endIndex === -1) {
+		return null;
+	}
+
+	return {
+		ranges: newRanges,
+		startIndex,
+		endIndex
+	};
+}
+
 /**
  * Create a single range spanning all the positions included in the set of input ranges. For
  * example, if rangeA goes from nodeA at offset 5 to nodeB at offset 2 and rangeB goes from nodeC

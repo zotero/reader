@@ -40,6 +40,7 @@ import {
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
+	splitRanges,
 	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges } from "./lib/selection";
@@ -1898,6 +1899,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
+		let ranges = this._getAllReadAloudRanges();
+
 		let targetRange: Range | null = null;
 		if (state.targetPosition) {
 			targetRange = this.toDisplayedRange(state.targetPosition as Selector);
@@ -1906,23 +1909,39 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
 		}
 
-		let segments = this._getReadAloudSegments(targetRange ? [targetRange] : undefined);
-
 		let backwardStopIndex: number | null = null;
 		let forwardStopIndex: number | null = null;
-		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
-
-		// Figure out where to put the stop positions
-		// If there's a selection, we start at the start of the selection and stop at the end
-		if (!targetRange) {
-			backwardStopIndex = segments.findIndex((segment) => {
-				let range = this.toDisplayedRange(segment.position as Selector);
-				return range && isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow);
-			});
+		if (targetRange) {
+			let split = splitRanges(ranges, targetRange);
+			if (split) {
+				ranges = split.ranges;
+				backwardStopIndex = split.startIndex;
+				forwardStopIndex = split.endIndex;
+			}
+			else {
+				ranges = this._getReadAloudRanges(targetRange);
+			}
+		}
+		else {
+			backwardStopIndex = ranges.findIndex(
+				range => isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow)
+			);
 			if (backwardStopIndex === -1) {
 				backwardStopIndex = null;
 			}
 		}
+
+		let segments = ranges
+			.map(r => this._readAloudRangeToSegment(r))
+			.filter((segment, i) => {
+				if (segment) {
+					return true;
+				}
+				if (backwardStopIndex !== null && backwardStopIndex >= i) backwardStopIndex--;
+				if (forwardStopIndex !== null && forwardStopIndex >= i) forwardStopIndex--;
+				return false;
+			}) as ReadAloudSegment[];
+		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
 
 		this._options.onSetReadAloudState({
 			...state,
@@ -1936,59 +1955,58 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 	}
 
-	protected _getReadAloudSegments(rootRanges?: Range[]): ReadAloudSegment[] {
-		let segments: ReadAloudSegment[] = [];
-
-		rootRanges ??= this._getRoots(true).map((root) => {
+	protected _getAllReadAloudRanges(): Range[] {
+		let rootRanges = this._getRoots(true).map((root) => {
 			let range = this._iframeDocument.createRange();
 			range.selectNodeContents(root);
 			return range;
 		});
+		return rootRanges.flatMap(rootRange => this._getReadAloudRanges(rootRange));
+	}
 
-		for (let rootRange of rootRanges) {
-			// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
-			let matches = new Set();
-			let filter = (node: Node) => {
-				if (matches.has(node.parentNode)) {
-					// Reject sub-trees of accepted nodes.
-					return NodeFilter.FILTER_REJECT;
-				}
-				if (!/\S/.test(node.textContent!)) {
-					// Reject nodes with no text.
-					return NodeFilter.FILTER_REJECT;
-				}
-				for (let c = node.firstChild; c; c = c.nextSibling) {
-					if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
-						// If node has a non-empty text child accept it.
-						matches.add(node);
-						return NodeFilter.FILTER_ACCEPT;
-					}
-				}
-				return NodeFilter.FILTER_SKIP;
-			};
-
-			let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
-			let elementRanges = [...iterateWalker(walker)].map((el) => {
-				let range = this._iframeDocument.createRange();
-				range.selectNodeContents(el);
-				return range;
-			});
-
-			// If there weren't any element children, just use the whole root range
-			if (!elementRanges.length) {
-				elementRanges = [rootRange];
+	protected _getReadAloudRanges(rootRange: Range): Range[] {
+		// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
+		let matches = new Set();
+		let filter = (node: Node) => {
+			if (matches.has(node.parentNode)) {
+				// Reject sub-trees of accepted nodes.
+				return NodeFilter.FILTER_REJECT;
 			}
-
-			for (let elementRange of elementRanges) {
-				let text = elementRange.toString();
-				if (!text) continue;
-				let position = this.toSelector(elementRange);
-				if (!position) continue;
-				segments.push({ text, position });
+			if (!/\S/.test(node.textContent!)) {
+				// Reject nodes with no text.
+				return NodeFilter.FILTER_REJECT;
 			}
+			for (let c = node.firstChild; c; c = c.nextSibling) {
+				if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
+					// If node has a non-empty text child accept it.
+					matches.add(node);
+					return NodeFilter.FILTER_ACCEPT;
+				}
+			}
+			return NodeFilter.FILTER_SKIP;
+		};
+
+		let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
+		let elementRanges = [...iterateWalker(walker)].map((el) => {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(el);
+			return range;
+		});
+
+		// If there weren't any element children, just use the whole root range
+		if (!elementRanges.length) {
+			elementRanges = [rootRange];
 		}
 
-		return segments;
+		return elementRanges;
+	}
+
+	protected _readAloudRangeToSegment(range: Range): ReadAloudSegment | null {
+		let text = range.toString();
+		if (!text) return null;
+		let position = this.toSelector(range);
+		if (!position) return null;
+		return { text, position };
 	}
 
 	// ***
