@@ -4,7 +4,6 @@ import {
 	FindState,
 	NavLocation,
 	NewAnnotation,
-	ReadAloudSegment,
 	ViewStats,
 	OutlineItem
 } from "../../common/types";
