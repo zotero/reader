@@ -179,6 +179,17 @@ function splitRangeAtContainedPoints(
 	let containedEnd = false;
 	let splitIndex = -1;
 
+	// If these ranges aren't comparable, we can't split
+	// Bail out now
+	if (range.commonAncestorContainer.getRootNode() !== splitAtRange.commonAncestorContainer.getRootNode()) {
+		return {
+			ranges: [range],
+			containedStart: false,
+			containedEnd: false,
+			splitIndex: -1,
+		};
+	}
+
 	if (
 		range.compareBoundaryPoints(Range.START_TO_START, splitAtRange) <= 0
 		&& range.compareBoundaryPoints(Range.START_TO_END, splitAtRange) >= 0
