@@ -165,93 +165,6 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 	return ranges;
 }
 
-function splitRangeAtContainedPoints(
-	range: Range,
-	splitAtRange: Range
-): {
-	ranges: Range[];
-	containedStart: boolean;
-	containedEnd: boolean;
-	splitIndex: number;
-} {
-	let ranges: Range[] = [];
-	let containedStart = false;
-	let containedEnd = false;
-	let splitIndex = -1;
-
-	// If these ranges aren't comparable, we can't split
-	// Bail out now
-	if (range.commonAncestorContainer.getRootNode() !== splitAtRange.commonAncestorContainer.getRootNode()) {
-		return {
-			ranges: [range],
-			containedStart: false,
-			containedEnd: false,
-			splitIndex: -1,
-		};
-	}
-
-	if (
-		range.compareBoundaryPoints(Range.START_TO_START, splitAtRange) <= 0
-		&& range.compareBoundaryPoints(Range.START_TO_END, splitAtRange) >= 0
-	) {
-		containedStart = true;
-	}
-
-	if (
-		range.compareBoundaryPoints(Range.END_TO_START, splitAtRange) <= 0
-		&& range.compareBoundaryPoints(Range.END_TO_END, splitAtRange) >= 0
-	) {
-		containedEnd = true;
-	}
-
-	if (containedStart) {
-		let before = range.cloneRange();
-		before.setEnd(splitAtRange.startContainer, splitAtRange.startOffset);
-		if (!before.collapsed) ranges.push(before);
-	}
-
-	if (containedStart || containedEnd) {
-		let middle = range.cloneRange();
-		let start = containedStart
-			? splitAtRange.startContainer
-			: range.startContainer;
-		let startOffset = containedStart
-			? splitAtRange.startOffset
-			: range.startOffset;
-		let end = containedEnd
-			? splitAtRange.endContainer
-			: range.endContainer;
-		let endOffset = containedEnd
-			? splitAtRange.endOffset
-			: range.endOffset;
-
-		middle.setStart(start, startOffset);
-		middle.setEnd(end, endOffset);
-
-		if (!middle.collapsed) {
-			ranges.push(middle);
-			splitIndex = ranges.length - 1;
-		}
-	}
-	else if (!range.collapsed) {
-		ranges.push(range);
-		splitIndex = ranges.length - 1;
-	}
-
-	if (containedEnd) {
-		let after = range.cloneRange();
-		after.setStart(splitAtRange.endContainer, splitAtRange.endOffset);
-		if (!after.collapsed) ranges.push(after);
-	}
-
-	return {
-		ranges,
-		containedStart,
-		containedEnd,
-		splitIndex,
-	};
-}
-
 export function splitRanges(
 	ranges: Range[],
 	splitAtRange: Range
@@ -260,14 +173,93 @@ export function splitRanges(
 	let startIndex = -1;
 	let endIndex = -1;
 
+	let lastStartToStart: number | null = null;
+	let lastStartToEnd: number | null = null;
+	let lastEndToStart: number | null = null;
+	let lastEndToEnd: number | null = null;
+
 	for (let i = 0; i < ranges.length; i++) {
 		let range = ranges[i];
-		if (range === splitAtRange) continue;
-		let { ranges: splitRanges, containedStart, containedEnd, splitIndex } = splitRangeAtContainedPoints(range, splitAtRange);
+		if (range === splitAtRange) {
+			continue;
+		}
+		if (startIndex !== -1 && endIndex !== -1) {
+			newRanges.push(range);
+			continue;
+		}
+		// If these ranges aren't comparable, we can't split
+		if (range.commonAncestorContainer.getRootNode() !== splitAtRange.commonAncestorContainer.getRootNode()) {
+			newRanges.push(range);
+			continue;
+		}
+
+		let splitRanges: Range[] = [];
+		let containedStart = false;
+		let containedEnd = false;
+		let splitIndex = -1;
+
+		let startToStart = range.compareBoundaryPoints(Range.START_TO_START, splitAtRange);
+		let startToEnd = range.compareBoundaryPoints(Range.START_TO_END, splitAtRange);
+		if (
+			// If the start point of splitAtRange is somewhere within range,
+			// or it was somewhere between the last range and this range
+			(startToStart <= 0 || lastStartToStart === -1 && startToStart === 1)
+			&& (startToEnd >= 0 || lastStartToEnd === -1 && startToEnd === 1)
+		) {
+			containedStart = true;
+		}
+		lastStartToStart = startToStart;
+		lastStartToEnd = startToEnd;
+
+		let endToStart = range.compareBoundaryPoints(Range.END_TO_START, splitAtRange);
+		let endToEnd = range.compareBoundaryPoints(Range.END_TO_END, splitAtRange);
+		if (
+			// If the end point of splitAtRange is somewhere within range,
+			// or it was somewhere between the last range and this range
+			(endToStart <= 0 || lastEndToStart === -1 && endToStart === 1)
+			&& (endToEnd >= 0 || lastEndToEnd === -1 && endToEnd === 1)
+		) {
+			containedEnd = true;
+		}
+		lastEndToStart = endToStart;
+		lastEndToEnd = endToEnd;
+
 		if (containedStart) {
+			let before = range.cloneRange();
+			before.setEnd(splitAtRange.startContainer, splitAtRange.startOffset);
+			if (!before.collapsed) splitRanges.push(before);
+		}
+
+		if (containedStart || containedEnd) {
+			let middle = range.cloneRange();
+			let start = (containedStart ? splitAtRange : range).startContainer;
+			let startOffset = (containedStart ? splitAtRange : range).startOffset;
+			let end = (containedEnd ? splitAtRange : range).endContainer;
+			let endOffset = (containedEnd ? splitAtRange : range).endOffset;
+
+			middle.setStart(start, startOffset);
+			middle.setEnd(end, endOffset);
+
+			if (!middle.collapsed) {
+				splitRanges.push(middle);
+				splitIndex = splitRanges.length - 1;
+			}
+		}
+		else if (!range.collapsed) {
+			splitRanges.push(range);
+			splitIndex = splitRanges.length - 1;
+		}
+
+		if (containedEnd) {
+			let after = range.cloneRange();
+			after.setStart(splitAtRange.endContainer, splitAtRange.endOffset);
+			if (!after.collapsed) splitRanges.push(after);
+		}
+
+		if (startIndex === -1 && containedStart) {
 			startIndex = newRanges.length + splitIndex;
 		}
-		if (containedEnd) {
+		if (endIndex === -1 && containedEnd) {
 			endIndex = newRanges.length + splitIndex + 1;
 		}
 		newRanges.push(...splitRanges);
