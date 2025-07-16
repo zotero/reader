@@ -1977,6 +1977,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 	}
 
+	get hasReadAloudTarget(): boolean {
+		return !!this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed;
+	}
+
 	protected _getAllReadAloudRanges(): Range[] {
 		let rootRanges = this._getRoots(true).map((root) => {
 			let range = this._iframeDocument.createRange();

@@ -509,6 +509,14 @@ class Reader {
 		}
 
 		if (this._state.readAloudState !== previousState.readAloudState) {
+			// If the view has a new Read Aloud target, reset our state
+			if (!this._state.readAloudState.paused && previousState.readAloudState.paused
+					&& this._primaryView?.hasReadAloudTarget) {
+				this._state.readAloudState.segments = null;
+				this._state.readAloudState.backwardStopIndex = null;
+				this._state.readAloudState.forwardStopIndex = null;
+				this._state.readAloudState.activeSegment = null;
+			}
 			this._primaryView?.setReadAloudState(this._state.readAloudState);
 			this._secondaryView?.setReadAloudState(this._state.readAloudState);
 		}
