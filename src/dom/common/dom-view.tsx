@@ -1890,7 +1890,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (selector) {
 				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
 				setTimeout(() => {
-					this._navigateToSelector(selector, {
+					// Navigate to the start of the segment if possible
+					let startRange = range.cloneRange();
+					startRange.collapse(true);
+					let startSelector = this.toSelector(startRange);
+
+					this._navigateToSelector(startSelector || selector, {
 						ifNeeded: true,
 						visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
 						block: 'center',
