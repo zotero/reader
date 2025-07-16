@@ -1912,6 +1912,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		else if (!this._iframeDocument.getSelection()!.isCollapsed) {
 			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
+			this._iframeDocument.getSelection()!.collapseToStart();
 		}
 
 		let backwardStopIndex: number | null = null;
