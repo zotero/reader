@@ -22,6 +22,7 @@ import {
 	ViewContextMenuOverlay,
 	ViewStats,
 	WADMAnnotation,
+	RangeRef,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import { flushSync } from "react-dom";
@@ -31,7 +32,7 @@ import {
 	DisplayedAnnotation
 } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { isSelector, Selector } from "./lib/selector";
+import { Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
 	createRangeWalker,
@@ -1882,17 +1883,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (isSelector(state.activeSegment?.position)) {
-			let selector = state.activeSegment.position;
-			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
-			setTimeout(() => {
-				this._navigateToSelector(selector, {
-					ifNeeded: true,
-					visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
-					block: 'center',
-					behavior: 'smooth'
+		if (state.activeSegment?.position) {
+			let { range } = state.activeSegment.position as RangeRef;
+			let selector = this.toSelector(range);
+			if (selector) {
+				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
+				setTimeout(() => {
+					this._navigateToSelector(selector, {
+						ifNeeded: true,
+						visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
+						block: 'center',
+						behavior: 'smooth'
+					});
 				});
-			});
+			}
 		}
 
 		if (state.segments !== null) {
@@ -2004,8 +2008,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _readAloudRangeToSegment(range: Range): ReadAloudSegment | null {
 		let text = range.toString();
 		if (!text) return null;
-		let position = this.toSelector(range);
-		if (!position) return null;
+		let position = { range };
 		return { text, position };
 	}
 

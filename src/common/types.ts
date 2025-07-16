@@ -60,12 +60,16 @@ export type NavLocation = {
 	scrollCoords?: [number, number];
 };
 
-export type Position = PDFPosition | Selector;
+export type Position = PDFPosition | Selector | RangeRef;
 
 export type PDFPosition = {
 	pageIndex: number;
 	rects?: number[][];
 	paths?: number[][];
+};
+
+export type RangeRef = {
+	range: Range;
 };
 
 type NewAnnotationOptionalFields =
