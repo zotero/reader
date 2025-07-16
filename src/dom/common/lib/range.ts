@@ -178,11 +178,7 @@ export function splitRanges(
 	let lastEndToStart: number | null = null;
 	let lastEndToEnd: number | null = null;
 
-	for (let i = 0; i < ranges.length; i++) {
-		let range = ranges[i];
-		if (range === splitAtRange) {
-			continue;
-		}
+	for (let range of ranges) {
 		if (startIndex !== -1 && endIndex !== -1) {
 			newRanges.push(range);
 			continue;
