@@ -194,31 +194,35 @@ export function splitRanges(
 		let containedEnd = false;
 		let splitIndex = -1;
 
-		let startToStart = range.compareBoundaryPoints(Range.START_TO_START, splitAtRange);
-		let startToEnd = range.compareBoundaryPoints(Range.START_TO_END, splitAtRange);
-		if (
-			// If the start point of splitAtRange is somewhere within range,
-			// or it was somewhere between the last range and this range
-			(startToStart <= 0 || lastStartToStart === -1 && startToStart === 1)
-			&& (startToEnd >= 0 || lastStartToEnd === -1 && startToEnd === 1)
-		) {
-			containedStart = true;
+		if (startIndex === -1) {
+			let startToStart = range.compareBoundaryPoints(Range.START_TO_START, splitAtRange);
+			let startToEnd = range.compareBoundaryPoints(Range.START_TO_END, splitAtRange);
+			if (
+				// If the start point of splitAtRange is somewhere within range,
+				// or it was somewhere between the last range and this range
+				(startToStart <= 0 || lastStartToStart === -1 && startToStart === 1)
+				&& (startToEnd >= 0 || lastStartToEnd === -1 && startToEnd === 1)
+			) {
+				containedStart = true;
+			}
+			lastStartToStart = startToStart;
+			lastStartToEnd = startToEnd;
 		}
-		lastStartToStart = startToStart;
-		lastStartToEnd = startToEnd;
 
-		let endToStart = range.compareBoundaryPoints(Range.END_TO_START, splitAtRange);
-		let endToEnd = range.compareBoundaryPoints(Range.END_TO_END, splitAtRange);
-		if (
-			// If the end point of splitAtRange is somewhere within range,
-			// or it was somewhere between the last range and this range
-			(endToStart <= 0 || lastEndToStart === -1 && endToStart === 1)
-			&& (endToEnd >= 0 || lastEndToEnd === -1 && endToEnd === 1)
-		) {
-			containedEnd = true;
+		if (endIndex === -1) {
+			let endToStart = range.compareBoundaryPoints(Range.END_TO_START, splitAtRange);
+			let endToEnd = range.compareBoundaryPoints(Range.END_TO_END, splitAtRange);
+			if (
+				// If the end point of splitAtRange is somewhere within range,
+				// or it was somewhere between the last range and this range
+				(endToStart <= 0 || lastEndToStart === -1 && endToStart === 1)
+				&& (endToEnd >= 0 || lastEndToEnd === -1 && endToEnd === 1)
+			) {
+				containedEnd = true;
+			}
+			lastEndToStart = endToStart;
+			lastEndToEnd = endToEnd;
 		}
-		lastEndToStart = endToStart;
-		lastEndToEnd = endToEnd;
 
 		if (containedStart) {
 			let before = range.cloneRange();
@@ -252,10 +256,10 @@ export function splitRanges(
 			if (!after.collapsed) splitRanges.push(after);
 		}
 
-		if (startIndex === -1 && containedStart) {
+		if (containedStart) {
 			startIndex = newRanges.length + splitIndex;
 		}
-		if (endIndex === -1 && containedEnd) {
+		if (containedEnd) {
 			endIndex = newRanges.length + splitIndex + 1;
 		}
 		newRanges.push(...splitRanges);
