@@ -47,7 +47,7 @@ export function isPageRectVisible(rect: DOMRectReadOnly, win: Window, margin = 5
 	);
 }
 
-export function isPageRectFullyContained(rect: DOMRectReadOnly, win: Window) {
+export function isPageRectFullyVisible(rect: DOMRectReadOnly, win: Window) {
 	if (isErrorRect(rect)) {
 		return false;
 	}

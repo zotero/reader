@@ -64,7 +64,8 @@ import {
 import { debounce } from "../../common/lib/debounce";
 import {
 	getBoundingRect,
-	isPageRectFullyContained,
+	isErrorRect,
+	isPageRectFullyVisible,
 	isPageRectVisible,
 	pageRectToClientRect,
 	rectContainsPoint
@@ -1928,8 +1929,25 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		else {
 			backwardStopIndex = ranges.findIndex(
-				range => isPageRectFullyContained(getBoundingPageRect(range), this._iframeWindow)
+				range => isPageRectFullyVisible(getBoundingPageRect(range), this._iframeWindow)
 			);
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = ranges.findIndex(
+					range => isPageRectVisible(getBoundingPageRect(range), this._iframeWindow)
+				);
+			}
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = ranges.findIndex(
+					range => isPageRectVisible(getBoundingPageRect(range), this._iframeWindow,
+						this._iframeWindow.innerWidth)
+				);
+			}
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = ranges.findIndex((range) => {
+					let rect = range.getBoundingClientRect();
+					return !isErrorRect(rect) && rect.x >= 0;
+				});
+			}
 			if (backwardStopIndex === -1) {
 				backwardStopIndex = null;
 			}
