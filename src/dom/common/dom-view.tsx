@@ -1965,8 +1965,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				if (segment) {
 					return true;
 				}
-				if (backwardStopIndex !== null && backwardStopIndex >= i) backwardStopIndex--;
-				if (forwardStopIndex !== null && forwardStopIndex >= i) forwardStopIndex--;
+				if (backwardStopIndex !== null && backwardStopIndex > i) backwardStopIndex--;
+				if (forwardStopIndex !== null && forwardStopIndex > i) forwardStopIndex--;
 				return false;
 			}) as ReadAloudSegment[];
 		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
@@ -2035,7 +2035,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _readAloudRangeToSegment(range: Range): ReadAloudSegment | null {
 		let text = range.toString();
-		if (!text) return null;
+		if (!text.trim()) return null;
 		let position = { range };
 		return { text, position };
 	}
