@@ -224,9 +224,9 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
 
-	let outerGroupRef = useRef<SVGGElement>(null);
-	let rectGroupRef = useRef<SVGGElement>(null);
-	let dragImageRef = isSafari ? outerGroupRef : rectGroupRef;
+	let groupRef = useRef<SVGGElement>(null);
+	let pathRef = useRef<SVGPathElement>(null);
+	let dragImageRef = isSafari ? groupRef : pathRef;
 
 	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		onPointerDown?.(annotation, event);
@@ -326,21 +326,21 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let vert = isVertical(annotation.range.commonAncestorContainer);
 	let rtl = isRTL(annotation.range.commonAncestorContainer);
 	let underline = annotation.type === 'underline';
-	let rectGroup = useMemo(() => {
-		return <g ref={rectGroupRef}>
-			{rects.map((rect, i) => (
-				<rect
-					x={vert && underline ? rect.x + (rtl ? -3 : rect.width) : rect.x}
-					y={!vert && underline ? rect.y + rect.height : rect.y}
-					width={vert && underline ? 3 : rect.width}
-					height={!vert && underline ? 3 : rect.height}
-					rx={isSpotlight ? 5 : undefined}
-					opacity="50%"
-					key={i}
-				/>
-			))}
-		</g>;
-	}, [isSpotlight, rects, rtl, underline, vert]);
+	let path = useMemo(() => {
+		return (
+			<path
+				ref={pathRef}
+				opacity="50%"
+				d={rects.map((rect) => {
+					let x = vert && underline ? rect.x + (rtl ? -3 : rect.width) : rect.x;
+					let y = !vert && underline ? rect.y + rect.height : rect.y;
+					let width = vert && underline ? 3 : rect.width;
+					let height = !vert && underline ? 3 : rect.height;
+					return `M ${x} ${y} h ${width} v ${height} H ${x} V ${y}`;
+				}).join('\n')}
+			/>
+		);
+	}, [rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
 		if (isResizing) {
@@ -433,9 +433,9 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			tabIndex={-1}
 			data-annotation-id={annotation.id}
 			fill={annotation.color}
-			ref={outerGroupRef}
+			ref={groupRef}
 		>
-			{rectGroup}
+			{path}
 			{foreignObjects}
 			{resizer}
 		</g>
