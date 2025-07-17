@@ -191,6 +191,7 @@ function ReadAloudPopup(props) {
 				<div className="row speed" data-tabstop={1}>
 					<input
 						id="read-aloud-speed"
+						aria-label={l10n.getString('reader-read-aloud-speed')}
 						type="range"
 						min="0.5"
 						max="2.0"
