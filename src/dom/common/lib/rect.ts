@@ -71,12 +71,12 @@ export function pageRectToClientRect(pageRect: DOMRectReadOnly, win: Window) {
 	);
 }
 
-export function expandRect(rect: DOMRectReadOnly, margin: number): DOMRect {
+export function expandRect(rect: DOMRectReadOnly, marginInline: number, marginBlock: number = marginInline): DOMRect {
 	return DOMRect.fromRect({
-		x: rect.left - margin,
-		y: rect.top - margin,
-		width: rect.width + margin * 2,
-		height: rect.height + margin * 2,
+		x: rect.left - marginInline,
+		y: rect.top - marginBlock,
+		width: rect.width + marginInline * 2,
+		height: rect.height + marginBlock * 2,
 	});
 }
 

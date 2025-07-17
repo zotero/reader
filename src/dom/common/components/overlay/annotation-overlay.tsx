@@ -279,17 +279,25 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	}, [allowResize, annotation, handleResizeEnd, isResizing]);
 
 	let { rects, interactiveRects, commentIconPosition } = useMemo(() => {
-		let ranges = isSpotlight ? [annotation.range] : splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
+		let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
 		let rects = new Map<string, DOMRect>();
 		let interactiveRects = new Set<DOMRect>();
 		for (let range of ranges) {
 			let closestInteractiveElement = range.startContainer.parentElement?.closest('a, area');
-			for (let rect of isSpotlight ? getColumnSeparatedPageRects(range) : getPageRects(range)) {
+			for (let rect of getPageRects(range)) {
 				if (rect.width == 0 || rect.height == 0) {
 					continue;
 				}
 				if (isSpotlight) {
-					rect = expandRect(rect, 6);
+					let marginInline = 2;
+					let marginBlock = 0;
+
+					let element = closestElement(range.startContainer);
+					if (element) {
+						marginBlock = (parseFloat(getComputedStyle(element).lineHeight) - rect.height) / 2;
+					}
+
+					rect = expandRect(rect, marginInline, marginBlock);
 				}
 				let key = JSON.stringify(rect);
 				if (!rects.has(key)) {
