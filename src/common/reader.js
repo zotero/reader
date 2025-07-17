@@ -900,13 +900,15 @@ class Reader {
 		}
 	}
 
-	toggleReadAloudPaused() {
+	toggleReadAloudPaused(paused = undefined) {
 		this._ensureType('epub', 'snapshot');
-		// Only update the two main status flags
 		if (!this._state.readAloudState.active) {
 			return;
 		}
-		this._handleReadAloudStateChange({ paused: !this._state.readAloudState.paused });
+		if (paused === undefined) {
+			paused = !this._state.readAloudState.paused;
+		}
+		this._handleReadAloudStateChange({ paused });
 	}
 
 	startReadAloudAtPosition(position) {
