@@ -95,6 +95,9 @@ async function createReader() {
 		},
 		onSetReadAloudVoice(lang, voice, speed) {
 			console.log('Set read aloud voice', voice, 'for lang', lang, 'with speed', speed);
+		},
+		onSetReadAloudStatus(status) {
+			console.log('Set read aloud status', status);
 		}
 	});
 	reader.enableAddToNote(true);

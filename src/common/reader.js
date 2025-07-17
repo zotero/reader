@@ -76,6 +76,7 @@ class Reader {
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
 		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
+		this._onSetReadAloudStatus = options.onSetReadAloudStatus;
 
 		this._readerRef = React.createRef();
 		this._primaryView = null;
@@ -519,6 +520,10 @@ class Reader {
 			}
 			this._primaryView?.setReadAloudState(this._state.readAloudState);
 			this._secondaryView?.setReadAloudState(this._state.readAloudState);
+
+			// Tell Zotero about the two main status flags
+			let { active, paused } = this._state.readAloudState;
+			this._onSetReadAloudStatus?.({ active, paused });
 		}
 
 		if (this._state.readOnly !== previousState.readOnly) {
@@ -854,6 +859,7 @@ class Reader {
 	}
 
 	_handleReadAloudStateChange(state) {
+		this._ensureType('epub', 'snapshot');
 		// Ignore late changes due to event handlers after popup has closed
 		if (!this._state.readAloudState.active && !state.active) {
 			return;
@@ -892,6 +898,15 @@ class Reader {
 				activeSegment: null,
 			});
 		}
+	}
+
+	toggleReadAloudPaused() {
+		this._ensureType('epub', 'snapshot');
+		// Only update the two main status flags
+		if (!this._state.readAloudState.active) {
+			return;
+		}
+		this._handleReadAloudStateChange({ paused: !this._state.readAloudState.paused });
 	}
 
 	startReadAloudAtPosition(position) {
