@@ -1886,12 +1886,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (state.activeSegment?.position) {
 			let { range } = state.activeSegment.position as RangeRef;
-			let selector = this.toSelector(range);
+			let selector = this.toSelector(range.toRange());
 			if (selector) {
 				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
 				setTimeout(() => {
 					// Navigate to the start of the segment if possible
-					let startRange = range.cloneRange();
+					let startRange = range.toRange();
 					startRange.collapse(true);
 					let startSelector = this.toSelector(startRange);
 
@@ -2036,7 +2036,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _readAloudRangeToSegment(range: Range): ReadAloudSegment | null {
 		let text = range.toString();
 		if (!text.trim()) return null;
-		let position = { range };
+		let position = { range: new PersistentRange(range) };
 		return { text, position };
 	}
 

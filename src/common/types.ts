@@ -1,5 +1,6 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/dom-view";
+import { PersistentRange } from '../dom/common/lib/range';
 
 export type ToolType =
 	| 'highlight'
@@ -69,7 +70,7 @@ export type PDFPosition = {
 };
 
 export type RangeRef = {
-	range: Range;
+	range: PersistentRange;
 };
 
 type NewAnnotationOptionalFields =
