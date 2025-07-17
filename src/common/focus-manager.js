@@ -15,8 +15,9 @@ export class FocusManager {
 		// Some browsers (Chrome) trigger focus event when focusing an iframe and some not (Firefox),
 		// therefore just use an interval because document.activeElement is always correct
 		setInterval(() => {
-			if (document.activeElement !== document.body && !document.activeElement.closest('.context-menu-overlay')) {
+			if (!this._preventFocus && document.activeElement !== document.body && !document.activeElement.closest('.context-menu-overlay')) {
 				this._lastActiveElement = document.activeElement;
+				this._preventFocus = false;
 			}
 		}, 100);
 
@@ -81,6 +82,12 @@ export class FocusManager {
 
 	_handlePointerDown(event) {
 		if ('closest' in event.target) {
+			// An ugly workaround to prevent delayed selection of annotation in the sidebar on right-click on Windows
+			if (event.button === 2 && event.target.closest('.annotation')) {
+				this._preventFocus = true;
+				return;
+			}
+
 			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row, .preview-popup, .appearance-popup, #selector')) {
 				// Note: Doing event.preventDefault() also prevents :active class on Firefox
 				event.preventDefault();
