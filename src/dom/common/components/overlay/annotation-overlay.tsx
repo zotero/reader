@@ -277,7 +277,8 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 
 	let { rects, interactiveRects, commentIconPosition } = useMemo(() => {
 		let ranges = splitRangeToTextNodes(isResizing ? resizedRange : annotation.range);
-		let rects = new Map<string, DOMRect>();
+		let rects: DOMRect[] = [];
+		let seenRects = new Set<string>();
 		let interactiveRects = new Set<DOMRect>();
 		for (let range of ranges) {
 			let closestInteractiveElement = range.startContainer.parentElement?.closest('a, area');
@@ -286,11 +287,14 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					continue;
 				}
 				let key = JSON.stringify(rect);
-				if (!rects.has(key)) {
-					rects.set(key, rect);
-					if (closestInteractiveElement) {
-						interactiveRects.add(rect);
-					}
+				if (seenRects.has(key)) {
+					continue;
+				}
+
+				rects.push(rect);
+				seenRects.add(key);
+				if (closestInteractiveElement) {
+					interactiveRects.add(rect);
 				}
 			}
 		}
@@ -306,7 +310,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			commentIconPosition = null;
 		}
 
-		return { rects: Array.from(rects.values()), interactiveRects, commentIconPosition };
+		return { rects, interactiveRects, commentIconPosition };
 	}, [annotation, isResizing, resizedRange]);
 
 	let vert = isVertical(annotation.range.commonAncestorContainer);
