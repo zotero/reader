@@ -294,7 +294,10 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 
 					let element = closestElement(range.startContainer);
 					if (element) {
-						marginBlock = (parseFloat(getComputedStyle(element).lineHeight) - rect.height) / 2;
+						let lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+						if (!isNaN(lineHeight)) {
+							marginBlock = (lineHeight - rect.height) / 2;
+						}
 					}
 
 					rect = expandRect(rect, marginInline, marginBlock);
