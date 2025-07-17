@@ -105,8 +105,12 @@
 	}
 
 	.image {
-		width: 100%;
-		@include pdf-page-image-dark-light;
+		display: flex;
+		justify-content: center;
+		img {
+			width: 100%;
+			@include pdf-page-image-dark-light;
+		}
 	}
 
 	.tags {

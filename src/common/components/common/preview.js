@@ -6,6 +6,8 @@ import ExpandableEditor from './expandable-editor';
 import { getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import CustomSections from './custom-sections';
+import { getPositionBoundingRect } from '../../../pdf/lib/utilities';
+import { calculateInkImageRect } from '../../../pdf/pdf-renderer';
 
 import IconHighlight from '../../../../res/icons/16/annotate-highlight.svg';
 import IconUnderline from '../../../../res/icons/16/annotate-underline.svg';
@@ -282,6 +284,13 @@ export function SidebarPreview(props) {
 	expandedState['expanded' + props.state] = true;
 
 	let image = annotation.image || lastImageRef.current;
+	let imageRect;
+	if (image) {
+		imageRect = getPositionBoundingRect(annotation.position);
+		if (annotation.type === 'ink') {
+			imageRect = calculateInkImageRect(annotation.position);
+		}
+	}
 
 	return (
 		<div
@@ -347,13 +356,14 @@ export function SidebarPreview(props) {
 				</div>
 			</header>
 			{image && (
-				<img
+				<div
 					className="image"
-					src={image}
 					onClick={e => handleSectionClick(e, 'image')}
 					draggable={true}
 					onDragStart={handleDragStart}
-				/>
+				>
+					<img src={image} style={{ maxWidth: Math.round(imageRect[2] - imageRect[0]) * 2 + 'px' }}/>
+				</div>
 			)}
 			{text}
 			{comment}

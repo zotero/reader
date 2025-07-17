@@ -6,6 +6,29 @@ const SCALE = 4;
 const PATH_BOX_PADDING = 10; // pt
 const MIN_PATH_BOX_SIZE = 30; // pt
 
+export function calculateInkImageRect(position) {
+	let rect = getPositionBoundingRect(position);
+	rect = [
+		rect[0] - PATH_BOX_PADDING,
+		rect[1] - PATH_BOX_PADDING,
+		rect[2] + PATH_BOX_PADDING,
+		rect[3] + PATH_BOX_PADDING
+	];
+
+	if (rect[2] - rect[0] < MIN_PATH_BOX_SIZE) {
+		let x = rect[0] + (rect[2] - rect[0]) / 2;
+		rect[0] = x - MIN_PATH_BOX_SIZE;
+		rect[2] = x + MIN_PATH_BOX_SIZE;
+	}
+
+	if (rect[3] - rect[1] < MIN_PATH_BOX_SIZE) {
+		let y = rect[1] + (rect[3] - rect[1]) / 2;
+		rect[1] = y - MIN_PATH_BOX_SIZE;
+		rect[3] = y + MIN_PATH_BOX_SIZE;
+	}
+	return rect;
+}
+
 class PDFRenderer {
 	constructor(options) {
 		this._pdfView = options.pdfView;
@@ -47,26 +70,7 @@ class PDFRenderer {
 		}
 		// paths
 		else {
-			let rect = getPositionBoundingRect(position);
-			rect = [
-				rect[0] - PATH_BOX_PADDING,
-				rect[1] - PATH_BOX_PADDING,
-				rect[2] + PATH_BOX_PADDING,
-				rect[3] + PATH_BOX_PADDING
-			];
-
-			if (rect[2] - rect[0] < MIN_PATH_BOX_SIZE) {
-				let x = rect[0] + (rect[2] - rect[0]) / 2;
-				rect[0] = x - MIN_PATH_BOX_SIZE;
-				rect[2] = x + MIN_PATH_BOX_SIZE;
-			}
-
-			if (rect[3] - rect[1] < MIN_PATH_BOX_SIZE) {
-				let y = rect[1] + (rect[3] - rect[1]) / 2;
-				rect[1] = y - MIN_PATH_BOX_SIZE;
-				rect[3] = y + MIN_PATH_BOX_SIZE;
-			}
-
+			let rect = calculateInkImageRect(position);
 			expandedPosition.rects = [fitRectIntoRect(rect, page.view)];
 		}
 
