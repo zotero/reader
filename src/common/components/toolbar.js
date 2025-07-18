@@ -23,6 +23,7 @@ import IconInk from '../../../res/icons/20/annotate-ink.svg';
 import IconEraser from '../../../res/icons/20/annotate-eraser.svg';
 import IconFind from '../../../res/icons/20/magnifier.svg';
 import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
+import IconGoBack from '../../../res/icons/20/go-back.svg';
 
 function Toolbar(props) {
 	const pageInputRef = useRef();
@@ -121,7 +122,7 @@ function Toolbar(props) {
 					tabIndex={-1}
 					disabled={!props.enableNavigateBack}
 					onClick={props.onNavigateBack}
-				><IconChevronLeft/></button>
+				><IconGoBack/></button>
 				<div className="divider"/>
 				{['pdf', 'epub'].includes(props.type) && (
 					<React.Fragment>
