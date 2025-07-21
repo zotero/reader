@@ -2143,18 +2143,19 @@ class PDFView {
 			if (action.annotation.type === 'ink') {
 				let [x, y] = originalPagePosition.rects[0];
 				let rect = getPositionBoundingRect(action.annotation.position);
+
 				if (action.dir.includes('l')) {
-					rect[0] = x;
+					rect[0] = Math.min(rect[2] - 1, x);
 				}
 				else if (action.dir.includes('r')) {
-					rect[2] = x;
+					rect[2] = Math.max(rect[0] + 1, x);
 				}
 
 				if (action.dir.includes('b')) {
-					rect[1] = y;
+					rect[1] = Math.min(rect[3] - 1, y);
 				}
 				else if (action.dir.includes('t')) {
-					rect[3] = y;
+					rect[3] = Math.max(rect[1] + 1, y);
 				}
 
 				let r1 = getPositionBoundingRect(action.annotation.position);
