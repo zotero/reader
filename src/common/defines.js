@@ -23,6 +23,7 @@ export let SELECTION_COLOR = '#71ADFD';
 
 export const PDF_NOTE_DIMENSIONS = 22; // pt
 export const MIN_IMAGE_ANNOTATION_SIZE = 10; // pt
+export const MIN_TEXT_ANNOTATION_WIDTH = 10; // pt
 
 export const DEBOUNCE_STATE_CHANGE = 300; // ms
 export const DEBOUNCE_STATS_CHANGE = 100; // ms

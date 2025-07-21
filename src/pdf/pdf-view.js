@@ -55,6 +55,7 @@ import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
 import {
 	MIN_IMAGE_ANNOTATION_SIZE,
+	MIN_TEXT_ANNOTATION_WIDTH,
 	PDF_NOTE_DIMENSIONS,
 	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH
 } from '../common/defines';
@@ -2210,17 +2211,17 @@ class PDFView {
 				}
 
 				if (action.dir.includes('l')) {
-					rect[0] = x;
+					rect[0] = Math.min(rect[2] - MIN_TEXT_ANNOTATION_WIDTH, x);
 				}
 				else if (action.dir.includes('r')) {
-					rect[2] = x;
+					rect[2] = Math.max(rect[0] + MIN_TEXT_ANNOTATION_WIDTH, x);
 				}
 
 				if (action.dir.includes('b')) {
-					rect[1] = y;
+					rect[1] = Math.min(rect[3] - MIN_TEXT_ANNOTATION_WIDTH, y);
 				}
 				else if (action.dir.includes('t')) {
-					rect[3] = y;
+					rect[3] = Math.max(rect[1] + MIN_TEXT_ANNOTATION_WIDTH, y);
 				}
 
 				let fontSize = 0;
