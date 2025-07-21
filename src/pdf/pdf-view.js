@@ -3393,11 +3393,14 @@ class PDFView {
 		if (event.dataTransfer.dropEffect === 'none') {
 			this.action = null;
 		}
-		this._handlePointerUp(event);
+		this.action = null;
+		this.pointerDownPosition = null;
+		this._pointerDownTriggered = false;
+		this._render();
 	}
 
 	_handleDrop(event) {
-
+		this._handlePointerUp(event);
 	}
 
 	_handleCopy(event) {

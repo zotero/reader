@@ -989,9 +989,9 @@ export default class Page {
 					this.actualContext.lineWidth = 2 * devicePixelRatio;
 					let rect = getPositionBoundingRect(action.position);
 					let tm = this.transform;
-					if (annotation.type === 'text') {
+					if (action.annotation.type === 'text') {
 						rect = action.position.rects[0];
-						tm = getRotationTransform(rect, annotation.position.rotation || 0);
+						tm = getRotationTransform(rect, action.annotation.position.rotation || 0);
 						tm = transform(this.transform, tm);
 					}
 					let p1 = [rect[0], rect[1]];
