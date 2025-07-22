@@ -643,3 +643,31 @@ export function getOutlinePath(outline, pageIndex) {
 
 	return bestMatch.path;
 }
+
+export function roundPositionValues(position) {
+	let roundedPosition = { ...position };
+
+	if (roundedPosition.rects) {
+		roundedPosition.rects = roundedPosition.rects.map(
+			rect => rect.map(value => Math.round(value * 1e3) / 1e3)
+		);
+	}
+
+	if (roundedPosition.nextPageRects) {
+		roundedPosition.nextPageRects = roundedPosition.nextPageRects.map(
+			rect => rect.map(value => Math.round(value * 1e3) / 1e3)
+		);
+	}
+
+	if (roundedPosition.paths) {
+		roundedPosition.paths = roundedPosition.paths.map(path =>
+			path.map(value => Math.round(value * 1e3) / 1e3)
+		);
+	}
+
+	if (roundedPosition.width !== undefined) {
+		roundedPosition.width = Math.round(roundedPosition.width * 1e3) / 1e3;
+	}
+
+	return roundedPosition;
+}
