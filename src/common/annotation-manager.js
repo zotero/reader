@@ -400,11 +400,12 @@ class AnnotationManager {
 		}
 
 		if (tags.length || colors.length || authors.length) {
-			annotations = annotations.filter(x => (
-				tags && x.tags.some(t => tags.includes(t.name))
-				|| colors && colors.includes(x.color)
-				|| authors && authors.includes(x.authorName)
-			));
+			annotations = annotations.filter(x => {
+				const matchesTags = tags.length === 0 || x.tags.some(t => tags.includes(t.name));
+				const matchesColors = colors.length === 0 || colors.includes(x.color);
+				const matchesAuthors = authors.length === 0 || authors.includes(x.authorName);
+				return matchesTags && matchesColors && matchesAuthors;
+			});
 		}
 
 		if (query) {
