@@ -46,6 +46,8 @@ export class KeyboardManager {
 		let key = getKeyCombination(event);
 		let code = getCodeCombination(event);
 
+		let sidebarAnnotationFocused = document.activeElement.classList.contains('annotation');
+
 		if (!isTextBox(event.target)) {
 			if (
 				// macOS (ANSI/ISO)
@@ -160,7 +162,7 @@ export class KeyboardManager {
 
 		// Focus sidebar annotation comment if pressed Enter
 		if (key === 'Enter') {
-			if (document.activeElement.classList.contains('annotation')) {
+			if (sidebarAnnotationFocused) {
 				setTimeout(() => {
 					let input = document.activeElement.querySelector('.comment .content');
 					if (input) {
@@ -184,12 +186,12 @@ export class KeyboardManager {
 				}
 			}
 		}
-		else if (view && key === `${pm}-z`) {
+		else if ((view || sidebarAnnotationFocused) && key === `${pm}-z`) {
 			event.preventDefault();
 			this._reader._annotationManager.undo();
 			this._reader.setSelectedAnnotations([]);
 		}
-		else if (view && key === `${pm}-Shift-z`) {
+		else if ((view || sidebarAnnotationFocused) && key === `${pm}-Shift-z`) {
 			event.preventDefault();
 			this._reader._annotationManager.redo();
 			this._reader.setSelectedAnnotations([]);
