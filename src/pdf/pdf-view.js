@@ -2686,7 +2686,8 @@ class PDFView {
 				selectableAnnotation = (this.getSelectableAnnotations(position) || [])[0];
 			}
 			let selectedAnnotations = this.getSelectedAnnotations();
-			if (!selectableAnnotation) {
+			let overSelection = this._selectionRanges.some(x => intersectAnnotationWithPoint(x.position, position));
+			if (overSelection || !selectableAnnotation) {
 				if (this._selectedAnnotationIDs.length !== 0) {
 					this._onSelectAnnotations([], event);
 				}
