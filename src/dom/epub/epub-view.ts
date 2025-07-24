@@ -23,6 +23,7 @@ import { EPUBFindProcessor } from "./find";
 import DOMView, {
 	DOMViewOptions,
 	DOMViewState,
+	SpotlightKey,
 	NavigateOptions,
 	ReflowableAppearance
 } from "../common/dom-view";
@@ -539,9 +540,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected override _getContainingRoot(node: Node) {
-		return this._sectionRenderers.find(r => r.container.contains(node))?.container
-			?? null;
+	protected override _getRoots(includeUnmounted = false): HTMLElement[] {
+		return this._sectionRenderers.map(includeUnmounted
+			? (r => r.body)
+			: (r => r.container)
+		);
 	}
 
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
@@ -1316,7 +1319,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					}
 					let selector = this.toSelector(range);
 					if (selector) {
-						this._setHighlight(selector);
+						this._setSpotlight(SpotlightKey.Navigation, selector);
 					}
 				}
 			}
