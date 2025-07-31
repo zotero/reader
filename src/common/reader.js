@@ -1297,10 +1297,6 @@ class Reader {
 		// Note: Using this._state.selectedAnnotationIDs.length here and below to avoid
 		// https://github.com/zotero/zotero/issues/3381 (annotation selection, even passing an empty array,
 		// also triggers text deselection)
-		// TODO: This prevents annotation deselection when holding shift and trying to select text under the annotation
-		if (this._state.selectedAnnotationIDs.length && !ids.length && triggeredFromView && (shift || mod)) {
-			return;
-		}
 
 		// TODO: This is temporary, until annotation selection and focus management is reworked
 		if (this._state.selectedAnnotationIDs.length && !triggeringEvent && !shift && mod && !this._keyboardManager.pointerDown) {
