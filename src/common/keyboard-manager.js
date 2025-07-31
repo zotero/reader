@@ -240,7 +240,10 @@ export class KeyboardManager {
 			// Prevent the deletion of annotations when they are selected and the focus is within
 			// an input or label popup. Normally, the focus should not be inside an input unless
 			// it is within a label popup, which needs to indicate the annotations being modified
-			if (event.target.closest('input, .label-popup')) {
+			if (
+				event.target.closest('input, .label-popup')
+				|| document.querySelector('.context-menu-overlay')
+			) {
 				return;
 			}
 			if (this._reader._state.readOnly) {
