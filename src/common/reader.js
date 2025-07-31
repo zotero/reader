@@ -19,7 +19,10 @@ import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
 	getCurrentColorScheme,
-	getImageDataURL, isMac,
+	getImageDataURL,
+	isLinux,
+	isMac,
+	isWin,
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
@@ -72,6 +75,8 @@ class Reader {
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
+		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
+		this._onSetReadAloudStatus = options.onSetReadAloudStatus;
 
 		if (Array.isArray(options.ftl)) {
 			for (let ftl of options.ftl) {
@@ -140,6 +145,8 @@ class Reader {
 			? DEFAULT_THEMES.find(x => x.id === 'dark')
 			: themes.get(options.darkTheme) || null;
 
+		this._readAloudVoices = new Map(Object.entries(options.readAloudVoices || {}));
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -187,6 +194,16 @@ class Reader {
 			appearancePopup: null,
 			themePopup: null,
 			contextMenu: null,
+			readAloudState: {
+				active: false,
+				paused: false,
+				segments: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
+				activeSegment: null,
+				speed: 1,
+				voice: null,
+			},
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -298,6 +315,11 @@ class Reader {
 						onChangePageNumber={pageNumber => this._lastView.navigate({ pageNumber })}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
+						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						readAloudVoices={this._readAloudVoices}
+						onSetReadAloudVoice={this._onSetReadAloudVoice}
+						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
+						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
 						onChangeSidebarView={this.setSidebarView.bind(this)}
@@ -368,7 +390,7 @@ class Reader {
 						onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 						onOpenLink={this._onOpenLink}
 						onChangeAppearance={this._handleAppearanceChange.bind(this)}
-						onChangeFocusModeEnabled={this._handleFocusModeEnabledChange.bind(this)}
+						onChangeReadingModeEnabled={this._handleReadingModeEnabledChange.bind(this)}
 						onChangeFindState={this._handleFindStateChange.bind(this)}
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
@@ -494,6 +516,23 @@ class Reader {
 				this._primaryView?.setColorScheme(this._state.colorScheme);
 				this._secondaryView?.setColorScheme(this._state.colorScheme);
 			}
+		}
+
+		if (this._state.readAloudState !== previousState.readAloudState) {
+			// If the view has a new Read Aloud target, reset our state
+			if (!this._state.readAloudState.paused && previousState.readAloudState.paused
+					&& this._primaryView?.hasReadAloudTarget) {
+				this._state.readAloudState.segments = null;
+				this._state.readAloudState.backwardStopIndex = null;
+				this._state.readAloudState.forwardStopIndex = null;
+				this._state.readAloudState.activeSegment = null;
+			}
+			this._primaryView?.setReadAloudState(this._state.readAloudState);
+			this._secondaryView?.setReadAloudState(this._state.readAloudState);
+
+			// Tell Zotero about the two main status flags
+			let { active, paused } = this._state.readAloudState;
+			this._onSetReadAloudStatus?.({ active, paused });
 		}
 
 		if (this._state.readOnly !== previousState.readOnly) {
@@ -756,15 +795,15 @@ class Reader {
 		this._secondaryView?.setAppearance(params);
 	}
 
-	_handleFocusModeEnabledChange(enabled) {
+	_handleReadingModeEnabledChange(enabled) {
 		this._ensureType('snapshot');
 		try {
-			this._primaryView?.setFocusModeEnabled(enabled);
-			this._secondaryView?.setFocusModeEnabled(enabled);
+			this._primaryView?.setReadingModeEnabled(enabled);
+			this._secondaryView?.setReadingModeEnabled(enabled);
 		}
 		catch (e) {
 			console.error(e);
-			this.setErrorMessage(this._getString('reader-focus-mode-not-supported'));
+			this.setErrorMessage(this._getString('reader-reading-mode-not-supported'));
 			setTimeout(() => {
 				this.setErrorMessage(null);
 			}, 5000);
@@ -826,6 +865,72 @@ class Reader {
 		if (!open) {
 			this._lastView.focus();
 		}
+	}
+
+	_handleReadAloudStateChange(state) {
+		this._ensureType('epub', 'snapshot');
+		// Ignore late changes due to event handlers after popup has closed
+		if (!this._state.readAloudState.active && !state.active) {
+			return;
+		}
+		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
+	}
+
+	openVoicePreferences() {
+		if (isMac()) {
+			this._onOpenLink('x-apple.systempreferences:com.apple.preference.universalaccess?SpokenContent');
+		}
+		else if (isWin()) {
+			this._onOpenLink('ms-settings:speech');
+		}
+		else if (isLinux()) {
+			this._onOpenLink('https://github.com/brailcom/speechd'); // Sorry!
+		}
+	}
+
+	toggleReadAloudPopup(active) {
+		if (active === undefined) {
+			active = !this._state.readAloudState.active;
+		}
+		if (active) {
+			this._handleReadAloudStateChange({
+				active: true,
+			});
+		}
+		else {
+			this._handleReadAloudStateChange({
+				active: false,
+				paused: false,
+				segments: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
+				activeSegment: null,
+			});
+		}
+	}
+
+	toggleReadAloudPaused(paused = undefined) {
+		this._ensureType('epub', 'snapshot');
+		if (!this._state.readAloudState.active) {
+			return;
+		}
+		if (paused === undefined) {
+			paused = !this._state.readAloudState.paused;
+		}
+		this._handleReadAloudStateChange({ paused });
+	}
+
+	startReadAloudAtPosition(position) {
+		this._ensureType('epub', 'snapshot');
+		this._handleReadAloudStateChange({
+			active: true,
+			paused: false,
+			segments: null,
+			backwardStopIndex: null,
+			forwardStopIndex: null,
+			targetPosition: position,
+			activeSegment: null,
+		});
 	}
 
 	toggleFindPopup({ primary, open } = {}) {
@@ -965,6 +1070,10 @@ class Reader {
 			this.a11yAnnounceSearchMessage(params.result);
 		};
 
+		let onSetReadAloudState = (params) => {
+			this._updateState({ readAloudState: params });
+		};
+
 		let onSelectAnnotations = (ids, triggeringEvent) => {
 			this.setSelectedAnnotations(ids, true, triggeringEvent);
 		};
@@ -1039,6 +1148,7 @@ class Reader {
 			lightTheme: this._state.lightTheme,
 			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
+			readAloudState: this._state.readAloudState,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
@@ -1055,6 +1165,7 @@ class Reader {
 			onSetAnnotationPopup,
 			onSetOverlayPopup,
 			onSetFindState,
+			onSetReadAloudState,
 			onSetOutline,
 			onSelectAnnotations,
 			onTabOut,
