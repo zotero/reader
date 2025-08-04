@@ -273,6 +273,11 @@ class Reader {
 
 		this._primaryView = this._createView(true, options.location);
 
+		// Resolve the Reader's initializedPromise after the primary view is initialized
+		this._primaryView.initializedPromise.then(() => {
+			this._resolveInitializedPromise();
+		});
+
 		if (selectAnnotationID) {
 			(async () => {
 				await this._primaryView.initializedPromise;
