@@ -1167,10 +1167,20 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				let onFirstResult = () => this.findNext();
 				await this._find.run(startRange, onFirstResult);
 			}
-			else if (previousState && previousState.highlightAll !== state.highlightAll) {
-				this._find.findState.highlightAll = state.highlightAll;
-				this._find.updateFindState();
-				this._renderAnnotations();
+			else {
+				if (previousState && previousState.highlightAll !== state.highlightAll) {
+					this._find.findState.highlightAll = state.highlightAll;
+					this._find.updateFindState();
+					this._renderAnnotations();
+				}
+				if (previousState && state.index !== null && previousState.index !== state.index) {
+					console.log('Navigate to result', state.index);
+					let result = await this._find.setPosition(state.index);
+					if (result) {
+						this.flow.scrollIntoView(result.range);
+					}
+					this._renderAnnotations();
+				}
 			}
 		}
 	}

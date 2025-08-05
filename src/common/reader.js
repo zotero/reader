@@ -199,6 +199,7 @@ class Reader {
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
+				index: null,
 				result: null,
 			},
 			secondaryViewState: null,
@@ -213,6 +214,7 @@ class Reader {
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
+				index: null,
 				result: null
 			},
 		};

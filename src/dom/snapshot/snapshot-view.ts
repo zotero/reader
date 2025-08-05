@@ -548,7 +548,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 		else if (state.active) {
-			if (!previousState
+			if (!this._find
+				|| !previousState
 				|| previousState.query !== state.query
 				|| previousState.caseSensitive !== state.caseSensitive
 				|| previousState.entireWord !== state.entireWord
@@ -583,9 +584,20 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				);
 				this.findNext();
 			}
-			else if (previousState && previousState.highlightAll !== state.highlightAll) {
-				this._find!.findState.highlightAll = state.highlightAll;
-				this._renderAnnotations();
+			else {
+				if (previousState && previousState.highlightAll !== state.highlightAll) {
+					this._find.findState.highlightAll = state.highlightAll;
+					this._renderAnnotations();
+				}
+				if (previousState && state.index !== null && previousState.index !== state.index) {
+					console.log('Navigate to result', state.index);
+					this._find.position = state.index;
+					let result = this._find.getResults()[state.index];
+					if (result) {
+						scrollIntoView(result.range.toRange(), { block: 'center' });
+					}
+					this._renderAnnotations();
+				}
 			}
 		}
 	}

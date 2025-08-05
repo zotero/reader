@@ -123,6 +123,27 @@ export class EPUBFindProcessor implements FindProcessor {
 		return null;
 	}
 
+	async setPosition(index: number) {
+		let result: FindResult | null = null;
+		let currentIndex = 0;
+		for (let processorPromise of this._processorPromises) {
+			let processor = await processorPromise;
+			let found = false;
+			for (let [i, currentResult] of processor.getResults().entries()) {
+				if (currentIndex == index) {
+					processor.position = i;
+					result = currentResult;
+					found = true;
+				}
+				currentIndex++;
+			}
+			if (!found) {
+				processor.position = null;
+			}
+		}
+		return result;
+	}
+
 	getAnnotations(): FindAnnotation[] {
 		let highlights = [];
 		for (let [i, processor] of this._processors.entries()) {

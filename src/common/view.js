@@ -12,6 +12,19 @@ class View {
 		this._type = options.type;
 		this._options = options;
 
+		// This is quite hacky, but this way we enable search functionality over the existing findState
+		this._findState = {
+			active: !!options.findParams,
+			query: '',
+			highlightAll: true,
+			caseSensitive: false,
+			entireWord: false,
+			index: null,
+			result: null,
+			// View can be created with an active search
+			...(options.findParams || {})
+		};
+
 		this._lightTheme = (options.lightTheme && DEFAULT_THEMES.find(x => x.id === options.lightTheme))
 			?? null;
 		this._darkTheme = options.darkTheme
@@ -49,20 +62,8 @@ class View {
 		};
 
 		let onSetFindState = (params) => {
+			this._findState = params;
 			this._options.onFindResult(params.result);
-		};
-
-		// This is quite hacky, but this way we enable search functionality over the existing findState
-		let findState = {
-			open: !!this._options.findParams,
-			query: '',
-			highlightAll: true,
-			caseSensitive: false,
-			entireWord: false,
-			resultsCount: null,
-			resultIndex: 0,
-			// View can be created with an active search
-			...(this._options.findParams || {})
 		};
 
 		let common = {
@@ -74,7 +75,7 @@ class View {
 			tool: this._options.tool || { type: 'pointer' },
 			selectedAnnotationIDs: this._options.selectedAnnotationIDs || [],
 			annotations: this._options.annotations || [],
-			findState,
+			findState: this._findState,
 			viewState: this._options.viewState || null,
 			location: this._options.location || null,
 			lightTheme: this._lightTheme,
@@ -128,21 +129,32 @@ class View {
 	}
 
 	/**
-	 * @param {String} params.query
-	 * @param {String} params.highlightAll
-	 * @param {String} params.caseSensitive
-	 * @param {String} params.entireWord
-	 * @param {String} params.index Focus specific result
+	 * @param {String} [params.query]
+	 * @param {String} [params.highlightAll]
+	 * @param {String} [params.caseSensitive]
+	 * @param {String} [params.entireWord]
+	 * @param {String} [params.index] Focus specific result
 	 */
 	find(params) {
-		this._view.setFindState({
-			active: !!params,
-			query: '',
-			highlightAll: true,
-			caseSensitive: false,
-			entireWord: false,
-			...(params || {})
-		});
+		let active = !!params;
+		if (active === this._findState.active) {
+			this._view.setFindState({
+				...this._findState,
+				...(params || {})
+			});
+		}
+		else {
+			this._view.setFindState({
+				active,
+				query: '',
+				highlightAll: true,
+				caseSensitive: false,
+				entireWord: false,
+				index: null,
+				result: null,
+				...(params || {})
+			});
+		}
 	}
 
 	findNext() {

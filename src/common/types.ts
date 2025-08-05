@@ -156,7 +156,7 @@ export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePo
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 
 export type FindState = {
-	popupOpen: boolean;
+	popupOpen?: boolean;
 	active: boolean;
 	query: string;
 	highlightAll: boolean;
