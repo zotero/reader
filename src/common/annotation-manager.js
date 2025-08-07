@@ -552,12 +552,6 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
-				let newID = this._generateObjectKey();
-				mapping.set(annotation.id, newID);
-				annotation.id = newID;
-			}
 			allAnnotations.set(id, annotation);
 			this._unsavedAnnotations.set(id, annotation);
 		}
@@ -584,12 +578,6 @@ class AnnotationManager {
 			undoPoint.set(id, prevAnnotation);
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
-			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
-				let newID = this._generateObjectKey();
-				mapping.set(annotation.id, newID);
-				annotation.id = newID;
 			}
 			allAnnotations.set(id, annotation);
 			this._unsavedAnnotations.set(id, annotation);
