@@ -54,7 +54,7 @@ class AnnotationManager {
 			this._annotations.push(annotation);
 		}
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
-		this._clearInterferingHistory(annotations.map(x => x.id));
+		this.clearInterferingHistory(annotations.map(x => x.id));
 		this.render();
 	}
 
@@ -591,7 +591,7 @@ class AnnotationManager {
 		return true;
 	}
 
-	_clearInterferingHistory(affectedAnnotationIDs) {
+	clearInterferingHistory(affectedAnnotationIDs) {
 		for (let i = this._undoStack.length - 1; i >= 0; i--) {
 			if (affectedAnnotationIDs.some(id => this._undoStack[i].has(id))) {
 				this._undoStack = this._undoStack.slice(i + 1);
