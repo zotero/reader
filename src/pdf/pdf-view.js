@@ -743,19 +743,58 @@ class PDFView {
 		let rect = this.getPositionBoundingViewRect(position);
 
 		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
-
 		let verticalPadding = 5;
+
+		let scrollTop = element.scrollTop;
+		let scrollLeft = element.scrollLeft;
 
 		let x = rect[0];
 		let y = rect[1];
 
-		// Calculate the new scroll position to center the bounding rectangle
-		let left = x - (clientWidth / 2);
-		let top = y - (options.block === 'start' ? 0 : (clientHeight / 2)) - verticalPadding;
+		// Determine desired scroll positions
+		let left;
+		let top;
 
-		// Ensure the new scroll position does not go out of bounds
-		left = Math.max(0, Math.min(left, scrollWidth - clientWidth));
-		top = Math.max(0, Math.min(top, scrollHeight - clientHeight));
+		if (options.block === 'start') {
+			// Vertical: align to start
+			top = y;
+			// Horizontal: center by default
+			left = x - (clientWidth / 2);
+		}
+		else if (options.block === 'nearest') {
+			const MARGIN = 10;
+
+			// Vertical "nearest" behavior
+			if (y < scrollTop + MARGIN) {
+				top = y - MARGIN;
+			}
+			else if (y > scrollTop + clientHeight - MARGIN) {
+				top = y - clientHeight + MARGIN;
+			}
+			// else leave 'top' undefined so we don't change vertical scroll
+
+			// Horizontal "nearest" behavior
+			if (x < scrollLeft + MARGIN) {
+				left = x - MARGIN;
+			}
+			else if (x > scrollLeft + clientWidth - MARGIN) {
+				left = x - clientWidth + MARGIN;
+			}
+			// else leave 'left' undefined so we don't change horizontal scroll
+		}
+		else {
+			// Default: center both axes
+			left = x - (clientWidth / 2);
+			top = y - (clientHeight / 2) - verticalPadding;
+		}
+
+		// Clamp within bounds only if defined
+		if (typeof left === 'number') {
+			left = Math.max(0, Math.min(left, scrollWidth - clientWidth));
+		}
+		if (typeof top === 'number') {
+			top = Math.max(0, Math.min(top, scrollHeight - clientHeight));
+		}
 
 		let { first, last } = this._iframeWindow.PDFViewerApplication.pdfViewer._getVisiblePages();
 		let startPageIndex = first.id - 1;
@@ -764,12 +803,14 @@ class PDFView {
 		endPageIndex++;
 		let close = startPageIndex <= position.pageIndex && position.pageIndex <= endPageIndex;
 
-		// Scroll the element smoothly if it's close enough
-		element.scrollTo({
-			left,
-			top,
+		// Build scroll options, only include axes that are defined
+		let scrollOptions = {
 			behavior: close ? 'smooth' : 'instant'
-		});
+		};
+		if (typeof left === 'number') scrollOptions.left = left;
+		if (typeof top === 'number') scrollOptions.top = top;
+
+		element.scrollTo(scrollOptions);
 	}
 
 	setPageLabels(pageLabels) {
@@ -996,6 +1037,18 @@ class PDFView {
 		}
 		else {
 			this._onSetSelectionPopup();
+		}
+	}
+
+	_scrollSelectionHeadIntoView(selectionRanges) {
+		let selectionRange = selectionRanges.find(x => !x.collapsed && x.head);
+		if (selectionRange) {
+			let { chars } = this._pdfPages[selectionRange.pageIndex];
+			let char = chars[selectionRange.headOffset];
+			this.navigateToPosition({
+				pageIndex: selectionRange.pageIndex,
+				rects: [char.rect]
+			}, { block: 'nearest' });
 		}
 	}
 
@@ -2783,15 +2836,19 @@ class PDFView {
 			event.preventDefault();
 			if (key === 'Shift-ArrowLeft') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'left'));
+				this._scrollSelectionHeadIntoView(this._selectionRanges);
 			}
 			else if (key === 'Shift-ArrowRight') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'right'));
+				this._scrollSelectionHeadIntoView(this._selectionRanges);
 			}
 			else if (key === 'Shift-ArrowUp') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'up'));
+				this._scrollSelectionHeadIntoView(this._selectionRanges);
 			}
 			else if (key === 'Shift-ArrowDown') {
 				this._setSelectionRanges(getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, 'down'));
+				this._scrollSelectionHeadIntoView(this._selectionRanges);
 			}
 			this._render();
 		}
@@ -2876,6 +2933,7 @@ class PDFView {
 					let { text, sortIndex, position } = annotation2;
 					this._onUpdateAnnotations([{ id, text, sortIndex, position }]);
 					this._onSetAnnotationPopup();
+					this._scrollSelectionHeadIntoView(selectionRanges);
 				}
 				event.stopPropagation();
 				event.preventDefault();
@@ -2917,6 +2975,7 @@ class PDFView {
 					let { text, sortIndex, position } = annotation2;
 					this._onUpdateAnnotations([{ id, text, sortIndex, position }]);
 					this._onSetAnnotationPopup();
+					this._scrollSelectionHeadIntoView(selectionRanges);
 				}
 				event.stopPropagation();
 				event.preventDefault();
