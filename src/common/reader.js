@@ -736,6 +736,10 @@ class Reader {
 		this._annotationManager.unsetAnnotations(ids);
 	}
 
+	clearAnnotationsEditHistory(ids) {
+		this._annotationManager.clearInterferingHistory(ids);
+	}
+
 	openContextMenu(params) {
 		this._onBringReaderToFront?.(true);
 		this._updateState({ contextMenu: params });
