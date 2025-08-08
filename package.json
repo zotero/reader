@@ -9,6 +9,7 @@
 		"build:ios": "webpack --config-name ios",
 		"build:android": "webpack --config-name android",
 		"start": "webpack-dev-server --mode development --config-name dev",
+		"start:esm": "webpack-dev-server --config-name esm",
 		"view-dev": "webpack-dev-server --mode development --config-name view-dev",
 		"test": "echo \"No tests yet\""
 	},
