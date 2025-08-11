@@ -116,10 +116,14 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 }
 
 .pdfViewer .page canvas {
-	margin: 0;
-	display: block;
-	width: 100%;
-	height: 100%;
+	position:absolute;
+	top:0;
+	left:0;
+	margin:0;
+	display:block;
+	width:100%;
+	height:100%;
+	contain:content;
 }
 
 .pdfViewer .page canvas .structTree {
