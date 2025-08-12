@@ -182,6 +182,7 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplicationOptions.set('disablePreferences', true);
 			this._iframeWindow.PDFViewerApplicationOptions.set('disableHistory', true);
 			this._iframeWindow.PDFViewerApplicationOptions.set('enableXfa', false);
+			this._iframeWindow.PDFViewerApplicationOptions.set('annotationEditorMode', -1);
 		};
 
 		window.addEventListener('webviewerloaded', () => {
