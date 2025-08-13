@@ -820,7 +820,10 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerMove = (event: PointerEvent) => {
-		if (!this._touchDown || !event.isPrimary || event.buttons % 1 !== 0) {
+		if (!this._touchDown
+				|| !event.isPrimary
+				|| event.buttons % 1 !== 0
+				|| !this._iframeDocument.getSelection()!.isCollapsed) {
 			return;
 		}
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
@@ -835,10 +838,12 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerUp = (event: PointerEvent) => {
-		if (!this._touchDown || !event.isPrimary) {
+		if (!this._touchDown
+				|| !event.isPrimary
+				// No event.buttons check - "buttons" have now been released
+				|| !this._iframeDocument.getSelection()!.isCollapsed) {
 			return;
 		}
-		event.preventDefault();
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
 		this._touchDown = false;
 
@@ -870,7 +875,9 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerCancel = (event: PointerEvent) => {
-		if (!this._touchDown || !event.isPrimary) {
+		if (!this._touchDown
+				|| !event.isPrimary) {
+			// No event.buttons check - "buttons" have now been released
 			return;
 		}
 		this._touchDown = false;
