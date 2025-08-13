@@ -64,7 +64,10 @@ window.createView = (options) => {
 		onChangeViewStats: (stats) => {
 			// Provides useful information about the view
 			console.log('View stats changed', stats);
-		}
+		},
+		onBackdropTap: (event) => {
+			console.log('Backdrop tap', event);
+		},
 	});
 
 	window._view = view;

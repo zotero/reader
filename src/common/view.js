@@ -101,6 +101,7 @@ class View {
 			onKeyUp: nop,
 			onFocusAnnotation: nop,
 			onSetHiddenAnnotations: nop,
+			onBackdropTap: this._options.onBackdropTap,
 		};
 
 		if (this._type === 'epub') {

@@ -541,28 +541,28 @@ export class PaginatedFlow extends AbstractFlow {
 		this._sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections') as HTMLElement;
 		this._swipeIndicators = this._iframeDocument.querySelector('.swipe-indicators') as HTMLElement;
 
-		this._iframeDocument.addEventListener('keydown', this._handleKeyDown, { capture: true });
-		this._iframeDocument.addEventListener('pointerdown', this._handlePointerDown);
-		this._iframeDocument.addEventListener('pointermove', this._handlePointerMove);
-		this._iframeDocument.addEventListener('pointerup', this._handlePointerUp);
-		this._iframeDocument.addEventListener('pointerout', this._handlePointerCancel);
-		this._iframeDocument.addEventListener('pointercancel', this._handlePointerCancel);
-		this._iframeDocument.addEventListener('wheel', this._handleWheel, { passive: false });
-		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange);
+		this._iframeDocument.body.addEventListener('keydown', this._handleKeyDown, { capture: true });
+		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown);
+		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove);
+		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp);
+		this._iframeDocument.body.addEventListener('pointerout', this._handlePointerCancel);
+		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerCancel);
+		this._iframeDocument.body.addEventListener('wheel', this._handleWheel, { passive: false });
+		this._iframeDocument.body.addEventListener('selectionchange', this._handleSelectionChange);
 		this._iframe.classList.add('flow-mode-paginated');
 		this._iframeDocument.body.classList.add('flow-mode-paginated');
 	}
 
 	override destroy(): void {
 		super.destroy();
-		this._iframeDocument.removeEventListener('keydown', this._handleKeyDown, { capture: true });
-		this._iframeDocument.removeEventListener('pointerdown', this._handlePointerDown);
-		this._iframeDocument.removeEventListener('pointermove', this._handlePointerMove);
-		this._iframeDocument.removeEventListener('pointerup', this._handlePointerUp);
-		this._iframeDocument.removeEventListener('pointerout', this._handlePointerCancel);
-		this._iframeDocument.removeEventListener('pointercancel', this._handlePointerCancel);
-		this._iframeDocument.removeEventListener('wheel', this._handleWheel);
-		this._iframeDocument.removeEventListener('selectionchange', this._handleSelectionChange);
+		this._iframeDocument.body.removeEventListener('keydown', this._handleKeyDown, { capture: true });
+		this._iframeDocument.body.removeEventListener('pointerdown', this._handlePointerDown);
+		this._iframeDocument.body.removeEventListener('pointermove', this._handlePointerMove);
+		this._iframeDocument.body.removeEventListener('pointerup', this._handlePointerUp);
+		this._iframeDocument.body.removeEventListener('pointerout', this._handlePointerCancel);
+		this._iframeDocument.body.removeEventListener('pointercancel', this._handlePointerCancel);
+		this._iframeDocument.body.removeEventListener('wheel', this._handleWheel);
+		this._iframeDocument.body.removeEventListener('selectionchange', this._handleSelectionChange);
 		this._iframe.classList.remove('flow-mode-paginated');
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
@@ -846,9 +846,11 @@ export class PaginatedFlow extends AbstractFlow {
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		if (swipeAmount <= -1) {
 			this.navigateRight();
+			event.preventDefault();
 		}
 		else if (swipeAmount >= 1) {
 			this.navigateLeft();
+			event.preventDefault();
 		}
 		// If there's no selection, allow single-tap page turns
 		else if (this._iframeWindow.getSelection()!.isCollapsed
@@ -858,9 +860,11 @@ export class PaginatedFlow extends AbstractFlow {
 				&& !(event.target as Element).closest('a, .clickable-image')) {
 			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {
 				this.navigateRight();
+				event.preventDefault();
 			}
 			else if (event.clientX <= PAGE_TURN_TAP_MARGIN_PX) {
 				this.navigateLeft();
+				event.preventDefault();
 			}
 		}
 	};

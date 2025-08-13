@@ -262,12 +262,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
-		this._iframeDocument.body.addEventListener('pointerover', this._handlePointerOver.bind(this));
-		this._iframeDocument.body.addEventListener('pointerout', this._handlePointerLeave.bind(this));
-		this._iframeDocument.body.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
-		this._iframeDocument.body.addEventListener('pointerup', this._handlePointerUp.bind(this));
-		this._iframeDocument.body.addEventListener('pointercancel', this._handlePointerUp.bind(this));
-		this._iframeDocument.body.addEventListener('pointermove', this._handlePointerMove.bind(this));
+		this._iframeDocument.addEventListener('pointerover', this._handlePointerOver.bind(this));
+		this._iframeDocument.addEventListener('pointerout', this._handlePointerLeave.bind(this));
+		this._iframeDocument.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
+		this._iframeDocument.addEventListener('pointerup', this._handlePointerUp.bind(this));
+		this._iframeDocument.addEventListener('pointercancel', this._handlePointerUp.bind(this));
+		this._iframeDocument.addEventListener('pointermove', this._handlePointerMove.bind(this));
 		this._iframeDocument.addEventListener('touchstart', this._handleTouchStart.bind(this));
 		this._iframeDocument.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
@@ -436,6 +436,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return this._getAnnotationFromRange(range, type, color);
 	}
 
+	/**
+	 * @returns Whether tool was used
+	 */
 	protected _tryUseTool() {
 		this._updateViewStats();
 
@@ -444,27 +447,31 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				let selection = this._iframeWindow.getSelection();
 				if (selection && !selection.isCollapsed) {
 					this._openSelectionPopup(selection);
+					return true;
 				}
 			}
-			return;
 		}
-
-		if (this._tool.type == 'highlight' || this._tool.type == 'underline') {
+		else if (this._tool.type == 'highlight' || this._tool.type == 'underline') {
 			if (this._gotPointerUp) {
 				let annotation = this._touchAnnotationStartPosition
 					? this._previewAnnotation
 					: this._getAnnotationFromTextSelection(this._tool.type, this._tool.color);
-				if (annotation && annotation.text) {
-					this._options.onAddAnnotation(annotation);
-				}
 				this._iframeWindow.getSelection()?.removeAllRanges();
 				this._previewAnnotation = null;
+				this._renderAnnotations();
+
+				if (annotation?.text) {
+					this._options.onAddAnnotation(annotation);
+					return true;
+				}
 			}
 			else {
 				this._previewAnnotation = this._getAnnotationFromTextSelection(this._tool.type, this._tool.color);
+				this._renderAnnotations();
 			}
-			this._renderAnnotations();
 		}
+
+		return false;
 	}
 
 	protected _tryUseToolDebounced = debounce(this._tryUseTool.bind(this), 500);
@@ -1307,6 +1314,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
+		event.stopPropagation();
+
 		// pointerdown handles:
 		//  - Selecting annotations when cycling isn't possible (no overlap between pointer and selected annotations)
 		//  - Opening the annotation context menu
@@ -1348,6 +1357,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	};
 
 	private _handleAnnotationPointerUp = (id: string, event: React.PointerEvent) => {
+		event.stopPropagation();
+
 		// If pointerdown already performed an action due to this pointer, don't do anything
 		if (this._handledPointerIDs.has(event.pointerId)) {
 			this._handledPointerIDs.delete(event.pointerId);
@@ -1369,6 +1380,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
 		}
 		this._lastKeyboardFocusedAnnotationID = null;
+		this._handledPointerIDs.add(event.pointerId);
 	};
 
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
@@ -1511,12 +1523,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
+				this._handledPointerIDs.add(event.pointerId);
 			}
 		}
 	}
 
 	protected _handlePointerUp(event: PointerEvent) {
-		if (!event.isPrimary) {
+		this._handledPointerIDs.delete(event.pointerId);
+
+		if (!event.isPrimary || event.defaultPrevented) {
 			return;
 		}
 
@@ -1532,9 +1547,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._tryUseToolDebounced();
 		}
 		else {
-			this._tryUseTool();
+			let wasToolUsed = this._tryUseTool();
+			if (!wasToolUsed
+					&& !this._pointerMovedWhileDown
+					&& !this._handledPointerIDs.has(event.pointerId)
+					&& !(event.target as Element).closest('a')) {
+				this._options.onBackdropTap?.(event);
+			}
 		}
 		this._touchAnnotationStartPosition = null;
+		this._previewAnnotation = null;
+		this._renderAnnotations();
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
 
@@ -1953,6 +1976,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onEPUBEncrypted: () => void;
 	onFocusAnnotation: (annotation: WADMAnnotation) => void;
 	onSetHiddenAnnotations: (ids: string[]) => void;
+	onBackdropTap?: (event: PointerEvent) => void;
 	getLocalizedString?: (name: string) => string;
 	data: Data & {
 		buf?: Uint8Array,
