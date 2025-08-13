@@ -118,6 +118,13 @@ export function createViewContextMenu(reader, params) {
 			],
 			[
 				{
+					label: reader._getString('reader-read-aloud'),
+					disabled: !(params.overlay && params.overlay.type === 'read-aloud'),
+					onCommand: () => reader.startReadAloudAtPosition(params.overlay.position)
+				}
+			],
+			[
+				{
 					label: reader._getString('reader-zoom-in'),
 					disabled: !reader.canZoomIn,
 					persistent: true,
