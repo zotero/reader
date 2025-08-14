@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Zotero Reader Module</title>
+  <link rel="stylesheet" href="./reader.css" />
+</head>
+<body>
+  <div id="reader-root"></div>
+
+  <script type="module">
+    import Reader from '/reader.mjs';
+    import epubAnnotations from '/epub/annotations.js';
+    import pdfAnnotations from '/pdf/annotations.js';
+    import snapshotAnnotations from '/snapshot/annotations.js';
+
+    const annotationsMap = {
+      epub: epubAnnotations,
+      pdf: pdfAnnotations,
+      snapshot: snapshotAnnotations
+    };
+
+    const files = {
+      epub: '/epub/demo.epub',
+      pdf: '/pdf/demo.pdf',
+      snapshot: '/snapshot/demo.html'
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type') || 'epub';
+
+    const annotations = annotationsMap[type];
+    const file = files[type];
+
+    const container = document.getElementById('reader-root');
+    if (!container) throw new Error('Container #reader-root not found');
+
+    // Create DOM structure expected by Reader
+    const readerUI = document.createElement('div');
+    readerUI.id = 'reader-ui';
+
+    const splitView = document.createElement('div');
+    splitView.id = 'split-view';
+
+    const primaryView = document.createElement('div');
+    primaryView.id = 'primary-view';
+    primaryView.className = 'primary-view';
+
+    const secondaryView = document.createElement('div');
+    secondaryView.id = 'secondary-view';
+    secondaryView.className = 'secondary-view';
+
+    splitView.append(primaryView, secondaryView);
+
+    const printContainer = document.createElement('div');
+    printContainer.id = 'printContainer';
+
+    container.append(readerUI, splitView, printContainer);
+
+    let reader;
+
+    const init = async () => {
+      const res = await fetch(file);
+      const buf = new Uint8Array(await res.arrayBuffer());
+
+      reader = new Reader({
+        container,
+        type,
+        readOnly: false,
+        data: {
+          buf,
+          url: location.origin + '/'
+        },
+        annotations,
+        sidebarWidth: 240,
+        authorName: 'John',
+        showAnnotations: true,
+        onOpenContextMenu(params) {
+          reader.openContextMenu(params);
+        },
+        onChangeViewState(state, primary) {
+          console.log('View state changed:', state, primary);
+        }
+      });
+
+      await reader.initializedPromise;
+      reader.enableAddToNote(true);
+      window._reader = reader;
+
+      console.log(`Reader initialized with type: ${type}`);
+    };
+
+    init().catch(err => {
+      console.error(err);
+      alert('Failed to initialize reader: ' + err.message);
+    });
+  </script>
+</body>
+</html>
