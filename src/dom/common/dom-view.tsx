@@ -1715,7 +1715,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		};
 		this._iframeDocument.addEventListener('click', clickListener, { once: true, capture: true });
 		setTimeout(() => {
-			this._iframeDocument.removeEventListener('click', clickListener);
+			this._iframeDocument.removeEventListener('click', clickListener, { capture: true });
 		}, 500);
 	}
 
