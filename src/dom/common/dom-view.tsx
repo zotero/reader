@@ -1380,7 +1380,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
 		}
 		this._lastKeyboardFocusedAnnotationID = null;
-		this._handledPointerIDs.add(event.pointerId);
 	};
 
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
