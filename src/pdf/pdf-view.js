@@ -1871,6 +1871,12 @@ class PDFView {
 	}
 
 	_handlePointerDown(event) {
+		// Prevent double-click word highlight on triple-click
+		if (this._creationTimeout) {
+			clearTimeout(this._creationTimeout);
+			this._creationTimeout = null;
+		}
+
 		if (event.pointerType === 'mouse') {
 			return;
 		}
@@ -2086,6 +2092,10 @@ class PDFView {
 	}
 
 	_handlePointerMove = throttle((event) => {
+		// Don't cancel a highlight/underline annotation just created in word selection mode
+		// when the highlight/underline tool is enabled
+		this._creationTimeout = null;
+
 		if (this._scrolling) {
 			return;
 		}
@@ -2621,13 +2631,24 @@ class PDFView {
 					this._onSelectAnnotations([], event);
 				}
 				if (action.type === 'selectText') {
-					// TODO: Handle triple click as well. Likely there should be a delay when action.mode is 'word'
 					if (['highlight', 'underline'].includes(this._tool.type)) {
 						if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
 							let annotation = this._getAnnotationFromSelectionRanges(this._selectionRanges, this._tool.type, this._tool.color);
 							annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
-							this._onAddAnnotation(annotation);
-							this._setSelectionRanges();
+							let createAnnotation = () => {
+								this._onAddAnnotation(annotation);
+								this._setSelectionRanges();
+								this._render();
+							};
+							if (action.mode === 'chars') {
+								createAnnotation();
+							}
+							else if (action.mode === 'words') {
+								this._creationTimeout = setTimeout(createAnnotation, 500);
+							}
+							else if (action.mode === 'lines') {
+								createAnnotation();
+							}
 						}
 					}
 					else {
