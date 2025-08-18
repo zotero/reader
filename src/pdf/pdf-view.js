@@ -841,7 +841,9 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplication.pdfCursorTools.switchTool(0);
 		}
 
-		this._iframeWindow.document.getElementById('viewerContainer').style.touchAction = tool.type !== 'pointer' ? 'none' : 'auto';
+		if (this._options.platform === 'web') {
+			this._iframeWindow.document.getElementById('viewerContainer').style.touchAction = tool.type !== 'pointer' ? 'none' : 'auto';
+		}
 		this._tool = tool;
 	}
 
@@ -2074,9 +2076,9 @@ class PDFView {
 	_handleTouchMove(event) {
 		if (
 			// Prevent default touch action (which is scroll) if any tool is enabled
-			this._tool.type !== 'pointer'
+			this._tool.type !== 'pointer' && event.target.id !== 'viewer'
 			// Or a text selection action is triggered using a pen in the page (not the gray area)
-			|| (this.action?.type === 'selectText' && event.target.id !== 'viewer')
+			|| this.action?.type === 'selectText'
 		) {
 			event.preventDefault();
 		}
