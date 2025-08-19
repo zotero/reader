@@ -591,21 +591,53 @@ export function getClosestObject(currentObjectRect, otherObjects, side) {
 export function getRangeRects(chars, offsetStart, offsetEnd) {
 	let rects = [];
 	let start = offsetStart;
+
+	let norm = (r) => {
+		let [x1, y1, x2, y2] = r;
+		return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
+	};
+
 	for (let i = start; i <= offsetEnd; i++) {
 		let char = chars[i];
-		if (char.lineBreakAfter || i === offsetEnd) {
-			let firstChar = chars[start];
-			let lastChar = char;
-			let rect = [
-				firstChar.rect[0],
-				firstChar.inlineRect[1],
-				lastChar.rect[2],
-				firstChar.inlineRect[3],
+		let isBreak = char.lineBreakAfter || i === offsetEnd;
+		if (!isBreak) continue;
+
+		let firstChar = chars[start];
+		let lastChar = char;
+
+		// Normalize rectangles to avoid inverted coordinates
+		let firstRect = norm(firstChar.rect);
+		let lastRect = norm(lastChar.rect);
+		let firstInline = norm(firstChar.inlineRect);
+
+		// Rotation is already normalized
+		let rot = firstChar?.rotation ?? 0;
+		let isVertical = rot === 90 || rot === 270;
+
+		let rect;
+		if (isVertical) {
+			// Vertical text flow (inline axis is X from inlineRect, block axis is Y from chars)
+			rect = [
+				firstInline[0], // left from line's inline box
+				firstRect[1],   // top from first char in the run
+				firstInline[2], // right from line's inline box
+				lastRect[3],    // bottom from last char in the run
 			];
-			rects.push(rect);
-			start = i + 1;
 		}
+		else {
+			// Horizontal text flow (inline axis is X from chars, block axis is Y from inlineRect)
+			rect = [
+				firstRect[0],   // left from first char in the run
+				firstInline[1], // top from line's inline box
+				lastRect[2],    // right from last char in the run
+				firstInline[3], // bottom from line's inline box
+			];
+		}
+
+		rects.push(rect);
+		start = i + 1;
 	}
+
 	return rects;
 }
 
