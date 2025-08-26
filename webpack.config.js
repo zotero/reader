@@ -7,27 +7,45 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ZoteroLocalePlugin = require('./webpack.zotero-locale-plugin');
 
 function generateReaderConfig(build) {
-	let config = {
+	const isESM = build === 'esm';
+
+	const config = {
 		name: build,
 		mode: build === 'dev' ? 'development' : 'production',
 		devtool: (build === 'zotero' || build === 'web') ? false : 'source-map',
-		entry: {
-			reader: [
-				'./src/index.' + build + '.js',
-				'./src/common/stylesheets/main.scss'
-			]
-		},
+		entry: isESM
+			? { reader: './src/index.esm.js' }
+			: {
+				reader: [
+					'./src/index.' + build + '.js',
+					'./src/common/stylesheets/main.scss'
+				]
+			},
 		output: {
 			path: path.resolve(__dirname, './build/' + build),
-			filename: 'reader.js',
-			libraryTarget: 'umd',
+			filename: isESM ? 'reader.mjs' : 'reader.js',
 			publicPath: '',
-			library: {
-				name: 'reader',
-				type: 'umd',
-				umdNamedDefine: true,
-			},
+			...(isESM
+				? {
+					module: true,
+					library: {
+						type: 'module',
+					},
+				}
+				: {
+					libraryTarget: 'umd',
+					library: {
+						name: 'reader',
+						type: 'umd',
+						umdNamedDefine: true,
+					},
+				}),
 		},
+		...(isESM && {
+			experiments: {
+				outputModule: true,
+			},
+		}),
 		optimization: {
 			minimize: build === 'web',
 			minimizer: [new CssMinimizerPlugin(), '...'], // ... is for built-in TerserPlugin https://webpack.js.org/configuration/optimization/#optimizationminimizer
@@ -116,7 +134,7 @@ function generateReaderConfig(build) {
 			new MiniCssExtractPlugin({
 				filename: '[name].css',
 			}),
-			new HtmlWebpackPlugin({
+			!isESM && new HtmlWebpackPlugin({
 				template: './index.reader.html',
 				filename: './[name].html',
 				templateParameters: {
@@ -169,6 +187,31 @@ function generateReaderConfig(build) {
 				writeToDisk: true,
 			},
 			open: '/dev/reader.html?type=pdf',
+			port: 3000,
+		};
+	}
+
+	else if (build === 'esm') {
+		config.plugins.push(
+			new CopyWebpackPlugin({
+				patterns: [
+					{ from: 'demo/epub', to: './epub' },
+					{ from: 'demo/pdf', to: './pdf' },
+					{ from: 'demo/snapshot', to: './snapshot' },
+					{ from: 'demo/esm.html', to: './reader.html' }
+				],
+				options: {}
+			})
+		);
+		config.devServer = {
+			static: {
+				directory: path.resolve(__dirname, 'build/'),
+				watch: true,
+			},
+			devMiddleware: {
+				writeToDisk: true,
+			},
+			open: '/esm/reader.html?type=epub',
 			port: 3000,
 		};
 	}
@@ -312,6 +355,7 @@ function generateViewConfig(build) {
 module.exports = [
 	generateReaderConfig('zotero'),
 	generateReaderConfig('web'),
+	generateReaderConfig('esm'),
 	generateReaderConfig('dev'),
 	generateViewConfig('ios'),
 	generateViewConfig('android'),
