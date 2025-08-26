@@ -207,8 +207,7 @@ class PDFView {
 				catch (e) {
 				}
 				setOptions();
-				this._iframeWindow.onAttachPage = this._attachPage.bind(this);
-				this._iframeWindow.onDetachPage = this._detachPage.bind(this);
+				this._iframeWindow.onDestroyPage = this._handlePageDestroy.bind(this);
 				if (this._preview) {
 					setTimeout(this._resolveInitializedPromise);
 				}
@@ -310,6 +309,8 @@ class PDFView {
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));
+		this._iframeWindow.PDFViewerApplication.eventBus.on('pagerendered', this._handlePageRendered.bind(this));
+		this._iframeWindow.PDFViewerApplication.eventBus.on('textlayerrendered', this._handleTextLayerRendered.bind(this));
 
 		this._findController = new PDFFindController({
 			linkService: this._iframeWindow.PDFViewerApplication.pdfViewer.linkService,
@@ -541,59 +542,61 @@ class PDFView {
 		}
 	}
 
-	async _attachPage(originalPage) {
-		this._init2 && this._init2();
+	_handleTextLayerRendered(event) {
+		let originalPage = event.source;
+		let textLayer = originalPage.div.querySelector('.textLayer');
+		if (textLayer) {
+			textLayer.draggable = true;
+		}
+	}
 
-		if (this._preview) {
-			this._detachPage(originalPage, true);
+	async _handlePageRendered(event) {
+		let pageIndex = event.pageNumber - 1;
+		let originalPage = event.source;
+		let page = this._pages.find(x => x.pageIndex === pageIndex);
+		let { isDetailView } = event;
+		if (page) {
+			page.refresh(isDetailView);
+		}
+		else {
+			this._init2 && this._init2();
+
+			if (this._preview) {
+				let page = new Page(this, originalPage);
+				this._pages.push(page);
+				this._render();
+				return;
+			}
+
+			if (this._primary && !this._pdfThumbnails) {
+				this._initThumbnails();
+			}
+
+			// When actively changing zoom sometimes the PageView that was just attached no longer has canvas
+			// which probably means that it is being destroyed
+			if (!originalPage.canvas) {
+				return;
+			}
+
 			let page = new Page(this, originalPage);
+
 			this._pages.push(page);
 			this._render();
-			return;
-		}
 
-		if (this._primary && !this._pdfThumbnails) {
-			this._initThumbnails();
-		}
-
-		this._detachPage(originalPage, true);
-
-		// When actively changing zoom sometimes the PageView that was just attached no longer has canvas
-		// which probably means that it is being destroyed
-		if (!originalPage.canvas) {
-			return;
-		}
-
-		originalPage.textLayerPromise.then(() => {
-			// Text layer may no longer exist if it was detached in the meantime
-			let textLayer = originalPage.div.querySelector('.textLayer');
-			if (textLayer) {
-				textLayer.draggable = true;
-			}
-		});
-
-		let page = new Page(this, originalPage);
-
-		let pageIndex = originalPage.id - 1;
-
-		this._pages.push(page);
-		this._render();
-
-		if (!this._pdfPages[pageIndex]) {
-			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
 			if (!this._pdfPages[pageIndex]) {
-				this._pdfPages[pageIndex] = pageData;
-				this._render();
+				let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
+				if (!this._pdfPages[pageIndex]) {
+					this._pdfPages[pageIndex] = pageData;
+					this._render();
+				}
 			}
 		}
 	}
 
-	_detachPage(originalPage, replacing) {
+	_handlePageDestroy(originalPage) {
 		let pageIndex = originalPage.id - 1;
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
-		if (!replacing) {
-			delete this._pdfPages[pageIndex];
-		}
+		delete this._pdfPages[pageIndex];
 	}
 
 	_getPageLabel(pageIndex, usePrevAnnotation) {
