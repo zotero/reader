@@ -63,9 +63,9 @@ window.createView = options => {
 		onChangeViewStats: stats => {
 			postMessage('onChangeViewStats', {stats});
 		},
-		onBackdropTap: params => {
-			postMessage('onBackdropTap', params);
-		}
+        onBackdropTap: () => {
+            postMessage('onBackdropTap');
+        }
 	});
 }
 
