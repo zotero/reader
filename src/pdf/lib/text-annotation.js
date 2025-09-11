@@ -11,7 +11,7 @@ function measureHeight(comment, width, fontSize) {
 	comment = comment || 'A';
 	customAnnotation.value = comment;
 	// $font-family-sans-serif
-	customAnnotation.style.fontFamily = '"Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif';
+	customAnnotation.style.fontFamily = window.computedFontFamily;
 	customAnnotation.style.fontSize = fontSize + 'px';
 	customAnnotation.style.wordBreak = 'break-word';
 	customAnnotation.style.pointerEvents = 'none';
@@ -38,7 +38,7 @@ function measureWidth(comment, fontSize) {
 	comment = comment || 'A';
 	customAnnotation.value = comment;
 	// $font-family-sans-serif
-	customAnnotation.style.fontFamily = '"Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", Geneva, -apple-system, sans-serif';
+	customAnnotation.style.fontFamily = window.computedFontFamily;
 	customAnnotation.style.fontSize = fontSize + 'px';
 	customAnnotation.style.wordBreak = 'break-word';
 	customAnnotation.style.pointerEvents = 'none';
