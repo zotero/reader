@@ -608,7 +608,15 @@ class PDFView {
 				if (!annotation.readOnly
 					&& annotation.pageLabel !== '-'
 					&& annotation.position.pageIndex <= pageIndex) {
-					if (parseInt(annotation.pageLabel) == annotation.pageLabel || (/[0-9]+[-\u2013][0-9]+/).test(annotation.pageLabel)) {
+					let deltaPageLabel = parseInt(this._pageLabels[pageIndex]) - parseInt(this._pageLabels[annotation.position.pageIndex]);
+					let deltaPageIndex = pageIndex - annotation.position.pageIndex;
+					if (
+						deltaPageLabel === deltaPageIndex
+						&& (
+							parseInt(annotation.pageLabel) == annotation.pageLabel
+							|| (/[0-9]+[-\u2013][0-9]+/).test(annotation.pageLabel)
+						)
+					) {
 						pageLabel = (pageIndex + (parseInt(annotation.pageLabel) - annotation.position.pageIndex)).toString();
 					}
 					break;
