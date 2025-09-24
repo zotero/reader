@@ -66,7 +66,7 @@ export function isTextPosition(selector: Selector): selector is TextPositionSele
 }
 
 export function isSelector(maybeSelector: any): maybeSelector is Selector {
-	if (!('type' in maybeSelector)) {
+	if (typeof maybeSelector !== 'object' || !('type' in maybeSelector)) {
 		return false;
 	}
 	let selector = maybeSelector as Selector;
