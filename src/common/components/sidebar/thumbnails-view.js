@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useContext, useEffect, useRef, memo } from 'react';
-import { useLocalization } from '@fluent/react';
+import { useLocalization, Localized } from '@fluent/react';
 import cx from 'classnames';
 import { pressedNextKey, pressedPreviousKey } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
@@ -208,7 +208,9 @@ function ThumbnailsView(props) {
 		<div id="thumbnailsView" className="thumbnails-view" role="tabpanel" aria-labelledby="viewThumbnail">
 			{platform === 'web' && (
 				<div className="thumbnails-header">
-					<FormattedMessage id="reader-selected-pages" values={ { count: selected.length }} />
+					<Localized id="reader-selected-pages" vars={{ count: selected.length }}>
+						{"{ $count } pages selected"}
+					</Localized>
 					<button
 						tabIndex={-1}
 						data-tabstop={1}
