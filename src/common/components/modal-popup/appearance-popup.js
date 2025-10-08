@@ -379,19 +379,19 @@ function AppearancePopup(props) {
 					<div className="group">
 						{type === 'snapshot' && (
 							<div className="option">
-								<label htmlFor="focus-mode-enabled">{l10n.getString('reader-focus-mode')}</label>
+								<label htmlFor="reading-mode-enabled">{l10n.getString('reader-reading-mode')}</label>
 								<input
 									data-tabstop={1}
 									tabIndex={-1}
 									className="switch"
 									type="checkbox"
-									id="focus-mode-enabled"
-									checked={props.viewStats.focusModeEnabled}
-									onChange={e => props.onChangeFocusModeEnabled(e.target.checked)}
+									id="reading-mode-enabled"
+									checked={props.viewStats.readingModeEnabled}
+									onChange={e => props.onChangeReadingModeEnabled(e.target.checked)}
 								/>
 							</div>
 						)}
-						{(type === 'epub' || props.viewStats.focusModeEnabled) && (
+						{(type === 'epub' || props.viewStats.readingModeEnabled) && (
 							<ReflowableAppearanceSection
 								params={props.viewStats.appearance}
 								enablePageWidth={type === 'snapshot'
