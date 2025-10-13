@@ -209,6 +209,8 @@ class PDFView {
 				setOptions();
 				this._iframeWindow.onDestroyPage = this._handlePageDestroy.bind(this);
 				if (this._preview) {
+					// Necessary for view stats update
+					this._iframeWindow.PDFViewerApplication.eventBus.on('pagerendered', this._handlePageRendered.bind(this));
 					setTimeout(this._resolveInitializedPromise);
 				}
 				else {
