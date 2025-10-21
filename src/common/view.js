@@ -178,6 +178,24 @@ class View {
 		this._view.setTool(tool);
 	}
 
+	get canUndo() {
+		return this._annotationManager.canUndo;
+	}
+
+	get canRedo() {
+		return this._annotationManager.canRedo;
+	}
+
+	undo() {
+		this._annotationManager.undo();
+		this.selectAnnotations([]);
+	}
+
+	redo() {
+		this._annotationManager.redo();
+		this.selectAnnotations([]);
+	}
+
 	/**
 	 * @param {Array} ids Array of annotation ids (item keys)
 	 */
