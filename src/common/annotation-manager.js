@@ -537,6 +537,14 @@ class AnnotationManager {
 		}
 	}
 
+	get canUndo() {
+		return !!this._undoStack.length;
+	}
+
+	get canRedo() {
+		return !!this._redoStack.length;
+	}
+
 	undo() {
 		let undoPoint = this._undoStack.pop();
 		if (!undoPoint) {
