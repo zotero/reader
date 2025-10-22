@@ -195,10 +195,8 @@ export function supportsCaretPositionFromPoint(): boolean {
 }
 
 export function caretPositionFromPoint(doc: Document, x: number, y: number): CaretPosition | null {
-	// Make sure text selection is enabled everywhere
-	// We need this for WebKit because user-select: none disables
-	// caretRangeFromPoint()
-	doc.body.classList.add('force-enable-selection-everywhere');
+	// Enable CSS hacks for WebKit
+	doc.body.classList.add('reading-caret-position');
 	try {
 		if (typeof doc.caretPositionFromPoint == 'function') {
 			return doc.caretPositionFromPoint(x, y);
@@ -217,7 +215,7 @@ export function caretPositionFromPoint(doc: Document, x: number, y: number): Car
 		return null;
 	}
 	finally {
-		doc.body.classList.remove('force-enable-selection-everywhere');
+		doc.body.classList.remove('reading-caret-position');
 	}
 }
 

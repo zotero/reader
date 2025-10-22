@@ -10,10 +10,20 @@ body.resizing-annotation, body.creating-touch-annotation {
 	}
 }
 
-body.force-enable-selection-everywhere {
+body.reading-caret-position {
+	// Make sure text selection is enabled everywhere.
+	// We need this for WebKit because user-select: none disables
+	// caretRangeFromPoint().
 	&, & * {
 		user-select: auto !important;
 		-webkit-user-select: auto !important;
+	}
+
+	// Fully remove the annotation overlay from hit testing. This class is
+	// added/removed synchronously in a single tick, so this will have no
+	// visual effect.
+	#annotation-overlay {
+		display: none !important;
 	}
 }
 
