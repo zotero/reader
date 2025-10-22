@@ -1,27 +1,27 @@
-import focusSCSS from '../stylesheets/focus.scss';
+import readingModeSCSS from '../stylesheets/reading-mode.scss';
 import { Readability } from "@abejellinek/readability-keep-nodes";
 import { iterateWalker } from "../../common/lib/nodes";
 import { enumerate } from "../../common/lib/collection";
 import { NodeMapping } from "./node-mapping";
 
-export class FocusMode {
+export class ReadingMode {
 	private readonly _doc: Document;
 
 	private readonly _mapping = new NodeMapping();
 
-	private readonly _fragment: DocumentFragment;
+	private readonly _preFragment: DocumentFragment;
 
 	private readonly _originalStyleSheets = new Map<CSSStyleSheet, Element | ProcessingInstruction | null>;
 
-	private readonly _focusStyle: HTMLStyleElement;
+	private readonly _style: HTMLStyleElement;
 
 	private _enabled = false;
 
 	constructor(doc: Document) {
 		this._doc = doc;
-		this._fragment = doc.createDocumentFragment();
-		this._focusStyle = doc.createElement('style');
-		this._focusStyle.textContent = focusSCSS;
+		this._preFragment = doc.createDocumentFragment();
+		this._style = doc.createElement('style');
+		this._style.textContent = readingModeSCSS;
 
 		for (let styleSheet of [...this._doc.styleSheets, ...this._doc.adoptedStyleSheets]) {
 			if (styleSheet.disabled) {
@@ -48,11 +48,13 @@ export class FocusMode {
 		this._enabled = enabled;
 	}
 
-	get originalRoot(): DocumentFragment {
-		if (!this._enabled) {
-			throw new Error('Not enabled');
+	get preBody(): HTMLBodyElement {
+		if (this._enabled) {
+			return this._preFragment.firstElementChild as HTMLBodyElement;
 		}
-		return this._fragment;
+		else {
+			return this._doc.body as HTMLBodyElement;
+		}
 	}
 
 	mapNodeToFocus(node: Node) {
@@ -83,7 +85,7 @@ export class FocusMode {
 			throw new Error('Not enabled');
 		}
 		let mappedNode = this._mapping.getByPost(node);
-		if (!mappedNode || !this._fragment.contains(mappedNode)) {
+		if (!mappedNode || !this._preFragment.contains(mappedNode)) {
 			return null;
 		}
 		return mappedNode;
@@ -117,7 +119,7 @@ export class FocusMode {
 				}
 				fragmentBody.append(child);
 			}
-			this._fragment.replaceChildren(fragmentBody);
+			this._preFragment.replaceChildren(fragmentBody);
 
 			return clonedDoc;
 		};
@@ -153,12 +155,12 @@ export class FocusMode {
 			styleSheet.disabled = true;
 			ownerNode?.remove();
 		}
-		this._doc.head.append(this._focusStyle);
+		this._doc.head.append(this._style);
 	}
 
 	private _disable() {
 		this._doc.body.replaceChildren(
-			...this._fragment.firstElementChild!.childNodes,
+			...this._preFragment.firstElementChild!.childNodes,
 			this._doc.body.querySelector(':scope > #annotation-overlay')!,
 		);
 
@@ -168,8 +170,8 @@ export class FocusMode {
 				this._doc.head.append(ownerNode);
 			}
 		}
-		this._focusStyle.remove();
+		this._style.remove();
 		this._mapping.clear();
-		this._fragment.replaceChildren();
+		this._preFragment.replaceChildren();
 	}
 }
