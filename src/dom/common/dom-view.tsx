@@ -56,6 +56,7 @@ import {
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
+	expandRect,
 	getBoundingRect,
 	isPageRectVisible,
 	pageRectToClientRect,
@@ -1486,9 +1487,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
 					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')
 					&& event.target !== this._annotationShadowRoot.host) {
-				this._touchAnnotationStartPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-				this._iframeDocument.body.classList.add('creating-touch-annotation');
-				event.stopPropagation();
+				let caretPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+				let caretRect = caretPosition?.getClientRect();
+				// Only start touch annotation if the touch was within 100px of
+				// the detected caret position, so scrolling is still allowed
+				// in the margins with an annotation tool selected
+				if (caretRect && rectContains(expandRect(caretRect, 100), event.clientX, event.clientY)) {
+					this._touchAnnotationStartPosition = caretPosition;
+					this._iframeDocument.body.classList.add('creating-touch-annotation');
+					event.stopPropagation();
+				}
 			}
 		}
 
