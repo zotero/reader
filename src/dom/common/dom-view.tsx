@@ -161,6 +161,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _lastKeyboardFocusedAnnotationID: string | null = null;
 
+	protected _penConnected: boolean;
+
+	protected _penExclusive: boolean;
+
 	protected _a11yVirtualCursorTarget: Node | null;
 
 	protected _a11yShouldFocusVirtualCursorTarget: boolean;
@@ -183,6 +187,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
 		this._findState = options.findState;
+		this._penConnected = options.penConnected ?? false;
+		this._penExclusive = options.penExclusive ?? false;
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 		this._history = new History({
 			onUpdate: () => this._updateViewStats(),
@@ -1862,6 +1868,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations(true);
 	}
 
+	setPenConnected(penConnected: boolean) {
+		this._penConnected = penConnected;
+	}
+
+	setPenExclusive(penExclusive: boolean) {
+		this._penExclusive = penExclusive;
+	}
+
 	// ***
 	// Public methods to control the view from the outside
 	// ***
@@ -1962,6 +1976,8 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	viewState?: State;
 	fontFamily?: string;
 	hyphenate?: boolean;
+	penConnected?: boolean;
+	penExclusive?: boolean;
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;

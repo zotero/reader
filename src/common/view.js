@@ -81,6 +81,8 @@ class View {
 			lightTheme: this._lightTheme,
 			darkTheme: this._darkTheme,
 			colorScheme: this._colorScheme,
+			penConnected: this._options.penConnected ?? false,
+			penExclusive: this._options.penExclusive ?? false,
 			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
 			onChangeViewStats: debounce(this._options.onChangeViewStats, DEBOUNCE_STATS_CHANGE),
 			onAddAnnotation,
@@ -281,6 +283,14 @@ class View {
 	setColorScheme(scheme) {
 		this._colorScheme = scheme;
 		this._view.setColorScheme(scheme);
+	}
+
+	setPenConnected(penConnected) {
+		this._view.setPenConnected(penConnected);
+	}
+
+	setPenExclusive(penExclusive) {
+		this._view.setPenExclusive(penExclusive);
 	}
 }
 
