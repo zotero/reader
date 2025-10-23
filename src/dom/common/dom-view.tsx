@@ -1593,6 +1593,26 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!caretRect || !rectContains(expandRect(caretRect, 100), event.clientX, event.clientY)) {
 			return null;
 		}
+
+		// Try to snap to the start of the word
+		if ('Segmenter' in Intl && caretPosition.offsetNode.nodeType === Node.TEXT_NODE) {
+			try {
+				let lang = closestElement(caretPosition.offsetNode)?.closest('[lang]')
+					?.getAttribute('lang') || 'en';
+				let wordSegmenter = new Intl.Segmenter(lang, { granularity: 'word' });
+
+				let words = wordSegmenter.segment(caretPosition.offsetNode.nodeValue!);
+				let wordContainingCaret = words.containing(caretPosition.offset);
+
+				// If we found a word and we're not too far from its start, snap to that
+				if (wordContainingCaret && wordContainingCaret.index >= caretPosition.offset - 16) {
+					caretPosition = { ...caretPosition, offset: wordContainingCaret.index };
+				}
+			}
+			catch (e) {
+				console.error(e);
+			}
+		}
 		return caretPosition;
 	}
 

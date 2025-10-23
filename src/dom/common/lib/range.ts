@@ -199,7 +199,15 @@ export function caretPositionFromPoint(doc: Document, x: number, y: number): Car
 	doc.body.classList.add('reading-caret-position');
 	try {
 		if (typeof doc.caretPositionFromPoint == 'function') {
-			return doc.caretPositionFromPoint(x, y);
+			let pos = doc.caretPositionFromPoint(x, y);
+			if (!pos) {
+				return null;
+			}
+			return {
+				offsetNode: pos.offsetNode,
+				offset: pos.offset,
+				getClientRect: () => pos.getClientRect()
+			};
 		}
 		else if (typeof doc.caretRangeFromPoint == 'function') {
 			const range = doc.caretRangeFromPoint(x, y);
