@@ -54,6 +54,7 @@ class Reader {
 		this._onOpenContextMenu = options.onOpenContextMenu;
 		this._onToggleSidebar = options.onToggleSidebar;
 		this._onChangeSidebarWidth = options.onChangeSidebarWidth;
+		this._onChangeSidebarView = options.onChangeSidebarView;
 		this._onChangeViewState = options.onChangeViewState;
 		this._onOpenLink = options.onOpenLink;
 		this._onCopyImage = options.onCopyImage;
@@ -175,7 +176,7 @@ class Reader {
 			pageLabels: [],
 			sidebarOpen: options.sidebarOpen !== undefined ? options.sidebarOpen : true,
 			sidebarWidth: options.sidebarWidth !== undefined ? options.sidebarWidth : 240,
-			sidebarView: 'annotations',
+			sidebarView: options.sidebarView !== undefined ? options.sidebarView : 'annotations',
 			contextPaneOpen: options.contextPaneOpen !== undefined ? options.contextPaneOpen : false,
 			bottomPlaceholderHeight: options.bottomPlaceholderHeight || null,
 			toolbarPlaceholderWidth: options.toolbarPlaceholderWidth || 0,
@@ -302,7 +303,10 @@ class Reader {
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
-						onChangeSidebarView={this.setSidebarView.bind(this)}
+						onChangeSidebarView={(view) => {
+							this.setSidebarView(view);
+							this._onChangeSidebarView(view);
+						}}
 						onToggleSidebar={(open) => {
 							this.toggleSidebar(open);
 							this._onToggleSidebar(open);

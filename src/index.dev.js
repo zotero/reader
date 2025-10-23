@@ -34,6 +34,7 @@ async function createReader() {
 		annotations: demo.annotations,
 		primaryViewState: demo.state,
 		sidebarWidth: 240,
+		sidebarView: 'annotations', //thumbnails, outline
 		bottomPlaceholderHeight: null,
 		toolbarPlaceholderWidth: 0,
 		authorName: 'John',
@@ -69,6 +70,9 @@ async function createReader() {
 		},
 		onChangeSidebarWidth(width) {
 			console.log('Sidebar width changed', width);
+		},
+		onChangeSidebarView(view) {
+			console.log('Sidebar view changed', view);
 		},
 		onSetDataTransferAnnotations(dataTransfer, annotations, fromText) {
 			console.log('Set formatted dataTransfer annotations', dataTransfer, annotations, fromText);
