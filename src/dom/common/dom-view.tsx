@@ -1490,19 +1490,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._gotPointerUp = false;
 			this._pointerMovedWhileDown = false;
 
-			if ((event.pointerType === 'touch' || event.pointerType === 'pen')
-					&& (this._tool.type === 'highlight' || this._tool.type === 'underline')
-					&& event.target !== this._annotationShadowRoot.host) {
-				let caretPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
-				let caretRect = caretPosition?.getClientRect();
-				// Only start touch annotation if the touch was within 100px of
-				// the detected caret position, so scrolling is still allowed
-				// in the margins with an annotation tool selected
-				if (caretRect && rectContains(expandRect(caretRect, 100), event.clientX, event.clientY)) {
-					this._touchAnnotationStartPosition = caretPosition;
-					this._iframeDocument.body.classList.add('creating-touch-annotation');
-					event.stopPropagation();
-				}
+			let touchCaretPosition = this._getTouchAnnotationStartPosition(event);
+			if (touchCaretPosition) {
+				this._touchAnnotationStartPosition = touchCaretPosition;
+				this._iframeDocument.body.classList.add('creating-touch-annotation');
+				event.stopPropagation();
 			}
 		}
 
@@ -1580,8 +1572,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		this._pointerMovedWhileDown = true;
 		if (this._touchAnnotationStartPosition
-				&& (event.pointerType === 'touch' || event.pointerType === 'pen')
-				&& (this._tool.type === 'highlight' || this._tool.type === 'underline')) {
+				&& this._canToolDoTouchAnnotation(this._tool.type)
+				&& this._canPointerEventDoTouchAnnotation(event)) {
 			let endPos = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
 			if (endPos) {
 				let range = this._iframeDocument.createRange();
@@ -1599,6 +1591,34 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 			event.stopPropagation();
 		}
+	}
+
+	protected _canToolDoTouchAnnotation(toolType: ToolType): toolType is 'highlight' | 'underline' {
+		return toolType === 'highlight' || toolType === 'underline';
+	}
+
+	protected _canPointerEventDoTouchAnnotation(event: PointerEvent): boolean {
+		return (event.pointerType === 'touch' || event.pointerType === 'pen')
+			&& (event.pointerType === 'pen' || !(this._penConnected && this._penExclusive))
+			&& event.target !== this._annotationShadowRoot.host;
+	}
+
+	protected _getTouchAnnotationStartPosition(event: PointerEvent): CaretPosition | null {
+		if (!this._canToolDoTouchAnnotation(this._tool.type) || !this._canPointerEventDoTouchAnnotation(event)) {
+			return null;
+		}
+		let caretPosition = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
+		if (!caretPosition) {
+			return null;
+		}
+		let caretRect = caretPosition.getClientRect();
+		// Only start touch annotation if the touch was within 100px of
+		// the detected caret position, so scrolling is still allowed
+		// in the margins with an annotation tool selected
+		if (!caretRect || !rectContains(expandRect(caretRect, 100), event.clientX, event.clientY)) {
+			return null;
+		}
+		return caretPosition;
 	}
 
 	protected _handleTouchStart(event: TouchEvent) {
