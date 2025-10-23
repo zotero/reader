@@ -39,7 +39,7 @@ import {
 	PersistentRange,
 	supportsCaretPositionFromPoint
 } from "./lib/range";
-import { getSelectionRanges } from "./lib/selection";
+import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
 import { FindProcessor } from "./lib/find";
 import { SELECTION_COLOR } from "../../common/defines";
 import {
@@ -1402,32 +1402,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// handler, preventing it from being cleared. We should synthesize a drag from the selection instead of the
 		// annotation.
 		if (sel && !sel.isCollapsed) {
-			// Normally the browser does the work of generating the drag image for a text drag. We can't use that
-			// here, so instead we'll do something silly with a canvas to make a passable drag image (probably not
-			// a great one).
-
-			let text = sel.toString();
-			if (text.length > 100) {
-				text = text.slice(0, 100) + '…';
-			}
-
-			let computedStyle = getComputedStyle(closestElement(sel.anchorNode!)!);
-			let fontSize = computedStyle.fontSize;
-			let fontFamily = computedStyle.fontFamily;
-			let font = fontSize + ' ' + fontFamily;
-
-			let canvas = document.createElement('canvas');
-			let ctx = canvas.getContext('2d')!;
-			ctx.font = font;
-			let metrics = ctx.measureText(text);
-
-			canvas.width = metrics.width;
-			canvas.height = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent;
-			ctx.font = font;
-			ctx.textBaseline = 'top';
-			ctx.fillText(text, 0, 0);
-
-			dataTransfer.setDragImage(canvas, 0, 0);
+			dataTransfer.setDragImage(makeDragImageForTextSelection(sel), 0, 0);
 			return;
 		}
 
