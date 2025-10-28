@@ -850,6 +850,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 				// @ts-ignore
 				xmlns="http://www.w3.org/1999/xhtml"
 				className="annotation-div"
+				style={{ width: `${size}px`, height: `${size}px` }}
 				draggable={true}
 				onPointerDown={props.onPointerDown}
 				onPointerUp={props.onPointerUp}
