@@ -226,10 +226,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		// }
 
-		// Initialize speech synthesis (for Chrome, which only returns voices
-		// the second time this is called)
-		window.speechSynthesis.getVoices();
-
 		// Set the CSP directly on the iframe; we also add it as a <meta> tag in the srcdoc for browsers that don't
 		// support the csp attribute (currently all browsers besides Chrome derivatives)
 		this._iframe.setAttribute('csp', this._getCSP());
