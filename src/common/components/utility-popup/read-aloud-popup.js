@@ -20,14 +20,17 @@ function ReadAloudPopup(props) {
 	let [showOptions, setShowOptions] = useState(false);
 	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
 	let [allProviders, setAllProviders] = useState(() => getAvailableProviders());
+	let [controller, setController] = useState(null);
 
-	let controller = useMemo(() => {
+	useEffect(() => {
 		if (!params.segments) {
-			return null;
+			setController(null);
+			return;
 		}
-		return getAvailableProviders().find(p => p.id === params.voice)
+		let controller = getAvailableProviders().find(p => p.id === params.voice)
 				?.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex)
 			?? null;
+		setController(controller);
 	}, [params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
 	useEffect(() => {
