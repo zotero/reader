@@ -1638,7 +1638,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Only start touch annotation if the touch was within 100px of
 		// the detected caret position, so scrolling is still allowed
 		// in the margins with an annotation tool selected
-		if (!caretRect || !rectContains(expandRect(caretRect, 100), event.clientX, event.clientY)) {
+		if (!caretRect || !rectContainsPoint(expandRect(caretRect, 100), event.clientX, event.clientY)) {
 			return null;
 		}
 
