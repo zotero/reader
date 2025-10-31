@@ -116,7 +116,7 @@ function Toolbar(props) {
 					tabIndex={-1}
 					onClick={() => props.onToggleAppearancePopup()}
 				>{props.readingModeEnabled ? <IconFormatTextFocus/> : <IconFormatText/>}</button>
-				{['epub', 'snapshot'].includes(props.type) && (
+				{['pdf', 'epub', 'snapshot'].includes(props.type) && (
 					<button
 						id="read-aloud"
 						className={cx('toolbar-button', { active: props.readAloudState.active })}
