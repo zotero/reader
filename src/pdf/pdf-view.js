@@ -35,6 +35,7 @@ import {
 	getRectsAreaSize,
 	getClosestObject,
 	getOutlinePath,
+	getRangeRects,
 } from './lib/utilities';
 import {
 	debounceUntilScrollFinishes,
@@ -412,6 +413,170 @@ class PDFView {
 		this._findController.setDocument(this._iframeWindow.PDFViewerApplication.pdfDocument);
 	}
 
+	async _initReadAloudSegments() {
+		if (this._readAloudSegmentsPromise) {
+			return this._readAloudSegmentsPromise;
+		}
+		let resolvePromise;
+		this._readAloudSegmentsPromise = new Promise(r => (resolvePromise = r));
+
+		let segments = [];
+		let { pagesCount } = this._iframeWindow.PDFViewerApplication.pdfViewer;
+
+		// Punctuation and helpers
+		let END = new Set(['.', '!', '?', '…', '。', '！', '？']);
+		let TRAIL = new Set(['"', "'", '”', '’', '»', '《', '》', ')', ']', '}', '›', '」', '』']);
+		let isLetter = (c) => /\p{L}/u.test(c);
+		let trim = (s) => s.replace(/^ +| +$/g, '');
+		let joinWithSpace = (a, b) => {
+			if (!a) return b; if (!b) return a;
+			return a + ((a.at(-1) !== ' ' && !/[\p{P}]/u.test(b[0] || '')) ? ' ' : '') + b;
+		};
+
+		// Extract previous word (letters only) and its start index (by wordBreakAfter)
+		function getPrevWordInfo(chars, prevIdx) {
+			if (prevIdx == null || prevIdx < 0) return { letters: '', startIdx: -1 };
+			let s = prevIdx;
+			while (s - 1 >= 0 && !chars[s - 1].wordBreakAfter) s--;
+			let w = '';
+			for (let k = s; k <= prevIdx; k++) {
+				let ch = chars[k]?.c || '';
+				if (isLetter(ch)) w += ch;
+			}
+			return { letters: w, startIdx: s };
+		}
+
+		// Build sentences from chars with all rules; returns array of { text, ranges, boundary }
+		function sentencesFromChars(chars) {
+			let MIN_LEN = 30;
+			let out = [];
+			let buf = [], ranges = [], segStart = null;
+
+			let append = (idx) => {
+				let ch = chars[idx];
+				buf.push(ch.c);
+				if (ch.spaceAfter) buf.push(' ');
+			};
+			let flush = (boundary) => {
+				let text = trim(buf.join(''));
+				if (text && ranges.length) out.push({ text, ranges: ranges.slice(), boundary });
+				buf = []; ranges = []; segStart = null;
+			};
+			let consumeAfterPunct = (i) => {
+				let endIdx = i, j = i + 1;
+				while (j < chars.length && END.has(chars[j].c)) { append(j); endIdx = j; j++; }
+				while (j < chars.length && TRAIL.has(chars[j].c)) { append(j); endIdx = j; j++; }
+				return { endIdx, nextI: j };
+			};
+			let hasSepBeforeWord = (startIdx) => {
+				let bi = startIdx - 1;
+				return startIdx === 0 || (bi >= 0 && (chars[bi].spaceAfter || chars[bi].lineBreakAfter || chars[bi].paragraphBreakAfter));
+			};
+			let dotOk = (word) => word.length >= 2 || (word.length > 0 && word === word.toLowerCase());
+
+			for (let i = 0; i < chars.length; ) {
+				let ch = chars[i];
+				if (!ch) {
+					i++; continue;
+				}
+				if (segStart == null) segStart = i;
+
+				append(i);
+
+				// Hard paragraph split always
+				if (ch.paragraphBreakAfter) {
+					ranges.push([segStart, i]);
+					flush('paragraph');
+					i++;
+					continue;
+				}
+
+				// Handle sentence-ending punctuation
+				if (END.has(ch.c)) {
+					// Hard end at line/paragraph end or EOF (after any symbol/letter)
+					if (ch.lineBreakAfter || ch.paragraphBreakAfter || i === chars.length - 1) {
+						let { endIdx, nextI } = consumeAfterPunct(i);
+						ranges.push([segStart, endIdx]);
+						flush('punct');
+						i = nextI;
+						continue;
+					}
+
+					// Soft end path: need previous word boundary letraints
+					let prev = chars[i - 1];
+					if (prev && prev.wordBreakAfter) {
+						let { letters: prevWord, startIdx } = getPrevWordInfo(chars, i - 1);
+						if (hasSepBeforeWord(startIdx) && (ch.c !== '.' || dotOk(prevWord))) {
+							let { endIdx, nextI } = consumeAfterPunct(i);
+							ranges.push([segStart, endIdx]);
+							flush('punct');
+							i = nextI;
+							continue;
+						}
+					}
+				}
+
+				i++;
+			}
+
+			// Tail as EOF
+			if (segStart != null) {
+				ranges.push([segStart, Math.max(segStart, chars.length - 1)]);
+				flush('eof');
+			}
+
+			// Merge short segments without crossing paragraph boundaries
+			let merged = [];
+			for (let k = 0; k < out.length; k++) {
+				let cur = out[k];
+				if (cur.boundary === 'paragraph' || cur.text.length >= MIN_LEN) {
+					merged.push(cur);
+					continue;
+				}
+				let nxt = out[k + 1];
+				if (nxt && nxt.boundary !== 'paragraph') {
+					merged.push({
+						text: joinWithSpace(cur.text, nxt.text),
+						ranges: cur.ranges.concat(nxt.ranges),
+						boundary: nxt.boundary
+					});
+					k++;
+				} else if (merged.length && merged[merged.length - 1].boundary !== 'paragraph') {
+					let prev = merged[merged.length - 1];
+					prev.text = joinWithSpace(prev.text, cur.text);
+					prev.ranges = prev.ranges.concat(cur.ranges);
+				} else {
+					merged.push(cur);
+				}
+			}
+			return merged;
+		}
+
+		for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) {
+			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
+			let chars = pageData?.chars || [];
+			if (!chars.length) continue;
+
+			let sentences = sentencesFromChars(chars, 30);
+
+			for (let s of sentences) {
+				let rects = [];
+				for (let [start, endInc] of s.ranges) {
+					if (start == null || endInc == null) continue;
+					let ss = Math.max(0, start);
+					let ee = Math.min(endInc, chars.length - 1);
+					if (ee < ss) continue;
+					let part = getRangeRects(chars, ss, ee);
+					if (part && part.length) rects = rects.concat(part);
+				}
+				if (s.text) segments.push({ text: s.text, position: { pageIndex, rects } });
+			}
+		}
+
+		this._readAloudSegments = segments;
+		resolvePromise();
+	}
+
 	async _setState(state, skipScroll) {
 		if (Number.isInteger(state.scrollMode)) {
 			this._iframeWindow.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
@@ -633,12 +798,13 @@ class PDFView {
 		this._render();
 	}
 
-	_focusNext(side) {
+	_getVisibleObjects(objects) {
 		let visiblePages = this._iframeWindow.PDFViewerApplication.pdfViewer._getVisiblePages();
 		let visibleObjects = [];
 
 		let scrollY = this._iframeWindow.PDFViewerApplication.pdfViewer.scroll.lastY;
 		let scrollX = this._iframeWindow.PDFViewerApplication.pdfViewer.scroll.lastX;
+
 		for (let view of visiblePages.views) {
 			let visibleRect = [
 				scrollX,
@@ -649,27 +815,15 @@ class PDFView {
 
 			let pageIndex = view.id - 1;
 
-			let overlays = [];
-			let pdfPage = this._pdfPages[pageIndex];
-			if (pdfPage) {
-				overlays = pdfPage.overlays.filter(x => x.type !== 'reference');
-			}
-
-			let objects = [];
-
-			for (let annotation of this._annotations) {
-				if (annotation.position.pageIndex === pageIndex
-					|| annotation.position.nextPageRects && annotation.position.pageIndex + 1 === pageIndex) {
-					objects.push({ type: 'annotation', object: annotation });
-				}
-			}
-
-			for (let overlay of overlays) {
-				objects.push({ type: 'overlay', object: overlay });
-			}
-
 			for (let object of objects) {
-				let p = p2v(object.object.position, view.view.viewport, pageIndex);
+				let pos = object.object.position;
+				// Match objects that belong to this page (including spillover to next page)
+				if (!(pos.pageIndex === pageIndex
+					|| (pos.nextPageRects && pos.pageIndex + 1 === pageIndex))) {
+					continue;
+				}
+
+				let p = p2v(pos, view.view.viewport, pageIndex);
 				let br = getPositionBoundingRect(p, pageIndex);
 				let absoluteRect = [
 					view.x + br[0],
@@ -678,14 +832,43 @@ class PDFView {
 					view.y + br[3],
 				];
 
-				object.rect = absoluteRect;
-				object.pageIndex = pageIndex;
-
 				if (quickIntersectRect(absoluteRect, visibleRect)) {
+					object.pageIndex = pageIndex;
+					object.rect = absoluteRect;
 					visibleObjects.push(object);
 				}
 			}
 		}
+
+		return visibleObjects;
+	}
+
+	_focusNext(side) {
+		let visiblePages = this._iframeWindow.PDFViewerApplication.pdfViewer._getVisiblePages();
+
+		let scrollY = this._iframeWindow.PDFViewerApplication.pdfViewer.scroll.lastY;
+		let scrollX = this._iframeWindow.PDFViewerApplication.pdfViewer.scroll.lastX;
+
+		// Collect all candidate objects (annotations + overlays) with their positions
+		let objects = [];
+		for (let view of visiblePages.views) {
+			let pageIndex = view.id - 1;
+			let pdfPage = this._pdfPages[pageIndex];
+			let overlays = [];
+			if (pdfPage) {
+				overlays = pdfPage.overlays.filter(x => x.type !== 'reference');
+			}
+
+			for (let annotation of this._annotations) {
+				objects.push({ type: 'annotation', object: annotation, position: annotation.position });
+			}
+			for (let overlay of overlays) {
+				objects.push({ type: 'overlay', object: overlay, position: overlay.position });
+			}
+		}
+
+		// Extract objects visible in the viewport
+		let visibleObjects = this._getVisibleObjects(objects);
 
 		let nextObject;
 
@@ -917,6 +1100,108 @@ class PDFView {
 	setOverlayPopup(popup) {
 		this._overlayPopup = popup;
 		this._overlayPopupDelayer.setOpen(!!popup);
+	}
+
+	async setReadAloudState(state) {
+		await this._initReadAloudSegments();
+
+		this._readAloudState = state;
+
+		if (!state.active) {
+			this._highlightedPosition = null;
+			this._render();
+			return;
+		}
+
+		if (state.activeSegment?.position) {
+			this._highlightedPosition = state.activeSegment.position;
+			this._render();
+			this.navigateToPosition(state.activeSegment.position);
+		}
+
+		if (state.segments !== null) {
+			return;
+		}
+
+		let segments = this._readAloudSegments;
+
+		let backwardStopIndex = null;
+		let forwardStopIndex = null;
+
+		if (state.targetPosition) {
+			for (let i = 0; i < this._readAloudSegments.length; i++) {
+				let segment = this._readAloudSegments[i];
+				if (segment.position.pageIndex === state.targetPosition.pageIndex) {
+					if (intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
+						backwardStopIndex = i;
+					}
+				}
+			}
+		}
+		else if (this._selectionRanges.length) {
+			let selectionRanges = [...this._selectionRanges];
+			selectionRanges.sort((a, b) => {
+				const pa = a.pageIndex;
+				const pb = b.pageIndex;
+				if (pa !== pb) {
+					return pa - pb;
+				}
+
+				const aMin = Math.min(a.anchorOffset, a.headOffset);
+				const bMin = Math.min(b.anchorOffset, b.headOffset);
+				return aMin - bMin;
+			});
+			let start = selectionRanges[0];
+			let end = selectionRanges.at(-1);
+
+			let startSegmentIndex = null;
+			let endSegmentIndex = null;
+			for (let i = 0; i < segments.length; i++) {
+				let segment = segments[i];
+				if (
+					startSegmentIndex === null
+					&& segment.position.pageIndex === start.position.pageIndex
+					&& segment.position.rects.some(r => quickIntersectRect(r, start.position.rects[0]))
+				) {
+					startSegmentIndex = i;
+				}
+			}
+			for (let i = segments.length - 1; i >= 0; i--) {
+				let segment = segments[i];
+				if (
+					endSegmentIndex === null
+					&& segment.position.pageIndex === end.position.pageIndex
+					&& segment.position.rects.some(r => quickIntersectRect(r, end.position.rects.at(-1)))
+				) {
+					endSegmentIndex = i + 1;
+				}
+			}
+			backwardStopIndex = startSegmentIndex;
+			forwardStopIndex = endSegmentIndex;
+			this._setSelectionRanges();
+		}
+		else {
+			let objects = this._readAloudSegments.map((object, index) => ({ index, object }));
+			let visibleObjects = this._getVisibleObjects(objects);
+			if (visibleObjects.length) {
+				backwardStopIndex = visibleObjects[0].index;
+			}
+		}
+
+		this._options.onSetReadAloudState({
+			...state,
+			paused: false,
+			segments,
+			activeSegment: null,
+			backwardStopIndex,
+			forwardStopIndex,
+			targetPosition: undefined,
+			lang: null,
+		});
+	}
+
+	get hasReadAloudTarget() {
+		return this._selectionRanges.length && !this._selectionRanges[0].collapsed;
 	}
 
 	setFindState(state) {
@@ -2785,6 +3070,17 @@ class PDFView {
 				if (position) {
 					overlay = this._getSelectableOverlay(position);
 				}
+
+				if (!overlay) {
+					let page = this._pdfPages[position.pageIndex];
+					if (page) {
+						let { chars } = page;
+						if (chars.some(char => quickIntersectRect(char.rect, position.rects[0]))) {
+							overlay = { type: 'read-aloud', position };
+						}
+					}
+				}
+
 				// If this is a keyboard contextmenu event, its position won't take our
 				// text selection into account since we don't use browser selection APIs.
 				// Position the menu manually.
