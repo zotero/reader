@@ -146,6 +146,10 @@ class Reader {
 			? DEFAULT_THEMES.find(x => x.id === 'dark')
 			: themes.get(options.darkTheme) || null;
 
+		// Initialize speech synthesis (for Chrome, which only returns voices
+		// the second time this is called)
+		window.speechSynthesis.getVoices();
+
 		this._readAloudVoices = new Map(Object.entries(options.readAloudVoices || {}));
 
 		this._state = {
@@ -875,7 +879,7 @@ class Reader {
 	}
 
 	_handleReadAloudStateChange(state) {
-		this._ensureType('epub', 'snapshot');
+		this._ensureType('pdf', 'epub', 'snapshot');
 		// Ignore late changes due to event handlers after popup has closed
 		if (!this._state.readAloudState.active && !state.active) {
 			return;
@@ -917,7 +921,7 @@ class Reader {
 	}
 
 	toggleReadAloudPaused(paused = undefined) {
-		this._ensureType('epub', 'snapshot');
+		this._ensureType('pdf', 'epub', 'snapshot');
 		if (!this._state.readAloudState.active) {
 			return;
 		}
@@ -928,7 +932,7 @@ class Reader {
 	}
 
 	startReadAloudAtPosition(position) {
-		this._ensureType('epub', 'snapshot');
+		this._ensureType('pdf', 'epub', 'snapshot');
 		this._handleReadAloudStateChange({
 			active: true,
 			paused: false,
