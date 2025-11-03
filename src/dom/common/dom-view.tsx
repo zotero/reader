@@ -46,6 +46,7 @@ import {
 	debounceUntilScrollFinishes,
 	getCodeCombination, getCurrentColorScheme,
 	getKeyCombination, getModeBasedOnColors,
+	isFirefox,
 	isMac,
 	isSafari,
 	placeA11yVirtualCursor
@@ -309,6 +310,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		annotationsStyle.innerHTML = annotationsCSS;
 		this._annotationShadowRoot.append(annotationsStyle);
 
+		this._iframeDocument.documentElement.classList.toggle('is-firefox', isFirefox);
 		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
 
 		// Pass options to setters that were delayed until iframe initialization

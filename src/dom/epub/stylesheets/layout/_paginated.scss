@@ -114,17 +114,19 @@ replaced-body {
 		max-inline-size: var(--media-max-width);
 	}
 
-	table, mtable {
-		display: block;
-		overflow: auto;
-		max-block-size: calc(100vh - 80px);
-		max-block-size: calc(100vb - 80px);
-		border: none !important;
-	}
+	:root.is-firefox & {
+		table, mtable {
+			display: block;
+			overflow: auto;
+			max-block-size: calc(100vh - 80px);
+			max-block-size: calc(100vb - 80px);
+			border: none !important;
+		}
 
-	.table-like:not(table, mtable), ol, ul {
-		display: flex;
-		flex-direction: column;
+		.table-like:not(table, mtable), ol, ul {
+			display: flex;
+			flex-direction: column;
+		}
 	}
 
 	@media (max-width: 800px) {
