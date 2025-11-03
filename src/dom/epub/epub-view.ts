@@ -206,6 +206,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.setAppearance(DEFAULT_REFLOWABLE_APPEARANCE);
 		}
 
+		// Perform the navigation on the next frame, because apparently the layout might not have
+		// settled yet
+		await new Promise(resolve => requestAnimationFrame(resolve));
+
 		if (this._options.location) {
 			this.navigate(this._options.location, { behavior: 'instant' });
 		}
@@ -214,9 +218,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		else {
 			let cfi = lengthenCFI(viewState.cfi);
-			// Perform the navigation on the next frame, because apparently the split view layout might not have
-			// settled yet
-			await new Promise(resolve => requestAnimationFrame(resolve));
 			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetBlock: viewState.cfiElementOffset });
 		}
 
