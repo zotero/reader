@@ -35,6 +35,7 @@ body[data-tool="note"] {
 
 #annotation-overlay {
 	user-select: none;
+	-webkit-user-select: none;
 }
 
 :focus-visible {
