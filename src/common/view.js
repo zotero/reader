@@ -83,6 +83,7 @@ class View {
 			colorScheme: this._colorScheme,
 			penConnected: this._options.penConnected ?? false,
 			penExclusive: this._options.penExclusive ?? false,
+			fontFamily: this._options.fontFamily,
 			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
 			onChangeViewStats: debounce(this._options.onChangeViewStats, DEBOUNCE_STATS_CHANGE),
 			onAddAnnotation,
@@ -291,6 +292,10 @@ class View {
 
 	setPenExclusive(penExclusive) {
 		this._view.setPenExclusive(penExclusive);
+	}
+
+	setFontFamily(fontFamily) {
+		this._view.setFontFamily(fontFamily);
 	}
 }
 
