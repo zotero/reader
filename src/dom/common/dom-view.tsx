@@ -1325,7 +1325,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
 		event.stopPropagation();
 
-		// pointerdown handles:
+		// On mobile, pointerup handles all annotation selection
+		if (this._options.mobile) {
+			return;
+		}
+
+		// On desktop, pointerdown handles:
 		//  - Selecting annotations when cycling isn't possible (no overlap between pointer and selected annotations)
 		//  - Opening the annotation context menu
 
@@ -1374,16 +1379,19 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		if (event.button != 0 || !this._selectedAnnotationIDs.length) {
+		if (event.button !== 0
+				|| this._options.mobile && this._pointerMovedWhileDown
+				|| !this._options.mobile && this._selectedAnnotationIDs.length) {
 			return;
 		}
+
 		// Cycle selection on left click if clicked annotation is already selected
 		let idsHere = this._getAnnotationsAtPoint(event.clientX, event.clientY);
 		let selectedID = this._selectedAnnotationIDs.find(id => idsHere.includes(id));
-		if (!selectedID) {
-			return;
-		}
-		let nextID = idsHere[(idsHere.indexOf(selectedID) + 1) % idsHere.length];
+		let nextIDIndex = selectedID
+			? (idsHere.indexOf(selectedID) + 1) % idsHere.length
+			: 0;
+		let nextID = idsHere[nextIDIndex];
 		this._options.onSelectAnnotations([nextID], event.nativeEvent);
 		if (this._selectedAnnotationIDs.length == 1) {
 			this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
