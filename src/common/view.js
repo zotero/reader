@@ -82,6 +82,7 @@ class View {
 			darkTheme: this._darkTheme,
 			colorScheme: this._colorScheme,
 			penConnected: this._options.penConnected ?? false,
+			penActive: this._options.penActive ?? false,
 			penExclusive: this._options.penExclusive ?? false,
 			fontFamily: this._options.fontFamily,
 			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
@@ -288,6 +289,10 @@ class View {
 
 	setPenConnected(penConnected) {
 		this._view.setPenConnected(penConnected);
+	}
+
+	setPenActive(penActive) {
+		this._view.setPenActive(penActive);
 	}
 
 	setPenExclusive(penExclusive) {

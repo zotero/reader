@@ -164,6 +164,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _penConnected: boolean;
 
+	protected _penActive: boolean;
+
 	protected _penExclusive: boolean;
 
 	protected _a11yVirtualCursorTarget: Node | null;
@@ -189,6 +191,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._overlayPopup = options.overlayPopup;
 		this._findState = options.findState;
 		this._penConnected = options.penConnected ?? false;
+		this._penActive = options.penActive ?? false;
 		this._penExclusive = options.penExclusive ?? false;
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 		this._history = new History({
@@ -1574,6 +1577,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					this._renderAnnotations();
 				}
 			}
+			this._penActive ||= event.pointerType === 'pen';
 			event.stopPropagation();
 		}
 	}
@@ -1583,9 +1587,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _canPointerEventDoTouchAnnotation(event: PointerEvent): boolean {
-		return (event.pointerType === 'touch' || event.pointerType === 'pen')
-			&& (event.pointerType === 'pen' || !(this._penConnected && this._penExclusive))
-			&& event.target !== this._annotationShadowRoot.host;
+		if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
+			return false;
+		}
+		if (this._penConnected && (this._penActive || this._penExclusive) && event.pointerType !== 'pen') {
+			return false;
+		}
+		return event.target !== this._annotationShadowRoot.host;
 	}
 
 	protected _getTouchAnnotationStartPosition(event: PointerEvent): CaretPosition | null {
@@ -1793,6 +1801,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._previewAnnotation = null;
 		}
 		this._renderAnnotations();
+
+		if (tool.type === 'pointer') {
+			this._penActive = false;
+		}
 	}
 
 	setAnnotations(annotations: WADMAnnotation[]) {
@@ -1895,6 +1907,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	setPenConnected(penConnected: boolean) {
 		this._penConnected = penConnected;
+	}
+
+	setPenActive(penActive: boolean) {
+		this._penActive = penActive;
 	}
 
 	setPenExclusive(penExclusive: boolean) {
@@ -2002,6 +2018,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	fontFamily?: string;
 	hyphenate?: boolean;
 	penConnected?: boolean;
+	penActive?: boolean;
 	penExclusive?: boolean;
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
