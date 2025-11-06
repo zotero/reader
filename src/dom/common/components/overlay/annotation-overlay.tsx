@@ -380,8 +380,14 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			>
 				<div
 					className={cx('annotation-div', { 'disable-pointer-events': interactiveRects.has(rect) })}
-					// Safari needs position: absolute, which breaks all other browsers
-					style={isSafari ? { position: 'absolute', top: `${rect.y}px`, left: `${rect.x}px`, width: `${rect.width}px`, height: `${rect.height}px` } : undefined}
+					style={{
+						// Safari needs position: absolute, which breaks all other browsers
+						position: isSafari ? 'absolute' : undefined,
+						top: `${rect.y}px`,
+						left: `${rect.x}px`,
+						width: `${rect.width}px`,
+						height: `${rect.height}px`
+					}}
 					draggable={true}
 					onPointerDown={handlePointerDown}
 					onPointerUp={handlePointerUp}
