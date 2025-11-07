@@ -887,18 +887,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		else if (this.flow.startRangeIsBeforeFirstMapping) {
 			cfi = '_start';
 		}
-		let approximateProgress: number | undefined;
-		// Progress is currently only shown on mobile
-		if (this._options.mobile) {
-			if (this.flow.startRange) {
-				let index = this.pageMapping.getPageIndex(this.flow.startRange) ?? 0;
-				approximateProgress = (index + 1) / this.pageMapping.length;
-				approximateProgress = Math.floor(approximateProgress * 100); // Whole-number percentage
-			}
-			else if (this.flow.startRangeIsBeforeFirstMapping) {
-				approximateProgress = 0;
-			}
-		}
 		let viewState: EPUBViewState = {
 			scale: Math.round(this.scale * 1000) / 1000, // Three decimal places
 			cfi,
@@ -907,7 +895,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,
 			appearance: this.appearance,
-			approximateProgress,
 		};
 		this._options.onChangeViewState(viewState);
 	}
@@ -1510,7 +1497,6 @@ export const enum SpreadMode {
 export interface EPUBViewState extends DOMViewState {
 	cfi?: string;
 	cfiElementOffset?: number;
-	approximateProgress?: number;
 	savedPageMapping?: string;
 	flowMode?: FlowMode;
 	spreadMode?: SpreadMode;
