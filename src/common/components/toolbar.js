@@ -277,7 +277,7 @@ function ReadingProgress(props) {
 
 	let [progress, setProgress] = useState(0);
 	let [isCaptured, setCaptured] = useState(false);
-	let [releaseTime, setReleaseTime] = useState(0);
+	let [releaseTime, setReleaseTime] = useState(Number.NEGATIVE_INFINITY);
 
 	useEffect(() => {
 		if (isCaptured || performance.now() - releaseTime < 500) return;
