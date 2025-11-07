@@ -299,6 +299,7 @@ class Reader {
 						onNavigateToPreviousPage={this.navigateToPreviousPage.bind(this)}
 						onNavigateToNextPage={this.navigateToNextPage.bind(this)}
 						onChangePageNumber={pageNumber => this._lastView.navigate({ pageNumber })}
+						onChangePageIndex={pageIndex => this._lastView.navigate({ pageIndex })}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}

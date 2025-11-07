@@ -54,6 +54,7 @@ export interface WADMAnnotation extends Annotation {
 
 export type NavLocation = {
 	pageNumber?: string;
+	pageIndex?: number;
 	annotationID?: string;
 	position?: Position;
 	href?: string;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useContext, Fragment } from 'react';
+import React, { useEffect, useRef, useContext, Fragment, useState } from 'react';
 import { Localized, useLocalization } from "@fluent/react";
 import cx from 'classnames';
 import CustomSections from './common/custom-sections';
@@ -10,7 +10,6 @@ import IconSidebarBottom from '../../../res/icons/20/sidebar-bottom.svg';
 import IconZoomIn from '../../../res/icons/20/zoom-in.svg';
 import IconZoomOut from '../../../res/icons/20/zoom-out.svg';
 import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
-import IconChevronLeft from '../../../res/icons/20/chevron-left.svg';
 import IconChevronUp from '../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../res/icons/20/chevron-down.svg';
 import IconFormatText from '../../../res/icons/20/format-text.svg';
@@ -260,6 +259,71 @@ function Toolbar(props) {
 					</Fragment>
 				)}
 			</div>
+			{props.type === 'epub' && (
+				<ReadingProgress
+					pageIndex={props.pageIndex}
+					pagesCount={props.pagesCount}
+					onChangePageIndex={props.onChangePageIndex}
+				/>
+			)}
+		</div>
+	);
+}
+
+function ReadingProgress(props) {
+	let { pageIndex, pagesCount, onChangePageIndex } = props;
+	pageIndex ??= 0;
+	pagesCount ??= 0;
+
+	let [progress, setProgress] = useState(0);
+	let [isCaptured, setCaptured] = useState(false);
+	let [releaseTime, setReleaseTime] = useState(0);
+
+	useEffect(() => {
+		if (isCaptured || performance.now() - releaseTime < 500) return;
+		setProgress(pagesCount === 0 ? 0 : (pageIndex + 1) / pagesCount);
+	}, [isCaptured, releaseTime, pageIndex, pagesCount]);
+
+	function handlePointerDown(event) {
+		event.currentTarget.setPointerCapture(event.pointerId);
+		setCaptured(true);
+		updateProgress(event);
+	}
+
+	function handlePointerUp(event) {
+		event.currentTarget.releasePointerCapture(event.pointerId);
+		setCaptured(false);
+		setReleaseTime(performance.now());
+	}
+
+	function handlePointerMove(event) {
+		updateProgress(event);
+	}
+
+	function updateProgress(event) {
+		if (event.buttons !== 1) return;
+		let rect = event.currentTarget.getBoundingClientRect();
+		let newProgress = (event.clientX - rect.left) / rect.width;
+		newProgress = Math.min(Math.max(newProgress, 0), 1);
+		onChangePageIndex(Math.floor(pagesCount * newProgress));
+		setProgress(newProgress);
+	}
+
+	return (
+		<div
+			className="reading-progress"
+			style={{ '--value': progress }}
+			role="meter"
+			aria-valuemin="0"
+			aria-valuemax="100"
+			aria-valuenow={Math.round(progress * 100)}
+			onPointerDown={handlePointerDown}
+			onPointerUp={handlePointerUp}
+			onPointerCancel={handlePointerUp}
+			onPointerMove={handlePointerMove}
+		>
+			<div className="track"/>
+			<div className="handle"/>
 		</div>
 	);
 }
