@@ -28,6 +28,9 @@ window.createView = options => {
 		annotations: annotations,
 		viewState: options.viewState,
 		container: document.getElementById('view'),
+		penConnected: options.penConnected,
+		penActive: false,
+		penExclusive: options.penExclusive,
 		data: {
 			url: new URL(options.url)
 		},
