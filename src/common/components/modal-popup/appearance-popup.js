@@ -26,7 +26,7 @@ import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
 import TickedRangeInput from "../common/ticked-range-input";
 
-function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent }) {
+function ReflowableAppearanceSection({ params, enablePageWidth, onChange }) {
 	const { l10n } = useLocalization();
 
 	const { type } = useContext(ReaderContext);
@@ -52,7 +52,7 @@ function ReflowableAppearanceSection({ params, enablePageWidth, onChange, indent
 	}
 
 	return (
-		<div className={cx('reflowable-appearance', { indent })}>
+		<div className="reflowable-appearance">
 			<div className="row">
 				<label htmlFor="line-height">{l10n.getString('reader-epub-appearance-line-height')}</label>
 				<TickedRangeInput
@@ -375,31 +375,14 @@ function AppearancePopup(props) {
 						</div>
 					</div>
 				</div>
-				{(type === 'epub' || type === 'snapshot') && (
+				{(type === 'epub' || type === 'snapshot' && props.viewStats.readingModeEnabled) && (
 					<div className="group">
-						{type === 'snapshot' && (
-							<div className="option">
-								<label htmlFor="focus-mode-enabled">{l10n.getString('reader-focus-mode')}</label>
-								<input
-									data-tabstop={1}
-									tabIndex={-1}
-									className="switch"
-									type="checkbox"
-									id="focus-mode-enabled"
-									checked={props.viewStats.focusModeEnabled}
-									onChange={e => props.onChangeFocusModeEnabled(e.target.checked)}
-								/>
-							</div>
-						)}
-						{(type === 'epub' || props.viewStats.focusModeEnabled) && (
-							<ReflowableAppearanceSection
-								params={props.viewStats.appearance}
-								enablePageWidth={type === 'snapshot'
-									|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
-								onChange={props.onChangeAppearance}
-								indent={type === 'snapshot'}
-							/>
-						)}
+						<ReflowableAppearanceSection
+							params={props.viewStats.appearance}
+							enablePageWidth={type === 'snapshot'
+								|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
+							onChange={props.onChangeAppearance}
+						/>
 					</div>
 				)}
 				<div className="group">
