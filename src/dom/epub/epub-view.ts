@@ -1310,6 +1310,20 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 			this.flow.scrollIntoView(range, options);
 		}
+		else if (typeof location.pageIndex === 'number') {
+			options.block ||= 'start';
+
+			if (this.flow.startRange && this.pageMapping.getPageIndex(this.flow.startRange) === location.pageIndex) {
+				console.log('Already on page', location.pageNumber);
+				return;
+			}
+			let range = Array.from(this.pageMapping.ranges())[location.pageIndex];
+			if (!range) {
+				console.error('Unable to find range');
+				return;
+			}
+			this.flow.scrollIntoView(range, options);
+		}
 		else if (location.href) {
 			options.block ||= 'start';
 
