@@ -258,6 +258,8 @@ class RemoteReadAloudProvider implements ReadAloudProvider {
 }
 
 class RemoteReadAloudController extends ReadAloudController {
+	readonly ENDPOINT = 'http://localhost:4080';
+
 	private readonly _audios: HTMLAudioElement[];
 
 	constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
@@ -277,14 +279,22 @@ class RemoteReadAloudController extends ReadAloudController {
 			audio.pause();
 		}
 
+		for (let index = 0; index < this._audios.length; index++) {
+			let segment = this._segments[index];
+			let audio = this._audios[index];
+
+			audio.preload = 'none';
+			let src = this._getAudioURL(segment);
+			if (audio.src !== src) {
+				audio.src = src;
+			}
+		}
+
 		if (!this._paused) {
 			for (let index = this._position; index < this._segments.length && index < this._position + 3; index++) {
-				let segment = this._segments[index];
 				let audio = this._audios[index];
 
-				if (!audio.src) {
-					audio.src = this._getAudioURL(segment);
-				}
+				audio.preload = 'auto';
 
 				if (index === this._position) {
 					audio.currentTime = 0;
@@ -295,21 +305,10 @@ class RemoteReadAloudController extends ReadAloudController {
 	}
 
 	protected _getAudioURL(segment: ReadAloudSegment) {
-		// Mock using random CC music
-		// In reality, we want to call a TTS API here
-		let songs = [
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Sergio%27s Magic Dustbin.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Mesmerizing Galaxy Loop.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Lord of the Rangs.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Galactic Rap.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Equatorial Complex.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Cloud Dancer.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Brain Dance.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Vibing Over Venus.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Southern Gothic.mp3",
-			"https://incompetech.com/music/royalty-free/mp3-royaltyfree/Morning.mp3",
-		];
-		return songs[segment.text.charCodeAt(0) % songs.length];
+		let params = new URLSearchParams();
+		params.set('text', segment.text);
+		params.set('speed', this._speed.toString());
+		return `${this.ENDPOINT}/?${params}`;
 	}
 
 	destroy(): void {
@@ -321,13 +320,13 @@ class RemoteReadAloudController extends ReadAloudController {
 
 export async function waitForProviders(): Promise<void> {
 	await Promise.all(
-		[BrowserReadAloudProvider, RemoteReadAloudProvider]
+		[RemoteReadAloudProvider]
 			.map(providerClass => providerClass.waitForProviders())
 	);
 }
 
 export function getAvailableProviders(): ReadAloudProvider[] {
-	return [BrowserReadAloudProvider, RemoteReadAloudProvider]
+	return [RemoteReadAloudProvider]
 		.flatMap(providerClass => providerClass.getAvailableProviders())
 		.sort((v1, v2) => v2.score - v1.score);
 }
