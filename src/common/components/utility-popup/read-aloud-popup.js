@@ -18,7 +18,7 @@ function ReadAloudPopup(props) {
 	let { params, voices, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
-	let [wasPausedBeforeChangingSpeed, setWasPausedBeforeChangingSpeed] = useState(false);
+	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let [allProviders, setAllProviders] = useState(() => getAvailableProviders());
 	let [controller, setController] = useState(null);
 
@@ -88,19 +88,34 @@ function ReadAloudPopup(props) {
 	);
 
 	function handleSpeedChange(event) {
-		let speed = parseFloat(event.target.value);
-		onChange({ speed });
-		onSetVoice(resolvedLang, params.voice, speed);
+		if (speedWhileDragging === null) {
+			let speed = parseFloat(event.target.value);
+			onChange({ speed });
+			onSetVoice(resolvedLang, params.voice, speed);
+		}
+		else {
+			setSpeedWhileDragging(parseFloat(event.target.value));
+		}
 	}
 
-	// Pause while actively changing speed to avoid audio jank
 	function handleSpeedPointerDown() {
-		setWasPausedBeforeChangingSpeed(params.paused);
-		onChange({ paused: true });
+		setSpeedWhileDragging(params.speed);
 	}
 
-	function handleSpeedPointerUp() {
-		onChange({ paused: wasPausedBeforeChangingSpeed });
+	async function handleSpeedPointerUp() {
+		if (speedWhileDragging !== null) {
+			let paused = params.paused;
+			if (!paused) {
+				// Pause, then wait momentarily, because otherwise Web Speech
+				// will read multiple lines at once
+				onChange({ paused: true });
+				await new Promise(resolve => setTimeout(resolve, 100));
+			}
+			let speed = speedWhileDragging;
+			onChange({ speed, paused });
+			onSetVoice(resolvedLang, params.voice, speed);
+			setSpeedWhileDragging(null);
+		}
 	}
 
 	function handleLangChange(event) {
@@ -199,14 +214,14 @@ function ReadAloudPopup(props) {
 						min="0.5"
 						max="2.0"
 						step="0.1"
-						value={params.speed}
+						value={speedWhileDragging ?? params.speed}
 						tabIndex="-1"
 						onChange={handleSpeedChange}
 						onPointerDown={handleSpeedPointerDown}
 						onPointerUp={handleSpeedPointerUp}
 						onPointerCancel={handleSpeedPointerUp}
 					/>
-					<label htmlFor="read-aloud-speed">{params.speed.toFixed(1)}×</label>
+					<label htmlFor="read-aloud-speed">{(speedWhileDragging ?? params.speed).toFixed(1)}×</label>
 				</div>
 				<Select
 					value={resolvedLang}
