@@ -71,19 +71,19 @@
 	}
 
 	.reading-progress {
-		$height-padding: 4px;
+		$padding: 4px;
 		$height-track: 2px;
 		$size-handle: 10px;
 
 		position: absolute;
-		bottom: -1px;
+		bottom: calc(-1px - $padding);
 		inset-inline: 0;
-		height: $height-padding + $height-track;
+		height: $padding * 2 + $height-track;
 		overflow-x: clip;
 
 		.track {
 			position: absolute;
-			bottom: 0;
+			bottom: $padding;
 			inset-inline-start: 0;
 			width: calc(var(--value) * 100%);
 			height: $height-track;
@@ -95,7 +95,7 @@
 			width: $size-handle;
 			height: $size-handle;
 			inset-inline-start: calc(var(--value) * 100% - $size-handle / 2);
-			top: calc($height-padding + ($height-track - $size-handle) / 2);
+			top: calc($padding + ($height-track - $size-handle) / 2);
 			background: var(--accent-blue);
 			border-radius: 50%;
 			transition: opacity 100ms ease-in, transform 100ms ease-in-out;
