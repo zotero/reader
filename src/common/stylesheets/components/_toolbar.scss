@@ -107,11 +107,9 @@
 		transform: scale(0);
 	}
 
-	&:hover {
-		.reading-progress .handle {
-			opacity: 1;
-			transform: scale(1);
-		}
+	.reading-progress:hover .handle {
+		opacity: 1;
+		transform: scale(1);
 	}
 
 	@include macOS-inactive-opacity;
