@@ -98,18 +98,16 @@
 			top: calc($padding + ($height-track - $size-handle) / 2);
 			background: var(--accent-blue);
 			border-radius: 50%;
+
 			transition: opacity 100ms ease-in, transform 100ms ease-in-out;
+			opacity: 0;
+			transform: scale(0);
 		}
-	}
 
-	.reading-progress .handle {
-		opacity: 0;
-		transform: scale(0);
-	}
-
-	.reading-progress:hover .handle {
-		opacity: 1;
-		transform: scale(1);
+		&:hover .handle {
+			opacity: 1;
+			transform: scale(1);
+		}
 	}
 
 	@include macOS-inactive-opacity;
