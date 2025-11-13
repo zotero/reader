@@ -305,7 +305,7 @@ function ReadingProgress(props) {
 		let rect = event.currentTarget.getBoundingClientRect();
 		let newProgress = (event.clientX - rect.left) / rect.width;
 		newProgress = Math.min(Math.max(newProgress, 0), 1);
-		onChangePageIndex(Math.floor(pagesCount * newProgress));
+		onChangePageIndex(Math.floor(pagesCount * newProgress), { behavior: 'instant' });
 		setProgress(newProgress);
 	}
 

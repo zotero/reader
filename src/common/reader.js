@@ -298,8 +298,8 @@ class Reader {
 						onNavigateBack={this.navigateBack.bind(this)}
 						onNavigateToPreviousPage={this.navigateToPreviousPage.bind(this)}
 						onNavigateToNextPage={this.navigateToNextPage.bind(this)}
-						onChangePageNumber={pageNumber => this._lastView.navigate({ pageNumber })}
-						onChangePageIndex={pageIndex => this._lastView.navigate({ pageIndex })}
+						onChangePageNumber={(pageNumber, options) => this._lastView.navigate({ pageNumber }, options)}
+						onChangePageIndex={(pageIndex, options) => this._lastView.navigate({ pageIndex }, options)}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
