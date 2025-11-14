@@ -288,10 +288,19 @@ class RemoteReadAloudController extends ReadAloudController {
 		// Create elements now, but only set src later, when we want to load a segment
 		this._audios = segments.map((segment, index) => {
 			let audio = document.createElement('audio');
+			audio.oncanplaythrough = () => this._handleSegmentCanPlayThrough(segment, index);
 			audio.onplaying = () => this._handleSegmentStart(segment, index);
 			audio.onended = () => this._handleSegmentEnd(segment, index);
 			return audio;
 		});
+	}
+
+	protected _handleSegmentCanPlayThrough(_segment: ReadAloudSegment, index: number) {
+		let nextIndex = index + 1;
+		if (nextIndex >= this._segments.length || index >= this._position + 3) {
+			return;
+		}
+		this._audios[nextIndex].preload = 'auto';
 	}
 
 	protected _speak(): void {
@@ -311,16 +320,10 @@ class RemoteReadAloudController extends ReadAloudController {
 		}
 
 		if (!this._paused) {
-			for (let index = this._position; index < this._segments.length && index < this._position + 3; index++) {
-				let audio = this._audios[index];
-
-				audio.preload = 'auto';
-
-				if (index === this._position) {
-					audio.currentTime = 0;
-					audio.play();
-				}
-			}
+			let audio = this._audios[this._position];
+			audio.preload = 'auto';
+			audio.currentTime = 0;
+			audio.play();
 		}
 	}
 
