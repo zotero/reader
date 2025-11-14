@@ -154,8 +154,17 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		if (!params.voice) {
-			let { voice, speed } = voices.get(resolvedLang)
-				?? { voice: providers[0].id, speed: params.speed };
+			let voice;
+			let speed;
+			if (voices.has(resolvedLang)) {
+				({ voice, speed } = voices.get(resolvedLang));
+			}
+			else if (providers.length) {
+				({ voice, speed } = { voice: providers[0].id, speed: params.speed });
+			}
+			else {
+				return;
+			}
 			onChange({ voice, speed });
 		}
 	}, [onChange, params.speed, params.voice, providers, resolvedLang, voices]);
