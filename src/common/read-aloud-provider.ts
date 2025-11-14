@@ -177,7 +177,7 @@ class BrowserReadAloudProvider implements ReadAloudProvider {
 		}
 	}
 
-	static getAvailableProviders(): BrowserReadAloudProvider[] {
+	static getAvailableProviders(): ReadAloudProvider[] {
 		let voices = window.speechSynthesis.getVoices();
 		let idsToNames = new Map<string, string>(); // Safari returns duplicates
 		for (let voice of voices) {
@@ -227,13 +227,25 @@ class BrowserReadAloudController extends ReadAloudController {
 	}
 }
 
+const REMOTE_ENDPOINT = 'http://localhost:4080';
+
 class RemoteReadAloudProvider implements ReadAloudProvider {
+	private readonly _voice: { id: string, label: string };
+
+	private static _PROVIDERS: RemoteReadAloudProvider[] | null = null;
+
+	private static _providersPromise: Promise<void> | null = null;
+
+	constructor(voice: { id: string, label: string }) {
+		this._voice = voice;
+	}
+
 	get id() {
-		return 'example';
+		return this._voice.id;
 	}
 
 	get label() {
-		return 'Remote Example';
+		return this._voice.label;
 	}
 
 	get lang() {
@@ -248,18 +260,26 @@ class RemoteReadAloudProvider implements ReadAloudProvider {
 		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
-	static async waitForProviders(): Promise<void> {
-		// Nothing to do for now
+	static waitForProviders(): Promise<void> {
+		if (!this._providersPromise) {
+			this._providersPromise = (async () => {
+				let providers: RemoteReadAloudProvider[] = [];
+				let voices = await fetch(`${REMOTE_ENDPOINT}/voices`).then(r => r.json());
+				for (let { id, label } of voices) {
+					providers.push(new RemoteReadAloudProvider({ id, label }));
+				}
+				this._PROVIDERS = providers;
+			})();
+		}
+		return this._providersPromise;
 	}
 
-	static getAvailableProviders(): RemoteReadAloudProvider[] {
-		return [new RemoteReadAloudProvider()];
+	static getAvailableProviders(): ReadAloudProvider[] {
+		return this._PROVIDERS ?? [];
 	}
 }
 
 class RemoteReadAloudController extends ReadAloudController {
-	readonly ENDPOINT = 'http://localhost:4080';
-
 	private readonly _audios: HTMLAudioElement[];
 
 	constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
@@ -306,9 +326,10 @@ class RemoteReadAloudController extends ReadAloudController {
 
 	protected _getAudioURL(segment: ReadAloudSegment) {
 		let params = new URLSearchParams();
+		params.set('voice', this.provider.id);
 		params.set('text', segment.text);
 		params.set('speed', this._speed.toString());
-		return `${this.ENDPOINT}/?${params}`;
+		return `${REMOTE_ENDPOINT}/speak?${params}`;
 	}
 
 	destroy(): void {
@@ -320,13 +341,13 @@ class RemoteReadAloudController extends ReadAloudController {
 
 export async function waitForProviders(): Promise<void> {
 	await Promise.all(
-		[RemoteReadAloudProvider]
+		[BrowserReadAloudProvider, RemoteReadAloudProvider]
 			.map(providerClass => providerClass.waitForProviders())
 	);
 }
 
 export function getAvailableProviders(): ReadAloudProvider[] {
-	return [RemoteReadAloudProvider]
+	return [BrowserReadAloudProvider, RemoteReadAloudProvider]
 		.flatMap(providerClass => providerClass.getAvailableProviders())
 		.sort((v1, v2) => v2.score - v1.score);
 }
