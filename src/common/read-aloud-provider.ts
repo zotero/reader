@@ -19,8 +19,6 @@ export interface ReadAloudProvider {
 }
 
 export abstract class ReadAloudController extends EventTarget {
-	readonly provider: ReadAloudProvider;
-
 	protected readonly _segments: ReadAloudSegment[];
 
 	protected _position: number;
@@ -55,9 +53,8 @@ export abstract class ReadAloudController extends EventTarget {
 		return this._position;
 	}
 
-	constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+	protected constructor(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super();
-		this.provider = provider;
 		this._position = backwardStopIndex ?? 0;
 		this._backwardStopIndex = backwardStopIndex;
 		this._forwardStopIndex = forwardStopIndex;
@@ -166,7 +163,7 @@ class BrowserReadAloudProvider implements ReadAloudProvider {
 	}
 
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null): ReadAloudController {
-		return new BrowserReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
+		return new BrowserReadAloudController(this.voice, segments, backwardStopIndex, forwardStopIndex);
 	}
 
 	static async waitForProviders(): Promise<void> {
@@ -190,16 +187,16 @@ class BrowserReadAloudProvider implements ReadAloudProvider {
 }
 
 class BrowserReadAloudController extends ReadAloudController {
-	private readonly _voice: SpeechSynthesisVoice;
+	readonly voice: SpeechSynthesisVoice;
 
 	private readonly _utterances: SpeechSynthesisUtterance[];
 
-	constructor(provider: BrowserReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(provider, segments, backwardStopIndex, forwardStopIndex);
-		this._voice = provider.voice;
+	constructor(voice: SpeechSynthesisVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(segments, backwardStopIndex, forwardStopIndex);
+		this.voice = voice;
 		this._utterances = segments.map((segment, index) => {
 			let utterance = new SpeechSynthesisUtterance(segment.text);
-			utterance.voice = this._voice;
+			utterance.voice = this.voice;
 			utterance.onstart = () => this._handleSegmentStart(segment, index);
 			utterance.onend = () => this._handleSegmentEnd(segment, index);
 			return utterance;
@@ -227,16 +224,12 @@ class BrowserReadAloudController extends ReadAloudController {
 	}
 }
 
-const REMOTE_ENDPOINT = 'http://localhost:4080';
+const REMOTE_ENDPOINT = 'https://speech-server.example.com';
 
 class RemoteReadAloudProvider implements ReadAloudProvider {
-	private readonly _voice: { id: string, label: string };
+	private readonly _voice: RemoteVoiceConfig;
 
-	private static _PROVIDERS: RemoteReadAloudProvider[] | null = null;
-
-	private static _providersPromise: Promise<void> | null = null;
-
-	constructor(voice: { id: string, label: string }) {
+	constructor(voice: RemoteVoiceConfig) {
 		this._voice = voice;
 	}
 
@@ -257,33 +250,30 @@ class RemoteReadAloudProvider implements ReadAloudProvider {
 	}
 
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null): ReadAloudController {
-		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
+		return new RemoteReadAloudController(this._voice, segments, backwardStopIndex, forwardStopIndex);
 	}
 
-	static waitForProviders(): Promise<void> {
-		if (!this._providersPromise) {
-			this._providersPromise = (async () => {
-				let providers: RemoteReadAloudProvider[] = [];
-				let voices = await fetch(`${REMOTE_ENDPOINT}/voices`).then(r => r.json());
-				for (let { id, label } of voices) {
-					providers.push(new RemoteReadAloudProvider({ id, label }));
-				}
-				this._PROVIDERS = providers;
-			})();
-		}
-		return this._providersPromise;
+	static async waitForProviders(): Promise<void> {
+		// Nothing to do for now
 	}
 
 	static getAvailableProviders(): ReadAloudProvider[] {
-		return this._PROVIDERS ?? [];
+		return [
+			new RemoteReadAloudProvider({ id: 'archenar', label: 'Archenar (Gemini)', provider: 'google' }),
+			new RemoteReadAloudProvider({ id: 'nova', label: 'Nova (OpenAI)', provider: 'openai' }),
+		];
 	}
 }
 
 class RemoteReadAloudController extends ReadAloudController {
+	private readonly _voice: RemoteVoiceConfig;
+
 	private readonly _audios: HTMLAudioElement[];
 
-	constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(provider, segments, backwardStopIndex, forwardStopIndex);
+	constructor(voice: RemoteVoiceConfig, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(segments, backwardStopIndex, forwardStopIndex);
+
+		this._voice = voice;
 
 		// Create elements now, but only set src later, when we want to load a segment
 		this._audios = segments.map((segment, index) => {
@@ -329,7 +319,8 @@ class RemoteReadAloudController extends ReadAloudController {
 
 	protected _getAudioURL(segment: ReadAloudSegment) {
 		let params = new URLSearchParams();
-		params.set('voice', this.provider.id);
+		params.set('provider', this._voice.provider);
+		params.set('voice', this._voice.id);
 		params.set('text', segment.text);
 		params.set('speed', this._speed.toString());
 		return `${REMOTE_ENDPOINT}/?${params}`;
@@ -363,3 +354,10 @@ export class ReadAloudEvent extends Event {
 		this.segment = segment;
 	}
 }
+
+type RemoteVoiceConfig = {
+	id: string;
+	label: string;
+	provider: string;
+};
+
