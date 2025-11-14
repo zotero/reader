@@ -340,7 +340,7 @@ class RemoteReadAloudController extends ReadAloudController {
 }
 
 export async function waitForProviders(): Promise<void> {
-	await Promise.all(
+	await Promise.allSettled(
 		[BrowserReadAloudProvider, RemoteReadAloudProvider]
 			.map(providerClass => providerClass.waitForProviders())
 	);
