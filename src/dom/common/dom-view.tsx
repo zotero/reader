@@ -1994,12 +1994,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let ranges = this._getAllReadAloudRanges();
 
 		let targetRange: Range | null = null;
+		let targetIsSelection = false;
 		if (state.targetPosition) {
 			targetRange = this.toDisplayedRange(state.targetPosition as Selector);
 		}
 		else if (!this._iframeDocument.getSelection()!.isCollapsed) {
 			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
 			this._iframeDocument.getSelection()!.collapseToStart();
+			targetIsSelection = true;
 		}
 
 		let backwardStopIndex: number | null = null;
@@ -2009,7 +2011,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (split) {
 				ranges = split.ranges;
 				backwardStopIndex = split.startIndex;
-				forwardStopIndex = split.endIndex;
+				if (targetIsSelection) {
+					forwardStopIndex = split.endIndex;
+				}
 			}
 			else {
 				ranges = this._getReadAloudRanges(targetRange);
