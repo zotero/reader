@@ -70,6 +70,46 @@
 		margin: 0 4px;
 	}
 
+	.reading-progress {
+		$padding: 4px;
+		$height-track: 2px;
+		$size-handle: 10px;
+
+		position: absolute;
+		bottom: calc(-1px - $padding);
+		inset-inline: 0;
+		height: $padding * 2 + $height-track;
+		overflow-x: clip;
+
+		.track {
+			position: absolute;
+			bottom: $padding;
+			inset-inline-start: 0;
+			width: calc(var(--value) * 100%);
+			height: $height-track;
+			background: var(--accent-blue);
+		}
+
+		.handle {
+			position: absolute;
+			width: $size-handle;
+			height: $size-handle;
+			inset-inline-start: calc(var(--value) * 100% - $size-handle / 2);
+			top: calc($padding + ($height-track - $size-handle) / 2);
+			background: var(--accent-blue);
+			border-radius: 50%;
+
+			transition: opacity 100ms ease-in, transform 100ms ease-in-out;
+			opacity: 0;
+			transform: scale(0);
+		}
+
+		&:hover .handle {
+			opacity: 1;
+			transform: scale(1);
+		}
+	}
+
 	@include macOS-inactive-opacity;
 }
 
