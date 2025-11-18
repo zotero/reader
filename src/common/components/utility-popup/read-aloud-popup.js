@@ -10,7 +10,7 @@ import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import { useLocalization } from '@fluent/react';
 import Select from "../common/select";
-import { getAvailableProviders, waitForProviders } from '../../read-aloud-provider';
+import { getAvailableProviders, waitForProviders } from '../../read-aloud/provider';
 
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
