@@ -60,7 +60,7 @@ export class RemoteReadAloudController extends ReadAloudController {
 		params.set('voice', this._voice.id);
 		params.set('text', segment.text);
 		params.set('speed', this._speed.toString());
-		return `${REMOTE_ENDPOINT}/?${params}`;
+		return `${REMOTE_ENDPOINT}/speak?${params}`;
 	}
 
 	destroy(): void {
