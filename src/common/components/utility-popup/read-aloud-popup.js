@@ -19,7 +19,7 @@ function ReadAloudPopup(props) {
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
-	let [allProviders, setAllProviders] = useState(() => getAvailableProviders());
+	let [allProviders, setAllProviders] = useState([]);
 	let [controller, setController] = useState(null);
 
 	useEffect(() => {
@@ -45,8 +45,8 @@ function ReadAloudPopup(props) {
 	}, [controller]);
 
 	let languages = useMemo(() => [...new Set(
-		getAvailableProviders().map(provider => provider.lang)
-	)], []);
+		allProviders.map(provider => provider.lang)
+	)], [allProviders]);
 
 	let resolvedLang = useMemo(() => {
 		let contentLanguageCode;
