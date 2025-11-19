@@ -27,6 +27,7 @@ window.createView = options => {
 		type: options.type,
 		annotations: annotations,
 		viewState: options.viewState,
+		location: options.location,
 		container: document.getElementById('view'),
 		penConnected: options.penConnected,
 		penActive: false,
