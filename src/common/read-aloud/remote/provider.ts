@@ -1,5 +1,5 @@
 import { ReadAloudProvider } from '../provider';
-import { RemoteVoiceConfig } from './index';
+import { REMOTE_ENDPOINT, RemoteVoiceConfig } from './index';
 import { ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
 import { RemoteReadAloudController } from './controller';
@@ -24,21 +24,32 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 	}
 
 	get score() {
-		return 1;
+		return 999;
 	}
 
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null): ReadAloudController {
 		return new RemoteReadAloudController(this._voice, segments, backwardStopIndex, forwardStopIndex);
 	}
 
-	static async waitForProviders(): Promise<void> {
-		// Nothing to do for now
+	static waitForProviders(): Promise<void> {
+		if (!_providersPromise) {
+			_providersPromise = fetch(`${REMOTE_ENDPOINT}/voices`, {
+				// Params
+			}).then(res => res.json()).then((json) => {
+				let voices = json as RemoteVoiceConfig[];
+				for (let voice of voices) {
+					_providers.push(new RemoteReadAloudProvider(voice));
+				}
+			});
+		}
+		return _providersPromise;
 	}
 
 	static getAvailableProviders(): ReadAloudProvider[] {
-		return [
-			new RemoteReadAloudProvider({ id: 'archenar', label: 'Archenar (Gemini)', provider: 'google' }),
-			new RemoteReadAloudProvider({ id: 'nova', label: 'Nova (OpenAI)', provider: 'openai' }),
-		];
+		return _providers;
 	}
 }
+
+let _providers: ReadAloudProvider[] = [];
+
+let _providersPromise: Promise<void> | null = null;
