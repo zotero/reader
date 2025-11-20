@@ -374,8 +374,8 @@ class Reader {
 						onRenderThumbnails={(pageIndexes) => this._primaryView._pdfThumbnails.render(pageIndexes)}
 						onSetDataTransferAnnotations={this._handleSetDataTransferAnnotations.bind(this)}
 						onOpenLink={this._onOpenLink}
+						onToggleReadingMode={this._onToggleReadingMode.bind(this)}
 						onChangeAppearance={this._handleAppearanceChange.bind(this)}
-						onChangeFocusModeEnabled={this._handleFocusModeEnabledChange.bind(this)}
 						onChangeFindState={this._handleFindStateChange.bind(this)}
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
@@ -763,15 +763,18 @@ class Reader {
 		this._secondaryView?.setAppearance(params);
 	}
 
-	_handleFocusModeEnabledChange(enabled) {
+	_onToggleReadingMode(enabled) {
 		this._ensureType('snapshot');
+		if (enabled === undefined) {
+			enabled = !this._state.primaryViewStats.readingModeEnabled;
+		}
 		try {
-			this._primaryView?.setFocusModeEnabled(enabled);
-			this._secondaryView?.setFocusModeEnabled(enabled);
+			this._primaryView?.setReadingModeEnabled(enabled);
+			this._secondaryView?.setReadingModeEnabled(enabled);
 		}
 		catch (e) {
 			console.error(e);
-			this.setErrorMessage(this._getString('reader-focus-mode-not-supported'));
+			this.setErrorMessage(this._getString('reader-reading-mode-not-supported'));
 			setTimeout(() => {
 				this.setErrorMessage(null);
 			}, 5000);
