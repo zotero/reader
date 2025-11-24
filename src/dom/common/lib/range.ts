@@ -1,5 +1,5 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
-import { closestElement, iterateWalker } from "./nodes";
+import { closestElement, getLang, iterateWalker } from "./nodes";
 import { getBoundingRect, isPageRectVisible, rectsIntersect } from "./rect";
 
 /**
@@ -163,6 +163,101 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 		node = treeWalker.nextNode();
 	}
 	return ranges;
+}
+
+export function splitRangeToSentences(range: Range, { keepWhitespace = false } = {}): Range[] {
+	if (!('Segmenter' in Intl)) {
+		return [range];
+	}
+
+	let walker = createRangeWalker(range, NodeFilter.SHOW_TEXT);
+
+	let textParts: {
+		node: Text;
+		globalStart: number;
+		globalEnd: number;
+		localStart: number;
+		localEnd: number;
+	}[] = [];
+
+	let text = '';
+	let globalOffset = 0;
+
+	for (let node of iterateWalker(walker)) {
+		let nodeValue = node.nodeValue!;
+
+		let startInNode = node === range.startContainer
+			? range.startOffset
+			: 0;
+
+		let endInNode = node === range.endContainer
+			? range.endOffset
+			: nodeValue.length;
+
+		if (endInNode > startInNode) {
+			let nodeValueWithinRange = nodeValue.slice(startInNode, endInNode);
+			textParts.push({
+				node: node as Text,
+				globalStart: globalOffset,
+				globalEnd: globalOffset + nodeValueWithinRange.length,
+				localStart: startInNode,
+				localEnd: endInNode,
+			});
+			text += nodeValueWithinRange;
+			globalOffset += nodeValueWithinRange.length;
+		}
+	}
+
+	let segmenter = new Intl.Segmenter(getLang(range.commonAncestorContainer), {
+		granularity: 'sentence',
+	});
+	let segments = [...segmenter.segment(text)];
+
+	let outputRanges: Range[] = [];
+	for (let segment of segments) {
+		let sentStart = segment.index;
+		let sentEnd = sentStart + segment.segment.length;
+
+		if (!keepWhitespace) {
+			// Trim leading/trailing whitespace within the segment
+			let leading = (segment.segment.match(/^\s*/)?.[0].length) ?? 0;
+			let trailing = (segment.segment.match(/\s*$/)?.[0].length) ?? 0;
+			sentStart += leading;
+			sentEnd -= trailing;
+			// Skip segments that are only whitespace after trimming
+			if (sentEnd <= sentStart) {
+				continue;
+			}
+		}
+
+		let startNode: Text | null = null;
+		let startOffsetInNode = 0;
+		for (let textPart of textParts) {
+			if (textPart.globalStart <= sentStart && sentStart < textPart.globalEnd) {
+				startNode = textPart.node;
+				startOffsetInNode = textPart.localStart + (sentStart - textPart.globalStart);
+				break;
+			}
+		}
+
+		let endNode: Text | null = null;
+		let endOffsetInNode = 0;
+		for (let textPart of textParts) {
+			if (textPart.globalStart < sentEnd && sentEnd <= textPart.globalEnd) {
+				endNode = textPart.node;
+				endOffsetInNode = textPart.localStart + (sentEnd - textPart.globalStart);
+				break;
+			}
+		}
+
+		if (!startNode || !endNode) continue;
+
+		let sentenceRange = range.commonAncestorContainer.ownerDocument!.createRange();
+		sentenceRange.setStart(startNode, startOffsetInNode);
+		sentenceRange.setEnd(endNode, endOffsetInNode);
+		outputRanges.push(sentenceRange);
+	}
+	return outputRanges;
 }
 
 export function splitRanges(
@@ -332,7 +427,7 @@ export function caretPositionFromPoint(doc: Document, x: number, y: number): Car
 			};
 		}
 		else if (typeof doc.caretRangeFromPoint == 'function') {
-			const range = doc.caretRangeFromPoint(x, y);
+			let range = doc.caretRangeFromPoint(x, y);
 			if (!range) {
 				return null;
 			}

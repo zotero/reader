@@ -1,4 +1,4 @@
-import { ReadAloudSegment } from '../types';
+import { ReadAloudGranularity, ReadAloudSegment } from '../types';
 import { ReadAloudController } from './controller';
 import { RemoteReadAloudProvider } from './remote/provider';
 import { BrowserReadAloudProvider } from './browser/provider';
@@ -11,6 +11,8 @@ export interface ReadAloudProvider {
 	readonly lang: string;
 
 	readonly score: number;
+
+	readonly segmentGranularity: ReadAloudGranularity;
 
 	getController(
 		segments: ReadAloudSegment[],

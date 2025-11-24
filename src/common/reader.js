@@ -200,6 +200,7 @@ class Reader {
 			themePopup: null,
 			contextMenu: null,
 			readAloudState: {
+				popupOpen: false,
 				active: false,
 				paused: false,
 				segments: null,
@@ -880,7 +881,7 @@ class Reader {
 	_handleReadAloudStateChange(state) {
 		this._ensureType('pdf', 'epub', 'snapshot');
 		// Ignore late changes due to event handlers after popup has closed
-		if (!this._state.readAloudState.active && !state.active) {
+		if (!this._state.readAloudState.popupOpen && !state.popupOpen) {
 			return;
 		}
 		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
@@ -898,17 +899,18 @@ class Reader {
 		}
 	}
 
-	toggleReadAloudPopup(active) {
-		if (active === undefined) {
-			active = !this._state.readAloudState.active;
+	toggleReadAloudPopup(popupOpen) {
+		if (popupOpen === undefined) {
+			popupOpen = !this._state.readAloudState.popupOpen;
 		}
-		if (active) {
+		if (popupOpen) {
 			this._handleReadAloudStateChange({
-				active: true,
+				popupOpen: true,
 			});
 		}
 		else {
 			this._handleReadAloudStateChange({
+				popupOpen: false,
 				active: false,
 				paused: false,
 				segments: null,

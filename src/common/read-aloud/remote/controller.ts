@@ -2,6 +2,7 @@ import { ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
 import { REMOTE_ENDPOINT, RemoteVoiceConfig } from './';
 import LRUCacheMap from '../../lib/lru-cache-map';
+import { RemoteReadAloudProvider } from './provider';
 
 const BLOB_CACHE_CAPACITY = 4;
 
@@ -20,10 +21,12 @@ export class RemoteReadAloudController extends ReadAloudController {
 
 	private _fetching = new Map<string, Promise<Blob>>();
 
-	constructor(voice: RemoteVoiceConfig, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(segments, backwardStopIndex, forwardStopIndex);
+	private _destroyed = false;
 
-		this._voice = voice;
+	constructor(provider: RemoteReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(provider, segments, backwardStopIndex, forwardStopIndex);
+
+		this._voice = provider.voice;
 		this._audio = new Audio();
 		this._audio.preload = 'auto';
 	}
@@ -47,7 +50,7 @@ export class RemoteReadAloudController extends ReadAloudController {
 		this._getBlob(url)
 			.then((blob) => {
 				// If position changed or reading was paused while loading, don't start
-				if (this._paused || this._position !== index) {
+				if (this._destroyed || this._paused || this._position !== index) {
 					return;
 				}
 
@@ -123,5 +126,8 @@ export class RemoteReadAloudController extends ReadAloudController {
 		}
 		this._blobs.clear();
 		this._fetching.clear();
+		this._audio.pause();
+		this._audio.removeAttribute('src');
+		this._destroyed = true;
 	}
 }

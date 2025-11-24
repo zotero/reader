@@ -5,7 +5,8 @@ import {
 	NavLocation,
 	NewAnnotation,
 	ViewStats,
-	OutlineItem
+	OutlineItem,
+	ReadAloudGranularity
 } from "../../common/types";
 import {
 	getBoundingPageRect,
@@ -629,15 +630,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	protected override _getAllReadAloudRanges(): Range[] {
+	protected override _getAllReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
 		if (this._readingMode.enabled) {
-			return super._getAllReadAloudRanges();
+			return super._getAllReadAloudRanges(granularity);
 		}
 
 		let segmentsWithReadingModeEnabled = this._keepSelection(() => {
 			try {
 				this._readingMode.enabled = true;
-				return super._getAllReadAloudRanges().map((range) => {
+				return super._getAllReadAloudRanges(granularity).map((range) => {
 					let mappedRange = this._readingMode.mapRangeFromFocus(range);
 					if (!mappedRange) return null;
 					return new PersistentRange(mappedRange);
@@ -653,7 +654,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return segmentsWithReadingModeEnabled.map(r => r.toRange());
 		}
 
-		return super._getAllReadAloudRanges();
+		return super._getAllReadAloudRanges(granularity);
 	}
 
 	protected _setScale(scale: number) {

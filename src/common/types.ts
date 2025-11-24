@@ -178,8 +178,10 @@ export type FindState = {
 };
 
 export type ReadAloudState = {
+	popupOpen: boolean;
 	active: boolean;
 	paused: boolean;
+	segmentGranularity?: ReadAloudGranularity;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;
 	backwardStopIndex: number | null;
@@ -193,7 +195,11 @@ export type ReadAloudState = {
 export type ReadAloudSegment = {
 	position: Position;
 	text: string;
+	granularity: ReadAloudGranularity;
+	anchor: 'paragraphStart' | null;
 };
+
+export type ReadAloudGranularity = 'paragraph' | 'sentence';
 
 export type MaybePromise<T> = Promise<T> | T;
 
