@@ -1,6 +1,9 @@
 import { ReadAloudSegment } from '../types';
+import { ReadAloudProvider } from './provider';
 
 export abstract class ReadAloudController extends EventTarget {
+	protected readonly _provider: ReadAloudProvider;
+
 	protected readonly _segments: ReadAloudSegment[];
 
 	protected _position: number;
@@ -12,6 +15,10 @@ export abstract class ReadAloudController extends EventTarget {
 	protected _paused = false;
 
 	protected _speed = 1;
+
+	get provider() {
+		return this._provider;
+	}
 
 	get paused() {
 		return this._paused;
@@ -35,8 +42,9 @@ export abstract class ReadAloudController extends EventTarget {
 		return this._position;
 	}
 
-	protected constructor(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+	protected constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super();
+		this._provider = provider;
 		this._position = backwardStopIndex ?? 0;
 		this._backwardStopIndex = backwardStopIndex;
 		this._forwardStopIndex = forwardStopIndex;
@@ -45,7 +53,13 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	skipBack() {
-		this._position = Math.max(this._position - 1, 0);
+		let previousIndex = this._segments.slice(0, this._position).findLastIndex(
+			segment => segment.anchor === 'paragraphStart'
+		);
+		if (previousIndex === -1) {
+			previousIndex = this._position - 1;
+		}
+		this._position = Math.max(previousIndex, 0);
 		this._speak();
 		if (this._paused) {
 			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._segments[this._position]));
@@ -53,7 +67,13 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	skipAhead() {
-		this._position = Math.min(this._position + 1, this._segments.length - 1);
+		let nextIndex = this._segments.slice(this._position + 1).findIndex(
+			segment => segment.anchor === 'paragraphStart'
+		);
+		if (nextIndex === -1) {
+			nextIndex = 0;
+		}
+		this._position = Math.min(nextIndex + this._position + 1, this._segments.length - 1);
 		this._speak();
 		if (this._paused) {
 			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._segments[this._position]));

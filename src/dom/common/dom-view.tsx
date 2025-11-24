@@ -23,6 +23,7 @@ import {
 	ViewStats,
 	WADMAnnotation,
 	RangeRef,
+	ReadAloudGranularity,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import { flushSync } from "react-dom";
@@ -42,6 +43,7 @@ import {
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
 	splitRanges,
+	splitRangeToSentences,
 	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
@@ -59,6 +61,7 @@ import {
 import {
 	closestElement,
 	getContainingBlock,
+	getLang,
 	isBlock,
 	iterateWalker
 } from "./lib/nodes";
@@ -1641,9 +1644,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Try to snap to the start of the word
 		if ('Segmenter' in Intl && caretPosition.offsetNode.nodeType === Node.TEXT_NODE) {
 			try {
-				let lang = closestElement(caretPosition.offsetNode)?.closest('[lang]')
-					?.getAttribute('lang') || 'en';
-				let wordSegmenter = new Intl.Segmenter(lang, { granularity: 'word' });
+				let wordSegmenter = new Intl.Segmenter(getLang(caretPosition.offsetNode), {
+					granularity: 'word'
+				});
 
 				let words = wordSegmenter.segment(caretPosition.offsetNode.nodeValue!);
 				let wordContainingCaret = words.containing(caretPosition.offset);
@@ -1959,6 +1962,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	setReadAloudState(state: ReadAloudState): void {
+		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
 		if (!state.active) {
@@ -1987,11 +1991,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		if (state.segments !== null) {
+		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
+				|| !state.segmentGranularity) {
 			return;
 		}
 
-		let ranges = this._getAllReadAloudRanges();
+		let ranges = this._getAllReadAloudRanges(state.segmentGranularity);
 
 		let targetRange: Range | null = null;
 		let targetIsSelection = false;
@@ -2016,7 +2021,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 			}
 			else {
-				ranges = this._getReadAloudRanges(targetRange);
+				ranges = this._getReadAloudRanges(targetRange, state.segmentGranularity);
 			}
 		}
 		else {
@@ -2045,8 +2050,23 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		let segments = ranges
-			.map(r => this._readAloudRangeToSegment(r))
+		let lastContainingBlock: Element | null = null;
+		let segments: ReadAloudSegment[] = ranges
+			.map((range) => {
+				let text = range.toString();
+				if (!text.trim()) return null;
+				let containingBlock = getContainingBlock(closestElement(range.commonAncestorContainer)!);
+				let differentContainingBlock = containingBlock !== lastContainingBlock;
+				lastContainingBlock = containingBlock;
+				return {
+					text,
+					position: {
+						range: new PersistentRange(range)
+					},
+					granularity: state.segmentGranularity!,
+					anchor: differentContainingBlock ? 'paragraphStart' : null,
+				} satisfies ReadAloudSegment;
+			})
 			.filter((segment, i) => {
 				if (segment) {
 					return true;
@@ -2073,16 +2093,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return !!this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed;
 	}
 
-	protected _getAllReadAloudRanges(): Range[] {
+	protected _getAllReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
 		let rootRanges = this._getRoots(true).map((root) => {
 			let range = this._iframeDocument.createRange();
 			range.selectNodeContents(root);
 			return range;
 		});
-		return rootRanges.flatMap(rootRange => this._getReadAloudRanges(rootRange));
+		return rootRanges.flatMap(rootRange => this._getReadAloudRanges(rootRange, granularity));
 	}
 
-	protected _getReadAloudRanges(rootRange: Range): Range[] {
+	protected _getReadAloudRanges(rootRange: Range, granularity: ReadAloudGranularity): Range[] {
 		// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
 		let matches = new Set();
 		let filter = (node: Node) => {
@@ -2116,14 +2136,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			elementRanges = [rootRange];
 		}
 
-		return elementRanges;
-	}
+		if (granularity === 'sentence') {
+			elementRanges = elementRanges.flatMap(range => splitRangeToSentences(range));
+		}
 
-	protected _readAloudRangeToSegment(range: Range): ReadAloudSegment | null {
-		let text = range.toString();
-		if (!text.trim()) return null;
-		let position = { range: new PersistentRange(range) };
-		return { text, position };
+		return elementRanges;
 	}
 
 	// ***

@@ -259,7 +259,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onClose={props.onCloseThemePopup}
 					/>
 				)}
-				{state.readAloudState.active && state.readAloudState.segments && (
+				{state.readAloudState.popupOpen && (
 					<ReadAloudPopup
 						params={state.readAloudState}
 						voices={props.readAloudVoices}

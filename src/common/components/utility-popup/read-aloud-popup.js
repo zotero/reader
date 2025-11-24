@@ -23,26 +23,25 @@ function ReadAloudPopup(props) {
 	let [controller, setController] = useState(null);
 
 	useEffect(() => {
+		let provider = getAvailableProviders().find(p => p.id === params.voice);
+		if (!provider) {
+			setController(null);
+			return undefined;
+		}
+		onChange({ segmentGranularity: provider.segmentGranularity, active: true });
 		if (!params.segments) {
 			setController(null);
-			return;
+			return undefined;
 		}
-		let controller = getAvailableProviders().find(p => p.id === params.voice)
-				?.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex)
-			?? null;
+		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
-	}, [params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
+		return () => controller.destroy();
+	}, [onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
 	useEffect(() => {
 		if (!controller) return;
 		controller.speed = params.speed;
 	}, [controller, params.speed]);
-
-	useEffect(() => {
-		return () => {
-			controller?.destroy();
-		};
-	}, [controller]);
 
 	let languages = useMemo(() => [...new Set(
 		allProviders.map(provider => provider.lang)
@@ -133,16 +132,26 @@ function ReadAloudPopup(props) {
 	}
 
 	useEffect(() => {
-		if (controller) {
-			controller.paused = params.paused;
-			controller.addEventListener('ActiveSegmentChange', (event) => {
-				onChange({ activeSegment: event.segment });
-			});
-			controller.addEventListener('Complete', () => {
-				onChange({ paused: true, activeSegment: null });
-			});
+		if (!controller) {
+			return;
 		}
-	}, [controller, onChange, params.paused]);
+		controller.paused = params.paused;
+	}, [controller, params.paused]);
+
+	useEffect(() => {
+		if (!controller) {
+			return;
+		}
+		controller.addEventListener('ActiveSegmentChange', (event) => {
+			onChange({ activeSegment: event.segment });
+		});
+		controller.addEventListener('Complete', () => {
+			onChange({
+				paused: true,
+				activeSegment: null
+			});
+		});
+	}, [controller, onChange]);
 
 	useEffect(() => {
 		let waitForProvidersAndSet = async () => {
@@ -165,9 +174,13 @@ function ReadAloudPopup(props) {
 			else {
 				return;
 			}
-			onChange({ voice, speed });
+			onChange({
+				voice,
+				speed,
+				active: voice !== params.voice ? false : params.active,
+			});
 		}
-	}, [onChange, params.speed, params.voice, providers, resolvedLang, voices]);
+	}, [onChange, params.active, params.speed, params.voice, providers, resolvedLang, voices]);
 
 	let displayNames = new Intl.DisplayNames(undefined, {
 		type: 'language',

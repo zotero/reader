@@ -118,7 +118,7 @@ function Toolbar(props) {
 				{['pdf', 'epub', 'snapshot'].includes(props.type) && (
 					<button
 						id="read-aloud"
-						className={cx('toolbar-button', { active: props.readAloudState.active })}
+						className={cx('toolbar-button', { active: props.readAloudState.popupOpen })}
 						title={l10n.getString('reader-read-aloud')}
 						tabIndex={-1}
 						onClick={() => props.onToggleReadAloud()}

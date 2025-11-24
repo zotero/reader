@@ -1,6 +1,6 @@
 import { isSafari } from '../../lib/utilities';
 import { ReadAloudProvider } from '../provider';
-import { ReadAloudSegment } from '../../types';
+import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
 import { BrowserReadAloudController } from './controller';
 
@@ -53,8 +53,12 @@ export class BrowserReadAloudProvider implements ReadAloudProvider {
 		return 1;
 	}
 
+	get segmentGranularity(): ReadAloudGranularity {
+		return 'sentence';
+	}
+
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null): ReadAloudController {
-		return new BrowserReadAloudController(this.voice, segments, backwardStopIndex, forwardStopIndex);
+		return new BrowserReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
 	static async waitForProviders(): Promise<void> {

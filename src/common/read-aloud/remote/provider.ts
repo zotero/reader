@@ -1,22 +1,22 @@
 import { ReadAloudProvider } from '../provider';
 import { REMOTE_ENDPOINT, RemoteVoiceConfig } from './index';
-import { ReadAloudSegment } from '../../types';
+import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
 import { RemoteReadAloudController } from './controller';
 
 export class RemoteReadAloudProvider implements ReadAloudProvider {
-	private readonly _voice: RemoteVoiceConfig;
+	readonly voice: RemoteVoiceConfig;
 
 	constructor(voice: RemoteVoiceConfig) {
-		this._voice = voice;
+		this.voice = voice;
 	}
 
 	get id() {
-		return this._voice.id;
+		return this.voice.id;
 	}
 
 	get label() {
-		return this._voice.label;
+		return this.voice.label;
 	}
 
 	get lang() {
@@ -27,8 +27,12 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 		return 999;
 	}
 
+	get segmentGranularity(): ReadAloudGranularity {
+		return 'paragraph';
+	}
+
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null): ReadAloudController {
-		return new RemoteReadAloudController(this._voice, segments, backwardStopIndex, forwardStopIndex);
+		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
 	static waitForProviders(): Promise<void> {
