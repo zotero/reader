@@ -42,6 +42,10 @@ export abstract class ReadAloudController extends EventTarget {
 		return this._position;
 	}
 
+	private get _currentSegment() {
+		return this._segments[this._position];
+	}
+
 	protected constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super();
 		this._provider = provider;
@@ -60,9 +64,10 @@ export abstract class ReadAloudController extends EventTarget {
 			previousIndex = this._position - 1;
 		}
 		this._position = Math.max(previousIndex, 0);
+		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
 		this._speak();
 		if (this._paused) {
-			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._segments[this._position]));
+			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._currentSegment));
 		}
 	}
 
@@ -74,9 +79,10 @@ export abstract class ReadAloudController extends EventTarget {
 			nextIndex = 0;
 		}
 		this._position = Math.min(nextIndex + this._position + 1, this._segments.length - 1);
+		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
 		this._speak();
 		if (this._paused) {
-			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._segments[this._position]));
+			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._currentSegment));
 		}
 	}
 
@@ -94,13 +100,15 @@ export abstract class ReadAloudController extends EventTarget {
 		if (this._paused) {
 			return;
 		}
+		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', null));
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', null));
 
 		if (this._position === index) {
 			if (this._forwardStopIndex !== null && this._position === this._forwardStopIndex - 1) {
 				this._position = Math.min(this._position + 1, this._segments.length - 1);
 				this._forwardStopIndex = null;
-				this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._segments[this._position]));
+				this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
+				this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._currentSegment));
 				this.dispatchEvent(new ReadAloudEvent('Complete', null));
 			}
 			else if (this._position === this._segments.length - 1) {

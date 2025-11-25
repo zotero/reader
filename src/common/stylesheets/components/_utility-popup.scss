@@ -22,6 +22,14 @@
 				display: flex;
 				gap: 4px;
 			}
+
+			.loading-spinner {
+				width: 28px;
+				height: 28px;
+				padding: 6px;
+				color: var(--fill-secondary);
+				animation: rotating 0.5s steps(12) infinite;
+			}
 		}
 
 		&.speed {
@@ -57,5 +65,14 @@
 				}
 			}
 		}
+	}
+}
+
+@keyframes rotating {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
 	}
 }
