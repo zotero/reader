@@ -8,6 +8,7 @@ import IconPlay from '../../../../res/icons/20/play.svg';
 import IconPause from '../../../../res/icons/20/pause.svg';
 import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
+import IconLoading from '../../../../res/icons/16/loading.svg';
 import { useLocalization } from '@fluent/react';
 import Select from "../common/select";
 import { getAvailableProviders, waitForProviders } from '../../read-aloud/provider';
@@ -21,6 +22,9 @@ function ReadAloudPopup(props) {
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let [allProviders, setAllProviders] = useState([]);
 	let [controller, setController] = useState(null);
+	let [audioBuffering, setAudioBuffering] = useState(false);
+
+	let showSpinner = !params.segments || audioBuffering;
 
 	useEffect(() => {
 		let provider = getAvailableProviders().find(p => p.id === params.voice);
@@ -35,6 +39,7 @@ function ReadAloudPopup(props) {
 		}
 		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
+		setAudioBuffering(true);
 		return () => controller.destroy();
 	}, [onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
@@ -142,7 +147,11 @@ function ReadAloudPopup(props) {
 		if (!controller) {
 			return;
 		}
+		controller.addEventListener('ActiveSegmentChanging', () => {
+			setAudioBuffering(true);
+		});
 		controller.addEventListener('ActiveSegmentChange', (event) => {
+			setAudioBuffering(false);
 			onChange({ activeSegment: event.segment });
 		});
 		controller.addEventListener('Complete', () => {
@@ -205,12 +214,18 @@ function ReadAloudPopup(props) {
 						tabIndex="-1"
 						onClick={() => controller?.skipBack()}
 					><IconSkipBack/></button>
-					<button
-						className="toolbar-button"
-						title={l10n.getString(`reader-read-aloud-${params.paused ? 'play' : 'pause'}`)}
-						tabIndex="-1"
-						onClick={() => onChange({ paused: !params.paused })}
-					>{params.paused ? <IconPlay/> : <IconPause/>}</button>
+					{showSpinner
+						? <IconLoading
+							className="loading-spinner"
+							aria-busy={true}
+						/>
+						: <button
+							className="toolbar-button"
+							title={l10n.getString(`reader-read-aloud-${params.paused ? 'play' : 'pause'}`)}
+							tabIndex="-1"
+							onClick={() => onChange({ paused: !params.paused })}
+						>{params.paused ? <IconPlay/> : <IconPause/>}</button>
+					}
 					<button
 						className="toolbar-button"
 						title={l10n.getString('reader-read-aloud-skip-ahead')}
