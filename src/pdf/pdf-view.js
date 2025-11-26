@@ -3,6 +3,7 @@ import { p2v, v2p } from './lib/coordinates';
 import {
 	getLineSelectionRanges,
 	getModifiedSelectionRanges,
+	getNodeOffset,
 	getRectRotationOnText,
 	getReversedSelectionRanges,
 	getSelectionRanges,
@@ -10,67 +11,63 @@ import {
 	getSortIndex,
 	getTextFromSelectionRanges,
 	getWordSelectionRanges,
-	setTextLayerSelection,
-	getNodeOffset
+	setTextLayerSelection
 } from './selection';
 import {
+	adjustRectHeightByRatio,
 	applyInverseTransform,
-	applyTransform, adjustRectHeightByRatio,
-	getPageIndexesFromAnnotations,
-	getPositionBoundingRect,
-	intersectAnnotationWithPoint,
-	quickIntersectRect,
-	transform,
-	getBoundingBox,
-	inverseTransform,
-	scaleShape,
-	getRotationTransform,
-	getScaleTransform,
+	applyTransform,
 	calculateScale,
-	getAxialAlignedBoundingBox,
 	distanceBetweenRects,
-	getTransformFromRects,
-	getRotationDegrees,
-	normalizeDegrees,
-	getRectsAreaSize,
+	getAxialAlignedBoundingBox,
+	getBoundingBox,
 	getClosestObject,
 	getOutlinePath,
-	getRangeRects,
+	getPageIndexesFromAnnotations,
+	getPositionBoundingRect,
+	getRectsAreaSize,
+	getRotationDegrees,
+	getRotationTransform,
+	getScaleTransform,
+	getTransformFromRects,
+	intersectAnnotationWithPoint,
+	inverseTransform,
+	normalizeDegrees,
+	quickIntersectRect,
+	scaleShape,
+	transform
 } from './lib/utilities';
 import {
 	debounceUntilScrollFinishes,
+	getAffectedAnnotations,
 	getCodeCombination,
 	getKeyCombination,
-	getAffectedAnnotations,
-	isMac,
-	isLinux,
-	isWin,
-	isFirefox,
-	isSafari,
-	throttle,
 	getModeBasedOnColors,
-	placeA11yVirtualCursor
+	isFirefox,
+	isLinux,
+	isMac,
+	isSafari,
+	isWin,
+	placeA11yVirtualCursor,
+	throttle
 } from '../common/lib/utilities';
 import { debounce } from '../common/lib/debounce';
 import { AutoScroll } from './lib/auto-scroll';
 import { PDFThumbnails } from './pdf-thumbnails';
 import {
+	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH,
 	MIN_IMAGE_ANNOTATION_SIZE,
 	MIN_TEXT_ANNOTATION_WIDTH,
-	PDF_NOTE_DIMENSIONS,
-	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH
+	PDF_NOTE_DIMENSIONS
 } from '../common/defines';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
 import { adjustTextAnnotationPosition } from './lib/text-annotation';
-import {
-	applyTransformationMatrixToInkPosition,
-	eraseInk,
-	smoothPath
-} from './lib/path';
+import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
+import { buildReadAloudSegments } from './read-aloud-segments';
 
 class PDFView {
 	constructor(options) {
@@ -419,162 +416,26 @@ class PDFView {
 		}
 		let resolvePromise;
 		this._readAloudSegmentsPromise = new Promise(r => (resolvePromise = r));
-
-		let segments = [];
+		let allParagraphs = [];
+		let allSentences = [];
 		let { pagesCount } = this._iframeWindow.PDFViewerApplication.pdfViewer;
-
-		// Punctuation and helpers
-		let END = new Set(['.', '!', '?', '…', '。', '！', '？']);
-		let TRAIL = new Set(['"', "'", '”', '’', '»', '《', '》', ')', ']', '}', '›', '」', '』']);
-		let isLetter = (c) => /\p{L}/u.test(c);
-		let trim = (s) => s.replace(/^ +| +$/g, '');
-		let joinWithSpace = (a, b) => {
-			if (!a) return b; if (!b) return a;
-			return a + ((a.at(-1) !== ' ' && !/[\p{P}]/u.test(b[0] || '')) ? ' ' : '') + b;
-		};
-
-		// Extract previous word (letters only) and its start index (by wordBreakAfter)
-		function getPrevWordInfo(chars, prevIdx) {
-			if (prevIdx == null || prevIdx < 0) return { letters: '', startIdx: -1 };
-			let s = prevIdx;
-			while (s - 1 >= 0 && !chars[s - 1].wordBreakAfter) s--;
-			let w = '';
-			for (let k = s; k <= prevIdx; k++) {
-				let ch = chars[k]?.c || '';
-				if (isLetter(ch)) w += ch;
-			}
-			return { letters: w, startIdx: s };
-		}
-
-		// Build sentences from chars with all rules; returns array of { text, ranges, boundary }
-		function sentencesFromChars(chars) {
-			let MIN_LEN = 30;
-			let out = [];
-			let buf = [], ranges = [], segStart = null;
-
-			let append = (idx) => {
-				let ch = chars[idx];
-				buf.push(ch.c);
-				if (ch.spaceAfter) buf.push(' ');
-			};
-			let flush = (boundary) => {
-				let text = trim(buf.join(''));
-				if (text && ranges.length) out.push({ text, ranges: ranges.slice(), boundary });
-				buf = []; ranges = []; segStart = null;
-			};
-			let consumeAfterPunct = (i) => {
-				let endIdx = i, j = i + 1;
-				while (j < chars.length && END.has(chars[j].c)) { append(j); endIdx = j; j++; }
-				while (j < chars.length && TRAIL.has(chars[j].c)) { append(j); endIdx = j; j++; }
-				return { endIdx, nextI: j };
-			};
-			let hasSepBeforeWord = (startIdx) => {
-				let bi = startIdx - 1;
-				return startIdx === 0 || (bi >= 0 && (chars[bi].spaceAfter || chars[bi].lineBreakAfter || chars[bi].paragraphBreakAfter));
-			};
-			let dotOk = (word) => word.length >= 2 || (word.length > 0 && word === word.toLowerCase());
-
-			for (let i = 0; i < chars.length; ) {
-				let ch = chars[i];
-				if (!ch) {
-					i++; continue;
-				}
-				if (segStart == null) segStart = i;
-
-				append(i);
-
-				// Hard paragraph split always
-				if (ch.paragraphBreakAfter) {
-					ranges.push([segStart, i]);
-					flush('paragraph');
-					i++;
-					continue;
-				}
-
-				// Handle sentence-ending punctuation
-				if (END.has(ch.c)) {
-					// Hard end at line/paragraph end or EOF (after any symbol/letter)
-					if (ch.lineBreakAfter || ch.paragraphBreakAfter || i === chars.length - 1) {
-						let { endIdx, nextI } = consumeAfterPunct(i);
-						ranges.push([segStart, endIdx]);
-						flush('punct');
-						i = nextI;
-						continue;
-					}
-
-					// Soft end path: need previous word boundary letraints
-					let prev = chars[i - 1];
-					if (prev && prev.wordBreakAfter) {
-						let { letters: prevWord, startIdx } = getPrevWordInfo(chars, i - 1);
-						if (hasSepBeforeWord(startIdx) && (ch.c !== '.' || dotOk(prevWord))) {
-							let { endIdx, nextI } = consumeAfterPunct(i);
-							ranges.push([segStart, endIdx]);
-							flush('punct');
-							i = nextI;
-							continue;
-						}
-					}
-				}
-
-				i++;
-			}
-
-			// Tail as EOF
-			if (segStart != null) {
-				ranges.push([segStart, Math.max(segStart, chars.length - 1)]);
-				flush('eof');
-			}
-
-			// Merge short segments without crossing paragraph boundaries
-			let merged = [];
-			for (let k = 0; k < out.length; k++) {
-				let cur = out[k];
-				if (cur.boundary === 'paragraph' || cur.text.length >= MIN_LEN) {
-					merged.push(cur);
-					continue;
-				}
-				let nxt = out[k + 1];
-				if (nxt && nxt.boundary !== 'paragraph') {
-					merged.push({
-						text: joinWithSpace(cur.text, nxt.text),
-						ranges: cur.ranges.concat(nxt.ranges),
-						boundary: nxt.boundary
-					});
-					k++;
-				} else if (merged.length && merged[merged.length - 1].boundary !== 'paragraph') {
-					let prev = merged[merged.length - 1];
-					prev.text = joinWithSpace(prev.text, cur.text);
-					prev.ranges = prev.ranges.concat(cur.ranges);
-				} else {
-					merged.push(cur);
-				}
-			}
-			return merged;
-		}
-
 		for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) {
 			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
-			let chars = pageData?.chars || [];
-			if (!chars.length) continue;
-
-			let sentences = sentencesFromChars(chars, 30);
-
-			for (let s of sentences) {
-				let rects = [];
-				for (let [start, endInc] of s.ranges) {
-					if (start == null || endInc == null) continue;
-					let ss = Math.max(0, start);
-					let ee = Math.min(endInc, chars.length - 1);
-					if (ee < ss) continue;
-					let part = getRangeRects(chars, ss, ee);
-					if (part && part.length) rects = rects.concat(part);
-				}
-				if (s.text) segments.push({ text: s.text, position: { pageIndex, rects } });
+			let chars = pageData.chars;
+			if (!chars.length) {
+				continue;
 			}
+			let { paragraphs, sentences } = buildReadAloudSegments(chars, pageIndex);
+			allParagraphs.push(...paragraphs);
+			allSentences.push(...sentences);
 		}
-
-		this._readAloudSegments = segments;
+		this._readAloudSegments = allParagraphs;
+		this._readAloudSegments = {
+			paragraphs: allParagraphs,
+			sentences: allSentences
+		};
 		resolvePromise();
+		return allParagraphs;
 	}
 
 	async _setState(state, skipScroll) {
@@ -1105,6 +966,7 @@ class PDFView {
 	async setReadAloudState(state) {
 		await this._initReadAloudSegments();
 
+		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
 		if (!state.active) {
@@ -1119,18 +981,21 @@ class PDFView {
 			this.navigateToPosition(state.activeSegment.position);
 		}
 
-		if (state.segments !== null) {
+		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
+			|| !state.segmentGranularity) {
 			return;
 		}
 
-		let segments = this._readAloudSegments;
+		let segments = state.segmentGranularity === 'sentence'
+			? this._readAloudSegments.sentences
+			: this._readAloudSegments.paragraphs;
 
 		let backwardStopIndex = null;
 		let forwardStopIndex = null;
 
 		if (state.targetPosition) {
-			for (let i = 0; i < this._readAloudSegments.length; i++) {
-				let segment = this._readAloudSegments[i];
+			for (let i = 0; i < segments.length; i++) {
+				let segment = segments[i];
 				if (segment.position.pageIndex === state.targetPosition.pageIndex) {
 					if (intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
 						backwardStopIndex = i;
@@ -1138,7 +1003,7 @@ class PDFView {
 				}
 			}
 		}
-		else if (this._selectionRanges.length) {
+		else if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
 			let selectionRanges = [...this._selectionRanges];
 			selectionRanges.sort((a, b) => {
 				const pa = a.pageIndex;
@@ -1181,7 +1046,7 @@ class PDFView {
 			this._setSelectionRanges();
 		}
 		else {
-			let objects = this._readAloudSegments.map((object, index) => ({ index, object }));
+			let objects = segments.map((object, index) => ({ index, object }));
 			let visibleObjects = this._getVisibleObjects(objects);
 			if (visibleObjects.length) {
 				backwardStopIndex = visibleObjects[0].index;
