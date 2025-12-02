@@ -263,6 +263,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					<ReadAloudPopup
 						params={state.readAloudState}
 						voices={props.readAloudVoices}
+						remoteInterface={props.readAloudRemoteInterface}
 						onChange={props.onChangeReadAloudState}
 						onSetVoice={props.onSetReadAloudVoice}
 						onOpenVoicePreferences={props.onOpenVoicePreferences}

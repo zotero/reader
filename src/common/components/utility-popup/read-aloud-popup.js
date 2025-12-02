@@ -16,7 +16,7 @@ import { getAvailableProviders, waitForProviders } from '../../read-aloud/provid
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
-	let { params, voices, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
+	let { params, voices, remoteInterface, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
@@ -27,7 +27,7 @@ function ReadAloudPopup(props) {
 	let showSpinner = !params.segments || audioBuffering;
 
 	useEffect(() => {
-		let provider = getAvailableProviders().find(p => p.id === params.voice);
+		let provider = allProviders.find(p => p.id === params.voice);
 		if (!provider) {
 			setController(null);
 			return undefined;
@@ -164,11 +164,10 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		let waitForProvidersAndSet = async () => {
-			await waitForProviders();
-			setAllProviders(getAvailableProviders());
+			setAllProviders(await getAvailableProviders(remoteInterface));
 		};
 		waitForProvidersAndSet();
-	}, []);
+	}, [remoteInterface]);
 
 	useEffect(() => {
 		if (!params.voice) {

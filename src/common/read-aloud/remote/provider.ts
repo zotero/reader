@@ -1,13 +1,16 @@
 import { ReadAloudProvider } from '../provider';
-import { REMOTE_ENDPOINT, RemoteVoiceConfig } from './index';
+import { RemoteInterface, RemoteVoiceConfig } from './index';
 import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
 import { RemoteReadAloudController } from './controller';
 
 export class RemoteReadAloudProvider implements ReadAloudProvider {
+	readonly remote: RemoteInterface;
+
 	readonly voice: RemoteVoiceConfig;
 
-	constructor(voice: RemoteVoiceConfig) {
+	constructor(remote: RemoteInterface, voice: RemoteVoiceConfig) {
+		this.remote = remote;
 		this.voice = voice;
 	}
 
@@ -35,25 +38,9 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
-	static waitForProviders(): Promise<void> {
-		if (!_providersPromise) {
-			_providersPromise = fetch(`${REMOTE_ENDPOINT}/voices`, {
-				// Params
-			}).then(res => res.json()).then((json) => {
-				let voices = json as RemoteVoiceConfig[];
-				for (let voice of voices) {
-					_providers.push(new RemoteReadAloudProvider(voice));
-				}
-			});
-		}
-		return _providersPromise;
-	}
-
-	static getAvailableProviders(): ReadAloudProvider[] {
-		return _providers;
+	static async getAvailableProviders(remote: RemoteInterface): Promise<ReadAloudProvider[]> {
+		let { data: configs } = await remote.getVoices();
+		return configs?.map(config => new RemoteReadAloudProvider(remote, config))
+			?? [];
 	}
 }
-
-let _providers: ReadAloudProvider[] = [];
-
-let _providersPromise: Promise<void> | null = null;

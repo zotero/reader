@@ -1,12 +1,14 @@
 import { ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
-import { REMOTE_ENDPOINT, RemoteVoiceConfig } from './';
+import { RemoteInterface, RemoteVoiceConfig } from './';
 import LRUCacheMap from '../../lib/lru-cache-map';
 import { RemoteReadAloudProvider } from './provider';
 
 const BLOB_CACHE_CAPACITY = 4;
 
 export class RemoteReadAloudController extends ReadAloudController {
+	private readonly _remote: RemoteInterface;
+
 	private readonly _voice: RemoteVoiceConfig;
 
 	private _audio: HTMLAudioElement;
@@ -26,6 +28,7 @@ export class RemoteReadAloudController extends ReadAloudController {
 	constructor(provider: RemoteReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super(provider, segments, backwardStopIndex, forwardStopIndex);
 
+		this._remote = provider.remote;
 		this._voice = provider.voice;
 		this._audio = new Audio();
 		this._audio.preload = 'auto';
@@ -45,9 +48,8 @@ export class RemoteReadAloudController extends ReadAloudController {
 
 		let index = this._position;
 		let segment = this._segments[index];
-		let url = this._getAudioURL(segment);
 
-		this._getBlob(url)
+		this._getBlob(segment)
 			.then((blob) => {
 				// If position changed or reading was paused while loading, don't start
 				if (this._destroyed || this._paused || this._position !== index) {
@@ -80,44 +82,39 @@ export class RemoteReadAloudController extends ReadAloudController {
 
 	private async _prefetchFrom(index: number) {
 		for (; index < this._segments.length && index < this._position + 3; index++) {
-			let url = this._getAudioURL(this._segments[index]);
 			// Start fetch if not already in progress
 			try {
-				await this._getBlob(url);
+				await this._getBlob(this._segments[index]);
 			}
 			catch {}
 		}
 	}
 
-	private async _getBlob(url: string): Promise<Blob> {
-		let cached = this._blobs.get(url);
+	private async _getBlob(segment: ReadAloudSegment): Promise<Blob> {
+		let key = this._getKey(segment);
+
+		let cached = this._blobs.get(key);
 		if (cached) return cached;
 
-		let inflight = this._fetching.get(url);
+		let inflight = this._fetching.get(key);
 		if (inflight) return inflight;
 
 		let fetchBlob = async () => {
-			let response = await fetch(url, {
-				// Params
-			});
-			if (!response.ok) {
-				throw new Error(`Failed to fetch audio: ${response.status}`);
+			let { data: blob } = await this._remote.getAudio(segment, this._voice);
+			if (!blob) {
+				throw new Error('Failed to fetch audio');
 			}
-			let blob = await response.blob();
-			this._blobs.set(url, blob);
+			this._blobs.set(key, blob);
 			return blob;
 		};
 
-		inflight = fetchBlob().finally(() => this._fetching.delete(url));
-		this._fetching.set(url, inflight);
+		inflight = fetchBlob().finally(() => this._fetching.delete(key));
+		this._fetching.set(key, inflight);
 		return inflight;
 	}
 
-	protected _getAudioURL(segment: ReadAloudSegment) {
-		let params = new URLSearchParams();
-		params.set('voice', this._voice.id);
-		params.set('text', segment.text);
-		return `${REMOTE_ENDPOINT}/speak?${params}`;
+	private _getKey(segment: ReadAloudSegment): string {
+		return JSON.stringify({ voice: this._voice.id, text: segment.text });
 	}
 
 	destroy(): void {

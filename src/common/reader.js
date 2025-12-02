@@ -151,6 +151,7 @@ class Reader {
 		window.speechSynthesis.getVoices();
 
 		this._readAloudVoices = new Map(Object.entries(options.readAloudVoices || {}));
+		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
 		this._state = {
 			splitType: null,
@@ -326,6 +327,7 @@ class Reader {
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
 						readAloudVoices={this._readAloudVoices}
+						readAloudRemoteInterface={this._readAloudRemoteInterface}
 						onSetReadAloudVoice={this._onSetReadAloudVoice}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}

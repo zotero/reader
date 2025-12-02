@@ -61,15 +61,13 @@ export class BrowserReadAloudProvider implements ReadAloudProvider {
 		return new BrowserReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 
-	static async waitForProviders(): Promise<void> {
-		if (!this.getAvailableProviders().length) {
-			await new Promise(
-				resolve => window.speechSynthesis.addEventListener('voiceschanged', resolve)
-			);
+	static async getAvailableProviders(): Promise<ReadAloudProvider[]> {
+		if (!window.speechSynthesis.getVoices().length) {
+			await new Promise((resolve) => {
+				window.speechSynthesis.addEventListener('voiceschanged', resolve, { once: true });
+			});
 		}
-	}
 
-	static getAvailableProviders(): ReadAloudProvider[] {
 		let voices = window.speechSynthesis.getVoices();
 		let idsToNames = new Map<string, string>(); // Safari returns duplicates
 		for (let voice of voices) {

@@ -2,6 +2,7 @@ import { ReadAloudGranularity, ReadAloudSegment } from '../types';
 import { ReadAloudController } from './controller';
 import { RemoteReadAloudProvider } from './remote/provider';
 import { BrowserReadAloudProvider } from './browser/provider';
+import { RemoteInterface } from './remote';
 
 export interface ReadAloudProvider {
 	readonly id: string;
@@ -21,15 +22,9 @@ export interface ReadAloudProvider {
 	): ReadAloudController;
 }
 
-export async function waitForProviders(): Promise<void> {
-	await Promise.allSettled(
-		[BrowserReadAloudProvider, RemoteReadAloudProvider]
-			.map(providerClass => providerClass.waitForProviders())
-	);
-}
-
-export function getAvailableProviders(): ReadAloudProvider[] {
-	return [BrowserReadAloudProvider, RemoteReadAloudProvider]
-		.flatMap(providerClass => providerClass.getAvailableProviders())
-		.sort((v1, v2) => v2.score - v1.score);
+export async function getAvailableProviders(remote: RemoteInterface | null): Promise<ReadAloudProvider[]> {
+	return [
+		...remote ? await RemoteReadAloudProvider.getAvailableProviders(remote) : [],
+		...await BrowserReadAloudProvider.getAvailableProviders(),
+	];
 }
