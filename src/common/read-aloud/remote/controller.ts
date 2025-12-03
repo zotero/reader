@@ -100,7 +100,7 @@ export class RemoteReadAloudController extends ReadAloudController {
 		if (inflight) return inflight;
 
 		let fetchBlob = async () => {
-			let { data: blob } = await this._remote.getAudio(segment, this._voice);
+			let { audio: blob } = await this._remote.getAudio(segment, this._voice);
 			if (!blob) {
 				throw new Error('Failed to fetch audio');
 			}

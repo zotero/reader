@@ -39,8 +39,7 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 	}
 
 	static async getAvailableProviders(remote: RemoteInterface): Promise<ReadAloudProvider[]> {
-		let { data: configs } = await remote.getVoices();
-		return configs?.map(config => new RemoteReadAloudProvider(remote, config))
-			?? [];
+		let configs = await remote.getVoices();
+		return configs.map(config => new RemoteReadAloudProvider(remote, config));
 	}
 }
