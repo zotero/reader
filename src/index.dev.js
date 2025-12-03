@@ -3,6 +3,10 @@ import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
 
+// Injected by Webpack in dev builds
+// eslint-disable-next-line no-process-env
+const ZOTERO_API_KEY = process.env.ZOTERO_API_KEY;
+
 window.dev = true;
 
 async function createReader() {
@@ -101,7 +105,31 @@ async function createReader() {
 		},
 		onSetReadAloudStatus(status) {
 			console.log('Set read aloud status', status);
-		}
+		},
+		readAloudRemoteInterface: ZOTERO_API_KEY && {
+			async getVoices() {
+				return fetch('https://api.zotero.org/tts/voices', {
+					headers: {
+						'Zotero-API-Key': ZOTERO_API_KEY,
+					},
+				}).then(r => r.json());
+			},
+
+			async getAudio(segment, voice) {
+				let params = new URLSearchParams();
+				params.set('text', segment.text);
+				params.set('voice', voice.id);
+				let response = await fetch('https://api.zotero.org/tts/speak?' + params, {
+					headers: {
+						'Zotero-API-Key': ZOTERO_API_KEY,
+					},
+				});
+				return {
+					audio: await response.blob(),
+					secondsRemaining: parseInt(response.headers.get('Zotero-TTS-Seconds-Remaining')),
+				};
+			}
+		},
 	});
 	reader.enableAddToNote(true);
 	window._reader = reader;
