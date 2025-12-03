@@ -22,9 +22,8 @@ function ReadAloudPopup(props) {
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let [allProviders, setAllProviders] = useState([]);
 	let [controller, setController] = useState(null);
-	let [audioBuffering, setAudioBuffering] = useState(false);
 
-	let showSpinner = !params.segments || audioBuffering;
+	let showSpinner = !params.segments;
 
 	useEffect(() => {
 		let provider = allProviders.find(p => p.id === params.voice);
@@ -39,7 +38,6 @@ function ReadAloudPopup(props) {
 		}
 		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
-		setAudioBuffering(true);
 		return () => controller.destroy();
 	}, [onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
@@ -147,11 +145,7 @@ function ReadAloudPopup(props) {
 		if (!controller) {
 			return;
 		}
-		controller.addEventListener('ActiveSegmentChanging', () => {
-			setAudioBuffering(true);
-		});
 		controller.addEventListener('ActiveSegmentChange', (event) => {
-			setAudioBuffering(false);
 			onChange({ activeSegment: event.segment });
 		});
 		controller.addEventListener('Complete', () => {
