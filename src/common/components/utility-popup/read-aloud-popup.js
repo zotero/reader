@@ -21,7 +21,7 @@ function ReadAloudPopup(props) {
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
-	let [voiceMode, setVoiceMode] = useState('remote');
+	let [voiceMode, setVoiceMode] = useState(null);
 	let [allProviders, setAllProviders] = useState([]);
 	let [controller, setController] = useState(null);
 	let [isBuffering, setBuffering] = useState(false);
@@ -41,6 +41,10 @@ function ReadAloudPopup(props) {
 		}
 		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
+
+		let voiceMode = provider instanceof BrowserReadAloudProvider ? 'browser' : 'remote';
+		setVoiceMode(voiceMode);
+
 		return () => {
 			controller.destroy();
 			setBuffering(false);
@@ -93,8 +97,12 @@ function ReadAloudPopup(props) {
 	}, [params.lang, resolvedLang]);
 
 	let providers = useMemo(
-		() => allProviders.filter(p => p.lang === null || p.lang.startsWith(resolvedLang)),
-		[allProviders, resolvedLang]
+		() => allProviders.filter((provider) => {
+			let providerVoiceMode = provider instanceof BrowserReadAloudProvider ? 'browser' : 'remote';
+			return (voiceMode === null || providerVoiceMode === voiceMode)
+				&& (provider.lang === null || provider.lang.startsWith(resolvedLang));
+		}),
+		[allProviders, resolvedLang, voiceMode]
 	);
 
 	function handleSpeedChange(event) {
@@ -145,7 +153,6 @@ function ReadAloudPopup(props) {
 		}
 		let voice = event.target.value;
 		onChange({ voice });
-		onSetVoice(resolvedLang, voice, params.speed);
 	}
 
 	useEffect(() => {
@@ -176,13 +183,12 @@ function ReadAloudPopup(props) {
 	useEffect(() => {
 		let getProvidersAndSet = async () => {
 			setAllProviders([]);
-			let allProviders = await (voiceMode === 'remote'
-				? RemoteReadAloudProvider.getAvailableProviders(remoteInterface)
-				: BrowserReadAloudProvider.getAvailableProviders());
-			setAllProviders(allProviders);
+			let remoteProviders = await RemoteReadAloudProvider.getAvailableProviders(remoteInterface);
+			let browserProviders = await BrowserReadAloudProvider.getAvailableProviders();
+			setAllProviders([...remoteProviders, ...browserProviders]);
 		};
 		getProvidersAndSet();
-	}, [voiceMode, remoteInterface]);
+	}, [remoteInterface]);
 
 	useEffect(() => {
 		if (params.voice && providers.some(provider => provider.id === params.voice)) {
@@ -199,10 +205,11 @@ function ReadAloudPopup(props) {
 		}
 		onChange({
 			voice,
-			speed: speed,
+			speed,
 			active: voice !== params.voice ? false : params.active,
 		});
-	}, [onChange, params.active, params.speed, params.voice, providers, resolvedLang, voices]);
+		onSetVoice(resolvedLang, voice, params.speed);
+	}, [onChange, onSetVoice, params.active, params.speed, params.voice, providers, resolvedLang, voices]);
 
 	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
 		type: 'language',
@@ -275,7 +282,7 @@ function ReadAloudPopup(props) {
 				</div>
 				<Select
 					aria-label={l10n.getString('reader-read-aloud-voice-mode')}
-					value={voiceMode}
+					value={voiceMode ?? 'remote'}
 					tabIndex="-1"
 					onChange={handleVoiceModeChange}
 				>
@@ -294,7 +301,7 @@ function ReadAloudPopup(props) {
 						))}
 					</Select>
 				)}
-				{allProviders.length && (
+				{providers.length && (
 					<div className="row voices" data-tabstop={1}>
 						<Select
 							value={params.voice || ''}
