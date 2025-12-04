@@ -8,6 +8,8 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected _position: number;
 
+	private _buffering = false;
+
 	protected readonly _backwardStopIndex: number | null;
 
 	protected _forwardStopIndex: number | null;
@@ -40,6 +42,18 @@ export abstract class ReadAloudController extends EventTarget {
 
 	get position() {
 		return this._position;
+	}
+
+	get buffering() {
+		return this._buffering;
+	}
+
+	protected set buffering(buffering) {
+		if (this._buffering === buffering) {
+			return;
+		}
+		this._buffering = buffering;
+		this.dispatchEvent(new ReadAloudEvent('BufferingChange', this._currentSegment));
 	}
 
 	private get _currentSegment() {

@@ -30,10 +30,16 @@ export class BrowserReadAloudController extends ReadAloudController {
 			let utterance = this._utterances[this._position];
 			if (utterance) {
 				utterance.rate = this._speed;
+				this.buffering = true;
 				window.speechSynthesis.speak(utterance);
 			}
 		}
 	});
+
+	protected override _handleSegmentStart(segment: ReadAloudSegment, index: number) {
+		super._handleSegmentStart(segment, index);
+		this.buffering = false;
+	}
 
 	destroy() {
 		this._position = -1;

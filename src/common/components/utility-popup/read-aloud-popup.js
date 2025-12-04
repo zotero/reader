@@ -24,8 +24,9 @@ function ReadAloudPopup(props) {
 	let [voiceMode, setVoiceMode] = useState('remote');
 	let [allProviders, setAllProviders] = useState([]);
 	let [controller, setController] = useState(null);
+	let [isBuffering, setBuffering] = useState(false);
 
-	let showSpinner = !params.segments;
+	let showSpinner = !params.segments || isBuffering;
 
 	useEffect(() => {
 		let provider = allProviders.find(p => p.id === params.voice);
@@ -40,7 +41,10 @@ function ReadAloudPopup(props) {
 		}
 		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
-		return () => controller.destroy();
+		return () => {
+			controller.destroy();
+			setBuffering(false);
+		};
 	}, [allProviders, onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
 	useEffect(() => {
@@ -155,6 +159,9 @@ function ReadAloudPopup(props) {
 		if (!controller) {
 			return;
 		}
+		controller.addEventListener('BufferingChange', () => {
+			setBuffering(controller.buffering);
+		});
 		controller.addEventListener('ActiveSegmentChange', (event) => {
 			onChange({ activeSegment: event.segment });
 		});
