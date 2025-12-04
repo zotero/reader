@@ -10,8 +10,9 @@ import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import IconLoading from '../../../../res/icons/16/loading.svg';
 import { useLocalization } from '@fluent/react';
-import Select from "../common/select";
-import { getAvailableProviders, waitForProviders } from '../../read-aloud/provider';
+import Select from '../common/select';
+import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
+import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
 
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
@@ -20,6 +21,7 @@ function ReadAloudPopup(props) {
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
+	let [voiceMode, setVoiceMode] = useState('remote');
 	let [allProviders, setAllProviders] = useState([]);
 	let [controller, setController] = useState(null);
 
@@ -39,7 +41,7 @@ function ReadAloudPopup(props) {
 		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
 		return () => controller.destroy();
-	}, [onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
+	}, [allProviders, onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
 	useEffect(() => {
 		if (!controller) return;
@@ -47,7 +49,7 @@ function ReadAloudPopup(props) {
 	}, [controller, params.speed]);
 
 	let languages = useMemo(() => [...new Set(
-		allProviders.map(provider => provider.lang)
+		allProviders.map(provider => provider.lang).filter(Boolean)
 	)], [allProviders]);
 
 	let resolvedLang = useMemo(() => {
@@ -62,22 +64,24 @@ function ReadAloudPopup(props) {
 
 		let userLocale = navigator.languages[0];
 
+		let isLangSupported = lang => !languages.length || languages.includes(lang);
+
 		// If the user's locale has the same language as the content locale
 		// (but possibly a different region), use the user's locale
-		if (userLocale.startsWith(contentLanguageCode) && languages.includes(userLocale)) {
+		if (userLocale.startsWith(contentLanguageCode) && isLangSupported(userLocale)) {
 			return userLocale;
 		}
 		// Otherwise, if we know how to read the content locale, use that
-		if (languages.includes(params.lang)) {
+		if (isLangSupported(params.lang)) {
 			return params.lang;
 		}
 		// Fall back to US English
-		if (languages.includes('en-US')) {
+		if (isLangSupported('en-US')) {
 			return 'en-US';
 		}
 		// Or, in the rare situation where the system can't read US English,
 		// whatever the first locale it can read is
-		return languages[0];
+		return languages[0] ?? null;
 	}, [params.lang, languages]);
 
 	useEffect(() => {
@@ -85,7 +89,7 @@ function ReadAloudPopup(props) {
 	}, [params.lang, resolvedLang]);
 
 	let providers = useMemo(
-		() => allProviders.filter(p => p.lang.startsWith(resolvedLang)),
+		() => allProviders.filter(p => p.lang === null || p.lang.startsWith(resolvedLang)),
 		[allProviders, resolvedLang]
 	);
 
@@ -120,8 +124,14 @@ function ReadAloudPopup(props) {
 		}
 	}
 
+	function handleVoiceModeChange(event) {
+		setVoiceMode(event.target.value);
+		onChange({ voice: null });
+	}
+
 	function handleLangChange(event) {
-		onChange({ lang: event.target.value, voice: null });
+		let lang = event.target.value;
+		onChange({ lang, voice: null });
 	}
 
 	function handleVoiceChange(event) {
@@ -157,37 +167,40 @@ function ReadAloudPopup(props) {
 	}, [controller, onChange]);
 
 	useEffect(() => {
-		let waitForProvidersAndSet = async () => {
-			setAllProviders(await getAvailableProviders(remoteInterface));
+		let getProvidersAndSet = async () => {
+			setAllProviders([]);
+			let allProviders = await (voiceMode === 'remote'
+				? RemoteReadAloudProvider.getAvailableProviders(remoteInterface)
+				: BrowserReadAloudProvider.getAvailableProviders());
+			setAllProviders(allProviders);
 		};
-		waitForProvidersAndSet();
-	}, [remoteInterface]);
+		getProvidersAndSet();
+	}, [voiceMode, remoteInterface]);
 
 	useEffect(() => {
-		if (!params.voice) {
-			let voice;
-			let speed;
-			if (voices.has(resolvedLang)) {
-				({ voice, speed } = voices.get(resolvedLang));
-			}
-			else if (providers.length) {
-				({ voice, speed } = { voice: providers[0].id, speed: params.speed });
-			}
-			else {
+		if (params.voice && providers.some(provider => provider.id === params.voice)) {
+			return;
+		}
+
+		let { voice, speed } = voices.get(resolvedLang) ?? {};
+		if (!voice || !providers.some(provider => provider.id === voice)) {
+			if (!providers.length) {
 				return;
 			}
-			onChange({
-				voice,
-				speed,
-				active: voice !== params.voice ? false : params.active,
-			});
+			voice = providers[0].id;
+			speed = params.speed;
 		}
+		onChange({
+			voice,
+			speed: speed,
+			active: voice !== params.voice ? false : params.active,
+		});
 	}, [onChange, params.active, params.speed, params.voice, providers, resolvedLang, voices]);
 
-	let displayNames = new Intl.DisplayNames(undefined, {
+	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
 		type: 'language',
 		languageDisplay: 'standard'
-	});
+	}), []);
 
 	return (
 		<UtilityPopup className="read-aloud-popup">
@@ -254,27 +267,41 @@ function ReadAloudPopup(props) {
 					<label htmlFor="read-aloud-speed">{(speedWhileDragging ?? params.speed).toFixed(1)}×</label>
 				</div>
 				<Select
-					value={resolvedLang}
+					aria-label={l10n.getString('reader-read-aloud-voice-mode')}
+					value={voiceMode}
 					tabIndex="-1"
-					onChange={handleLangChange}
+					onChange={handleVoiceModeChange}
 				>
-					{languages.map(language => (
-						<option key={language} value={language}>{displayNames.of(language)}</option>
-					))}
+					<option value="remote">{l10n.getString('reader-read-aloud-voice-mode-remote')}</option>
+					<option value="browser">{l10n.getString('reader-read-aloud-voice-mode-browser')}</option>
 				</Select>
-				<div className="row voices" data-tabstop={1}>
+				{voiceMode === 'browser' && (
 					<Select
-						value={params.voice || ''}
+						aria-label="reader-read-aloud-language"
+						value={resolvedLang}
 						tabIndex="-1"
-						onChange={handleVoiceChange}
+						onChange={handleLangChange}
 					>
-						{providers.map((provider, i) => (
-							<option key={i} value={provider.id}>{provider.label}</option>
+						{languages.map(language => (
+							<option key={language} value={language}>{displayNames.of(language)}</option>
 						))}
-						<option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>
 					</Select>
-					<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
-				</div>
+				)}
+				{allProviders.length && (
+					<div className="row voices" data-tabstop={1}>
+						<Select
+							value={params.voice || ''}
+							tabIndex="-1"
+							onChange={handleVoiceChange}
+						>
+							{providers.map((provider, i) => (
+								<option key={i} value={provider.id}>{provider.label}</option>
+							))}
+							{voiceMode === 'browser' && <option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>}
+						</Select>
+						<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
+					</div>
+				)}
 			</>}
 		</UtilityPopup>
 	);

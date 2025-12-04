@@ -82,6 +82,7 @@ export class RemoteReadAloudController extends ReadAloudController {
 
 	private async _prefetchFrom(index: number) {
 		for (; index < this._segments.length && index < this._position + 3; index++) {
+			if (this._destroyed) return;
 			// Start fetch if not already in progress
 			try {
 				await this._getBlob(this._segments[index]);

@@ -23,7 +23,7 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 	}
 
 	get lang() {
-		return 'en-US';
+		return null;
 	}
 
 	get score() {
