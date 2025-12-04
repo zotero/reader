@@ -304,7 +304,7 @@ function ReadAloudPopup(props) {
 							{providers.map((provider, i) => (
 								<option key={i} value={provider.id}>{provider.label}</option>
 							))}
-							{voiceMode === 'browser' && <option value="more-voices">{l10n.getString('read-aloud-more-voices')}</option>}
+							{voiceMode === 'browser' && <option value="more-voices">{l10n.getString('reader-read-aloud-more-voices')}</option>}
 						</Select>
 						<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
 					</div>
