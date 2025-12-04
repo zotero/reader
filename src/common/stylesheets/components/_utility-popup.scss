@@ -4,6 +4,9 @@
 	position: fixed; // Don't overflow the body
 	padding: 8px;
 	gap: 8px;
+
+	// Don't allow window dragging, even if a popup overlaps the toolbar
+	-moz-window-dragging: no-drag;
 }
 
 .read-aloud-popup {
