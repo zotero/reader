@@ -2053,8 +2053,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let lastContainingBlock: Element | null = null;
 		let segments: ReadAloudSegment[] = ranges
 			.map((range) => {
-				let text = range.toString();
-				if (!text.trim()) return null;
+				let text = range.toString().trim();
+				if (!text) return null;
 				let containingBlock = getContainingBlock(closestElement(range.commonAncestorContainer)!);
 				let differentContainingBlock = containingBlock !== lastContainingBlock;
 				lastContainingBlock = containingBlock;
