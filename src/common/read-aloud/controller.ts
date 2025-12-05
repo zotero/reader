@@ -53,6 +53,15 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		this.dispatchEvent(new ReadAloudEvent('BufferingChange', this._currentSegment));
 	}
 
+	get secondsRemaining(): number | null {
+		let creditsRemaining = this.voice.provider.creditsRemaining;
+		let creditsPerSecond = this.voice.creditsPerSecond;
+		if (creditsRemaining === null || creditsPerSecond === null) {
+			return null;
+		}
+		return creditsRemaining / creditsPerSecond;
+	}
+
 	private get _currentSegment() {
 		return this._segments[this._position];
 	}

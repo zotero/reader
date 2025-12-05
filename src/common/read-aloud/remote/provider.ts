@@ -5,7 +5,7 @@ import { RemoteReadAloudVoice } from './voice';
 export class RemoteReadAloudProvider implements ReadAloudProvider<RemoteReadAloudVoice> {
 	readonly remote: RemoteInterface;
 
-	creditsRemaining: number | null = null;
+	creditsRemaining!: number;
 
 	constructor(remote: RemoteInterface) {
 		this.remote = remote;
@@ -14,6 +14,8 @@ export class RemoteReadAloudProvider implements ReadAloudProvider<RemoteReadAlou
 	async getVoices(): Promise<RemoteReadAloudVoice[]> {
 		let { voices, creditsRemaining } = await this.remote.getVoices();
 		this.creditsRemaining = creditsRemaining;
-		return voices.map(voice => new RemoteReadAloudVoice(this, voice));
+		return voices
+			.map(voice => new RemoteReadAloudVoice(this, voice))
+			.sort((a, b) => b.score - a.score);
 	}
 }

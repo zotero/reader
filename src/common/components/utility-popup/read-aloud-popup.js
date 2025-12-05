@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import cx from 'classnames';
 
 import UtilityPopup from './common/utility-popup';
@@ -26,6 +26,7 @@ function ReadAloudPopup(props) {
 	let [allVoices, setAllVoices] = useState([]);
 	let [controller, setController] = useState(null);
 	let [isBuffering, setBuffering] = useState(false);
+	let [secondsRemaining, setSecondsRemaining] = useState(null);
 
 	let showSpinner = !params.segments || isBuffering;
 
@@ -182,6 +183,21 @@ function ReadAloudPopup(props) {
 	}, [controller, onChange]);
 
 	useEffect(() => {
+		if (!controller) {
+			setSecondsRemaining(null);
+			return undefined;
+		}
+
+		let updateRemaining = () => {
+			setSecondsRemaining(controller.secondsRemaining);
+		};
+		updateRemaining();
+
+		let interval = setInterval(updateRemaining, 1000);
+		return () => clearInterval(interval);
+	}, [controller, params.paused]);
+
+	useEffect(() => {
 		let fetchVoicesAndSet = async () => {
 			setAllVoices([]);
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
@@ -220,6 +236,29 @@ function ReadAloudPopup(props) {
 		type: 'language',
 		languageDisplay: 'standard'
 	}), []);
+
+	let formatTime = (totalSeconds) => {
+		if (totalSeconds === null) return null;
+
+		let hours = Math.floor(totalSeconds / (60 * 60));
+		let minutes = Math.floor(totalSeconds / 60);
+		let seconds = Math.floor(totalSeconds % 60);
+
+		if ('DurationFormat' in Intl) {
+			return new Intl.DurationFormat(undefined, {
+				style: 'digital',
+				hoursDisplay: 'auto',
+			}).format({ hours, minutes, seconds });
+		}
+
+		// Fall back to H:m:ss format if Intl.DurationFormat isn't available
+		if (hours > 0) {
+			return `${hours}:${minutes}:${seconds.toString().padStart(2, '0')}`;
+		}
+		else {
+			return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+		}
+	};
 
 	return (
 		<UtilityPopup className="read-aloud-popup">
@@ -319,6 +358,11 @@ function ReadAloudPopup(props) {
 							{voiceMode === 'browser' && <option value="more-voices">{l10n.getString('reader-read-aloud-more-voices')}</option>}
 						</Select>
 						<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
+					</div>
+				)}
+				{secondsRemaining !== null && (
+					<div className="row remaining-time">
+						{formatTime(secondsRemaining)}
 					</div>
 				)}
 			</>}

@@ -25,6 +25,19 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
 
+	private _creditsRemaining: number | null = null;
+
+	private _creditsConsumed = new Map<string, number>();
+
+	override get secondsRemaining() {
+		let creditsRemaining = this._creditsRemaining ?? this.voice.provider.creditsRemaining;
+		let creditsPerSecond = this.voice.creditsPerSecond;
+		let remainingTimeInAudio = isNaN(this._audio.duration)
+			? 0
+			: this._audio.duration - this._audio.currentTime;
+		return creditsRemaining / creditsPerSecond + remainingTimeInAudio;
+	}
+
 	constructor(voice: RemoteReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super(voice, segments, backwardStopIndex, forwardStopIndex);
 
@@ -68,6 +81,12 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 					}
 					this._audio.src = URL.createObjectURL(blob);
 					this._currentBlob = blob;
+					if (this._creditsRemaining !== null) {
+						this._creditsRemaining -= this._creditsConsumed.get(this._getKey(segment))!;
+					}
+					else {
+						console.warn('_creditsRemaining not set');
+					}
 				}
 
 				if (indexAtPause !== index) {
@@ -176,7 +195,14 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 			let startTime = performance.now();
 
 			let { audio: blob, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+
+			let creditsBefore = this.voice.provider.creditsRemaining;
+			if (this._creditsRemaining === null) {
+				this._creditsRemaining = creditsBefore;
+			}
 			this.voice.provider.creditsRemaining = creditsRemaining;
+			this._creditsConsumed.set(key, creditsBefore - creditsRemaining);
+
 			if (!blob) {
 				throw new Error('Failed to fetch audio');
 			}

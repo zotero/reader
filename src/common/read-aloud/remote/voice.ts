@@ -18,6 +18,9 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 	}
 
 	get score() {
+		if (this.id === 'openai') {
+			return 998;
+		}
 		return 999;
 	}
 
