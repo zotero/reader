@@ -13,43 +13,44 @@ import { useLocalization } from '@fluent/react';
 import Select from '../common/select';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
+import { BrowserReadAloudVoice } from '../../read-aloud/browser/voice';
 
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
-	let { params, voices, remoteInterface, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
+	let { params, voices: persistedVoices, remoteInterface, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let [voiceMode, setVoiceMode] = useState(null);
-	let [allProviders, setAllProviders] = useState([]);
+	let [allVoices, setAllVoices] = useState([]);
 	let [controller, setController] = useState(null);
 	let [isBuffering, setBuffering] = useState(false);
 
 	let showSpinner = !params.segments || isBuffering;
 
 	useEffect(() => {
-		let provider = allProviders.find(p => p.id === params.voice);
-		if (!provider) {
+		let voice = allVoices.find(v => v.id === params.voice);
+		if (!voice) {
 			setController(null);
 			return undefined;
 		}
-		onChange({ segmentGranularity: provider.segmentGranularity, active: true });
+		onChange({ segmentGranularity: voice.segmentGranularity, active: true });
 		if (!params.segments) {
 			setController(null);
 			return undefined;
 		}
-		let controller = provider.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
+		let controller = voice.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
 
-		let voiceMode = provider instanceof BrowserReadAloudProvider ? 'browser' : 'remote';
+		let voiceMode = voice instanceof BrowserReadAloudVoice ? 'browser' : 'remote';
 		setVoiceMode(voiceMode);
 
 		return () => {
 			controller.destroy();
 			setBuffering(false);
 		};
-	}, [allProviders, onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
+	}, [allVoices, onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
 	useEffect(() => {
 		if (!controller) return;
@@ -57,8 +58,8 @@ function ReadAloudPopup(props) {
 	}, [controller, params.speed]);
 
 	let languages = useMemo(() => [...new Set(
-		allProviders.map(provider => provider.lang).filter(Boolean)
-	)], [allProviders]);
+		allVoices.map(voice => voice.lang).filter(Boolean)
+	)], [allVoices]);
 
 	let resolvedLang = useMemo(() => {
 		let contentLanguageCode;
@@ -96,13 +97,13 @@ function ReadAloudPopup(props) {
 		console.log(`Resolved ${params.lang} to ${resolvedLang}`);
 	}, [params.lang, resolvedLang]);
 
-	let providers = useMemo(
-		() => allProviders.filter((provider) => {
-			let providerVoiceMode = provider instanceof BrowserReadAloudProvider ? 'browser' : 'remote';
-			return (voiceMode === null || providerVoiceMode === voiceMode)
-				&& (provider.lang === null || provider.lang.startsWith(resolvedLang));
+	let voicesForSelection = useMemo(
+		() => allVoices.filter((voice) => {
+			let voiceModeHere = voice instanceof BrowserReadAloudVoice ? 'browser' : 'remote';
+			return (voiceMode === null || voiceModeHere === voiceMode)
+				&& (voice.lang === null || voice.lang.startsWith(resolvedLang));
 		}),
-		[allProviders, resolvedLang, voiceMode]
+		[allVoices, resolvedLang, voiceMode]
 	);
 
 	function handleSpeedChange(event) {
@@ -181,26 +182,30 @@ function ReadAloudPopup(props) {
 	}, [controller, onChange]);
 
 	useEffect(() => {
-		let getProvidersAndSet = async () => {
-			setAllProviders([]);
-			let remoteProviders = await RemoteReadAloudProvider.getAvailableProviders(remoteInterface);
-			let browserProviders = await BrowserReadAloudProvider.getAvailableProviders();
-			setAllProviders([...remoteProviders, ...browserProviders]);
+		let fetchVoicesAndSet = async () => {
+			setAllVoices([]);
+			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
+			let browserProvider = new BrowserReadAloudProvider();
+			let [remoteVoices, browserVoices] = await Promise.all([
+				remoteProvider.getVoices(),
+				browserProvider.getVoices(),
+			]);
+			setAllVoices([...remoteVoices, ...browserVoices]);
 		};
-		getProvidersAndSet();
+		fetchVoicesAndSet();
 	}, [remoteInterface]);
 
 	useEffect(() => {
-		if (params.voice && providers.some(provider => provider.id === params.voice)) {
+		if (params.voice && voicesForSelection.some(v => v.id === params.voice)) {
 			return;
 		}
 
-		let { voice, speed } = voices.get(resolvedLang) ?? {};
-		if (!voice || !providers.some(provider => provider.id === voice)) {
-			if (!providers.length) {
+		let { voice, speed } = persistedVoices.get(resolvedLang) ?? {};
+		if (!voice || !voicesForSelection.some(v => v.id === voice)) {
+			if (!voicesForSelection.length) {
 				return;
 			}
-			voice = providers[0].id;
+			voice = voicesForSelection[0].id;
 			speed = params.speed;
 		}
 		onChange({
@@ -209,7 +214,7 @@ function ReadAloudPopup(props) {
 			active: voice !== params.voice ? false : params.active,
 		});
 		onSetVoice(resolvedLang, voice, params.speed);
-	}, [onChange, onSetVoice, params.active, params.speed, params.voice, providers, resolvedLang, voices]);
+	}, [onChange, onSetVoice, params.active, params.speed, params.voice, voicesForSelection, resolvedLang, persistedVoices]);
 
 	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
 		type: 'language',
@@ -301,15 +306,15 @@ function ReadAloudPopup(props) {
 						))}
 					</Select>
 				)}
-				{providers.length && (
+				{voicesForSelection.length && (
 					<div className="row voices" data-tabstop={1}>
 						<Select
 							value={params.voice || ''}
 							tabIndex="-1"
 							onChange={handleVoiceChange}
 						>
-							{providers.map((provider, i) => (
-								<option key={i} value={provider.id}>{provider.label}</option>
+							{voicesForSelection.map((voice, i) => (
+								<option key={i} value={voice.id}>{voice.label}</option>
 							))}
 							{voiceMode === 'browser' && <option value="more-voices">{l10n.getString('reader-read-aloud-more-voices')}</option>}
 						</Select>

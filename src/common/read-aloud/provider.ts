@@ -1,20 +1,5 @@
-import { ReadAloudGranularity, ReadAloudSegment } from '../types';
-import { ReadAloudController } from './controller';
+import { ReadAloudVoice } from './voice';
 
 export interface ReadAloudProvider {
-	readonly id: string;
-
-	readonly label: string;
-
-	readonly lang: string | null;
-
-	readonly score: number;
-
-	readonly segmentGranularity: ReadAloudGranularity;
-
-	getController(
-		segments: ReadAloudSegment[],
-		backwardStopIndex: number | null,
-		forwardStopIndex: number | null
-	): ReadAloudController;
+	getVoices(): Promise<ReadAloudVoice<unknown>[]>;
 }

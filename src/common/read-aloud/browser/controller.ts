@@ -1,19 +1,16 @@
 import { ReadAloudSegment } from '../../types';
 import { debounce } from '../../lib/debounce';
 import { ReadAloudController } from '../controller';
-import { BrowserReadAloudProvider } from './provider';
+import { BrowserReadAloudVoice } from './voice';
 
-export class BrowserReadAloudController extends ReadAloudController {
-	readonly voice: SpeechSynthesisVoice;
-
+export class BrowserReadAloudController extends ReadAloudController<BrowserReadAloudVoice> {
 	private readonly _utterances: SpeechSynthesisUtterance[];
 
-	constructor(provider: BrowserReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(provider, segments, backwardStopIndex, forwardStopIndex);
-		this.voice = provider.voice;
+	constructor(voice: BrowserReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(voice, segments, backwardStopIndex, forwardStopIndex);
 		this._utterances = segments.map((segment, index) => {
 			let utterance = new SpeechSynthesisUtterance(segment.text);
-			utterance.voice = this.voice;
+			utterance.voice = this._voice.impl;
 			utterance.onstart = () => this._handleSegmentStart(segment, index);
 			utterance.onend = () => this._handleSegmentEnd(segment, index);
 			return utterance;

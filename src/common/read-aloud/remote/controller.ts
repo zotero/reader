@@ -1,18 +1,13 @@
 import { ReadAloudSegment } from '../../types';
 import { ReadAloudController } from '../controller';
-import { RemoteInterface, RemoteVoiceConfig } from './';
 import LRUCacheMap from '../../lib/lru-cache-map';
-import { RemoteReadAloudProvider } from './provider';
+import { RemoteReadAloudVoice } from './voice';
 
 const BLOB_CACHE_CAPACITY = 32;
 const EST_PLAYBACK_CHARS_PER_SECOND = 16;
 const EXP_MOVING_AVERAGE_ALPHA = 0.25;
 
-export class RemoteReadAloudController extends ReadAloudController {
-	private readonly _remote: RemoteInterface;
-
-	private readonly _voice: RemoteVoiceConfig;
-
+export class RemoteReadAloudController extends ReadAloudController<RemoteReadAloudVoice> {
 	private readonly _audio: HTMLAudioElement;
 
 	private _currentIndex: number | null = null;
@@ -30,11 +25,9 @@ export class RemoteReadAloudController extends ReadAloudController {
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
 
-	constructor(provider: RemoteReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(provider, segments, backwardStopIndex, forwardStopIndex);
+	constructor(voice: RemoteReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(voice, segments, backwardStopIndex, forwardStopIndex);
 
-		this._remote = provider.remote;
-		this._voice = provider.voice;
 		this._audio = new Audio();
 		this._audio.preload = 'auto';
 	}
@@ -182,7 +175,7 @@ export class RemoteReadAloudController extends ReadAloudController {
 		let fetchBlob = async () => {
 			let startTime = performance.now();
 
-			let { audio: blob } = await this._remote.getAudio(segment, this._voice);
+			let { audio: blob } = await this._voice.impl.remote.getAudio(segment, this._voice.impl.voice);
 			if (!blob) {
 				throw new Error('Failed to fetch audio');
 			}

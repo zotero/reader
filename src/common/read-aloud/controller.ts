@@ -1,8 +1,8 @@
 import { ReadAloudSegment } from '../types';
-import { ReadAloudProvider } from './provider';
+import { ReadAloudVoice } from './voice';
 
-export abstract class ReadAloudController extends EventTarget {
-	protected readonly _provider: ReadAloudProvider;
+export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown>> extends EventTarget {
+	protected readonly _voice: TVoice;
 
 	protected readonly _segments: ReadAloudSegment[];
 
@@ -18,8 +18,8 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected _speed = 1;
 
-	get provider() {
-		return this._provider;
+	get voice() {
+		return this._voice;
 	}
 
 	get paused() {
@@ -60,9 +60,9 @@ export abstract class ReadAloudController extends EventTarget {
 		return this._segments[this._position];
 	}
 
-	protected constructor(provider: ReadAloudProvider, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+	protected constructor(voice: TVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super();
-		this._provider = provider;
+		this._voice = voice;
 		this._position = backwardStopIndex ?? 0;
 		this._backwardStopIndex = backwardStopIndex;
 		this._forwardStopIndex = forwardStopIndex;
