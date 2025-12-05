@@ -100,7 +100,7 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 	}
 
 	private async _prefetchFrom(startIndex: number) {
-		const MAX_WINDOW = 6;
+		const MAX_WINDOW = 3;
 		const MAX_CONCURRENT_FETCHES = 2;
 
 		let endIndex = Math.min(
