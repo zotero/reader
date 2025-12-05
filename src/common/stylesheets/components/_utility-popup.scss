@@ -13,6 +13,7 @@
 	top: $height-toolbar + 10px;
 	inset-inline-start: calc(var(--sidebar-width) + 10px);
 	width: 250px;
+	user-select: none;
 
 	.row {
 		display: flex;
@@ -66,6 +67,41 @@
 				&:active:not(.active):not(:disabled), &.active-pseudo-class-fix:not(.active):not(:disabled) {
 					background: var(--fill-quinary);
 				}
+			}
+		}
+
+		&.remaining-time {
+			flex-direction: column;
+			gap: 4px;
+			padding-inline: 6px;
+
+			.time-indicator {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+
+				&.urgent {
+					color: var(--accent-red);
+				}
+
+				button {
+					appearance: none;
+					margin: 0;
+					padding: 0;
+					background: none;
+					border: none;
+					outline: none;
+					color: var(--color-accent);
+					text-decoration: underline;
+					cursor: pointer;
+					margin-inline-start: auto;
+				}
+			}
+
+
+			.message {
+				color: var(--fill-secondary);
+				font-size: 11px;
 			}
 		}
 	}

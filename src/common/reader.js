@@ -330,6 +330,7 @@ class Reader {
 						readAloudRemoteInterface={this._readAloudRemoteInterface}
 						onSetReadAloudVoice={this._onSetReadAloudVoice}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
+						onOpenReadAloudLearnMore={this.openReadAloudLearnMore.bind(this)}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
@@ -900,6 +901,11 @@ class Reader {
 		else if (isLinux()) {
 			this._onOpenLink('https://github.com/brailcom/speechd'); // Sorry!
 		}
+	}
+
+	openReadAloudLearnMore() {
+		// TODO
+		console.log('Learn more');
 	}
 
 	toggleReadAloudPopup(popupOpen) {

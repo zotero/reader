@@ -267,6 +267,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChange={props.onChangeReadAloudState}
 						onSetVoice={props.onSetReadAloudVoice}
 						onOpenVoicePreferences={props.onOpenVoicePreferences}
+						onOpenLearnMore={props.onOpenReadAloudLearnMore}
 						onClose={() => props.onToggleReadAloud(false)}
 					/>
 				)}

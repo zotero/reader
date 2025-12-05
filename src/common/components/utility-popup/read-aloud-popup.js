@@ -9,6 +9,7 @@ import IconPause from '../../../../res/icons/20/pause.svg';
 import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import IconLoading from '../../../../res/icons/16/loading.svg';
+import IconClock from '../../../../res/icons/12/clock.svg';
 import { useLocalization } from '@fluent/react';
 import Select from '../common/select';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
@@ -18,7 +19,7 @@ import { BrowserReadAloudVoice } from '../../read-aloud/browser/voice';
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
-	let { params, voices: persistedVoices, remoteInterface, onChange, onSetVoice, onOpenVoicePreferences, onClose } = props;
+	let { params, voices: persistedVoices, remoteInterface, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onClose } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
@@ -237,29 +238,6 @@ function ReadAloudPopup(props) {
 		languageDisplay: 'standard'
 	}), []);
 
-	let formatTime = (totalSeconds) => {
-		if (totalSeconds === null) return null;
-
-		let hours = Math.floor(totalSeconds / (60 * 60));
-		let minutes = Math.floor(totalSeconds / 60);
-		let seconds = Math.floor(totalSeconds % 60);
-
-		if ('DurationFormat' in Intl) {
-			return new Intl.DurationFormat(undefined, {
-				style: 'digital',
-				hoursDisplay: 'auto',
-			}).format({ hours, minutes, seconds });
-		}
-
-		// Fall back to H:m:ss format if Intl.DurationFormat isn't available
-		if (hours > 0) {
-			return `${hours}:${minutes}:${seconds.toString().padStart(2, '0')}`;
-		}
-		else {
-			return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-		}
-	};
-
 	return (
 		<UtilityPopup className="read-aloud-popup">
 			<div className="row buttons" data-tabstop={1}>
@@ -360,13 +338,60 @@ function ReadAloudPopup(props) {
 						<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
 					</div>
 				)}
-				{secondsRemaining !== null && (
-					<div className="row remaining-time">
-						{formatTime(secondsRemaining)}
-					</div>
-				)}
+				<RemainingTime secondsRemaining={secondsRemaining} onOpenLearnMore={onOpenLearnMore}/>
 			</>}
 		</UtilityPopup>
+	);
+}
+
+function RemainingTime(props) {
+	const { l10n } = useLocalization();
+
+	let { secondsRemaining, onOpenLearnMore } = props;
+
+	let secondsRemainingFormatted = useMemo(() => {
+		if (secondsRemaining === null) return null;
+
+		let hours = Math.floor(secondsRemaining / (60 * 60));
+		let minutes = Math.floor(secondsRemaining / 60);
+		let seconds = Math.floor(secondsRemaining % 60);
+
+		if ('DurationFormat' in Intl) {
+			return new Intl.DurationFormat(undefined, {
+				style: 'digital',
+				hoursDisplay: 'auto',
+			}).format({ hours, minutes, seconds });
+		}
+
+		// Fall back to H:m:ss format if Intl.DurationFormat isn't available
+		if (hours > 0) {
+			return `${hours}:${minutes}:${seconds.toString().padStart(2, '0')}`;
+		}
+		else {
+			return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+		}
+	}, [secondsRemaining]);
+
+	if (secondsRemaining === null) {
+		return null;
+	}
+
+	let urgent = secondsRemaining < 60;
+
+	return (
+		<div
+			className="row remaining-time"
+			aria-label={l10n.getString('reader-read-aloud-remaining-time')}
+		>
+			<div className={cx('time-indicator', { urgent })}>
+				<IconClock/>
+				{secondsRemainingFormatted}
+				<button onClick={onOpenLearnMore}>{l10n.getString('reader-read-aloud-learn-more')}</button>
+			</div>
+			{urgent && (
+				<div className="message">{l10n.getString('reader-read-aloud-low-credit-message')}</div>
+			)}
+		</div>
 	);
 }
 
