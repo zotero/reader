@@ -10,7 +10,7 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 		super(voice, segments, backwardStopIndex, forwardStopIndex);
 		this._utterances = segments.map((segment, index) => {
 			let utterance = new SpeechSynthesisUtterance(segment.text);
-			utterance.voice = this._voice.impl;
+			utterance.voice = this.voice.impl;
 			utterance.onstart = () => this._handleSegmentStart(segment, index);
 			utterance.onend = () => this._handleSegmentEnd(segment, index);
 			return utterance;

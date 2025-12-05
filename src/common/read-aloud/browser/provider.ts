@@ -1,7 +1,9 @@
 import { ReadAloudProvider } from '../provider';
 import { BrowserReadAloudVoice } from './voice';
 
-export class BrowserReadAloudProvider implements ReadAloudProvider {
+export class BrowserReadAloudProvider implements ReadAloudProvider<BrowserReadAloudVoice> {
+	readonly creditsRemaining = null;
+
 	async getVoices(): Promise<BrowserReadAloudVoice[]> {
 		if (!window.speechSynthesis.getVoices().length) {
 			await new Promise((resolve) => {
@@ -14,7 +16,7 @@ export class BrowserReadAloudProvider implements ReadAloudProvider {
 			uniqueById.set(voice.voiceURI, voice); // Safari returns duplicates
 		}
 		return Array.from(uniqueById.values())
-			.map(v => new BrowserReadAloudVoice(v))
+			.map(v => new BrowserReadAloudVoice(this, v))
 			.sort((a, b) => b.score - a.score);
 	}
 }

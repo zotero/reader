@@ -108,11 +108,15 @@ async function createReader() {
 		},
 		readAloudRemoteInterface: ZOTERO_API_KEY && {
 			async getVoices() {
-				return fetch('https://api.zotero.org/tts/voices', {
+				let response = await fetch('https://api.zotero.org/tts/voices', {
 					headers: {
 						'Zotero-API-Key': ZOTERO_API_KEY,
 					},
-				}).then(r => r.json());
+				});
+				return {
+					voices: await response.json(),
+					creditsRemaining: parseInt(response.headers.get('Zotero-TTS-Credits-Remaining')),
+				};
 			},
 
 			async getAudio(segment, voice) {
@@ -126,7 +130,7 @@ async function createReader() {
 				});
 				return {
 					audio: await response.blob(),
-					secondsRemaining: parseInt(response.headers.get('Zotero-TTS-Seconds-Remaining')),
+					creditsRemaining: parseInt(response.headers.get('Zotero-TTS-Credits-Remaining')),
 				};
 			}
 		},

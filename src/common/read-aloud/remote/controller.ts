@@ -175,7 +175,8 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let fetchBlob = async () => {
 			let startTime = performance.now();
 
-			let { audio: blob } = await this._voice.impl.remote.getAudio(segment, this._voice.impl.voice);
+			let { audio: blob, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+			this.voice.provider.creditsRemaining = creditsRemaining;
 			if (!blob) {
 				throw new Error('Failed to fetch audio');
 			}
@@ -202,7 +203,7 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 	}
 
 	private _getKey(segment: ReadAloudSegment): string {
-		return JSON.stringify({ voice: this._voice.id, text: segment.text });
+		return JSON.stringify({ voice: this.voice.id, text: segment.text });
 	}
 
 	private _estimatePlaybackTime(segment: ReadAloudSegment): number {

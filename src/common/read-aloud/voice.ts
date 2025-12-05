@@ -1,10 +1,14 @@
 import { ReadAloudGranularity, ReadAloudSegment } from '../types';
 import { ReadAloudController } from './controller';
+import type { ReadAloudProvider } from './provider';
 
-export abstract class ReadAloudVoice<TImpl> {
+export abstract class ReadAloudVoice<TImpl, TProvider extends ReadAloudProvider> {
 	readonly impl: TImpl;
 
-	constructor(impl: TImpl) {
+	readonly provider: TProvider;
+
+	constructor(provider: TProvider, impl: TImpl) {
+		this.provider = provider;
 		this.impl = impl;
 	}
 
@@ -18,9 +22,11 @@ export abstract class ReadAloudVoice<TImpl> {
 
 	abstract readonly segmentGranularity: ReadAloudGranularity;
 
+	abstract readonly creditsPerSecond: number | null;
+
 	abstract getController(
 		segments: ReadAloudSegment[],
 		backwardStopIndex: number | null,
 		forwardStopIndex: number | null
-	): ReadAloudController<ReadAloudVoice<TImpl>>;
+	): ReadAloudController<ReadAloudVoice<TImpl, TProvider>>;
 }

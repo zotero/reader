@@ -2,8 +2,9 @@ import { ReadAloudVoice } from '../voice';
 import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
 import { BrowserReadAloudController } from './controller';
 import { isSafari } from '../../lib/utilities';
+import { BrowserReadAloudProvider } from './provider';
 
-export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice> {
+export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice, BrowserReadAloudProvider> {
 	get id(): string {
 		return this.impl.voiceURI;
 	}
@@ -48,6 +49,10 @@ export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice> 
 
 	get segmentGranularity(): ReadAloudGranularity {
 		return 'sentence';
+	}
+
+	get creditsPerSecond() {
+		return null;
 	}
 
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {

@@ -1,15 +1,16 @@
 import { ReadAloudVoice } from '../voice';
-import { RemoteInterface, RemoteVoiceConfig } from './index';
+import { RemoteVoiceConfig } from './index';
 import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
 import { RemoteReadAloudController } from './controller';
+import { RemoteReadAloudProvider } from './provider';
 
-export class RemoteReadAloudVoice extends ReadAloudVoice<Impl> {
+export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, RemoteReadAloudProvider> {
 	get id() {
-		return this.impl.voice.id;
+		return this.impl.id;
 	}
 
 	get label() {
-		return this.impl.voice.label;
+		return this.impl.label;
 	}
 
 	get lang() {
@@ -24,9 +25,12 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<Impl> {
 		return 'paragraph';
 	}
 
+	get creditsPerSecond() {
+		return this.impl.creditsPerSecond;
+	}
+
 	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
 	}
 }
 
-type Impl = { remote: RemoteInterface, voice: RemoteVoiceConfig };
