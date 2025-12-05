@@ -1,4 +1,5 @@
 import { ReadAloudSegment } from '../../types';
+import { ErrorState } from '../controller';
 
 export type RemoteVoiceConfig = {
 	id: string;
@@ -14,6 +15,7 @@ export type RemoteInterface = {
 
 	getAudio(segment: ReadAloudSegment, voice: RemoteVoiceConfig): Promise<{
 		audio: Blob | null;
-		creditsRemaining: number;
+		creditsRemaining: number | null;
+		error?: ErrorState;
 	}>;
 };

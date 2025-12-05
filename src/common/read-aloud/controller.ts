@@ -19,6 +19,8 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 
 	protected _speed = 1;
 
+	protected _error: ErrorState | null = null;
+
 	get paused() {
 		return this._paused;
 	}
@@ -60,6 +62,10 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 			return null;
 		}
 		return creditsRemaining / creditsPerSecond;
+	}
+
+	get error() {
+		return this._error;
 	}
 
 	private get _currentSegment() {
@@ -142,6 +148,11 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		}
 	}
 }
+
+export type ErrorState =
+	| 'quota-exceeded'
+	| 'network'
+	| 'unknown';
 
 export class ReadAloudEvent extends Event {
 	segment: ReadAloudSegment | null;

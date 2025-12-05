@@ -104,6 +104,12 @@
 				font-size: 11px;
 			}
 		}
+
+		&.error {
+			color: var(--accent-red);
+			font-size: 11px;
+			justify-content: center;
+		}
 	}
 }
 

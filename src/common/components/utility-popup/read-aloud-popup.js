@@ -28,6 +28,7 @@ function ReadAloudPopup(props) {
 	let [controller, setController] = useState(null);
 	let [isBuffering, setBuffering] = useState(false);
 	let [secondsRemaining, setSecondsRemaining] = useState(null);
+	let [error, setError] = useState(null);
 
 	let showSpinner = !params.segments || isBuffering;
 
@@ -181,6 +182,9 @@ function ReadAloudPopup(props) {
 				activeSegment: null
 			});
 		});
+		controller.addEventListener('error', () => {
+			setError(controller.error);
+		});
 	}, [controller, onChange]);
 
 	useEffect(() => {
@@ -203,9 +207,14 @@ function ReadAloudPopup(props) {
 			setAllVoices([]);
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
 			let browserProvider = new BrowserReadAloudProvider();
+
+			let handleError = (e) => {
+				console.error(e);
+				return [];
+			};
 			let [remoteVoices, browserVoices] = await Promise.all([
-				remoteProvider.getVoices(),
-				browserProvider.getVoices(),
+				remoteProvider.getVoices().catch(handleError),
+				browserProvider.getVoices().catch(handleError),
 			]);
 			setAllVoices([...remoteVoices, ...browserVoices]);
 		};
@@ -323,7 +332,7 @@ function ReadAloudPopup(props) {
 						))}
 					</Select>
 				)}
-				{voicesForSelection.length && (
+				{!!voicesForSelection.length && (
 					<div className="row voices" data-tabstop={1}>
 						<Select
 							value={params.voice || ''}
@@ -338,8 +347,13 @@ function ReadAloudPopup(props) {
 						<button className="help-button" aria-label={l10n.getString('general-help')}>?</button>
 					</div>
 				)}
-				<RemainingTime secondsRemaining={secondsRemaining} onOpenLearnMore={onOpenLearnMore}/>
+				{secondsRemaining !== null && (
+					<RemainingTime secondsRemaining={secondsRemaining} onOpenLearnMore={onOpenLearnMore}/>
+				)}
 			</>}
+			{error !== null && error !== 'quota-exceeded' && (
+				<ErrorMessage error={error}/>
+			)}
 		</UtilityPopup>
 	);
 }
@@ -372,10 +386,6 @@ function RemainingTime(props) {
 		}
 	}, [secondsRemaining]);
 
-	if (secondsRemaining === null) {
-		return null;
-	}
-
 	let urgent = secondsRemaining < 60;
 
 	return (
@@ -391,6 +401,21 @@ function RemainingTime(props) {
 			{urgent && (
 				<div className="message">{l10n.getString('reader-read-aloud-low-credit-message')}</div>
 			)}
+		</div>
+	);
+}
+
+function ErrorMessage(props) {
+	const { l10n } = useLocalization();
+
+	let { error } = props;
+
+	return (
+		<div
+			className="row error"
+			aria-label={l10n.getString('reader-read-aloud-error')}
+		>
+			{l10n.getString(`reader-read-aloud-error-${error}`)}
 		</div>
 	);
 }

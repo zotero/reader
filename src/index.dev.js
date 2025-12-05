@@ -113,6 +113,9 @@ async function createReader() {
 						'Zotero-API-Key': ZOTERO_API_KEY,
 					},
 				});
+				if (!response.ok) {
+					throw new Error('Failed to fetch voices from API');
+				}
 				return {
 					voices: await response.json(),
 					creditsRemaining: parseInt(response.headers.get('Zotero-TTS-Credits-Remaining')),
@@ -123,14 +126,45 @@ async function createReader() {
 				let params = new URLSearchParams();
 				params.set('text', segment.text);
 				params.set('voice', voice.id);
-				let response = await fetch('https://api.zotero.org/tts/speak?' + params, {
-					headers: {
-						'Zotero-API-Key': ZOTERO_API_KEY,
-					},
-				});
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/speak?' + params, {
+						headers: {
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+					});
+				}
+				catch {
+					return {
+						audio: null,
+						creditsRemaining: null,
+						error: 'network',
+					};
+				}
+
+				let creditsRemaining = parseInt(response.headers.get('Zotero-TTS-Credits-Remaining'));
+				if (isNaN(creditsRemaining)) {
+					creditsRemaining = null;
+				}
+
+				if (response.status === 402) {
+					return {
+						audio: null,
+						creditsRemaining,
+						error: 'quota-exceeded',
+					};
+				}
+				else if (!response.ok) {
+					return {
+						audio: null,
+						creditsRemaining,
+						error: 'unknown',
+					};
+				}
+
 				return {
 					audio: await response.blob(),
-					creditsRemaining: parseInt(response.headers.get('Zotero-TTS-Credits-Remaining')),
+					creditsRemaining,
 				};
 			}
 		},

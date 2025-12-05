@@ -194,19 +194,33 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let fetchBlob = async () => {
 			let startTime = performance.now();
 
-			let { audio: blob, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
 
 			let creditsBefore = this.voice.provider.creditsRemaining;
+
+			// If we haven't initialized this._creditsRemaining yet, set it to pre-request value
+			// so we can count down as this segment plays
 			if (this._creditsRemaining === null) {
 				this._creditsRemaining = creditsBefore;
 			}
+			// If the TTS service didn't return a creditsRemaining value (as in a fatal error),
+			// assume it's whatever we had before
+			if (creditsRemaining === null) {
+				creditsRemaining = creditsBefore;
+			}
+
 			this.voice.provider.creditsRemaining = creditsRemaining;
 			this._creditsConsumed.set(key, creditsBefore - creditsRemaining);
 
-			if (!blob) {
+			if (!audio) {
+				if (error) {
+					this._error = error;
+					this.dispatchEvent(new Event('error'));
+					console.error(error);
+				}
 				throw new Error('Failed to fetch audio');
 			}
-			this._blobs.set(key, blob);
+			this._blobs.set(key, audio);
 
 			// Update fetch time EMA
 			let endTime = performance.now();
@@ -220,7 +234,7 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 						+ (1 - EXP_MOVING_AVERAGE_ALPHA) * this._averageFetchTimePerChar;
 				}
 			}
-			return blob;
+			return audio;
 		};
 
 		inflight = fetchBlob().finally(() => this._fetching.delete(key));
