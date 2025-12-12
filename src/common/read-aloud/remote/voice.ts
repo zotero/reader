@@ -25,7 +25,7 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 	}
 
 	get segmentGranularity(): ReadAloudGranularity {
-		return 'paragraph';
+		return 'sentence';
 	}
 
 	get creditsPerSecond() {
