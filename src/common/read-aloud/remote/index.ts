@@ -1,10 +1,11 @@
-import { ReadAloudSegment } from '../../types';
+import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
 import { ErrorState } from '../controller';
 
 export type RemoteVoiceConfig = {
 	id: string;
 	label: string;
 	creditsPerSecond: number;
+	segmentGranularity: ReadAloudGranularity;
 };
 
 export type RemoteInterface = {
