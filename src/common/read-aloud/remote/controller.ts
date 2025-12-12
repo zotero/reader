@@ -60,6 +60,10 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let index = this._position;
 		let segment = this._segments[index];
 
+		if (!segment) {
+			return;
+		}
+
 		this.buffering = true;
 		this._getBlob(segment)
 			.then((blob) => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import cx from 'classnames';
 
 import UtilityPopup from './common/utility-popup';
@@ -16,6 +16,8 @@ import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
 import { BrowserReadAloudVoice } from '../../read-aloud/browser/voice';
 
+const URGENT_THRESHOLD_SECONDS = 60;
+
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
@@ -29,6 +31,7 @@ function ReadAloudPopup(props) {
 	let [isBuffering, setBuffering] = useState(false);
 	let [secondsRemaining, setSecondsRemaining] = useState(null);
 	let [error, setError] = useState(null);
+	let [pausedAfterQuotaExhausted, setPausedAfterQuotaExhausted] = useState(false);
 
 	let showSpinner = !params.segments || isBuffering;
 
@@ -183,6 +186,9 @@ function ReadAloudPopup(props) {
 			});
 		});
 		controller.addEventListener('error', () => {
+			if (controller.error === 'quota-exceeded') {
+				setShowOptions(true);
+			}
 			setError(controller.error);
 		});
 	}, [controller, onChange]);
@@ -195,6 +201,18 @@ function ReadAloudPopup(props) {
 
 		let updateRemaining = () => {
 			setSecondsRemaining(controller.secondsRemaining);
+			if (controller.secondsRemaining !== null && controller.secondsRemaining < URGENT_THRESHOLD_SECONDS) {
+				setShowOptions(true);
+			}
+			if (controller.secondsRemaining === 0 && !params.paused) {
+				if (pausedAfterQuotaExhausted) {
+					setVoiceMode('browser');
+				}
+				else {
+					onChange({ paused: true });
+					setPausedAfterQuotaExhausted(true);
+				}
+			}
 		};
 		updateRemaining();
 
@@ -386,7 +404,7 @@ function RemainingTime(props) {
 		}
 	}, [secondsRemaining]);
 
-	let urgent = secondsRemaining < 60;
+	let urgent = secondsRemaining < URGENT_THRESHOLD_SECONDS;
 
 	return (
 		<div
