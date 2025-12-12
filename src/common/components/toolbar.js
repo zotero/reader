@@ -13,6 +13,7 @@ import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
 import IconChevronUp from '../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../res/icons/20/chevron-down.svg';
 import IconFormatText from '../../../res/icons/20/format-text.svg';
+import IconFormatTextReadingMode from '../../../res/icons/20/format-text-reading-mode.svg';
 import IconHighlight from '../../../res/icons/20/annotate-highlight.svg';
 import IconUnderline from '../../../res/icons/20/annotate-underline.svg';
 import IconNote from '../../../res/icons/20/annotate-note.svg';
@@ -112,7 +113,7 @@ function Toolbar(props) {
 					title={l10n.getString('reader-appearance')}
 					tabIndex={-1}
 					onClick={() => props.onToggleAppearancePopup()}
-				>{props.readingModeEnabled ? <IconFormatTextFocus/> : <IconFormatText/>}</button>
+				>{props.readingModeEnabled ? <IconFormatTextReadingMode/> : <IconFormatText/>}</button>
 				<div className="divider"/>
 				<button
 					id="navigateBack"
