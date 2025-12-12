@@ -201,10 +201,15 @@ function ReadAloudPopup(props) {
 
 		let updateRemaining = () => {
 			setSecondsRemaining(controller.secondsRemaining);
-			if (controller.secondsRemaining !== null && controller.secondsRemaining < URGENT_THRESHOLD_SECONDS) {
+
+			let isQuotaExhausted = controller.error === 'quota-exhausted' || controller.secondsRemaining === 0;
+			let isQuotaLow = isQuotaExhausted
+				|| (controller.secondsRemaining !== null
+					&& controller.secondsRemaining < URGENT_THRESHOLD_SECONDS);
+			if (isQuotaLow) {
 				setShowOptions(true);
 			}
-			if (controller.secondsRemaining === 0 && !params.paused) {
+			if (isQuotaExhausted && !params.paused) {
 				if (pausedAfterQuotaExhausted) {
 					setVoiceMode('browser');
 				}
