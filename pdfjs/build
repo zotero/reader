@@ -1,16 +1,15 @@
 #!/bin/bash
 
 # Set paths for the PDF.js build and target directories
-PDFJS_BUILD=./pdfjs/pdf.js/build/generic-legacy
-PDFJS_MINIFIED_BUILD=./pdfjs/pdf.js/build/minified-legacy
+PDFJS_BUILD=./pdfjs/pdf.js/build/generic
+PDFJS_MINIFIED_BUILD=./pdfjs/pdf.js/build/minified
 BUILD_BASE=./build
 
 # Move into the PDF.js directory, install dependencies, and build
 cd pdfjs/pdf.js
 npm ci
-# Zotero with FF 115 ESR runs only the `legacy` build
-npx gulp generic-legacy
-npx gulp minified-legacy
+npx gulp generic
+npx gulp minified
 cd ../../
 
 # Set up directories for dev build
