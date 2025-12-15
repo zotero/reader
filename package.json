@@ -3,9 +3,10 @@
 	"version": "2.0.0",
 	"description": "Zotero Reader",
 	"scripts": {
-		"build": "npm run build:pdf.js && npm run build:reader",
+		"build": "npm run build:all",
 		"build:pdf.js": "sh pdfjs/build",
-		"build:reader": "webpack",
+		"build:all": "npm run build:pdf.js && webpack",
+		"build:zotero": "npm run build:pdf.js && webpack --config-name zotero",
 		"build:ios": "webpack --config-name ios",
 		"build:android": "webpack --config-name android",
 		"start": "webpack-dev-server --mode development --config-name dev",
