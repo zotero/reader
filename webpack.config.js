@@ -38,73 +38,7 @@ function generateReaderConfig(build) {
 			],
 		},
 		module: {
-			rules: [
-				{
-					test: /\.(ts|js)x?$/,
-					exclude: /node_modules/,
-					use: {
-						loader: 'babel-loader',
-						options: {
-							presets: [
-								['@babel/preset-env', {
-									useBuiltIns: false,
-									targets: build === 'zotero' || build === 'dev'
-										? { firefox: 115, chrome: 128 }
-										: undefined
-								}],
-							],
-						},
-					},
-				},
-				build === 'dev' && {
-					test: /\.tsx?$/,
-					exclude: /node_modules/,
-					use: 'ts-loader',
-				},
-				{
-					test: /\.s?css$/,
-					exclude: path.resolve(__dirname, './src/dom'),
-					use: [
-						MiniCssExtractPlugin.loader,
-						{
-							loader: 'css-loader',
-						},
-						{
-							loader: 'postcss-loader',
-						},
-						{
-							loader: 'sass-loader',
-							options: {
-								additionalData: `$platform: '${build}';`
-							}
-						},
-					],
-				},
-				{
-					test: /\.scss$/,
-					include: path.resolve(__dirname, './src/dom'),
-					use: [
-						{
-							loader: 'raw-loader',
-						},
-						{
-							loader: 'sass-loader',
-							options: {
-								additionalData: `$platform: '${build}';`
-							}
-						}
-					]
-				},
-				{
-					test: /\.svg$/i,
-					issuer: /\.[jt]sx?$/,
-					use: ['@svgr/webpack'],
-				},
-				{
-					test: /\.ftl$/,
-					type: 'asset/source'
-				}
-			].filter(Boolean)
+			rules: generateRules(build),
 		},
 		resolve: {
 			extensions: ['.js', '.ts', '.tsx'],
@@ -216,63 +150,7 @@ function generateViewConfig(build) {
 			minimizer: [new CssMinimizerPlugin(), '...'], // ... is for built-in TerserPlugin https://webpack.js.org/configuration/optimization/#optimizationminimizer
 		},
 		module: {
-			rules: [
-				{
-					test: /\.(js|jsx)$/,
-					exclude: /node_modules/,
-					use: {
-						loader: 'babel-loader',
-						options: {
-							presets: [
-								['@babel/preset-env', { useBuiltIns: false }],
-							],
-						},
-					},
-				},
-				{
-					test: /\.tsx?$/,
-					exclude: /node_modules/,
-					use: {
-						loader: 'ts-loader',
-						options: {
-							compilerOptions: {
-								target: 'ES2022'
-							}
-						}
-					},
-				},
-				{
-					test: /\.s?css$/,
-					exclude: path.resolve(__dirname, './src/dom'),
-					use: [
-						MiniCssExtractPlugin.loader,
-						{
-							loader: 'css-loader',
-						},
-						{
-							loader: 'postcss-loader',
-						},
-						{
-							loader: 'sass-loader',
-						},
-					]
-				},
-				{
-					test: /\.scss$/,
-					include: path.resolve(__dirname, './src/dom'),
-					use: [
-						{
-							loader: 'raw-loader',
-						},
-						{
-							loader: 'sass-loader',
-							options: {
-								additionalData: `$platform: '${build}';`
-							}
-						}
-					]
-				}
-			],
+			rules: generateRules(build),
 		},
 		resolve: {
 			extensions: ['.js', '.ts', '.tsx']
@@ -320,6 +198,79 @@ function generateViewConfig(build) {
 	}
 
 	return config;
+}
+
+function generateRules(build) {
+	return [
+		{
+			test: /\.(ts|js)x?$/,
+			include: path.resolve(__dirname, './src'),
+			use: {
+				loader: 'babel-loader',
+				options: {
+					presets: [
+						['@babel/preset-env', {
+							useBuiltIns: false,
+							targets: build === 'zotero' || build === 'dev'
+								? { firefox: 115, chrome: 128 }
+								: undefined
+						}],
+					],
+				},
+			},
+		},
+		build.endsWith('dev') && {
+			test: /\.tsx?$/,
+			include: path.resolve(__dirname, './src'),
+			use: 'ts-loader',
+		},
+		{
+			test: /\.s?css$/,
+			include: path.resolve(__dirname, './src'),
+			exclude: path.resolve(__dirname, './src/dom'),
+			use: [
+				MiniCssExtractPlugin.loader,
+				{
+					loader: 'css-loader',
+				},
+				{
+					loader: 'postcss-loader',
+				},
+				{
+					loader: 'sass-loader',
+					options: {
+						additionalData: `$platform: '${build}';`
+					}
+				},
+			],
+		},
+		{
+			test: /\.scss$/,
+			include: path.resolve(__dirname, './src/dom'),
+			use: [
+				{
+					loader: 'raw-loader',
+				},
+				{
+					loader: 'sass-loader',
+					options: {
+						additionalData: `$platform: '${build}';`
+					}
+				}
+			]
+		},
+		{
+			test: /\.svg$/i,
+			include: path.resolve(__dirname, './res/icons'),
+			issuer: /\.[jt]sx?$/,
+			use: ['@svgr/webpack'],
+		},
+		{
+			test: /\.ftl$/,
+			include: path.resolve(__dirname, './locales'),
+			type: 'asset/source'
+		},
+	];
 }
 
 module.exports = [
