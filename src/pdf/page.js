@@ -150,11 +150,10 @@ class Renderer {
 		}
 
 		let { viewport } = this._originalPage;
-		let t1 = viewport.transform;
-		let t2 = [1, 0, 0, 1, -detailArea.minX * devicePixelRatio + t1[4], -detailArea.minY * devicePixelRatio + t1[5]];
-		let extraScale = [devicePixelRatio, 0, 0, devicePixelRatio, 0, 0];
-		let tm = transform(t1, extraScale);
-		tm = transform(t2, tm);
+		let tm = viewport.transform.slice();
+		tm[4] -= detailArea.minX;
+		tm[5] -= detailArea.minY;
+		tm = transform([devicePixelRatio, 0, 0, devicePixelRatio, 0, 0], tm);
 		return tm;
 	}
 
