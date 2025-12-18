@@ -19,6 +19,13 @@
 	}
 }
 
+// Safari: Scale each annotation, because scaling applied to other elements
+// doesn't affect getClientRects()
+:host(:is(:root.is-safari *)) .annotation-container {
+	scale: var(--scale, none);
+	transform-origin: 0 0;
+}
+
 // :focus instead of :focus-visible because Chromium doesn't support :focus-visible
 // on SVG elements
 #annotation-render-root:not(.keyboard-focus) *:focus {

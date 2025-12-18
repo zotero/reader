@@ -33,7 +33,7 @@ import injectCSS from './stylesheets/inject.scss';
 import darkReaderJS from '!!raw-loader!darkreader/darkreader';
 import type { DynamicThemeFix } from "darkreader";
 import { isPageRectVisible } from "../common/lib/rect";
-import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
+import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
 import { ReadingMode } from "./reading-mode";
@@ -631,11 +631,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _setScale(scale: number) {
 		this.scale = scale;
 
-		if (this._options.onSetZoom) {
-			this._options.onSetZoom(this._iframe, scale);
-			// Store the scale factor so we can adjust clientX/clientY coordinates when opening popups
-			// TODO: Use CSS zoom instead of onSetZoom() when Zotero is on fx>=126
-			this._iframeCoordScaleFactor = scale;
+		let scaleString = scale.toFixed(3);
+		if (CSS.supports('scale', scaleString)) {
+			this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
+			if (isSafari) {
+				// Scaling doesn't affect getClientRects() in Safari
+				this._iframeCoordScaleFactor = scale;
+			}
 		}
 		else {
 			if (scale == 1) {
