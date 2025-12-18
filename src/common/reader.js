@@ -941,7 +941,11 @@ class Reader {
 		this._handleReadAloudStateChange({ paused });
 	}
 
-	startReadAloudAtPosition(position) {
+	startReadAloudAtPosition(position = null) {
+		if (!position && this._state[this._lastView + 'SelectionPopup']) {
+			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
+		}
+		position ??= null;
 		this._handleReadAloudStateChange({
 			popupOpen: true,
 			active: true,
