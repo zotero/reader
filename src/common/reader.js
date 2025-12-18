@@ -942,8 +942,8 @@ class Reader {
 	}
 
 	startReadAloudAtPosition(position) {
-		this._ensureType('pdf', 'epub', 'snapshot');
 		this._handleReadAloudStateChange({
+			popupOpen: true,
 			active: true,
 			paused: false,
 			segments: null,
