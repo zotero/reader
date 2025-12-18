@@ -342,6 +342,11 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
+			else if (key === 'Space' && this._reader._state.readAloudState.active) {
+				event.preventDefault();
+				event.stopPropagation();
+				this._reader.toggleReadAloudPaused();
+			}
 		}
 	}
 
