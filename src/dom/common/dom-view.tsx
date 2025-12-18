@@ -1383,8 +1383,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		if (event.button !== 0
-				|| this._options.mobile && this._pointerMovedWhileDown
-				|| !this._options.mobile && this._selectedAnnotationIDs.length) {
+				|| this._options.mobile && this._pointerMovedWhileDown) {
 			return;
 		}
 
