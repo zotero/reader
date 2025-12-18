@@ -49,12 +49,30 @@ function ReadAloudPopup(props) {
 		let controller = voice.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
 
+		controller.addEventListener('BufferingChange', () => {
+			setBuffering(controller.buffering);
+		});
+		controller.addEventListener('ActiveSegmentChange', (event) => {
+			onChange({ activeSegment: event.segment });
+		});
+		controller.addEventListener('Complete', () => {
+			onChange({
+				paused: true,
+				activeSegment: null
+			});
+		});
+		controller.addEventListener('error', () => {
+			if (controller.error === 'quota-exceeded') {
+				setShowOptions(true);
+			}
+			setError(controller.error);
+		});
+
 		let voiceMode = voice instanceof BrowserReadAloudVoice ? 'browser' : 'remote';
 		setVoiceMode(voiceMode);
 
 		return () => {
 			controller.destroy();
-			setBuffering(false);
 		};
 	}, [allVoices, onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
 
@@ -168,30 +186,6 @@ function ReadAloudPopup(props) {
 		}
 		controller.paused = params.paused;
 	}, [controller, params.paused]);
-
-	useEffect(() => {
-		if (!controller) {
-			return;
-		}
-		controller.addEventListener('BufferingChange', () => {
-			setBuffering(controller.buffering);
-		});
-		controller.addEventListener('ActiveSegmentChange', (event) => {
-			onChange({ activeSegment: event.segment });
-		});
-		controller.addEventListener('Complete', () => {
-			onChange({
-				paused: true,
-				activeSegment: null
-			});
-		});
-		controller.addEventListener('error', () => {
-			if (controller.error === 'quota-exceeded') {
-				setShowOptions(true);
-			}
-			setError(controller.error);
-		});
-	}, [controller, onChange]);
 
 	useEffect(() => {
 		if (!controller) {
