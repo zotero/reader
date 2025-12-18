@@ -594,7 +594,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		};
 	}
 
-	protected _handleViewUpdate() {
+	protected _handleViewUpdate(synchronous = true) {
 		if (!this.initialized) {
 			return;
 		}
@@ -602,7 +602,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._updateViewStats();
 		this._displayedAnnotationCache = new WeakMap();
 		this._boundingPageRectCache = new WeakMap();
-		this._renderAnnotations(true);
+		this._renderAnnotations(synchronous);
 		this._repositionPopups();
 	}
 

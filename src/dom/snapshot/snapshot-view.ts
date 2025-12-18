@@ -648,7 +648,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				this._readingMode.enabled = false;
 			}
 		});
-		this._handleViewUpdate();
+		this._handleViewUpdate(false);
 
 		if (segmentsWithReadingModeEnabled.length) {
 			return segmentsWithReadingModeEnabled.map(r => r.toRange());
