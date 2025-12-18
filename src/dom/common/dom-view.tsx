@@ -1972,6 +1972,34 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (state.activeSegment?.position) {
 			let { range } = state.activeSegment.position as RangeRef;
+			let segments = state.segments!;
+			if (state.segmentGranularity === 'sentence') {
+				// Highlight the whole paragraph
+				let firstRangeInParagraph: PersistentRange | null = null;
+				for (let i = segments.indexOf(state.activeSegment); i >= 0; i--) {
+					firstRangeInParagraph = (segments[i].position as RangeRef).range;
+					if (segments[i].anchor === 'paragraphStart') {
+						break;
+					}
+				}
+				let lastRangeInParagraph: PersistentRange | null = null;
+				for (let i = segments.indexOf(state.activeSegment) + 1; i < segments.length; i++) {
+					if (segments[i].anchor === 'paragraphStart') {
+						break;
+					}
+					lastRangeInParagraph = (segments[i].position as RangeRef).range;
+				}
+				range = range.clone();
+				if (firstRangeInParagraph) {
+					range.startContainer = firstRangeInParagraph.startContainer;
+					range.startOffset = firstRangeInParagraph.startOffset;
+				}
+				if (lastRangeInParagraph) {
+					range.endContainer = lastRangeInParagraph.endContainer;
+					range.endOffset = lastRangeInParagraph.endOffset;
+				}
+			}
+
 			let selector = this.toSelector(range.toRange());
 			if (selector) {
 				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);

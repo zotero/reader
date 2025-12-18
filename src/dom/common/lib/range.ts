@@ -42,6 +42,10 @@ export class PersistentRange {
 		return range;
 	}
 
+	clone() {
+		return new PersistentRange(this);
+	}
+
 	toString(): string {
 		return this.toRange().toString();
 	}
