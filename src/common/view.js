@@ -215,6 +215,10 @@ class View {
 		this._view.zoomOut();
 	}
 
+	zoomBy(delta) {
+		this._view.zoomBy(delta);
+	}
+
 	zoomReset() {
 		this._view.zoomReset();
 	}
