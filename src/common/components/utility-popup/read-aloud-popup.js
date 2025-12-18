@@ -10,7 +10,7 @@ import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import IconLoading from '../../../../res/icons/16/loading.svg';
 import IconClock from '../../../../res/icons/12/clock.svg';
-import { useLocalization } from '@fluent/react';
+import { Localized, useLocalization } from '@fluent/react';
 import Select from '../common/select';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
@@ -21,7 +21,7 @@ const URGENT_THRESHOLD_SECONDS = 60;
 function ReadAloudPopup(props) {
 	const { l10n } = useLocalization();
 
-	let { params, voices: persistedVoices, remoteInterface, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onClose } = props;
+	let { params, voices: persistedVoices, remoteInterface, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onClose, onLogIn } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
@@ -230,13 +230,13 @@ function ReadAloudPopup(props) {
 				return [];
 			};
 			let [remoteVoices, browserVoices] = await Promise.all([
-				remoteProvider.getVoices().catch(handleError),
+				loggedIn ? remoteProvider.getVoices().catch(handleError) : [],
 				browserProvider.getVoices().catch(handleError),
 			]);
 			setAllVoices([...remoteVoices, ...browserVoices]);
 		};
 		fetchVoicesAndSet();
-	}, [remoteInterface]);
+	}, [loggedIn, remoteInterface]);
 
 	useEffect(() => {
 		if (params.voice && voicesForSelection.some(v => v.id === params.voice)) {
@@ -328,15 +328,26 @@ function ReadAloudPopup(props) {
 					/>
 					<label htmlFor="read-aloud-speed">{(speedWhileDragging ?? params.speed).toFixed(1)}×</label>
 				</div>
-				<Select
-					aria-label={l10n.getString('reader-read-aloud-voice-mode')}
-					value={voiceMode ?? 'remote'}
-					tabIndex="-1"
-					onChange={handleVoiceModeChange}
-				>
-					<option value="remote">{l10n.getString('reader-read-aloud-voice-mode-remote')}</option>
-					<option value="browser">{l10n.getString('reader-read-aloud-voice-mode-browser')}</option>
-				</Select>
+				{loggedIn && (
+					<Select
+						aria-label={l10n.getString('reader-read-aloud-voice-mode')}
+						value={voiceMode ?? 'remote'}
+						tabIndex="-1"
+						onChange={handleVoiceModeChange}
+					>
+						<option value="remote">{l10n.getString('reader-read-aloud-voice-mode-remote')}</option>
+						<option value="browser">{l10n.getString('reader-read-aloud-voice-mode-browser')}</option>
+					</Select>
+				)}
+				{!loggedIn && (
+					<div className="row log-in">
+						<Localized id="reader-read-aloud-log-in" elems={{
+							'log-in': <button data-l10n-name="log-in" onClick={onLogIn}></button>,
+						}}>
+							<span/>
+						</Localized>
+					</div>
+				)}
 				{voiceMode === 'browser' && (
 					<Select
 						aria-label="reader-read-aloud-language"

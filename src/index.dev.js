@@ -43,6 +43,7 @@ async function createReader() {
 		toolbarPlaceholderWidth: 0,
 		authorName: 'John',
 		showAnnotations: true,
+		loggedIn: false,
 		// platform: 'web',
 		// password: 'test',
 		onOpenContextMenu(params) {
@@ -168,6 +169,9 @@ async function createReader() {
 				};
 			}
 		},
+		onLogIn() {
+			reader.setLoggedIn(true);
+		}
 	});
 	reader.enableAddToNote(true);
 	window._reader = reader;

@@ -78,6 +78,7 @@ class Reader {
 		this._onSetZoom = options.onSetZoom;
 		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
 		this._onSetReadAloudStatus = options.onSetReadAloudStatus;
+		this._onLogIn = options.onLogIn;
 
 		if (Array.isArray(options.ftl)) {
 			for (let ftl of options.ftl) {
@@ -169,6 +170,7 @@ class Reader {
 			},
 			readOnly: options.readOnly !== undefined ? options.readOnly : false,
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
+			loggedIn: options.loggedIn ?? false,
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			hyphenate: options.hyphenate,
@@ -442,6 +444,7 @@ class Reader {
 							}
 							this._updateState({ themePopup: null, customThemes, lightTheme, darkTheme });
 						}}
+						onLogIn={this._onLogIn}
 					/>
 				</ReaderContext.Provider>
 			);
@@ -1657,6 +1660,10 @@ class Reader {
 
 	setToolbarPlaceholderWidth(width) {
 		this._updateState({ toolbarPlaceholderWidth: width });
+	}
+
+	setLoggedIn(loggedIn) {
+		this._updateState({ loggedIn });
 	}
 
 	focusView(primary = true) {

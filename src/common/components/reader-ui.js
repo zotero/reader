@@ -264,11 +264,13 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						params={state.readAloudState}
 						voices={props.readAloudVoices}
 						remoteInterface={props.readAloudRemoteInterface}
+						loggedIn={state.loggedIn}
 						onChange={props.onChangeReadAloudState}
 						onSetVoice={props.onSetReadAloudVoice}
 						onOpenVoicePreferences={props.onOpenVoicePreferences}
 						onOpenLearnMore={props.onOpenReadAloudLearnMore}
 						onClose={() => props.onToggleReadAloud(false)}
+						onLogIn={props.onLogIn}
 					/>
 				)}
 				<div id="a11yAnnouncement" aria-live="polite"></div>
