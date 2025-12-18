@@ -195,10 +195,16 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let inflight = this._fetching.get(key);
 		if (inflight) return inflight;
 
-		let fetchBlob = async () => {
+		let fetchBlob = async (retriesRemaining = 2) => {
 			let startTime = performance.now();
 
 			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+
+			// Silently retry twice if we get a non-quota error
+			if (error && error !== 'quota-exceeded' && retriesRemaining) {
+				console.warn('Retrying fetch after error', error);
+				return fetchBlob(retriesRemaining - 1);
+			}
 
 			let creditsBefore = this.voice.provider.creditsRemaining;
 
