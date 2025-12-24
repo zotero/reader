@@ -212,6 +212,11 @@ export function splitRangeToSentences(range: Range, { keepWhitespace = false } =
 		}
 	}
 
+	// Normalize all whitespace to space characters, because Range#toString()
+	// returns invisible newlines in the HTML, and the segmenter will treat
+	// those as meaningful.
+	text = text.replace(/\s/g, ' ');
+
 	let segmenter = new Intl.Segmenter(getLang(range.commonAncestorContainer), {
 		granularity: 'sentence',
 	});
