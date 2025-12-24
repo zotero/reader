@@ -381,10 +381,17 @@ export function splitRanges(
  * at offset 0 to nodeD at offset 9, the output of makeRangeSpanning(rangeA, rangeB) would be a
  * range from nodeA at offset 5 to nodeD at offset 9.
  */
-export function makeRangeSpanning(...ranges: Range[]): Range {
+export function makeRangeSpanning(ranges: Range[], sorted = false): Range {
 	if (!ranges.length) {
 		return document.createRange();
 	}
+	if (sorted) {
+		let range = ranges[0].cloneRange();
+		let lastRange = ranges[ranges.length - 1];
+		range.setEnd(lastRange.endContainer, lastRange.endOffset);
+		return range;
+	}
+
 	let result = ranges[0].cloneRange();
 	for (let i = 1; i < ranges.length; i++) {
 		let range = ranges[i];

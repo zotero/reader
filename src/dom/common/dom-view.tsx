@@ -443,7 +443,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		let range: Range;
 		if (type === 'highlight' || type === 'underline') {
-			range = makeRangeSpanning(...getSelectionRanges(selection));
+			range = makeRangeSpanning(getSelectionRanges(selection));
 		}
 		else if (type === 'note') {
 			let element = closestElement(selection.getRangeAt(0).commonAncestorContainer);
@@ -726,7 +726,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (selection.isCollapsed) {
 			return;
 		}
-		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
+		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(getSelectionRanges(selection)));
 		// Split the selection into its column-separated parts and get the
 		// bounding rect encompassing the visible ones. This gives us a more
 		// accurate anchor for the popup.
@@ -1973,7 +1973,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (state.activeSegment?.position) {
 			let { range } = state.activeSegment.position as RangeRef;
 			let segments = state.segments!;
-			if (state.segmentGranularity === 'sentence') {
+			if (state.segmentGranularity !== 'paragraph') {
 				// Highlight the whole paragraph
 				let firstRangeInParagraph: PersistentRange | null = null;
 				for (let i = segments.indexOf(state.activeSegment); i >= 0; i--) {
@@ -2166,6 +2166,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (granularity === 'sentence') {
 			elementRanges = elementRanges.flatMap(range => splitRangeToSentences(range));
+		}
+		else if (granularity === 'paragraphWithInitialSentence') {
+			// Split each paragraph into first sentence + rest of paragraph
+			elementRanges = elementRanges.flatMap((range) => {
+				let sentences = splitRangeToSentences(range);
+				if (sentences.length <= 1) {
+					return sentences;
+				}
+				let firstRange = sentences[0];
+				let restRange = makeRangeSpanning(sentences.slice(1), true);
+				return [firstRange, restRange];
+			});
 		}
 
 		return elementRanges;
