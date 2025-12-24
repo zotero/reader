@@ -240,6 +240,7 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		if (params.voice && voicesForSelection.some(v => v.id === params.voice)) {
+			onSetVoice(resolvedLang, params.voice, params.speed);
 			return;
 		}
 
