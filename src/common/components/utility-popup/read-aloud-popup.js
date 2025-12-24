@@ -46,7 +46,11 @@ function ReadAloudPopup(props) {
 			setController(null);
 			return undefined;
 		}
-		let controller = voice.getController(params.segments, params.backwardStopIndex, params.forwardStopIndex);
+		let backwardStopIndex = params.backwardStopIndex;
+		if (params.segments && params.activeSegment) {
+			backwardStopIndex = params.segments.indexOf(params.activeSegment);
+		}
+		let controller = voice.getController(params.segments, backwardStopIndex, params.forwardStopIndex);
 		setController(controller);
 
 		controller.addEventListener('BufferingChange', () => {
