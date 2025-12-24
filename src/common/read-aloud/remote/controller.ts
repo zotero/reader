@@ -67,11 +67,13 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		this.buffering = true;
 		this._getBlob(segment)
 			.then((blob) => {
-				// If position changed or reading was paused while loading, don't start
-				if (this._destroyed || this._paused || this._position !== index) {
+				if (this._position !== index) {
 					return;
 				}
 				this.buffering = false;
+				if (this._destroyed || this._paused) {
+					return;
+				}
 
 				this._currentIndex = index;
 				this._handleSegmentStart(segment, index);
