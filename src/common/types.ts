@@ -200,7 +200,7 @@ export type ReadAloudSegment = {
 	anchor: 'paragraphStart' | null;
 };
 
-export type ReadAloudGranularity = 'paragraph' | 'sentence';
+export type ReadAloudGranularity = 'paragraph' | 'paragraphWithInitialSentence' | 'sentence';
 
 export type MaybePromise<T> = Promise<T> | T;
 

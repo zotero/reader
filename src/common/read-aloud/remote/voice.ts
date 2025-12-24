@@ -25,6 +25,9 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 	}
 
 	get segmentGranularity(): ReadAloudGranularity {
+		if (this.impl.segmentGranularity === 'paragraph') {
+			return 'paragraphWithInitialSentence';
+		}
 		return this.impl.segmentGranularity;
 	}
 
