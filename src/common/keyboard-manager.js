@@ -349,9 +349,13 @@ export class KeyboardManager {
 					this._reader.toggleReadAloudPaused();
 				}
 				else if (key === 'Arrow' + (window.rtl ? 'Right' : 'Left')) {
+					event.preventDefault();
+					event.stopPropagation();
 					this._reader._state.readAloudState.controller?.skipBack();
 				}
 				else if (key === 'Arrow' + (window.rtl ? 'Left' : 'Right')) {
+					event.preventDefault();
+					event.stopPropagation();
 					this._reader._state.readAloudState.controller?.skipAhead();
 				}
 			}
