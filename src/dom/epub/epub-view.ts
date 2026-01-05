@@ -23,6 +23,7 @@ import { EPUBFindProcessor } from "./find";
 import DOMView, {
 	DOMViewOptions,
 	DOMViewState,
+	SpotlightKey,
 	NavigateOptions,
 	ReflowableAppearance
 } from "../common/dom-view";
@@ -41,7 +42,7 @@ import { RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
 import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
-import LRUCacheMap from "../common/lib/lru-cache-map";
+import LRUCacheMap from "../../common/lib/lru-cache-map";
 import { mode } from "../common/lib/collection";
 import { debounce } from '../../common/lib/debounce';
 import { placeA11yVirtualCursor } from '../../common/lib/utilities';
@@ -540,9 +541,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected override _getContainingRoot(node: Node) {
-		return this._sectionRenderers.find(r => r.container.contains(node))?.container
-			?? null;
+	protected override _getRoots(includeUnmounted = false): HTMLElement[] {
+		return this._sectionRenderers.map(includeUnmounted
+			? (r => r.body)
+			: (r => r.container)
+		);
 	}
 
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
@@ -1341,7 +1344,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					}
 					let selector = this.toSelector(range);
 					if (selector) {
-						this._setHighlight(selector);
+						this._setSpotlight(SpotlightKey.Navigation, selector);
 					}
 				}
 			}

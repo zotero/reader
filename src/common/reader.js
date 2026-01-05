@@ -19,7 +19,10 @@ import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
 	getCurrentColorScheme,
-	getImageDataURL, isMac,
+	getImageDataURL,
+	isLinux,
+	isMac,
+	isWin,
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
@@ -73,6 +76,9 @@ class Reader {
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
+		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
+		this._onSetReadAloudStatus = options.onSetReadAloudStatus;
+		this._onLogIn = options.onLogIn;
 
 		if (Array.isArray(options.ftl)) {
 			for (let ftl of options.ftl) {
@@ -141,6 +147,13 @@ class Reader {
 			? DEFAULT_THEMES.find(x => x.id === 'dark')
 			: themes.get(options.darkTheme) || null;
 
+		// Initialize speech synthesis (for Chrome, which only returns voices
+		// the second time this is called)
+		window.speechSynthesis.getVoices();
+
+		this._readAloudVoices = new Map(Object.entries(options.readAloudVoices || {}));
+		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -157,6 +170,7 @@ class Reader {
 			},
 			readOnly: options.readOnly !== undefined ? options.readOnly : false,
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
+			loggedIn: options.loggedIn ?? false,
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			hyphenate: options.hyphenate,
@@ -188,6 +202,17 @@ class Reader {
 			appearancePopup: null,
 			themePopup: null,
 			contextMenu: null,
+			readAloudState: {
+				popupOpen: false,
+				active: false,
+				paused: false,
+				segments: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
+				activeSegment: null,
+				speed: 1,
+				voice: null,
+			},
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -302,6 +327,13 @@ class Reader {
 						onChangePageIndex={(pageIndex, options) => this._lastView.navigate({ pageIndex }, options)}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
+						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						readAloudVoices={this._readAloudVoices}
+						readAloudRemoteInterface={this._readAloudRemoteInterface}
+						onSetReadAloudVoice={this._onSetReadAloudVoice}
+						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
+						onOpenReadAloudLearnMore={this.openReadAloudLearnMore.bind(this)}
+						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
 						onChangeSidebarView={(view) => {
@@ -412,6 +444,7 @@ class Reader {
 							}
 							this._updateState({ themePopup: null, customThemes, lightTheme, darkTheme });
 						}}
+						onLogIn={this._onLogIn}
 					/>
 				</ReaderContext.Provider>
 			);
@@ -501,6 +534,23 @@ class Reader {
 				this._primaryView?.setColorScheme(this._state.colorScheme);
 				this._secondaryView?.setColorScheme(this._state.colorScheme);
 			}
+		}
+
+		if (this._state.readAloudState !== previousState.readAloudState) {
+			// If the view has a new Read Aloud target, reset our state
+			if (!this._state.readAloudState.paused && previousState.readAloudState.paused
+					&& this._primaryView?.hasReadAloudTarget) {
+				this._state.readAloudState.segments = null;
+				this._state.readAloudState.backwardStopIndex = null;
+				this._state.readAloudState.forwardStopIndex = null;
+				this._state.readAloudState.activeSegment = null;
+			}
+			this._primaryView?.setReadAloudState(this._state.readAloudState);
+			this._secondaryView?.setReadAloudState(this._state.readAloudState);
+
+			// Tell Zotero about the two main status flags
+			let { active, paused } = this._state.readAloudState;
+			this._onSetReadAloudStatus?.({ active, paused });
 		}
 
 		if (this._state.readOnly !== previousState.readOnly) {
@@ -835,6 +885,82 @@ class Reader {
 		}
 	}
 
+	_handleReadAloudStateChange(state) {
+		this._ensureType('pdf', 'epub', 'snapshot');
+		// Ignore late changes due to event handlers after popup has closed
+		if (!this._state.readAloudState.popupOpen && !state.popupOpen) {
+			return;
+		}
+		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
+	}
+
+	openVoicePreferences() {
+		if (isMac()) {
+			this._onOpenLink('x-apple.systempreferences:com.apple.preference.universalaccess?SpokenContent');
+		}
+		else if (isWin()) {
+			this._onOpenLink('ms-settings:speech');
+		}
+		else if (isLinux()) {
+			this._onOpenLink('https://github.com/brailcom/speechd'); // Sorry!
+		}
+	}
+
+	openReadAloudLearnMore() {
+		// TODO
+		console.log('Learn more');
+	}
+
+	toggleReadAloudPopup(popupOpen) {
+		if (popupOpen === undefined) {
+			popupOpen = !this._state.readAloudState.popupOpen;
+		}
+		if (popupOpen) {
+			this._handleReadAloudStateChange({
+				popupOpen: true,
+			});
+		}
+		else {
+			this._handleReadAloudStateChange({
+				popupOpen: false,
+				active: false,
+				paused: false,
+				segments: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
+				activeSegment: null,
+			});
+		}
+	}
+
+	toggleReadAloudPaused(paused = undefined) {
+		this._ensureType('pdf', 'epub', 'snapshot');
+		if (!this._state.readAloudState.active) {
+			return;
+		}
+		if (paused === undefined) {
+			paused = !this._state.readAloudState.paused;
+		}
+		this._handleReadAloudStateChange({ paused });
+	}
+
+	startReadAloudAtPosition(position = null) {
+		if (!position && this._state[this._lastView + 'SelectionPopup']) {
+			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
+		}
+		position ??= null;
+		this._handleReadAloudStateChange({
+			popupOpen: true,
+			active: true,
+			paused: false,
+			segments: null,
+			backwardStopIndex: null,
+			forwardStopIndex: null,
+			targetPosition: position,
+			activeSegment: null,
+		});
+	}
+
 	toggleFindPopup({ primary, open } = {}) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
@@ -972,6 +1098,10 @@ class Reader {
 			this.a11yAnnounceSearchMessage(params.result);
 		};
 
+		let onSetReadAloudState = (params) => {
+			this._updateState({ readAloudState: params });
+		};
+
 		let onSelectAnnotations = (ids, triggeringEvent) => {
 			this.setSelectedAnnotations(ids, true, triggeringEvent);
 		};
@@ -1046,6 +1176,7 @@ class Reader {
 			lightTheme: this._state.lightTheme,
 			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
+			readAloudState: this._state.readAloudState,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
@@ -1062,6 +1193,7 @@ class Reader {
 			onSetAnnotationPopup,
 			onSetOverlayPopup,
 			onSetFindState,
+			onSetReadAloudState,
 			onSetOutline,
 			onSelectAnnotations,
 			onTabOut,
@@ -1528,6 +1660,10 @@ class Reader {
 
 	setToolbarPlaceholderWidth(width) {
 		this._updateState({ toolbarPlaceholderWidth: width });
+	}
+
+	setLoggedIn(loggedIn) {
+		this._updateState({ loggedIn });
 	}
 
 	focusView(primary = true) {

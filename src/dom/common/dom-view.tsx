@@ -13,6 +13,8 @@ import {
 	OutlineItem,
 	OverlayPopupParams,
 	Platform,
+	ReadAloudState,
+	ReadAloudSegment,
 	SelectionPopupParams,
 	Theme,
 	Tool,
@@ -20,6 +22,8 @@ import {
 	ViewContextMenuOverlay,
 	ViewStats,
 	WADMAnnotation,
+	RangeRef,
+	ReadAloudGranularity,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import { flushSync } from "react-dom";
@@ -32,11 +36,14 @@ import React from "react";
 import { Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
+	createRangeWalker,
 	getBoundingPageRect,
 	getColumnSeparatedPageRects,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
+	splitRanges,
+	splitRangeToSentences,
 	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
@@ -53,15 +60,20 @@ import {
 } from "../../common/lib/utilities";
 import {
 	closestElement,
-	getContainingBlock, isBlock
+	getContainingBlock,
+	getLang,
+	isBlock,
+	iterateWalker
 } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
 	expandRect,
 	getBoundingRect,
+	isErrorRect,
+	isPageRectFullyVisible,
 	isPageRectVisible,
 	pageRectToClientRect,
-	rectContains
+	rectContainsPoint
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
@@ -75,6 +87,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	initializedPromise: Promise<void>;
 
 	initialized = false;
+
+	protected readonly _options: DOMViewOptions<State, Data>;
 
 	protected readonly _container: Element;
 
@@ -124,15 +138,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _find: FindProcessor | null;
 
-	protected readonly _options: DOMViewOptions<State, Data>;
-
 	protected _overlayPopupDelayer: PopupDelayer;
 
 	protected readonly _history: History;
 
 	protected _suspendHistorySaving = false;
 
-	protected _highlightedPosition: Selector | null = null;
+	protected _spotlights = new Map<SpotlightKey, Selector>();
 
 	protected _pointerMovedWhileDown = false;
 
@@ -145,6 +157,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _isCtrlKeyDown = false;
 
 	protected _lastSelectionRange: PersistentRange | null = null;
+
+	protected _readAloudState: ReadAloudState | null = null;
 
 	protected _iframeCoordScaleFactor = 1;
 
@@ -363,10 +377,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _updateViewStats(): void;
 
-	protected _getContainingRoot(node: Node): HTMLElement | null {
-		return this._iframeDocument.body.contains(node)
-			? this._iframeDocument.body
-			: null;
+	protected abstract _getRoots(includeUnmounted?: boolean): HTMLElement[];
+
+	protected _getContainingRoot(node: Node, includeUnmounted = false): HTMLElement | null {
+		return this._getRoots(includeUnmounted).find(root => root.contains(node))
+			?? null;
 	}
 
 	// ***
@@ -428,7 +443,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		let range: Range;
 		if (type === 'highlight' || type === 'underline') {
-			range = makeRangeSpanning(...getSelectionRanges(selection));
+			range = makeRangeSpanning(getSelectionRanges(selection));
 		}
 		else if (type === 'note') {
 			let element = closestElement(selection.getRangeAt(0).commonAncestorContainer);
@@ -579,7 +594,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		};
 	}
 
-	protected _handleViewUpdate() {
+	protected _handleViewUpdate(synchronous = true) {
 		if (!this.initialized) {
 			return;
 		}
@@ -587,7 +602,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._updateViewStats();
 		this._displayedAnnotationCache = new WeakMap();
 		this._boundingPageRectCache = new WeakMap();
-		this._renderAnnotations(true);
+		this._renderAnnotations(synchronous);
 		this._repositionPopups();
 	}
 
@@ -650,13 +665,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				range: a.range.toRange(),
 			})));
 		}
-		if (this._highlightedPosition) {
-			let range = this.toDisplayedRange(this._highlightedPosition);
+		for (let [key, selector] of this._spotlights) {
+			let range = this.toDisplayedRange(selector);
 			if (range) {
 				displayedAnnotations.push({
 					type: 'highlight',
-					color: SELECTION_COLOR,
-					key: '_highlightedPosition',
+					color: this._getSpotlightColor(key),
+					key,
 					range,
 				});
 			}
@@ -711,7 +726,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (selection.isCollapsed) {
 			return;
 		}
-		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(...getSelectionRanges(selection)));
+		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(getSelectionRanges(selection)));
 		// Split the selection into its column-separated parts and get the
 		// bounding rect encompassing the visible ones. This gives us a more
 		// accurate anchor for the popup.
@@ -1267,7 +1282,21 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			};
 		}
 
-		return undefined;
+		if (this._iframeDocument.getSelection()!.isCollapsed) {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(el);
+			let selector = this.toSelector(range);
+			if (selector) {
+				return {
+					type: 'read-aloud',
+					position: selector,
+				};
+			}
+		}
+
+		return {
+			type: 'read-aloud',
+		};
 	}
 
 	private _handleAnnotationContextMenu = (id: string, event: React.MouseEvent) => {
@@ -1607,16 +1636,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Only start touch annotation if the touch was within 100px of
 		// the detected caret position, so scrolling is still allowed
 		// in the margins with an annotation tool selected
-		if (!caretRect || !rectContains(expandRect(caretRect, 100), event.clientX, event.clientY)) {
+		if (!caretRect || !rectContainsPoint(expandRect(caretRect, 100), event.clientX, event.clientY)) {
 			return null;
 		}
 
 		// Try to snap to the start of the word
 		if ('Segmenter' in Intl && caretPosition.offsetNode.nodeType === Node.TEXT_NODE) {
 			try {
-				let lang = closestElement(caretPosition.offsetNode)?.closest('[lang]')
-					?.getAttribute('lang') || 'en';
-				let wordSegmenter = new Intl.Segmenter(lang, { granularity: 'word' });
+				let wordSegmenter = new Intl.Segmenter(getLang(caretPosition.offsetNode), {
+					granularity: 'word'
+				});
 
 				let words = wordSegmenter.segment(caretPosition.offsetNode.nodeValue!);
 				let wordContainingCaret = words.containing(caretPosition.offset);
@@ -1770,7 +1799,22 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let selectionBoundingRect = getBoundingRect(
 			getSelectionRanges(selection).map(range => range.getBoundingClientRect())
 		);
-		return rectContains(selectionBoundingRect, x, y);
+		return rectContainsPoint(selectionBoundingRect, x, y);
+	}
+
+	protected _keepSelection<T>(block: () => T): T {
+		let selection = this._iframeDocument.getSelection();
+		if (!selection || selection.isCollapsed) {
+			return block();
+		}
+
+		let rangesBefore = getSelectionRanges(selection).map(r => new PersistentRange(r));
+		let result = block();
+		selection.removeAllRanges();
+		for (let range of rangesBefore) {
+			selection.addRange(range.toRange());
+		}
+		return result;
 	}
 
 	destroy() {
@@ -1916,6 +1960,226 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._penExclusive = penExclusive;
 	}
 
+	setReadAloudState(state: ReadAloudState): void {
+		let previousState = this._readAloudState;
+		this._readAloudState = state;
+
+		if (!state.active) {
+			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
+			return;
+		}
+
+		if (state.activeSegment?.position) {
+			let { range } = state.activeSegment.position as RangeRef;
+			let segments = state.segments!;
+			// Highlight the whole paragraph
+			let firstRangeInParagraph: PersistentRange | null = null;
+			for (let i = segments.indexOf(state.activeSegment); i >= 0; i--) {
+				firstRangeInParagraph = (segments[i].position as RangeRef).range;
+				if (segments[i].anchor === 'paragraphStart') {
+					break;
+				}
+			}
+			let lastRangeInParagraph: PersistentRange | null = null;
+			for (let i = segments.indexOf(state.activeSegment) + 1; i < segments.length; i++) {
+				if (segments[i].anchor === 'paragraphStart') {
+					break;
+				}
+				lastRangeInParagraph = (segments[i].position as RangeRef).range;
+			}
+			range = range.clone();
+			if (firstRangeInParagraph) {
+				range.startContainer = firstRangeInParagraph.startContainer;
+				range.startOffset = firstRangeInParagraph.startOffset;
+			}
+			if (lastRangeInParagraph) {
+				range.endContainer = lastRangeInParagraph.endContainer;
+				range.endOffset = lastRangeInParagraph.endOffset;
+			}
+
+			let selector = this.toSelector(range.toRange());
+			if (selector) {
+				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
+				setTimeout(() => {
+					// Navigate to the start of the segment if possible
+					let startRange = range.toRange();
+					startRange.collapse(true);
+					let startSelector = this.toSelector(startRange);
+
+					this._navigateToSelector(startSelector || selector, {
+						ifNeeded: true,
+						visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
+						block: 'center',
+						behavior: 'smooth'
+					});
+				});
+			}
+		}
+
+		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
+				|| !state.segmentGranularity) {
+			return;
+		}
+
+		let ranges = this._getAllReadAloudRanges(state.segmentGranularity);
+
+		let targetRange: Range | null = null;
+		let targetIsSelection = false;
+		if (state.targetPosition) {
+			targetRange = this.toDisplayedRange(state.targetPosition as Selector);
+		}
+		else if (!this._iframeDocument.getSelection()!.isCollapsed) {
+			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
+			this._iframeDocument.getSelection()!.collapseToStart();
+			targetIsSelection = true;
+		}
+
+		let backwardStopIndex: number | null = null;
+		let forwardStopIndex: number | null = null;
+		if (targetRange) {
+			let split = splitRanges(ranges, targetRange);
+			if (split) {
+				ranges = split.ranges;
+				backwardStopIndex = split.startIndex;
+				if (targetIsSelection) {
+					forwardStopIndex = split.endIndex;
+				}
+			}
+			else {
+				ranges = this._getReadAloudRanges(targetRange, state.segmentGranularity);
+			}
+		}
+		else {
+			backwardStopIndex = ranges.findIndex(
+				range => isPageRectFullyVisible(getBoundingPageRect(range), this._iframeWindow)
+			);
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = ranges.findIndex(
+					range => isPageRectVisible(getBoundingPageRect(range), this._iframeWindow)
+				);
+			}
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = ranges.findIndex(
+					range => isPageRectVisible(getBoundingPageRect(range), this._iframeWindow,
+						this._iframeWindow.innerWidth)
+				);
+			}
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = ranges.findIndex((range) => {
+					let rect = range.getBoundingClientRect();
+					return !isErrorRect(rect) && rect.x >= 0;
+				});
+			}
+			if (backwardStopIndex === -1) {
+				backwardStopIndex = null;
+			}
+		}
+
+		let lastContainingBlock: Element | null = null;
+		let segments: ReadAloudSegment[] = ranges
+			.map((range) => {
+				let text = range.toString().trim().replace(/\s+/g, ' ');
+				if (!text) return null;
+				let containingBlock = getContainingBlock(closestElement(range.commonAncestorContainer)!);
+				let differentContainingBlock = containingBlock !== lastContainingBlock;
+				lastContainingBlock = containingBlock;
+				return {
+					text,
+					position: {
+						range: new PersistentRange(range)
+					},
+					granularity: state.segmentGranularity!,
+					anchor: differentContainingBlock ? 'paragraphStart' : null,
+				} satisfies ReadAloudSegment;
+			})
+			.filter((segment, i) => {
+				if (segment) {
+					return true;
+				}
+				if (backwardStopIndex !== null && backwardStopIndex > i) backwardStopIndex--;
+				if (forwardStopIndex !== null && forwardStopIndex > i) forwardStopIndex--;
+				return false;
+			}) as ReadAloudSegment[];
+		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+
+		this._options.onSetReadAloudState({
+			...state,
+			paused: false,
+			segments,
+			activeSegment: null,
+			backwardStopIndex,
+			forwardStopIndex,
+			targetPosition: undefined,
+			lang,
+		});
+	}
+
+	get hasReadAloudTarget(): boolean {
+		return !!this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed;
+	}
+
+	protected _getAllReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
+		let rootRanges = this._getRoots(true).map((root) => {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(root);
+			return range;
+		});
+		return rootRanges.flatMap(rootRange => this._getReadAloudRanges(rootRange, granularity));
+	}
+
+	protected _getReadAloudRanges(rootRange: Range, granularity: ReadAloudGranularity): Range[] {
+		// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
+		let matches = new Set();
+		let filter = (node: Node) => {
+			if (matches.has(node.parentNode)) {
+				// Reject sub-trees of accepted nodes.
+				return NodeFilter.FILTER_REJECT;
+			}
+			if (!/\S/.test(node.textContent!)) {
+				// Reject nodes with no text.
+				return NodeFilter.FILTER_REJECT;
+			}
+			for (let c = node.firstChild; c; c = c.nextSibling) {
+				if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
+					// If node has a non-empty text child accept it.
+					matches.add(node);
+					return NodeFilter.FILTER_ACCEPT;
+				}
+			}
+			return NodeFilter.FILTER_SKIP;
+		};
+
+		let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
+		let elementRanges = [...iterateWalker(walker)].map((el) => {
+			let range = this._iframeDocument.createRange();
+			range.selectNodeContents(el);
+			return range;
+		});
+
+		// If there weren't any element children, just use the whole root range
+		if (!elementRanges.length) {
+			elementRanges = [rootRange];
+		}
+
+		if (granularity === 'sentence') {
+			elementRanges = elementRanges.flatMap(range => splitRangeToSentences(range));
+		}
+		else if (granularity === 'paragraph') {
+			// Split each paragraph into first sentence + rest of paragraph
+			elementRanges = elementRanges.flatMap((range) => {
+				let sentences = splitRangeToSentences(range);
+				if (sentences.length <= 1) {
+					return sentences;
+				}
+				let firstRange = sentences[0];
+				let restRange = makeRangeSpanning(sentences.slice(1), true);
+				return [firstRange, restRange];
+			});
+		}
+
+		return elementRanges;
+	}
+
 	// ***
 	// Public methods to control the view from the outside
 	// ***
@@ -1948,16 +2212,34 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _setScale(scale: number): void;
 
-	protected _setHighlight(selector: Selector) {
-		this._highlightedPosition = selector;
-		this._renderAnnotations(true);
+	protected _setSpotlight(key: SpotlightKey, selector: Selector | null, timeout: number | null = 2000) {
+		if (selector) {
+			this._spotlights.set(key, selector);
+		}
+		else {
+			this._spotlights.delete(key);
+		}
+		this._renderAnnotations();
+
+		if (selector === null || timeout === null) return;
 
 		setTimeout(() => {
-			if (this._highlightedPosition === selector) {
-				this._highlightedPosition = null;
+			if (this._spotlights.get(key) === selector) {
+				this._spotlights.delete(key);
 				this._renderAnnotations(true);
 			}
-		}, 2000);
+		}, timeout);
+	}
+
+	protected _getSpotlightColor(key: SpotlightKey): string {
+		switch (key) {
+			case SpotlightKey.Navigation:
+				return SELECTION_COLOR;
+			case SpotlightKey.ReadAloudActiveSegment:
+				return '#4072e573';
+			default:
+				throw new Error('Unknown highlight key: ' + key);
+		}
 	}
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
@@ -1978,7 +2260,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 			let selector = location.position as Selector;
 			this._navigateToSelector(selector, options);
-			this._setHighlight(selector);
+			this._setSpotlight(SpotlightKey.Navigation, selector);
 		}
 	}
 
@@ -2019,6 +2301,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	penConnected?: boolean;
 	penActive?: boolean;
 	penExclusive?: boolean;
+	readAloudVoices: Map<string, string>,
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
 	onChangeViewStats: (stats: ViewStats) => void;
@@ -2031,6 +2314,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
+	onSetReadAloudState: (state?: ReadAloudState) => void;
 	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
 	onOpenViewContextMenu: (params: { x: number, y: number, overlay?: ViewContextMenuOverlay }) => void;
 	onOpenAnnotationContextMenu: (params: { ids: string[], x: number, y: number, view: boolean }) => void;
@@ -2057,6 +2341,7 @@ export interface DOMViewState {
 export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions, 'inline'> {
 	block?: 'center' | 'start';
 	ifNeeded?: boolean;
+	visibilityMargin?: number;
 	offsetBlock?: number;
 }
 
@@ -2076,6 +2361,11 @@ export const enum PageWidth {
 	Narrow = -1,
 	Normal = 0,
 	Full = 1
+}
+
+export const enum SpotlightKey {
+	Navigation = 'Navigation',
+	ReadAloudActiveSegment = 'ReadAloudActiveSegment',
 }
 
 export default DOMView;

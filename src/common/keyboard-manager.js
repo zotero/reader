@@ -236,6 +236,11 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.zoomReset();
 		}
+		else if (code === `${pm}-Alt-KeyR` || code === `${pm}-Alt-KeyL`) {
+			event.preventDefault();
+			event.stopPropagation();
+			this._reader.startReadAloudAtPosition();
+		}
 		else if (['Delete', 'Backspace'].includes(key)) {
 			// Prevent the deletion of annotations when they are selected and the focus is within
 			// an input or label popup. Normally, the focus should not be inside an input unless
@@ -336,6 +341,12 @@ export class KeyboardManager {
 				if (ANNOTATION_COLORS[idx]) {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
+			}
+			else if (key === 'Space' && this._reader._state.readAloudState.active
+					&& !event.target.matches('button, select')) {
+				event.preventDefault();
+				event.stopPropagation();
+				this._reader.toggleReadAloudPaused();
 			}
 		}
 	}
