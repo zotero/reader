@@ -80,6 +80,7 @@
 		inset-inline: 0;
 		height: $padding * 2 + $height-track;
 		overflow-x: clip;
+		-moz-window-dragging: no-drag;
 
 		.track {
 			position: absolute;
