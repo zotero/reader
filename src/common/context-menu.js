@@ -98,22 +98,52 @@ export function createViewContextMenu(reader, params) {
 					onCommand: () => {
 						navigator.clipboard.writeText(params.overlay.url);
 					}
-				}
-			],
-			[
+				},
 				{
 					label: reader._getString('general-copy'),
 					disabled: !(params.overlay && params.overlay.type === 'math' && !reader.canCopy),
 					onCommand: () => {
 						navigator.clipboard.writeText(params.overlay.tex);
 					}
-				}
+				},
+				{
+					label: reader._getString('reader-copy-image'),
+					disabled: !(params.overlay && params.overlay.type === 'image' && !reader.canCopy
+						&& typeof navigator.clipboard.write === 'function'),
+					onCommand: async () => {
+						// Browsers generally only support image/png in the Clipboard API,
+						// so use a canvas to convert to PNG
+						let bitmap = await createImageBitmap(params.overlay.image);
+						let canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+						let ctx = canvas.getContext('bitmaprenderer');
+						ctx.transferFromImageBitmap(bitmap);
+						let blob = await canvas.convertToBlob({ type: 'image/png' });
+						await navigator.clipboard.write([
+							new ClipboardItem({ [blob.type]: blob })
+						]);
+					}
+				},
 			],
 			[
 				{
 					label: reader._getString('general-copy'),
 					disabled: !reader.canCopy,
 					onCommand: () => reader.copy()
+				}
+			],
+			[
+				(reader._platform === 'zotero' || window.dev) && {
+					label: reader._getString('reader-save-image-as'),
+					disabled: !(params.overlay && params.overlay.type === 'image'),
+					onCommand: async () => {
+						// onSaveImageAs() expects PNG
+						let bitmap = await createImageBitmap(params.overlay.image);
+						let canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+						let ctx = canvas.getContext('bitmaprenderer');
+						ctx.transferFromImageBitmap(bitmap);
+						let blob = await canvas.convertToBlob({ type: 'image/png' });
+						reader._onSaveImageAs(blob);
+					},
 				}
 			],
 			[

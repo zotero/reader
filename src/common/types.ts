@@ -192,4 +192,8 @@ export type ViewContextMenuOverlay =
 	| {
 		type: 'math';
 		tex: string;
+	}
+	| {
+		type: 'image';
+		image: ImageBitmapSource;
 	};

@@ -1267,6 +1267,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			};
 		}
 
+		let img = el.closest('img');
+		if (img && /^(data|blob):/.test(img.src)) {
+			return {
+				type: 'image',
+				image: img,
+			};
+		}
+
 		return undefined;
 	}
 
