@@ -1,6 +1,7 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/dom-view";
 import { PersistentRange } from '../dom/common/lib/range';
+import { ReadAloudController } from './read-aloud/controller';
 
 export type ToolType =
 	| 'highlight'
@@ -182,6 +183,7 @@ export type ReadAloudState = {
 	popupOpen: boolean;
 	active: boolean;
 	paused: boolean;
+	controller?: ReadAloudController<never>;
 	segmentGranularity?: ReadAloudGranularity;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;

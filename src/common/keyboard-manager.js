@@ -342,11 +342,18 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (key === 'Space' && this._reader._state.readAloudState.active
-					&& !event.target.matches('button, select')) {
-				event.preventDefault();
-				event.stopPropagation();
-				this._reader.toggleReadAloudPaused();
+			else if (this._reader._state.readAloudState.active && !event.target.matches('button, select')) {
+				if (key === 'Space') {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader.toggleReadAloudPaused();
+				}
+				else if (key === 'Arrow' + (window.rtl ? 'Right' : 'Left')) {
+					this._reader._state.readAloudState.controller?.skipBack();
+				}
+				else if (key === 'Arrow' + (window.rtl ? 'Left' : 'Right')) {
+					this._reader._state.readAloudState.controller?.skipAhead();
+				}
 			}
 		}
 	}

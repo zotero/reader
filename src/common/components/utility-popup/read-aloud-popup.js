@@ -27,23 +27,23 @@ function ReadAloudPopup(props) {
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let [voiceMode, setVoiceMode] = useState(null);
 	let [allVoices, setAllVoices] = useState([]);
-	let [controller, setController] = useState(null);
 	let [isBuffering, setBuffering] = useState(false);
 	let [secondsRemaining, setSecondsRemaining] = useState(null);
 	let [error, setError] = useState(null);
 	let [pausedAfterQuotaExhausted, setPausedAfterQuotaExhausted] = useState(false);
 
+	let controller = params.controller;
 	let showSpinner = !params.segments || isBuffering;
 
 	useEffect(() => {
 		let voice = allVoices.find(v => v.id === params.voice);
 		if (!voice) {
-			setController(null);
+			onChange({ controller: undefined });
 			return undefined;
 		}
 		onChange({ segmentGranularity: voice.segmentGranularity, active: true });
 		if (!params.segments) {
-			setController(null);
+			onChange({ controller: undefined });
 			return undefined;
 		}
 		let backwardStopIndex = params.backwardStopIndex;
@@ -51,7 +51,7 @@ function ReadAloudPopup(props) {
 			backwardStopIndex = params.segments.indexOf(params.activeSegment);
 		}
 		let controller = voice.getController(params.segments, backwardStopIndex, params.forwardStopIndex);
-		setController(controller);
+		onChange({ controller });
 
 		controller.addEventListener('BufferingChange', () => {
 			setBuffering(controller.buffering);
@@ -221,7 +221,7 @@ function ReadAloudPopup(props) {
 
 		let interval = setInterval(updateRemaining, 1000);
 		return () => clearInterval(interval);
-	}, [controller, params.paused]);
+	}, [controller, onChange, params.paused, pausedAfterQuotaExhausted]);
 
 	useEffect(() => {
 		let fetchVoicesAndSet = async () => {
