@@ -339,9 +339,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		let isCoarsePointer = window.matchMedia('(pointer: coarse').matches;
 
 		let clickTargetRects = isCoarsePointer
-			// As in the Safari case above, use the full bounding rect as the tap
-			// target if the user is using a touch device
-			? [expandRect(getBoundingRect(rects), 10)]
+			? rects.map(rect => expandRect(rect, 10))
 			: rects;
 
 		if (isCoarsePointer && isSafari) {
@@ -349,7 +347,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			// makes foreignObjects eat all pointer events within their bounds
 			// with no regard for Z ordering. The foreignObject isn't necessary
 			// on mobile anyway because we don't support dragging.
-			return rects.map((rect, i) => (
+			return clickTargetRects.map((rect, i) => (
 				<rect
 					fill="transparent"
 					x={rect.x}
