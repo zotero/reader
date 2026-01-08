@@ -19,6 +19,7 @@ import AppearancePopup from "./modal-popup/appearance-popup";
 import ThemePopup from './modal-popup/theme-popup';
 import ReadAloudPopup from "./utility-popup/read-aloud-popup";
 import { bundle } from '../../fluent';
+import ReadAloudFirstRunPopup from './modal-popup/read-aloud-first-run-popup';
 
 function View(props) {
 	let { primary, state } = props;
@@ -260,18 +261,28 @@ const ReaderUI = React.forwardRef((props, ref) => {
 					/>
 				)}
 				{state.readAloudState.popupOpen && (
-					<ReadAloudPopup
-						params={state.readAloudState}
-						voices={props.readAloudVoices}
-						remoteInterface={props.readAloudRemoteInterface}
-						loggedIn={state.loggedIn}
-						onChange={props.onChangeReadAloudState}
-						onSetVoice={props.onSetReadAloudVoice}
-						onOpenVoicePreferences={props.onOpenVoicePreferences}
-						onOpenLearnMore={props.onOpenReadAloudLearnMore}
-						onClose={() => props.onToggleReadAloud(false)}
-						onLogIn={props.onLogIn}
-					/>
+					state.readAloudVoices.size
+						? <ReadAloudPopup
+							params={state.readAloudState}
+							voices={state.readAloudVoices}
+							remoteInterface={props.readAloudRemoteInterface}
+							loggedIn={state.loggedIn}
+							onChange={props.onChangeReadAloudState}
+							onSetVoice={props.onSetReadAloudVoice}
+							onOpenVoicePreferences={props.onOpenVoicePreferences}
+							onOpenLearnMore={props.onOpenReadAloudLearnMore}
+							onClose={() => props.onToggleReadAloud(false)}
+							onLogIn={props.onLogIn}
+						/>
+						: <ReadAloudFirstRunPopup
+							lang={viewStats.lang}
+							remoteInterface={props.readAloudRemoteInterface}
+							loggedIn={state.loggedIn}
+							onOpenVoicePreferences={props.onOpenVoicePreferences}
+							onPurchaseCredits={props.onOpenReadAloudLearnMore}
+							onCancel={() => props.onToggleReadAloud(false)}
+							onDone={props.onSetReadAloudVoice}
+						/>
 				)}
 				<div id="a11yAnnouncement" aria-live="polite"></div>
 			</Fragment>

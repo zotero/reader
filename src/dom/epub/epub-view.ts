@@ -930,6 +930,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			spreadMode: this.spreadMode,
 			appearance: this.appearance,
 			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
+			lang: this.lang,
 		};
 		this._options.onChangeViewStats(viewStats);
 		this.a11yRecordCurrentPage();

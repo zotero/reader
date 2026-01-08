@@ -15,6 +15,7 @@ import Select from '../common/select';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
 import { BrowserReadAloudVoice } from '../../read-aloud/browser/voice';
+import { getSupportedLanguages, resolveLanguage } from '../../read-aloud/lang';
 
 const URGENT_THRESHOLD_SECONDS = 60;
 
@@ -88,41 +89,8 @@ function ReadAloudPopup(props) {
 		controller.speed = params.speed;
 	}, [controller, params.speed]);
 
-	let languages = useMemo(() => [...new Set(
-		allVoices.map(voice => voice.lang).filter(Boolean)
-	)], [allVoices]);
-
-	let resolvedLang = useMemo(() => {
-		let contentLanguageCode;
-		try {
-			contentLanguageCode = new Intl.Locale(params.lang).language;
-		}
-		catch (e) {
-			console.warn(`Invalid locale: ${params.lang}`);
-			contentLanguageCode = 'en';
-		}
-
-		let userLocale = navigator.languages[0];
-
-		let isLangSupported = lang => !languages.length || languages.includes(lang);
-
-		// If the user's locale has the same language as the content locale
-		// (but possibly a different region), use the user's locale
-		if (userLocale.startsWith(contentLanguageCode) && isLangSupported(userLocale)) {
-			return userLocale;
-		}
-		// Otherwise, if we know how to read the content locale, use that
-		if (isLangSupported(params.lang)) {
-			return params.lang;
-		}
-		// Fall back to US English
-		if (isLangSupported('en-US')) {
-			return 'en-US';
-		}
-		// Or, in the rare situation where the system can't read US English,
-		// whatever the first locale it can read is
-		return languages[0] ?? null;
-	}, [params.lang, languages]);
+	let languages = useMemo(() => getSupportedLanguages(allVoices), [allVoices]);
+	let resolvedLang = useMemo(() => resolveLanguage(params.lang, languages), [params.lang, languages]);
 
 	useEffect(() => {
 		console.log(`Resolved ${params.lang} to ${resolvedLang}`);
@@ -136,6 +104,8 @@ function ReadAloudPopup(props) {
 		}),
 		[allVoices, resolvedLang, voiceMode]
 	);
+
+	let { voice: persistedVoice, speed: persistedSpeed } = persistedVoices.get(resolvedLang) ?? {};
 
 	function handleSpeedChange(event) {
 		if (speedWhileDragging === null) {
@@ -251,7 +221,8 @@ function ReadAloudPopup(props) {
 			return;
 		}
 
-		let { voice, speed } = persistedVoices.get(resolvedLang) ?? {};
+		let voice = persistedVoice;
+		let speed = persistedSpeed;
 		if (!voice || !voicesForSelection.some(v => v.id === voice)) {
 			if (!voicesForSelection.length) {
 				return;
@@ -265,7 +236,7 @@ function ReadAloudPopup(props) {
 			active: voice !== params.voice ? false : params.active,
 		});
 		onSetVoice(resolvedLang, voice, params.speed);
-	}, [onChange, onSetVoice, params.active, params.speed, params.voice, voicesForSelection, resolvedLang, persistedVoices]);
+	}, [onChange, onSetVoice, params.active, params.speed, params.voice, persistedSpeed, persistedVoice, resolvedLang, voicesForSelection]);
 
 	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
 		type: 'language',
@@ -371,6 +342,7 @@ function ReadAloudPopup(props) {
 				{!!voicesForSelection.length && (
 					<div className="row voices" data-tabstop={1}>
 						<Select
+							aria-label={l10n.getString('reader-read-aloud-voice')}
 							value={params.voice || ''}
 							tabIndex="-1"
 							onChange={handleVoiceChange}

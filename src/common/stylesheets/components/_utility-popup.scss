@@ -105,25 +105,7 @@
 
 	.time-indicator, .log-in {
 		button {
-			display: inline;
-			appearance: none;
-			margin: 0;
-			padding: 0;
-			background: none;
-			border: none;
-			outline: none;
-			color: var(--accent-blue);
-			text-decoration: underline;
-			cursor: pointer;
+			@include link-button;
 		}
-	}
-}
-
-@keyframes rotating {
-	from {
-		transform: rotate(0deg);
-	}
-	to {
-		transform: rotate(360deg);
 	}
 }

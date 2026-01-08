@@ -466,6 +466,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canNavigateForward: this._history.canNavigateForward,
 			appearance: this.appearance,
 			readingModeEnabled: this._readingMode.enabled,
+			lang: this.lang,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}

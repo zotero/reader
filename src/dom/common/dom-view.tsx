@@ -282,6 +282,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract getData(): Data;
 
+	get lang(): string {
+		return this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+	}
+
 	protected async _handleIFrameLoaded(): Promise<void> {
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
@@ -2101,7 +2105,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				if (forwardStopIndex !== null && forwardStopIndex > i) forwardStopIndex--;
 				return false;
 			}) as ReadAloudSegment[];
-		let lang = state.lang || this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		let lang = state.lang || this.lang;
 
 		this._options.onSetReadAloudState({
 			...state,

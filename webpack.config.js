@@ -225,11 +225,6 @@ function generateViewConfig(build) {
 					exclude: /node_modules/,
 					use: {
 						loader: 'ts-loader',
-						options: {
-							compilerOptions: {
-								target: 'ES2022'
-							}
-						}
 					},
 				},
 				{

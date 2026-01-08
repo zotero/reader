@@ -151,7 +151,6 @@ class Reader {
 		// the second time this is called)
 		window.speechSynthesis.getVoices();
 
-		this._readAloudVoices = new Map(Object.entries(options.readAloudVoices || {}));
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
 		this._state = {
@@ -213,6 +212,7 @@ class Reader {
 				speed: 1,
 				voice: null,
 			},
+			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -328,9 +328,8 @@ class Reader {
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
-						readAloudVoices={this._readAloudVoices}
 						readAloudRemoteInterface={this._readAloudRemoteInterface}
-						onSetReadAloudVoice={this._onSetReadAloudVoice}
+						onSetReadAloudVoice={this._setReadAloudVoice.bind(this)}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
 						onOpenReadAloudLearnMore={this.openReadAloudLearnMore.bind(this)}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
@@ -959,6 +958,20 @@ class Reader {
 			targetPosition: position,
 			activeSegment: null,
 		});
+	}
+
+	_setReadAloudVoice(lang, voice, speed) {
+		this._onSetReadAloudVoice(lang, voice, speed);
+		this._updateState({
+			readAloudVoices: new Map([
+				...this._state.readAloudVoices,
+				[lang, { voice, speed }],
+			]),
+		});
+	}
+
+	setReadAloudVoices(readAloudVoices) {
+		this._updateState({ readAloudVoices: new Map(readAloudVoices) });
 	}
 
 	toggleFindPopup({ primary, open } = {}) {
