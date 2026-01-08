@@ -56,6 +56,9 @@ function ReadAloudPopup(props) {
 		controller.addEventListener('BufferingChange', () => {
 			setBuffering(controller.buffering);
 		});
+		controller.addEventListener('ActiveSegmentChanging', (event) => {
+			onChange({ activeSegment: event.segment });
+		});
 		controller.addEventListener('ActiveSegmentChange', (event) => {
 			onChange({ activeSegment: event.segment });
 		});

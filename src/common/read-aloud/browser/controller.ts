@@ -33,6 +33,10 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 		}
 	});
 
+	protected _stop(): void {
+		window.speechSynthesis.cancel();
+	}
+
 	protected override _handleSegmentStart(segment: ReadAloudSegment, index: number) {
 		super._handleSegmentStart(segment, index);
 		this.buffering = false;

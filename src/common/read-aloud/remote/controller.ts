@@ -105,6 +105,10 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 			});
 	}
 
+	protected _stop(): void {
+		this._audio.pause();
+	}
+
 	private async _prefetchFrom(startIndex: number) {
 		const MAX_WINDOW = 3;
 		const MAX_CONCURRENT_FETCHES = 2;

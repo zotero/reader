@@ -1,6 +1,9 @@
 import { ReadAloudSegment } from '../types';
 import { ReadAloudVoice } from './voice';
 import { ReadAloudProvider } from './provider';
+import { debounce } from '../lib/debounce';
+
+const SKIP_DEBOUNCE_DELAY = 600;
 
 export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown, ReadAloudProvider>> extends EventTarget {
 	readonly voice: TVoice;
@@ -90,8 +93,9 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 			previousIndex = this._position - 1;
 		}
 		this._position = Math.max(previousIndex, 0);
+		this._stop();
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
-		this._speak();
+		this._speakWithSkipDebounce();
 		if (this._paused) {
 			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._currentSegment));
 		}
@@ -105,14 +109,19 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 			nextIndex = 0;
 		}
 		this._position = Math.min(nextIndex + this._position + 1, this._segments.length - 1);
+		this._stop();
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
-		this._speak();
+		this._speakWithSkipDebounce();
 		if (this._paused) {
 			this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', this._currentSegment));
 		}
 	}
 
+	private _speakWithSkipDebounce = debounce(() => this._speak(), SKIP_DEBOUNCE_DELAY);
+
 	protected abstract _speak(): void;
+
+	protected abstract _stop(): void;
 
 	abstract destroy(): void;
 
