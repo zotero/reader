@@ -20,7 +20,7 @@ import ReactDOM from "react-dom";
 import { IconNoteLarge } from "../../../../common/components/common/icons";
 import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
-import { expandRect, getBoundingRect, rectsEqual } from "../../lib/rect";
+import { expandRect, rectsEqual } from "../../lib/rect";
 import cx from "classnames";
 
 export type DisplayedAnnotation = {
@@ -377,10 +377,6 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				<div
 					className={cx('annotation-div', { 'disable-pointer-events': interactiveRects.has(rect) })}
 					style={{
-						// Safari needs position: absolute, which breaks all other browsers
-						position: isSafari ? 'absolute' : undefined,
-						top: `${rect.y}px`,
-						left: `${rect.x}px`,
 						width: `${rect.width}px`,
 						height: `${rect.height}px`
 					}}
