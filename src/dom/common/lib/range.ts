@@ -73,6 +73,10 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 		if (!startNode || startNode.nodeType !== Node.TEXT_NODE) {
 			// If it didn't point to a child or the child wasn't text, find the next text node in the document
 			let walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+			if (range.startContainer.childNodes.length && range.startOffset === range.startContainer.childNodes.length) {
+				// If it pointed to the end of the startContainer, start from there
+				startNode = range.startContainer.childNodes[range.startContainer.childNodes.length - 1];
+			}
 			walker.currentNode = startNode || range.startContainer;
 			startNode = walker.nextNode();
 		}
@@ -94,11 +98,9 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 			? range.endContainer.childNodes[Math.min(range.endOffset - 1, range.endContainer.childNodes.length - 1)]
 			: null;
 		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
-			// Get the last text node inside the container/child
-			let walker = doc.createTreeWalker(endNode || range.endContainer, NodeFilter.SHOW_TEXT);
-			for (let node of iterateWalker(walker)) {
-				endNode = node;
-			}
+			let walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
+			walker.currentNode = endNode || range.endContainer;
+			endNode = walker.previousNode();
 		}
 		if (endNode) {
 			let offset = 0;
