@@ -679,15 +679,6 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	let handlePointerMove = useCallback((event: React.PointerEvent) => {
 		let { clientX, clientY } = event;
 		let isStart = resizingSide === 'start';
-		if (isSafari) {
-			let targetRect = (event.target as Element).getBoundingClientRect();
-			if (clientX >= targetRect.left && clientX <= targetRect.right) {
-				// In Safari, caretPositionFromPoint() doesn't work if the mouse is directly over the target element
-				// (returns the last element in the body instead), so we have to offset the X position by 1 pixel.
-				// This makes resizing a bit jerkier, but it's better than the alternative.
-				clientX = isStart ? targetRect.left - 1 : targetRect.right + 1;
-			}
-		}
 		let pos = caretPositionFromPoint(event.view.document, clientX, clientY);
 		if (pos) {
 			// Just bail if the browser thinks the mouse is over the SVG - that seems to only happen momentarily
