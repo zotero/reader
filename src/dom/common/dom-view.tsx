@@ -224,7 +224,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected async _initialize(): Promise<void> {
-		this._iframe.srcdoc = await this._getSrcDoc();
+		let srcdoc = await this._getSrcDoc();
+		if (window.dev && isSafari) {
+			// Dev only: Long srcdoc strings make the Safari inspector unusable,
+			// so use a blob URL instead
+			this._iframe.src = URL.createObjectURL(new Blob([srcdoc], { type: 'text/html' }));
+		}
+		else {
+			this._iframe.srcdoc = srcdoc;
+		}
 		return new Promise<void>((resolve, reject) => {
 			this._iframe.addEventListener('load', () => {
 				this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
