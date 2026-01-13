@@ -24,10 +24,7 @@ import {
 import PopupDelayer from "../../common/lib/popup-delayer";
 import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
-import {
-	AnnotationOverlay,
-	DisplayedAnnotation
-} from "./components/overlay/annotation-overlay";
+import { AnnotationOverlay, DisplayedAnnotation } from "./components/overlay/annotation-overlay";
 import React from "react";
 import { Selector } from "./lib/selector";
 import {
@@ -44,25 +41,18 @@ import { FindProcessor } from "./lib/find";
 import { SELECTION_COLOR } from "../../common/defines";
 import {
 	debounceUntilScrollFinishes,
-	getCodeCombination, getCurrentColorScheme,
-	getKeyCombination, getModeBasedOnColors,
+	getCodeCombination,
+	getCurrentColorScheme,
+	getKeyCombination,
+	getModeBasedOnColors,
 	isFirefox,
 	isMac,
 	isSafari,
 	placeA11yVirtualCursor
 } from "../../common/lib/utilities";
-import {
-	closestElement,
-	getContainingBlock, isBlock
-} from "./lib/nodes";
+import { closestElement, getContainingBlock, isBlock } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
-import {
-	expandRect,
-	getBoundingRect,
-	isPageRectVisible,
-	pageRectToClientRect,
-	rectContains
-} from "./lib/rect";
+import { expandRect, getBoundingRect, isPageRectVisible, pageRectToClientRect, rectContains } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
