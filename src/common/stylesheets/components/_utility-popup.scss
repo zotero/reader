@@ -103,7 +103,7 @@
 		}
 	}
 
-	.time-indicator, .log-in {
+	.time-indicator, .log-in, .error {
 		button {
 			@include link-button;
 		}

@@ -73,7 +73,7 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		return this._error;
 	}
 
-	private get _currentSegment() {
+	protected get _currentSegment() {
 		return this._segments[this._position];
 	}
 

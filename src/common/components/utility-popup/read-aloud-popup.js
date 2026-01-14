@@ -79,11 +79,15 @@ function ReadAloudPopup(props) {
 				activeSegment: null
 			});
 		});
-		controller.addEventListener('error', () => {
+		controller.addEventListener('Error', () => {
 			if (controller.error === 'quota-exceeded') {
 				setShowOptions(true);
 			}
+			onChange({ paused: true });
 			setError(controller.error);
+		});
+		controller.addEventListener('ErrorCleared', () => {
+			setError(null);
 		});
 
 		let voiceMode = voice instanceof BrowserReadAloudVoice ? 'browser' : 'remote';
@@ -384,7 +388,10 @@ function ReadAloudPopup(props) {
 				)}
 			</>}
 			{error !== null && error !== 'quota-exceeded' && (
-				<ErrorMessage error={error}/>
+				<ErrorMessage error={error} onRetry={controller?.retry ? () => {
+					onChange({ paused: false });
+					controller.retry();
+				} : null}/>
 			)}
 		</UtilityPopup>
 	);
@@ -440,7 +447,7 @@ function RemainingTime(props) {
 function ErrorMessage(props) {
 	const { l10n } = useLocalization();
 
-	let { error } = props;
+	let { error, onRetry } = props;
 
 	return (
 		<div
@@ -448,6 +455,9 @@ function ErrorMessage(props) {
 			aria-label={l10n.getString('reader-read-aloud-error')}
 		>
 			{l10n.getString(`reader-read-aloud-error-${error}`)}
+			{onRetry && (
+				<button onClick={onRetry}>{l10n.getString('reader-read-aloud-retry')}</button>
+			)}
 		</div>
 	);
 }

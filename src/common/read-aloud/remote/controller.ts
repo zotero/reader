@@ -1,5 +1,5 @@
 import { ReadAloudSegment } from '../../types';
-import { ReadAloudController } from '../controller';
+import { ReadAloudController, ReadAloudEvent } from '../controller';
 import LRUCacheMap from '../../lib/lru-cache-map';
 import { RemoteReadAloudVoice } from './voice';
 
@@ -26,6 +26,8 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 	private _creditsRemaining: number | null = null;
 
 	private _creditsConsumed = new Map<string, number>();
+
+	private _failedSegmentKeys = new Set<string>();
 
 	override get secondsRemaining() {
 		let creditsRemaining = this._creditsRemaining ?? this.voice.provider.creditsRemaining;
@@ -59,6 +61,21 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let segment = this._segments[index];
 
 		if (!segment) {
+			return;
+		}
+
+		let key = this._getKey(segment);
+		let handleError = () => {
+			if (this._position !== index) {
+				return;
+			}
+			this.buffering = false;
+			this._handleSegmentStart(segment, index);
+			this.dispatchEvent(new ReadAloudEvent('Error', segment));
+		};
+
+		if (this._failedSegmentKeys.has(key)) {
+			handleError();
 			return;
 		}
 
@@ -100,11 +117,24 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 				this._audio.play();
 
 				this._prefetchFrom(index + 1);
-			});
+			})
+			.catch(handleError);
 	}
 
 	protected _stop(): void {
 		this._audio.pause();
+	}
+
+	retry(): void {
+		let key = this._getKey(this._currentSegment);
+		if (!this._failedSegmentKeys.has(key)) {
+			return;
+		}
+		this._failedSegmentKeys.delete(key);
+		this._error = null;
+		this.dispatchEvent(new ReadAloudEvent('ErrorCleared', this._currentSegment));
+		this._paused = false;
+		this._speak();
 	}
 
 	private async _prefetchFrom(startIndex: number) {
@@ -229,7 +259,8 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 			if (!audio) {
 				if (error) {
 					this._error = error;
-					this.dispatchEvent(new Event('error'));
+					this._failedSegmentKeys.add(key);
+					// Don't dispatch error immediately - wait until playback reaches this segment
 					console.error(error);
 				}
 				throw new Error('Failed to fetch audio');
