@@ -20,8 +20,6 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 
 	private _fetching = new Map<string, Promise<Blob>>();
 
-	private _destroyed = false;
-
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
 
@@ -275,7 +273,8 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		return LATENCY_PADDING_MS + perCharMs * segment.text.length;
 	}
 
-	destroy(): void {
+	override destroy(): void {
+		super.destroy();
 		if (this._audio.src) {
 			URL.revokeObjectURL(this._audio.src);
 		}
@@ -283,6 +282,5 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		this._fetching.clear();
 		this._audio.pause();
 		this._audio.removeAttribute('src');
-		this._destroyed = true;
 	}
 }

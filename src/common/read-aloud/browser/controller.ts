@@ -42,7 +42,8 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 		this.buffering = false;
 	}
 
-	destroy() {
+	override destroy() {
+		super.destroy();
 		this._position = -1;
 		window.speechSynthesis.cancel();
 	}

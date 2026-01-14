@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import cx from 'classnames';
 
 import UtilityPopup from './common/utility-popup';
@@ -33,6 +33,15 @@ function ReadAloudPopup(props) {
 	let [error, setError] = useState(null);
 	let [pausedAfterQuotaExhausted, setPausedAfterQuotaExhausted] = useState(false);
 
+	let paramsRef = useRef(params);
+	let pausedAfterQuotaExhaustedRef = useRef(pausedAfterQuotaExhausted);
+	useEffect(() => {
+		paramsRef.current = params;
+	}, [params]);
+	useEffect(() => {
+		pausedAfterQuotaExhaustedRef.current = pausedAfterQuotaExhausted;
+	}, [pausedAfterQuotaExhausted]);
+
 	let controller = params.controller;
 	let showSpinner = !params.segments || isBuffering;
 
@@ -48,8 +57,9 @@ function ReadAloudPopup(props) {
 			return undefined;
 		}
 		let backwardStopIndex = params.backwardStopIndex;
-		if (params.segments && params.activeSegment) {
-			backwardStopIndex = params.segments.indexOf(params.activeSegment);
+		// Use ref to access activeSegment so we don't rerun when it changes
+		if (params.segments && paramsRef.current.activeSegment && params.segments.includes(paramsRef.current.activeSegment)) {
+			backwardStopIndex = params.segments.indexOf(paramsRef.current.activeSegment);
 		}
 		let controller = voice.getController(params.segments, backwardStopIndex, params.forwardStopIndex);
 		onChange({ controller });
@@ -124,19 +134,24 @@ function ReadAloudPopup(props) {
 	}
 
 	async function handleSpeedPointerUp() {
-		if (speedWhileDragging !== null) {
-			let paused = params.paused;
-			if (!paused) {
-				// Pause, then wait momentarily, because otherwise Web Speech
-				// will read multiple lines at once
-				onChange({ paused: true });
-				await new Promise(resolve => setTimeout(resolve, 100));
-			}
-			let speed = speedWhileDragging;
-			onChange({ speed, paused });
-			onSetVoice(resolvedLang, params.voice, speed);
-			setSpeedWhileDragging(null);
+		// Capture all values before awaiting to avoid race conditions
+		let speed = speedWhileDragging;
+		if (speed === null) {
+			return;
 		}
+		let paused = paramsRef.current.paused;
+		let currentVoice = paramsRef.current.voice;
+		let currentResolvedLang = resolvedLang;
+
+		if (!paused) {
+			// Pause, then wait momentarily, because otherwise Web Speech
+			// will read multiple lines at once
+			onChange({ paused: true });
+			await new Promise(resolve => setTimeout(resolve, 100));
+		}
+		onChange({ speed, paused });
+		onSetVoice(currentResolvedLang, currentVoice, speed);
+		setSpeedWhileDragging(null);
 	}
 
 	function handleVoiceModeChange(event) {
@@ -181,8 +196,8 @@ function ReadAloudPopup(props) {
 			if (isQuotaLow) {
 				setShowOptions(true);
 			}
-			if (isQuotaExhausted && !params.paused) {
-				if (pausedAfterQuotaExhausted) {
+			if (isQuotaExhausted && !paramsRef.current.paused) {
+				if (pausedAfterQuotaExhaustedRef.current) {
 					setVoiceMode('browser');
 				}
 				else {
@@ -195,9 +210,11 @@ function ReadAloudPopup(props) {
 
 		let interval = setInterval(updateRemaining, 1000);
 		return () => clearInterval(interval);
-	}, [controller, onChange, params.paused, pausedAfterQuotaExhausted]);
+	}, [controller, onChange]);
 
 	useEffect(() => {
+		let cancelled = false;
+
 		let fetchVoicesAndSet = async () => {
 			setAllVoices([]);
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
@@ -211,9 +228,15 @@ function ReadAloudPopup(props) {
 				loggedIn ? remoteProvider.getVoices().catch(handleError) : [],
 				browserProvider.getVoices().catch(handleError),
 			]);
-			setAllVoices([...remoteVoices, ...browserVoices]);
+			if (!cancelled) {
+				setAllVoices([...remoteVoices, ...browserVoices]);
+			}
 		};
 		fetchVoicesAndSet();
+
+		return () => {
+			cancelled = true;
+		};
 	}, [loggedIn, remoteInterface]);
 
 	useEffect(() => {

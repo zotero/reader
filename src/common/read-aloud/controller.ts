@@ -24,6 +24,8 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 
 	protected _error: ErrorState | null = null;
 
+	protected _destroyed = false;
+
 	get paused() {
 		return this._paused;
 	}
@@ -85,6 +87,13 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		this._segments = segments;
 	}
 
+	override dispatchEvent(event: Event): boolean {
+		if (this._destroyed) {
+			return false;
+		}
+		return super.dispatchEvent(event);
+	}
+
 	skipBack() {
 		let previousIndex = this._segments.slice(0, this._position).findLastIndex(
 			segment => segment.anchor === 'paragraphStart'
@@ -123,7 +132,9 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 
 	protected abstract _stop(): void;
 
-	abstract destroy(): void;
+	destroy(): void {
+		this._destroyed = true;
+	}
 
 	protected _handleSegmentStart(segment: ReadAloudSegment, index: number) {
 		this._position = index;
