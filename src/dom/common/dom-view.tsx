@@ -160,6 +160,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _readAloudState: ReadAloudState | null = null;
 
+	protected _lastNavigationTime: number | null = null;
+
 	protected _iframeCoordScaleFactor = 1;
 
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
@@ -1732,6 +1734,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleWheelCapture(event: WheelEvent) {
 		if (!event.ctrlKey && !(event.metaKey && isMac())) {
 			this._lastScrollTime = event.timeStamp;
+			if (this._readAloudState?.active) {
+				this._lastNavigationTime = performance.now();
+			}
 			return;
 		}
 
@@ -2006,6 +2011,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (selector) {
 				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
 				setTimeout(() => {
+					// Don't navigate if the user has manually navigated since the last Read Aloud navigation
+					if (this._lastNavigationTime !== null
+							&& this._lastNavigationTime > (state.controller?.lastSkipTime ?? Number.NEGATIVE_INFINITY)) {
+						return;
+					}
 					// Navigate to the start of the segment if possible
 					let startRange = range.toRange();
 					startRange.collapse(true);

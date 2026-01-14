@@ -75,8 +75,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private readonly _hrefTargetCache = new Map<string, HTMLElement>();
 
-	private _lastNavigationTime = 0;
-
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
 		super(options);
 		if (options.data.buf) {
@@ -871,11 +869,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			if (key == 'ArrowLeft') {
 				this.flow.navigateLeft();
 				event.preventDefault();
+				this._lastNavigationTime = performance.now();
 				return;
 			}
 			if (key == 'ArrowRight') {
 				this.flow.navigateRight();
 				event.preventDefault();
+				this._lastNavigationTime = performance.now();
 				// eslint-disable-next-line no-useless-return
 				return;
 			}
@@ -929,7 +929,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,
 			appearance: this.appearance,
-			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
+			outlinePath: this._lastNavigationTime === null || performance.now() - this._lastNavigationTime > 1500
+				? this._getOutlinePath()
+				: undefined,
 			lang: this.lang,
 		};
 		this._options.onChangeViewStats(viewStats);
@@ -1289,7 +1291,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {
 		console.log('Navigating to', location);
-		this._lastNavigationTime = Date.now();
+		this._lastNavigationTime = performance.now();
 
 		options.behavior ||= 'smooth';
 
@@ -1357,10 +1359,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	navigateToFirstPage() {
 		this.flow.navigateToFirstPage();
+		this._lastNavigationTime = performance.now();
 	}
 
 	navigateToLastPage() {
 		this.flow.navigateToLastPage();
+		this._lastNavigationTime = performance.now();
 	}
 
 	canNavigateToPreviousPage() {
@@ -1373,10 +1377,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	navigateToPreviousPage() {
 		this.flow.navigateToPreviousPage();
+		this._lastNavigationTime = performance.now();
 	}
 
 	navigateToNextPage() {
 		this.flow.navigateToNextPage();
+		this._lastNavigationTime = performance.now();
 	}
 
 	canNavigateToPreviousSection() {
