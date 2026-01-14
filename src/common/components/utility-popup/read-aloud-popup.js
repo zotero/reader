@@ -78,6 +78,7 @@ function ReadAloudPopup(props) {
 
 		let voiceMode = voice instanceof BrowserReadAloudVoice ? 'browser' : 'remote';
 		setVoiceMode(voiceMode);
+		setError(null);
 
 		return () => {
 			controller.destroy();
