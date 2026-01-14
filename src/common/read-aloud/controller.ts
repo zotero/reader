@@ -22,8 +22,6 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 
 	protected _speed = 1;
 
-	protected _lastSkipTime: number | null = null;
-
 	protected _error: ErrorState | null = null;
 
 	protected _destroyed = false;
@@ -71,10 +69,6 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		return creditsRemaining / creditsPerSecond;
 	}
 
-	get lastSkipTime(): number | null {
-		return this._lastSkipTime;
-	}
-
 	get error() {
 		return this._error;
 	}
@@ -108,7 +102,6 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 			previousIndex = this._position - 1;
 		}
 		this._position = Math.max(previousIndex, 0);
-		this._lastSkipTime = performance.now();
 		this._stop();
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
 		this._speakWithSkipDebounce();
@@ -125,7 +118,6 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 			nextIndex = 0;
 		}
 		this._position = Math.min(nextIndex + this._position + 1, this._segments.length - 1);
-		this._lastSkipTime = performance.now();
 		this._stop();
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
 		this._speakWithSkipDebounce();
