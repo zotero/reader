@@ -234,7 +234,7 @@ function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoiceP
 	);
 }
 
-function ReadAloudFirstRunPopup({ lang, remoteInterface, loggedIn, onOpenVoicePreferences, onPurchaseCredits, onCancel, onDone }) {
+function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoicePreferences, onPurchaseCredits, onCancel, onDone }) {
 	const { l10n } = useLocalization();
 
 	let [selectedMode, setSelectedMode] = useState(null);
@@ -245,7 +245,7 @@ function ReadAloudFirstRunPopup({ lang, remoteInterface, loggedIn, onOpenVoicePr
 
 	let allVoices = useMemo(() => [...browserVoices, ...remoteVoices], [browserVoices, remoteVoices]);
 	let languages = getSupportedLanguages(allVoices);
-	let resolvedLang = useMemo(() => resolveLanguage(lang || 'en', languages), [lang, languages]);
+	let resolvedLang = useMemo(() => resolveLanguage(params.lang, languages), [languages, params.lang]);
 
 	useEffect(() => {
 		async function fetchVoices() {

@@ -106,6 +106,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
+	get lang(): string {
+		return this.book.packaging.metadata.language;
+	}
+
 	protected override _handleIFrameLoaded() {
 		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
 
@@ -116,7 +120,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		await super._handleViewCreated(viewState);
 		await this.book.opened;
 
-		this._iframeDocument.documentElement.lang = this.book.packaging.metadata.language;
+		this._iframeDocument.documentElement.lang = this.lang;
 
 		let cspMeta = this._iframeDocument.createElement('meta');
 		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
@@ -156,7 +160,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
 		if (!this.pageProgressionRTL) {
 			try {
-				let locale = new Intl.Locale(this.book.packaging.metadata.language).maximize();
+				let locale = new Intl.Locale(this.lang).maximize();
 				this.pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
 				if (this.pageProgressionRTL) {
 					console.log('Guessed RTL page progression from maximized locale: ' + locale);
@@ -247,7 +251,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			document: this._iframeDocument,
 		});
 		await renderer.render(this.book.archive.request.bind(this.book.archive), cssRewriter);
-		renderer.body.lang = this.book.packaging.metadata.language;
+		renderer.body.lang = this.lang;
 		this._sectionRenderers[section.index] = renderer;
 	}
 
@@ -930,7 +934,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			spreadMode: this.spreadMode,
 			appearance: this.appearance,
 			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
-			lang: this.lang,
 		};
 		this._options.onChangeViewStats(viewStats);
 		this.a11yRecordCurrentPage();

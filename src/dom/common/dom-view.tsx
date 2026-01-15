@@ -282,9 +282,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract getData(): Data;
 
-	get lang(): string {
-		return this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
-	}
+	abstract get lang(): string;
 
 	protected async _handleIFrameLoaded(): Promise<void> {
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
@@ -1969,7 +1967,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
-		if (!state.active) {
+		if (!state.popupOpen) {
 			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
 			return;
 		}
@@ -2021,7 +2019,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
+		if (!state.lang) {
+			this._options.onSetReadAloudState({
+				...state,
+				lang: this.lang,
+			});
+			return;
+		}
+
+		if (!state.active
+				|| state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
 				|| !state.segmentGranularity) {
 			return;
 		}

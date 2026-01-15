@@ -40,6 +40,7 @@ import { debounceUntilScrollFinishes } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
 import { ReadingMode } from "./reading-mode";
+import { detectLang } from '../../common/lib/detect-lang';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -107,6 +108,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			url: this._iframeDocument.head.querySelector('base')?.href,
 			importedFromURL: this._options.data.importedFromURL,
 		};
+	}
+
+	get lang(): string {
+		let lang = this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
+		if (!lang) {
+			lang = detectLang(this._iframeDocument.body.innerText) || 'en';
+			this._iframeDocument.documentElement.lang = lang;
+		}
+		return lang;
 	}
 
 	protected override _handleIFrameLoaded() {
@@ -466,7 +476,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canNavigateForward: this._history.canNavigateForward,
 			appearance: this.appearance,
 			readingModeEnabled: this._readingMode.enabled,
-			lang: this.lang,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}

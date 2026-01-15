@@ -261,7 +261,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onClose={props.onCloseThemePopup}
 					/>
 				)}
-				{props.enableReadAloud && state.readAloudState.popupOpen && (
+				{props.enableReadAloud && state.readAloudState.popupOpen && state.readAloudState.lang && (
 					state.readAloudVoices.size
 						? <ReadAloudPopup
 							params={state.readAloudState}
@@ -276,7 +276,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							onLogIn={props.onLogIn}
 						/>
 						: <ReadAloudFirstRunPopup
-							lang={viewStats.lang}
+							params={state.readAloudState}
 							remoteInterface={props.readAloudRemoteInterface}
 							loggedIn={state.loggedIn}
 							onOpenVoicePreferences={props.onOpenVoicePreferences}

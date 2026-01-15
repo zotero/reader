@@ -68,6 +68,7 @@ import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import { buildReadAloudSegments } from './read-aloud-segments';
+import { detectLang } from '../common/lib/detect-lang';
 
 class PDFView {
 	constructor(options) {
@@ -969,7 +970,7 @@ class PDFView {
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
-		if (!state.active) {
+		if (!state.popupOpen) {
 			this._highlightedPosition = null;
 			this._render();
 			return;
@@ -981,7 +982,20 @@ class PDFView {
 			this.navigateToPosition(state.activeSegment.position);
 		}
 
-		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
+		if (!state.lang) {
+			let textSample = this._readAloudSegments.paragraphs
+				.slice(0, 25)
+				.map(p => p.text)
+				.join('\n');
+			this._options.onSetReadAloudState({
+				...state,
+				lang: detectLang(textSample) || 'en',
+			});
+			return;
+		}
+
+		if (!state.active
+			|| state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
 			|| !state.segmentGranularity) {
 			return;
 		}

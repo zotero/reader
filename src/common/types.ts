@@ -121,7 +121,6 @@ export type ViewStats = {
 	fontFamily?: string;
 	outlinePath?: number[];
 	readingModeEnabled?: boolean;
-	lang?: string;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
