@@ -232,7 +232,7 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let fetchBlob = async (retriesRemaining = 2) => {
 			let startTime = performance.now();
 
-			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.voice.lang);
 
 			// Silently retry twice if we get a non-quota error
 			if (error && error !== 'quota-exceeded' && retriesRemaining) {

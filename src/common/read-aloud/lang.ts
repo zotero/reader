@@ -1,4 +1,5 @@
 import { ReadAloudVoice } from './voice';
+import { pickLocale } from 'locale-matcher';
 
 export function getSupportedLanguages(voices: ReadAloudVoice<never, never>[]): string[] {
 	return [...new Set(
@@ -7,35 +8,21 @@ export function getSupportedLanguages(voices: ReadAloudVoice<never, never>[]): s
 }
 
 export function resolveLanguage(contentLanguageCode: string, supportedLanguages: string[]) {
-	let contentLanguageCodeResolved;
-	try {
-		contentLanguageCodeResolved = new Intl.Locale(contentLanguageCode).language;
-	}
-	catch (e) {
-		console.warn(`Invalid locale: ${contentLanguageCode}`);
-		contentLanguageCodeResolved = 'en';
-	}
-
-	let userLocale = navigator.languages[0];
-
-	let isLangSupported = (lang: string) => (
-		!supportedLanguages.length || supportedLanguages.includes(lang)
-	);
-
-	// If the user's locale has the same language as the content locale
-	// (but possibly a different region), use the user's locale
-	if (userLocale.startsWith(contentLanguageCodeResolved) && isLangSupported(userLocale)) {
-		return userLocale;
-	}
-	// Otherwise, if we know how to read the content locale, use that
-	if (isLangSupported(contentLanguageCode)) {
+	if (!supportedLanguages.length) {
 		return contentLanguageCode;
 	}
-	// Fall back to US English
-	if (isLangSupported('en-US')) {
-		return 'en-US';
+	return pickLocale(contentLanguageCode, supportedLanguages);
+}
+
+export function normalizeLanguageForGoogle(language: string) {
+	// TODO: TEMP: Adapt language codes for Google API
+	switch (language) {
+		case 'en':
+			language = 'en-US';
+			break;
+		case 'ar':
+			language = 'ar-XA';
+			break;
 	}
-	// Or, in the rare situation where the system can't read US English,
-	// whatever the first locale it can read is
-	return supportedLanguages[0] ?? null;
+	return language;
 }

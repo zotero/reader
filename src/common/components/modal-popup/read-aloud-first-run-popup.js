@@ -9,9 +9,8 @@ import IconLoading from '../../../../res/icons/16/loading.svg';
 import IconPlayFill from '../../../../res/icons/16/play-fill.svg';
 import IconChevronLeft from '../../../../res/icons/20/chevron-left.svg';
 import IconChevronRight from '../../../../res/icons/20/chevron-right.svg';
-import { getSupportedLanguages, resolveLanguage } from '../../read-aloud/lang';
 
-function VoicePreview({ mode, voices, active, selectedVoiceID, onSetVoice, onOpenVoicePreferences }) {
+function VoicePreview({ mode, voices, active, selectedVoice, onSetVoice, onOpenVoicePreferences }) {
 	const { l10n } = useLocalization();
 
 	let sampleText = l10n.getString('reader-read-aloud-first-run-sample-text');
@@ -26,16 +25,11 @@ function VoicePreview({ mode, voices, active, selectedVoiceID, onSetVoice, onOpe
 	let [buffering, setBuffering] = useState(false);
 	let [autoplay, setAutoplay] = useState(false);
 
-	let selectedVoice = useMemo(
-		() => voices.find(v => v.id === selectedVoiceID) ?? voices[0],
-		[voices, selectedVoiceID]
-	);
-
 	useEffect(() => {
-		if (voices.length > 0 && !selectedVoiceID) {
-			onSetVoice(voices[0].id);
+		if (voices.length > 0 && !selectedVoice) {
+			onSetVoice(voices[0]);
 		}
-	}, [voices, selectedVoiceID, onSetVoice]);
+	}, [voices, onSetVoice, selectedVoice]);
 
 	useEffect(() => {
 		if (!active && controller) {
@@ -84,8 +78,8 @@ function VoicePreview({ mode, voices, active, selectedVoiceID, onSetVoice, onOpe
 		}
 	}
 
-	function handleVoiceSelected(voiceID) {
-		onSetVoice(voiceID);
+	function handleVoiceSelected(voice) {
+		onSetVoice(voice);
 		setAutoplay(true);
 	}
 
@@ -103,7 +97,7 @@ function VoicePreview({ mode, voices, active, selectedVoiceID, onSetVoice, onOpe
 					className="voice-switcher"
 					disabled={!voices.length || selectedVoice === voices[0]}
 					type="button"
-					onClick={() => handleVoiceSelected(voices[voices.indexOf(selectedVoice) - 1].id)}
+					onClick={() => handleVoiceSelected(voices[voices.indexOf(selectedVoice) - 1])}
 				>
 					<IconChevronLeft/>
 				</button>
@@ -117,9 +111,9 @@ function VoicePreview({ mode, voices, active, selectedVoiceID, onSetVoice, onOpe
 					>{buffering ? <IconLoading /> : <IconPlayFill/>}</button>
 					<Select
 						aria-label={l10n.getString('reader-read-aloud-voice')}
-						value={selectedVoiceID || ''}
+						value={selectedVoice?.id || ''}
 						tabIndex="-1"
-						onChange={e => handleVoiceSelected(e.target.value)}
+						onChange={e => handleVoiceSelected(voices.find(v => v.id === e.target.value))}
 					>
 						{voices.map((voice) => (
 							<option key={voice.id} value={voice.id}>{voice.label}</option>
@@ -130,7 +124,7 @@ function VoicePreview({ mode, voices, active, selectedVoiceID, onSetVoice, onOpe
 					className="voice-switcher"
 					disabled={!voices.length || selectedVoice === voices[voices.length - 1]}
 					type="button"
-					onClick={() => handleVoiceSelected(voices[voices.indexOf(selectedVoice) + 1].id)}
+					onClick={() => handleVoiceSelected(voices[voices.indexOf(selectedVoice) + 1])}
 				>
 					<IconChevronRight/>
 				</button>
@@ -186,7 +180,7 @@ function BulletList({ text, onPurchaseCredits }) {
 	);
 }
 
-function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoicePreferences, voices, selectedVoiceID, onSetVoice }) {
+function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoicePreferences, voices, selectedVoice, onSetVoice }) {
 	const { l10n } = useLocalization();
 
 	let radio = useRef();
@@ -226,7 +220,7 @@ function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoiceP
 				mode={mode}
 				voices={voices}
 				active={checked}
-				selectedVoiceID={selectedVoiceID}
+				selectedVoice={selectedVoice}
 				onSetVoice={onSetVoice}
 				onOpenVoicePreferences={onOpenVoicePreferences}
 			/>
@@ -240,53 +234,67 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 	let [selectedMode, setSelectedMode] = useState(null);
 	let [browserVoices, setBrowserVoices] = useState([]);
 	let [remoteVoices, setRemoteVoices] = useState([]);
-	let [selectedBrowserVoiceID, setSelectedBrowserVoiceID] = useState(null);
-	let [selectedRemoteVoiceID, setSelectedRemoteVoiceID] = useState(null);
-
-	let allVoices = useMemo(() => [...browserVoices, ...remoteVoices], [browserVoices, remoteVoices]);
-	let languages = getSupportedLanguages(allVoices);
-	let resolvedLang = useMemo(() => resolveLanguage(params.lang, languages), [languages, params.lang]);
+	let [selectedBrowserVoice, setSelectedBrowserVoice] = useState(null);
+	let [selectedRemoteVoice, setSelectedRemoteVoice] = useState(null);
 
 	useEffect(() => {
+		let cancelled = false;
+
 		async function fetchVoices() {
 			let browserProvider = new BrowserReadAloudProvider();
 			try {
-				setBrowserVoices((await browserProvider.getVoices())
-					.filter(voice => voice.lang.startsWith(resolvedLang)));
+				let voices = await browserProvider.getVoices(params.lang);
+				if (cancelled) return;
+				setBrowserVoices(voices);
 			}
 			catch (e) {
+				if (cancelled) return;
 				console.error(e);
 				setBrowserVoices([]);
 			}
 		}
 		fetchVoices();
-	}, [resolvedLang]);
+
+		return () => {
+			cancelled = true;
+		};
+	}, [params.lang]);
 
 	useEffect(() => {
 		if (!remoteInterface || !loggedIn) {
-			return;
+			return undefined;
 		}
+
+		let cancelled = false;
+
 		async function fetchVoices() {
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
 			try {
-				setRemoteVoices(await remoteProvider.getVoices());
+				let voices = await remoteProvider.getVoices(params.lang);
+				if (cancelled) return;
+				setRemoteVoices(voices);
 			}
 			catch (e) {
+				if (cancelled) return;
 				console.error(e);
 				setRemoteVoices([]);
 			}
 		}
 		fetchVoices();
-	}, [remoteInterface, loggedIn]);
+
+		return () => {
+			cancelled = true;
+		};
+	}, [remoteInterface, loggedIn, params.lang]);
 
 	function handleSubmit(event) {
 		event.preventDefault();
 		if (!selectedMode) return;
-		let selectedVoiceID = selectedMode === 'browser'
-			? selectedBrowserVoiceID
-			: selectedRemoteVoiceID;
-		if (!selectedVoiceID) return;
-		onDone(resolvedLang, selectedVoiceID, 1);
+		let selectedVoice = selectedMode === 'browser'
+			? selectedBrowserVoice
+			: selectedRemoteVoice;
+		if (!selectedVoice) return;
+		onDone(selectedVoice.lang, selectedVoice.id, 1);
 	}
 
 	return (
@@ -302,8 +310,8 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 						onSelect={setSelectedMode}
 						onOpenVoicePreferences={onOpenVoicePreferences}
 						voices={browserVoices}
-						selectedVoiceID={selectedBrowserVoiceID}
-						onSetVoice={setSelectedBrowserVoiceID}
+						selectedVoice={selectedBrowserVoice}
+						onSetVoice={setSelectedBrowserVoice}
 					/>
 					<ModePreview
 						mode="remote"
@@ -312,8 +320,8 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 						onPurchaseCredits={onPurchaseCredits}
 						onOpenVoicePreferences={onOpenVoicePreferences}
 						voices={remoteVoices}
-						selectedVoiceID={selectedRemoteVoiceID}
-						onSetVoice={setSelectedRemoteVoiceID}
+						selectedVoice={selectedRemoteVoice}
+						onSetVoice={setSelectedRemoteVoice}
 					/>
 				</div>
 				<div className="row buttons">

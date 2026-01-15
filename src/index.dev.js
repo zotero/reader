@@ -124,10 +124,11 @@ async function createReader() {
 				};
 			},
 
-			async getAudio(segment, voice) {
+			async getAudio(segment, voice, lang) {
 				let params = new URLSearchParams();
 				params.set('text', segment.text);
 				params.set('voice', voice.id);
+				params.set('lang', lang);
 				let response;
 				try {
 					response = await fetch('https://api.zotero.org/tts/speak?' + params, {

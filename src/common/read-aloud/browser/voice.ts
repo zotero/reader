@@ -14,7 +14,7 @@ export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice, 
 	}
 
 	get lang(): string {
-		return this.impl.lang;
+		return this.impl.lang.replace(/-.+$/, '');
 	}
 
 	get score(): number {

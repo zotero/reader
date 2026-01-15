@@ -16,7 +16,7 @@ export abstract class ReadAloudVoice<TImpl, TProvider extends ReadAloudProvider>
 
 	abstract readonly label: string;
 
-	abstract readonly lang: string | null;
+	abstract readonly lang: string;
 
 	abstract readonly score: number;
 

@@ -14,7 +14,7 @@ export type RemoteInterface = {
 		creditsRemaining: number;
 	}>;
 
-	getAudio(segment: ReadAloudSegment, voice: RemoteVoiceConfig): Promise<{
+	getAudio(segment: ReadAloudSegment, voice: RemoteVoiceConfig, lang: string): Promise<{
 		audio: Blob | null;
 		creditsRemaining: number | null;
 		error?: ErrorState;

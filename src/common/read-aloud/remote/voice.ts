@@ -5,6 +5,13 @@ import { RemoteReadAloudController } from './controller';
 import { RemoteReadAloudProvider } from './provider';
 
 export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, RemoteReadAloudProvider> {
+	private readonly _lang: string;
+
+	constructor(provider: RemoteReadAloudProvider, impl: RemoteVoiceConfig, lang: string) {
+		super(provider, impl);
+		this._lang = lang;
+	}
+
 	get id() {
 		return this.impl.id;
 	}
@@ -14,7 +21,7 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 	}
 
 	get lang() {
-		return null;
+		return this._lang;
 	}
 
 	get score() {
