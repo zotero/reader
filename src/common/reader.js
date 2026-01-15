@@ -151,6 +151,7 @@ class Reader {
 		// the second time this is called)
 		window.speechSynthesis.getVoices();
 
+		this._enableReadAloud = options.enableReadAloud || false;
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
 		this._state = {
@@ -327,6 +328,7 @@ class Reader {
 						onChangePageIndex={(pageIndex, options) => this._lastView.navigate({ pageIndex }, options)}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
+						enableReadAloud={this._enableReadAloud}
 						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
 						readAloudRemoteInterface={this._readAloudRemoteInterface}
 						onSetReadAloudVoice={this._setReadAloudVoice.bind(this)}

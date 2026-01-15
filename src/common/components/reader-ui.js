@@ -144,6 +144,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						readOnly={state.readOnly}
 						stackedView={stackedView}
 						showContextPaneToggle={showContextPaneToggle}
+						showReadAloudToggle={props.enableReadAloud}
 						onToggleSidebar={props.onToggleSidebar}
 						onZoomIn={props.onZoomIn}
 						onZoomOut={props.onZoomOut}
@@ -260,7 +261,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onClose={props.onCloseThemePopup}
 					/>
 				)}
-				{state.readAloudState.popupOpen && (
+				{props.enableReadAloud && state.readAloudState.popupOpen && (
 					state.readAloudVoices.size
 						? <ReadAloudPopup
 							params={state.readAloudState}

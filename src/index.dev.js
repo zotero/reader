@@ -107,6 +107,7 @@ async function createReader() {
 		onSetReadAloudStatus(status) {
 			console.log('Set read aloud status', status);
 		},
+		enableReadAloud: true,
 		readAloudRemoteInterface: ZOTERO_API_KEY && {
 			async getVoices() {
 				let response = await fetch('https://api.zotero.org/tts/voices', {
