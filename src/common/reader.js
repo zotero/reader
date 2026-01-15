@@ -913,6 +913,9 @@ class Reader {
 	}
 
 	toggleReadAloudPopup(popupOpen) {
+		if (!this._enableReadAloud) {
+			return;
+		}
 		if (popupOpen === undefined) {
 			popupOpen = !this._state.readAloudState.popupOpen;
 		}
@@ -935,6 +938,9 @@ class Reader {
 	}
 
 	toggleReadAloudPaused(paused = undefined) {
+		if (!this._enableReadAloud) {
+			return;
+		}
 		this._ensureType('pdf', 'epub', 'snapshot');
 		if (!this._state.readAloudState.active) {
 			return;
@@ -946,6 +952,9 @@ class Reader {
 	}
 
 	startReadAloudAtPosition(position = null) {
+		if (!this._enableReadAloud) {
+			return;
+		}
 		if (!position && this._state[this._lastView + 'SelectionPopup']) {
 			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
 		}
