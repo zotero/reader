@@ -198,7 +198,7 @@ async function createReader() {
 					};
 				}
 
-				let { audio, timepoints } = await response.json();
+				let { audio } = await response.json();
 				return {
 					audio,
 				};
