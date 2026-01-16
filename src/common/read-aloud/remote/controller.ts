@@ -2,14 +2,43 @@ import { ReadAloudSegment } from '../../types';
 import { ReadAloudController, ReadAloudEvent } from '../controller';
 import LRUCacheMap from '../../lib/lru-cache-map';
 import { RemoteReadAloudVoice } from './voice';
+import { resolveLanguage } from '../lang';
 
 const BLOB_CACHE_CAPACITY = 32;
 const EST_PLAYBACK_CHARS_PER_SECOND = 16;
 const EXP_MOVING_AVERAGE_ALPHA = 0.25;
 
-export class RemoteReadAloudController extends ReadAloudController<RemoteReadAloudVoice> {
-	private readonly _audio: HTMLAudioElement;
+abstract class RemoteReadAloudControllerBase extends ReadAloudController<RemoteReadAloudVoice> {
+	protected readonly _audio: HTMLAudioElement;
 
+	constructor(voice: RemoteReadAloudVoice, lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		// Resolve base language code (e.g., "en") to a full locale the voice supports (e.g., "en-US")
+		let resolvedLang = resolveLanguage(lang, voice.languages) ?? lang;
+		super(voice, resolvedLang, segments, backwardStopIndex, forwardStopIndex);
+
+		this._audio = new Audio();
+		this._audio.preload = 'auto';
+	}
+
+	protected _stop(): void {
+		this._audio.pause();
+	}
+
+	protected _revokeAudioSrc(): void {
+		if (this._audio.src) {
+			URL.revokeObjectURL(this._audio.src);
+		}
+	}
+
+	override destroy(): void {
+		super.destroy();
+		this._revokeAudioSrc();
+		this._audio.pause();
+		this._audio.removeAttribute('src');
+	}
+}
+
+export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	private _currentIndex: number | null = null;
 
 	private _currentBlob: Blob | null = null;
@@ -36,13 +65,6 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 			? 0
 			: this._audio.duration - this._audio.currentTime;
 		return creditsRemaining / creditsPerSecond + remainingTimeInAudio;
-	}
-
-	constructor(voice: RemoteReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(voice, segments, backwardStopIndex, forwardStopIndex);
-
-		this._audio = new Audio();
-		this._audio.preload = 'auto';
 	}
 
 	protected _speak(): void {
@@ -119,10 +141,6 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 				this._prefetchFrom(index + 1);
 			})
 			.catch(handleError);
-	}
-
-	protected _stop(): void {
-		this._audio.pause();
 	}
 
 	retry(): void {
@@ -232,7 +250,7 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 		let fetchBlob = async (retriesRemaining = 2) => {
 			let startTime = performance.now();
 
-			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.voice.lang);
+			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.lang);
 
 			// Silently retry twice if we get a non-quota error
 			if (error && error !== 'quota-exceeded' && retriesRemaining) {
@@ -306,12 +324,52 @@ export class RemoteReadAloudController extends ReadAloudController<RemoteReadAlo
 
 	override destroy(): void {
 		super.destroy();
-		if (this._audio.src) {
-			URL.revokeObjectURL(this._audio.src);
-		}
 		this._blobs.clear();
 		this._fetching.clear();
+	}
+}
+
+export class RemoteSampleReadAloudController extends RemoteReadAloudControllerBase {
+	constructor(voice: RemoteReadAloudVoice, lang: string, segments: ReadAloudSegment[]) {
+		super(voice, lang, segments, null, null);
+	}
+
+	protected _speak() {
+		if (this._paused) {
+			this._audio.pause();
+			return;
+		}
+
+		let segment = this._segments[0];
+		if (!segment) {
+			return;
+		}
+
+		this._revokeAudioSrc();
 		this._audio.pause();
-		this._audio.removeAttribute('src');
+		this.buffering = true;
+
+		this.voice.provider.remote.getSampleAudio(this.voice.impl, this.lang)
+			.then(({ audio, error }) => {
+				this.buffering = false;
+				if (this._destroyed || this._paused) {
+					return;
+				}
+				if (audio) {
+					this._audio.src = URL.createObjectURL(audio);
+					this._audio.onended = () => this._handleSegmentEnd(segment, 0);
+					this._handleSegmentStart(segment, 0);
+					this._audio.play();
+				}
+				else if (error) {
+					console.error(error);
+					this.dispatchEvent(new ReadAloudEvent('Error', segment));
+				}
+			})
+			.catch((err) => {
+				this.buffering = false;
+				console.error(err);
+				this.dispatchEvent(new ReadAloudEvent('Error', segment));
+			});
 	}
 }

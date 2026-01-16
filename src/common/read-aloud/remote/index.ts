@@ -4,6 +4,7 @@ import { ErrorState } from '../controller';
 export type RemoteVoiceConfig = {
 	id: string;
 	label: string;
+	locales: string[];
 	creditsPerSecond: number;
 	segmentGranularity: ReadAloudGranularity;
 };
@@ -17,6 +18,11 @@ export type RemoteInterface = {
 	getAudio(segment: ReadAloudSegment, voice: RemoteVoiceConfig, lang: string): Promise<{
 		audio: Blob | null;
 		creditsRemaining: number | null;
+		error?: ErrorState;
+	}>;
+
+	getSampleAudio(voice: RemoteVoiceConfig, lang: string): Promise<{
+		audio: Blob | null;
 		error?: ErrorState;
 	}>;
 };

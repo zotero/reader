@@ -16,7 +16,7 @@ export abstract class ReadAloudVoice<TImpl, TProvider extends ReadAloudProvider>
 
 	abstract readonly label: string;
 
-	abstract readonly lang: string;
+	abstract readonly languages: string[];
 
 	abstract readonly score: number;
 
@@ -25,8 +25,11 @@ export abstract class ReadAloudVoice<TImpl, TProvider extends ReadAloudProvider>
 	abstract readonly creditsPerSecond: number | null;
 
 	abstract getController(
+		lang: string,
 		segments: ReadAloudSegment[],
 		backwardStopIndex: number | null,
 		forwardStopIndex: number | null
 	): ReadAloudController<ReadAloudVoice<TImpl, TProvider>>;
+
+	abstract getSampleController(lang: string, segments: ReadAloudSegment[]): ReadAloudController<ReadAloudVoice<TImpl, TProvider>>;
 }

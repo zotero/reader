@@ -13,8 +13,8 @@ export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice, 
 		return this.impl.name;
 	}
 
-	get lang(): string {
-		return this.impl.lang.replace(/-.+$/, '');
+	get languages(): string[] {
+		return [this.impl.lang.replace(/-.+$/, '')];
 	}
 
 	get score(): number {
@@ -55,7 +55,11 @@ export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice, 
 		return null;
 	}
 
-	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		return new BrowserReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
+	getController(lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		return new BrowserReadAloudController(this, lang, segments, backwardStopIndex, forwardStopIndex);
+	}
+
+	getSampleController(lang: string, segments: ReadAloudSegment[]) {
+		return new BrowserReadAloudController(this, lang, segments, null, null);
 	}
 }

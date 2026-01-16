@@ -169,6 +169,37 @@ async function createReader() {
 					audio: await response.blob(),
 					creditsRemaining,
 				};
+			},
+
+			async getSampleAudio(voice, lang) {
+				let params = new URLSearchParams();
+				params.set('voice', voice.id);
+				params.set('lang', lang);
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/sample?' + params, {
+						headers: {
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+					});
+				}
+				catch {
+					return {
+						audio: null,
+						error: 'network',
+					};
+				}
+
+				if (!response.ok) {
+					return {
+						audio: null,
+						error: 'unknown',
+					};
+				}
+
+				return {
+					audio: await response.blob(),
+				};
 			}
 		},
 		onLogIn() {

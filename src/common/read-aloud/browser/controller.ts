@@ -6,8 +6,8 @@ import { BrowserReadAloudVoice } from './voice';
 export class BrowserReadAloudController extends ReadAloudController<BrowserReadAloudVoice> {
 	private readonly _utterances: SpeechSynthesisUtterance[];
 
-	constructor(voice: BrowserReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(voice, segments, backwardStopIndex, forwardStopIndex);
+	constructor(voice: BrowserReadAloudVoice, lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		super(voice, lang, segments, backwardStopIndex, forwardStopIndex);
 		this._utterances = segments.map((segment, index) => {
 			let utterance = new SpeechSynthesisUtterance(segment.text);
 			utterance.voice = this.voice.impl;

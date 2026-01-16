@@ -978,6 +978,10 @@ class Reader {
 				...this._state.readAloudVoices,
 				[lang, { voice, speed }],
 			]),
+			readAloudState: {
+				...this._state.readAloudState,
+				lang,
+			},
 		});
 	}
 

@@ -15,7 +15,7 @@ import Select from '../common/select';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
 import { BrowserReadAloudVoice } from '../../read-aloud/browser/voice';
-import { getSupportedLanguages, resolveLanguage } from '../../read-aloud/lang';
+import { getSupportedLanguages, getVoicesForLanguage, resolveLanguage } from '../../read-aloud/lang';
 
 const URGENT_THRESHOLD_SECONDS = 60;
 
@@ -28,7 +28,6 @@ function ReadAloudPopup(props) {
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let [voiceMode, setVoiceMode] = useState(null);
 	let [allVoices, setAllVoices] = useState([]);
-	let [browserLanguages, setBrowserLanguages] = useState([]);
 	let [isBuffering, setBuffering] = useState(false);
 	let [secondsRemaining, setSecondsRemaining] = useState(null);
 	let [error, setError] = useState(null);
@@ -62,7 +61,7 @@ function ReadAloudPopup(props) {
 		if (params.segments && paramsRef.current.activeSegment && params.segments.includes(paramsRef.current.activeSegment)) {
 			backwardStopIndex = params.segments.indexOf(paramsRef.current.activeSegment);
 		}
-		let controller = voice.getController(params.segments, backwardStopIndex, params.forwardStopIndex);
+		let controller = voice.getController(params.lang, params.segments, backwardStopIndex, params.forwardStopIndex);
 		onChange({ controller });
 
 		controller.addEventListener('BufferingChange', () => {
@@ -98,19 +97,35 @@ function ReadAloudPopup(props) {
 		return () => {
 			controller.destroy();
 		};
-	}, [allVoices, onChange, params.backwardStopIndex, params.forwardStopIndex, params.segments, params.voice]);
+	}, [allVoices, onChange, params.backwardStopIndex, params.forwardStopIndex, params.lang, params.segments, params.voice]);
 
 	useEffect(() => {
 		if (!controller) return;
 		controller.speed = params.speed;
 	}, [controller, params.speed]);
 
-	let voicesForSelection = useMemo(
+	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
+		type: 'language',
+		languageDisplay: 'standard'
+	}), []);
+
+	let voicesForMode = useMemo(
 		() => allVoices.filter((voice) => {
 			let voiceModeHere = voice instanceof BrowserReadAloudVoice ? 'browser' : 'remote';
 			return voiceMode === null || voiceModeHere === voiceMode;
 		}),
 		[allVoices, voiceMode]
+	);
+
+	let currentLanguages = useMemo(
+		() => getSupportedLanguages(voicesForMode)
+			.sort((a, b) => displayNames.of(a).localeCompare(displayNames.of(b))),
+		[voicesForMode, displayNames]
+	);
+
+	let voicesForSelection = useMemo(
+		() => getVoicesForLanguage(voicesForMode, params.lang),
+		[voicesForMode, params.lang]
 	);
 
 	let { voice: persistedVoice, speed: persistedSpeed } = useMemo(() => {
@@ -217,7 +232,6 @@ function ReadAloudPopup(props) {
 		let cancelled = false;
 
 		let fetchVoicesAndSet = async () => {
-			setAllVoices([]);
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
 			let browserProvider = new BrowserReadAloudProvider();
 
@@ -226,13 +240,11 @@ function ReadAloudPopup(props) {
 				return [];
 			};
 			let [remoteVoices, browserVoices] = await Promise.all([
-				loggedIn ? remoteProvider.getVoices(params.lang).catch(handleError) : [],
-				browserProvider.getVoices(params.lang).catch(handleError),
+				loggedIn ? remoteProvider.getVoices().catch(handleError) : [],
+				browserProvider.getVoices().catch(handleError),
 			]);
-			let browserLanguages = await browserProvider.getLanguages();
 			if (!cancelled) {
 				setAllVoices([...remoteVoices, ...browserVoices]);
-				setBrowserLanguages(browserLanguages);
 			}
 		};
 		fetchVoicesAndSet();
@@ -240,7 +252,7 @@ function ReadAloudPopup(props) {
 		return () => {
 			cancelled = true;
 		};
-	}, [loggedIn, params.lang, remoteInterface]);
+	}, [loggedIn, remoteInterface]);
 
 	useEffect(() => {
 		if (params.voice && voicesForSelection.some(v => v.id === params.voice)) {
@@ -264,11 +276,6 @@ function ReadAloudPopup(props) {
 		});
 		onSetVoice(params.lang, voice, params.speed);
 	}, [onChange, onSetVoice, params.active, params.lang, params.speed, params.voice, persistedSpeed, persistedVoice, voicesForSelection]);
-
-	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
-		type: 'language',
-		languageDisplay: 'standard'
-	}), []);
 
 	return (
 		<UtilityPopup className="read-aloud-popup">
@@ -354,18 +361,16 @@ function ReadAloudPopup(props) {
 						</Localized>
 					</div>
 				)}
-				{voiceMode === 'browser' && (
-					<Select
-						aria-label="reader-read-aloud-language"
-						value={params.lang}
-						tabIndex="-1"
-						onChange={handleLangChange}
-					>
-						{browserLanguages.map(language => (
-							<option key={language} value={language}>{displayNames.of(language)}</option>
-						))}
-					</Select>
-				)}
+				<Select
+					aria-label="reader-read-aloud-language"
+					value={params.lang}
+					tabIndex="-1"
+					onChange={handleLangChange}
+				>
+					{currentLanguages.map(language => (
+						<option key={language} value={language}>{displayNames.of(language)}</option>
+					))}
+				</Select>
 				{!!voicesForSelection.length && (
 					<div className="row voices" data-tabstop={1}>
 						<Select

@@ -4,13 +4,14 @@ import DialogPopup from './common/dialog-popup';
 import Select from '../common/select';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
+import { getSupportedLanguages, getVoicesForLanguage } from '../../read-aloud/lang';
 import cx from 'classnames';
 import IconLoading from '../../../../res/icons/16/loading.svg';
 import IconPlayFill from '../../../../res/icons/16/play-fill.svg';
 import IconChevronLeft from '../../../../res/icons/20/chevron-left.svg';
 import IconChevronRight from '../../../../res/icons/20/chevron-right.svg';
 
-function VoicePreview({ mode, voices, active, selectedVoice, onSetVoice, onOpenVoicePreferences }) {
+function VoicePreview({ mode, voices, active, selectedVoice, lang, onSetVoice, onOpenVoicePreferences }) {
 	const { l10n } = useLocalization();
 
 	let sampleText = l10n.getString('reader-read-aloud-first-run-sample-text');
@@ -56,7 +57,7 @@ function VoicePreview({ mode, voices, active, selectedVoice, onSetVoice, onOpenV
 			controller.destroy();
 		}
 
-		let newController = selectedVoice.getController(sampleSegments, null, null);
+		let newController = selectedVoice.getSampleController(lang, sampleSegments, null, null);
 		setController(newController);
 		setPlaying(false);
 
@@ -65,7 +66,7 @@ function VoicePreview({ mode, voices, active, selectedVoice, onSetVoice, onOpenV
 		newController.addEventListener('Complete', () => setPlaying(false));
 
 		newController.paused = false;
-	}, [controller, sampleSegments, selectedVoice]);
+	}, [controller, lang, sampleSegments, selectedVoice]);
 
 	function playOrStopSample() {
 		if (controller && playing) {
@@ -180,7 +181,7 @@ function BulletList({ text, onPurchaseCredits }) {
 	);
 }
 
-function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoicePreferences, voices, selectedVoice, onSetVoice }) {
+function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoicePreferences, voices, selectedVoice, lang, onSetVoice }) {
 	const { l10n } = useLocalization();
 
 	let radio = useRef();
@@ -218,6 +219,7 @@ function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoiceP
 			</div>
 			<VoicePreview
 				mode={mode}
+				lang={lang}
 				voices={voices}
 				active={checked}
 				selectedVoice={selectedVoice}
@@ -232,10 +234,11 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 	const { l10n } = useLocalization();
 
 	let [selectedMode, setSelectedMode] = useState(null);
-	let [browserVoices, setBrowserVoices] = useState([]);
-	let [remoteVoices, setRemoteVoices] = useState([]);
+	let [allBrowserVoices, setAllBrowserVoices] = useState([]);
+	let [allRemoteVoices, setAllRemoteVoices] = useState([]);
 	let [selectedBrowserVoice, setSelectedBrowserVoice] = useState(null);
 	let [selectedRemoteVoice, setSelectedRemoteVoice] = useState(null);
+	let [selectedLang, setSelectedLang] = useState(params.lang.replace(/-.+$/, ''));
 
 	useEffect(() => {
 		let cancelled = false;
@@ -243,14 +246,14 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 		async function fetchVoices() {
 			let browserProvider = new BrowserReadAloudProvider();
 			try {
-				let voices = await browserProvider.getVoices(params.lang);
+				let voices = await browserProvider.getVoices();
 				if (cancelled) return;
-				setBrowserVoices(voices);
+				setAllBrowserVoices(voices);
 			}
 			catch (e) {
 				if (cancelled) return;
 				console.error(e);
-				setBrowserVoices([]);
+				setAllBrowserVoices([]);
 			}
 		}
 		fetchVoices();
@@ -258,7 +261,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 		return () => {
 			cancelled = true;
 		};
-	}, [params.lang]);
+	}, []);
 
 	useEffect(() => {
 		if (!remoteInterface || !loggedIn) {
@@ -270,14 +273,14 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 		async function fetchVoices() {
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
 			try {
-				let voices = await remoteProvider.getVoices(params.lang);
+				let voices = await remoteProvider.getVoices();
 				if (cancelled) return;
-				setRemoteVoices(voices);
+				setAllRemoteVoices(voices);
 			}
 			catch (e) {
 				if (cancelled) return;
 				console.error(e);
-				setRemoteVoices([]);
+				setAllRemoteVoices([]);
 			}
 		}
 		fetchVoices();
@@ -285,7 +288,45 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 		return () => {
 			cancelled = true;
 		};
-	}, [remoteInterface, loggedIn, params.lang]);
+	}, [remoteInterface, loggedIn]);
+
+	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
+		type: 'language',
+		languageDisplay: 'standard'
+	}), []);
+
+	let availableLanguages = useMemo(
+		() => getSupportedLanguages([...allBrowserVoices, ...allRemoteVoices])
+			.sort((a, b) => displayNames.of(a).localeCompare(displayNames.of(b))),
+		[allBrowserVoices, allRemoteVoices, displayNames]
+	);
+
+	let browserVoices = useMemo(
+		() => getVoicesForLanguage(allBrowserVoices, selectedLang),
+		[allBrowserVoices, selectedLang]
+	);
+
+	let remoteVoices = useMemo(
+		() => getVoicesForLanguage(allRemoteVoices, selectedLang),
+		[allRemoteVoices, selectedLang]
+	);
+
+	useEffect(() => {
+		// Clear selected voice when language changes and voice is no longer available
+		if (selectedBrowserVoice && !browserVoices.some(v => v.id === selectedBrowserVoice.id)) {
+			setSelectedBrowserVoice(null);
+		}
+	}, [browserVoices, selectedBrowserVoice]);
+
+	useEffect(() => {
+		if (selectedRemoteVoice && !remoteVoices.some(v => v.id === selectedRemoteVoice.id)) {
+			setSelectedRemoteVoice(null);
+		}
+	}, [remoteVoices, selectedRemoteVoice]);
+
+	function handleLangChange(event) {
+		setSelectedLang(event.target.value);
+	}
 
 	function handleSubmit(event) {
 		event.preventDefault();
@@ -294,7 +335,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 			? selectedBrowserVoice
 			: selectedRemoteVoice;
 		if (!selectedVoice) return;
-		onDone(selectedVoice.lang, selectedVoice.id, 1);
+		onDone(selectedLang, selectedVoice.id, 1);
 	}
 
 	return (
@@ -302,6 +343,17 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 			<form onSubmit={handleSubmit}>
 				<div className="row">
 					<h1>{l10n.getString('reader-read-aloud-first-run-title')}</h1>
+					<div className="language">
+						<Select
+							aria-label={l10n.getString('reader-read-aloud-language')}
+							value={selectedLang}
+							onChange={handleLangChange}
+						>
+							{availableLanguages.map(language => (
+								<option key={language} value={language}>{displayNames.of(language)}</option>
+							))}
+						</Select>
+					</div>
 				</div>
 				<div className="row modes">
 					<ModePreview
@@ -311,6 +363,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 						onOpenVoicePreferences={onOpenVoicePreferences}
 						voices={browserVoices}
 						selectedVoice={selectedBrowserVoice}
+						lang={selectedLang}
 						onSetVoice={setSelectedBrowserVoice}
 					/>
 					<ModePreview
@@ -321,6 +374,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 						onOpenVoicePreferences={onOpenVoicePreferences}
 						voices={remoteVoices}
 						selectedVoice={selectedRemoteVoice}
+						lang={selectedLang}
 						onSetVoice={setSelectedRemoteVoice}
 					/>
 				</div>

@@ -8,6 +8,8 @@ const SKIP_DEBOUNCE_DELAY = 600;
 export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown, ReadAloudProvider>> extends EventTarget {
 	readonly voice: TVoice;
 
+	readonly lang: string;
+
 	protected readonly _segments: ReadAloudSegment[];
 
 	protected _position: number;
@@ -77,9 +79,15 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		return this._segments[this._position];
 	}
 
-	protected constructor(voice: TVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+	protected constructor(voice: TVoice, lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super();
+
+		if (!voice.languages.includes(lang)) {
+			throw new Error(`Unsupported language: ${lang} (supported: ${voice.languages})`);
+		}
+
 		this.voice = voice;
+		this.lang = lang;
 		this._position = backwardStopIndex ?? 0;
 		this._backwardStopIndex = backwardStopIndex;
 		this._forwardStopIndex = forwardStopIndex;

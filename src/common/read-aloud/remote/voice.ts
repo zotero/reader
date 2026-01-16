@@ -1,17 +1,10 @@
 import { ReadAloudVoice } from '../voice';
 import { RemoteVoiceConfig } from './index';
 import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
-import { RemoteReadAloudController } from './controller';
+import { RemoteReadAloudController, RemoteSampleReadAloudController } from './controller';
 import { RemoteReadAloudProvider } from './provider';
 
 export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, RemoteReadAloudProvider> {
-	private readonly _lang: string;
-
-	constructor(provider: RemoteReadAloudProvider, impl: RemoteVoiceConfig, lang: string) {
-		super(provider, impl);
-		this._lang = lang;
-	}
-
 	get id() {
 		return this.impl.id;
 	}
@@ -20,8 +13,8 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 		return this.impl.label;
 	}
 
-	get lang() {
-		return this._lang;
+	get languages() {
+		return this.impl.locales;
 	}
 
 	get score() {
@@ -39,8 +32,11 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 		return this.impl.creditsPerSecond;
 	}
 
-	getController(segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		return new RemoteReadAloudController(this, segments, backwardStopIndex, forwardStopIndex);
+	getController(lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+		return new RemoteReadAloudController(this, lang, segments, backwardStopIndex, forwardStopIndex);
+	}
+
+	getSampleController(lang: string, segments: ReadAloudSegment[]) {
+		return new RemoteSampleReadAloudController(this, lang, segments);
 	}
 }
-
