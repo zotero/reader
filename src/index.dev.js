@@ -177,11 +177,7 @@ async function createReader() {
 				params.set('lang', lang);
 				let response;
 				try {
-					response = await fetch('https://api.zotero.org/tts/sample?' + params, {
-						headers: {
-							'Zotero-API-Key': ZOTERO_API_KEY,
-						},
-					});
+					response = await fetch('https://api.zotero.org/tts/sample?' + params);
 				}
 				catch {
 					return {
