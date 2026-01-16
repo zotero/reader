@@ -65,7 +65,7 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 	get secondsRemaining(): number | null {
 		let creditsRemaining = this.voice.provider.creditsRemaining;
 		let creditsPerSecond = this.voice.creditsPerSecond;
-		if (creditsRemaining === null || creditsPerSecond === null) {
+		if (creditsRemaining === null || !creditsPerSecond) {
 			return null;
 		}
 		return creditsRemaining / creditsPerSecond;
