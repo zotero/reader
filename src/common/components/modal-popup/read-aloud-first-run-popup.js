@@ -181,12 +181,13 @@ function BulletList({ text, onPurchaseCredits }) {
 	);
 }
 
-function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoicePreferences, voices, selectedVoice, lang, onSetVoice }) {
+function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoicePreferences, voices, selectedVoice, lang, onSetVoice, disabled }) {
 	const { l10n } = useLocalization();
 
 	let radio = useRef();
 
 	function handleClick(event) {
+		if (disabled) return;
 		if (radio.current.contains(event.target)) {
 			return;
 		}
@@ -194,13 +195,14 @@ function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoiceP
 	}
 
 	function handleChange() {
+		if (disabled) return;
 		onSelect(mode);
 	}
 
 	let checked = selected === mode;
 
 	return (
-		<div className={cx('mode', { checked })} onClick={handleClick}>
+		<div className={cx('mode', { checked, disabled })} onClick={handleClick}>
 			<div className="text">
 				<label>
 					<input
@@ -208,6 +210,7 @@ function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoiceP
 						name="mode"
 						ref={radio}
 						checked={checked}
+						disabled={disabled}
 						onChange={handleChange}
 					/>
 					{l10n.getString(`reader-read-aloud-voice-mode-${mode}`)}
@@ -264,7 +267,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 	}, []);
 
 	useEffect(() => {
-		if (!remoteInterface || !loggedIn) {
+		if (!remoteInterface) {
 			return undefined;
 		}
 
@@ -288,7 +291,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 		return () => {
 			cancelled = true;
 		};
-	}, [remoteInterface, loggedIn]);
+	}, [remoteInterface]);
 
 	let displayNames = useMemo(() => new Intl.DisplayNames(undefined, {
 		type: 'language',
@@ -317,6 +320,13 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 			setSelectedBrowserVoice(null);
 		}
 	}, [browserVoices, selectedBrowserVoice]);
+
+	useEffect(() => {
+		// Switch to remote mode if browser mode is selected but no browser voices are available
+		if (selectedMode === 'browser' && !browserVoices.length) {
+			setSelectedMode('remote');
+		}
+	}, [browserVoices, selectedMode]);
 
 	useEffect(() => {
 		if (selectedRemoteVoice && !remoteVoices.some(v => v.id === selectedRemoteVoice.id)) {
@@ -365,6 +375,7 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 						selectedVoice={selectedBrowserVoice}
 						lang={selectedLang}
 						onSetVoice={setSelectedBrowserVoice}
+						disabled={!browserVoices.length}
 					/>
 					<ModePreview
 						mode="remote"

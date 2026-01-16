@@ -432,6 +432,17 @@
 				margin: 0;
 			}
 
+			&.disabled {
+				.text {
+					opacity: 0.5;
+				}
+
+				.voice-preview .controls {
+					opacity: 0.5;
+					pointer-events: none;
+				}
+			}
+
 			.text {
 				display: flex;
 				flex-direction: column;
