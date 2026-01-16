@@ -132,6 +132,7 @@ async function createReader() {
 				params.set('text', segment.text);
 				params.set('voice', voice.id);
 				params.set('lang', lang);
+				params.set('timepoints', '1');
 				let response;
 				try {
 					response = await fetch('https://api.zotero.org/tts/speak?' + params, {
@@ -168,8 +169,9 @@ async function createReader() {
 					};
 				}
 
+				let { audio, timepoints } = await response.json();
 				return {
-					audio: await response.blob(),
+					audio,
 					creditsRemaining,
 				};
 			},
@@ -196,8 +198,9 @@ async function createReader() {
 					};
 				}
 
+				let { audio, timepoints } = await response.json();
 				return {
-					audio: await response.blob(),
+					audio,
 				};
 			}
 		},

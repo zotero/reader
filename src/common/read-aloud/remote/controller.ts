@@ -24,15 +24,8 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController<RemoteR
 		this._audio.pause();
 	}
 
-	protected _revokeAudioSrc(): void {
-		if (this._audio.src) {
-			URL.revokeObjectURL(this._audio.src);
-		}
-	}
-
 	override destroy(): void {
 		super.destroy();
-		this._revokeAudioSrc();
 		this._audio.pause();
 		this._audio.removeAttribute('src');
 	}
@@ -41,13 +34,13 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController<RemoteR
 export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	private _currentIndex: number | null = null;
 
-	private _currentBlob: Blob | null = null;
+	private _currentAudioData: string | null = null;
 
 	private _indexAtPause: number | null = null;
 
-	private _blobs = new LRUCacheMap<string, Blob>(BLOB_CACHE_CAPACITY);
+	private _audioData = new LRUCacheMap<string, string>(BLOB_CACHE_CAPACITY);
 
-	private _fetching = new Map<string, Promise<Blob>>();
+	private _fetching = new Map<string, Promise<string>>();
 
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
@@ -102,8 +95,8 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		}
 
 		this.buffering = true;
-		this._getBlob(segment)
-			.then((blob) => {
+		this._getAudioData(segment)
+			.then((audioData) => {
 				if (this._position !== index) {
 					return;
 				}
@@ -118,12 +111,9 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 					this._handleSegmentEnd(segment, index);
 				};
 
-				if (this._currentBlob !== blob) {
-					if (this._audio.src) {
-						URL.revokeObjectURL(this._audio.src);
-					}
-					this._audio.src = URL.createObjectURL(blob);
-					this._currentBlob = blob;
+				if (this._currentAudioData !== audioData) {
+					this._audio.src = `data:audio/ogg;base64,${audioData}`;
+					this._currentAudioData = audioData;
 					if (this._creditsRemaining !== null) {
 						this._creditsRemaining -= this._creditsConsumed.get(this._getKey(segment))!;
 					}
@@ -216,7 +206,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			}
 
 			try {
-				await this._getBlob(this._segments[index]);
+				await this._getAudioData(this._segments[index]);
 			}
 			catch {
 				// Ignore
@@ -234,14 +224,12 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		while (numFetchesInProgress < MAX_CONCURRENT_FETCHES && candidates.length) {
 			keepFetching();
 		}
-
-		// If playback position jumps, we don't try to cancel individual fetches here; _getBlob shares inflight via map
 	}
 
-	private async _getBlob(segment: ReadAloudSegment): Promise<Blob> {
+	private async _getAudioData(segment: ReadAloudSegment): Promise<string> {
 		let key = this._getKey(segment);
 
-		let cached = this._blobs.get(key);
+		let cached = this._audioData.get(key);
 		if (cached) return cached;
 
 		let inflight = this._fetching.get(key);
@@ -283,7 +271,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 				}
 				throw new Error('Failed to fetch audio');
 			}
-			this._blobs.set(key, audio);
+			this._audioData.set(key, audio);
 
 			// Update fetch time EMA
 			let endTime = performance.now();
@@ -324,7 +312,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 	override destroy(): void {
 		super.destroy();
-		this._blobs.clear();
+		this._audioData.clear();
 		this._fetching.clear();
 	}
 }
@@ -345,7 +333,6 @@ export class RemoteSampleReadAloudController extends RemoteReadAloudControllerBa
 			return;
 		}
 
-		this._revokeAudioSrc();
 		this._audio.pause();
 		this.buffering = true;
 
@@ -356,7 +343,7 @@ export class RemoteSampleReadAloudController extends RemoteReadAloudControllerBa
 					return;
 				}
 				if (audio) {
-					this._audio.src = URL.createObjectURL(audio);
+					this._audio.src = `data:audio/ogg;base64,${encodeURIComponent(audio)}`;
 					this._audio.onended = () => this._handleSegmentEnd(segment, 0);
 					this._handleSegmentStart(segment, 0);
 					this._audio.play();

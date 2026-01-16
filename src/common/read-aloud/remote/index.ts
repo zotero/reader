@@ -16,13 +16,15 @@ export type RemoteInterface = {
 	}>;
 
 	getAudio(segment: ReadAloudSegment, voice: RemoteVoiceConfig, lang: string): Promise<{
-		audio: Blob | null;
+		// base64
+		audio: string | null;
 		creditsRemaining: number | null;
 		error?: ErrorState;
 	}>;
 
 	getSampleAudio(voice: RemoteVoiceConfig, lang: string): Promise<{
-		audio: Blob | null;
+		// base64
+		audio: string | null;
 		error?: ErrorState;
 	}>;
 };
