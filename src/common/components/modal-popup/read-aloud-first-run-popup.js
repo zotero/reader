@@ -233,7 +233,7 @@ function ModePreview({ mode, selected, onSelect, onPurchaseCredits, onOpenVoiceP
 	);
 }
 
-function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoicePreferences, onPurchaseCredits, onCancel, onDone }) {
+function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onCancel, onDone }) {
 	const { l10n } = useLocalization();
 
 	let [selectedMode, setSelectedMode] = useState(null);
@@ -397,13 +397,21 @@ function ReadAloudFirstRunPopup({ params, remoteInterface, loggedIn, onOpenVoice
 						type="button"
 						onClick={onCancel}
 					>{l10n.getString('general-cancel')}</button>
-					<button
-						tabIndex={-1}
-						data-tabstop={1}
-						type="submit"
-						className="form-button primary"
-						disabled={!selectedMode}
-					>{l10n.getString('general-done')}</button>
+					{loggedIn || selectedMode !== 'remote'
+						? <button
+							tabIndex={-1}
+							data-tabstop={1}
+							type="submit"
+							className="form-button primary"
+							disabled={!selectedMode}
+						>{l10n.getString('general-done')}</button>
+						: <button
+							tabIndex={-1}
+							data-tabstop={1}
+							type="button"
+							className="form-button primary"
+							onClick={onLogIn}
+						>{l10n.getString('reader-read-aloud-log-in-button')}</button>}
 				</div>
 			</form>
 		</DialogPopup>

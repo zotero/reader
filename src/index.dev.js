@@ -199,7 +199,9 @@ async function createReader() {
 			}
 		},
 		onLogIn() {
-			reader.setLoggedIn(true);
+			setTimeout(() => {
+				reader.setLoggedIn(true);
+			}, 200);
 		}
 	});
 	reader.enableAddToNote(true);

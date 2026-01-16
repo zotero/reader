@@ -282,6 +282,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							onOpenVoicePreferences={props.onOpenVoicePreferences}
 							onPurchaseCredits={props.onOpenReadAloudLearnMore}
 							onCancel={() => props.onToggleReadAloud(false)}
+							onLogIn={props.onLogIn}
 							onDone={props.onSetReadAloudVoice}
 						/>
 				)}

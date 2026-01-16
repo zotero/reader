@@ -354,7 +354,7 @@ function ReadAloudPopup(props) {
 				)}
 				{!loggedIn && (
 					<div className="row log-in">
-						<Localized id="reader-read-aloud-log-in" elems={{
+						<Localized id="reader-read-aloud-log-in-link" elems={{
 							'log-in': <button data-l10n-name="log-in" onClick={onLogIn}></button>,
 						}}>
 							<span/>
