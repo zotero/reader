@@ -118,9 +118,12 @@ async function createReader() {
 				if (!response.ok) {
 					throw new Error('Failed to fetch voices from API');
 				}
+				let creditsRemaining = response.headers.has('Zotero-TTS-Credits-Remaining')
+					? parseInt(response.headers.get('Zotero-TTS-Credits-Remaining'))
+					: null;
 				return {
 					voices: await response.json(),
-					creditsRemaining: parseInt(response.headers.get('Zotero-TTS-Credits-Remaining')),
+					creditsRemaining,
 				};
 			},
 

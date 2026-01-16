@@ -12,7 +12,7 @@ export type RemoteVoiceConfig = {
 export type RemoteInterface = {
 	getVoices(): Promise<{
 		voices: RemoteVoiceConfig[];
-		creditsRemaining: number;
+		creditsRemaining: number | null;
 	}>;
 
 	getAudio(segment: ReadAloudSegment, voice: RemoteVoiceConfig, lang: string): Promise<{

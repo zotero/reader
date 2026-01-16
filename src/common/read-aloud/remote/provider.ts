@@ -13,7 +13,9 @@ export class RemoteReadAloudProvider implements ReadAloudProvider<RemoteReadAlou
 
 	async getVoices(): Promise<RemoteReadAloudVoice[]> {
 		let { voices, creditsRemaining } = await this.remote.getVoices();
-		this.creditsRemaining = creditsRemaining;
+		if (creditsRemaining !== null) {
+			this.creditsRemaining = creditsRemaining;
+		}
 		return voices
 			.map(voice => new RemoteReadAloudVoice(this, voice))
 			.sort((a, b) => b.score - a.score);
