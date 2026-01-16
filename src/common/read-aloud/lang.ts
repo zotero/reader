@@ -28,16 +28,3 @@ export function resolveLanguage(contentLang: string, supportedLangs: string[]) {
 	}
 	return pickLocale(contentLangs, supportedLangs);
 }
-
-export function normalizeLanguageForGoogle(language: string) {
-	// TODO: TEMP: Adapt language codes for Google API
-	switch (language) {
-		case 'en':
-			language = 'en-US';
-			break;
-		case 'ar':
-			language = 'ar-XA';
-			break;
-	}
-	return language;
-}
