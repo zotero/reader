@@ -350,31 +350,6 @@ function AppearancePopup(props) {
 						</div>
 					</div>
 				)}
-				<div className="group">
-					<div className="option">
-						<label>{l10n.getString('reader-split-view')}</label>
-						<div className="split-toggle" data-tabstop={1}>
-							<button
-								tabIndex={-1}
-								className={cx({ active: !props.splitType })}
-								title={l10n.getString('reader-none')}
-								onClick={() => props.onChangeSplitType()}
-							><IconSplitNone/></button>
-							<button
-								tabIndex={-1}
-								className={cx({ active: props.splitType === 'vertical' })}
-								title={l10n.getString('reader-vertical')}
-								onClick={() => props.onChangeSplitType('vertical')}
-							><IconSplitHorizontal/></button>
-							<button
-								tabIndex={-1}
-								className={cx({ active: props.splitType === 'horizontal' })}
-								title={l10n.getString('reader-horizontal')}
-								onClick={() => props.onChangeSplitType('horizontal')}
-							><IconSplitVertical/></button>
-						</div>
-					</div>
-				</div>
 				{(type === 'epub' || type === 'snapshot') && (
 					<div className="group">
 						{type === 'snapshot' && (
@@ -402,6 +377,31 @@ function AppearancePopup(props) {
 						)}
 					</div>
 				)}
+				<div className="group">
+					<div className="option">
+						<label>{l10n.getString('reader-split-view')}</label>
+						<div className="split-toggle" data-tabstop={1}>
+							<button
+								tabIndex={-1}
+								className={cx({ active: !props.splitType })}
+								title={l10n.getString('reader-none')}
+								onClick={() => props.onChangeSplitType()}
+							><IconSplitNone/></button>
+							<button
+								tabIndex={-1}
+								className={cx({ active: props.splitType === 'vertical' })}
+								title={l10n.getString('reader-vertical')}
+								onClick={() => props.onChangeSplitType('vertical')}
+							><IconSplitHorizontal/></button>
+							<button
+								tabIndex={-1}
+								className={cx({ active: props.splitType === 'horizontal' })}
+								title={l10n.getString('reader-horizontal')}
+								onClick={() => props.onChangeSplitType('horizontal')}
+							><IconSplitVertical/></button>
+						</div>
+					</div>
+				</div>
 				<div className="group">
 					<div className="option themes">
 						<label>{l10n.getString('reader-themes')}</label>
