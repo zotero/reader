@@ -1075,7 +1075,6 @@ class PDFView {
 			backwardStopIndex,
 			forwardStopIndex,
 			targetPosition: undefined,
-			lang: null,
 		});
 	}
 
