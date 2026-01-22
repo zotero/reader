@@ -54,9 +54,9 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	override get secondsRemaining() {
 		let creditsRemaining = this._creditsRemaining ?? this.voice.provider.creditsRemaining;
 		let creditsPerSecond = this.voice.creditsPerSecond;
-		let remainingTimeInAudio = isNaN(this._audio.duration)
-			? 0
-			: this._audio.duration - this._audio.currentTime;
+		let remainingTimeInAudio = isFinite(this._audio.duration)
+			? this._audio.duration - this._audio.currentTime
+			: 0;
 		return creditsRemaining / creditsPerSecond + remainingTimeInAudio;
 	}
 
