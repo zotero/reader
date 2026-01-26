@@ -47,6 +47,7 @@ export const TEXT_ANNOTATION_FONT_SIZE_STEPS = [6, 8, 10, 12, 14, 18, 24, 36, 48
 
 export const DEFAULT_THEMES = [
 	{ id: 'dark', label: 'Dark', background: "#2E3440", foreground: "#D8DEE9" },
+	{ id: 'black', label: 'Black', background: "#000000", foreground: "#FFFFFF", invertImages: true },
 	{ id: 'snow', label: 'Snow', background: "#ECEFF4", foreground: "#3B4252" },
 	{ id: 'sepia', label: 'Sepia', background: "#F4ECD8", foreground: "#5B4636" }
 ];

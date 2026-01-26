@@ -108,7 +108,7 @@ function generateReaderConfig(build) {
 			new ZoteroLocalePlugin({
 				files: ['zotero.ftl', 'reader.ftl'],
 				locales: ['en-US'],
-				commitHash: '42b47c54536d418f9b80e11ce55be5ff5e86b79c',
+				commitHash: '69002c122df40021ae50d7a32701677e62076831',
 			}),
 			new CleanWebpackPlugin({
 				cleanOnceBeforeBuildPatterns: ['**/*', '!pdf/**']
