@@ -513,5 +513,9 @@
 	.option {
 		display: flex;
 		gap: 8px;
+
+		input:disabled + label {
+			color: var(--fill-secondary);
+		}
 	}
 }

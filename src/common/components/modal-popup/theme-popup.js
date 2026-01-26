@@ -1,4 +1,4 @@
-import React, { Fragment, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocalization } from '@fluent/react';
 import DialogPopup from './common/dialog-popup';
 import { getCurrentColorScheme } from '../../lib/utilities';
@@ -101,6 +101,14 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 	let [foreground, setForeground] = useState(params.theme?.foreground || fg);
 	let [invertImages, setInvertImages] = useState(params.theme?.invertImages ?? inv);
 
+	let themeIsDark = isDarkTheme(background, foreground);
+
+	useEffect(() => {
+		if (!themeIsDark) {
+			setInvertImages(false);
+		}
+	}, [themeIsDark]);
+
 	useLayoutEffect(() => {
 		nameRef.current.focus();
 	}, []);
@@ -157,7 +165,9 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 	}
 
 	function handleInvertImagesChange(event) {
-		setInvertImages(event.target.checked);
+		if (themeIsDark) {
+			setInvertImages(event.target.checked);
+		}
 	}
 
 	function handleSubmit(event) {
@@ -192,22 +202,21 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 					<div className="input"><ColorPicker color={background} onChange={handleBackgroundChange}/></div>
 					<label>{l10n.getString('reader-foreground')}</label>
 					<div className="input"><ColorPicker color={foreground} onChange={handleForegroundChange}/></div>
-					{isDarkTheme(background, foreground) && <Fragment>
-						<div></div>
-						<div>
-							<div className="option">
-								<input
-									tabIndex={-1}
-									data-tabstop={1}
-									id="theme-invert-images"
-									type="checkbox"
-									checked={invertImages}
-									onChange={handleInvertImagesChange}
-								/>
-								<label htmlFor="theme-invert-images">{l10n.getString('reader-theme-invert-images')}</label>
-							</div>
+					<div></div>
+					<div>
+						<div className="option">
+							<input
+								tabIndex={-1}
+								data-tabstop={1}
+								id="theme-invert-images"
+								type="checkbox"
+								checked={invertImages}
+								disabled={!themeIsDark}
+								onChange={handleInvertImagesChange}
+							/>
+							<label htmlFor="theme-invert-images">{l10n.getString('reader-theme-invert-images')}</label>
 						</div>
-					</Fragment>}
+					</div>
 				</div>
 				<div className="row buttons">
 					<button
