@@ -42,6 +42,12 @@ body[data-tool="note"] {
 	outline: 1px auto;
 }
 
+:root[data-color-scheme="dark"] {
+	img, svg {
+		filter: brightness(80%);
+	}
+}
+
 :root[data-color-scheme="dark"].invert-images {
 	img, svg {
 		filter: invert(1) hue-rotate(180deg);
