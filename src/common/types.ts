@@ -182,6 +182,7 @@ export type Theme = {
 	label: string;
 	background: string;
 	foreground: string;
+	invertImages?: boolean;
 };
 
 export type ViewContextMenuOverlay =
