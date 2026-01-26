@@ -815,6 +815,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let roots = [this._iframeDocument.documentElement, this._annotationRenderRootEl];
 		for (let root of roots) {
 			root.dataset.colorScheme = themeColorScheme;
+			root.classList.toggle('invert-images', !!theme.invertImages);
 			root.style.colorScheme = themeColorScheme;
 			root.style.setProperty('--background-color', theme.background);
 			root.style.setProperty('--text-color', theme.foreground);

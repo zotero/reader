@@ -41,3 +41,11 @@ body[data-tool="note"] {
 :focus-visible {
 	outline: 1px auto;
 }
+
+:root[data-color-scheme="dark"].invert-images {
+	img, svg {
+		filter: invert(1) hue-rotate(180deg);
+		// Project over page background color
+		mix-blend-mode: screen;
+	}
+}
