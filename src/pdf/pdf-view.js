@@ -2867,7 +2867,7 @@ class PDFView {
 			event.stopPropagation();
 			event.preventDefault();
 		}
-		else if (key.startsWith('Shift') && this._selectionRanges.length) {
+		else if (['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key) && this._selectionRanges.length) {
 			// Prevent browser doing its own text selection
 			event.stopPropagation();
 			event.preventDefault();
