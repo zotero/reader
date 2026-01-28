@@ -763,14 +763,15 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 	}
 
 	let vert = isVertical(annotation.range.commonAncestorContainer);
-	let topLeftRect = highlightRects[0];
-	let bottomRightRect = highlightRects[highlightRects.length - 1];
+	let rtl = isRTL(annotation.range.commonAncestorContainer);
+	let startRect = highlightRects[0];
+	let endRect = highlightRects[highlightRects.length - 1];
 	return <>
 		<rect
-			x={vert ? topLeftRect.left : topLeftRect.left - size}
-			y={vert ? topLeftRect.top - size : topLeftRect.top}
-			width={vert ? topLeftRect.width : size}
-			height={vert ? size : topLeftRect.height}
+			x={vert ? startRect.left : rtl ? startRect.right : startRect.left - size}
+			y={vert ? startRect.top - size : startRect.top}
+			width={vert ? startRect.width : size}
+			height={vert ? size : startRect.height}
 			fill={annotation.color}
 			className={cx('resizer inherit-pointer-events', { 'resizer-vertical': vert })}
 			onPointerDown={handlePointerDown}
@@ -781,10 +782,10 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			onLostPointerCapture={handleLostPointerCapture}
 		/>
 		<rect
-			x={vert ? bottomRightRect.left : bottomRightRect.right}
-			y={vert ? bottomRightRect.bottom : bottomRightRect.top}
-			width={vert ? bottomRightRect.width : size}
-			height={vert ? size : bottomRightRect.height}
+			x={vert || rtl ? endRect.left : endRect.right}
+			y={vert ? endRect.bottom : endRect.top}
+			width={vert ? endRect.width : size}
+			height={vert ? size : endRect.height}
 			fill={annotation.color}
 			className={cx("resizer inherit-pointer-events", { 'resizer-vertical': vert })}
 			onPointerDown={handlePointerDown}
