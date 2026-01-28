@@ -782,7 +782,7 @@ const Resizer: React.FC<ResizerProps> = (props) => {
 			onLostPointerCapture={handleLostPointerCapture}
 		/>
 		<rect
-			x={vert || rtl ? endRect.left : endRect.right}
+			x={vert ? endRect.left : rtl ? endRect.left - size : endRect.right}
 			y={vert ? endRect.bottom : endRect.top}
 			width={vert ? endRect.width : size}
 			height={vert ? size : endRect.height}
