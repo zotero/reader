@@ -98,9 +98,10 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 			? range.endContainer.childNodes[Math.min(range.endOffset - 1, range.endContainer.childNodes.length - 1)]
 			: null;
 		if (!endNode || endNode.nodeType !== Node.TEXT_NODE) {
-			let walker = doc.createTreeWalker(doc, NodeFilter.SHOW_TEXT);
-			walker.currentNode = endNode || range.endContainer;
-			endNode = walker.previousNode();
+			// Find the last text node child
+			let walker = doc.createTreeWalker(endNode || range.endContainer, NodeFilter.SHOW_TEXT);
+			while (walker.nextNode()) {}
+			endNode = walker.currentNode;
 		}
 		if (endNode) {
 			let offset = 0;
