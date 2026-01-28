@@ -110,14 +110,30 @@ async function createReader() {
 		enableReadAloud: true,
 		readAloudRemoteInterface: ZOTERO_API_KEY && {
 			async getVoices() {
-				let response = await fetch('https://api.zotero.org/tts/voices', {
-					headers: {
-						'Zotero-API-Key': ZOTERO_API_KEY,
-					},
-				});
-				if (!response.ok) {
-					throw new Error('Failed to fetch voices from API');
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/voices', {
+						headers: {
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+					});
 				}
+				catch (e) {
+					console.error('Failed to fetch voices from API');
+					return {
+						voices: [],
+						creditsRemaining: null,
+					};
+				}
+
+				if (!response.ok) {
+					console.error('Failed to fetch voices from API', response.status, await response.text());
+					return {
+						voices: [],
+						creditsRemaining: null,
+					};
+				}
+
 				let creditsRemaining = response.headers.has('Zotero-TTS-Credits-Remaining')
 					? parseInt(response.headers.get('Zotero-TTS-Credits-Remaining'))
 					: null;
