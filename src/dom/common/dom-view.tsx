@@ -1555,7 +1555,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 		this._touchAnnotationStartPosition = null;
-		this._previewAnnotation = null;
 		this._renderAnnotations();
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
