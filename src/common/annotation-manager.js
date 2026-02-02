@@ -49,11 +49,18 @@ class AnnotationManager {
 
 	// Called when changes come from the client side
 	async setAnnotations(annotations) {
+		let changed = false;
 		for (let annotation of annotations) {
+			if (this._unsavedAnnotations.has(annotation.id)) {
+				continue;
+			}
 			this._annotations = this._annotations.filter(x => x.id !== annotation.id);
 			this._annotations.push(annotation);
+			changed = true;
 		}
-		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		if (changed) {
+			this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		}
 		this._clearInterferingHistory(annotations.map(x => x.id));
 		this.render();
 	}
