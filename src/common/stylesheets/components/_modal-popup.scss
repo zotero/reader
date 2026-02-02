@@ -286,6 +286,9 @@
 			border-radius: 6px;
 			color: var(--fill-secondary);
 			border: 0.5px solid transparent;
+			@media (resolution: 1dppx) {
+				border-width: 1px;
+			}
 			background: unset;
 			box-shadow: none;
 			position: relative;
@@ -379,6 +382,9 @@
 			background: var(--accent-white);
 			border: 0.5px solid rgba(0, 0, 0, 0.02);
 			border-radius: 100px;
+			@media (resolution: 1dppx) {
+				border-width: 1px;
+			}
 			box-shadow: 0 0.2px 0.25px 0 rgba(0, 0, 0, 0.12);
 
 			transition: inset-inline-start $transition;
