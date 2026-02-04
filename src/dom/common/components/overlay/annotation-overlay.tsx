@@ -22,6 +22,7 @@ import { closestElement, isRTL, isVertical } from "../../lib/nodes";
 import { isSafari } from "../../../../common/lib/utilities";
 import { expandRect, rectsEqual } from "../../lib/rect";
 import cx from "classnames";
+import { SpotlightKey } from "../../dom-view";
 
 export type DisplayedAnnotation = {
 	id?: string;
@@ -223,9 +224,9 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let [isResizing, setResizing] = useState(false);
 	let [resizedRange, setResizedRange] = useState(annotation.range);
 
-	let outerGroupRef = useRef<SVGGElement>(null);
-	let rectGroupRef = useRef<SVGGElement>(null);
-	let dragImageRef = isSafari ? outerGroupRef : rectGroupRef;
+	let groupRef = useRef<SVGGElement>(null);
+	let pathRef = useRef<SVGPathElement>(null);
+	let dragImageRef = isSafari ? groupRef : pathRef;
 
 	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		onPointerDown?.(annotation, event);
@@ -269,6 +270,8 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 
 	let allowResize = selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint();
 
+	let isSpotlight = annotation.key === SpotlightKey.ReadAloudActiveSegment;
+
 	useEffect(() => {
 		if (!allowResize && isResizing) {
 			handleResizeEnd(annotation, true);
@@ -285,6 +288,20 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			for (let rect of getPageRects(range)) {
 				if (rect.width == 0 || rect.height == 0) {
 					continue;
+				}
+				if (isSpotlight) {
+					let marginInline = 2;
+					let marginBlock = 0;
+
+					let element = closestElement(range.startContainer);
+					if (element) {
+						let lineHeight = parseFloat(getComputedStyle(element).lineHeight);
+						if (!isNaN(lineHeight)) {
+							marginBlock = (lineHeight - rect.height) / 2;
+						}
+					}
+
+					rect = expandRect(rect, marginInline, marginBlock);
 				}
 				let key = JSON.stringify(rect);
 				if (seenRects.has(key)) {
@@ -311,24 +328,25 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		}
 
 		return { rects, interactiveRects, commentIconPosition };
-	}, [annotation, isResizing, resizedRange]);
+	}, [annotation.comment, annotation.range, isResizing, isSpotlight, resizedRange]);
 
 	let vert = isVertical(annotation.range.commonAncestorContainer);
 	let rtl = isRTL(annotation.range.commonAncestorContainer);
 	let underline = annotation.type === 'underline';
-	let rectGroup = useMemo(() => {
-		return <g ref={rectGroupRef}>
-			{rects.map((rect, i) => (
-				<rect
-					x={vert && underline ? rect.x + (rtl ? -3 : rect.width) : rect.x}
-					y={!vert && underline ? rect.y + rect.height : rect.y}
-					width={vert && underline ? 3 : rect.width}
-					height={!vert && underline ? 3 : rect.height}
-					opacity="50%"
-					key={i}
-				/>
-			))}
-		</g>;
+	let path = useMemo(() => {
+		return (
+			<path
+				ref={pathRef}
+				opacity="50%"
+				d={rects.map((rect) => {
+					let x = vert && underline ? rect.x + (rtl ? -3 : rect.width) : rect.x;
+					let y = !vert && underline ? rect.y + rect.height : rect.y;
+					let width = vert && underline ? 3 : rect.width;
+					let height = !vert && underline ? 3 : rect.height;
+					return `M ${x} ${y} h ${width} v ${height} H ${x} V ${y}`;
+				}).join('\n')}
+			/>
+		);
 	}, [rects, rtl, underline, vert]);
 
 	let foreignObjects = useMemo(() => {
@@ -420,9 +438,9 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			tabIndex={-1}
 			data-annotation-id={annotation.id}
 			fill={annotation.color}
-			ref={outerGroupRef}
+			ref={groupRef}
 		>
-			{rectGroup}
+			{path}
 			{foreignObjects}
 			{resizer}
 		</g>

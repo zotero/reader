@@ -88,7 +88,7 @@ export class FocusManager {
 				return;
 			}
 
-			if (!event.target.closest('input, textarea, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row, .preview-popup, .appearance-popup, #selector')) {
+			if (!event.target.closest('input, textarea, select, [contenteditable="true"], .annotation, .thumbnails-view, .outline-view, .error-bar, .reference-row, .preview-popup, .appearance-popup, #selector')) {
 				// Note: Doing event.preventDefault() also prevents :active class on Firefox
 				event.preventDefault();
 			}

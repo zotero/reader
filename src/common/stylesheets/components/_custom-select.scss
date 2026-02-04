@@ -1,0 +1,203 @@
+.custom-select {
+	position: relative;
+	min-width: 0;
+
+	.custom-select-trigger {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		width: 100%;
+		height: 100%;
+		min-height: 22px;
+		padding: 0 6px;
+		padding-inline-end: 20px;
+		border-radius: 5px;
+		border: var(--material-border-quarternary);
+		background: var(--material-background);
+		font-size: inherit;
+		text-align: start;
+		cursor: default;
+		position: relative;
+		white-space: nowrap;
+		overflow: hidden;
+
+		&:not([disabled]) {
+			&:hover {
+				background-color: var(--material-mix-quinary);
+			}
+
+			&:active, &[aria-expanded="true"] {
+				background-color: var(--material-mix-quarternary);
+			}
+		}
+
+		&[disabled] {
+			opacity: 0.5;
+		}
+
+		> .label {
+			flex: 0 1 auto;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		> .chevron {
+			position: absolute;
+			top: calc(50% - 4px);
+			inset-inline-end: 6px;
+			pointer-events: none;
+			color: var(--fill-secondary);
+		}
+	}
+}
+
+.custom-select-overlay {
+	pointer-events: all;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	z-index: $z-index-context-menu;
+	outline: none;
+}
+
+.custom-select-dropdown {
+	position: relative;
+	background: var(--material-toolbar);
+	border: var(--material-panedivider);
+	border-radius: 8px;
+	box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.08), 0 3px 8px rgba(0, 0, 0, 0.12);
+	min-width: 120px;
+	font-size: 12px;
+	max-height: calc(100vh - 16px);
+	overflow: hidden;
+	width: max-content;
+
+	> .scroll-indicator {
+		position: absolute;
+		left: 0;
+		width: 100%;
+		height: calc(var(--row-height) + 5px);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: var(--fill-secondary);
+		cursor: default;
+		z-index: 1;
+
+		&.up {
+			top: 0;
+			border-radius: 8px 8px 0 0;
+		}
+
+		&.down {
+			bottom: 0;
+			border-radius: 0 0 8px 8px;
+		}
+
+		&.hidden {
+			display: none;
+		}
+
+		> svg {
+			width: 8px;
+			height: 8px;
+		}
+	}
+
+	> .scroll-container {
+		overflow-y: auto;
+		overflow-x: hidden;
+		overscroll-behavior: none;
+		padding: 5px;
+		max-height: inherit;
+		scrollbar-width: none;
+
+		--mask-top: 0%;
+		--mask-bottom: 0%;
+
+		&.can-scroll-up {
+			--mask-top: calc(var(--row-height) + 5px);
+		}
+
+		&.can-scroll-down {
+			--mask-bottom: calc(var(--row-height) + 5px);
+		}
+
+		mask-image: linear-gradient(
+			to bottom,
+			transparent var(--mask-top),
+			black var(--mask-top),
+			black calc(100% - var(--mask-bottom)),
+			transparent calc(100% - var(--mask-bottom))
+		);
+
+		&::-webkit-scrollbar {
+			display: none;
+		}
+	}
+
+	.option {
+		user-select: none;
+		cursor: default;
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+		height: var(--row-height);
+		border-radius: 5px;
+		scroll-margin: calc(var(--row-height) + 5px) 0;
+		padding-inline-start: 22px;
+		padding-inline-end: 10px;
+		position: relative;
+
+		&.selected::before {
+			content: '\2713';
+			position: absolute;
+			inset-inline-start: 5px;
+			height: var(--row-height);
+			display: flex;
+			align-items: center;
+		}
+
+		&.focused:not(.disabled) {
+			background: var(--fill-quinary);
+		}
+
+		&.disabled {
+			opacity: 0.5;
+		}
+
+		> .label {
+			flex: 0 1 auto;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		> .secondary-label {
+			flex: 0 0 auto;
+			margin-inline-start: 8px;
+			color: var(--fill-secondary);
+		}
+
+	}
+
+	.header {
+		user-select: none;
+		cursor: default;
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+		height: var(--row-height);
+		padding-inline-start: 7px;
+		padding-inline-end: 10px;
+		font-weight: bold;
+		color: var(--fill-secondary);
+	}
+
+	.divider {
+		height: 1px;
+		background: var(--color-panedivider);
+		margin: 5px 0;
+	}
+}

@@ -22,6 +22,7 @@
 		"@fluent/react": "^0.15.2",
 		"classnames": "^2.3.1",
 		"darkreader": "^4.9.83",
+		"eld": "^2.0.2",
 		"epubjs": "file:epubjs/epub.js",
 		"luaparse": "^0.3.1",
 		"mathjax-full": "^3.2.2",
@@ -30,6 +31,7 @@
 		"queue": "^6.0.2",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
+		"sentencex-ts": "^0.1.13-ts",
 		"sorted-btree": "^1.8.1"
 	},
 	"devDependencies": {
