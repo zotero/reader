@@ -17,12 +17,14 @@
 		border: var(--material-border-quarternary);
 		background: var(--material-background);
 
-		&:not([disabled]):hover {
-			background-color: var(--material-mix-quinary);
-		}
+		&:not([disabled]) {
+			&:hover {
+				background-color: var(--material-mix-quinary);
+			}
 
-		&:not([disabled]):active {
-			background-color: var(--material-mix-quarternary);
+			&:active, &:open {
+				background-color: var(--material-mix-quarternary);
+			}
 		}
 	}
 
