@@ -1,6 +1,6 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
-import { closestElement, iterateWalker } from "./nodes";
-import { getBoundingRect, isPageRectVisible, rectIntersects } from "./rect";
+import { closestElement, getLang, iterateWalker } from "./nodes";
+import { getBoundingRect, isPageRectVisible, rectsIntersect } from "./rect";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
@@ -40,6 +40,10 @@ export class PersistentRange {
 		range.setStart(this.startContainer, this.startOffset);
 		range.setEnd(this.endContainer, this.endOffset);
 		return range;
+	}
+
+	clone() {
+		return new PersistentRange(this);
 	}
 
 	toString(): string {
@@ -130,17 +134,28 @@ export function moveRangeEndsIntoTextNodes(range: Range): Range {
 }
 
 /**
+ * Create a TreeWalker that walks only the nodes intersecting a range.
+ */
+export function createRangeWalker(
+	range: Range,
+	whatToShow?: number,
+	filter: ((node: Node) => number) = () => NodeFilter.FILTER_ACCEPT
+): TreeWalker {
+	let doc = range.commonAncestorContainer.ownerDocument!;
+	return doc.createTreeWalker(
+		range.commonAncestorContainer,
+		whatToShow,
+		node => (range.intersectsNode(node) ? filter(node) : NodeFilter.FILTER_SKIP)
+	);
+}
+
+/**
  * Given a range, return an array of ranges spanning the selected portions of the text nodes it contains.
  * This ensures that the rects returned from {@link Range#getClientRects} will include a rect per line of text
  * instead of one rect for the entire block element.
  */
 export function splitRangeToTextNodes(range: Range): Range[] {
-	let doc = range.commonAncestorContainer.ownerDocument;
-	if (!doc) {
-		return [];
-	}
-	let treeWalker = doc.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT,
-		node => (range.intersectsNode(node) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP));
+	let treeWalker = createRangeWalker(range, NodeFilter.SHOW_TEXT);
 	let ranges = [];
 	let node: Node | null = treeWalker.currentNode;
 	while (node) {
@@ -157,16 +172,234 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 	return ranges;
 }
 
+export function splitRangeToSentences(range: Range, { keepWhitespace = false } = {}): Range[] {
+	if (!('Segmenter' in Intl)) {
+		return [range];
+	}
+
+	let walker = createRangeWalker(range, NodeFilter.SHOW_TEXT);
+
+	let textParts: {
+		node: Text;
+		globalStart: number;
+		globalEnd: number;
+		localStart: number;
+		localEnd: number;
+	}[] = [];
+
+	let text = '';
+	let globalOffset = 0;
+
+	for (let node of iterateWalker(walker)) {
+		let nodeValue = node.nodeValue!;
+
+		let startInNode = node === range.startContainer
+			? range.startOffset
+			: 0;
+
+		let endInNode = node === range.endContainer
+			? range.endOffset
+			: nodeValue.length;
+
+		if (endInNode > startInNode) {
+			let nodeValueWithinRange = nodeValue.slice(startInNode, endInNode);
+			textParts.push({
+				node: node as Text,
+				globalStart: globalOffset,
+				globalEnd: globalOffset + nodeValueWithinRange.length,
+				localStart: startInNode,
+				localEnd: endInNode,
+			});
+			text += nodeValueWithinRange;
+			globalOffset += nodeValueWithinRange.length;
+		}
+	}
+
+	// Normalize all whitespace to space characters, because Range#toString()
+	// returns invisible newlines in the HTML, and the segmenter will treat
+	// those as meaningful.
+	text = text.replace(/\s/g, ' ');
+
+	let segmenter = new Intl.Segmenter(getLang(range.commonAncestorContainer), {
+		granularity: 'sentence',
+	});
+	let segments = [...segmenter.segment(text)];
+
+	let outputRanges: Range[] = [];
+	for (let segment of segments) {
+		let sentStart = segment.index;
+		let sentEnd = sentStart + segment.segment.length;
+
+		if (!keepWhitespace) {
+			// Trim leading/trailing whitespace within the segment
+			let leading = (segment.segment.match(/^\s*/)?.[0].length) ?? 0;
+			let trailing = (segment.segment.match(/\s*$/)?.[0].length) ?? 0;
+			sentStart += leading;
+			sentEnd -= trailing;
+			// Skip segments that are only whitespace after trimming
+			if (sentEnd <= sentStart) {
+				continue;
+			}
+		}
+
+		let startNode: Text | null = null;
+		let startOffsetInNode = 0;
+		for (let textPart of textParts) {
+			if (textPart.globalStart <= sentStart && sentStart < textPart.globalEnd) {
+				startNode = textPart.node;
+				startOffsetInNode = textPart.localStart + (sentStart - textPart.globalStart);
+				break;
+			}
+		}
+
+		let endNode: Text | null = null;
+		let endOffsetInNode = 0;
+		for (let textPart of textParts) {
+			if (textPart.globalStart < sentEnd && sentEnd <= textPart.globalEnd) {
+				endNode = textPart.node;
+				endOffsetInNode = textPart.localStart + (sentEnd - textPart.globalStart);
+				break;
+			}
+		}
+
+		if (!startNode || !endNode) continue;
+
+		let sentenceRange = range.commonAncestorContainer.ownerDocument!.createRange();
+		sentenceRange.setStart(startNode, startOffsetInNode);
+		sentenceRange.setEnd(endNode, endOffsetInNode);
+		outputRanges.push(sentenceRange);
+	}
+	return outputRanges;
+}
+
+export function splitRanges(
+	ranges: Range[],
+	splitAtRange: Range
+): { ranges: Range[]; startIndex: number; endIndex: number } | null {
+	let newRanges: Range[] = [];
+	let startIndex = -1;
+	let endIndex = -1;
+
+	let lastStartToStart: number | null = null;
+	let lastStartToEnd: number | null = null;
+	let lastEndToStart: number | null = null;
+	let lastEndToEnd: number | null = null;
+
+	for (let range of ranges) {
+		if (startIndex !== -1 && endIndex !== -1) {
+			newRanges.push(range);
+			continue;
+		}
+		// If these ranges aren't comparable, we can't split
+		if (range.commonAncestorContainer.getRootNode() !== splitAtRange.commonAncestorContainer.getRootNode()) {
+			newRanges.push(range);
+			continue;
+		}
+
+		let splitRanges: Range[] = [];
+		let containedStart = false;
+		let containedEnd = false;
+		let splitIndex = -1;
+
+		if (startIndex === -1) {
+			let startToStart = range.compareBoundaryPoints(Range.START_TO_START, splitAtRange);
+			let startToEnd = range.compareBoundaryPoints(Range.START_TO_END, splitAtRange);
+			if (
+				// If the start point of splitAtRange is somewhere within range,
+				// or it was somewhere between the last range and this range
+				(startToStart <= 0 || lastStartToStart === -1 && startToStart === 1)
+				&& (startToEnd >= 0 || lastStartToEnd === -1 && startToEnd === 1)
+			) {
+				containedStart = true;
+			}
+			lastStartToStart = startToStart;
+			lastStartToEnd = startToEnd;
+		}
+
+		if (endIndex === -1) {
+			let endToStart = range.compareBoundaryPoints(Range.END_TO_START, splitAtRange);
+			let endToEnd = range.compareBoundaryPoints(Range.END_TO_END, splitAtRange);
+			if (
+				// If the end point of splitAtRange is somewhere within range,
+				// or it was somewhere between the last range and this range
+				(endToStart <= 0 || lastEndToStart === -1 && endToStart === 1)
+				&& (endToEnd >= 0 || lastEndToEnd === -1 && endToEnd === 1)
+			) {
+				containedEnd = true;
+			}
+			lastEndToStart = endToStart;
+			lastEndToEnd = endToEnd;
+		}
+
+		if (containedStart) {
+			let before = range.cloneRange();
+			before.setEnd(splitAtRange.startContainer, splitAtRange.startOffset);
+			if (!before.collapsed) splitRanges.push(before);
+		}
+
+		if (containedStart || containedEnd) {
+			let middle = range.cloneRange();
+			let start = (containedStart ? splitAtRange : range).startContainer;
+			let startOffset = (containedStart ? splitAtRange : range).startOffset;
+			let end = (containedEnd ? splitAtRange : range).endContainer;
+			let endOffset = (containedEnd ? splitAtRange : range).endOffset;
+
+			middle.setStart(start, startOffset);
+			middle.setEnd(end, endOffset);
+
+			if (!middle.collapsed) {
+				splitRanges.push(middle);
+				splitIndex = splitRanges.length - 1;
+			}
+		}
+		else if (!range.collapsed) {
+			splitRanges.push(range);
+			splitIndex = splitRanges.length - 1;
+		}
+
+		if (containedEnd) {
+			let after = range.cloneRange();
+			after.setStart(splitAtRange.endContainer, splitAtRange.endOffset);
+			if (!after.collapsed) splitRanges.push(after);
+		}
+
+		if (containedStart) {
+			startIndex = newRanges.length + splitIndex;
+		}
+		if (containedEnd) {
+			endIndex = newRanges.length + splitIndex + 1;
+		}
+		newRanges.push(...splitRanges);
+	}
+
+	if (startIndex === -1 || endIndex === -1) {
+		return null;
+	}
+
+	return {
+		ranges: newRanges,
+		startIndex,
+		endIndex
+	};
+}
+
 /**
  * Create a single range spanning all the positions included in the set of input ranges. For
  * example, if rangeA goes from nodeA at offset 5 to nodeB at offset 2 and rangeB goes from nodeC
  * at offset 0 to nodeD at offset 9, the output of makeRangeSpanning(rangeA, rangeB) would be a
  * range from nodeA at offset 5 to nodeD at offset 9.
  */
-export function makeRangeSpanning(...ranges: Range[]): Range {
+export function makeRangeSpanning(ranges: Range[], sorted = false): Range {
 	if (!ranges.length) {
 		return document.createRange();
 	}
+	if (sorted) {
+		let range = ranges[0].cloneRange();
+		let lastRange = ranges[ranges.length - 1];
+		range.setEnd(lastRange.endContainer, lastRange.endOffset);
+		return range;
+	}
+
 	let result = ranges[0].cloneRange();
 	for (let i = 1; i < ranges.length; i++) {
 		let range = ranges[i];
@@ -213,7 +446,7 @@ export function caretPositionFromPoint(doc: Document, x: number, y: number): Car
 			};
 		}
 		else if (typeof doc.caretRangeFromPoint == 'function') {
-			const range = doc.caretRangeFromPoint(x, y);
+			let range = doc.caretRangeFromPoint(x, y);
 			if (!range) {
 				return null;
 			}
@@ -282,7 +515,7 @@ export function getColumnSeparatedPageRects(range: Range, visibleOnly = true): D
 		// are within this column
 		let rangeRectsWithinColumn = [];
 		for (let rangeRect of rangeRects) {
-			if (rectIntersects(rangeRect, columnRect)) {
+			if (rectsIntersect(rangeRect, columnRect)) {
 				rangeRectsWithinColumn.push(rangeRect);
 				rangeRects.delete(rangeRect);
 			}

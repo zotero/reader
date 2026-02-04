@@ -124,7 +124,7 @@
 			&.active, &:active, &.active-pseudo-class-fix {
 				background: var(--material-button, #FFFFFF);
 				border: 0.5px solid var(--fill-senary, #00000005);
-				box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
+				box-shadow: $shadow-button;
 			}
 
 			&:active:not(.active), &.active-pseudo-class-fix:not(.active) {
@@ -137,7 +137,7 @@
 	.wide-button {
 		background: var(--material-button);
 		text-align: center;
-		box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.05), 0px 0.5px 2.5px 0px rgba(0, 0, 0, 0.30);
+		box-shadow: $shadow-button;
 		width: 100%;
 		color: var(--fill-primary);
 		height: 22px;
@@ -291,6 +291,77 @@
 			&, & img {
 				transition: none;
 			}
+		}
+	}
+}
+
+.read-aloud-annotation-popup {
+	@include popup;
+	z-index: $z-index-popup;
+	position: fixed;
+	display: flex;
+	flex-direction: column;
+	padding: 12px;
+	gap: 8px;
+	top: 50%;
+	left: calc(var(--sidebar-width) / 2 + 50vw);
+	transform: translateX(-50%);
+	width: 500px;
+	max-width: calc((100vw - var(--sidebar-width)) * 0.8);
+	text-align: center;
+	user-select: none;
+	line-height: 1.5;
+
+	&.fading {
+		opacity: 0;
+		transition: opacity 1s ease-out;
+	}
+
+	.annotation-text {
+		align-self: center;
+		font-family: serif;
+		font-size: 18px;
+		font-weight: 500;
+		text-align: justify;
+		overflow-wrap: anywhere;
+		white-space: preserve;
+		max-height: 300px;
+		overflow: hidden auto;
+
+		.underline {
+			text-decoration: underline;
+			text-decoration-thickness: 2px;
+			text-underline-offset: 2px;
+		}
+	}
+
+	.buttons {
+		display: flex;
+		justify-content: flex-end;
+		gap: 8px;
+
+		.menu-button {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			width: 40px;
+		}
+	}
+
+	.hint {
+		display: grid;
+		grid-template-columns: max-content auto max-content auto;
+		gap: 0 12px;
+		margin: 0 auto;
+		font-size: 12px;
+		color: var(--fill-secondary);
+		text-align: start;
+		width: fit-content;
+
+		.key {
+			text-align: end;
+			font-weight: 500;
+			white-space: nowrap;
 		}
 	}
 }

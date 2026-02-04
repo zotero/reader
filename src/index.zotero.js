@@ -12,6 +12,9 @@ window.createReader = (options) => {
 			reader.openContextMenu(params);
 			return;
 		}
+		if (params.itemGroups.some(group => group.some(item => item.icon || item.slider))) {
+			throw new Error('Icons and sliders are unsupported in native context menus');
+		}
 		window.contextMenuParams = params;
 		onOpenContextMenu(params);
 	};

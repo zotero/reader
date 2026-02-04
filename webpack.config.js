@@ -5,6 +5,7 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ZoteroLocalePlugin = require('./webpack.zotero-locale-plugin');
+const { EnvironmentPlugin } = require('webpack');
 
 function generateReaderConfig(build) {
 	let config = {
@@ -158,7 +159,10 @@ function generateReaderConfig(build) {
 				options: {
 
 				}
-			})
+			}),
+			new EnvironmentPlugin({
+				ZOTERO_API_KEY: null,
+			}),
 		);
 		config.devServer = {
 			static: {
@@ -221,11 +225,6 @@ function generateViewConfig(build) {
 					exclude: /node_modules/,
 					use: {
 						loader: 'ts-loader',
-						options: {
-							compilerOptions: {
-								target: 'ES2022'
-							}
-						}
 					},
 				},
 				{

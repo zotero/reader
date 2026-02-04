@@ -36,6 +36,9 @@ export class KeyboardManager {
 		// Primary modifier
 		let pm = isMac() ? 'Cmd' : 'Ctrl';
 
+		let arrowPrev = 'Arrow' + (window.rtl ? 'Right' : 'Left');
+		let arrowNext = 'Arrow' + (window.rtl ? 'Left' : 'Right');
+
 		this.shift = event.shiftKey;
 		this.mod = ctrl || cmd;
 
@@ -47,6 +50,56 @@ export class KeyboardManager {
 		let code = getCodeCombination(event);
 
 		let sidebarAnnotationFocused = document.activeElement.classList.contains('annotation');
+
+		if (this._reader._state.readAloudState.annotationPopup) {
+			if (['Escape', 'Enter'].includes(key)) {
+				event.preventDefault();
+				this._reader.dismissReadAloudAnnotationPopup();
+				return;
+			}
+			if (['Delete', 'Backspace'].includes(key)) {
+				event.preventDefault();
+				this._reader.deleteReadAloudAnnotation();
+				return;
+			}
+			if (key === `${pm}-${arrowPrev}`) {
+				event.preventDefault();
+				event.stopPropagation();
+				this._reader.extendReadAloudAnnotation('prev');
+				return;
+			}
+			if (key === `${pm}-${arrowNext}`) {
+				event.preventDefault();
+				event.stopPropagation();
+				this._reader.extendReadAloudAnnotation('next');
+				return;
+			}
+			if (key === arrowPrev || key === `Shift-${arrowPrev}`) {
+				event.preventDefault();
+				event.stopPropagation();
+				this._reader.moveReadAloudAnnotation('prev', event.shiftKey);
+				return;
+			}
+			if (key === arrowNext || key === `Shift-${arrowNext}`) {
+				event.preventDefault();
+				event.stopPropagation();
+				this._reader.moveReadAloudAnnotation('next', event.shiftKey);
+				return;
+			}
+			if (code.startsWith('Digit')) {
+				let idx = parseInt(code.slice(5)) - 1;
+				if (ANNOTATION_COLORS[idx]) {
+					event.preventDefault();
+					this._reader.setReadAloudAnnotationColor(ANNOTATION_COLORS[idx][1]);
+					return;
+				}
+			}
+			if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
+				event.preventDefault();
+				this._reader.setReadAloudAnnotationType(key === 'h' || key === 'H' ? 'highlight' : 'underline');
+				return;
+			}
+		}
 
 		if (!isTextBox(event.target)) {
 			if (
@@ -236,6 +289,11 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.zoomReset();
 		}
+		else if (code === `${pm}-Alt-KeyR` || code === `${pm}-Alt-KeyL`) {
+			event.preventDefault();
+			event.stopPropagation();
+			this._reader.startReadAloudAtPosition();
+		}
 		else if (['Delete', 'Backspace'].includes(key)) {
 			// Prevent the deletion of annotations when they are selected and the focus is within
 			// an input or label popup. Normally, the focus should not be inside an input unless
@@ -335,6 +393,44 @@ export class KeyboardManager {
 				let idx = parseInt(code.slice(5)) - 1;
 				if (ANNOTATION_COLORS[idx]) {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
+				}
+			}
+			else if (this._reader._state.readAloudState.active && !event.target.matches('button, select')) {
+				if (key === 'Space') {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader.toggleReadAloudPaused();
+				}
+				else if (key === `Alt-${arrowPrev}` || key === `Alt-Shift-${arrowPrev}`) {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader._state.readAloudState.controller?.skipBack('sentence', event.shiftKey);
+				}
+				else if (key === `Alt-${arrowNext}` || key === `Alt-Shift-${arrowNext}`) {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader._state.readAloudState.controller?.skipAhead('sentence', event.shiftKey);
+				}
+				else if (key === arrowPrev || key === `Shift-${arrowPrev}`) {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader._state.readAloudState.controller?.skipBack('paragraph', event.shiftKey);
+				}
+				else if (key === arrowNext || key === `Shift-${arrowNext}`) {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader._state.readAloudState.controller?.skipAhead('paragraph', event.shiftKey);
+				}
+				else if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
+					event.preventDefault();
+					event.stopPropagation();
+					let segment = this._reader._state.readAloudState.controller?.getSegmentToAnnotate();
+					if (segment) {
+						this._reader.addAnnotationFromReadAloudSegment(
+							segment,
+							key === 'h' || key === 'H' ? 'highlight' : 'underline'
+						);
+					}
 				}
 			}
 		}

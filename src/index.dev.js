@@ -3,6 +3,10 @@ import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
 
+// Injected by Webpack in dev builds
+// eslint-disable-next-line no-process-env
+const ZOTERO_API_KEY = process.env.ZOTERO_API_KEY;
+
 window.dev = true;
 
 async function createReader() {
@@ -39,6 +43,7 @@ async function createReader() {
 		toolbarPlaceholderWidth: 0,
 		authorName: 'John',
 		showAnnotations: true,
+		loggedIn: true,
 		// platform: 'web',
 		// password: 'test',
 		onOpenContextMenu(params) {
@@ -64,6 +69,7 @@ async function createReader() {
 		},
 		onOpenLink(url) {
 			alert('Navigating to an external link: ' + url);
+			window.open(url, /^(https?|file):\/\//.test(url) ? '_blank' : '_self');
 		},
 		onToggleSidebar: (open) => {
 			console.log('Sidebar toggled', open);
@@ -94,6 +100,129 @@ async function createReader() {
 		},
 		onSaveCustomThemes(customThemes) {
 			console.log('Save custom themes', customThemes);
+		},
+		onSetReadAloudVoice(lang, region, voice, speed) {
+			console.log('Set read aloud voice', voice, 'with region', region, 'for lang', lang, 'with speed', speed);
+		},
+		onSetReadAloudStatus(status) {
+			console.log('Set read aloud status', status);
+		},
+		enableReadAloud: true,
+		readAloudRemoteInterface: ZOTERO_API_KEY && {
+			async getVoices() {
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/voices', {
+						headers: {
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+					});
+				}
+				catch (e) {
+					console.error('Failed to fetch voices from API');
+					return {
+						voices: [],
+						creditsRemaining: null,
+					};
+				}
+
+				if (!response.ok) {
+					console.error('Failed to fetch voices from API', response.status, await response.text());
+					return {
+						voices: [],
+						creditsRemaining: null,
+					};
+				}
+
+				let creditsRemaining = response.headers.has('Zotero-TTS-Credits-Remaining')
+					? parseInt(response.headers.get('Zotero-TTS-Credits-Remaining'))
+					: null;
+				return {
+					voices: await response.json(),
+					creditsRemaining,
+				};
+			},
+
+			async getAudio(segment, voice, lang) {
+				let params = new URLSearchParams();
+				params.set('text', segment.text);
+				params.set('voice', voice.id);
+				params.set('lang', lang);
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/speak?' + params, {
+						headers: {
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+					});
+				}
+				catch {
+					return {
+						audio: null,
+						creditsRemaining: null,
+						error: 'network',
+					};
+				}
+
+				let creditsRemaining = parseInt(response.headers.get('Zotero-TTS-Credits-Remaining'));
+				if (isNaN(creditsRemaining)) {
+					creditsRemaining = null;
+				}
+
+				if (response.status === 402) {
+					return {
+						audio: null,
+						creditsRemaining,
+						error: 'quota-exceeded',
+					};
+				}
+				else if (!response.ok) {
+					return {
+						audio: null,
+						creditsRemaining,
+						error: 'unknown',
+					};
+				}
+
+				let { audio, timepoints } = await response.json();
+				return {
+					audio,
+					creditsRemaining,
+				};
+			},
+
+			async getSampleAudio(voice, lang) {
+				let params = new URLSearchParams();
+				params.set('voice', voice.id);
+				params.set('lang', lang);
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/sample?' + params);
+				}
+				catch {
+					return {
+						audio: null,
+						error: 'network',
+					};
+				}
+
+				if (!response.ok) {
+					return {
+						audio: null,
+						error: 'unknown',
+					};
+				}
+
+				let { audio } = await response.json();
+				return {
+					audio,
+				};
+			}
+		},
+		onLogIn() {
+			setTimeout(() => {
+				reader.setLoggedIn(true);
+			}, 200);
 		}
 	});
 	reader.enableAddToNote(true);

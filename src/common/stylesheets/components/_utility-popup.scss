@@ -1,0 +1,124 @@
+.utility-popup {
+	@include control-popup;
+	z-index: $z-index-popup;
+	position: fixed; // Don't overflow the body
+	padding: 8px;
+	gap: 8px;
+
+	// Don't allow window dragging, even if a popup overlaps the toolbar
+	-moz-window-dragging: no-drag;
+}
+
+.read-aloud-popup {
+	top: $height-toolbar + 10px;
+	inset-inline-start: calc(var(--sidebar-width) + 10px);
+	width: 250px;
+	user-select: none;
+
+	.row {
+		display: flex;
+		gap: 8px;
+
+		&.buttons {
+			margin: -8px;
+			justify-content: space-between;
+
+			button {
+				width: 40px;
+				height: 40px;
+				border-radius: 0;
+			}
+
+			.group {
+				display: flex;
+				gap: 4px;
+			}
+
+			.loading-spinner {
+				width: 40px;
+				height: 40px;
+				padding: 12px;
+				color: var(--fill-secondary);
+				animation: rotating 0.5s steps(12) infinite;
+			}
+
+			&:not(:last-child) {
+				border-bottom: var(--material-border-quarternary);
+			}
+		}
+
+		&.speed {
+			padding-top: 8px;
+
+			input {
+				flex: 1;
+			}
+
+			label {
+				flex-shrink: 0;
+				font-variant: tabular-nums;
+			}
+		}
+
+		&.voices {
+			.select {
+				flex: 1;
+			}
+
+			.help-button {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				width: 20px;
+				height: 20px;
+				border-radius: 100px;
+				background: var(--material-button);
+				box-shadow: $shadow-button;
+				font-size: 15px;
+				font-weight: 500;
+
+				&:active:not(.active):not(:disabled), &.active-pseudo-class-fix:not(.active):not(:disabled) {
+					background: var(--fill-quinary);
+				}
+			}
+		}
+
+		&.remaining-time {
+			flex-direction: column;
+			gap: 4px;
+			padding-inline: 6px;
+
+			.time-indicator {
+				display: flex;
+				align-items: center;
+				gap: 4px;
+
+				&.urgent {
+					color: var(--accent-red);
+				}
+
+				button {
+					margin-inline-start: auto;
+				}
+			}
+
+
+			.message {
+				color: var(--fill-secondary);
+				font-size: 11px;
+			}
+		}
+
+		&.error {
+			color: var(--accent-red);
+			font-size: 11px;
+			justify-content: center;
+		}
+	}
+
+	.time-indicator, .log-in, .error {
+		button {
+			@include link-button;
+		}
+	}
+}

@@ -23,6 +23,7 @@ import { EPUBFindProcessor } from "./find";
 import DOMView, {
 	DOMViewOptions,
 	DOMViewState,
+	SpotlightKey,
 	NavigateOptions,
 	ReflowableAppearance
 } from "../common/dom-view";
@@ -41,7 +42,7 @@ import { RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
 import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
-import LRUCacheMap from "../common/lib/lru-cache-map";
+import LRUCacheMap from "../../common/lib/lru-cache-map";
 import { mode } from "../common/lib/collection";
 import { debounce } from '../../common/lib/debounce';
 import { placeA11yVirtualCursor } from '../../common/lib/utilities';
@@ -105,6 +106,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
+	get lang(): string {
+		return this.book.packaging.metadata.language;
+	}
+
 	protected override _handleIFrameLoaded() {
 		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
 
@@ -115,7 +120,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		await super._handleViewCreated(viewState);
 		await this.book.opened;
 
-		this._iframeDocument.documentElement.lang = this.book.packaging.metadata.language;
+		this._iframeDocument.documentElement.lang = this.lang;
 
 		let cspMeta = this._iframeDocument.createElement('meta');
 		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
@@ -155,7 +160,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
 		if (!this.pageProgressionRTL) {
 			try {
-				let locale = new Intl.Locale(this.book.packaging.metadata.language).maximize();
+				let locale = new Intl.Locale(this.lang).maximize();
 				this.pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
 				if (this.pageProgressionRTL) {
 					console.log('Guessed RTL page progression from maximized locale: ' + locale);
@@ -246,7 +251,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			document: this._iframeDocument,
 		});
 		await renderer.render(this.book.archive.request.bind(this.book.archive), cssRewriter);
-		renderer.body.lang = this.book.packaging.metadata.language;
+		renderer.body.lang = this.lang;
 		this._sectionRenderers[section.index] = renderer;
 	}
 
@@ -540,9 +545,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	protected override _getContainingRoot(node: Node) {
-		return this._sectionRenderers.find(r => r.container.contains(node))?.container
-			?? null;
+	protected override _getRoots(includeUnmounted = false): HTMLElement[] {
+		return this._sectionRenderers.map(includeUnmounted
+			? (r => r.body)
+			: (r => r.container)
+		);
 	}
 
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
@@ -1341,7 +1348,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					}
 					let selector = this.toSelector(range);
 					if (selector) {
-						this._setHighlight(selector);
+						this._setSpotlight(SpotlightKey.Navigation, selector);
 					}
 				}
 			}
