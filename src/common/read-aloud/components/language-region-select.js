@@ -36,7 +36,15 @@ function LanguageRegionSelect({ languages, regions, lang, region, onLangChange, 
 			}
 		}
 
-		return result.sort((a, b) => a.label.localeCompare(b.label));
+		return result.sort((a, b) => {
+			if (a.value.startsWith(b.value + '-')) {
+				return 1;
+			}
+			if (b.value.startsWith(a.value + '-')) {
+				return -1;
+			}
+			return a.label.localeCompare(b.label);
+		});
 	}, [languages, regions, displayNames, l10n]);
 
 	function handleChange(event) {
