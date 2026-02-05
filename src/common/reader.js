@@ -214,6 +214,7 @@ class Reader {
 				speed: 1,
 				voice: null,
 				annotationPopup: null,
+				segmentAnnotations: new Map(),
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			primaryViewState: options.primaryViewState,
@@ -553,6 +554,7 @@ class Reader {
 				this._state.readAloudState.backwardStopIndex = null;
 				this._state.readAloudState.forwardStopIndex = null;
 				this._state.readAloudState.activeSegment = null;
+				this._state.readAloudState.segmentAnnotations = new Map();
 			}
 			this._primaryView?.setReadAloudState(this._state.readAloudState);
 			this._secondaryView?.setReadAloudState(this._state.readAloudState);
@@ -945,6 +947,7 @@ class Reader {
 				forwardStopIndex: null,
 				activeSegment: null,
 				annotationPopup: null,
+				segmentAnnotations: new Map(),
 			});
 		}
 	}
@@ -979,6 +982,7 @@ class Reader {
 			forwardStopIndex: null,
 			targetPosition: position,
 			activeSegment: null,
+			segmentAnnotations: new Map(),
 		});
 	}
 
@@ -1002,8 +1006,8 @@ class Reader {
 	}
 
 	addAnnotationFromReadAloudSegment(segment, type) {
-		// If annotation popup is already open, change the type if specified
-		let popup = this._state.readAloudState.annotationPopup;
+		let { annotationPopup: popup, segments, segmentAnnotations } = this._state.readAloudState.annotationPopup;
+		// If the annotation popup is already open, just change the type if specified
 		if (popup) {
 			if (type) {
 				this.setReadAloudAnnotationType(type);
@@ -1011,8 +1015,43 @@ class Reader {
 			return;
 		}
 
-		let segments = this._state.readAloudState.segments;
 		let segmentIndex = segments ? segments.indexOf(segment) : -1;
+		// Check if this segment already has an annotation
+		let existingAnnotationID = segmentAnnotations.get(segmentIndex);
+		let existingAnnotation = existingAnnotationID && this._annotationManager._getAnnotationByID(existingAnnotationID);
+
+		if (existingAnnotation) {
+			// Find the segment range for this annotation
+			let startSegmentIndex = segmentIndex;
+			let endSegmentIndex = segmentIndex;
+			for (let [idx, annID] of segmentAnnotations) {
+				if (annID === existingAnnotationID) {
+					startSegmentIndex = Math.min(startSegmentIndex, idx);
+					endSegmentIndex = Math.max(endSegmentIndex, idx);
+				}
+			}
+			this._handleReadAloudStateChange({
+				annotationPopup: {
+					annotation: existingAnnotation,
+					baseSegmentIndex: segmentIndex,
+					startSegmentIndex,
+					endSegmentIndex,
+					segments,
+				}
+			});
+			this._lastView.navigate({ annotationID: existingAnnotation.id });
+			return;
+		}
+
+		// If an old annotation was deleted, clean up stale mappings
+		if (existingAnnotationID) {
+			for (let [idx, annID] of segmentAnnotations) {
+				if (annID === existingAnnotationID) {
+					segmentAnnotations.delete(idx);
+				}
+			}
+		}
+
 		let annotation = this._lastView.addAnnotationFromReadAloudSegments(
 			[segment],
 			{
@@ -1023,6 +1062,7 @@ class Reader {
 			},
 		);
 		if (annotation && segments && segmentIndex >= 0) {
+			segmentAnnotations.set(segmentIndex, annotation.id);
 			this._handleReadAloudStateChange({
 				annotationPopup: {
 					annotation,
@@ -1041,15 +1081,21 @@ class Reader {
 		if (!popup) {
 			return;
 		}
-		let { annotation, segments } = popup;
+		let { annotation, startSegmentIndex, endSegmentIndex, segments } = popup;
+		let { segmentAnnotations } = this._state.readAloudState;
 		// Get updated annotation data
 		annotation = this._annotationManager._getAnnotationByID(annotation.id);
 		if (!annotation) {
 			return;
 		}
+
+		// Clean up segment mappings in the old range
+		for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
+			segmentAnnotations.delete(i);
+		}
 		// Delete the old annotation
 		this._annotationManager.deleteAnnotations([annotation.id]);
-		// Create a new annotation for the new range
+		// And create a new one across the new range
 		let segmentsInRange = segments.slice(newStartIndex, newEndIndex + 1);
 		let newAnnotation = this._lastView.addAnnotationFromReadAloudSegments(
 			segmentsInRange,
@@ -1060,6 +1106,10 @@ class Reader {
 			},
 		);
 		if (newAnnotation) {
+			// Add segment mappings across the new range
+			for (let i = newStartIndex; i <= newEndIndex; i++) {
+				segmentAnnotations.set(i, newAnnotation.id);
+			}
 			this._handleReadAloudStateChange({
 				annotationPopup: {
 					annotation: newAnnotation,
@@ -1132,6 +1182,12 @@ class Reader {
 		let popup = this._state.readAloudState.annotationPopup;
 		if (!popup) {
 			return;
+		}
+		let { startSegmentIndex, endSegmentIndex } = popup;
+		let { segmentAnnotations } = this._state.readAloudState;
+		// Clear segment mappings
+		for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
+			segmentAnnotations.delete(i);
 		}
 		this._annotationManager.deleteAnnotations([popup.annotation.id]);
 		this._handleReadAloudStateChange({ annotationPopup: null });
