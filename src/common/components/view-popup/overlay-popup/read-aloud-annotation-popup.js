@@ -54,6 +54,20 @@ function ReadAloudAnnotationPopup(props) {
 		setTop(rect.top - rect.height / 2);
 	}, []);
 
+	useEffect(() => {
+		let handlePointerDownCapture = (event) => {
+			if (ref.current && !ref.current.contains(event.target)) {
+				onDismiss();
+			}
+		};
+		document.addEventListener('pointerdown', handlePointerDownCapture, { capture: true });
+		window.addEventListener('blur', onDismiss);
+		return () => {
+			document.removeEventListener('pointerdown', handlePointerDownCapture, { capture: true });
+			window.removeEventListener('blur', onDismiss);
+		};
+	}, [onDismiss]);
+
 	let handlePointerMove = () => {
 		setFading(false);
 		startTimers();
