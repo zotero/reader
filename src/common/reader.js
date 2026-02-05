@@ -1006,7 +1006,7 @@ class Reader {
 	}
 
 	addAnnotationFromReadAloudSegment(segment, type) {
-		let { annotationPopup: popup, segments, segmentAnnotations } = this._state.readAloudState.annotationPopup;
+		let { annotationPopup: popup, segments, segmentAnnotations } = this._state.readAloudState;
 		// If the annotation popup is already open, just change the type if specified
 		if (popup) {
 			if (type) {
