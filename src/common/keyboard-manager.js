@@ -405,21 +405,25 @@ export class KeyboardManager {
 					event.preventDefault();
 					event.stopPropagation();
 					this._reader._state.readAloudState.controller?.skipBack('sentence', event.shiftKey);
+					this._reader._handleReadAloudSkip();
 				}
 				else if (key === `Alt-${arrowNext}` || key === `Alt-Shift-${arrowNext}`) {
 					event.preventDefault();
 					event.stopPropagation();
 					this._reader._state.readAloudState.controller?.skipAhead('sentence', event.shiftKey);
+					this._reader._handleReadAloudSkip();
 				}
 				else if (key === arrowPrev || key === `Shift-${arrowPrev}`) {
 					event.preventDefault();
 					event.stopPropagation();
 					this._reader._state.readAloudState.controller?.skipBack('paragraph', event.shiftKey);
+					this._reader._handleReadAloudSkip();
 				}
 				else if (key === arrowNext || key === `Shift-${arrowNext}`) {
 					event.preventDefault();
 					event.stopPropagation();
 					this._reader._state.readAloudState.controller?.skipAhead('paragraph', event.shiftKey);
+					this._reader._handleReadAloudSkip();
 				}
 				else if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
 					event.preventDefault();

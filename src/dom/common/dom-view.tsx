@@ -154,6 +154,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _readAloudState: ReadAloudState | null = null;
 
+	protected _readAloudPositionLocked = true;
+
+	protected _readAloudScrolling = false;
+
 	protected _iframeCoordScaleFactor = 1;
 
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
@@ -1718,6 +1722,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 	}
 
+	protected _onManualNavigation(): void {
+		if (this._readAloudState?.active && this._readAloudPositionLocked) {
+			this._readAloudPositionLocked = false;
+		}
+	}
+
+	lockPositionToReadAloud(): void {
+		if (this._readAloudState?.active) {
+			this._readAloudPositionLocked = true;
+		}
+	}
+
 	protected _handleScrollCapture(event: Event) {
 		// The annotation layer is positioned at the top-left of the document, so it moves along with the content when
 		// the document is scrolled. But scrollable sub-frames (e.g. elements with overflow: auto) don't have their own
@@ -1976,6 +1992,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
+		// Initialize lock state when Read Aloud starts
+		if (state.active && !previousState?.active) {
+			this._readAloudPositionLocked = true;
+		}
+
 		if (!this.initialized) {
 			return;
 		}
@@ -2017,9 +2038,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (selector) {
 				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
 
-				// If the Read Aloud annotation popup isn't open, navigate to the current segment
-				if (!state.annotationPopup) {
+				// If the Read Aloud annotation popup isn't open and position is locked, navigate to the current segment
+				if (!state.annotationPopup && this._readAloudPositionLocked) {
 					setTimeout(() => {
+						this._readAloudScrolling = true;
+
 						// Navigate to the start of the segment if possible
 						let startRange = range.toRange();
 						startRange.collapse(true);
@@ -2030,6 +2053,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 							visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
 							block: 'center',
 							behavior: 'smooth'
+						});
+
+						debounceUntilScrollFinishes(this._iframeDocument).then(() => {
+							this._readAloudScrolling = false;
 						});
 					});
 				}
@@ -2291,6 +2318,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	navigate(location: NavLocation, options: NavigateOptions = {}) {
+		if (!options.skipHistory) {
+			this._onManualNavigation();
+		}
+
 		if (location.annotationID) {
 			options.block ||= 'center';
 			options.ifNeeded ??= true;
@@ -2313,10 +2344,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	navigateBack() {
+		this._onManualNavigation();
 		this._history.navigateBack();
 	}
 
 	navigateForward() {
+		this._onManualNavigation();
 		this._history.navigateForward();
 	}
 

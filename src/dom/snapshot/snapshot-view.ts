@@ -537,6 +537,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		super._handleScroll(event);
 		this._updateViewState();
 		this._pushHistoryPoint(true);
+
+		if (this._readAloudState?.active && !this._readAloudScrolling) {
+			this._onManualNavigation();
+		}
 	}
 
 	protected _handleVisibilityChange() {

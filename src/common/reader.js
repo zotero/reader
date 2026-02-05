@@ -338,6 +338,7 @@ class Reader {
 						onOpenReadAloudLearnMore={this.openReadAloudLearnMore.bind(this)}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onAddReadAloudAnnotation={this.addAnnotationFromReadAloudSegment.bind(this)}
+						onReadAloudSkip={this._handleReadAloudSkip.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
 						onChangeSidebarView={(view) => {
@@ -899,6 +900,10 @@ class Reader {
 			return;
 		}
 		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
+	}
+
+	_handleReadAloudSkip() {
+		this._lastView?.lockPositionToReadAloud();
 	}
 
 	openVoicePreferences() {

@@ -22,7 +22,7 @@ import { useSamplePlayback } from '../../read-aloud/components/use-sample-playba
 const URGENT_THRESHOLD_SECONDS = 60;
 
 function ReadAloudPopup(props) {
-	let { params, voices: persistedVoices, remoteInterface, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onLogIn, onAddAnnotation } = props;
+	let { params, voices: persistedVoices, remoteInterface, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onLogIn, onAddAnnotation, onSkip } = props;
 	let controller = params.controller;
 
 	let [showOptions, setShowOptions] = useState(false);
@@ -280,6 +280,7 @@ function ReadAloudPopup(props) {
 				onPlayPause={() => onChange({ paused: !params.paused })}
 				controller={controller}
 				onAddAnnotation={onAddAnnotation}
+				onSkip={onSkip}
 			/>
 			{showOptions && <>
 				<SpeedSlider
@@ -335,7 +336,7 @@ function ReadAloudPopup(props) {
 function PlaybackControls(props) {
 	const { l10n } = useLocalization();
 
-	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation } = props;
+	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation, onSkip } = props;
 
 	function handleAddAnnotation() {
 		let segment = controller?.getSegmentToAnnotate();
@@ -359,7 +360,10 @@ function PlaybackControls(props) {
 					className="toolbar-button"
 					title={l10n.getString('reader-read-aloud-skip-back')}
 					tabIndex="-1"
-					onClick={() => controller?.skipBack()}
+					onClick={() => {
+						controller?.skipBack();
+						onSkip();
+					}}
 				><IconSkipBack/></button>
 				{showSpinner
 					? <IconLoading
@@ -377,7 +381,10 @@ function PlaybackControls(props) {
 					className="toolbar-button"
 					title={l10n.getString('reader-read-aloud-skip-ahead')}
 					tabIndex="-1"
-					onClick={() => controller?.skipAhead()}
+					onClick={() => {
+						controller?.skipAhead();
+						onSkip();
+					}}
 				><IconSkipAhead/></button>
 			</div>
 			<div className="group">

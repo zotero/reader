@@ -83,6 +83,8 @@ abstract class AbstractFlow implements Flow {
 
 	protected _onPushHistoryPoint: (transient: boolean) => void;
 
+	protected _onManualNavigation: () => void;
+
 	protected _nextHistoryPushIsFromNavigation = false;
 
 	protected _intersectionObserver: IntersectionObserver;
@@ -97,6 +99,7 @@ abstract class AbstractFlow implements Flow {
 		this._onUpdateViewStats = options.onUpdateViewStats;
 		this._onViewUpdate = options.onViewUpdate;
 		this._onPushHistoryPoint = options.onPushHistoryPoint;
+		this._onManualNavigation = options.onManualNavigation;
 
 		this._isRTL = isRTL(this._iframeDocument.body);
 
@@ -299,6 +302,7 @@ interface Options {
 	onUpdateViewStats: () => void;
 	onViewUpdate: () => void;
 	onPushHistoryPoint: (transient: boolean) => void;
+	onManualNavigation: () => void;
 }
 
 export class ScrolledFlow extends AbstractFlow {
@@ -756,37 +760,44 @@ export class PaginatedFlow extends AbstractFlow {
 		// Left/right arrows are handled in EPUBView
 		if (!shiftKey) {
 			if (key == 'ArrowUp') {
+				this._onManualNavigation();
 				this.navigateToPreviousPage();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'ArrowDown') {
+				this._onManualNavigation();
 				this.navigateToNextPage();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'PageUp') {
+				this._onManualNavigation();
 				this.navigateToPreviousPage();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'PageDown') {
+				this._onManualNavigation();
 				this.navigateToNextPage();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'Home') {
+				this._onManualNavigation();
 				this.navigateToFirstPage();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'End') {
+				this._onManualNavigation();
 				this.navigateToLastPage();
 				event.preventDefault();
 				return;
 			}
 		}
 		if (key == ' ') {
+			this._onManualNavigation();
 			if (shiftKey) {
 				this.navigateToPreviousPage();
 			}
@@ -856,10 +867,12 @@ export class PaginatedFlow extends AbstractFlow {
 		// Switch pages after swiping
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		if (swipeAmount <= -1) {
+			this._onManualNavigation();
 			this.navigateRight();
 			event.preventDefault();
 		}
 		else if (swipeAmount >= 1) {
+			this._onManualNavigation();
 			this.navigateLeft();
 			event.preventDefault();
 		}
@@ -870,10 +883,12 @@ export class PaginatedFlow extends AbstractFlow {
 				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX
 				&& !(event.target as Element).closest('a, .clickable-image')) {
 			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {
+				this._onManualNavigation();
 				this.navigateRight();
 				event.preventDefault();
 			}
 			else if (event.clientX <= PAGE_TURN_TAP_MARGIN_PX) {
+				this._onManualNavigation();
 				this.navigateLeft();
 				event.preventDefault();
 			}
@@ -896,6 +911,7 @@ export class PaginatedFlow extends AbstractFlow {
 				return;
 			}
 		}
+		this._onManualNavigation();
 		if (event.deltaY < 0) {
 			this.navigateToPreviousPage();
 			event.preventDefault();

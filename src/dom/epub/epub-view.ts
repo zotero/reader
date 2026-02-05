@@ -873,11 +873,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		if (!event.shiftKey) {
 			if (key == 'ArrowLeft') {
+				this._onManualNavigation();
 				this.flow.navigateLeft();
 				event.preventDefault();
 				return;
 			}
 			if (key == 'ArrowRight') {
+				this._onManualNavigation();
 				this.flow.navigateRight();
 				event.preventDefault();
 				// eslint-disable-next-line no-useless-return
@@ -1212,6 +1214,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				onPushHistoryPoint: (transient) => {
 					this._pushHistoryPoint(transient);
 				},
+				onManualNavigation: () => this._onManualNavigation(),
 			});
 			this.flow.setSpreadMode(this.spreadMode);
 		});
@@ -1359,10 +1362,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	navigateToFirstPage() {
+		this._onManualNavigation();
 		this.flow.navigateToFirstPage();
 	}
 
 	navigateToLastPage() {
+		this._onManualNavigation();
 		this.flow.navigateToLastPage();
 	}
 
@@ -1375,10 +1380,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	navigateToPreviousPage() {
+		this._onManualNavigation();
 		this.flow.navigateToPreviousPage();
 	}
 
 	navigateToNextPage() {
+		this._onManualNavigation();
 		this.flow.navigateToNextPage();
 	}
 
