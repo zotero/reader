@@ -1,29 +1,13 @@
+import { detectLang } from '../common/lib/detect-lang';
 import { getRangeRects } from './lib/utilities';
+import { getTextFromChars } from './selection';
 
-const END_PUNCTUATION = new Set(['.', '!', '?', '…', '。', '！', '？']);
-const TRAILING_CHARS = new Set(['"', "'", '”', '’', '»', '《', '》', ')', ']', '}', '›', '」', '』']);
-
-let isLetter = (c) => /\p{L}/u.test(c);
 let trimText = (s) => s.replace(/^ +| +$/g, '');
 let joinWithSpace = (a, b) => {
 	if (!a) return b;
 	if (!b) return a;
 	return a + ((a.at(-1) !== ' ' && !/[\p{P}]/u.test(b[0] || '')) ? ' ' : '') + b;
 };
-
-function getPrevWordInfo(chars, prevIdx) {
-	if (prevIdx === null || prevIdx < 0) return { letters: '', startIdx: -1 };
-
-	let s = prevIdx;
-	while (s - 1 >= 0 && !chars[s - 1].wordBreakAfter) s--;
-
-	let w = '';
-	for (let k = s; k <= prevIdx; k++) {
-		let ch = chars[k]?.c || '';
-		if (isLetter(ch)) w += ch;
-	}
-	return { letters: w, startIdx: s };
-}
 
 let computeBoundingRect = (rects) => {
 	let minX = Infinity;
@@ -146,142 +130,116 @@ function paragraphsFromChars(chars) {
 	return paragraphs;
 }
 
-function sentencesFromChars(chars) {
-	const MIN_LEN = 30;
+function buildSegmenterText(chars) {
+	let textParts = [];
+	let textLength = 0;
+	let charIndexByTextIndex = [];
 
-	let out = [];
-	let buf = [];
-	let ranges = [];
-	let segStart = null;
-
-	let append = (idx) => {
-		let ch = chars[idx];
-		// Skip ignorable characters for the textual content,
-		// mirroring getTextFromChars behavior.
-		if (ch.ignorable) return;
-
-		buf.push(ch.c);
-
-		// Match getTextFromChars:
-		// - space after explicit spaces or line breaks
-		// - and also after paragraph breaks
-		if (ch.spaceAfter || ch.lineBreakAfter) {
-			buf.push(' ');
-		}
-		if (ch.paragraphBreakAfter) {
-			buf.push(' ');
-		}
-	};
-
-	let flush = () => {
-		let text = trimText(buf.join(''));
-		if (text && ranges.length) {
-			out.push({ text, ranges: ranges.slice() });
-		}
-		buf = [];
-		ranges = [];
-		segStart = null;
-	};
-
-	let consumeAfterPunct = (i) => {
-		let endIdx = i;
-		let j = i + 1;
-
-		while (j < chars.length && END_PUNCTUATION.has(chars[j].c)) {
-			append(j);
-			endIdx = j;
-			j++;
-		}
-		while (j < chars.length && TRAILING_CHARS.has(chars[j].c)) {
-			append(j);
-			endIdx = j;
-			j++;
-		}
-		return { endIdx, nextI: j };
-	};
-
-	let hasSepBeforeWord = (startIdx) => {
-		let bi = startIdx - 1;
-		return (
-			startIdx === 0 ||
-			(bi >= 0 &&
-				(chars[bi].spaceAfter ||
-					chars[bi].lineBreakAfter ||
-					chars[bi].paragraphBreakAfter))
-		);
-	};
-
-	let dotOk = (word) => word.length >= 2 || (word.length > 0 && word === word.toLowerCase());
-
-	for (let i = 0; i < chars.length;) {
+	for (let i = 0; i < chars.length; i++) {
 		let ch = chars[i];
 		if (!ch || ch.ignorable) {
-			i++;
 			continue;
 		}
-		if (segStart === null) segStart = i;
 
-		append(i);
-
-		if (END_PUNCTUATION.has(ch.c)) {
-			// Sentence definitely ends at line/paragraph end or at the last char
-			if (ch.lineBreakAfter || ch.paragraphBreakAfter || i === chars.length - 1) {
-				let { endIdx, nextI } = consumeAfterPunct(i);
-				ranges.push([segStart, endIdx]);
-				flush();
-				i = nextI;
-				continue;
-			}
-
-			let prev = chars[i - 1];
-			if (prev && prev.wordBreakAfter) {
-				let { letters: prevWord, startIdx } = getPrevWordInfo(chars, i - 1);
-				if (hasSepBeforeWord(startIdx) && (ch.c !== '.' || dotOk(prevWord))) {
-					let { endIdx, nextI } = consumeAfterPunct(i);
-					ranges.push([segStart, endIdx]);
-					flush();
-					i = nextI;
-					continue;
-				}
-			}
+		// Map all code units in ch.c to this char index for robust offset mapping.
+		for (let j = 0; j < ch.c.length; j++) {
+			charIndexByTextIndex[textLength + j] = i;
 		}
+		textParts.push(ch.c);
+		textLength += ch.c.length;
 
-		i++;
-	}
-
-	if (segStart !== null) {
-		ranges.push([segStart, Math.max(segStart, chars.length - 1)]);
-		flush();
-	}
-
-	let merged = [];
-	for (let k = 0; k < out.length; k++) {
-		let cur = out[k];
-		if (cur.text.length >= MIN_LEN) {
-			merged.push(cur);
-			continue;
-		}
-		let nxt = out[k + 1];
-		if (nxt) {
-			merged.push({
-				text: joinWithSpace(cur.text, nxt.text),
-				ranges: cur.ranges.concat(nxt.ranges)
-			});
-			k++;
-		}
-		else if (merged.length) {
-			let prev = merged[merged.length - 1];
-			prev.text = joinWithSpace(prev.text, cur.text);
-			prev.ranges = prev.ranges.concat(cur.ranges);
-		}
-		else {
-			merged.push(cur);
+		if (ch.spaceAfter || ch.lineBreakAfter || ch.paragraphBreakAfter) {
+			textParts.push(' ');
+			textLength += 1;
 		}
 	}
-	return merged;
+
+	// Normalize all whitespace to space characters
+	let text = textParts.join('');
+	text = text.replace(/\s/g, ' ');
+
+	return { text, charIndexByTextIndex };
 }
 
-function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
+function trimSegmentSpaces(segmentText) {
+	let start = 0;
+	let end = segmentText.length;
+	while (start < end && segmentText[start] === ' ') start++;
+	while (end > start && segmentText[end - 1] === ' ') end--;
+	return { start, end };
+}
+
+function findCharIndex(charIndexByTextIndex, start, end, forward) {
+	let i = forward ? start : end - 1;
+	let step = forward ? 1 : -1;
+	let stop = forward ? end : start - 1;
+	for (; i !== stop; i += step) {
+		if (charIndexByTextIndex[i] !== undefined) {
+			return charIndexByTextIndex[i];
+		}
+	}
+	return null;
+}
+
+function textRangeToCharRange(charIndexByTextIndex, start, end) {
+	let startChar = findCharIndex(charIndexByTextIndex, start, end, true);
+	if (startChar === null) {
+		return null;
+	}
+
+	let endChar = findCharIndex(charIndexByTextIndex, start, end, false);
+	if (endChar === null) {
+		return null;
+	}
+
+	return [startChar, endChar];
+}
+
+function sentencesFromSegmenterText(text, charIndexByTextIndex, lang) {
+	if (!text) {
+		return [];
+	}
+
+	if (!('Segmenter' in Intl)) {
+		return [];
+	}
+
+	let segmenter = new Intl.Segmenter(lang || undefined, { granularity: 'sentence' });
+	let segments = [...segmenter.segment(text)];
+
+	let out = [];
+	for (let segment of segments) {
+		let sentStart = segment.index;
+		let sentEnd = sentStart + segment.segment.length;
+
+		let trimmed = trimSegmentSpaces(segment.segment);
+		sentStart += trimmed.start;
+		sentEnd = sentStart + (trimmed.end - trimmed.start);
+
+		if (sentEnd <= sentStart) {
+			continue;
+		}
+
+		let charRange = textRangeToCharRange(charIndexByTextIndex, sentStart, sentEnd);
+		if (!charRange) {
+			continue;
+		}
+
+		let segmentText = text.slice(sentStart, sentEnd);
+		if (!segmentText) {
+			continue;
+		}
+
+		out.push({
+			text: segmentText,
+			ranges: [charRange]
+		});
+	}
+
+	return out;
+}
+
+export function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
 	if (!chars || !chars.length || !paragraphRanges || !paragraphRanges.length) {
 		return { paragraphs: [], sentences: [] };
 	}
@@ -293,9 +251,12 @@ function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
 		if (start === null || end === null || start > end) continue;
 
 		let paraChars = chars.slice(start, end + 1);
-		let rawSentences = sentencesFromChars(paraChars);
+		let { text, charIndexByTextIndex } = buildSegmenterText(paraChars);
+		let paragraphText = trimText(text);
+		let paragraphLang = detectLang(paragraphText) || undefined;
+		let rawSentences = sentencesFromSegmenterText(text, charIndexByTextIndex, paragraphLang);
 
-		let paraRects = [];
+		let paraRects = getRangeRects(chars, start, end) || [];
 		let paraText = '';
 
 		// Track first sentence in this paragraph
@@ -305,6 +266,8 @@ function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
 			if (!s.text) continue;
 
 			let rects = [];
+			let sentenceStart = null;
+			let sentenceEnd = null;
 			for (let [localStart, localEndInc] of s.ranges) {
 				if (localStart === null || localEndInc === null) continue;
 
@@ -312,15 +275,22 @@ function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
 				let ee = Math.min(start + localEndInc, chars.length - 1);
 				if (ee < ss) continue;
 
+				if (sentenceStart === null || ss < sentenceStart) sentenceStart = ss;
+				if (sentenceEnd === null || ee > sentenceEnd) sentenceEnd = ee;
+
 				let part = getRangeRects(chars, ss, ee);
 				if (part && part.length) rects = rects.concat(part);
 			}
 
-			if (!rects.length) continue;
+			if (!rects.length || sentenceStart === null || sentenceEnd === null) continue;
 
 			let sentence = {
 				text: s.text,
-				position: { pageIndex, rects }
+				position: { pageIndex, rects },
+				paragraphIndex: paragraphs.length,
+				granularity: 'sentence',
+				offsetStart: sentenceStart,
+				offsetEnd: sentenceEnd
 			};
 
 			// Mark the first sentence of each paragraph
@@ -330,7 +300,6 @@ function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
 			}
 
 			sentences.push(sentence);
-			paraRects = paraRects.concat(rects);
 			paraText = joinWithSpace(paraText, s.text);
 		}
 
@@ -338,7 +307,10 @@ function buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges) {
 			paragraphs.push({
 				anchor: 'paragraphStart',
 				text: paraText,
-				position: { pageIndex, rects: paraRects }
+				position: { pageIndex, rects: paraRects },
+				granularity: 'paragraph',
+				offsetStart: start,
+				offsetEnd: end
 			});
 		}
 	}
@@ -352,4 +324,211 @@ export function buildReadAloudSegments(chars, pageIndex) {
 	}
 	let paragraphRanges = paragraphsFromChars(chars);
 	return buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges);
+}
+
+export function getReadAloudSelectionBounds(selectionRanges) {
+	if (!selectionRanges?.length || selectionRanges[0].collapsed) {
+		return null;
+	}
+
+	let sortedRanges = [...selectionRanges];
+	sortedRanges.sort((a, b) => {
+		const pa = a.position.pageIndex;
+		const pb = b.position.pageIndex;
+		if (pa !== pb) {
+			return pa - pb;
+		}
+		const aMin = Math.min(a.anchorOffset, a.headOffset);
+		const bMin = Math.min(b.anchorOffset, b.headOffset);
+		return aMin - bMin;
+	});
+
+	let startRange = sortedRanges[0];
+	let endRange = sortedRanges[sortedRanges.length - 1];
+	let startOffset = Math.min(startRange.anchorOffset, startRange.headOffset);
+	let endOffset = Math.max(endRange.anchorOffset, endRange.headOffset) - 1;
+	if (endOffset < startOffset) {
+		return null;
+	}
+
+	return {
+		selectionRanges: sortedRanges,
+		start: {
+			pageIndex: startRange.position.pageIndex,
+			offset: startOffset
+		},
+		end: {
+			pageIndex: endRange.position.pageIndex,
+			offset: endOffset
+		}
+	};
+}
+
+export function buildReadAloudSegmentPart(chars, segment, pageIndex, offsetStart, offsetEnd, anchor) {
+	if (offsetStart > offsetEnd || !chars?.length) {
+		return null;
+	}
+
+	let start = Math.max(0, Math.min(offsetStart, chars.length - 1));
+	let end = Math.max(0, Math.min(offsetEnd, chars.length - 1));
+	if (start > end) {
+		return null;
+	}
+
+	let rects = getRangeRects(chars, start, end);
+	if (!rects?.length) {
+		return null;
+	}
+
+	let text = getTextFromChars(chars.slice(start, end + 1));
+	if (!text) {
+		return null;
+	}
+
+	let next = {
+		text,
+		position: { pageIndex, rects },
+		granularity: segment.granularity,
+		anchor: anchor || null,
+		offsetStart: start,
+		offsetEnd: end
+	};
+	if (segment.paragraphIndex !== undefined) {
+		next.paragraphIndex = segment.paragraphIndex;
+	}
+	return next;
+}
+
+export function splitReadAloudSegmentsBySelection(segments, selectionStart, selectionEnd, getCharsForPage) {
+	let comparePos = (a, b) => {
+		if (a.pageIndex !== b.pageIndex) {
+			return a.pageIndex - b.pageIndex;
+		}
+		return a.offset - b.offset;
+	};
+
+	let hasOffsets = segments.every(segment =>
+		Number.isInteger(segment.offsetStart) && Number.isInteger(segment.offsetEnd)
+	);
+	if (!hasOffsets) {
+		return null;
+	}
+
+	let startIndex = segments.findIndex(segment => {
+		let segEnd = { pageIndex: segment.position.pageIndex, offset: segment.offsetEnd };
+		return comparePos(selectionStart, segEnd) <= 0;
+	});
+	if (startIndex === -1) {
+		return null;
+	}
+
+	let endIndex = segments.findIndex(segment => {
+		let segStart = { pageIndex: segment.position.pageIndex, offset: segment.offsetStart };
+		return comparePos(selectionEnd, segStart) < 0;
+	});
+	if (endIndex === -1) {
+		endIndex = segments.length;
+	}
+	if (startIndex >= endIndex) {
+		return null;
+	}
+
+	let newSegments = [];
+	let splitStartIndex = null;
+	let splitEndIndex = null;
+
+	for (let i = 0; i < segments.length; i++) {
+		let segment = segments[i];
+		if (i < startIndex || i >= endIndex) {
+			newSegments.push(segment);
+			continue;
+		}
+
+		let pageIndex = segment.position.pageIndex;
+		let segStart = { pageIndex, offset: segment.offsetStart };
+		let segEnd = { pageIndex, offset: segment.offsetEnd };
+
+		let startWithin = i === startIndex
+			&& comparePos(selectionStart, segStart) > 0
+			&& comparePos(selectionStart, segEnd) <= 0;
+		let endWithin = i === endIndex - 1
+			&& comparePos(selectionEnd, segStart) >= 0
+			&& comparePos(selectionEnd, segEnd) < 0;
+
+		if (!startWithin && !endWithin) {
+			if (i === startIndex) {
+				splitStartIndex = newSegments.length;
+			}
+			newSegments.push(segment);
+			if (i === endIndex - 1) {
+				splitEndIndex = newSegments.length;
+			}
+			continue;
+		}
+
+		let chars = getCharsForPage?.(pageIndex);
+		let middleAnchor = segment.anchor || null;
+		if (startWithin) {
+			let before = buildReadAloudSegmentPart(
+				chars,
+				segment,
+				pageIndex,
+				segment.offsetStart,
+				selectionStart.offset - 1,
+				middleAnchor
+			);
+			if (before) {
+				newSegments.push(before);
+				middleAnchor = null;
+			}
+		}
+
+		let middleStart = startWithin ? selectionStart.offset : segment.offsetStart;
+		let middleEnd = endWithin ? selectionEnd.offset : segment.offsetEnd;
+		let middle = buildReadAloudSegmentPart(
+			chars,
+			segment,
+			pageIndex,
+			middleStart,
+			middleEnd,
+			middleAnchor
+		);
+		if (middle) {
+			if (i === startIndex) {
+				splitStartIndex = newSegments.length;
+			}
+			newSegments.push(middle);
+			if (i === endIndex - 1 && endWithin) {
+				splitEndIndex = newSegments.length;
+			}
+		}
+
+		if (endWithin) {
+			let after = buildReadAloudSegmentPart(
+				chars,
+				segment,
+				pageIndex,
+				selectionEnd.offset + 1,
+				segment.offsetEnd,
+				null
+			);
+			if (after) {
+				newSegments.push(after);
+			}
+		}
+
+		if (i === endIndex - 1 && !endWithin) {
+			splitEndIndex = newSegments.length;
+		}
+	}
+
+	if (splitStartIndex === null || splitEndIndex === null) {
+		return null;
+	}
+
+	return {
+		segments: newSegments,
+		startIndex: splitStartIndex,
+		endIndex: splitEndIndex
+	};
 }

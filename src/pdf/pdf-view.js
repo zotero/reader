@@ -67,7 +67,12 @@ import { adjustTextAnnotationPosition } from './lib/text-annotation';
 import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
-import { buildReadAloudSegments } from './read-aloud-segments';
+import {
+	buildReadAloudSegments,
+	buildReadAloudSegmentsFromRanges,
+	getReadAloudSelectionBounds,
+	splitReadAloudSegmentsBySelection
+} from './read-aloud-segments';
 import { detectLang } from '../common/lib/detect-lang';
 
 class PDFView {
@@ -152,6 +157,8 @@ class PDFView {
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
 
 		this._selectionRanges = [];
+		this._highlightedPosition = null;
+		this._readAloudHighlightedPosition = null;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.addEventListener('load', () => this._iframe.classList.add('loaded'));
@@ -427,10 +434,13 @@ class PDFView {
 				continue;
 			}
 			let { paragraphs, sentences } = buildReadAloudSegments(chars, pageIndex);
+			let paragraphOffset = allParagraphs.length;
+			for (let sentence of sentences) {
+				sentence.paragraphIndex += paragraphOffset;
+			}
 			allParagraphs.push(...paragraphs);
 			allSentences.push(...sentences);
 		}
-		this._readAloudSegments = allParagraphs;
 		this._readAloudSegments = {
 			paragraphs: allParagraphs,
 			sentences: allSentences
@@ -807,6 +817,25 @@ class PDFView {
 		let scrollTop = element.scrollTop;
 		let scrollLeft = element.scrollLeft;
 
+		if (options.ifNeeded) {
+			let margin = options.visibilityMargin || 0;
+			let visibleRect = [
+				scrollLeft - margin,
+				scrollTop - margin,
+				scrollLeft + clientWidth + margin,
+				scrollTop + clientHeight + margin
+			];
+			let intersects = !(
+				rect[0] > visibleRect[2]
+				|| rect[2] < visibleRect[0]
+				|| rect[1] > visibleRect[3]
+				|| rect[3] < visibleRect[1]
+			);
+			if (intersects) {
+				return;
+			}
+		}
+
 		let x = rect[0];
 		let y = rect[1];
 
@@ -864,7 +893,7 @@ class PDFView {
 
 		// Build scroll options, only include axes that are defined
 		let scrollOptions = {
-			behavior: close ? 'smooth' : 'instant'
+			behavior: options.behavior || (close ? 'smooth' : 'instant')
 		};
 		if (typeof left === 'number') scrollOptions.left = left;
 		if (typeof top === 'number') scrollOptions.top = top;
@@ -965,26 +994,35 @@ class PDFView {
 	}
 
 	async setReadAloudState(state) {
-		await this._initReadAloudSegments();
-
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
 		if (!state.popupOpen) {
-			this._highlightedPosition = null;
+			this._readAloudHighlightedPosition = null;
 			this._render();
 			return;
 		}
 
 		if (state.activeSegment?.position) {
-			this._highlightedPosition = state.activeSegment.position;
+			// Highlight the whole paragraph containing the active segment (matching dom-view behavior)
+			this._readAloudHighlightedPosition = this._getReadAloudParagraphPosition(state)
+				|| state.activeSegment.position;
 			this._render();
 
 			// If the Read Aloud annotation popup isn't open, navigate to the current segment
 			if (!state.annotationPopup) {
-				this.navigateToPosition(state.activeSegment.position);
+				setTimeout(() => {
+					this.navigateToPosition(state.activeSegment.position, {
+						ifNeeded: true,
+						visibilityMargin: -this._iframeWindow.innerHeight / 4,
+						block: 'center',
+						behavior: 'smooth'
+					});
+				});
 			}
 		}
+
+		await this._initReadAloudSegments();
 
 		if (!state.lang) {
 			let textSample = this._readAloudSegments.paragraphs
@@ -1011,57 +1049,72 @@ class PDFView {
 		let backwardStopIndex = null;
 		let forwardStopIndex = null;
 
-		if (state.targetPosition) {
-			for (let i = 0; i < segments.length; i++) {
-				let segment = segments[i];
-				if (segment.position.pageIndex === state.targetPosition.pageIndex) {
-					if (intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
-						backwardStopIndex = i;
+		let selectionInfo = getReadAloudSelectionBounds(this._selectionRanges);
+		if (selectionInfo) {
+			await this._ensureBasicPageData(selectionInfo.start.pageIndex);
+			if (selectionInfo.end.pageIndex !== selectionInfo.start.pageIndex) {
+				await this._ensureBasicPageData(selectionInfo.end.pageIndex);
+			}
+
+			this._setSelectionRanges();
+
+			let split = splitReadAloudSegmentsBySelection(
+				segments,
+				selectionInfo.start,
+				selectionInfo.end,
+				pageIndex => this._pdfPages[pageIndex]?.chars
+			);
+
+			if (split) {
+				segments = split.segments;
+				backwardStopIndex = split.startIndex;
+				forwardStopIndex = split.endIndex;
+			}
+			else if (selectionInfo.selectionRanges.length) {
+				let selectionSegments = { paragraphs: [], sentences: [] };
+
+				for (let selectionRange of selectionInfo.selectionRanges) {
+					let { pageIndex } = selectionRange.position;
+					await this._ensureBasicPageData(pageIndex);
+					let page = this._pdfPages[pageIndex];
+					if (!page?.chars?.length) {
+						continue;
 					}
+					let { chars } = page;
+					let start = Math.min(selectionRange.anchorOffset, selectionRange.headOffset);
+					let end = Math.max(selectionRange.anchorOffset, selectionRange.headOffset);
+
+					let { paragraphs, sentences } = buildReadAloudSegmentsFromRanges(
+						chars, pageIndex, [[start, end - 1]]
+					);
+
+					let paragraphOffset = selectionSegments.paragraphs.length;
+					for (let sentence of sentences) {
+						sentence.paragraphIndex += paragraphOffset;
+					}
+
+					selectionSegments.paragraphs.push(...paragraphs);
+					selectionSegments.sentences.push(...sentences);
+				}
+
+				segments = state.segmentGranularity === 'sentence'
+					? selectionSegments.sentences
+					: selectionSegments.paragraphs;
+				if (segments.length) {
+					backwardStopIndex = 0;
+					forwardStopIndex = segments.length;
 				}
 			}
 		}
-		else if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
-			let selectionRanges = [...this._selectionRanges];
-			selectionRanges.sort((a, b) => {
-				const pa = a.pageIndex;
-				const pb = b.pageIndex;
-				if (pa !== pb) {
-					return pa - pb;
-				}
-
-				const aMin = Math.min(a.anchorOffset, a.headOffset);
-				const bMin = Math.min(b.anchorOffset, b.headOffset);
-				return aMin - bMin;
-			});
-			let start = selectionRanges[0];
-			let end = selectionRanges.at(-1);
-
-			let startSegmentIndex = null;
-			let endSegmentIndex = null;
+		else if (state.targetPosition) {
 			for (let i = 0; i < segments.length; i++) {
 				let segment = segments[i];
-				if (
-					startSegmentIndex === null
-					&& segment.position.pageIndex === start.position.pageIndex
-					&& segment.position.rects.some(r => quickIntersectRect(r, start.position.rects[0]))
-				) {
-					startSegmentIndex = i;
+				if (segment.position.pageIndex === state.targetPosition.pageIndex
+					&& intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
+					backwardStopIndex = i;
+					break;
 				}
 			}
-			for (let i = segments.length - 1; i >= 0; i--) {
-				let segment = segments[i];
-				if (
-					endSegmentIndex === null
-					&& segment.position.pageIndex === end.position.pageIndex
-					&& segment.position.rects.some(r => quickIntersectRect(r, end.position.rects.at(-1)))
-				) {
-					endSegmentIndex = i + 1;
-				}
-			}
-			backwardStopIndex = startSegmentIndex;
-			forwardStopIndex = endSegmentIndex;
-			this._setSelectionRanges();
 		}
 		else {
 			let objects = segments.map((object, index) => ({ index, object }));
@@ -1080,6 +1133,69 @@ class PDFView {
 			forwardStopIndex,
 			targetPosition: undefined,
 		});
+	}
+
+	_getReadAloudParagraphPosition(state) {
+		if (!state.activeSegment?.position) {
+			return null;
+		}
+
+		let pageIndex = state.activeSegment.position.pageIndex;
+		let paragraphPosition = null;
+
+		if (state.segmentGranularity === 'sentence') {
+			let paragraphIndex = state.activeSegment.paragraphIndex;
+			let paragraph = Number.isInteger(paragraphIndex)
+				? this._readAloudSegments?.paragraphs?.[paragraphIndex]
+				: null;
+			if (paragraph?.position?.rects?.length && paragraph.position.pageIndex === pageIndex) {
+				paragraphPosition = paragraph.position;
+			}
+		}
+		else if (state.segmentGranularity === 'paragraph') {
+			paragraphPosition = state.activeSegment.position;
+		}
+
+		if (paragraphPosition) {
+			return paragraphPosition;
+		}
+
+		let segments = state.segments || [];
+		let activeIndex = segments.indexOf(state.activeSegment);
+		if (activeIndex === -1) {
+			return null;
+		}
+
+		// Find paragraph boundaries using anchor === 'paragraphStart'
+		let paragraphStartIndex = activeIndex;
+		for (let i = activeIndex; i >= 0; i--) {
+			paragraphStartIndex = i;
+			if (segments[i].anchor === 'paragraphStart') {
+				break;
+			}
+		}
+		let paragraphEndIndex = activeIndex;
+		for (let i = activeIndex + 1; i < segments.length; i++) {
+			if (segments[i].anchor === 'paragraphStart') {
+				break;
+			}
+			paragraphEndIndex = i;
+		}
+
+		// Combine positions of all segments in the paragraph
+		let paragraphRects = [];
+		for (let i = paragraphStartIndex; i <= paragraphEndIndex; i++) {
+			let seg = segments[i];
+			if (seg.position.pageIndex === pageIndex && seg.position.rects) {
+				paragraphRects.push(...seg.position.rects);
+			}
+		}
+
+		if (!paragraphRects.length) {
+			return null;
+		}
+
+		return { pageIndex, rects: paragraphRects };
 	}
 
 	get hasReadAloudTarget() {

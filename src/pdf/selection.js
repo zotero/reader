@@ -214,7 +214,7 @@ function getRectsFromChars(chars) {
 	return lineRects;
 }
 
-function getTextFromChars(chars) {
+export function getTextFromChars(chars) {
 	let text = [];
 	for (let char of chars) {
 		if (!char.ignorable) {
