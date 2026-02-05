@@ -2006,6 +2006,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
+		// After resuming playback, re-lock position if the current segment is visible
+		if (state.active && previousState?.paused && !state.paused && state.activeSegment?.position) {
+			let { range } = state.activeSegment.position as RangeRef;
+			if (isPageRectVisible(getBoundingPageRect(range), this._iframeWindow)) {
+				this._readAloudPositionLocked = true;
+			}
+		}
+
 		if (state.activeSegment?.position) {
 			let { range } = state.activeSegment.position as RangeRef;
 			let segments = state.segments!;
