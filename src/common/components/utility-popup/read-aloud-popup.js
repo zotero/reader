@@ -360,8 +360,8 @@ function PlaybackControls(props) {
 					className="toolbar-button"
 					title={l10n.getString('reader-read-aloud-skip-back')}
 					tabIndex="-1"
-					onClick={() => {
-						controller?.skipBack();
+					onClick={(event) => {
+						controller?.skipBack(event.altKey ? 'sentence' : 'paragraph');
 						onSkip();
 					}}
 				><IconSkipBack/></button>
@@ -381,8 +381,8 @@ function PlaybackControls(props) {
 					className="toolbar-button"
 					title={l10n.getString('reader-read-aloud-skip-ahead')}
 					tabIndex="-1"
-					onClick={() => {
-						controller?.skipAhead();
+					onClick={(event) => {
+						controller?.skipAhead(event.altKey ? 'sentence' : 'paragraph');
 						onSkip();
 					}}
 				><IconSkipAhead/></button>
