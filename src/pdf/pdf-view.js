@@ -3111,12 +3111,11 @@ class PDFView {
 					overlay = this._getSelectableOverlay(position);
 				}
 
-				let textPosition = undefined;
-				let page = this._pdfPages[position.pageIndex];
-				if (page) {
-					let { chars } = page;
-					if (chars.some(char => quickIntersectRect(char.rect, position.rects[0]))) {
-						textPosition = position;
+				let textPosition;
+				if (position) {
+					let selectionRanges = getWordSelectionRanges(this._pdfPages, position, position);
+					if (selectionRanges.length && !selectionRanges[0].collapsed) {
+						textPosition = selectionRanges[0].position;
 					}
 				}
 
