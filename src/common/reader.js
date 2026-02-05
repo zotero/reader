@@ -550,11 +550,7 @@ class Reader {
 			// If the view has a new Read Aloud target, reset our state
 			if (!this._state.readAloudState.paused && previousState.readAloudState.paused
 					&& this._primaryView?.hasReadAloudTarget) {
-				this._state.readAloudState.segments = null;
-				this._state.readAloudState.backwardStopIndex = null;
-				this._state.readAloudState.forwardStopIndex = null;
-				this._state.readAloudState.activeSegment = null;
-				this._state.readAloudState.segmentAnnotations = new Map();
+				Object.assign(this._state.readAloudState, this._getReadAloudSegmentResetState());
 			}
 			this._primaryView?.setReadAloudState(this._state.readAloudState);
 			this._secondaryView?.setReadAloudState(this._state.readAloudState);
@@ -904,6 +900,16 @@ class Reader {
 		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
 	}
 
+	_getReadAloudSegmentResetState() {
+		return {
+			segments: null,
+			backwardStopIndex: null,
+			forwardStopIndex: null,
+			activeSegment: null,
+			segmentAnnotations: new Map(),
+		};
+	}
+
 	_handleReadAloudSkip() {
 		this._lastView?.lockPositionToReadAloud();
 	}
@@ -942,12 +948,8 @@ class Reader {
 				popupOpen: false,
 				active: false,
 				paused: false,
-				segments: null,
-				backwardStopIndex: null,
-				forwardStopIndex: null,
-				activeSegment: null,
 				annotationPopup: null,
-				segmentAnnotations: new Map(),
+				...this._getReadAloudSegmentResetState(),
 			});
 		}
 	}
@@ -977,12 +979,8 @@ class Reader {
 			popupOpen: true,
 			active: true,
 			paused: false,
-			segments: null,
-			backwardStopIndex: null,
-			forwardStopIndex: null,
 			targetPosition: position,
-			activeSegment: null,
-			segmentAnnotations: new Map(),
+			...this._getReadAloudSegmentResetState(),
 		});
 	}
 
