@@ -21,6 +21,7 @@ function ReadAloudAnnotationPopup(props) {
 	let ref = useRef();
 	let fadeTimerRef = useRef(null);
 	let dismissTimerRef = useRef(null);
+	let contextMenuOpenRef = useRef(false);
 
 	let clearTimers = useCallback(() => {
 		if (fadeTimerRef.current) {
@@ -56,15 +57,24 @@ function ReadAloudAnnotationPopup(props) {
 
 	useEffect(() => {
 		let handlePointerDownCapture = (event) => {
+			if (contextMenuOpenRef.current) {
+				return;
+			}
 			if (ref.current && !ref.current.contains(event.target)) {
 				onDismiss();
 			}
 		};
+		let handleBlur = () => {
+			if (contextMenuOpenRef.current) {
+				return;
+			}
+			onDismiss();
+		};
 		document.addEventListener('pointerdown', handlePointerDownCapture, { capture: true });
-		window.addEventListener('blur', onDismiss);
+		window.addEventListener('blur', handleBlur);
 		return () => {
 			document.removeEventListener('pointerdown', handlePointerDownCapture, { capture: true });
-			window.removeEventListener('blur', onDismiss);
+			window.removeEventListener('blur', handleBlur);
 		};
 	}, [onDismiss]);
 
@@ -72,9 +82,13 @@ function ReadAloudAnnotationPopup(props) {
 		startTimers();
 	};
 
-	let handleMenuClick = (event) => {
+	let handleMenuClick = async (event) => {
 		let rect = event.currentTarget.getBoundingClientRect();
-		onOpenContextMenu({ x: rect.left, y: rect.bottom });
+		clearTimers();
+		contextMenuOpenRef.current = true;
+		await onOpenContextMenu({ x: rect.left, y: rect.bottom });
+		contextMenuOpenRef.current = false;
+		startTimers();
 	};
 
 	let { annotation } = params;
