@@ -9,14 +9,13 @@ window.createReader = (options) => {
 	let { onOpenContextMenu } = options;
 	options.onOpenContextMenu = (params) => {
 		if (params.internal) {
-			reader.openContextMenu(params);
-			return;
+			return reader.openContextMenu(params);
 		}
 		if (params.itemGroups.some(group => group.some(item => item.icon || item.slider))) {
 			throw new Error('Icons and sliders are unsupported in native context menus');
 		}
 		window.contextMenuParams = params;
-		onOpenContextMenu(params);
+		return onOpenContextMenu(params);
 	};
 
 	let { onSaveAnnotations } = options;

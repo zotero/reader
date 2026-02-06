@@ -47,7 +47,7 @@ async function createReader() {
 		// platform: 'web',
 		// password: 'test',
 		onOpenContextMenu(params) {
-			reader.openContextMenu(params);
+			return reader.openContextMenu(params);
 		},
 		onAddToNote() {
 			alert('Add annotations to the current note');

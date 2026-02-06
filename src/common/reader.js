@@ -805,6 +805,9 @@ class Reader {
 			window.focus();
 			document.activeElement.blur();
 		});
+		return new Promise((resolve) => {
+			this._contextMenuCloseResolve = resolve;
+		});
 	}
 
 	closeContextMenu() {
@@ -812,6 +815,8 @@ class Reader {
 		this._focusManager.restoreFocus();
 		this._onBringReaderToFront?.(false);
 		document.querySelectorAll('.context-menu-open').forEach(x => x.classList.remove('context-menu-open'));
+		this._contextMenuCloseResolve?.();
+		this._contextMenuCloseResolve = null;
 	}
 
 	_handleAppearanceChange(params) {
