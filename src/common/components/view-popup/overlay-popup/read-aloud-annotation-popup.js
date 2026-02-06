@@ -34,6 +34,7 @@ function ReadAloudAnnotationPopup(props) {
 	}, []);
 
 	let startTimers = useCallback(() => {
+		setFading(false);
 		clearTimers();
 		fadeTimerRef.current = setTimeout(() => {
 			setFading(true);
@@ -44,7 +45,6 @@ function ReadAloudAnnotationPopup(props) {
 	}, [clearTimers, onDismiss]);
 
 	useEffect(() => {
-		setFading(false);
 		startTimers();
 		return clearTimers;
 	}, [startTimers, clearTimers, params.annotation]);
@@ -69,7 +69,6 @@ function ReadAloudAnnotationPopup(props) {
 	}, [onDismiss]);
 
 	let handlePointerMove = () => {
-		setFading(false);
 		startTimers();
 	};
 
