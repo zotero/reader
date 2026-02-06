@@ -18,11 +18,12 @@ import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
 import { BrowserReadAloudVoice } from '../../read-aloud/browser/voice';
 import { getAllRegions, getSupportedLanguages, getVoicesForLanguage, resolveLanguage } from '../../read-aloud/lang';
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
+import { useMediaControls } from '../../read-aloud/components/use-media-controls';
 
 const URGENT_THRESHOLD_SECONDS = 60;
 
 function ReadAloudPopup(props) {
-	let { params, voices: persistedVoices, remoteInterface, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onLogIn, onAddAnnotation, onSkip } = props;
+	let { params, voices: persistedVoices, remoteInterface, title, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onLogIn, onAddAnnotation, onSkip } = props;
 	let controller = params.controller;
 
 	let [showOptions, setShowOptions] = useState(false);
@@ -174,6 +175,23 @@ function ReadAloudPopup(props) {
 			stopSample();
 		}
 	}, [params.paused, stopSample]);
+
+	useMediaControls({
+		active: !!controller,
+		title,
+		paused: params.paused,
+		speed: params.speed,
+		useSilentAudio: voiceMode === 'browser',
+		onSetPaused: paused => onChange({ paused }),
+		onSkipBack: () => {
+			controller?.skipBack();
+			onSkip();
+		},
+		onSkipAhead: () => {
+			controller?.skipAhead();
+			onSkip();
+		},
+	});
 
 	useEffect(() => {
 		if (!controller) {

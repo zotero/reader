@@ -43,6 +43,7 @@ async function createReader() {
 		toolbarPlaceholderWidth: 0,
 		authorName: 'John',
 		showAnnotations: true,
+		title: 'Demo',
 		loggedIn: true,
 		// platform: 'web',
 		// password: 'test',

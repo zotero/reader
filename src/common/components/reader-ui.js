@@ -268,6 +268,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							params={state.readAloudState}
 							voices={state.readAloudVoices}
 							remoteInterface={props.readAloudRemoteInterface}
+							title={state.title}
 							loggedIn={state.loggedIn}
 							onChange={props.onChangeReadAloudState}
 							onSetVoice={props.onSetReadAloudVoice}

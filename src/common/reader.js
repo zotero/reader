@@ -171,6 +171,7 @@ class Reader {
 			},
 			readOnly: options.readOnly !== undefined ? options.readOnly : false,
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
+			title: options.title || '',
 			loggedIn: options.loggedIn ?? false,
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
@@ -1929,6 +1930,10 @@ class Reader {
 
 	setToolbarPlaceholderWidth(width) {
 		this._updateState({ toolbarPlaceholderWidth: width });
+	}
+
+	setTitle(title) {
+		this._updateState({ title });
 	}
 
 	setLoggedIn(loggedIn) {
