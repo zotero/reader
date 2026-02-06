@@ -205,7 +205,7 @@ function ReadAloudPopup(props) {
 
 		let interval = setInterval(updateRemaining, 1000);
 		return () => clearInterval(interval);
-	}, [controller, onChange]);
+	}, [controller, params.paused, onChange]);
 
 	useEffect(() => {
 		let cancelled = false;
