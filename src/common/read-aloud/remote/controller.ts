@@ -132,7 +132,11 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 					this._audio.src = `data:audio/ogg;base64,${audioData}`;
 					this._currentAudioData = audioData;
 					if (this._creditsRemaining !== null) {
-						this._creditsRemaining -= this._creditsConsumed.get(index)!;
+						let creditsConsumed = this._creditsConsumed.get(index);
+						if (creditsConsumed !== undefined) {
+							this._creditsRemaining -= creditsConsumed;
+							this._creditsConsumed.delete(index);
+						}
 					}
 					else {
 						console.warn('_creditsRemaining not set');
