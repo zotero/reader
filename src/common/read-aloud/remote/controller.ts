@@ -47,18 +47,18 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 	private _indexAtPause: number | null = null;
 
-	private _audioData = new LRUCacheMap<string, string>(BLOB_CACHE_CAPACITY);
+	private _audioData = new LRUCacheMap<number, string>(BLOB_CACHE_CAPACITY);
 
-	private _fetching = new Map<string, Promise<string>>();
+	private _fetching = new Map<number, Promise<string>>();
 
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
 
 	private _creditsRemaining: number | null = null;
 
-	private _creditsConsumed = new Map<string, number>();
+	private _creditsConsumed = new Map<number, number>();
 
-	private _failedSegmentKeys = new Set<string>();
+	private _failedIndices = new Set<number>();
 
 	override get secondsRemaining() {
 		let creditsRemaining = this._creditsRemaining ?? this.voice.provider.creditsRemaining;
@@ -97,7 +97,6 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			return;
 		}
 
-		let key = this._getKey(segment);
 		let handleError = () => {
 			if (this._position !== index) {
 				return;
@@ -107,13 +106,13 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			this.dispatchEvent(new ReadAloudEvent('Error', segment));
 		};
 
-		if (this._failedSegmentKeys.has(key)) {
+		if (this._failedIndices.has(index)) {
 			handleError();
 			return;
 		}
 
 		this.buffering = true;
-		this._getAudioData(segment)
+		this._getAudioData(index)
 			.then((audioData) => {
 				if (this._position !== index) {
 					return;
@@ -133,7 +132,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 					this._audio.src = `data:audio/ogg;base64,${audioData}`;
 					this._currentAudioData = audioData;
 					if (this._creditsRemaining !== null) {
-						this._creditsRemaining -= this._creditsConsumed.get(this._getKey(segment))!;
+						this._creditsRemaining -= this._creditsConsumed.get(index)!;
 					}
 					else {
 						console.warn('_creditsRemaining not set');
@@ -154,11 +153,11 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	private _speakInternalWithSkipDebounce = debounce(() => this._speakInternal(), SKIP_DEBOUNCE_DELAY);
 
 	retry(): void {
-		let key = this._getKey(this._currentSegment);
-		if (!this._failedSegmentKeys.has(key)) {
+		let index = this._position;
+		if (!this._failedIndices.has(index)) {
 			return;
 		}
-		this._failedSegmentKeys.delete(key);
+		this._failedIndices.delete(index);
 		this._error = null;
 		this.dispatchEvent(new ReadAloudEvent('ErrorCleared', this._currentSegment));
 		this._paused = false;
@@ -226,7 +225,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			}
 
 			try {
-				await this._getAudioData(this._segments[index]);
+				await this._getAudioData(index);
 			}
 			catch {
 				// Ignore
@@ -246,15 +245,14 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		}
 	}
 
-	private async _getAudioData(segment: ReadAloudSegment): Promise<string> {
-		let key = this._getKey(segment);
-
-		let cached = this._audioData.get(key);
+	private async _getAudioData(index: number): Promise<string> {
+		let cached = this._audioData.get(index);
 		if (cached) return cached;
 
-		let inflight = this._fetching.get(key);
+		let inflight = this._fetching.get(index);
 		if (inflight) return inflight;
 
+		let segment = this._segments[index];
 		let fetchBlob = async () => {
 			let startTime = performance.now();
 
@@ -274,18 +272,18 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			}
 
 			this.voice.provider.creditsRemaining = creditsRemaining;
-			this._creditsConsumed.set(key, creditsBefore - creditsRemaining);
+			this._creditsConsumed.set(index, creditsBefore - creditsRemaining);
 
 			if (!audio) {
 				if (error) {
 					this._error = error;
-					this._failedSegmentKeys.add(key);
+					this._failedIndices.add(index);
 					// Don't dispatch error immediately - wait until playback reaches this segment
 					console.error(error);
 				}
 				throw new Error('Failed to fetch audio');
 			}
-			this._audioData.set(key, audio);
+			this._audioData.set(index, audio);
 
 			// Update fetch time EMA
 			let endTime = performance.now();
@@ -302,13 +300,9 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			return audio;
 		};
 
-		inflight = fetchBlob().finally(() => this._fetching.delete(key));
-		this._fetching.set(key, inflight);
+		inflight = fetchBlob().finally(() => this._fetching.delete(index));
+		this._fetching.set(index, inflight);
 		return inflight;
-	}
-
-	private _getKey(segment: ReadAloudSegment): string {
-		return JSON.stringify({ voice: this.voice.id, text: segment.text });
 	}
 
 	private _estimatePlaybackTime(segment: ReadAloudSegment): number {
