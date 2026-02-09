@@ -14,7 +14,6 @@ import {
 	OverlayPopupParams,
 	Platform,
 	Position,
-	RangeRef,
 	ReadAloudGranularity,
 	ReadAloudSegment,
 	ReadAloudState,
@@ -34,14 +33,11 @@ import React from "react";
 import { Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
-	createRangeWalker,
 	getBoundingPageRect,
 	getColumnSeparatedPageRects,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
-	splitRanges,
-	splitRangeToSentences,
 	supportsCaretPositionFromPoint
 } from "./lib/range";
 import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
@@ -58,13 +54,11 @@ import {
 	isSafari,
 	placeA11yVirtualCursor
 } from "../../common/lib/utilities";
-import { closestElement, getContainingBlock, getLang, isBlock, iterateWalker } from "./lib/nodes";
+import { closestElement, getContainingBlock, getLang, isBlock } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
 	expandRect,
 	getBoundingRect,
-	isErrorRect,
-	isPageRectFullyVisible,
 	isPageRectVisible,
 	pageRectToClientRect,
 	rectContainsPoint
@@ -72,6 +66,7 @@ import {
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
+import { ReadAloud } from "./lib/read-aloud";
 
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
@@ -152,11 +147,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _lastSelectionRange: PersistentRange | null = null;
 
-	protected _readAloudState: ReadAloudState | null = null;
-
-	protected _readAloudPositionLocked = true;
-
-	protected _readAloudScrolling = false;
+	protected _readAloud!: ReadAloud<typeof this>;
 
 	protected _iframeCoordScaleFactor = 1;
 
@@ -212,6 +203,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		});
 		this._a11yVirtualCursorTarget = null;
 		this._a11yShouldFocusVirtualCursorTarget = false;
+		this._readAloud = new ReadAloud(this);
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.sandbox.add('allow-same-origin', 'allow-modals');
@@ -289,6 +281,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	abstract getData(): Data;
 
 	abstract get lang(): string;
+
+	get iframeDocument(): Document {
+		return this._iframeDocument;
+	}
+
+	get iframeWindow(): Window & typeof globalThis {
+		return this._iframeWindow;
+	}
 
 	protected async _handleIFrameLoaded(): Promise<void> {
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
@@ -371,15 +371,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract toDisplayedRange(selector: Selector): Range | null;
 
-	protected abstract _navigateToSelector(selector: Selector, options?: NavigateOptions): void;
+	abstract navigateToSelector(selector: Selector, options?: NavigateOptions): void;
 
 	// ***
 	// Abstractions over document structure
 	// ***
 
-	protected abstract _getHistoryLocation(): NavLocation | null;
+	abstract getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
 
-	protected abstract _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null;
+	protected abstract _getHistoryLocation(): NavLocation | null;
 
 	protected abstract _updateViewState(): void;
 
@@ -468,7 +468,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		else {
 			return null;
 		}
-		return this._getAnnotationFromRange(range, type, color);
+		return this.getAnnotationFromRange(range, type, color);
 	}
 
 	/**
@@ -589,7 +589,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _updateAnnotationRange(annotation: WADMAnnotation, range: Range): WADMAnnotation {
-		let newAnnotation = this._getAnnotationFromRange(range, annotation.type);
+		let newAnnotation = this.getAnnotationFromRange(range, annotation.type);
 		if (!newAnnotation) {
 			throw new Error('Invalid updated range');
 		}
@@ -751,7 +751,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._iframeWindow
 			)
 		);
-		let annotation = this._getAnnotationFromRange(range, 'highlight');
+		let annotation = this.getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
 			let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
 			this._options.onSetSelectionPopup({ rect, annotation });
@@ -806,7 +806,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				return annotation;
 			}
 			range = moveRangeEndsIntoTextNodes(range);
-			let newAnnotation = this._getAnnotationFromRange(range, annotation.type, annotation.color);
+			let newAnnotation = this.getAnnotationFromRange(range, annotation.type, annotation.color);
 			if (!newAnnotation) {
 				console.warn('Could not create annotation from normalized range', annotation);
 				return annotation;
@@ -868,7 +868,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._tool.type == 'note') {
 			let range = this._getNoteTargetRange(event);
 			if (range) {
-				this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._tool.color);
+				this._previewAnnotation = this.getAnnotationFromRange(range, 'note', this._tool.color);
 				this._renderAnnotations();
 			}
 		}
@@ -896,7 +896,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		event.preventDefault();
 		let range = this._getNoteTargetRange(event);
 		if (range) {
-			this._previewAnnotation = this._getAnnotationFromRange(range, 'note', this._draggingNoteAnnotation.color);
+			this._previewAnnotation = this.getAnnotationFromRange(range, 'note', this._draggingNoteAnnotation.color);
 			this._renderAnnotations();
 		}
 	}
@@ -1126,7 +1126,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					return;
 				}
 				this._options.onUpdateAnnotations([annotation]);
-				this._navigateToSelector(annotation.position, {
+				this.navigateToSelector(annotation.position, {
 					block: 'center',
 					behavior: 'smooth',
 					skipHistory: true,
@@ -1206,12 +1206,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				if (block) {
 					let range = this._iframeDocument.createRange();
 					range.selectNode(block);
-					annotation = this._getAnnotationFromRange(range, type, this._options.tools[type].color);
+					annotation = this.getAnnotationFromRange(range, type, this._options.tools[type].color);
 				}
 			}
 			if (annotation) {
 				this._options.onAddAnnotation(annotation, true);
-				this._navigateToSelector(annotation.position, {
+				this.navigateToSelector(annotation.position, {
 					block: 'center',
 					behavior: 'smooth',
 					skipHistory: true,
@@ -1615,7 +1615,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					range.setStart(endPos.offsetNode, endPos.offset);
 					range.setEnd(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
 				}
-				let annotation = this._getAnnotationFromRange(range, this._tool.type, this._tool.color);
+				let annotation = this.getAnnotationFromRange(range, this._tool.type, this._tool.color);
 				if (annotation) {
 					this._previewAnnotation = annotation;
 					this._renderAnnotations();
@@ -1723,15 +1723,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _onManualNavigation(): void {
-		if (this._readAloudState?.active && this._readAloudPositionLocked) {
-			this._readAloudPositionLocked = false;
-		}
+		this._readAloud.setPositionLocked(false);
 	}
 
 	lockPositionToReadAloud(): void {
-		if (this._readAloudState?.active) {
-			this._readAloudPositionLocked = true;
-		}
+		this._readAloud.setPositionLocked(true);
 	}
 
 	protected _handleScrollCapture(event: Event) {
@@ -1989,278 +1985,31 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	setReadAloudState(state: ReadAloudState): void {
-		let previousState = this._readAloudState;
-		this._readAloudState = state;
-
-		// Initialize lock state when Read Aloud starts
-		if (state.active && !previousState?.active) {
-			this._readAloudPositionLocked = true;
+		let updatedState = this._readAloud.setState(state);
+		if (updatedState) {
+			this._options.onSetReadAloudState(updatedState);
 		}
-
-		if (!this.initialized) {
-			return;
-		}
-
-		if (!state.popupOpen) {
-			this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
-			return;
-		}
-
-		// After resuming playback, re-lock position if the current segment is visible
-		if (state.active && previousState?.paused && !state.paused && state.activeSegment?.position) {
-			let { range } = state.activeSegment.position as RangeRef;
-			if (isPageRectVisible(getBoundingPageRect(range), this._iframeWindow)) {
-				this._readAloudPositionLocked = true;
-			}
-		}
-
-		if (state.activeSegment?.position) {
-			let { range } = state.activeSegment.position as RangeRef;
-			let segments = state.segments!;
-			// Highlight the whole paragraph
-			let firstRangeInParagraph: PersistentRange | null = null;
-			for (let i = segments.indexOf(state.activeSegment); i >= 0; i--) {
-				firstRangeInParagraph = (segments[i].position as RangeRef).range;
-				if (segments[i].anchor === 'paragraphStart') {
-					break;
-				}
-			}
-			let lastRangeInParagraph: PersistentRange | null = null;
-			for (let i = segments.indexOf(state.activeSegment) + 1; i < segments.length; i++) {
-				if (segments[i].anchor === 'paragraphStart') {
-					break;
-				}
-				lastRangeInParagraph = (segments[i].position as RangeRef).range;
-			}
-			range = range.clone();
-			if (firstRangeInParagraph) {
-				range.startContainer = firstRangeInParagraph.startContainer;
-				range.startOffset = firstRangeInParagraph.startOffset;
-			}
-			if (lastRangeInParagraph) {
-				range.endContainer = lastRangeInParagraph.endContainer;
-				range.endOffset = lastRangeInParagraph.endOffset;
-			}
-
-			let selector = this.toSelector(range.toRange());
-			if (selector) {
-				this._setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
-
-				// If the Read Aloud annotation popup isn't open and position is locked, navigate to the current segment
-				if (!state.annotationPopup && this._readAloudPositionLocked) {
-					setTimeout(() => {
-						this._readAloudScrolling = true;
-
-						// Navigate to the start of the segment if possible
-						let startRange = range.toRange();
-						startRange.collapse(true);
-						let startSelector = this.toSelector(startRange);
-
-						this._navigateToSelector(startSelector || selector, {
-							ifNeeded: true,
-							visibilityMargin: -this._iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
-							block: 'center',
-							behavior: 'smooth'
-						});
-
-						debounceUntilScrollFinishes(this._iframeDocument).then(() => {
-							this._readAloudScrolling = false;
-						});
-					});
-				}
-			}
-		}
-
-		if (!state.lang) {
-			this._options.onSetReadAloudState({
-				...state,
-				lang: this.lang,
-			});
-			return;
-		}
-
-		if (!state.active
-				|| state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
-				|| !state.segmentGranularity) {
-			return;
-		}
-
-		let ranges = this._getAllReadAloudRanges(state.segmentGranularity);
-
-		let targetRange: Range | null = null;
-		let targetIsSelection = false;
-		if (!this._iframeDocument.getSelection()!.isCollapsed) {
-			targetRange = this._iframeDocument.getSelection()!.getRangeAt(0);
-			this._iframeDocument.getSelection()!.collapseToStart();
-			targetIsSelection = true;
-		}
-		else if (state.targetPosition) {
-			targetRange = this.toDisplayedRange(state.targetPosition as Selector);
-		}
-
-		let backwardStopIndex: number | null = null;
-		let forwardStopIndex: number | null = null;
-		if (targetRange) {
-			let split = splitRanges(ranges, targetRange);
-			if (split) {
-				ranges = split.ranges;
-				backwardStopIndex = split.startIndex;
-				if (targetIsSelection) {
-					forwardStopIndex = split.endIndex;
-				}
-			}
-			else {
-				ranges = this._getReadAloudRanges(targetRange, state.segmentGranularity);
-			}
-		}
-		else {
-			backwardStopIndex = ranges.findIndex(
-				range => isPageRectFullyVisible(getBoundingPageRect(range), this._iframeWindow)
-			);
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = ranges.findIndex(
-					range => isPageRectVisible(getBoundingPageRect(range), this._iframeWindow)
-				);
-			}
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = ranges.findIndex(
-					range => isPageRectVisible(getBoundingPageRect(range), this._iframeWindow,
-						this._iframeWindow.innerWidth)
-				);
-			}
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = ranges.findIndex((range) => {
-					let rect = range.getBoundingClientRect();
-					return !isErrorRect(rect) && rect.x >= 0;
-				});
-			}
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = null;
-			}
-		}
-
-		let lastContainingBlock: Element | null = null;
-		let segments: ReadAloudSegment[] = ranges
-			.map((range) => {
-				let text = range.toString().trim().replace(/\s+/g, ' ');
-				if (!text) return null;
-				let containingBlock = getContainingBlock(closestElement(range.commonAncestorContainer)!);
-				let differentContainingBlock = containingBlock !== lastContainingBlock;
-				lastContainingBlock = containingBlock;
-				return {
-					text,
-					position: {
-						range: new PersistentRange(range)
-					},
-					granularity: state.segmentGranularity!,
-					anchor: differentContainingBlock ? 'paragraphStart' : null,
-				} satisfies ReadAloudSegment;
-			})
-			.filter((segment, i) => {
-				if (segment) {
-					return true;
-				}
-				if (backwardStopIndex !== null && backwardStopIndex > i) backwardStopIndex--;
-				if (forwardStopIndex !== null && forwardStopIndex > i) forwardStopIndex--;
-				return false;
-			}) as ReadAloudSegment[];
-		let lang = state.lang || this.lang;
-
-		this._options.onSetReadAloudState({
-			...state,
-			paused: false,
-			segments,
-			activeSegment: null,
-			backwardStopIndex,
-			forwardStopIndex,
-			targetPosition: undefined,
-			lang,
-		});
 	}
 
 	get hasReadAloudTarget(): boolean {
-		return !!this._iframeDocument.getSelection() && !this._iframeDocument.getSelection()!.isCollapsed;
+		return this._readAloud.hasTarget;
 	}
 
-	addAnnotationFromReadAloudSegments(segments: ReadAloudSegment[], init: NewAnnotation<WADMAnnotation>): Annotation | undefined {
-		if (!segments.length) {
-			return undefined;
-		}
-		let range = makeRangeSpanning(
-			segments.map(s => (s.position as RangeRef).range.toRange()),
-			true
-		);
-		let annotation = this._getAnnotationFromRange(range, 'highlight');
+	addAnnotationFromReadAloudSegments(segments: ReadAloudSegment[], init: NewAnnotation<WADMAnnotation>): Annotation | null {
+		let annotation = this._readAloud.getAnnotationFromSegments(segments, init);
 		if (annotation) {
-			annotation = {
-				...annotation,
-				...init,
-			};
 			return this._options.onAddAnnotation(annotation);
 		}
-		return undefined;
+		return null;
 	}
 
-	protected _getAllReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
+	getReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
 		let rootRanges = this._getRoots(true).map((root) => {
 			let range = this._iframeDocument.createRange();
 			range.selectNodeContents(root);
 			return range;
 		});
-		return rootRanges.flatMap(rootRange => this._getReadAloudRanges(rootRange, granularity));
-	}
-
-	protected _getReadAloudRanges(rootRange: Range, granularity: ReadAloudGranularity): Range[] {
-		// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
-		let matches = new Set();
-		let filter = (node: Node) => {
-			if (matches.has(node.parentNode)) {
-				// Reject sub-trees of accepted nodes.
-				return NodeFilter.FILTER_REJECT;
-			}
-			if (!/\S/.test(node.textContent!)) {
-				// Reject nodes with no text.
-				return NodeFilter.FILTER_REJECT;
-			}
-			for (let c = node.firstChild; c; c = c.nextSibling) {
-				if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
-					// If node has a non-empty text child accept it.
-					matches.add(node);
-					return NodeFilter.FILTER_ACCEPT;
-				}
-			}
-			return NodeFilter.FILTER_SKIP;
-		};
-
-		let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
-		let elementRanges = [...iterateWalker(walker)].map((el) => {
-			let range = this._iframeDocument.createRange();
-			range.selectNodeContents(el);
-			return range;
-		});
-
-		// If there weren't any element children, just use the whole root range
-		if (!elementRanges.length) {
-			elementRanges = [rootRange];
-		}
-
-		if (granularity === 'sentence') {
-			elementRanges = elementRanges.flatMap(range => splitRangeToSentences(range));
-		}
-		else if (granularity === 'paragraph') {
-			// Split each paragraph into first sentence + rest of paragraph
-			elementRanges = elementRanges.flatMap((range) => {
-				let sentences = splitRangeToSentences(range);
-				if (sentences.length <= 1) {
-					return sentences;
-				}
-				let firstRange = sentences[0];
-				let restRange = makeRangeSpanning(sentences.slice(1), true);
-				return [firstRange, restRange];
-			});
-		}
-
-		return elementRanges;
+		return rootRanges.flatMap(rootRange => this._readAloud.getRanges(rootRange, granularity));
 	}
 
 	// ***
@@ -2295,7 +2044,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected abstract _setScale(scale: number): void;
 
-	protected _setSpotlight(key: SpotlightKey, selector: Selector | null, timeout: number | null = 2000) {
+	setSpotlight(key: SpotlightKey, selector: Selector | null, timeout: number | null = 2000) {
 		if (selector) {
 			this._spotlights.set(key, selector);
 		}
@@ -2339,15 +2088,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				return;
 			}
 			let selector = annotation.position;
-			this._navigateToSelector(selector, options);
+			this.navigateToSelector(selector, options);
 		}
 		else if (location.position) {
 			options.block ||= 'center';
 			options.ifNeeded ??= true;
 
 			let selector = location.position as Selector;
-			this._navigateToSelector(selector, options);
-			this._setSpotlight(SpotlightKey.Navigation, selector);
+			this.navigateToSelector(selector, options);
+			this.setSpotlight(SpotlightKey.Navigation, selector);
 		}
 	}
 
@@ -2422,7 +2171,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onBackdropTap?: (event: PointerEvent) => void;
 	getLocalizedString?: (name: string) => string;
 	data: Data & {
-		buf?: Uint8Array,
+		buf?: Uint8Array<ArrayBuffer>,
 		url?: string
 	};
 };

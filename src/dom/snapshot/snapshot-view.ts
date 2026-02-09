@@ -265,7 +265,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._options.onSetOutline(outline);
 	}
 
-	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
+	getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		if (range.collapsed) {
 			return null;
 		}
@@ -414,7 +414,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		return { scrollCoords: [this._iframeWindow.scrollX, this._iframeWindow.scrollY] };
 	}
 
-	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
+	navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
 		if (!range) {
 			// Suppress log when failure is likely just due to reading mode
@@ -538,7 +538,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._updateViewState();
 		this._pushHistoryPoint(true);
 
-		if (this._readAloudState?.active && !this._readAloudScrolling) {
+		if (this._readAloud.state?.active && !this._readAloud.scrolling) {
 			this._onManualNavigation();
 		}
 	}
@@ -586,7 +586,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 								snippets: result.snippets,
 								annotation: (
 									result.range
-									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
+									&& this.getAnnotationFromRange(result.range.toRange(), 'highlight')
 								) ?? undefined,
 								currentPageLabel: null,
 								currentSnippet: result.snippets[result.index]
@@ -644,15 +644,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	protected override _getAllReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
+	override getReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
 		if (this._readingMode.enabled) {
-			return super._getAllReadAloudRanges(granularity);
+			return super.getReadAloudRanges(granularity);
 		}
 
 		let segmentsWithReadingModeEnabled = this._keepSelection(() => {
 			try {
 				this._readingMode.enabled = true;
-				return super._getAllReadAloudRanges(granularity).map((range) => {
+				return super.getReadAloudRanges(granularity).map((range) => {
 					let mappedRange = this._readingMode.mapRangeFromFocus(range);
 					if (!mappedRange) return null;
 					return new PersistentRange(mappedRange);
@@ -668,7 +668,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return segmentsWithReadingModeEnabled.map(r => r.toRange());
 		}
 
-		return super._getAllReadAloudRanges(granularity);
+		return super.getReadAloudRanges(granularity);
 	}
 
 	protected _setScale(scale: number) {
@@ -746,9 +746,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		// Reinitialize outline to remove inaccessible sections
 		this._initOutline();
 		// Reset Read Aloud segments, since ranges will no longer be valid
-		if (this._readAloudState?.active && this._readAloudState.segments !== null) {
+		if (this._readAloud.state?.active && this._readAloud.state.segments !== null) {
 			this._options.onSetReadAloudState({
-				...this._readAloudState,
+				...this._readAloud.state,
 				segments: null,
 				activeSegment: null,
 			});

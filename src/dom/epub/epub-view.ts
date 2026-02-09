@@ -476,7 +476,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		return result;
 	}
 
-	protected _navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
+	navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		if (!isFragment(selector) || selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
 			console.warn("Not a CFI FragmentSelector", selector);
 			return;
@@ -484,7 +484,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this.navigate({ pageNumber: selector.value }, options);
 	}
 
-	protected _getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
+	getAnnotationFromRange(range: Range, type: AnnotationType, color?: string): NewAnnotation<WADMAnnotation> | null {
 		range = moveRangeEndsIntoTextNodes(range);
 		if (range.collapsed) {
 			return null;
@@ -629,7 +629,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			if (!color) {
 				throw new Error('Missing color: ' + color);
 			}
-			let annotation = this._getAnnotationFromRange(
+			let annotation = this.getAnnotationFromRange(
 				range,
 				'highlight',
 				color,
@@ -704,7 +704,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					break;
 			}
 
-			let annotation = this._getAnnotationFromRange(range, type, color);
+			let annotation = this.getAnnotationFromRange(range, type, color);
 			if (!annotation) {
 				console.warn('Unable to resolve range', calibreAnnotation);
 				continue;
@@ -1161,7 +1161,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 								snippets: result.snippets,
 								annotation: (
 									result.range
-									&& this._getAnnotationFromRange(result.range.toRange(), 'highlight')
+									&& this.getAnnotationFromRange(result.range.toRange(), 'highlight')
 								) ?? undefined,
 								currentPageLabel: result.range ? this.pageMapping.getPageLabel(result.range.toRange()) : null,
 								currentSnippet: result.snippets[result.index]
@@ -1351,7 +1351,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					}
 					let selector = this.toSelector(range);
 					if (selector) {
-						this._setSpotlight(SpotlightKey.Navigation, selector);
+						this.setSpotlight(SpotlightKey.Navigation, selector);
 					}
 				}
 			}
