@@ -41,10 +41,6 @@
 				color: var(--fill-secondary);
 				animation: rotating 0.5s steps(12) infinite;
 			}
-
-			&:not(:last-child) {
-				border-bottom: var(--material-border-quarternary);
-			}
 		}
 
 		&.speed {
@@ -114,6 +110,10 @@
 			font-size: 11px;
 			justify-content: center;
 		}
+	}
+
+	&.expanded > .row.buttons {
+		border-bottom: var(--material-border-quarternary);
 	}
 
 	.time-indicator, .log-in, .error {

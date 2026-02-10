@@ -289,7 +289,7 @@ function ReadAloudPopup(props) {
 	}
 
 	return (
-		<UtilityPopup className="read-aloud-popup">
+		<UtilityPopup className={cx('read-aloud-popup', { expanded: showOptions })}>
 			<PlaybackControls
 				showOptions={showOptions}
 				onToggleOptions={() => setShowOptions(!showOptions)}
