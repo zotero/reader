@@ -1202,6 +1202,11 @@ class PDFView {
 		return this._selectionRanges.length && !this._selectionRanges[0].collapsed;
 	}
 
+	lockPositionToReadAloud() {
+		// TODO
+		console.error('Not implemented');
+	}
+
 	addAnnotationFromReadAloudSegments(segments, init) {
 		if (!segments.length) {
 			return undefined;
