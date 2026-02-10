@@ -557,7 +557,7 @@ function RemainingTime(props) {
 		if (secondsRemaining === null) return null;
 
 		let hours = Math.floor(secondsRemaining / (60 * 60));
-		let minutes = Math.floor(secondsRemaining / 60);
+		let minutes = Math.floor((secondsRemaining % (60 * 60)) / 60);
 		let seconds = Math.floor(secondsRemaining % 60);
 
 		if ('DurationFormat' in Intl) {
