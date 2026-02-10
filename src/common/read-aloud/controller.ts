@@ -36,7 +36,7 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 
 	set paused(paused) {
 		this._paused = paused;
-		this._clearInterSegmentTimeout();
+		this._clearDelayTimeout();
 		this._speak();
 	}
 
@@ -169,7 +169,7 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 	}
 
 	private _skipTo(position: number) {
-		this._clearInterSegmentTimeout();
+		this._clearDelayTimeout();
 		this._position = position;
 		this._stop();
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
@@ -184,11 +184,11 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 	protected abstract _stop(): void;
 
 	destroy(): void {
-		this._clearInterSegmentTimeout();
+		this._clearDelayTimeout();
 		this._destroyed = true;
 	}
 
-	private _clearInterSegmentTimeout() {
+	private _clearDelayTimeout() {
 		if (this._delayTimeout !== null) {
 			clearTimeout(this._delayTimeout);
 			this._delayTimeout = null;
