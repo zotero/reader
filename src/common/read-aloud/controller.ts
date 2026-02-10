@@ -127,6 +127,11 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		}
 		else {
 			newPosition = this._position;
+			// Skip an extra paragraph back if we're mid-paragraph,
+			// so paragraphs are treated as a single unit for skipping
+			if (this._segments[newPosition]?.anchor !== 'paragraphStart') {
+				delta++;
+			}
 			for (let i = 0; i < delta; i++) {
 				let previousIndex = this._segments.slice(0, newPosition).findLastIndex(
 					segment => segment.anchor === 'paragraphStart'
