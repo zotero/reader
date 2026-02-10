@@ -8,6 +8,7 @@ const LANGUAGE_EQUIVALENTS: Record<string, string> = {
 // And region codes
 const REGION_EQUIVALENTS: Record<string, string> = {
 	XA: '001', // Arabic
+	SA: '001', // Arabic
 };
 
 function normalizeLanguage(lang: string): string {
