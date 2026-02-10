@@ -3,6 +3,11 @@ import { debounce } from '../../lib/debounce';
 import { ReadAloudController } from '../controller';
 import { BrowserReadAloudVoice } from './voice';
 
+// Track which controller instance last called speechSynthesis.speak(),
+// so that other instances don't cancel its speech via the global
+// speechSynthesis.cancel()
+let lastSpeaker: BrowserReadAloudController | null = null;
+
 export class BrowserReadAloudController extends ReadAloudController<BrowserReadAloudVoice> {
 	private readonly _utterances: SpeechSynthesisUtterance[];
 
@@ -29,7 +34,13 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 	}
 
 	protected _speak = debounce(() => {
-		window.speechSynthesis.cancel();
+		// Only cancel speechSynthesis if we're the last controller to have
+		// called speak(). speechSynthesis is global, so canceling
+		// unconditionally would kill speech from other controllers (e.g.
+		// sample playback).
+		if (lastSpeaker === this || lastSpeaker === null) {
+			window.speechSynthesis.cancel();
+		}
 
 		// We don't use speechSynthesis.pause()/resume() because of poor browser support
 		// (waking from sleep will unpause in Firefox, pausing before .speak()
@@ -39,13 +50,17 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 			if (utterance) {
 				utterance.rate = this._speed;
 				this.buffering = true;
+				// eslint-disable-next-line @typescript-eslint/no-this-alias,consistent-this
+				lastSpeaker = this;
 				window.speechSynthesis.speak(utterance);
 			}
 		}
 	});
 
 	protected _stop(): void {
-		window.speechSynthesis.cancel();
+		if (lastSpeaker === this || lastSpeaker === null) {
+			window.speechSynthesis.cancel();
+		}
 	}
 
 	protected override _handleSegmentStart(segment: ReadAloudSegment, index: number) {
@@ -56,7 +71,11 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 
 	override destroy() {
 		super.destroy();
+		this._speak.cancel();
 		this._position = -1;
-		window.speechSynthesis.cancel();
+		if (lastSpeaker === this) {
+			lastSpeaker = null;
+			window.speechSynthesis.cancel();
+		}
 	}
 }
