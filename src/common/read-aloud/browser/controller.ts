@@ -35,9 +35,10 @@ export class BrowserReadAloudController extends ReadAloudController<BrowserReadA
 
 	protected _speak = debounce(() => {
 		// Only cancel speechSynthesis if we're the last controller to have
-		// called speak(). speechSynthesis is global, so canceling
-		// unconditionally would kill speech from other controllers (e.g.
-		// sample playback).
+		// called speak(). window.speechSynthesis is global, so cancelling
+		// unconditionally could kill speech by another controller
+		// (like a sample controller) that was initialized while this
+		// controller was still alive.
 		if (lastSpeaker === this || lastSpeaker === null) {
 			window.speechSynthesis.cancel();
 		}
