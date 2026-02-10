@@ -7,6 +7,7 @@ export type RemoteVoiceConfig = {
 	locales: string[];
 	creditsPerSecond: number;
 	segmentGranularity: ReadAloudGranularity;
+	sentenceDelay?: number;
 };
 
 export type RemoteInterface = {

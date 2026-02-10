@@ -32,6 +32,10 @@ export class RemoteReadAloudVoice extends ReadAloudVoice<RemoteVoiceConfig, Remo
 		return this.impl.creditsPerSecond;
 	}
 
+	get sentenceDelay() {
+		return this.impl.sentenceDelay ?? 0;
+	}
+
 	getController(lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		return new RemoteReadAloudController(this, lang, segments, backwardStopIndex, forwardStopIndex);
 	}

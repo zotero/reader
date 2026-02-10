@@ -55,6 +55,10 @@ export class BrowserReadAloudVoice extends ReadAloudVoice<SpeechSynthesisVoice, 
 		return null;
 	}
 
+	get sentenceDelay() {
+		return 0;
+	}
+
 	getController(lang: string, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		return new BrowserReadAloudController(this, lang, segments, backwardStopIndex, forwardStopIndex);
 	}

@@ -24,6 +24,8 @@ export abstract class ReadAloudVoice<TImpl, TProvider extends ReadAloudProvider>
 
 	abstract readonly creditsPerSecond: number | null;
 
+	abstract readonly sentenceDelay: number;
+
 	abstract getController(
 		lang: string,
 		segments: ReadAloudSegment[],
