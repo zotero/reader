@@ -3,6 +3,9 @@ import { ReadAloudVoice } from './voice';
 import { ReadAloudProvider } from './provider';
 import { voiceSupportsLanguage } from './lang';
 
+const DELAY_SENTENCE = 300;
+const DELAY_PARAGRAPH = 600;
+
 export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown, ReadAloudProvider>> extends EventTarget {
 	readonly voice: TVoice;
 
@@ -26,12 +29,15 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 
 	protected _destroyed = false;
 
+	private _interSegmentTimeout: ReturnType<typeof setTimeout> | null = null;
+
 	get paused() {
 		return this._paused;
 	}
 
 	set paused(paused) {
 		this._paused = paused;
+		this._clearInterSegmentTimeout();
 		this._speak();
 	}
 
@@ -159,6 +165,7 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 	}
 
 	private _skipTo(position: number) {
+		this._clearInterSegmentTimeout();
 		this._position = position;
 		this._stop();
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', this._currentSegment));
@@ -173,7 +180,15 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 	protected abstract _stop(): void;
 
 	destroy(): void {
+		this._clearInterSegmentTimeout();
 		this._destroyed = true;
+	}
+
+	private _clearInterSegmentTimeout() {
+		if (this._interSegmentTimeout !== null) {
+			clearTimeout(this._interSegmentTimeout);
+			this._interSegmentTimeout = null;
+		}
 	}
 
 	protected _handleSegmentStart(segment: ReadAloudSegment, index: number) {
@@ -203,7 +218,13 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 			}
 			else {
 				this._position++;
-				this._speak();
+				let delay = this._currentSegment?.anchor === 'paragraphStart'
+					? DELAY_PARAGRAPH
+					: DELAY_SENTENCE;
+				this._interSegmentTimeout = setTimeout(() => {
+					this._interSegmentTimeout = null;
+					this._speak();
+				}, delay);
 			}
 		}
 	}
