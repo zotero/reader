@@ -202,7 +202,7 @@ function ReadAloudPopup(props) {
 		let updateRemaining = () => {
 			setSecondsRemaining(controller.secondsRemaining);
 
-			let isQuotaExhausted = controller.error === 'quota-exhausted' || controller.secondsRemaining === 0;
+			let isQuotaExhausted = controller.error === 'quota-exhausted';
 			let isQuotaLow = isQuotaExhausted
 				|| (controller.secondsRemaining !== null
 					&& controller.secondsRemaining < URGENT_THRESHOLD_SECONDS);
