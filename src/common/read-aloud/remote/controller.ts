@@ -54,20 +54,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
 
-	private _creditsRemaining: number | null = null;
-
-	private _creditsConsumed = new Map<number, number>();
-
 	private _failedIndices = new Set<number>();
-
-	override get secondsRemaining() {
-		let creditsRemaining = this._creditsRemaining ?? this.voice.provider.creditsRemaining;
-		let creditsPerSecond = this.voice.creditsPerSecond;
-		let remainingTimeInAudio = isFinite(this._audio.duration)
-			? this._audio.duration - this._audio.currentTime
-			: 0;
-		return creditsRemaining / creditsPerSecond + remainingTimeInAudio;
-	}
 
 	protected _speak(cause?: 'skip'): void {
 		if (cause === 'skip') {
@@ -131,16 +118,6 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 				if (this._currentAudioData !== audioData) {
 					this._audio.src = `data:audio/ogg;base64,${audioData}`;
 					this._currentAudioData = audioData;
-					if (this._creditsRemaining !== null) {
-						let creditsConsumed = this._creditsConsumed.get(index);
-						if (creditsConsumed !== undefined) {
-							this._creditsRemaining -= creditsConsumed;
-							this._creditsConsumed.delete(index);
-						}
-					}
-					else {
-						console.warn('_creditsRemaining not set');
-					}
 				}
 
 				if (indexAtPause !== index) {
@@ -262,21 +239,9 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.lang);
 
-			let creditsBefore = this.voice.provider.creditsRemaining;
-
-			// If we haven't initialized this._creditsRemaining yet, set it to pre-request value
-			// so we can count down as this segment plays
-			if (this._creditsRemaining === null) {
-				this._creditsRemaining = creditsBefore;
+			if (creditsRemaining !== null) {
+				this.voice.provider.creditsRemaining = creditsRemaining;
 			}
-			// If the TTS service didn't return a creditsRemaining value (as in a fatal error),
-			// assume it's whatever we had before
-			if (creditsRemaining === null) {
-				creditsRemaining = creditsBefore;
-			}
-
-			this.voice.provider.creditsRemaining = creditsRemaining;
-			this._creditsConsumed.set(index, creditsBefore - creditsRemaining);
 
 			if (!audio) {
 				if (error) {

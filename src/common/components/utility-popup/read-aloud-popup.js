@@ -20,7 +20,7 @@ import { getAllRegions, getSupportedLanguages, getVoicesForLanguage, resolveLang
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
 import { useMediaControls } from '../../read-aloud/components/use-media-controls';
 
-const URGENT_THRESHOLD_SECONDS = 60;
+const URGENT_THRESHOLD_SECONDS = 3 * 60;
 
 function ReadAloudPopup(props) {
 	let { params, voices: persistedVoices, remoteInterface, title, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onOpenLearnMore, onLogIn, onAddAnnotation, onSkip } = props;
@@ -221,7 +221,7 @@ function ReadAloudPopup(props) {
 		};
 		updateRemaining();
 
-		let interval = setInterval(updateRemaining, 1000);
+		let interval = setInterval(updateRemaining, 10_000);
 		return () => clearInterval(interval);
 	}, [controller, params.paused, onChange]);
 
@@ -553,26 +553,25 @@ function RemainingTime(props) {
 
 	let { secondsRemaining, onOpenLearnMore } = props;
 
-	let secondsRemainingFormatted = useMemo(() => {
+	let remainingFormatted = useMemo(() => {
 		if (secondsRemaining === null) return null;
 
 		let hours = Math.floor(secondsRemaining / (60 * 60));
-		let minutes = Math.floor((secondsRemaining % (60 * 60)) / 60);
-		let seconds = Math.floor(secondsRemaining % 60);
+		let minutes = Math.ceil((secondsRemaining % (60 * 60)) / 60);
 
 		if ('DurationFormat' in Intl) {
 			return new Intl.DurationFormat(undefined, {
-				style: 'digital',
+				style: 'narrow',
 				hoursDisplay: 'auto',
-			}).format({ hours, minutes, seconds });
+				minutesDisplay: 'always',
+			}).format({ hours, minutes });
 		}
 
-		// Fall back to H:m:ss format if Intl.DurationFormat isn't available
 		if (hours > 0) {
-			return `${hours}:${minutes}:${seconds.toString().padStart(2, '0')}`;
+			return `${hours}h ${minutes}m`;
 		}
 		else {
-			return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+			return `${minutes}m`;
 		}
 	}, [secondsRemaining]);
 
@@ -585,7 +584,7 @@ function RemainingTime(props) {
 		>
 			<div className={cx('time-indicator', { urgent })}>
 				<IconClock/>
-				{secondsRemainingFormatted}
+				{remainingFormatted}
 				<button onClick={onOpenLearnMore}>{l10n.getString('reader-read-aloud-learn-more')}</button>
 			</div>
 			{urgent && (
