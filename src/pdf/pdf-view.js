@@ -133,6 +133,8 @@ class PDFView {
 		this._findState = options.findState;
 
 		this._scrolling = false;
+		this._readAloudPositionLocked = true;
+		this._readAloudScrolling = false;
 
 
 		// Create a MediaQueryList object
@@ -237,6 +239,10 @@ class PDFView {
 					this._scrollTimeout = setTimeout(() => {
 						this._scrolling = false;
 					}, 100);
+
+					if (this._readAloudState?.active && !this._readAloudScrolling) {
+						this._onManualNavigation();
+					}
 
 
 					let x = event.target.scrollLeft;
@@ -997,6 +1003,16 @@ class PDFView {
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
+		if (state.active && !previousState?.active) {
+			this._readAloudPositionLocked = true;
+		}
+
+		if (state.active && previousState?.paused && !state.paused
+			&& state.activeSegment?.position
+			&& this._isPositionInViewBounds(state.activeSegment.position)) {
+			this._readAloudPositionLocked = true;
+		}
+
 		if (!state.popupOpen) {
 			this._readAloudHighlightedPosition = null;
 			this._render();
@@ -1009,15 +1025,26 @@ class PDFView {
 				|| state.activeSegment.position;
 			this._render();
 
-			// If the Read Aloud annotation popup isn't open, navigate to the current segment
-			if (!state.annotationPopup) {
+			// If the Read Aloud annotation popup isn't open and position is locked, navigate to the current segment
+			if (!state.annotationPopup && this._readAloudPositionLocked) {
 				setTimeout(() => {
+					this._readAloudScrolling = true;
 					this.navigateToPosition(state.activeSegment.position, {
 						ifNeeded: true,
 						visibilityMargin: -this._iframeWindow.innerHeight / 4,
 						block: 'center',
 						behavior: 'smooth'
 					});
+
+					let viewerContainer = this._iframeWindow.document.getElementById('viewerContainer');
+					if (viewerContainer) {
+						debounceUntilScrollFinishes(viewerContainer).then(() => {
+							this._readAloudScrolling = false;
+						});
+					}
+					else {
+						this._readAloudScrolling = false;
+					}
 				});
 			}
 		}
@@ -1203,8 +1230,24 @@ class PDFView {
 	}
 
 	lockPositionToReadAloud() {
-		// TODO
-		console.error('Not implemented');
+		this._readAloudPositionLocked = true;
+	}
+
+	_isPositionInViewBounds(position) {
+		let viewerContainer = this._iframeWindow?.document.getElementById('viewerContainer');
+		if (!viewerContainer) {
+			return false;
+		}
+
+		let rect = this.getPositionBoundingViewRect(position);
+		let visibleRect = [
+			viewerContainer.scrollLeft,
+			viewerContainer.scrollTop,
+			viewerContainer.scrollLeft + viewerContainer.clientWidth,
+			viewerContainer.scrollTop + viewerContainer.clientHeight
+		];
+
+		return quickIntersectRect(rect, visibleRect);
 	}
 
 	addAnnotationFromReadAloudSegments(segments, init) {
@@ -1449,8 +1492,17 @@ class PDFView {
 		}, 2000);
 	}
 
+	_onManualNavigation() {
+		if (this._readAloudState?.active) {
+			this._readAloudPositionLocked = false;
+		}
+	}
+
 	async navigate(location, options = {}) {
 		options.block ||= 'center';
+		if (!options.skipHistory) {
+			this._onManualNavigation();
+		}
 		this._lastNavigationTime = Date.now();
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
@@ -1494,26 +1546,32 @@ class PDFView {
 	}
 
 	navigateBack() {
+		this._onManualNavigation();
 		this._history.navigateBack();
 	}
 
 	navigateForward() {
+		this._onManualNavigation();
 		this._history.navigateForward();
 	}
 
 	navigateToNextPage() {
+		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.pdfViewer.nextPage();
 	}
 
 	navigateToPreviousPage() {
+		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.pdfViewer.previousPage();
 	}
 
 	navigateToFirstPage() {
+		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('firstpage');
 	}
 
 	navigateToLastPage() {
+		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('lastpage');
 	}
 
