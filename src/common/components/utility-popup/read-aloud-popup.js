@@ -226,6 +226,14 @@ function ReadAloudPopup(props) {
 	}, [controller, params.paused, onChange]);
 
 	useEffect(() => {
+		if (!controller) {
+			return undefined;
+		}
+		let interval = setInterval(() => controller.refreshCreditsRemaining(), 60_000);
+		return () => clearInterval(interval);
+	}, [controller]);
+
+	useEffect(() => {
 		let cancelled = false;
 
 		let fetchVoicesAndSet = async () => {

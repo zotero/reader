@@ -74,6 +74,14 @@ export abstract class ReadAloudController<TVoice extends ReadAloudVoice<unknown,
 		return creditsRemaining / creditsPerSecond;
 	}
 
+	async refreshCreditsRemaining(): Promise<void> {
+		// No-op for non-remote controllers
+	}
+
+	retry() {
+		// No-op for non-remote controllers
+	}
+
 	get error() {
 		return this._error;
 	}

@@ -144,14 +144,43 @@ async function createReader() {
 				};
 			},
 
+			async getCreditsRemaining() {
+				let response;
+				try {
+					response = await fetch('https://api.zotero.org/tts/credits', {
+						headers: {
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+					});
+				}
+				catch (e) {
+					console.error('Failed to fetch creditsRemaining from API');
+					return null;
+				}
+
+				if (!response.ok) {
+					console.error('Failed to fetch creditsRemaining from API', response.status, await response.text());
+					return null;
+				}
+
+				return (await response.json()).creditsRemaining;
+			},
+
 			async getAudio(segment, voice, lang) {
+				let url;
 				let params = new URLSearchParams();
-				params.set('text', segment.text);
+				if (segment === 'sample') {
+					url = 'https://api.zotero.org/tts/sample';
+				}
+				else {
+					url = 'https://api.zotero.org/tts/speak';
+					params.set('text', segment.text);
+				}
 				params.set('voice', voice.id);
 				params.set('lang', lang);
 				let response;
 				try {
-					response = await fetch('https://api.zotero.org/tts/speak?' + params, {
+					response = await fetch(url + '?' + params, {
 						headers: {
 							'Zotero-API-Key': ZOTERO_API_KEY,
 						},
@@ -160,65 +189,25 @@ async function createReader() {
 				catch {
 					return {
 						audio: null,
-						creditsRemaining: null,
 						error: 'network',
 					};
-				}
-
-				let creditsRemaining = parseInt(response.headers.get('Zotero-TTS-Credits-Remaining'));
-				if (isNaN(creditsRemaining)) {
-					creditsRemaining = null;
 				}
 
 				if (response.status === 402) {
 					return {
 						audio: null,
-						creditsRemaining,
 						error: 'quota-exceeded',
 					};
 				}
 				else if (!response.ok) {
 					return {
 						audio: null,
-						creditsRemaining,
 						error: 'unknown',
 					};
 				}
 
-				let { audio, timepoints } = await response.json();
-				return {
-					audio,
-					creditsRemaining,
-				};
+				return { audio: await response.blob() };
 			},
-
-			async getSampleAudio(voice, lang) {
-				let params = new URLSearchParams();
-				params.set('voice', voice.id);
-				params.set('lang', lang);
-				let response;
-				try {
-					response = await fetch('https://api.zotero.org/tts/sample?' + params);
-				}
-				catch {
-					return {
-						audio: null,
-						error: 'network',
-					};
-				}
-
-				if (!response.ok) {
-					return {
-						audio: null,
-						error: 'unknown',
-					};
-				}
-
-				let { audio } = await response.json();
-				return {
-					audio,
-				};
-			}
 		},
 		onLogIn() {
 			setTimeout(() => {

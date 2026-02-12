@@ -33,9 +33,17 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController<RemoteR
 		this._audio.pause();
 	}
 
+	protected _revokeAudioSrc(): void {
+		let src = this._audio.src;
+		if (src.startsWith('blob:')) {
+			URL.revokeObjectURL(src);
+		}
+	}
+
 	override destroy(): void {
 		super.destroy();
 		this._audio.pause();
+		this._revokeAudioSrc();
 		this._audio.removeAttribute('src');
 	}
 }
@@ -43,13 +51,13 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController<RemoteR
 export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	private _currentIndex: number | null = null;
 
-	private _currentAudioData: string | null = null;
+	private _currentAudioData: Blob | null = null;
 
 	private _indexAtPause: number | null = null;
 
-	private _audioData = new LRUCacheMap<number, string>(BLOB_CACHE_CAPACITY);
+	private _audioData = new LRUCacheMap<number, Blob>(BLOB_CACHE_CAPACITY);
 
-	private _fetching = new Map<number, Promise<string>>();
+	private _fetching = new Map<number, Promise<Blob>>();
 
 	// Exponential moving average of time spent fetching per character (in milliseconds)
 	private _averageFetchTimePerChar: number | null = null;
@@ -116,7 +124,8 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 				};
 
 				if (this._currentAudioData !== audioData) {
-					this._audio.src = `data:audio/ogg;base64,${audioData}`;
+					this._revokeAudioSrc();
+					this._audio.src = URL.createObjectURL(audioData);
 					this._currentAudioData = audioData;
 				}
 
@@ -133,7 +142,14 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 	private _speakInternalWithSkipDebounce = debounce(() => this._speakInternal(), SKIP_DEBOUNCE_DELAY);
 
-	retry(): void {
+	override async refreshCreditsRemaining() {
+		let creditsRemaining = await this.voice.provider.remote.getCreditsRemaining();
+		if (creditsRemaining !== null) {
+			this.voice.provider.creditsRemaining = creditsRemaining;
+		}
+	}
+
+	override retry(): void {
 		let index = this._position;
 		if (!this._failedIndices.has(index)) {
 			return;
@@ -226,7 +242,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		}
 	}
 
-	private async _getAudioData(index: number): Promise<string> {
+	private async _getAudioData(index: number): Promise<Blob> {
 		let cached = this._audioData.get(index);
 		if (cached) return cached;
 
@@ -237,11 +253,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		let fetchBlob = async () => {
 			let startTime = performance.now();
 
-			let { audio, error, creditsRemaining } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.lang);
-
-			if (creditsRemaining !== null) {
-				this.voice.provider.creditsRemaining = creditsRemaining;
-			}
+			let { audio, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.lang);
 
 			if (!audio) {
 				if (error) {
@@ -313,14 +325,15 @@ export class RemoteSampleReadAloudController extends RemoteReadAloudControllerBa
 		this._audio.pause();
 		this.buffering = true;
 
-		this.voice.provider.remote.getSampleAudio(this.voice.impl, this.lang)
+		this.voice.provider.remote.getAudio('sample', this.voice.impl, this.lang)
 			.then(({ audio, error }) => {
 				this.buffering = false;
 				if (this._destroyed || this._paused) {
 					return;
 				}
 				if (audio) {
-					this._audio.src = `data:audio/ogg;base64,${encodeURIComponent(audio)}`;
+					this._revokeAudioSrc();
+					this._audio.src = URL.createObjectURL(audio);
 					this._audio.onended = () => this._handleSegmentEnd(segment, 0);
 					this._handleSegmentStart(segment, 0);
 					this._audio.play();
