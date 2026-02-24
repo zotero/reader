@@ -9,14 +9,14 @@ const SANITIZER_REPLACE_TAGS_RE = new RegExp(
 	'g');
 
 export function parseKOReaderPosition(position: string): KOReaderPosition {
-	const KOREADER_POSITION_RE = /^\/body\/DocFragment\[(\d+)]\/(.+)\.(\d+)$/;
+	const KOREADER_POSITION_RE = /^\/body\/DocFragment(?:\[(\d+)])?\/(.+)\.(\d+)$/;
 
 	let matches = position.match(KOREADER_POSITION_RE);
 	if (!matches) {
 		throw new Error('Unable to parse KOReader position: ' + position);
 	}
 
-	let fragmentIndex = parseInt(matches[1]);
+	let fragmentIndex = matches[1] ? parseInt(matches[1]) : 1;
 	let xpath = matches[2].replace(
 		SANITIZER_REPLACE_TAGS_RE,
 		(_, prefix, tag) => prefix + 'replaced-' + tag);
