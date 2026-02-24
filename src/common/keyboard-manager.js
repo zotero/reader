@@ -210,7 +210,7 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.findNext();
 		}
-		else if (key === `${pm}Alt-g`) {
+		else if (key === `${pm}-Alt-g`) {
 			event.preventDefault();
 			let pageNumberInput = document.getElementById('pageNumber');
 			pageNumberInput.focus();
