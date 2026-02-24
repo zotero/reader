@@ -1,7 +1,9 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ZoteroLocalePlugin = require('./webpack.zotero-locale-plugin');
@@ -30,7 +32,10 @@ function generateReaderConfig(build) {
 		},
 		optimization: {
 			minimize: build === 'web',
-			minimizer: [new CssMinimizerPlugin(), '...'], // ... is for built-in TerserPlugin https://webpack.js.org/configuration/optimization/#optimizationminimizer
+			minimizer: [
+				new CssMinimizerPlugin(),
+				new TerserPlugin({ terserOptions: { compress: { passes: 2 } } }),
+			],
 		},
 		module: {
 			rules: [
@@ -146,6 +151,14 @@ function generateReaderConfig(build) {
 			// No support for importing EPUB annotations on the web, so no need for luaparse there
 			luaparse: 'luaparse',
 		};
+		// Mimic upstream pdf.js production build by defining PDFJSDev so that
+		// dev-only validation code is eliminated as dead code by terser
+		config.plugins.push(
+			new webpack.DefinePlugin({
+				'typeof PDFJSDev': JSON.stringify('object'),
+				PDFJSDev: '({ test: () => false })',
+			})
+		);
 	}
 	else if (build === 'dev') {
 		config.plugins.push(
