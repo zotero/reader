@@ -1,16 +1,25 @@
 #!/bin/bash
 
+if [[ -z $PDFJS_CONFIG ]]; then
+	echo "Error: PDFJS_CONFIG is not set. Use one of: zotero, web, dev, all" >&2
+	exit 1
+fi
+
 # Set paths for the PDF.js build and target directories
 PDFJS_BUILD=./pdfjs/pdf.js/build/generic
-PDFJS_MINIFIED_BUILD=./pdfjs/pdf.js/build/minified
+PDFJS_LEGACY_BUILD=./pdfjs/pdf.js/build/generic-legacy
+PDFJS_MINIFIED_LEGACY_BUILD=./pdfjs/pdf.js/build/minified-legacy
 BUILD_BASE=./build
 
 # Move into the PDF.js directory, install dependencies, and build
 pushd pdfjs/pdf.js
 npm ci
-npx gulp generic
+if [[ $PDFJS_CONFIG != "web" ]]; then
+	npx gulp generic
+fi
 if [[ $PDFJS_CONFIG = "web" || $PDFJS_CONFIG = "all" ]]; then
-	npx gulp minified
+	npx gulp generic-legacy
+	npx gulp minified-legacy
 fi
 popd
 
@@ -35,22 +44,22 @@ if [[ $PDFJS_CONFIG = "dev" || $PDFJS_CONFIG = "all" ]]; then
 fi
 
 if [[ $PDFJS_CONFIG = "web" || $PDFJS_CONFIG = "all" ]]; then
-	# Set up directories for web build
+	# Set up directories for web build (uses legacy builds for broad browser support)
 	BUILD=web
 	BUILD_DIR="$BUILD_BASE/$BUILD/pdf"
 	rm -rf "$BUILD_DIR"
 	mkdir -p "$BUILD_DIR/build"
 	mkdir -p "$BUILD_DIR/web/images"
-	cp -r "$PDFJS_BUILD/LICENSE" "$BUILD_DIR/"
-	cp -r "$PDFJS_MINIFIED_BUILD/build/pdf.min.mjs" "$BUILD_DIR/build/pdf.mjs"
-	cp -r "$PDFJS_MINIFIED_BUILD/build/pdf.worker.min.mjs" "$BUILD_DIR/build/pdf.worker.mjs"
-	cp -r "$PDFJS_BUILD/web/cmaps" "$BUILD_DIR/web/"
-	cp -r "$PDFJS_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
-	cp -r "$PDFJS_BUILD/web/iccs" "$BUILD_DIR/web/"
-	cp -r "$PDFJS_BUILD/web/wasm" "$BUILD_DIR/web/"
-	cp -r "$PDFJS_BUILD/web/viewer.html" "$BUILD_DIR/web/"
-	npx terser "$PDFJS_BUILD/web/viewer.mjs" -o "$BUILD_DIR/web/viewer.mjs"
-	cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
+	cp -r "$PDFJS_LEGACY_BUILD/LICENSE" "$BUILD_DIR/"
+	cp -r "$PDFJS_MINIFIED_LEGACY_BUILD/build/pdf.min.mjs" "$BUILD_DIR/build/pdf.mjs"
+	cp -r "$PDFJS_MINIFIED_LEGACY_BUILD/build/pdf.worker.min.mjs" "$BUILD_DIR/build/pdf.worker.mjs"
+	cp -r "$PDFJS_LEGACY_BUILD/web/cmaps" "$BUILD_DIR/web/"
+	cp -r "$PDFJS_LEGACY_BUILD/web/standard_fonts" "$BUILD_DIR/web/"
+	cp -r "$PDFJS_LEGACY_BUILD/web/iccs" "$BUILD_DIR/web/"
+	cp -r "$PDFJS_LEGACY_BUILD/web/wasm" "$BUILD_DIR/web/"
+	cp -r "$PDFJS_LEGACY_BUILD/web/viewer.html" "$BUILD_DIR/web/"
+	npx terser "$PDFJS_LEGACY_BUILD/web/viewer.mjs" -o "$BUILD_DIR/web/viewer.mjs"
+	cp -r "$PDFJS_LEGACY_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
 	cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
 fi
 
