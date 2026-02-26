@@ -3,7 +3,8 @@ import { ReadAloudController, ReadAloudEvent } from '../controller';
 import LRUCacheMap from '../../lib/lru-cache-map';
 import { RemoteReadAloudVoice } from './voice';
 import { debounce } from '../../lib/debounce';
-import { stretchAudioBuffer } from './time-stretch';
+import { stretchAudioBuffer } from './lib/time-stretch';
+import { findWordOnset } from './lib/word-onset';
 
 const BLOB_CACHE_CAPACITY = 32;
 const EST_PLAYBACK_CHARS_PER_SECOND = 16;
@@ -223,7 +224,19 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 				this._currentIndex = index;
 				this._handleSegmentStart(segment, index);
 
-				let offset = (indexAtPause === index) ? this._segmentProgressSeconds : 0;
+				let offset: number;
+				if (indexAtPause === index) {
+					if (this.lang.startsWith('en')) {
+						// English only for now: try to resume at a word boundary
+						offset = findWordOnset(audioBuffer, this._segmentProgressSeconds);
+					}
+					else {
+						offset = this._segmentProgressSeconds;
+					}
+				}
+				else {
+					offset = 0;
+				}
 				this._playAudioBuffer(audioBuffer, offset, this._speed)
 					.then(() => this._handleSegmentEnd(segment, index));
 
