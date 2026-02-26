@@ -62,12 +62,15 @@
 			background-color: transparent;
 			border: none;
 			cursor: pointer;
-			outline: 0;
 			vertical-align: middle;
 			text-align: center;
 
 			&:hover {
 				background-color: var(--fill-quinary);
+			}
+
+			&:active {
+				background-color: var(--fill-quarternary);
 			}
 		}
 	}
