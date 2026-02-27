@@ -201,14 +201,29 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 		setCanScrollDown(el.scrollTop + el.clientHeight < el.scrollHeight - 1);
 	}, []);
 
+	let wheelAccumRef = useRef(0);
+
 	let handleWheel = useCallback((event) => {
 		event.preventDefault();
 		let el = scrollContainerRef.current;
 		if (!el) return;
-		let direction = event.deltaY > 0 ? 1 : -1;
-		el.scrollTop += direction * ROW_HEIGHT;
-		updateScrollIndicators();
-		expandDropdownIfNeeded();
+
+		let delta = event.deltaY;
+		// Reset accumulator on direction change
+		if ((wheelAccumRef.current > 0 && delta < 0) || (wheelAccumRef.current < 0 && delta > 0)) {
+			wheelAccumRef.current = 0;
+		}
+		wheelAccumRef.current += delta;
+
+		// Scroll one row each time the accumulated delta crosses the threshold
+		let threshold = ROW_HEIGHT;
+		let steps = Math.trunc(wheelAccumRef.current / threshold);
+		if (steps !== 0) {
+			wheelAccumRef.current -= steps * threshold;
+			el.scrollTop += steps * ROW_HEIGHT;
+			updateScrollIndicators();
+			expandDropdownIfNeeded();
+		}
 	}, [updateScrollIndicators]);
 
 	function handleOverlayPointerDown(event) {
