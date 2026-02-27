@@ -107,7 +107,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	get lang(): string {
-		return this.book.packaging.metadata.language;
+		return this.book.packaging.metadata.language || 'en';
 	}
 
 	protected override _handleIFrameLoaded() {
