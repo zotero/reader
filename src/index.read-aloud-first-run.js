@@ -22,7 +22,6 @@ window.createReadAloudFirstRun = (options) => {
 
 	let popupRef = createRef();
 	let root = createRoot(document.getElementById('read-aloud-first-run'));
-	let enabledVoices = new Map(Object.entries(options.readAloudEnabledVoices || {}));
 
 	function render() {
 		root.render(
@@ -33,7 +32,6 @@ window.createReadAloudFirstRun = (options) => {
 					lang={options.lang}
 					remoteInterface={options.remoteInterface}
 					loggedIn={options.loggedIn}
-					persistedEnabledVoices={enabledVoices}
 					onOpenVoicesPopup={options.onOpenVoicesPopup}
 					onPurchaseCredits={options.onPurchaseCredits}
 					onLogIn={options.onLogIn}
@@ -49,13 +47,6 @@ window.createReadAloudFirstRun = (options) => {
 	window.submit = () => {
 		popupRef.current?.submit();
 		return pendingResult;
-	};
-
-	// Exposed so the parent can push updated enabled voices
-	// (e.g. after the Manage Voices dialog closes)
-	window.updateEnabledVoices = (data) => {
-		enabledVoices = new Map(Object.entries(data || {}));
-		render();
 	};
 
 	flushSync(() => render());

@@ -1,17 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserReadAloudProvider } from '../browser/provider';
+import { BrowserReadAloudVoice } from '../browser/voice';
+import { ErrorState } from '../controller';
 import { RemoteReadAloudProvider, RemoteVoicesError } from '../remote/provider';
-import { resolveLanguage } from '../lang';
-import { getSupportedLanguages } from '../voice';
+import { RemoteInterface } from '../remote';
+import { RemoteReadAloudVoice } from '../remote/voice';
+import { ReadAloudVoice, getSupportedLanguages } from '../voice';
 
 /**
  * Hook that loads all voices and manages language state.
  */
-export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) {
-	let [allBrowserVoices, setAllBrowserVoices] = useState(null);
-	let [allRemoteVoices, setAllRemoteVoices] = useState(null);
-	let [browserVoicesError, setBrowserVoicesError] = useState(null);
-	let [remoteVoicesError, setRemoteVoicesError] = useState(null);
+export function useVoiceData({ lang, remoteInterface }: {
+	lang: string;
+	remoteInterface?: RemoteInterface;
+}) {
+	let [allBrowserVoices, setAllBrowserVoices] = useState<BrowserReadAloudVoice[] | null>(null);
+	let [allRemoteVoices, setAllRemoteVoices] = useState<RemoteReadAloudVoice[] | null>(null);
+	let [browserVoicesError, setBrowserVoicesError] = useState<ErrorState | null>(null);
+	let [remoteVoicesError, setRemoteVoicesError] = useState<ErrorState | null>(null);
 	let [selectedLang, setSelectedLang] = useState(lang);
 
 	// Fetch browser voices
@@ -35,7 +41,9 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 			}
 		}
 		fetchVoices();
-		return () => cancelled = true;
+		return () => {
+			cancelled = true;
+		};
 	}, []);
 
 	// Fetch remote voices
@@ -43,7 +51,7 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 		if (!remoteInterface) return undefined;
 		let cancelled = false;
 		async function fetchVoices() {
-			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
+			let remoteProvider = new RemoteReadAloudProvider(remoteInterface!);
 			try {
 				let voices = await remoteProvider.getVoices();
 				if (!cancelled) {
@@ -60,12 +68,14 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 			}
 		}
 		fetchVoices();
-		return () => cancelled = true;
+		return () => {
+			cancelled = true;
+		};
 	}, [remoteInterface]);
 
 	let loaded = allBrowserVoices !== null && (allRemoteVoices !== null || !remoteInterface);
 
-	let allVoices = useMemo(
+	let allVoices: ReadAloudVoice[] = useMemo(
 		() => [...(allRemoteVoices || []), ...(allBrowserVoices || [])],
 		[allRemoteVoices, allBrowserVoices]
 	);
@@ -74,13 +84,6 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 		() => getSupportedLanguages(allVoices),
 		[allVoices]
 	);
-
-	let enabledVoices = useMemo(() => {
-		if (!persistedEnabledVoices) return null;
-		let resolvedLang = resolveLanguage(selectedLang, [...persistedEnabledVoices.keys()]);
-		if (!resolvedLang) return null;
-		return persistedEnabledVoices.get(resolvedLang) ?? null;
-	}, [persistedEnabledVoices, selectedLang]);
 
 	return {
 		allBrowserVoices,
@@ -92,7 +95,6 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 		selectedLang,
 		availableLanguages,
 		effectiveLang: selectedLang,
-		enabledVoices,
 		handleLangChange: setSelectedLang,
 	};
 }
