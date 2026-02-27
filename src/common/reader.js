@@ -8,6 +8,7 @@ import AnnotationManager from './annotation-manager';
 import {
 	createAnnotationContextMenu,
 	createColorContextMenu,
+	createReadAloudAnnotationContextMenu,
 	createSelectorContextMenu,
 	createThemeContextMenu,
 	createThumbnailContextMenu,
@@ -19,12 +20,14 @@ import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
 	getCurrentColorScheme,
-	getImageDataURL, isMac,
+	getImageDataURL,
+	isMac,
 	setMultiDragPreview,
 } from './lib/utilities';
 import { debounce } from './lib/debounce';
 import { flushSync } from 'react-dom';
 import { addFTL, getLocalizedString } from '../fluent';
+import { getVoicePreferencesURL } from './lib/read-aloud-links';
 
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
@@ -73,11 +76,13 @@ class Reader {
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
+		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
+		this._onSetReadAloudStatus = options.onSetReadAloudStatus;
+		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
+		this._onLogIn = options.onLogIn;
 
-		if (Array.isArray(options.ftl)) {
-			for (let ftl of options.ftl) {
-				addFTL(ftl);
-			}
+		for (let ftl of options.ftl) {
+			addFTL(ftl);
 		}
 
 		this._readerRef = React.createRef();
@@ -141,6 +146,13 @@ class Reader {
 			? DEFAULT_THEMES.find(x => x.id === 'dark')
 			: themes.get(options.darkTheme) || null;
 
+		// Initialize speech synthesis (for Chrome, which only returns voices
+		// the second time this is called)
+		window.speechSynthesis.getVoices();
+
+		this._enableReadAloud = options.enableReadAloud || false;
+		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -157,6 +169,8 @@ class Reader {
 			},
 			readOnly: options.readOnly !== undefined ? options.readOnly : false,
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
+			title: options.title || '',
+			loggedIn: options.loggedIn ?? false,
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			hyphenate: options.hyphenate,
@@ -188,6 +202,21 @@ class Reader {
 			appearancePopup: null,
 			themePopup: null,
 			contextMenu: null,
+			readAloudState: {
+				popupOpen: false,
+				active: false,
+				paused: false,
+				segments: null,
+				backwardStopIndex: null,
+				forwardStopIndex: null,
+				activeSegment: null,
+				speed: 1,
+				voice: null,
+				annotationPopup: null,
+				segmentAnnotations: new Map(),
+			},
+			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
+			readAloudFirstRunPopup: false,
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -302,6 +331,15 @@ class Reader {
 						onChangePageIndex={(pageIndex, options) => this._lastView.navigate({ pageIndex }, options)}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
+						enableReadAloud={this._enableReadAloud}
+						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						readAloudRemoteInterface={this._readAloudRemoteInterface}
+						onSetReadAloudVoice={this._setReadAloudVoice.bind(this)}
+						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
+						onPurchaseReadAloudCredits={this.purchaseReadAloudCredits.bind(this)}
+						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
+						onAddReadAloudAnnotation={this.addAnnotationFromReadAloudSegment.bind(this)}
+						onReadAloudSkip={this._handleReadAloudSkip.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
 						onChangeSidebarView={(view) => {
@@ -412,6 +450,11 @@ class Reader {
 							}
 							this._updateState({ themePopup: null, customThemes, lightTheme, darkTheme });
 						}}
+						onLogIn={this._onLogIn}
+						onMoveReadAloudAnnotation={this.moveReadAloudAnnotation.bind(this)}
+						onDismissReadAloudAnnotationPopup={this.dismissReadAloudAnnotationPopup.bind(this)}
+						onDeleteReadAloudAnnotation={this.deleteReadAloudAnnotation.bind(this)}
+						onOpenReadAloudAnnotationContextMenu={params => this._onOpenContextMenu(createReadAloudAnnotationContextMenu(this, params))}
 					/>
 				</ReaderContext.Provider>
 			);
@@ -500,6 +543,32 @@ class Reader {
 			if (!init) {
 				this._primaryView?.setColorScheme(this._state.colorScheme);
 				this._secondaryView?.setColorScheme(this._state.colorScheme);
+			}
+		}
+
+		if (this._state.readAloudState !== previousState.readAloudState) {
+			// If the view has a new Read Aloud target, reset our state
+			if (!this._state.readAloudState.paused && previousState.readAloudState.paused
+					&& this._primaryView?.hasReadAloudTarget) {
+				Object.assign(this._state.readAloudState, this._getReadAloudSegmentResetState());
+			}
+			this._primaryView?.setReadAloudState(this._state.readAloudState);
+			this._secondaryView?.setReadAloudState(this._state.readAloudState);
+
+			// Tell Zotero about the two main status flags
+			let { active, paused } = this._state.readAloudState;
+			this._onSetReadAloudStatus?.({ active, paused });
+
+			// If the first-run popup should be shown and we have an external handler,
+			// call it instead of rendering the inline popup
+			if (this._onOpenReadAloudFirstRunPopup
+					&& this._state.readAloudFirstRunPopup
+					&& this._state.readAloudState.popupOpen
+					&& this._state.readAloudState.lang) {
+				this._onOpenReadAloudFirstRunPopup({
+					lang: this._state.readAloudState.lang,
+				});
+				this.toggleReadAloudPopup(false);
 			}
 		}
 
@@ -748,6 +817,9 @@ class Reader {
 			window.focus();
 			document.activeElement.blur();
 		});
+		return new Promise((resolve) => {
+			this._contextMenuCloseResolve = resolve;
+		});
 	}
 
 	closeContextMenu() {
@@ -755,6 +827,8 @@ class Reader {
 		this._focusManager.restoreFocus();
 		this._onBringReaderToFront?.(false);
 		document.querySelectorAll('.context-menu-open').forEach(x => x.classList.remove('context-menu-open'));
+		this._contextMenuCloseResolve?.();
+		this._contextMenuCloseResolve = null;
 	}
 
 	_handleAppearanceChange(params) {
@@ -833,6 +907,347 @@ class Reader {
 		if (!open) {
 			this._lastView.focus();
 		}
+	}
+
+	_handleReadAloudStateChange(state) {
+		// Ignore late changes due to event handlers after popup has closed
+		if (!this._state.readAloudState.popupOpen && !state.popupOpen) {
+			return;
+		}
+		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
+	}
+
+	_getReadAloudSegmentResetState() {
+		return {
+			segments: null,
+			backwardStopIndex: null,
+			forwardStopIndex: null,
+			activeSegment: null,
+			segmentAnnotations: new Map(),
+		};
+	}
+
+	_handleReadAloudSkip() {
+		this._lastView?.lockPositionToReadAloud();
+	}
+
+	openVoicePreferences() {
+		let url = getVoicePreferencesURL();
+		if (url) {
+			this._onOpenLink(url);
+		}
+	}
+
+	purchaseReadAloudCredits() {
+		// TODO
+		console.log('Purchase credits');
+	}
+
+	toggleReadAloudPopup(popupOpen) {
+		if (!this._enableReadAloud) {
+			return;
+		}
+		if (popupOpen === undefined) {
+			popupOpen = !this._state.readAloudState.popupOpen;
+		}
+		if (popupOpen) {
+			this._updateState({
+				readAloudFirstRunPopup: !this._state.readAloudVoices.size,
+			});
+			this._handleReadAloudStateChange({
+				popupOpen: true,
+			});
+		}
+		else {
+			this._updateState({
+				readAloudFirstRunPopup: false,
+			});
+			this._handleReadAloudStateChange({
+				popupOpen: false,
+				active: false,
+				paused: false,
+				annotationPopup: null,
+				...this._getReadAloudSegmentResetState(),
+			});
+		}
+	}
+
+	toggleReadAloudPaused(paused = undefined) {
+		if (!this._enableReadAloud) {
+			return;
+		}
+		if (!this._state.readAloudState.active) {
+			return;
+		}
+		if (paused === undefined) {
+			paused = !this._state.readAloudState.paused;
+		}
+		this._handleReadAloudStateChange({ paused });
+	}
+
+	startReadAloudAtPosition(position = null) {
+		if (!this._enableReadAloud) {
+			return;
+		}
+		if (!position && this._state[this._lastView + 'SelectionPopup']) {
+			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
+		}
+		position ??= null;
+		this._handleReadAloudStateChange({
+			popupOpen: true,
+			active: true,
+			paused: false,
+			targetPosition: position,
+			...this._getReadAloudSegmentResetState(),
+		});
+	}
+
+	_setReadAloudVoice({ lang, region, voice, speed, tier }) {
+		this._onSetReadAloudVoice({ lang, region, voice, speed, tier });
+		let existing = this._state.readAloudVoices.get(lang) || {};
+		let tierVoices = { ...existing.tierVoices };
+		if (tier) {
+			// Push to the end of the object
+			delete tierVoices[tier];
+			tierVoices[tier] = voice;
+		}
+		this._updateState({
+			readAloudFirstRunPopup: false,
+			readAloudVoices: new Map([
+				...this._state.readAloudVoices,
+				[lang, { region, voice, speed, tierVoices }],
+			]),
+			readAloudState: {
+				...this._state.readAloudState,
+				lang,
+			},
+		});
+	}
+
+	setReadAloudVoices(readAloudVoices) {
+		this._updateState({ readAloudVoices: new Map(Object.entries(readAloudVoices)) });
+	}
+
+	addAnnotationFromReadAloudSegment(segment, type) {
+		let { annotationPopup: popup, segments, segmentAnnotations } = this._state.readAloudState;
+		// If the annotation popup is already open, just change the type if specified
+		if (popup) {
+			if (type) {
+				this.setReadAloudAnnotationType(type);
+			}
+			return;
+		}
+
+		let segmentIndex = segments ? segments.indexOf(segment) : -1;
+		// Check if this segment already has an annotation
+		let existingAnnotationID = segmentAnnotations.get(segmentIndex);
+		let existingAnnotation = existingAnnotationID && this._annotationManager._getAnnotationByID(existingAnnotationID);
+
+		if (existingAnnotation) {
+			// Find the segment range for this annotation
+			let startSegmentIndex = segmentIndex;
+			let endSegmentIndex = segmentIndex;
+			for (let [idx, annID] of segmentAnnotations) {
+				if (annID === existingAnnotationID) {
+					startSegmentIndex = Math.min(startSegmentIndex, idx);
+					endSegmentIndex = Math.max(endSegmentIndex, idx);
+				}
+			}
+			this._handleReadAloudStateChange({
+				annotationPopup: {
+					annotation: existingAnnotation,
+					baseSegmentIndex: segmentIndex,
+					startSegmentIndex,
+					endSegmentIndex,
+					segments,
+				}
+			});
+			this._lastView.navigate({ annotationID: existingAnnotation.id });
+			return;
+		}
+
+		// If an old annotation was deleted, clean up stale mappings
+		if (existingAnnotationID) {
+			for (let [idx, annID] of segmentAnnotations) {
+				if (annID === existingAnnotationID) {
+					segmentAnnotations.delete(idx);
+				}
+			}
+		}
+
+		let annotation = this._lastView.addAnnotationFromReadAloudSegments(
+			[segment],
+			{
+				type: type || this._tools[this._state.textSelectionAnnotationMode].type,
+				color: ['highlight', 'underline'].includes(this._state.tool.type)
+					? this._state.tool.color
+					: ANNOTATION_COLORS[0][1],
+			},
+		);
+		if (annotation && segments && segmentIndex >= 0) {
+			segmentAnnotations.set(segmentIndex, annotation.id);
+			this._handleReadAloudStateChange({
+				annotationPopup: {
+					annotation,
+					baseSegmentIndex: segmentIndex,
+					startSegmentIndex: segmentIndex,
+					endSegmentIndex: segmentIndex,
+					segments,
+				}
+			});
+			this._lastView.navigate({ annotationID: annotation.id });
+		}
+	}
+
+	_updateReadAloudAnnotation(newBaseIndex, newStartIndex, newEndIndex) {
+		let popup = this._state.readAloudState.annotationPopup;
+		if (!popup) {
+			return;
+		}
+		let { annotation, startSegmentIndex, endSegmentIndex, segments } = popup;
+		let { segmentAnnotations } = this._state.readAloudState;
+		// Get updated annotation data
+		annotation = this._annotationManager._getAnnotationByID(annotation.id);
+		if (!annotation) {
+			return;
+		}
+
+		// Clean up segment mappings in the old range
+		for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
+			segmentAnnotations.delete(i);
+		}
+		// Delete the old annotation
+		this._annotationManager.deleteAnnotations([annotation.id]);
+		// And create a new one across the new range
+		let segmentsInRange = segments.slice(newStartIndex, newEndIndex + 1);
+		let newAnnotation = this._lastView.addAnnotationFromReadAloudSegments(
+			segmentsInRange,
+			{
+				type: annotation.type,
+				color: annotation.color,
+				comment: annotation.comment,
+			},
+		);
+		if (newAnnotation) {
+			// Add segment mappings across the new range
+			for (let i = newStartIndex; i <= newEndIndex; i++) {
+				segmentAnnotations.set(i, newAnnotation.id);
+			}
+			this._handleReadAloudStateChange({
+				annotationPopup: {
+					annotation: newAnnotation,
+					baseSegmentIndex: newBaseIndex,
+					startSegmentIndex: newStartIndex,
+					endSegmentIndex: newEndIndex,
+					segments,
+				}
+			});
+			this._lastView.navigate({ annotationID: newAnnotation.id }, { block: 'center', ifNeeded: false });
+		}
+	}
+
+	moveReadAloudAnnotation(direction, accelerate) {
+		let popup = this._state.readAloudState.annotationPopup;
+		if (!popup) {
+			return;
+		}
+		let { baseSegmentIndex, segments } = popup;
+		let delta = accelerate ? 5 : 1;
+		let newIndex = direction === 'prev' ? baseSegmentIndex - delta : baseSegmentIndex + delta;
+		newIndex = Math.max(0, Math.min(newIndex, segments.length - 1));
+		this._updateReadAloudAnnotation(newIndex, newIndex, newIndex);
+	}
+
+	extendReadAloudAnnotation(direction) {
+		let popup = this._state.readAloudState.annotationPopup;
+		if (!popup) {
+			return;
+		}
+		let { baseSegmentIndex, startSegmentIndex, endSegmentIndex, segments } = popup;
+
+		let newStartIndex = startSegmentIndex;
+		let newEndIndex = endSegmentIndex;
+
+		if (direction === 'prev') {
+			// Alt+Left: shrink backward if extended forward, else extend backward
+			if (endSegmentIndex > baseSegmentIndex) {
+				newEndIndex = endSegmentIndex - 1;
+			}
+			else if (startSegmentIndex > 0) {
+				newStartIndex = startSegmentIndex - 1;
+			}
+			else {
+				return;
+			}
+		}
+		else {
+			// Alt+Right: shrink forward if extended backward, else extend forward
+			// eslint-disable-next-line no-lonely-if
+			if (startSegmentIndex < baseSegmentIndex) {
+				newStartIndex = startSegmentIndex + 1;
+			}
+			else if (endSegmentIndex < segments.length - 1) {
+				newEndIndex = endSegmentIndex + 1;
+			}
+			else {
+				return;
+			}
+		}
+
+		this._updateReadAloudAnnotation(baseSegmentIndex, newStartIndex, newEndIndex);
+	}
+
+	dismissReadAloudAnnotationPopup() {
+		this._handleReadAloudStateChange({ annotationPopup: null });
+	}
+
+	deleteReadAloudAnnotation() {
+		let popup = this._state.readAloudState.annotationPopup;
+		if (!popup) {
+			return;
+		}
+		let { startSegmentIndex, endSegmentIndex } = popup;
+		let { segmentAnnotations } = this._state.readAloudState;
+		// Clear segment mappings
+		for (let i = startSegmentIndex; i <= endSegmentIndex; i++) {
+			segmentAnnotations.delete(i);
+		}
+		this._annotationManager.deleteAnnotations([popup.annotation.id]);
+		this._handleReadAloudStateChange({ annotationPopup: null });
+	}
+
+	setReadAloudAnnotationColor(color) {
+		let popup = this._state.readAloudState.annotationPopup;
+		if (!popup) {
+			return;
+		}
+		this._annotationManager.updateAnnotations([{
+			id: popup.annotation.id,
+			color,
+		}]);
+		this._handleReadAloudStateChange({
+			annotationPopup: {
+				...popup,
+				annotation: this._annotationManager._getAnnotationByID(popup.annotation.id),
+			}
+		});
+	}
+
+	setReadAloudAnnotationType(type) {
+		let popup = this._state.readAloudState.annotationPopup;
+		if (!popup) {
+			return;
+		}
+		this._annotationManager.updateAnnotations([{
+			id: popup.annotation.id,
+			type,
+		}]);
+		this._handleReadAloudStateChange({
+			annotationPopup: {
+				...popup,
+				annotation: this._annotationManager._getAnnotationByID(popup.annotation.id),
+			}
+		});
 	}
 
 	toggleFindPopup({ primary, open } = {}) {
@@ -972,6 +1387,10 @@ class Reader {
 			this.a11yAnnounceSearchMessage(params.result);
 		};
 
+		let onSetReadAloudState = (params) => {
+			this._updateState({ readAloudState: params });
+		};
+
 		let onSelectAnnotations = (ids, triggeringEvent) => {
 			this.setSelectedAnnotations(ids, true, triggeringEvent);
 		};
@@ -1046,6 +1465,7 @@ class Reader {
 			lightTheme: this._state.lightTheme,
 			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
+			readAloudState: this._state.readAloudState,
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,
@@ -1062,6 +1482,7 @@ class Reader {
 			onSetAnnotationPopup,
 			onSetOverlayPopup,
 			onSetFindState,
+			onSetReadAloudState,
 			onSetOutline,
 			onSelectAnnotations,
 			onTabOut,
@@ -1528,6 +1949,14 @@ class Reader {
 
 	setToolbarPlaceholderWidth(width) {
 		this._updateState({ toolbarPlaceholderWidth: width });
+	}
+
+	setTitle(title) {
+		this._updateState({ title });
+	}
+
+	setLoggedIn(loggedIn) {
+		this._updateState({ loggedIn });
 	}
 
 	focusView(primary = true) {

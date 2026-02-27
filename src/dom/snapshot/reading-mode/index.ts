@@ -9,7 +9,7 @@ export class ReadingMode {
 
 	private readonly _mapping = new NodeMapping();
 
-	private readonly _fragment: DocumentFragment;
+	private readonly _preFragment: DocumentFragment;
 
 	private readonly _originalStyleSheets = new Map<CSSStyleSheet, Element | ProcessingInstruction | null>;
 
@@ -19,7 +19,7 @@ export class ReadingMode {
 
 	constructor(doc: Document) {
 		this._doc = doc;
-		this._fragment = doc.createDocumentFragment();
+		this._preFragment = doc.createDocumentFragment();
 		this._style = doc.createElement('style');
 		this._style.textContent = readingModeSCSS;
 
@@ -48,11 +48,13 @@ export class ReadingMode {
 		this._enabled = enabled;
 	}
 
-	get originalRoot(): DocumentFragment {
-		if (!this._enabled) {
-			throw new Error('Not enabled');
+	get preBody(): HTMLBodyElement {
+		if (this._enabled) {
+			return this._preFragment.firstElementChild as HTMLBodyElement;
 		}
-		return this._fragment;
+		else {
+			return this._doc.body as HTMLBodyElement;
+		}
 	}
 
 	mapNodeToFocus(node: Node) {
@@ -83,7 +85,7 @@ export class ReadingMode {
 			throw new Error('Not enabled');
 		}
 		let mappedNode = this._mapping.getByPost(node);
-		if (!mappedNode || !this._fragment.contains(mappedNode)) {
+		if (!mappedNode || !this._preFragment.contains(mappedNode)) {
 			return null;
 		}
 		return mappedNode;
@@ -117,7 +119,7 @@ export class ReadingMode {
 				}
 				fragmentBody.append(child);
 			}
-			this._fragment.replaceChildren(fragmentBody);
+			this._preFragment.replaceChildren(fragmentBody);
 
 			return clonedDoc;
 		};
@@ -158,7 +160,7 @@ export class ReadingMode {
 
 	private _disable() {
 		this._doc.body.replaceChildren(
-			...this._fragment.firstElementChild!.childNodes,
+			...this._preFragment.firstElementChild!.childNodes,
 			this._doc.body.querySelector(':scope > #annotation-overlay')!,
 		);
 
@@ -170,6 +172,6 @@ export class ReadingMode {
 		}
 		this._style.remove();
 		this._mapping.clear();
-		this._fragment.replaceChildren();
+		this._preFragment.replaceChildren();
 	}
 }

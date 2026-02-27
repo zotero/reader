@@ -19,7 +19,7 @@ function PrintPopup({ params }) {
 	}
 
 	return (
-		<DialogPopup className="print-popup">
+		<DialogPopup className="print-popup" onSubmit={handlePrint} onClose={handleCancel}>
 			{params.percent === undefined && (
 				<Fragment>
 					<div className="row checkbox">
