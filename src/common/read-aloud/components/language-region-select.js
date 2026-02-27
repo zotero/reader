@@ -10,13 +10,31 @@ function LanguageRegionSelect({ languages, lang, onLangChange, tabIndex }) {
 		languageDisplay: 'standard',
 	}), []);
 
-	let options = useMemo(() => {
-		let result = [];
+	let baseDisplayNames = useMemo(() => new Intl.DisplayNames(undefined, {
+		type: 'language',
+		languageDisplay: 'standard',
+	}), []);
 
+	let options = useMemo(() => {
+		// Count how many entries share each base language
+		let baseCounts = new Map();
 		for (let language of languages) {
+			let base = language.replace(/-.+$/, '');
+			baseCounts.set(base, (baseCounts.get(base) || 0) + 1);
+		}
+
+		let result = [];
+		for (let language of languages) {
+			let base = language.replace(/-.+$/, '');
+			let hasMultipleRegions = baseCounts.get(base) > 1;
+
+			// Use full label (with region) only when there are multiple
+			// regions for the same base language
 			let label;
 			try {
-				label = displayNames.of(language);
+				label = hasMultipleRegions
+					? displayNames.of(language)
+					: baseDisplayNames.of(base);
 			}
 			catch {
 				continue;
@@ -25,30 +43,8 @@ function LanguageRegionSelect({ languages, lang, onLangChange, tabIndex }) {
 			result.push({ value: language, label });
 		}
 
-		// Merge entries that resolved to the same label (e.g. because
-		// displayNames trimmed unrecognized subtags). The merged entry
-		// keeps the longest common prefix of all its values' segments.
-		let byLabel = new Map();
-		for (let entry of result) {
-			let existing = byLabel.get(entry.label);
-			if (existing) {
-				let a = existing.value.split('-');
-				let b = entry.value.split('-');
-				let common = [];
-				for (let i = 0; i < Math.min(a.length, b.length); i++) {
-					if (a[i] !== b[i]) break;
-					common.push(a[i]);
-				}
-				existing.value = common.join('-') || existing.value;
-			}
-			else {
-				byLabel.set(entry.label, entry);
-			}
-		}
-		result = [...byLabel.values()];
-
 		return result.sort((a, b) => a.label.localeCompare(b.label));
-	}, [languages, displayNames]);
+	}, [languages, displayNames, baseDisplayNames]);
 
 	return (
 		<CustomSelect

@@ -68,12 +68,29 @@ export function resolveEnabledVoiceIDs(
 }
 
 export function getSupportedLanguages(voices: ReadAloudVoice[]): string[] {
-	// Normalize to base language codes, removing the region component
-	return [...new Set(
-		voices.map(
-			voice => normalizeLanguage(voice.language).replace(/-.+$/, '')
-		)
-	)] as string[];
+	// Group voices by base language, collecting unique regions per base
+	let regionsByBase = new Map<string, Set<string | null>>();
+	for (let voice of voices) {
+		let normalized = normalizeLanguage(voice.language);
+		let base = normalized.replace(/-.+$/, '');
+		let region = normalized.includes('-') ? normalized.substring(base.length + 1) : null;
+		if (!regionsByBase.has(base)) regionsByBase.set(base, new Set());
+		regionsByBase.get(base)!.add(region);
+	}
+
+	let result: string[] = [];
+	for (let [base, regions] of regionsByBase) {
+		let namedRegions = [...regions].filter((r): r is string => r !== null);
+		// Emit each region-qualified code
+		for (let region of namedRegions) {
+			result.push(`${base}-${region}`);
+		}
+		// Emit bare base if any voices have no region
+		if (regions.has(null)) {
+			result.push(base);
+		}
+	}
+	return result;
 }
 
 export function getVoicesForLanguage<T extends ReadAloudVoice>(voices: T[], lang: string): T[] {
@@ -86,12 +103,3 @@ export function getVoiceRegion(voice: ReadAloudVoice): string | null {
 	return normalized.includes('-') ? normalized.substring(base.length + 1) : null;
 }
 
-export function groupVoicesByRegion<T extends ReadAloudVoice>(voices: T[]): Map<string | null, T[]> {
-	let groups = new Map<string | null, T[]>();
-	for (let voice of voices) {
-		let region = getVoiceRegion(voice);
-		if (!groups.has(region)) groups.set(region, []);
-		groups.get(region)!.push(voice);
-	}
-	return groups;
-}

@@ -72,36 +72,53 @@ export function getPreferredRegion(baseLang: string): string | null {
 }
 
 /**
- * Find the best match for contentLang among a list of language codes (e.g. persisted voice keys).
+ * Find the best match for a language code in a list of language codes.
+ * Tries exact match, then exact regional match, then preferred region,
+ * then falls back to first candidate with the same base language.
  */
-export function resolveLanguage(contentLang: string, langs: string[]) {
+export function resolveLanguage(lang: string, langs: string[]): string | null {
 	if (!langs.length) {
-		return contentLang;
+		return null;
 	}
 
-	let normalizedContentLang = normalizeLanguage(contentLang);
-	let contentBaseLang = normalizedContentLang.replace(/-.+$/, '');
-
-	// Find matching languages
-	let candidates: { original: string; normalized: string }[] = [];
-	for (let lang of langs) {
-		let normalizedLang = normalizeLanguage(lang);
-		let baseLang = normalizedLang.replace(/-.+$/, '');
-		if (baseLang === contentBaseLang) {
-			candidates.push({ original: lang, normalized: normalizedLang });
-		}
+	// Already in the list
+	if (langs.includes(lang)) {
+		return lang;
 	}
+
+	let normalizedLang = normalizeLanguage(lang);
+	let baseLang = normalizedLang.replace(/-.+$/, '');
+
+	// Find candidates with the same base language
+	let candidates = langs.filter((candidate) => {
+		candidate = normalizeLanguage(candidate);
+		let candidateBase = candidate.replace(/-.+$/, '');
+		return candidateBase === baseLang;
+	});
 
 	if (!candidates.length) {
 		return null;
 	}
 
-	// Prefer exact match
-	let exactMatch = candidates.find(c => c.normalized === normalizedContentLang);
-	if (exactMatch) {
-		return exactMatch.original;
+	// If normalizedLang has a region, prefer exact regional match
+	if (normalizedLang.includes('-')) {
+		let exactMatch = candidates.find(c => normalizeLanguage(c) === normalizedLang);
+		if (exactMatch) {
+			return exactMatch;
+		}
 	}
 
-	// Fall back to first matching language
-	return candidates[0].original;
+	// Use preferred region to pick the best match
+	let preferredRegion = getPreferredRegion(baseLang);
+	if (preferredRegion) {
+		let regionMatch = candidates.find(c => {
+			let normalized = normalizeLanguage(c);
+			return normalized === `${baseLang}-${preferredRegion}`;
+		});
+		if (regionMatch) {
+			return regionMatch;
+		}
+	}
+
+	return candidates[0];
 }

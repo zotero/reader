@@ -6,6 +6,7 @@ import { RemoteReadAloudProvider, RemoteVoicesError } from '../remote/provider';
 import { RemoteInterface } from '../remote';
 import { RemoteReadAloudVoice } from '../remote/voice';
 import { ReadAloudVoice, getSupportedLanguages } from '../voice';
+import { resolveLanguage } from '../lang';
 
 /**
  * Hook that loads all voices and manages language state.
@@ -84,6 +85,17 @@ export function useVoiceData({ lang, remoteInterface }: {
 		() => getSupportedLanguages(allVoices),
 		[allVoices]
 	);
+
+	// Resolve selectedLang if it's not in the available list
+	// (e.g. document declares lang="en" but available languages are ['en-US', 'en-GB'])
+	useEffect(() => {
+		if (availableLanguages.length && !availableLanguages.includes(selectedLang)) {
+			let resolved = resolveLanguage(selectedLang, availableLanguages);
+			if (resolved) {
+				setSelectedLang(resolved);
+			}
+		}
+	}, [availableLanguages, selectedLang]);
 
 	return {
 		allBrowserVoices,

@@ -191,7 +191,8 @@ function ReadAloudPopup(props) {
 	// Reset language when it becomes unavailable
 	useEffect(() => {
 		if (languages.length && !languages.includes(params.lang)) {
-			onChange({ lang: languages[0], region: null, voice: null });
+			let resolved = resolveLanguage(params.lang, languages) || languages[0];
+			onChange({ lang: resolved, region: null, voice: null });
 		}
 	}, [languages, onChange, params.lang]);
 
@@ -380,7 +381,6 @@ function ReadAloudPopup(props) {
 				<VoiceSelect
 					params={params}
 					voices={voicesForLanguage}
-					baseLang={params.lang}
 					playSample={playSample}
 					onChange={onChange}
 					onOpenVoicePreferences={selectedTier === 'local' ? onOpenVoicePreferences : null}
@@ -576,7 +576,7 @@ function TierSelect(props) {
 function VoiceSelect(props) {
 	const { l10n } = useLocalization();
 
-	let { params, voices, baseLang, playSample, onChange, onOpenVoicePreferences } = props;
+	let { params, voices, playSample, onChange, onOpenVoicePreferences } = props;
 
 	function handleVoiceChange(optionValue) {
 		if (optionValue === 'more-voices') {
@@ -596,7 +596,7 @@ function VoiceSelect(props) {
 		return null;
 	}
 
-	let { options, selectedValue } = buildVoiceOptions(voices, baseLang, params.voice);
+	let { options, selectedValue } = buildVoiceOptions(voices, params.voice);
 	if (onOpenVoicePreferences) {
 		options.push({ value: 'more-voices', label: l10n.getString('reader-read-aloud-more-voices') });
 	}

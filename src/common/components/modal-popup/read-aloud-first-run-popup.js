@@ -76,7 +76,7 @@ function VoicePreview({ voices, active, selectedVoice, lang, onSetVoice }) {
 		}
 	}, [active, lang, selectedVoice]);
 
-	let { options, selectedValue } = buildVoiceOptions(voices, lang, selectedVoice?.id);
+	let { options, selectedValue } = buildVoiceOptions(voices, selectedVoice?.id);
 
 	return (
 		<div className="voice-preview">
