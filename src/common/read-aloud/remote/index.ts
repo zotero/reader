@@ -41,7 +41,7 @@ export type RemoteInterface = {
 
 	getCreditsRemaining(): Promise<TierCredits>;
 
-	getAudio(segment: ReadAloudSegment | 'sample', voice: RemoteVoiceConfig, lang: string): Promise<{
+	getAudio(segment: ReadAloudSegment | 'sample', voice: RemoteVoiceConfig): Promise<{
 		audio: Blob | null;
 		error?: ErrorState;
 	}>;

@@ -371,7 +371,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		let fetchAndDecode = async () => {
 			let startTime = performance.now();
 
-			let { audio, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl, this.lang);
+			let { audio, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
 
 			if (!audio) {
 				if (error) {
@@ -445,7 +445,7 @@ export class RemoteSampleReadAloudController extends RemoteReadAloudControllerBa
 		this._stop();
 		this.buffering = true;
 
-		this.voice.provider.remote.getAudio('sample', this.voice.impl, this.lang)
+		this.voice.provider.remote.getAudio('sample', this.voice.impl)
 			.then(async ({ audio, error }) => {
 				this.buffering = false;
 				if (this._destroyed || this._paused) {

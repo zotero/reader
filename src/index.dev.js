@@ -213,7 +213,7 @@ async function createReader() {
 				};
 			},
 
-			async getAudio(segment, voice, lang) {
+			async getAudio(segment, voice) {
 				let url;
 				let params = new URLSearchParams();
 				if (segment === 'sample') {
@@ -224,7 +224,6 @@ async function createReader() {
 					params.set('text', segment.text);
 				}
 				params.set('voice', voice.id);
-				params.set('lang', lang);
 				let response;
 				try {
 					response = await fetch(url + '?' + params, {
