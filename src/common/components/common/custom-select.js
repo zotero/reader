@@ -5,11 +5,26 @@ import IconChevronDown8 from '../../../../res/icons/8/chevron-8.svg';
 const ROW_HEIGHT = 24;
 const SCROLL_PADDING = 10; // 5px on each vertical edge of .scroll-container
 
-function snapMaxHeight(maxH, overhead) {
-	let available = maxH - overhead - SCROLL_PADDING;
-	let rows = Math.floor(available / ROW_HEIGHT);
-	if (rows < 1) rows = 1;
-	return rows * ROW_HEIGHT + SCROLL_PADDING + overhead;
+function snapMaxHeight(maxH, overhead, scrollContainer) {
+	if (!scrollContainer) {
+		let available = maxH - overhead - SCROLL_PADDING;
+		let rows = Math.floor(available / ROW_HEIGHT);
+		if (rows < 1) rows = 1;
+		return rows * ROW_HEIGHT + SCROLL_PADDING + overhead;
+	}
+	// Snap to actual item boundaries to avoid cutting items in half,
+	// even when non-uniform-height elements like dividers are present
+	let availableHeight = maxH - overhead - SCROLL_PADDING;
+	let totalHeight = 0;
+	for (let child of scrollContainer.children) {
+		let childHeight = child.offsetHeight;
+		let style = getComputedStyle(child);
+		childHeight += parseFloat(style.marginTop) + parseFloat(style.marginBottom);
+		if (totalHeight + childHeight > availableHeight) break;
+		totalHeight += childHeight;
+	}
+	if (totalHeight === 0) totalHeight = ROW_HEIGHT;
+	return totalHeight + SCROLL_PADDING + overhead;
 }
 
 function findSelectedOption(options, value) {
@@ -191,7 +206,7 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 		let el = scrollContainerRef.current;
 		if (!el) return;
 		let direction = event.deltaY > 0 ? 1 : -1;
-		el.scrollTop = Math.round((el.scrollTop + direction * ROW_HEIGHT) / ROW_HEIGHT) * ROW_HEIGHT;
+		el.scrollTop += direction * ROW_HEIGHT;
 		updateScrollIndicators();
 		expandDropdownIfNeeded();
 	}, [updateScrollIndicators]);
@@ -248,7 +263,7 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 		// Snap after downward expansion to establish the stable bottom edge
 		let bottomEdge = dropdownTopRef.current + currentMax;
 		if (expanded) {
-			currentMax = snapMaxHeight(currentMax, measuredOverheadRef.current);
+			currentMax = snapMaxHeight(currentMax, measuredOverheadRef.current, el);
 			bottomEdge = dropdownTopRef.current + currentMax;
 		}
 
@@ -261,7 +276,7 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 			let actualExpand = newMax - currentMax;
 			if (actualExpand > 0) {
 				currentMax = newMax;
-				currentMax = snapMaxHeight(currentMax, measuredOverheadRef.current);
+				currentMax = snapMaxHeight(currentMax, measuredOverheadRef.current, el);
 				// Derive top from the fixed bottom edge so it never drifts
 				let topExpand = currentMax - (bottomEdge - dropdownTopRef.current);
 				if (topExpand > 0) {
@@ -327,7 +342,7 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 		let dropdownWidth = Math.max(dropdown.offsetWidth, triggerRect.width);
 		let measuredOverhead = dropdown.offsetHeight - scroller.clientHeight;
 		measuredOverheadRef.current = measuredOverhead;
-		let maxHeight = snapMaxHeight(window.innerHeight - padding * 2, measuredOverhead);
+		let maxHeight = snapMaxHeight(window.innerHeight - padding * 2, measuredOverhead, scroller);
 		let dropdownHeight = Math.min(dropdown.offsetHeight, maxHeight);
 
 		let triggerCenter = triggerRect.top + triggerRect.height / 2;
@@ -345,7 +360,7 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 			let buffer = ROW_HEIGHT;
 			let candidate = selectedBottom + buffer + SCROLL_PADDING + measuredOverhead;
 			candidate = Math.max(candidate, 80);
-			candidate = snapMaxHeight(candidate, measuredOverhead);
+			candidate = snapMaxHeight(candidate, measuredOverhead, scroller);
 			let useConstrainedHeight = candidate < dropdownHeight;
 			let effectiveHeight = useConstrainedHeight ? candidate : dropdownHeight;
 
@@ -432,7 +447,7 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 			}
 		}
 
-		initialMaxHeight = snapMaxHeight(initialMaxHeight, measuredOverhead);
+		initialMaxHeight = snapMaxHeight(initialMaxHeight, measuredOverhead, scroller);
 		fullMaxHeightRef.current = maxHeight;
 		currentMaxHeightRef.current = initialMaxHeight;
 		dropdownTopRef.current = top;
