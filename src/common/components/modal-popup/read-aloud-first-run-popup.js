@@ -82,7 +82,7 @@ function VoicePreview({ voices, active, selectedVoice, lang, onSetVoice }) {
 		<div className="voice-preview">
 			<div className="controls">
 				<button
-					className="voice-switcher"
+					className="voice-switcher toolbar-button"
 					disabled={!voices.length || selectedVoice === voices[0]}
 					type="button"
 					onClick={() => handleVoiceChange(voices[voices.indexOf(selectedVoice) - 1]?.id)}
@@ -107,7 +107,7 @@ function VoicePreview({ voices, active, selectedVoice, lang, onSetVoice }) {
 					/>
 				</div>
 				<button
-					className="voice-switcher"
+					className="voice-switcher toolbar-button"
 					disabled={!voices.length || selectedVoice === voices[voices.length - 1]}
 					type="button"
 					onClick={() => handleVoiceChange(voices[voices.indexOf(selectedVoice) + 1]?.id)}

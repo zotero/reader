@@ -7,7 +7,7 @@
 }
 
 @mixin -tier-card-bullets {
-	padding-inline-start: 20px;
+	padding-inline-start: 22px;
 	list-style-position: outside;
 	color: var(--fill-primary);
 
@@ -425,8 +425,13 @@
 .read-aloud-first-run-popup {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	padding: 24px;
+	gap: 16px;
+	@media (-moz-platform: macOS) {
+		padding: 6px 6px 12px;
+	}
+	@media (-moz-platform: windows), (-moz-platform: linux) {
+		padding: 10px 4px;
+	}
 	user-select: none;
 	background: var(--material-sidepane);
 
@@ -445,18 +450,23 @@
 
 	.language {
 		margin-inline-start: auto;
+		min-width: 180px;
 	}
 
 	.row {
 		display: flex;
-		gap: 8px;
+		gap: 12px;
+
+		&:not(.tiers) {
+			margin-inline: 1px;
+		}
 	}
 
 	.row.tiers {
 		.tier {
 			display: flex;
 			flex-direction: column;
-			gap: 20px;
+			gap: 12px;
 			flex: 1;
 			min-width: 0;
 			@include -tier-card;
@@ -486,7 +496,7 @@
 
 				label {
 					display: flex;
-					gap: 12px;
+					gap: 8px;
 					font-weight: 590;
 					font-size: 15px;
 				}
@@ -508,11 +518,6 @@
 					display: flex;
 					align-items: center;
 					gap: 8px;
-				}
-
-				.voice-switcher {
-					width: 20px;
-					height: 20px;
 				}
 
 				.select-wrapper {
