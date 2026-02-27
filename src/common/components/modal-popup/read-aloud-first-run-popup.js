@@ -119,7 +119,44 @@ function VoicePreview({ voices, active, selectedVoice, lang, onSetVoice }) {
 	);
 }
 
-function TierPreview({ tier, selected, onSelect, onPurchaseCredits, voices, selectedVoice, lang, onSetVoice, disabled }) {
+function TierStatus({ tier, status }) {
+	const { l10n } = useLocalization();
+
+	if (!status) {
+		return <div className="voice-status">{'\u00A0'}</div>;
+	}
+
+	if (status.error === 'unsupported') {
+		let languageName;
+		try {
+			languageName = new Intl.DisplayNames(undefined, {
+				type: 'language',
+				languageDisplay: 'standard',
+			}).of(status.lang);
+		}
+		catch {
+			languageName = status.lang;
+		}
+		return (
+			<div className="voice-status">
+				{l10n.getString('reader-read-aloud-first-run-no-voices-for-language', {
+					tier: l10n.getString(`reader-read-aloud-voice-tier-${tier}`),
+					language: languageName || status.lang,
+				})}
+			</div>
+		);
+	}
+
+	return (
+		<div className="voice-status error">
+			{l10n.getString(status.error === 'network'
+				? 'reader-read-aloud-error-connection'
+				: 'reader-read-aloud-error-unknown')}
+		</div>
+	);
+}
+
+function TierPreview({ tier, selected, onSelect, onPurchaseCredits, voices, selectedVoice, lang, onSetVoice, disabled, loaded, error }) {
 	const { l10n } = useLocalization();
 
 	let radio = useRef();
@@ -139,6 +176,12 @@ function TierPreview({ tier, selected, onSelect, onPurchaseCredits, voices, sele
 
 	let checked = selected === tier;
 
+	let status = error
+		? { error }
+		: loaded && !voices.length
+			? { error: 'unsupported', lang }
+			: null;
+
 	return (
 		<div className={cx('tier', { checked, disabled })} onClick={handleClick}>
 			<div className="text">
@@ -157,6 +200,7 @@ function TierPreview({ tier, selected, onSelect, onPurchaseCredits, voices, sele
 					tier={tier}
 					onPurchaseCredits={onPurchaseCredits}
 				/>
+				<TierStatus tier={tier} status={status}/>
 			</div>
 			<VoicePreview
 				lang={lang}
@@ -188,11 +232,25 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 	let {
 		allBrowserVoices,
 		allRemoteVoices,
+		browserVoicesError,
+		remoteVoicesError,
 		selectedLang,
 		availableLanguages,
 		effectiveLang,
 		handleLangChange,
 	} = useVoiceData({ lang, remoteInterface });
+
+	let tierLoaded = {
+		local: allBrowserVoices !== null,
+		standard: allRemoteVoices !== null,
+		premium: allRemoteVoices !== null,
+	};
+
+	let tierError = {
+		local: browserVoicesError,
+		standard: remoteVoicesError,
+		premium: remoteVoicesError,
+	};
 
 	let voicesByTier = useMemo(() => {
 		let localVoices = getVoicesForLanguage(allBrowserVoices || [], effectiveLang);
@@ -269,8 +327,10 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 						voices={voicesByTier[tier]}
 						selectedVoice={selectedVoices[tier]?.voice || null}
 						lang={effectiveLang}
-						onSetVoice={(voice) => setSelectedVoice(tier, voice)}
-						disabled={!voicesByTier[tier].length}
+						onSetVoice={voice => setSelectedVoice(tier, voice)}
+						disabled={!voicesByTier[tier].length && tierLoaded[tier]}
+						loaded={tierLoaded[tier]}
+						error={tierError[tier]}
 					/>
 				))}
 			</div>

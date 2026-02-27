@@ -34,7 +34,8 @@ type VoicesResponseTier = {
 
 export type RemoteInterface = {
 	getVoices(): Promise<{
-		voices: VoicesResponse;
+		error?: ErrorState;
+		voices?: VoicesResponse;
 		devMode: boolean;
 	} & TierCredits>;
 

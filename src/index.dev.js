@@ -130,7 +130,7 @@ async function createReader() {
 				catch (e) {
 					console.error('Failed to fetch voices from API');
 					return {
-						voices: [],
+						error: 'network',
 						standardCreditsRemaining: null,
 						premiumCreditsRemaining: null,
 					};
@@ -139,7 +139,7 @@ async function createReader() {
 				if (!response.ok) {
 					console.error('Failed to fetch voices from API', response.status, await response.text());
 					return {
-						voices: [],
+						error: 'unknown',
 						standardCreditsRemaining: null,
 						premiumCreditsRemaining: null,
 					};

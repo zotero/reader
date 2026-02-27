@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BrowserReadAloudProvider } from '../browser/provider';
-import { RemoteReadAloudProvider } from '../remote/provider';
+import { RemoteReadAloudProvider, RemoteVoicesError } from '../remote/provider';
 import { resolveLanguage } from '../lang';
 import { getSupportedLanguages } from '../voice';
 
@@ -10,6 +10,8 @@ import { getSupportedLanguages } from '../voice';
 export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) {
 	let [allBrowserVoices, setAllBrowserVoices] = useState(null);
 	let [allRemoteVoices, setAllRemoteVoices] = useState(null);
+	let [browserVoicesError, setBrowserVoicesError] = useState(null);
+	let [remoteVoicesError, setRemoteVoicesError] = useState(null);
 	let [selectedLang, setSelectedLang] = useState(lang);
 
 	// Fetch browser voices
@@ -19,12 +21,16 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 			let browserProvider = new BrowserReadAloudProvider();
 			try {
 				let voices = await browserProvider.getVoices();
-				if (!cancelled) setAllBrowserVoices(voices);
+				if (!cancelled) {
+					setAllBrowserVoices(voices);
+					setBrowserVoicesError(null);
+				}
 			}
 			catch (e) {
 				if (!cancelled) {
 					console.error(e);
 					setAllBrowserVoices([]);
+					setBrowserVoicesError('unknown');
 				}
 			}
 		}
@@ -40,12 +46,16 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 			let remoteProvider = new RemoteReadAloudProvider(remoteInterface);
 			try {
 				let voices = await remoteProvider.getVoices();
-				if (!cancelled) setAllRemoteVoices(voices);
+				if (!cancelled) {
+					setAllRemoteVoices(voices);
+					setRemoteVoicesError(null);
+				}
 			}
 			catch (e) {
 				if (!cancelled) {
 					console.error(e);
 					setAllRemoteVoices([]);
+					setRemoteVoicesError(e instanceof RemoteVoicesError ? e.errorState : 'unknown');
 				}
 			}
 		}
@@ -76,6 +86,8 @@ export function useVoiceData({ lang, remoteInterface, persistedEnabledVoices }) 
 		allBrowserVoices,
 		allRemoteVoices,
 		allVoices,
+		browserVoicesError,
+		remoteVoicesError,
 		loaded,
 		selectedLang,
 		availableLanguages,

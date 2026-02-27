@@ -492,7 +492,8 @@
 				display: flex;
 				flex-direction: column;
 				gap: 16px;
-				padding: 16px;
+				padding: 16px 16px 0;
+				flex: 1;
 
 				label {
 					display: flex;
@@ -503,6 +504,15 @@
 
 				ul {
 					@include -tier-card-bullets;
+				}
+
+				.voice-status {
+					text-align: center;
+					margin-top: auto;
+
+					&.error {
+						color: var(--accent-red);
+					}
 				}
 			}
 

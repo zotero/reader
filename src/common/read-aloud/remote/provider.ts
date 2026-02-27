@@ -1,7 +1,18 @@
 import { ReadAloudProvider } from '../provider';
+import { ErrorState } from '../controller';
 import { RemoteInterface, RemoteVoiceConfig, VoicesResponse } from './index';
 import { RemoteReadAloudVoice } from './voice';
 import { Tier, TIERS } from '../voice';
+
+export class RemoteVoicesError extends Error {
+	errorState: ErrorState;
+
+	constructor(errorState: ErrorState) {
+		super(`Remote voices error: ${errorState}`);
+		this.errorState = errorState;
+		this.name = 'RemoteVoicesError';
+	}
+}
 
 export class RemoteReadAloudProvider implements ReadAloudProvider {
 	readonly remote: RemoteInterface;
@@ -17,7 +28,16 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 	}
 
 	async getVoices(): Promise<RemoteReadAloudVoice[]> {
-		let { voices: response, standardCreditsRemaining, premiumCreditsRemaining, devMode } = await this.remote.getVoices();
+		let {
+			error,
+			voices,
+			standardCreditsRemaining,
+			premiumCreditsRemaining,
+			devMode,
+		} = await this.remote.getVoices();
+		if (error || !voices) {
+			throw new RemoteVoicesError(error || 'unknown');
+		}
 		if (standardCreditsRemaining !== null) {
 			this.standardCreditsRemaining = standardCreditsRemaining;
 		}
@@ -25,7 +45,7 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 			this.premiumCreditsRemaining = premiumCreditsRemaining;
 		}
 		this.devMode = devMode;
-		return parseVoicesResponse(response)
+		return parseVoicesResponse(voices)
 			.map(voice => new RemoteReadAloudVoice(this, voice));
 	}
 }
