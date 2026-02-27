@@ -75,36 +75,43 @@ function ReadAloudPopup(props) {
 		return voice ? getVoiceRegion(voice) : null;
 	}, [allVoices, params.voice]);
 
-	// Memoize the best fallback voice ID to avoid non-primitive
-	// useEffect dependencies below
+	// Memoize the best fallback voice ID to avoid non-primitive useEffect deps
 	let fallbackVoiceID = useMemo(() => {
 		if (!voicesForLanguage.length) return null;
-		// Priority order:
-		// 1. Tier-specific voice for this language
-		// 2. Last-used voice for this language
-		// 3. Voices persisted for other languages (most recently updated first)
-		let candidates = [
-			persistedTierVoices?.[selectedTier],
-			persistedVoice,
-		];
-		let persistedVoiceValues = [...persistedVoices.values()];
-		for (let i = persistedVoiceValues.length - 1; i >= 0; i--) {
-			let { tierVoices, voice } = persistedVoiceValues[i];
-			if (selectedTier) {
-				candidates.push(tierVoices?.[selectedTier]);
+		let targetTier = selectedTier;
+		if (!targetTier && persistedTierVoices) {
+			let persistedTier = Object.keys(persistedTierVoices).pop();
+			if (persistedTier) {
+				targetTier = persistedTier;
 			}
-			candidates.push(voice);
 		}
-		let match = candidates.find(id => id && voicesForLanguage.some(v => v.id === id));
-		if (match) return match;
-		// 4. First voice matching the persisted or preferred region
+		// Stay within targetTier unless it has no voices for this language
+		let pool = targetTier
+			? voicesForLanguage.filter(v => v.tier === targetTier)
+			: voicesForLanguage;
+		if (!pool.length) {
+			pool = voicesForLanguage;
+		}
+		let isAvailable = id => id && pool.some(v => v.id === id);
+
+		// 1. Tier-specific voice for this language
+		if (isAvailable(persistedTierVoices?.[targetTier])) {
+			return persistedTierVoices[targetTier];
+		}
+		// 2. Last-used voice for this language
+		if (isAvailable(persistedVoice)) {
+			return persistedVoice;
+		}
+		// 3. First voice matching the persisted or preferred region
 		let region = persistedRegion || getPreferredRegion(params.lang);
 		if (region) {
-			let regionMatch = voicesForLanguage.find(v => getVoiceRegion(v) === region);
-			if (regionMatch) return regionMatch.id;
+			let regionMatch = pool.find(v => getVoiceRegion(v) === region);
+			if (regionMatch) {
+				return regionMatch.id;
+			}
 		}
 		return null;
-	}, [persistedTierVoices, persistedVoice, persistedRegion, persistedVoices, params.lang, selectedTier, voicesForLanguage]);
+	}, [params.lang, persistedRegion, persistedTierVoices, persistedVoice, selectedTier, voicesForLanguage]);
 
 	let paramsRef = useRef(params);
 	let pausedRef = useRef(params.paused);

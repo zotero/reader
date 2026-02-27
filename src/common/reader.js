@@ -1007,6 +1007,8 @@ class Reader {
 		let existing = this._state.readAloudVoices.get(lang) || {};
 		let tierVoices = { ...existing.tierVoices };
 		if (tier) {
+			// Push to the end of the object
+			delete tierVoices[tier];
 			tierVoices[tier] = voice;
 		}
 		this._updateState({
