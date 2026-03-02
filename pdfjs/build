@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 if [[ -z $PDFJS_CONFIG ]]; then
 	echo "Error: PDFJS_CONFIG is not set. Use one of: zotero, web, dev, all" >&2
