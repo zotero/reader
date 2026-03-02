@@ -19,6 +19,7 @@ import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAUL
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
+	basicDeepEqual,
 	getCurrentColorScheme,
 	getImageDataURL,
 	isMac,
@@ -557,7 +558,11 @@ class Reader {
 
 			// Tell Zotero about the two main status flags
 			let { active, paused } = this._state.readAloudState;
-			this._onSetReadAloudStatus?.({ active, paused });
+			let status = { active, paused };
+			if (!basicDeepEqual(status, this._lastReadAloudStatus)) {
+				this._lastReadAloudStatus = status;
+				this._onSetReadAloudStatus?.(status);
+			}
 
 			// If the first-run popup should be shown and we have an external handler,
 			// call it instead of rendering the inline popup
