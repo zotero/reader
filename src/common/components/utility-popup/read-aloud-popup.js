@@ -479,7 +479,7 @@ function PlaybackControls(props) {
 			<div className="group">
 				<button
 					className="toolbar-button"
-					title={l10n.getString('reader-read-aloud-add-annotation')}
+					title={l10n.getString('reader-read-aloud-add-annotation', { key1: 'H', key2: 'U' })}
 					tabIndex="-1"
 					onClick={handleAddAnnotation}
 				><IconAnnotate/></button>
