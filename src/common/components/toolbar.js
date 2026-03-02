@@ -22,8 +22,10 @@ import IconImage from '../../../res/icons/20/annotate-area.svg';
 import IconInk from '../../../res/icons/20/annotate-ink.svg';
 import IconEraser from '../../../res/icons/20/annotate-eraser.svg';
 import IconFind from '../../../res/icons/20/magnifier.svg';
+import IconReadAloud from '../../../res/icons/20/read-aloud.svg';
 import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
 import IconGoBack from '../../../res/icons/20/go-back.svg';
+import IconLoading from '../../../res/icons/16/loading.svg';
 
 function Toolbar(props) {
 	const pageInputRef = useRef();
@@ -114,6 +116,20 @@ function Toolbar(props) {
 					tabIndex={-1}
 					onClick={() => props.onToggleAppearancePopup()}
 				>{props.readingModeEnabled ? <IconFormatTextReadingMode/> : <IconFormatText/>}</button>
+				{props.showReadAloudToggle && (
+					<button
+						id="read-aloud"
+						className={cx('toolbar-button', { active: props.readAloudState.popupOpen })}
+						title={l10n.getString('reader-read-aloud')}
+						tabIndex={-1}
+						onClick={() => props.onToggleReadAloud()}
+					>
+						{props.readAloudState.popupOpen && !props.readAloudState.lang
+							// Can't show popup because the view hasn't given us data yet
+							? <IconLoading className="loading-spinner" />
+							: <IconReadAloud/>}
+					</button>
+				)}
 				<div className="divider"/>
 				<button
 					id="navigateBack"

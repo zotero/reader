@@ -146,6 +146,14 @@
 	&[disabled] {
 		pointer-events: none;
 	}
+
+	.loading-spinner {
+		width: 28px;
+		height: 28px;
+		padding: 6px;
+		color: var(--fill-secondary);
+		animation: rotating 0.5s steps(12) infinite;
+	}
 }
 
 .toolbar-dropdown-button {

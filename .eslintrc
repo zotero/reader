@@ -9,7 +9,7 @@
 	},
 	"extends": [
 		"@zotero",
-		"plugin:react/recommended", 
+		"plugin:react/recommended",
 		"plugin:react-hooks/recommended"
 	],
 	"parser": "@babel/eslint-parser",
@@ -50,6 +50,7 @@
 		}
 	},
 	"rules": {
-		"no-await-in-loop": "off"
+		"no-await-in-loop": "off",
+		"func-names": ["error", "as-needed"]
 	}
 }

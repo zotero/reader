@@ -4,7 +4,7 @@
 		"jsx": "react",
 		"allowJs": true,
 		"strict": true,
-		"target": "ES2022",
+		"target": "ES2023",
 		"moduleResolution": "bundler",
 		"module": "esnext",
 		"allowSyntheticDefaultImports": true,

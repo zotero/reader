@@ -7,6 +7,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ZoteroLocalePlugin = require('./webpack.zotero-locale-plugin');
+const { EnvironmentPlugin } = require('webpack');
 
 function generateReaderConfig(build) {
 	let config = {
@@ -17,15 +18,21 @@ function generateReaderConfig(build) {
 			reader: [
 				'./src/index.' + build + '.js',
 				'./src/common/stylesheets/main.scss'
-			]
+			],
+			...(build === 'zotero'
+				? {
+					'read-aloud-first-run': './src/index.read-aloud-first-run.js',
+					'read-aloud-voices': './src/index.read-aloud-voices.js',
+				}
+				: {}),
 		},
 		output: {
 			path: path.resolve(__dirname, './build/' + build),
-			filename: 'reader.js',
+			filename: '[name].js',
 			libraryTarget: 'umd',
 			publicPath: '',
 			library: {
-				name: 'reader',
+				name: '[name]',
 				type: 'umd',
 				umdNamedDefine: true,
 			},
@@ -44,8 +51,12 @@ function generateReaderConfig(build) {
 			extensions: ['.js', '.ts', '.tsx'],
 		},
 		plugins: [
-			new ZoteroLocalePlugin({
-				files: ['zotero.ftl', 'reader.ftl'],
+			build !== 'zotero' && new ZoteroLocalePlugin({
+				files: [
+					'zotero.ftl',
+					'reader.ftl',
+					{ src: 'app/assets/branding/locale/brand.ftl', dest: 'brand.ftl' },
+				],
 				locales: ['en-US'],
 				commitHash: '69002c122df40021ae50d7a32701677e62076831',
 			}),
@@ -57,7 +68,24 @@ function generateReaderConfig(build) {
 			}),
 			new HtmlWebpackPlugin({
 				template: './index.reader.html',
-				filename: './[name].html',
+				filename: './reader.html',
+				chunks: ['reader'],
+				templateParameters: {
+					build
+				},
+			}),
+			build === 'zotero' && new HtmlWebpackPlugin({
+				template: './index.read-aloud-first-run.html',
+				filename: './read-aloud-first-run.html',
+				chunks: ['read-aloud-first-run'],
+				templateParameters: {
+					build
+				},
+			}),
+			build === 'zotero' && new HtmlWebpackPlugin({
+				template: './index.read-aloud-voices.html',
+				filename: './read-aloud-voices.html',
+				chunks: ['read-aloud-voices'],
 				templateParameters: {
 					build
 				},
@@ -70,7 +98,7 @@ function generateReaderConfig(build) {
 					}
 				],
 			}),
-		],
+		].filter(Boolean),
 	};
 
 	if (build === 'zotero') {
@@ -105,7 +133,10 @@ function generateReaderConfig(build) {
 				options: {
 
 				}
-			})
+			}),
+			new EnvironmentPlugin({
+				ZOTERO_API_KEY: null,
+			}),
 		);
 		config.devServer = {
 			static: {

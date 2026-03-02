@@ -18,6 +18,7 @@ import {
 	FIND_RESULT_COLOR_CURRENT_DARK,
 	FIND_RESULT_COLOR_CURRENT_LIGHT,
 	MIN_IMAGE_ANNOTATION_SIZE,
+	READ_ALOUD_ACTIVE_SEGMENT_COLOR,
 	SELECTION_COLOR
 } from '../common/defines';
 import { getRectRotationOnText } from './selection';
@@ -500,6 +501,14 @@ class Renderer {
 			highlightedSig = [1, ...this._geomDigestFromRects(rects)];
 		}
 
+		// Read Aloud highlighted position digest
+		let readAloudSig = [0];
+		let rap = layer._readAloudHighlightedPosition;
+		if (rap && (rap.pageIndex === this._pageIndex || (rap.nextPageRects && rap.pageIndex + 1 === this._pageIndex))) {
+			let rects = rap.rects || rap.nextPageRects || [];
+			readAloudSig = [1, ...this._geomDigestFromRects(rects)];
+		}
+
 		// Annotations that affect this page
 		let annotations = layer._getPageAnnotations(this._pageIndex) || [];
 		let annSigs = [];
@@ -554,6 +563,7 @@ class Renderer {
 			...findSig,
 			...overlaysSig,
 			...highlightedSig,
+			...readAloudSig,
 
 			// annotations
 			'#', ...annSigs.flat()
@@ -1391,6 +1401,21 @@ class Renderer {
 			}
 
 			// Highlight position
+			let readAloudHighlightedPosition = this._layer._readAloudHighlightedPosition;
+			if (readAloudHighlightedPosition && (
+				readAloudHighlightedPosition.pageIndex === this._pageIndex
+				|| readAloudHighlightedPosition.nextPageRects && readAloudHighlightedPosition.pageIndex + 1 === this._pageIndex
+			)) {
+				let position = readAloudHighlightedPosition;
+				let annotation2 = { position, color: READ_ALOUD_ACTIVE_SEGMENT_COLOR };
+				if (position.rects) {
+					this._drawHighlight(annotation2);
+				}
+				else if (position.paths) {
+					this._drawInk(annotation2);
+				}
+			}
+
 			let highlightedPosition = this._layer._highlightedPosition;
 			if (highlightedPosition && (
 				highlightedPosition.pageIndex === this._pageIndex

@@ -17,6 +17,9 @@ import PasswordPopup from './modal-popup/password-popup';
 import PrintPopup from './modal-popup/print-popup';
 import AppearancePopup from "./modal-popup/appearance-popup";
 import ThemePopup from './modal-popup/theme-popup';
+import ReadAloudPopup from "./utility-popup/read-aloud-popup";
+import ReadAloudAnnotationPopup from "./view-popup/overlay-popup/read-aloud-annotation-popup";
+import ReadAloudFirstRunPopup from './modal-popup/read-aloud-first-run-popup';
 import { bundle } from '../../fluent';
 
 function View(props) {
@@ -134,6 +137,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						enableNavigateToNextPage={viewStats.canNavigateToNextPage}
 						readingModeEnabled={viewStats.readingModeEnabled}
 						appearancePopup={state.appearancePopup}
+						readAloudState={state.readAloudState}
 						findPopupOpen={findState.popupOpen}
 						themes={state.themes}
 						onChangeTheme={props.onChangeTheme}
@@ -141,6 +145,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						readOnly={state.readOnly}
 						stackedView={stackedView}
 						showContextPaneToggle={showContextPaneToggle}
+						showReadAloudToggle={props.enableReadAloud}
 						onToggleSidebar={props.onToggleSidebar}
 						onZoomIn={props.onZoomIn}
 						onZoomOut={props.onZoomOut}
@@ -153,6 +158,9 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeTool={props.onChangeTool}
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
 						onToggleAppearancePopup={props.onToggleAppearancePopup}
+						onChangeReadAloudState={props.onChangeReadAloudState}
+						onSetReadAloudVoice={props.onSetReadAloudVoice}
+						onToggleReadAloud={props.onToggleReadAloud}
 						onToggleFind={props.onToggleFind}
 						onToggleContextPane={props.onToggleContextPane}
 					/>
@@ -252,6 +260,40 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						darkTheme={state.darkTheme}
 						onSaveCustomThemes={props.onSaveCustomThemes}
 						onClose={props.onCloseThemePopup}
+					/>
+				)}
+				{props.enableReadAloud && state.readAloudState.popupOpen && state.readAloudState.lang && (
+					!state.readAloudFirstRunPopup
+						? <ReadAloudPopup
+							params={state.readAloudState}
+							persistedVoices={state.readAloudVoices}
+							remoteInterface={props.readAloudRemoteInterface}
+							title={state.title}
+							loggedIn={state.loggedIn}
+							onChange={props.onChangeReadAloudState}
+							onSetVoice={props.onSetReadAloudVoice}
+							onOpenVoicePreferences={props.onOpenVoicePreferences}
+							onPurchaseCredits={props.onPurchaseReadAloudCredits}
+							onLogIn={props.onLogIn}
+							onAddAnnotation={props.onAddReadAloudAnnotation}
+							onSkip={props.onReadAloudSkip}
+						/>
+						: <ReadAloudFirstRunPopup
+							lang={state.readAloudState.lang}
+							remoteInterface={props.readAloudRemoteInterface}
+							loggedIn={state.loggedIn}
+							onPurchaseCredits={props.onPurchaseReadAloudCredits}
+							onCancel={() => props.onToggleReadAloud(false)}
+							onLogIn={props.onLogIn}
+							onDone={props.onSetReadAloudVoice}
+						/>
+				)}
+				{state.readAloudState.annotationPopup && (
+					<ReadAloudAnnotationPopup
+						params={state.readAloudState.annotationPopup}
+						onMove={props.onMoveReadAloudAnnotation}
+						onDismiss={props.onDismissReadAloudAnnotationPopup}
+						onOpenContextMenu={props.onOpenReadAloudAnnotationContextMenu}
 					/>
 				)}
 				<div id="a11yAnnouncement" aria-live="polite"></div>
