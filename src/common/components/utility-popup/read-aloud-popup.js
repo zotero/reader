@@ -15,7 +15,7 @@ import CustomSelect from '../common/custom-select';
 import LanguageRegionSelect from '../../read-aloud/components/language-region-select';
 import { RemoteReadAloudProvider } from '../../read-aloud/remote/provider';
 import { BrowserReadAloudProvider } from '../../read-aloud/browser/provider';
-import { getPreferredRegion, resolveLanguage } from '../../read-aloud/lang';
+import { getBaseLanguage, getPreferredRegion, resolveLanguage } from '../../read-aloud/lang';
 import { getSupportedLanguages, getVoicesForLanguage, getVoiceRegion } from '../../read-aloud/voice';
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
 import { useMediaControls } from '../../read-aloud/components/use-media-controls';
@@ -295,10 +295,6 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		if (params.voice && voicesForLanguage.some(v => v.id === params.voice)) {
-			let voice = allVoices.find(v => v.id === params.voice);
-			let tier = selectedTier || voice?.tier;
-			let region = voice ? getVoiceRegion(voice) : null;
-			onSetVoice({ lang: params.lang, region, voice: params.voice, speed: params.speed, tier });
 			return;
 		}
 
@@ -313,21 +309,25 @@ function ReadAloudPopup(props) {
 			speed = params.speed;
 		}
 
-		let voice = allVoices.find(v => v.id === voiceID);
-		let tier = selectedTier || voice?.tier;
-		let region = voice ? getVoiceRegion(voice) : null;
 		onChange({
 			voice: voiceID,
 			speed,
 			active: voiceID !== params.voice ? false : params.active,
 		});
-		onSetVoice({ lang: params.lang, region, voice: voiceID, speed: params.speed, tier });
-	}, [allVoices, fallbackVoiceID, onChange, onSetVoice, params.active, params.lang, params.speed, params.voice, persistedSpeed, selectedTier, voicesForLanguage]);
+	}, [allVoices, fallbackVoiceID, onChange, params.active, params.lang, params.speed, params.voice, persistedSpeed, selectedTier, voicesForLanguage]);
 
 	function handleTierChange(value) {
 		setSelectedTier(value);
 		let restoredVoice = persistedTierVoices?.[value] ?? null;
 		onChange({ voice: restoredVoice });
+	}
+
+	function handleUserVoiceSelect(voiceID) {
+		onChange({ voice: voiceID });
+		let voice = allVoices.find(v => v.id === voiceID);
+		let tier = selectedTier || voice?.tier;
+		let region = voice ? getVoiceRegion(voice) : null;
+		onSetVoice({ lang: getBaseLanguage(params.lang), region, voice: voiceID, speed: params.speed, tier });
 	}
 
 	function handleLangChange(lang) {
@@ -358,7 +358,7 @@ function ReadAloudPopup(props) {
 					speed={params.speed}
 					onChange={onChange}
 					onSetVoice={onSetVoice}
-					lang={params.lang}
+					lang={getBaseLanguage(params.lang)}
 					region={currentVoiceRegion}
 					voice={params.voice}
 					tier={selectedTier}
@@ -382,7 +382,7 @@ function ReadAloudPopup(props) {
 					params={params}
 					voices={voicesForLanguage}
 					playSample={playSample}
-					onChange={onChange}
+					onChange={handleUserVoiceSelect}
 					onOpenVoicePreferences={selectedTier === 'local' ? onOpenVoicePreferences : null}
 				/>
 				<RemainingTime
@@ -583,7 +583,7 @@ function VoiceSelect(props) {
 			onOpenVoicePreferences?.();
 			return;
 		}
-		onChange({ voice: optionValue });
+		onChange(optionValue);
 		if (params.paused) {
 			let voice = voices.find(v => v.id === optionValue);
 			if (voice) {

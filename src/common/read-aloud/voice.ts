@@ -1,7 +1,7 @@
 import { ReadAloudGranularity, ReadAloudSegment } from '../types';
 import { ReadAloudController } from './controller';
 import type { ReadAloudProvider } from './provider';
-import { normalizeLanguage, isLanguageSupported } from './lang';
+import { getBaseLanguage, normalizeLanguage, isLanguageSupported } from './lang';
 
 export abstract class ReadAloudVoice {
 	readonly impl: unknown;
@@ -72,7 +72,7 @@ export function getSupportedLanguages(voices: ReadAloudVoice[]): string[] {
 	let regionsByBase = new Map<string, Set<string | null>>();
 	for (let voice of voices) {
 		let normalized = normalizeLanguage(voice.language);
-		let base = normalized.replace(/-.+$/, '');
+		let base = getBaseLanguage(normalized);
 		let region = normalized.includes('-') ? normalized.substring(base.length + 1) : null;
 		if (!regionsByBase.has(base)) regionsByBase.set(base, new Set());
 		regionsByBase.get(base)!.add(region);
@@ -99,7 +99,7 @@ export function getVoicesForLanguage<T extends ReadAloudVoice>(voices: T[], lang
 
 export function getVoiceRegion(voice: ReadAloudVoice): string | null {
 	let normalized = normalizeLanguage(voice.language);
-	let base = normalized.replace(/-.+$/, '');
+	let base = getBaseLanguage(normalized);
 	return normalized.includes('-') ? normalized.substring(base.length + 1) : null;
 }
 

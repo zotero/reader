@@ -5,7 +5,7 @@ import { BulletList } from '../../read-aloud/components/bullet-list';
 import CustomSelect from '../common/custom-select';
 import LanguageRegionSelect from '../../read-aloud/components/language-region-select';
 import { useVoiceData } from '../../read-aloud/components/use-voice-data';
-import { getPreferredRegion } from '../../read-aloud/lang';
+import { getBaseLanguage, getPreferredRegion } from '../../read-aloud/lang';
 import { getVoicesForLanguage, getVoiceRegion, TIERS } from '../../read-aloud/voice';
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
 import { buildVoiceOptions } from '../../read-aloud/voice-options';
@@ -292,7 +292,7 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 		if (!selectedTier) return;
 		let selected = selectedVoices[selectedTier];
 		if (!selected?.voice) return;
-		onDone({ lang: selectedLang, region: getVoiceRegion(selected.voice), voice: selected.voice.id, speed: 1, tier: selectedTier });
+		onDone({ lang: getBaseLanguage(selectedLang), region: getVoiceRegion(selected.voice), voice: selected.voice.id, speed: 1, tier: selectedTier });
 	};
 
 	function handleSubmit(event) {

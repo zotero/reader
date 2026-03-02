@@ -25,8 +25,12 @@ const DEFAULT_REGIONS: Record<string, string> = {
 	es: 'ES',
 };
 
+export function getBaseLanguage(lang: string): string {
+	return lang.replace(/-.+$/g, '');
+}
+
 export function normalizeLanguage(lang: string): string {
-	let base = lang.replace(/-.+$/, '');
+	let base = getBaseLanguage(lang);
 	let region = lang.includes('-') ? lang.substring(base.length + 1) : '';
 	let normalizedBase = LANGUAGE_EQUIVALENTS[base] ?? base;
 	let normalizedRegion = REGION_EQUIVALENTS[region] ?? region;
@@ -35,11 +39,11 @@ export function normalizeLanguage(lang: string): string {
 
 export function isLanguageSupported(voiceLang: string, lang: string): boolean {
 	let normalizedLang = normalizeLanguage(lang);
-	let baseLang = normalizedLang.replace(/-.+$/, '');
+	let baseLang = getBaseLanguage(normalizedLang);
 	let hasRegion = normalizedLang.includes('-');
 
 	let normalizedVoiceLang = normalizeLanguage(voiceLang);
-	let voiceBaseLang = normalizedVoiceLang.replace(/-.+$/, '');
+	let voiceBaseLang = getBaseLanguage(normalizedVoiceLang);
 	let voiceHasRegion = normalizedVoiceLang.includes('-');
 
 	// Base languages must match
@@ -87,12 +91,12 @@ export function resolveLanguage(lang: string, langs: string[]): string | null {
 	}
 
 	let normalizedLang = normalizeLanguage(lang);
-	let baseLang = normalizedLang.replace(/-.+$/, '');
+	let baseLang = getBaseLanguage(normalizedLang);
 
 	// Find candidates with the same base language
 	let candidates = langs.filter((candidate) => {
 		candidate = normalizeLanguage(candidate);
-		let candidateBase = candidate.replace(/-.+$/, '');
+		let candidateBase = getBaseLanguage(candidate);
 		return candidateBase === baseLang;
 	});
 

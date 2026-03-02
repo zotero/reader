@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useLocalization } from '@fluent/react';
 import CustomSelect from '../../components/common/custom-select';
+import { getBaseLanguage } from '../lang';
 
 function LanguageRegionSelect({ languages, lang, onLangChange, tabIndex }) {
 	const { l10n } = useLocalization();
@@ -19,13 +20,13 @@ function LanguageRegionSelect({ languages, lang, onLangChange, tabIndex }) {
 		// Count how many entries share each base language
 		let baseCounts = new Map();
 		for (let language of languages) {
-			let base = language.replace(/-.+$/, '');
+			let base = getBaseLanguage(language);
 			baseCounts.set(base, (baseCounts.get(base) || 0) + 1);
 		}
 
 		let result = [];
 		for (let language of languages) {
-			let base = language.replace(/-.+$/, '');
+			let base = getBaseLanguage(language);
 			let hasMultipleRegions = baseCounts.get(base) > 1;
 
 			// Use full label (with region) only when there are multiple
