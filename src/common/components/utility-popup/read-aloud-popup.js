@@ -77,7 +77,10 @@ function ReadAloudPopup(props) {
 
 	// Memoize the best fallback voice ID to avoid non-primitive useEffect deps
 	let fallbackVoiceID = useMemo(() => {
-		if (!voicesForLanguage.length) return null;
+		if (!voicesForLanguage.length) {
+			console.log('Voice fallback: no voices for language, returning null');
+			return null;
+		}
 		let targetTier = selectedTier;
 		if (!targetTier && persistedTierVoices) {
 			let persistedTier = Object.keys(persistedTierVoices).pop();
@@ -85,21 +88,25 @@ function ReadAloudPopup(props) {
 				targetTier = persistedTier;
 			}
 		}
+		console.log(`Voice fallback: targetTier = ${targetTier}, selectedTier = ${selectedTier}, lang = ${params.lang}, ${voicesForLanguage.length} voices for language`);
 		// Stay within targetTier unless it has no voices for this language
 		let pool = targetTier
 			? voicesForLanguage.filter(v => v.tier === targetTier)
 			: voicesForLanguage;
 		if (!pool.length) {
+			console.log(`Voice fallback: no voices in tier ${targetTier}, falling back to all ${voicesForLanguage.length} voices`);
 			pool = voicesForLanguage;
 		}
 		let isAvailable = id => id && pool.some(v => v.id === id);
 
 		// 1. Tier-specific voice for this language
 		if (isAvailable(persistedTierVoices?.[targetTier])) {
+			console.log(`Voice fallback: using tier-specific voice ${persistedTierVoices[targetTier]}`);
 			return persistedTierVoices[targetTier];
 		}
 		// 2. Last-used voice for this language
 		if (isAvailable(persistedVoice)) {
+			console.log(`Voice fallback: using last-used voice ${persistedVoice}`);
 			return persistedVoice;
 		}
 		// 3. First voice matching the persisted or preferred region
@@ -107,9 +114,11 @@ function ReadAloudPopup(props) {
 		if (region) {
 			let regionMatch = pool.find(v => getVoiceRegion(v) === region);
 			if (regionMatch) {
+				console.log(`Voice fallback: using region match ${regionMatch.id} (region: ${region})`);
 				return regionMatch.id;
 			}
 		}
+		console.log(`Voice fallback: no match found, returning null (persistedVoice = ${persistedVoice}, region = ${region}, pool = ${pool.length})`);
 		return null;
 	}, [params.lang, persistedRegion, persistedTierVoices, persistedVoice, selectedTier, voicesForLanguage]);
 
@@ -299,16 +308,22 @@ function ReadAloudPopup(props) {
 		}
 
 		if (!voicesForLanguage.length) {
+			console.log('Voice selection: no voices for language, skipping');
 			return;
 		}
 
 		let speed = persistedSpeed || 1;
 		let voiceID = fallbackVoiceID;
 		if (!voiceID) {
+			console.log(`Voice selection: no fallback voice, using first voice ${voicesForLanguage[0].id}`);
 			voiceID = voicesForLanguage[0].id;
 			speed = params.speed;
 		}
+		else {
+			console.log(`Voice selection: using fallback voice ${voiceID} (persistedSpeed = ${persistedSpeed})`);
+		}
 
+		console.log(`Voice selection: setting voice = ${voiceID}, speed = ${speed}, active = ${voiceID !== params.voice ? false : params.active} (was voice: ${params.voice})`);
 		onChange({
 			voice: voiceID,
 			speed,
