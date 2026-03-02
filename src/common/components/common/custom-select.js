@@ -450,12 +450,12 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 			}
 		}
 
-		// If the dropdown ended up very short but has more content to show,
-		// move it upward to use available viewport space
-		let minDesiredHeight = 300;
-		if (initialMaxHeight < minDesiredHeight && scrollHeight + measuredOverhead > initialMaxHeight) {
+		// If there's still hidden content that couldn't be shown by expanding
+		// downward/upward, move the dropdown up to make room
+		if (scrollHeight + measuredOverhead > initialMaxHeight) {
+			let desiredHeight = Math.min(scrollHeight + measuredOverhead, maxHeight);
 			let spaceAbove = top - padding;
-			let growBy = Math.min(minDesiredHeight - initialMaxHeight, spaceAbove);
+			let growBy = Math.min(desiredHeight - initialMaxHeight, spaceAbove);
 			if (growBy > 0) {
 				initialMaxHeight += growBy;
 				top -= growBy;
@@ -463,6 +463,18 @@ function CustomSelect({ value, onChange, options, 'aria-label': ariaLabel, tabIn
 		}
 
 		initialMaxHeight = snapMaxHeight(initialMaxHeight, measuredOverhead, scroller);
+
+		// Clamp to viewport, accounting for border outside max-height (content-box)
+		let borderHeight = dropdown.offsetHeight - dropdown.clientHeight;
+		let bottomEdge = top + initialMaxHeight + borderHeight;
+		if (bottomEdge > window.innerHeight - padding) {
+			top -= bottomEdge - (window.innerHeight - padding);
+			if (top < padding) {
+				initialMaxHeight -= padding - top;
+				top = padding;
+			}
+		}
+
 		fullMaxHeightRef.current = maxHeight;
 		currentMaxHeightRef.current = initialMaxHeight;
 		dropdownTopRef.current = top;
