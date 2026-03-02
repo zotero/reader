@@ -79,8 +79,9 @@ class Reader {
 		this._onSetZoom = options.onSetZoom;
 		this._onSetReadAloudVoice = options.onSetReadAloudVoice;
 		this._onSetReadAloudStatus = options.onSetReadAloudStatus;
-		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
+		this._onPurchaseReadAloudCredits = options.onPurchaseReadAloudCredits;
 		this._onLogIn = options.onLogIn;
+		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
@@ -337,7 +338,7 @@ class Reader {
 						readAloudRemoteInterface={this._readAloudRemoteInterface}
 						onSetReadAloudVoice={this._setReadAloudVoice.bind(this)}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
-						onPurchaseReadAloudCredits={this.purchaseReadAloudCredits.bind(this)}
+						onPurchaseReadAloudCredits={this._onPurchaseReadAloudCredits}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onAddReadAloudAnnotation={this.addAnnotationFromReadAloudSegment.bind(this)}
 						onReadAloudSkip={this._handleReadAloudSkip.bind(this)}
@@ -941,11 +942,6 @@ class Reader {
 		if (url) {
 			this._onOpenLink(url);
 		}
-	}
-
-	purchaseReadAloudCredits() {
-		// TODO
-		console.log('Purchase credits');
 	}
 
 	toggleReadAloudPopup(popupOpen) {
