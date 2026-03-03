@@ -122,6 +122,14 @@ function ReadAloudPopup(props) {
 		return null;
 	}, [params.lang, persistedRegion, persistedTierVoices, persistedVoice, selectedTier, voicesForLanguage]);
 
+	// Fall back to local when selected tier when it becomes unavailable
+	useEffect(() => {
+		if (selectedTier !== null && !tiers.has(selectedTier) && tiers.has('local')) {
+			setSelectedTier('local');
+			onChange({ voice: null });
+		}
+	}, [selectedTier, tiers, onChange]);
+
 	let paramsRef = useRef(params);
 	let pausedRef = useRef(params.paused);
 	useEffect(() => {
