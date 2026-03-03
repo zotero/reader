@@ -6,7 +6,8 @@ import { debounce } from '../../lib/debounce';
 import { stretchAudioBuffer } from './lib/time-stretch';
 import { findWordOnset } from './lib/word-onset';
 
-const BLOB_CACHE_CAPACITY = 32;
+const AUDIO_BUFFER_CACHE_CAPACITY = 32;
+const CACHE_STORAGE_NAME = 'zotero-read-aloud';
 const EST_PLAYBACK_CHARS_PER_SECOND = 16;
 const EXP_MOVING_AVERAGE_ALPHA = 0.25;
 const SKIP_DEBOUNCE_DELAY = 600;
@@ -159,7 +160,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 	private _indexAtPause: number | null = null;
 
-	private _audioBuffers = new LRUCacheMap<number, AudioBuffer>(BLOB_CACHE_CAPACITY);
+	private _audioBuffers = new LRUCacheMap<number, AudioBuffer>(AUDIO_BUFFER_CACHE_CAPACITY);
 
 	private _fetching = new Map<number, Promise<AudioBuffer>>();
 
@@ -369,41 +370,64 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 		let segment = this._segments[index];
 		let fetchAndDecode = async () => {
-			let startTime = performance.now();
+			let blob = await this._fetchAudioBlob(segment);
 
-			let { audio, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
-
-			if (!audio) {
-				if (error) {
-					this._error = error;
-					this._failedIndices.add(index);
-					// Don't dispatch error immediately - wait until playback reaches this segment
-					console.error(error);
-				}
-				throw new Error('Failed to fetch audio');
-			}
-
-			let audioBuffer = await this._decodeAudioData(audio);
+			let audioBuffer = await this._decodeAudioData(blob);
 			this._audioBuffers.set(index, audioBuffer);
-
-			// Update fetch time EMA
-			let endTime = performance.now();
-			if (segment.text.length) {
-				let fetchTimePerChar = (endTime - startTime) / segment.text.length;
-				if (this._averageFetchTimePerChar === null) {
-					this._averageFetchTimePerChar = fetchTimePerChar;
-				}
-				else {
-					this._averageFetchTimePerChar = EXP_MOVING_AVERAGE_ALPHA * fetchTimePerChar
-						+ (1 - EXP_MOVING_AVERAGE_ALPHA) * this._averageFetchTimePerChar;
-				}
-			}
 			return audioBuffer;
 		};
 
 		inflight = fetchAndDecode().finally(() => this._fetching.delete(index));
 		this._fetching.set(index, inflight);
 		return inflight;
+	}
+
+	private async _fetchAudioBlob(segment: ReadAloudSegment): Promise<Blob> {
+		let cacheURL = this._makeCacheURL(segment);
+
+		// Check cache for a previously stored response
+		let cache = await caches.open(CACHE_STORAGE_NAME);
+		let cachedResponse = await cache.match(cacheURL);
+		if (cachedResponse) {
+			return cachedResponse.blob();
+		}
+
+		let startTime = performance.now();
+
+		let { audio, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+
+		if (!audio) {
+			if (error) {
+				this._error = error;
+				this._failedIndices.add(this._segments.indexOf(segment));
+				console.error(error);
+			}
+			throw new Error('Failed to fetch audio');
+		}
+
+		// Update fetch time EMA (only on actual network fetches, not cache hits)
+		if (segment.text.length) {
+			let fetchTimePerChar = (performance.now() - startTime) / segment.text.length;
+			if (this._averageFetchTimePerChar === null) {
+				this._averageFetchTimePerChar = fetchTimePerChar;
+			}
+			else {
+				this._averageFetchTimePerChar = EXP_MOVING_AVERAGE_ALPHA * fetchTimePerChar
+					+ (1 - EXP_MOVING_AVERAGE_ALPHA) * this._averageFetchTimePerChar;
+			}
+		}
+
+		// Store in cache for future sessions
+		await cache.put(cacheURL, new Response(audio));
+
+		return audio;
+	}
+
+	private _makeCacheURL(segment: ReadAloudSegment): string {
+		let params = new URLSearchParams();
+		params.set('voice', this.voice.id);
+		params.set('text', segment.text);
+		return 'https://read-aloud.zotero.invalid/audio?' + params;
 	}
 
 	private _estimatePlaybackTime(segment: ReadAloudSegment): number {
