@@ -126,6 +126,20 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 		});
 	}
 
+	protected override _onSpeedChange(): void {
+		if (this._isPlaying && this._currentBuffer) {
+			let offset = this._currentPlaybackTime;
+			this._stopSource();
+			this._playAudioBuffer(this._currentBuffer, offset, this._speed)
+				.then(() => {
+					let segment = this._currentSegment;
+					if (segment) {
+						this._handleSegmentEnd(segment, this._position);
+					}
+				});
+		}
+	}
+
 	protected _stop(): void {
 		if (this._isPlaying) {
 			this._playbackOffset = this._currentPlaybackTime;

@@ -68,29 +68,12 @@ export function resolveEnabledVoiceIDs(
 }
 
 export function getSupportedLanguages(voices: ReadAloudVoice[]): string[] {
-	// Group voices by base language, collecting unique regions per base
-	let regionsByBase = new Map<string, Set<string | null>>();
+	let bases = new Set<string>();
 	for (let voice of voices) {
 		let normalized = normalizeLanguage(voice.language);
-		let base = getBaseLanguage(normalized);
-		let region = normalized.includes('-') ? normalized.substring(base.length + 1) : null;
-		if (!regionsByBase.has(base)) regionsByBase.set(base, new Set());
-		regionsByBase.get(base)!.add(region);
+		bases.add(getBaseLanguage(normalized));
 	}
-
-	let result: string[] = [];
-	for (let [base, regions] of regionsByBase) {
-		let namedRegions = [...regions].filter((r): r is string => r !== null);
-		// Emit each region-qualified code
-		for (let region of namedRegions) {
-			result.push(`${base}-${region}`);
-		}
-		// Emit bare base if any voices have no region
-		if (regions.has(null)) {
-			result.push(base);
-		}
-	}
-	return result;
+	return [...bases];
 }
 
 export function getVoicesForLanguage<T extends ReadAloudVoice>(voices: T[], lang: string): T[] {

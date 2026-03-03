@@ -44,6 +44,10 @@ export abstract class ReadAloudController extends EventTarget {
 
 	set speed(speed) {
 		this._speed = speed;
+		this._onSpeedChange();
+	}
+
+	protected _onSpeedChange() {
 		this._speak();
 	}
 
@@ -107,7 +111,7 @@ export abstract class ReadAloudController extends EventTarget {
 		return this._currentSegment ?? null;
 	}
 
-	protected constructor(voice: ReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
+	constructor(voice: ReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super();
 
 		this.voice = voice;

@@ -384,8 +384,6 @@ function ReadAloudPopup(props) {
 					region={currentVoiceRegion}
 					voice={params.voice}
 					tier={selectedTier}
-					paused={params.paused}
-					pausedRef={pausedRef}
 				/>
 				<TierSelect
 					loggedIn={loggedIn}
@@ -498,11 +496,12 @@ function PlaybackControls(props) {
 function SpeedSlider(props) {
 	const { l10n } = useLocalization();
 
-	let { speed, onChange, onSetVoice, lang, region, voice, tier, paused, pausedRef } = props;
+	let { speed, onChange, onSetVoice, lang, region, voice, tier } = props;
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
+	let draggingRef = useRef(false);
 
 	function handleSpeedChange(event) {
-		if (speedWhileDragging === null) {
+		if (!draggingRef.current) {
 			let newSpeed = parseFloat(event.target.value);
 			onChange({ speed: newSpeed });
 			onSetVoice({ lang, region, voice, speed: newSpeed, tier });
@@ -513,24 +512,20 @@ function SpeedSlider(props) {
 	}
 
 	function handleSpeedPointerDown() {
+		draggingRef.current = true;
 		setSpeedWhileDragging(speed);
 	}
 
-	async function handleSpeedPointerUp() {
-		// Capture all values before awaiting to avoid race conditions
+	function handleSpeedPointerUp() {
+		if (!draggingRef.current) {
+			return;
+		}
+		draggingRef.current = false;
 		let newSpeed = speedWhileDragging;
 		if (newSpeed === null) {
 			return;
 		}
-		let wasPaused = pausedRef.current;
-
-		if (!wasPaused) {
-			// Pause, then wait momentarily, because otherwise Web Speech
-			// will read multiple lines at once
-			onChange({ paused: true });
-			await new Promise(resolve => setTimeout(resolve, 100));
-		}
-		onChange({ speed: newSpeed, paused: wasPaused });
+		onChange({ speed: newSpeed });
 		onSetVoice({ lang, region, voice, speed: newSpeed, tier });
 		setSpeedWhileDragging(null);
 	}

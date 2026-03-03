@@ -12,23 +12,11 @@ let lastSpeaker: BrowserReadAloudController | null = null;
 export class BrowserReadAloudController extends ReadAloudController {
 	declare readonly voice: BrowserReadAloudVoice;
 
-	private readonly _utterances: SpeechSynthesisUtterance[];
-
 	private _charIndex = 0;
 
 	private _segmentStartTime: number | null = null;
 
-	constructor(voice: BrowserReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
-		super(voice, segments, backwardStopIndex, forwardStopIndex);
-		this._utterances = segments.map((segment, index) => {
-			let utterance = new SpeechSynthesisUtterance(segment.text);
-			utterance.voice = this.voice.impl;
-			utterance.onstart = () => this._handleSegmentStart(segment, index);
-			utterance.onend = () => this._handleSegmentEnd(segment, index);
-			utterance.onboundary = event => this._charIndex = event.charIndex;
-			return utterance;
-		});
-	}
+	private _currentUtterance: SpeechSynthesisUtterance | null = null;
 
 	protected override get _segmentProgressFraction(): number {
 		let segment = this._currentSegment;
@@ -46,6 +34,13 @@ export class BrowserReadAloudController extends ReadAloudController {
 	}
 
 	protected _speak = debounce(() => {
+		// Detach the end handler from the previous utterance before
+		// cancelling so that the end event fired by cancel() is ignored.
+		if (this._currentUtterance) {
+			this._currentUtterance.onend = null;
+			this._currentUtterance = null;
+		}
+
 		// Only cancel speechSynthesis if we're the last controller to have
 		// called speak(). window.speechSynthesis is global, so cancelling
 		// unconditionally could kill speech by another controller
@@ -59,8 +54,13 @@ export class BrowserReadAloudController extends ReadAloudController {
 		// (waking from sleep will unpause in Firefox, pausing before .speak()
 		// has no effect in Chrome, ...)
 		if (!this._paused) {
-			let utterance = this._utterances[this._position];
-			if (utterance) {
+			let index = this._position;
+			let segment = this._segments[index];
+			if (segment) {
+				// Create a fresh utterance each time so cancelled and new
+				// end events are on separate objects.
+				let utterance = new SpeechSynthesisUtterance(segment.text);
+				utterance.voice = this.voice.impl;
 				if (isMac()) {
 					// macOS speech synthesis uses speeds in WPM. Firefox uses
 					// (rate * 200 wpm), but the system default speed is 180 wpm.
@@ -70,6 +70,10 @@ export class BrowserReadAloudController extends ReadAloudController {
 				else {
 					utterance.rate = this._speed;
 				}
+				utterance.onstart = () => this._handleSegmentStart(segment, index);
+				utterance.onend = () => this._handleSegmentEnd(segment, index);
+				utterance.onboundary = event => this._charIndex = event.charIndex;
+				this._currentUtterance = utterance;
 				this.buffering = true;
 				// eslint-disable-next-line @typescript-eslint/no-this-alias,consistent-this
 				lastSpeaker = this;
@@ -79,6 +83,10 @@ export class BrowserReadAloudController extends ReadAloudController {
 	});
 
 	protected _stop(): void {
+		if (this._currentUtterance) {
+			this._currentUtterance.onend = null;
+			this._currentUtterance = null;
+		}
 		if (lastSpeaker === this || lastSpeaker === null) {
 			window.speechSynthesis.cancel();
 		}
@@ -95,6 +103,10 @@ export class BrowserReadAloudController extends ReadAloudController {
 		super.destroy();
 		this._speak.cancel();
 		this._position = -1;
+		if (this._currentUtterance) {
+			this._currentUtterance.onend = null;
+			this._currentUtterance = null;
+		}
 		if (lastSpeaker === this) {
 			lastSpeaker = null;
 			window.speechSynthesis.cancel();
