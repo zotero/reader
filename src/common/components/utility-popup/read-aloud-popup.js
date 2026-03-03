@@ -126,7 +126,6 @@ function ReadAloudPopup(props) {
 	useEffect(() => {
 		if (selectedTier !== null && !tiers.has(selectedTier) && tiers.has('local')) {
 			setSelectedTier('local');
-			onChange({ voice: null });
 		}
 	}, [selectedTier, tiers, onChange]);
 
