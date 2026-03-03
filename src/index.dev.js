@@ -214,6 +214,20 @@ async function createReader() {
 			},
 
 			async getAudio(segment, voice) {
+				let cacheURL = 'https://read-aloud.zotero.invalid/audio?'
+					+ new URLSearchParams({ voice: voice.id, text: segment.text });
+				let cache;
+				try {
+					cache = await caches.open('zotero-read-aloud');
+					let cached = await cache.match(cacheURL);
+					if (cached) {
+						return { audio: await cached.blob() };
+					}
+				}
+				catch (e) {
+					console.error(e);
+				}
+
 				let url;
 				let fetchOptions;
 				if (segment === 'sample') {
@@ -265,7 +279,14 @@ async function createReader() {
 					};
 				}
 
-				return { audio: await response.blob() };
+				let audio = await response.blob();
+				try {
+					await cache?.put(cacheURL, new Response(audio));
+				}
+				catch (e) {
+					console.error(e);
+				}
+				return { audio };
 			},
 		},
 		onLogIn() {
