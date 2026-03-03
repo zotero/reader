@@ -215,22 +215,34 @@ async function createReader() {
 
 			async getAudio(segment, voice) {
 				let url;
-				let params = new URLSearchParams();
+				let fetchOptions;
 				if (segment === 'sample') {
-					url = 'https://api.zotero.org/tts/sample';
-				}
-				else {
-					url = 'https://api.zotero.org/tts/speak';
-					params.set('text', segment.text);
-				}
-				params.set('voice', voice.id);
-				let response;
-				try {
-					response = await fetch(url + '?' + params, {
+					let params = new URLSearchParams();
+					params.set('voice', voice.id);
+					url = 'https://api.zotero.org/tts/sample?' + params;
+					fetchOptions = {
 						headers: {
 							'Zotero-API-Key': ZOTERO_API_KEY,
 						},
-					});
+					};
+				}
+				else {
+					url = 'https://api.zotero.org/tts/speak';
+					fetchOptions = {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'Zotero-API-Key': ZOTERO_API_KEY,
+						},
+						body: JSON.stringify({
+							voice: voice.id,
+							text: segment.text,
+						}),
+					};
+				}
+				let response;
+				try {
+					response = await fetch(url, fetchOptions);
 				}
 				catch {
 					return {
