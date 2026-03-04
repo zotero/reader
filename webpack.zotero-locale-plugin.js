@@ -5,9 +5,11 @@ let path = require('path');
 const OUTPUT_PATH = path.resolve(__dirname, './locales');
 const SIGNATURE_PATH = path.join(OUTPUT_PATH, '.signature');
 
-// Static flags to ensure the plugin executes only once
-let pluginActivated = false;
-let filesProcessed = false;
+// Shared preparation state across all compiler instances in a single webpack process
+let localePrep = {
+	key: null,
+	promise: null
+};
 
 class ZoteroLocalePlugin {
 	constructor(options) {
@@ -25,6 +27,34 @@ class ZoteroLocalePlugin {
 
 	getRemoteURL() {
 		return `https://raw.githubusercontent.com/zotero/zotero/${this.commitHash}`;
+	}
+
+	getPrepKey() {
+		return JSON.stringify({
+			commitHash: this.commitHash,
+			locales: this.locales,
+			files: this.files
+		});
+	}
+
+	async ensureLocaleFilesReady() {
+		let key = this.getPrepKey();
+
+		if (localePrep.key !== key) {
+			localePrep = { key, promise: null };
+		}
+
+		if (!localePrep.promise) {
+			localePrep.promise = (async () => {
+				console.log('ZoteroLocalePlugin is running...');
+				await this.processFiles();
+			})().catch((err) => {
+				localePrep.promise = null;
+				throw err;
+			});
+		}
+
+		await localePrep.promise;
 	}
 
 	async downloadFile(url, outputPath) {
@@ -174,20 +204,9 @@ class ZoteroLocalePlugin {
 	}
 
 	apply(compiler) {
-		// Prevent plugin from running multiple times
-		if (pluginActivated) {
-			return;
-		}
-		// Mark plugin as activated
-		pluginActivated = true;
 		// Hook into Webpack's lifecycle
 		let run = async () => {
-			if (filesProcessed) {
-				return;
-			}
-			filesProcessed = true;
-			console.log('ZoteroLocalePlugin is running...');
-			await this.processFiles();
+			await this.ensureLocaleFilesReady();
 		};
 		compiler.hooks.beforeRun.tapPromise('ZoteroLocalePlugin', run);
 		compiler.hooks.watchRun.tapPromise('ZoteroLocalePlugin', run);
