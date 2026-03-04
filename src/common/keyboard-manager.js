@@ -50,6 +50,7 @@ export class KeyboardManager {
 		let code = getCodeCombination(event);
 
 		let sidebarAnnotationFocused = document.activeElement.classList.contains('annotation');
+		let readAloudActive = this._reader._state.readAloudState.active;
 
 		if (this._reader._state.readAloudState.annotationPopup) {
 			if (['Escape', 'Enter'].includes(key)) {
@@ -107,7 +108,7 @@ export class KeyboardManager {
 				(isMac() && ['Cmd-BracketLeft', 'Cmd-ArrowLeft'].includes(code))
 				// Windows / Linux
 				|| (isLinux() && code === 'Ctrl-BracketLeft')
-				|| ((isLinux() || isWin()) && code === 'Alt-ArrowLeft')
+				|| ((isLinux() || isWin()) && code === 'Alt-ArrowLeft' && !readAloudActive)
 				// Dedicated mouse / keyboard button
 				|| code === 'BrowserBack'
 			) {
@@ -120,7 +121,7 @@ export class KeyboardManager {
 				(isMac() && ['Cmd-BracketRight', 'Cmd-ArrowRight'].includes(code))
 				// Windows / Linux
 				|| (isLinux() && code === 'Ctrl-BracketRight')
-				|| ((isLinux() || isWin()) && code === 'Alt-ArrowRight')
+				|| ((isLinux() || isWin()) && code === 'Alt-ArrowRight' && !readAloudActive)
 				// Dedicated mouse / keyboard button
 				|| code === 'BrowserForward'
 			) {
@@ -395,7 +396,7 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (this._reader._state.readAloudState.active && !event.target.matches('button, select')) {
+			else if (readAloudActive && !event.target.matches('button, select')) {
 				if (key === 'Space') {
 					event.preventDefault();
 					event.stopPropagation();
