@@ -1,6 +1,7 @@
 .*
 !.gitignore
 !.editorconfig
+!.zotero-locale-commit
 /node_modules/
 /build/
 /locales/

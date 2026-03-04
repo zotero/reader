@@ -8,6 +8,9 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const ZoteroLocalePlugin = require('./webpack.zotero-locale-plugin');
 const { EnvironmentPlugin } = require('webpack');
+const fs = require('fs');
+
+const ZOTERO_LOCALE_COMMIT = fs.readFileSync(path.resolve(__dirname, '.zotero-locale-commit'), 'utf8').trim();
 
 function generateReaderConfig(build) {
 	let config = {
@@ -58,7 +61,7 @@ function generateReaderConfig(build) {
 					{ src: 'app/assets/branding/locale/brand.ftl', dest: 'brand.ftl' },
 				],
 				locales: ['en-US'],
-				commitHash: '69002c122df40021ae50d7a32701677e62076831',
+				commitHash: ZOTERO_LOCALE_COMMIT,
 			}),
 			new CleanWebpackPlugin({
 				cleanOnceBeforeBuildPatterns: ['**/*', '!pdf/**']
