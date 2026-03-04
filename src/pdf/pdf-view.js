@@ -938,6 +938,7 @@ class PDFView {
 			this._iframeWindow.document.getElementById('viewerContainer').style.touchAction = tool.type !== 'pointer' ? 'none' : 'auto';
 		}
 		this._tool = tool;
+		this.updateCursor();
 	}
 
 	setAnnotations(annotations) {
@@ -2189,8 +2190,10 @@ class PDFView {
 	}
 
 	updateCursor(action) {
-		let cursor = 'default';
-		if (action) {
+		let cursor = this._tool.type === 'hand'
+			? (this.pointerDownPosition ? 'grabbing' : 'grab')
+			: 'default';
+		if (action && this._tool.type !== 'hand') {
 			if (action.type === 'overlay') {
 				cursor = 'pointer';
 			}
@@ -2335,6 +2338,7 @@ class PDFView {
 
 		this.action = action;
 		this.pointerDownPosition = position;
+		this.updateCursor(action);
 		// Select text, and/or object, otherwise unselect
 
 		if (selectAnnotations && !(selectAnnotations.length === 0 && this._selectedAnnotationIDs.length === 0)) {
