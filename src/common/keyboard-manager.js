@@ -396,6 +396,12 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
+			else if (this._reader._type === 'pdf' && key === 'h' && !this._reader._state.readAloudState.active) {
+				this._reader.toggleHandTool();
+			}
+			else if (this._reader._type === 'pdf' && key === 's') {
+				this._reader.setTool({ type: 'pointer' });
+			}
 			else if (readAloudActive && !event.target.matches('button, select')) {
 				if (key === 'Space') {
 					event.preventDefault();
@@ -467,4 +473,3 @@ export class KeyboardManager {
 		this._handleKeyUp(event, true);
 	}
 }
-

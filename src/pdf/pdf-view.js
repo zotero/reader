@@ -3256,7 +3256,7 @@ class PDFView {
 		else if (key === 'r') {
 			event.stopPropagation();
 		}
-		else if (['n', 'j', 'p', 'k'].includes(key)) {
+		else if (['n', 'j', 'p', 'k', 'h', 's'].includes(key)) {
 			event.stopPropagation();
 		}
 		// This is necessary when a page is zoomed in and left/right arrow keys can't change page
