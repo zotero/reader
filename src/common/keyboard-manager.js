@@ -355,6 +355,7 @@ export class KeyboardManager {
 		}
 
 		if (!isTextBox(event.target)) {
+			let readAloudActive = this._reader._state.readAloudState.active;
 			if (code === 'Alt-Digit1') {
 				this._reader.toggleTool('highlight');
 			}
@@ -395,7 +396,7 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (this._reader._state.readAloudState.active && !event.target.matches('button, select')) {
+			else if (readAloudActive && !event.target.matches('button, select')) {
 				if (key === 'Space') {
 					event.preventDefault();
 					event.stopPropagation();
@@ -437,13 +438,10 @@ export class KeyboardManager {
 					}
 				}
 			}
-			else if (!this._reader._state.readAloudState.active) {
-				if (key === 'h' || key === 'H') {
-					this._reader.toggleHandTool(true);
-					event.preventDefault();
-				}
-				else if (key === 's' || key === 'S') {
-					this._reader.toggleHandTool(false);
+			else if (!readAloudActive) {
+				let lowerKey = key.toLowerCase();
+				if (lowerKey === 'h' || lowerKey === 's') {
+					this._reader.toggleHandTool(lowerKey === 'h');
 					event.preventDefault();
 				}
 			}
