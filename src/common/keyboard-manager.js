@@ -96,6 +96,7 @@ export class KeyboardManager {
 			}
 			if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
 				event.preventDefault();
+				event.stopPropagation();
 				this._reader.setReadAloudAnnotationType(key === 'h' || key === 'H' ? 'highlight' : 'underline');
 				return;
 			}
