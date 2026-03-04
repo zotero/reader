@@ -437,6 +437,16 @@ export class KeyboardManager {
 					}
 				}
 			}
+			else if (!this._reader._state.readAloudState.active) {
+				if (key === 'h' || key === 'H') {
+					this._reader.toggleHandTool(true);
+					event.preventDefault();
+				}
+				else if (key === 's' || key === 'S') {
+					this._reader.toggleHandTool(false);
+					event.preventDefault();
+				}
+			}
 		}
 	}
 
