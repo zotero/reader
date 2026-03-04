@@ -29,19 +29,47 @@ class ZoteroLocalePlugin {
 
 	async downloadFile(url, outputPath) {
 		return new Promise((resolve, reject) => {
+			let settled = false;
 			let file = fs.createWriteStream(outputPath);
-			https.get(url, (response) => {
-				if (response.statusCode === 200) {
-					response.pipe(file);
-					file.on('finish', () => {
-						file.close(resolve);
-					});
+			let fail = (error) => {
+				if (settled) {
+					return;
 				}
-				else {
-					reject(new Error(`Failed to download file (${response.statusCode}): ${url}`));
+				settled = true;
+				file.destroy();
+				fs.unlink(outputPath, () => reject(error));
+			};
+
+			let request = https.get(url, (response) => {
+				if (response.statusCode !== 200) {
+					response.resume();
+					fail(new Error(`Failed to download file (${response.statusCode}): ${url}`));
+					return;
 				}
-			}).on('error', (err) => {
-				fs.unlink(outputPath, () => reject(err));
+
+				response.pipe(file);
+			});
+
+			request.on('error', (err) => {
+				fail(new Error(`Failed to download file from ${url}: ${err.message}`));
+			});
+
+			file.on('finish', () => {
+				file.close((err) => {
+					if (settled) {
+						return;
+					}
+					if (err) {
+						fail(new Error(`Failed to finalize downloaded file ${outputPath}: ${err.message}`));
+						return;
+					}
+					settled = true;
+					resolve();
+				});
+			});
+
+			file.on('error', (err) => {
+				fail(new Error(`Failed to write downloaded file ${outputPath}: ${err.message}`));
 			});
 		});
 	}
@@ -69,12 +97,10 @@ class ZoteroLocalePlugin {
 				let srcPath = path.join(repoRoot, src.replace('{locale}', locale));
 				let destPath = path.join(localeDir, dest);
 
-				try {
-					fs.copyFileSync(srcPath, destPath);
+				if (!fs.existsSync(srcPath)) {
+					throw new Error(`Missing locale source file: ${srcPath}`);
 				}
-				catch (e) {
-					console.error(`Failed to copy ${srcPath}:`, e.message);
-				}
+				fs.copyFileSync(srcPath, destPath);
 			}
 		}
 	}
@@ -128,13 +154,8 @@ class ZoteroLocalePlugin {
 					let url = `${remoteBase}/${src.replace('{locale}', locale)}`;
 					let outputFile = path.join(localeDir, dest);
 
-					try {
-						console.log(`Downloading ${url} -> ${outputFile}`);
-						await this.downloadFile(url, outputFile);
-					}
-					catch (error) {
-						console.error(`Failed to download ${url}:`, error.message);
-					}
+					console.log(`Downloading ${url} -> ${outputFile}`);
+					await this.downloadFile(url, outputFile);
 				}
 			}
 
