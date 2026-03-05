@@ -184,7 +184,7 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplicationOptions.set('textLayerMode', this._preview ? 0 : 1);
 			this._iframeWindow.PDFViewerApplicationOptions.set('sidebarViewOnLoad', 0);
 			this._iframeWindow.PDFViewerApplicationOptions.set('ignoreDestinationZoom', true);
-			this._iframeWindow.PDFViewerApplicationOptions.set('renderInteractiveForms', false);
+			this._iframeWindow.PDFViewerApplicationOptions.set('annotationMode', 1);
 			this._iframeWindow.PDFViewerApplicationOptions.set('printResolution', 300);
 			this._iframeWindow.PDFViewerApplicationOptions.set('enableScripting', false);
 			this._iframeWindow.PDFViewerApplicationOptions.set('disablePreferences', true);
