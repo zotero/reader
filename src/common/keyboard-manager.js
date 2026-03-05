@@ -358,13 +358,13 @@ export class KeyboardManager {
 
 		if (!isTextBox(event.target)) {
 			if (textSelectionPopup) {
-				if (code === 'Alt-Digit1') {
+				if (key === 'h') {
 					event.preventDefault();
 					event.stopPropagation();
 					this._reader.setTextSelectionAnnotationMode('highlight');
 					return;
 				}
-				else if (code === 'Alt-Digit2') {
+				else if (key === 'u') {
 					event.preventDefault();
 					event.stopPropagation();
 					this._reader.setTextSelectionAnnotationMode('underline');
@@ -426,7 +426,7 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (this._reader._type === 'pdf' && key === 'h' && !this._reader._state.readAloudState.active) {
+			else if (this._reader._type === 'pdf' && key === 'h' && !textSelectionPopup && !readAloudActive) {
 				this._reader.toggleHandTool();
 			}
 			else if (this._reader._type === 'pdf' && key === 's') {
