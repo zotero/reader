@@ -84,6 +84,16 @@ export class FocusManager {
 		if ('closest' in event.target) {
 			// An ugly workaround to prevent delayed selection of annotation in the sidebar on right-click on Windows
 			if (event.button === 2 && event.target.closest('.annotation')) {
+				let annotation = event.target.closest('.annotation');
+				let annotationID = annotation.getAttribute('data-sidebar-annotation-id');
+				// If a selected sidebar annotation opens the context menu, keep it as the
+				// focus restore target before suppressing focus tracking for the Windows workaround.
+				if (annotationID && this._reader._state.selectedAnnotationIDs.includes(annotationID)) {
+					let activeElement = document.activeElement;
+					this._lastActiveElement = activeElement?.closest?.('.annotation') === annotation
+						? activeElement
+						: annotation;
+				}
 				this._preventFocus = true;
 				return;
 			}
