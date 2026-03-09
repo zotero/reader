@@ -68,12 +68,12 @@ export function resolveEnabledVoiceIDs(
 }
 
 export function getSupportedLanguages(voices: ReadAloudVoice[]): string[] {
-	let bases = new Set<string>();
+	let langs = new Set<string>();
 	for (let voice of voices) {
 		let normalized = normalizeLanguage(voice.language);
-		bases.add(getBaseLanguage(normalized));
+		langs.add(normalized);
 	}
-	return [...bases];
+	return [...langs];
 }
 
 export function getVoicesForLanguage<T extends ReadAloudVoice>(voices: T[], lang: string): T[] {
