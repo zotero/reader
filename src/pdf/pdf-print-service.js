@@ -52,6 +52,9 @@ class PrintTask {
 		const height = Math.floor(size.height * CSS_UNITS) + "px";
 
 		const ctx = this.scratchCanvas.getContext("2d");
+		// Dark mode rendering uses the PDF.js blender via window.theme; printing
+		// must bypass it so the output matches the original PDF colors.
+		ctx.skipBlender = true;
 		ctx.save();
 		ctx.fillStyle = "rgb(255, 255, 255)";
 		ctx.fillRect(0, 0, this.scratchCanvas.width, this.scratchCanvas.height);
