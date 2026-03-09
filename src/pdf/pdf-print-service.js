@@ -70,7 +70,7 @@ class PrintTask {
 		};
 		await pdfPage.render(renderContext).promise;
 		if (this._includeAnnotations) {
-			this._pdfView.renderPageAnnotationsOnCanvas(this.scratchCanvas, renderContext.viewport, pageNumber - 1);
+			await this._pdfView.renderPageAnnotationsOnCanvas(this.scratchCanvas, renderContext.viewport, pageNumber - 1);
 		}
 		return {
 			width, height,
