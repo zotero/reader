@@ -1018,8 +1018,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				f.focusedElement.blur();
 				handled = true;
 			}
-			if (!this._iframeWindow.getSelection()?.isCollapsed) {
-				this._iframeWindow.getSelection()?.removeAllRanges();
+			const selection = this._iframeWindow.getSelection();
+			if (selection && !selection.isCollapsed) {
+				selection.removeAllRanges();
 				handled = true;
 			}
 
