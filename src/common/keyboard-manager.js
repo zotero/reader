@@ -209,6 +209,12 @@ export class KeyboardManager {
 				event.preventDefault();
 				setTimeout(() => this._reader._lastView.focus());
 			}
+			// Stop read aloud
+			else if (readAloudActive) {
+				event.preventDefault();
+				this._reader.toggleReadAloudPopup(false);
+				setTimeout(() => this._reader._lastView.focus());
+			}
 			else {
 				setTimeout(() => this._reader._lastView.focus());
 			}
