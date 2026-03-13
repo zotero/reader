@@ -306,6 +306,10 @@ class View {
 	setFontFamily(fontFamily) {
 		this._view.setFontFamily(fontFamily);
 	}
+
+	setReadAloudSpotlight(selector) {
+		this._view.setSpotlight('ReadAloudActiveSegment', selector, null);
+	}
 }
 
 export default View;
