@@ -240,9 +240,16 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 				let offset: number;
 				if (indexAtPause === index) {
-					if (this.lang.startsWith('en')) {
-						// English only for now: try to resume at a word boundary
-						offset = findWordOnset(audioBuffer, this._segmentProgressSeconds);
+					let pauseDuration = this._pauseDurationSeconds;
+					if (pauseDuration < 5) {
+						// Short pause (under 5 seconds): resume from exact position
+						offset = this._segmentProgressSeconds;
+					}
+					else if (this.lang.startsWith('en')) {
+						// Medium pause (5-20 seconds): jump back one word boundary
+						// Long pause (20+ seconds): jump back two word boundaries
+						let wordBoundaries = pauseDuration >= 20 ? 2 : 1;
+						offset = findWordOnset(audioBuffer, this._segmentProgressSeconds, wordBoundaries);
 					}
 					else {
 						offset = this._segmentProgressSeconds;

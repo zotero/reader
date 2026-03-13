@@ -20,6 +20,8 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected _paused = false;
 
+	protected _pausedAt: number | null = null;
+
 	protected _speed = 1;
 
 	protected _error: ErrorState | null = null;
@@ -33,6 +35,9 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	set paused(paused) {
+		if (paused) {
+			this._pausedAt = performance.now();
+		}
 		this._paused = paused;
 		this._clearDelayTimeout();
 		this._speak();
@@ -49,6 +54,13 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected _onSpeedChange() {
 		this._speak();
+	}
+
+	protected get _pauseDurationSeconds(): number {
+		if (this._pausedAt === null) {
+			return 0;
+		}
+		return (performance.now() - this._pausedAt) / 1000;
 	}
 
 	get position() {
