@@ -366,6 +366,7 @@ function ReadAloudPopup(props) {
 	function handleTierChange(value) {
 		setSelectedTier(value);
 		let restoredVoice = persistedTierVoices?.[value] ?? null;
+		pendingSetVoiceRef.current = true;
 		onChange({ voice: restoredVoice });
 	}
 
