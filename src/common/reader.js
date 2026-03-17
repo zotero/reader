@@ -341,7 +341,7 @@ class Reader {
 						onPurchaseReadAloudCredits={this._onPurchaseReadAloudCredits}
 						onToggleReadAloud={this.toggleReadAloudPopup.bind(this)}
 						onAddReadAloudAnnotation={this.addAnnotationFromReadAloudSegment.bind(this)}
-						onReadAloudSkip={this._handleReadAloudSkip.bind(this)}
+						onLockReadAloudPosition={this._lockPositionToReadAloud.bind(this)}
 						onToggleFind={this.toggleFindPopup.bind(this)}
 						onChangeFilter={this.setFilter.bind(this)}
 						onChangeSidebarView={(view) => {
@@ -933,7 +933,7 @@ class Reader {
 		};
 	}
 
-	_handleReadAloudSkip() {
+	_lockPositionToReadAloud() {
 		this._lastView?.lockPositionToReadAloud();
 	}
 
@@ -982,6 +982,9 @@ class Reader {
 		}
 		if (paused === undefined) {
 			paused = !this._state.readAloudState.paused;
+		}
+		if (!paused) {
+			this._lockPositionToReadAloud();
 		}
 		this._handleReadAloudStateChange({ paused });
 	}

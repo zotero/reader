@@ -25,7 +25,7 @@ import { formatTimeRemaining } from '../../lib/format-time-remaining';
 const URGENT_THRESHOLD_MINUTES = 3;
 
 function ReadAloudPopup(props) {
-	let { params, persistedVoices, remoteInterface, title, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onAddAnnotation, onSkip } = props;
+	let { params, persistedVoices, remoteInterface, title, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onAddAnnotation, onLockPosition } = props;
 	let controller = params.controller;
 
 	let [showOptions, setShowOptions] = useState(false);
@@ -231,14 +231,19 @@ function ReadAloudPopup(props) {
 		paused: params.paused,
 		speed: params.speed,
 		useSilentAudio: true,
-		onSetPaused: paused => onChange({ paused }),
+		onSetPaused: (paused) => {
+			if (!paused) {
+				onLockPosition();
+			}
+			onChange({ paused });
+		},
 		onSkipBack: () => {
 			controller?.skipBack();
-			onSkip();
+			onLockPosition();
 		},
 		onSkipAhead: () => {
 			controller?.skipAhead();
-			onSkip();
+			onLockPosition();
 		},
 	});
 
@@ -373,7 +378,7 @@ function ReadAloudPopup(props) {
 				onPlayPause={() => onChange({ paused: !params.paused })}
 				controller={controller}
 				onAddAnnotation={onAddAnnotation}
-				onSkip={onSkip}
+				onLockPosition={onLockPosition}
 			/>
 			{showOptions && <>
 				<SpeedSlider
@@ -430,7 +435,7 @@ function ReadAloudPopup(props) {
 function PlaybackControls(props) {
 	const { l10n } = useLocalization();
 
-	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation, onSkip } = props;
+	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation, onLockPosition } = props;
 
 	function handleAddAnnotation() {
 		let segment = controller?.getSegmentToAnnotate();
@@ -456,7 +461,7 @@ function PlaybackControls(props) {
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipBack(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
-						onSkip();
+						onLockPosition();
 					}}
 				><IconSkipBack/></button>
 				{showSpinner
@@ -468,7 +473,12 @@ function PlaybackControls(props) {
 						className="toolbar-button"
 						title={l10n.getString(`reader-read-aloud-${paused ? 'play' : 'pause'}`)}
 						tabIndex="-1"
-						onClick={onPlayPause}
+						onClick={() => {
+							if (paused) {
+								onLockPosition();
+							}
+							onPlayPause();
+						}}
 					>{paused ? <IconPlay/> : <IconPause/>}</button>
 				}
 				<button
@@ -477,7 +487,7 @@ function PlaybackControls(props) {
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipAhead(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
-						onSkip();
+						onLockPosition();
 					}}
 				><IconSkipAhead/></button>
 			</div>
