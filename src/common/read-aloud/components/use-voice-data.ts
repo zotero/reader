@@ -87,7 +87,7 @@ export function useVoiceData({ lang, remoteInterface }: {
 	);
 
 	// Resolve selectedLang if it's not in the available list
-	// (e.g. document declares lang="en" but available languages are ['en-US', 'en-GB'])
+	// (e.g. base language "en" needs to resolve to "en-US")
 	useEffect(() => {
 		if (availableLanguages.length && !availableLanguages.includes(selectedLang)) {
 			let resolved = resolveLanguage(selectedLang, availableLanguages);
