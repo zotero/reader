@@ -42,7 +42,11 @@ import {
 } from "./lib/range";
 import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
 import { FindProcessor } from "./lib/find";
-import { SELECTION_COLOR } from "../../common/defines";
+import {
+	READ_ALOUD_ACTIVE_SEGMENT_COLOR,
+	READ_ALOUD_ACTIVE_SENTENCE_COLOR,
+	SELECTION_COLOR
+} from "../../common/defines";
 import {
 	debounceUntilScrollFinishes,
 	getCodeCombination,
@@ -2068,7 +2072,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			case SpotlightKey.Navigation:
 				return SELECTION_COLOR;
 			case SpotlightKey.ReadAloudActiveSegment:
-				return '#4072e573';
+				return READ_ALOUD_ACTIVE_SEGMENT_COLOR;
+			case SpotlightKey.ReadAloudActiveSentence:
+				return READ_ALOUD_ACTIVE_SENTENCE_COLOR;
 			default:
 				throw new Error('Unknown highlight key: ' + key);
 		}
@@ -2209,6 +2215,7 @@ export const enum PageWidth {
 export const enum SpotlightKey {
 	Navigation = 'Navigation',
 	ReadAloudActiveSegment = 'ReadAloudActiveSegment',
+	ReadAloudActiveSentence = 'ReadAloudActiveSentence',
 }
 
 export default DOMView;

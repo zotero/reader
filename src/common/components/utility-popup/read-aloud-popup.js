@@ -169,10 +169,10 @@ function ReadAloudPopup(props) {
 			setBuffering(controller.buffering);
 		});
 		controller.addEventListener('ActiveSegmentChanging', (event) => {
-			onChange({ activeSegment: event.segment });
+			onChange({ activeSegment: event.segment, lastSkipGranularity: controller.lastSkipGranularity });
 		});
 		controller.addEventListener('ActiveSegmentChange', (event) => {
-			onChange({ activeSegment: event.segment });
+			onChange({ activeSegment: event.segment, lastSkipGranularity: controller.lastSkipGranularity });
 		});
 		controller.addEventListener('Complete', () => {
 			onChange({

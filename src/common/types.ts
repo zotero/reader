@@ -202,6 +202,7 @@ export type ReadAloudState = {
 	speed: number;
 	voice: string | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
+	lastSkipGranularity?: 'sentence' | 'paragraph' | null;
 };
 
 export type ReadAloudSegment = {

@@ -270,7 +270,8 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 
 	let allowResize = selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint();
 
-	let isSpotlight = annotation.key === SpotlightKey.ReadAloudActiveSegment;
+	let isSpotlight = annotation.key === SpotlightKey.ReadAloudActiveSegment
+		|| annotation.key === SpotlightKey.ReadAloudActiveSentence;
 
 	useEffect(() => {
 		if (!allowResize && isResizing) {

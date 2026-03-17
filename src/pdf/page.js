@@ -19,6 +19,7 @@ import {
 	FIND_RESULT_COLOR_CURRENT_LIGHT,
 	MIN_IMAGE_ANNOTATION_SIZE,
 	READ_ALOUD_ACTIVE_SEGMENT_COLOR,
+	READ_ALOUD_ACTIVE_SENTENCE_COLOR,
 	SELECTION_COLOR
 } from '../common/defines';
 import { getRectRotationOnText } from './selection';
@@ -509,6 +510,14 @@ class Renderer {
 			readAloudSig = [1, ...this._geomDigestFromRects(rects)];
 		}
 
+		// Read Aloud sentence highlighted position digest
+		let readAloudSentenceSig = [0];
+		let rasp = layer._readAloudSentenceHighlightedPosition;
+		if (rasp && (rasp.pageIndex === this._pageIndex || (rasp.nextPageRects && rasp.pageIndex + 1 === this._pageIndex))) {
+			let rects = rasp.rects || rasp.nextPageRects || [];
+			readAloudSentenceSig = [1, ...this._geomDigestFromRects(rects)];
+		}
+
 		// Annotations that affect this page
 		let annotations = layer._getPageAnnotations(this._pageIndex) || [];
 		let annSigs = [];
@@ -564,6 +573,7 @@ class Renderer {
 			...overlaysSig,
 			...highlightedSig,
 			...readAloudSig,
+			...readAloudSentenceSig,
 
 			// annotations
 			'#', ...annSigs.flat()
@@ -1413,6 +1423,19 @@ class Renderer {
 				}
 				else if (position.paths) {
 					this._drawInk(annotation2);
+				}
+			}
+
+			// Sentence highlight position (shown after sentence skip)
+			let readAloudSentenceHighlightedPosition = this._layer._readAloudSentenceHighlightedPosition;
+			if (readAloudSentenceHighlightedPosition && (
+				readAloudSentenceHighlightedPosition.pageIndex === this._pageIndex
+				|| readAloudSentenceHighlightedPosition.nextPageRects && readAloudSentenceHighlightedPosition.pageIndex + 1 === this._pageIndex
+			)) {
+				let position = readAloudSentenceHighlightedPosition;
+				let annotation2 = { position, color: READ_ALOUD_ACTIVE_SENTENCE_COLOR };
+				if (position.rects) {
+					this._drawHighlight(annotation2);
 				}
 			}
 

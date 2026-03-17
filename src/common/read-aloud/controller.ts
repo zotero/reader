@@ -30,6 +30,8 @@ export abstract class ReadAloudController extends EventTarget {
 
 	private _delayTimeout: ReturnType<typeof setTimeout> | null = null;
 
+	lastSkipGranularity: 'sentence' | 'paragraph' | null = null;
+
 	get paused() {
 		return this._paused;
 	}
@@ -143,6 +145,7 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	skipBack(granularity: 'sentence' | 'paragraph' = 'paragraph', accelerate = false) {
+		this.lastSkipGranularity = granularity;
 		let delta = accelerate ? 5 : 1;
 		let newPosition: number;
 		if (granularity === 'sentence') {
@@ -170,6 +173,7 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	skipAhead(granularity: 'sentence' | 'paragraph' = 'paragraph', accelerate = false) {
+		this.lastSkipGranularity = granularity;
 		let delta = accelerate ? 5 : 1;
 		let newPosition: number;
 		if (granularity === 'sentence') {
@@ -228,6 +232,7 @@ export abstract class ReadAloudController extends EventTarget {
 		if (this._paused) {
 			return;
 		}
+		this.lastSkipGranularity = null;
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChanging', null));
 		this.dispatchEvent(new ReadAloudEvent('ActiveSegmentChange', null));
 
