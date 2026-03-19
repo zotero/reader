@@ -1,5 +1,5 @@
 import { Selector } from "../dom/common/lib/selector";
-import { ReflowableAppearance } from "../dom/common/dom-view";
+import { ReflowableAppearance } from "../dom/common/lib/appearance";
 import { PersistentRange } from '../dom/common/lib/range';
 import { ReadAloudController } from './read-aloud/controller';
 
@@ -202,6 +202,7 @@ export type ReadAloudState = {
 	speed: number;
 	voice: string | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
+	lastSkipGranularity?: 'sentence' | 'paragraph' | null;
 };
 
 export type ReadAloudSegment = {

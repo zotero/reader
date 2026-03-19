@@ -42,7 +42,11 @@ import {
 } from "./lib/range";
 import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
 import { FindProcessor } from "./lib/find";
-import { SELECTION_COLOR } from "../../common/defines";
+import {
+	READ_ALOUD_ACTIVE_SEGMENT_COLOR,
+	READ_ALOUD_ACTIVE_SENTENCE_COLOR,
+	SELECTION_COLOR
+} from "../../common/defines";
 import {
 	debounceUntilScrollFinishes,
 	getCodeCombination,
@@ -65,7 +69,7 @@ import {
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
-import { DEFAULT_REFLOWABLE_APPEARANCE } from "./defines";
+import { DEFAULT_REFLOWABLE_APPEARANCE, PageWidth, type ReflowableAppearance } from "./lib/appearance";
 import { ReadAloud } from "./lib/read-aloud";
 
 abstract class DOMView<State extends DOMViewState, Data> {
@@ -2068,7 +2072,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			case SpotlightKey.Navigation:
 				return SELECTION_COLOR;
 			case SpotlightKey.ReadAloudActiveSegment:
-				return '#4072e573';
+				return READ_ALOUD_ACTIVE_SEGMENT_COLOR;
+			case SpotlightKey.ReadAloudActiveSentence:
+				return READ_ALOUD_ACTIVE_SENTENCE_COLOR;
 			default:
 				throw new Error('Unknown highlight key: ' + key);
 		}
@@ -2192,23 +2198,10 @@ export interface NavigateOptions extends CustomScrollIntoViewOptions {
 	skipHistory?: boolean;
 }
 
-export interface ReflowableAppearance {
-	lineHeight: number;
-	wordSpacing: number;
-	letterSpacing: number;
-	pageWidth: PageWidth;
-	useOriginalFont: boolean;
-}
-
-export const enum PageWidth {
-	Narrow = -1,
-	Normal = 0,
-	Full = 1
-}
-
 export const enum SpotlightKey {
 	Navigation = 'Navigation',
 	ReadAloudActiveSegment = 'ReadAloudActiveSegment',
+	ReadAloudActiveSentence = 'ReadAloudActiveSentence',
 }
 
 export default DOMView;

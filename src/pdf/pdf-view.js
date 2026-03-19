@@ -161,6 +161,7 @@ class PDFView {
 		this._selectionRanges = [];
 		this._highlightedPosition = null;
 		this._readAloudHighlightedPosition = null;
+		this._readAloudSentenceHighlightedPosition = null;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.addEventListener('load', () => this._iframe.classList.add('loaded'));
@@ -1016,6 +1017,8 @@ class PDFView {
 
 		if (!state.popupOpen) {
 			this._readAloudHighlightedPosition = null;
+			this._readAloudSentenceHighlightedPosition = null;
+			clearTimeout(this._readAloudSentenceTimeout);
 			this._render();
 			return;
 		}
@@ -1024,6 +1027,19 @@ class PDFView {
 			// Highlight the whole paragraph containing the active segment (matching dom-view behavior)
 			this._readAloudHighlightedPosition = this._getReadAloudParagraphPosition(state)
 				|| state.activeSegment.position;
+
+			// After a sentence skip, briefly highlight the active sentence segment
+			clearTimeout(this._readAloudSentenceTimeout);
+			if (state.lastSkipGranularity === 'sentence') {
+				this._readAloudSentenceHighlightedPosition = state.activeSegment.position;
+				this._readAloudSentenceTimeout = setTimeout(() => {
+					this._readAloudSentenceHighlightedPosition = null;
+					this._render();
+				}, 2000);
+			}
+			else {
+				this._readAloudSentenceHighlightedPosition = null;
+			}
 			this._render();
 
 			// If the Read Aloud annotation popup isn't open and position is locked, navigate to the current segment

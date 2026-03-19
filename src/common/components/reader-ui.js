@@ -276,7 +276,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							onPurchaseCredits={props.onPurchaseReadAloudCredits}
 							onLogIn={props.onLogIn}
 							onAddAnnotation={props.onAddReadAloudAnnotation}
-							onSkip={props.onReadAloudSkip}
+							onLockPosition={props.onLockReadAloudPosition}
 						/>
 						: <ReadAloudFirstRunPopup
 							lang={state.readAloudState.lang}

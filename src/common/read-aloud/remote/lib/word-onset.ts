@@ -1,15 +1,16 @@
 /**
- * Search backward from {@link position} for an inter-word silence in the
- * audio, then return the onset of the next word (where energy rises again).
+ * Search backward from {@link position} for inter-word silences in the
+ * audio, skipping back {@link wordBoundaries} word boundaries, and return
+ * the onset of the next word (where energy rises again).
  * Falls back to the original position when no clear boundary is found.
  */
-export function findWordOnset(buffer: AudioBuffer, position: number): number {
+export function findWordOnset(buffer: AudioBuffer, position: number, wordBoundaries = 1): number {
 	let sampleRate = buffer.sampleRate;
 	let data = buffer.getChannelData(0);
 	let posSample = Math.round(position * sampleRate);
 
 	let windowLen = Math.round(sampleRate * 0.005); // 5ms energy windows
-	let lookbackSamples = Math.round(sampleRate * 1.5);
+	let lookbackSamples = Math.round(sampleRate * 1.5 * wordBoundaries);
 	let searchStart = Math.max(0, posSample - lookbackSamples);
 
 	let numWindows = Math.floor((posSample - searchStart) / windowLen);
@@ -38,7 +39,9 @@ export function findWordOnset(buffer: AudioBuffer, position: number): number {
 	// intra-word consonant closures (typically 10-40ms)
 	let minSilenceWindows = Math.round(0.08 / 0.005); // 16 windows
 
-	// Search backward for a run of consecutive silent windows
+	// Search backward for runs of consecutive silent windows
+	let boundariesFound = 0;
+	let lastOnsetWindow = -1;
 	let silenceEnd = -1;
 	let silenceStart = -1;
 	for (let w = numWindows - 1; w >= 0; w--) {
@@ -46,7 +49,20 @@ export function findWordOnset(buffer: AudioBuffer, position: number): number {
 			if (silenceEnd < 0) silenceEnd = w;
 			silenceStart = w;
 			if (silenceEnd - silenceStart + 1 >= minSilenceWindows) {
-				break;
+				boundariesFound++;
+				// Find the word onset after this silence gap
+				for (let ow = silenceEnd + 1; ow < numWindows; ow++) {
+					if (energies[ow] >= threshold) {
+						lastOnsetWindow = ow;
+						break;
+					}
+				}
+				if (boundariesFound >= wordBoundaries) {
+					break;
+				}
+				// Continue searching backward from before this silence
+				silenceEnd = -1;
+				silenceStart = -1;
 			}
 		}
 		else {
@@ -55,15 +71,8 @@ export function findWordOnset(buffer: AudioBuffer, position: number): number {
 		}
 	}
 
-	if (silenceEnd < 0 || silenceEnd - silenceStart + 1 < minSilenceWindows) {
-		return position;
-	}
-
-	// Move forward past the silence to the word onset
-	for (let w = silenceEnd + 1; w < numWindows; w++) {
-		if (energies[w] >= threshold) {
-			return (searchStart + w * windowLen) / sampleRate;
-		}
+	if (lastOnsetWindow >= 0) {
+		return (searchStart + lastOnsetWindow * windowLen) / sampleRate;
 	}
 
 	return position;

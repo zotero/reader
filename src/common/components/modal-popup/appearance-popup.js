@@ -3,7 +3,7 @@ import cx from 'classnames';
 
 import IconRevert from '../../../../res/icons/16/revert.svg';
 import { useLocalization } from '@fluent/react';
-import { DEFAULT_REFLOWABLE_APPEARANCE } from '../../../dom/common/defines';
+import { DEFAULT_REFLOWABLE_APPEARANCE } from '../../../dom/common/lib/appearance';
 
 import IconColumnDouble from '../../../../res/icons/16/column-double.svg';
 import IconColumnSingle from '../../../../res/icons/16/column-single.svg';

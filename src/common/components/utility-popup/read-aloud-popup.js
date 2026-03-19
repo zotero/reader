@@ -25,7 +25,7 @@ import { formatTimeRemaining } from '../../lib/format-time-remaining';
 const URGENT_THRESHOLD_MINUTES = 3;
 
 function ReadAloudPopup(props) {
-	let { params, persistedVoices, remoteInterface, title, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onAddAnnotation, onSkip } = props;
+	let { params, persistedVoices, remoteInterface, title, loggedIn, onChange, onSetVoice, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onAddAnnotation, onLockPosition } = props;
 	let controller = params.controller;
 
 	let [showOptions, setShowOptions] = useState(false);
@@ -98,19 +98,21 @@ function ReadAloudPopup(props) {
 			pool = voicesForLanguage;
 		}
 		let isAvailable = id => id && pool.some(v => v.id === id);
+		// Skip persisted voice when user explicitly selected a different region
+		let regionChanged = params.region && persistedRegion && params.region !== persistedRegion;
 
 		// 1. Tier-specific voice for this language
-		if (isAvailable(persistedTierVoices?.[targetTier])) {
+		if (!regionChanged && isAvailable(persistedTierVoices?.[targetTier])) {
 			console.log(`Voice fallback: using tier-specific voice ${persistedTierVoices[targetTier]}`);
 			return persistedTierVoices[targetTier];
 		}
 		// 2. Last-used voice for this language
-		if (isAvailable(persistedVoice)) {
+		if (!regionChanged && isAvailable(persistedVoice)) {
 			console.log(`Voice fallback: using last-used voice ${persistedVoice}`);
 			return persistedVoice;
 		}
-		// 3. First voice matching the persisted or preferred region
-		let region = persistedRegion || getPreferredRegion(params.lang);
+		// 3. First voice matching the selected, persisted, or preferred region
+		let region = params.region || persistedRegion || getPreferredRegion(params.lang);
 		if (region) {
 			let regionMatch = pool.find(v => getVoiceRegion(v) === region);
 			if (regionMatch) {
@@ -120,7 +122,7 @@ function ReadAloudPopup(props) {
 		}
 		console.log(`Voice fallback: no match found, returning null (persistedVoice = ${persistedVoice}, region = ${region}, pool = ${pool.length})`);
 		return null;
-	}, [params.lang, persistedRegion, persistedTierVoices, persistedVoice, selectedTier, voicesForLanguage]);
+	}, [params.lang, params.region, persistedRegion, persistedTierVoices, persistedVoice, selectedTier, voicesForLanguage]);
 
 	// Fall back to local when selected tier when it becomes unavailable
 	useEffect(() => {
@@ -131,6 +133,7 @@ function ReadAloudPopup(props) {
 
 	let paramsRef = useRef(params);
 	let pausedRef = useRef(params.paused);
+	let pendingSetVoiceRef = useRef(false);
 	useEffect(() => {
 		paramsRef.current = params;
 		pausedRef.current = params.paused;
@@ -169,10 +172,10 @@ function ReadAloudPopup(props) {
 			setBuffering(controller.buffering);
 		});
 		controller.addEventListener('ActiveSegmentChanging', (event) => {
-			onChange({ activeSegment: event.segment });
+			onChange({ activeSegment: event.segment, lastSkipGranularity: controller.lastSkipGranularity });
 		});
 		controller.addEventListener('ActiveSegmentChange', (event) => {
-			onChange({ activeSegment: event.segment });
+			onChange({ activeSegment: event.segment, lastSkipGranularity: controller.lastSkipGranularity });
 		});
 		controller.addEventListener('Complete', () => {
 			onChange({
@@ -201,12 +204,17 @@ function ReadAloudPopup(props) {
 
 	useEffect(() => {
 		if (!controller) return;
-		controller.speed = params.speed;
+		// Guard against redundant sets -- the setter restarts audio playback,
+		// and this effect also re-runs on controller change with unchanged speed.
+		if (controller.speed !== params.speed) {
+			controller.speed = params.speed;
+		}
 	}, [controller, params.speed]);
 
 	// Reset language when it becomes unavailable
 	useEffect(() => {
-		if (languages.length && !languages.includes(params.lang)) {
+		let baseLang = getBaseLanguage(params.lang);
+		if (languages.length && !languages.some(l => getBaseLanguage(l) === baseLang)) {
 			let resolved = resolveLanguage(params.lang, languages) || languages[0];
 			onChange({ lang: resolved, region: null, voice: null });
 		}
@@ -231,14 +239,19 @@ function ReadAloudPopup(props) {
 		paused: params.paused,
 		speed: params.speed,
 		useSilentAudio: true,
-		onSetPaused: paused => onChange({ paused }),
+		onSetPaused: (paused) => {
+			if (!paused) {
+				onLockPosition();
+			}
+			onChange({ paused });
+		},
 		onSkipBack: () => {
 			controller?.skipBack();
-			onSkip();
+			onLockPosition();
 		},
 		onSkipAhead: () => {
 			controller?.skipAhead();
-			onSkip();
+			onLockPosition();
 		},
 	});
 
@@ -338,9 +351,22 @@ function ReadAloudPopup(props) {
 		});
 	}, [allVoices, fallbackVoiceID, onChange, params.active, params.lang, params.speed, params.voice, persistedSpeed, selectedTier, voicesForLanguage]);
 
+	// Persist voice after a manual language change, once the voice selection
+	// effect has resolved the new voice.
+	useEffect(() => {
+		if (pendingSetVoiceRef.current && params.voice) {
+			pendingSetVoiceRef.current = false;
+			let voice = allVoices.find(v => v.id === params.voice);
+			let tier = selectedTier || voice?.tier;
+			let region = voice ? getVoiceRegion(voice) : null;
+			onSetVoice({ lang: getBaseLanguage(params.lang), region, voice: params.voice, speed: params.speed, tier });
+		}
+	}, [allVoices, onSetVoice, params.lang, params.speed, params.voice, selectedTier]);
+
 	function handleTierChange(value) {
 		setSelectedTier(value);
 		let restoredVoice = persistedTierVoices?.[value] ?? null;
+		pendingSetVoiceRef.current = true;
 		onChange({ voice: restoredVoice });
 	}
 
@@ -352,8 +378,11 @@ function ReadAloudPopup(props) {
 		onSetVoice({ lang: getBaseLanguage(params.lang), region, voice: voiceID, speed: params.speed, tier });
 	}
 
-	function handleLangChange(lang) {
-		onChange({ lang, voice: null });
+	function handleLangChange(fullLang) {
+		let base = getBaseLanguage(fullLang);
+		let region = fullLang.includes('-') ? fullLang.substring(base.length + 1) : null;
+		pendingSetVoiceRef.current = true;
+		onChange({ lang: base, region, voice: null });
 	}
 
 	async function handleResetCredits() {
@@ -373,11 +402,12 @@ function ReadAloudPopup(props) {
 				onPlayPause={() => onChange({ paused: !params.paused })}
 				controller={controller}
 				onAddAnnotation={onAddAnnotation}
-				onSkip={onSkip}
+				onLockPosition={onLockPosition}
 			/>
 			{showOptions && <>
 				<SpeedSlider
 					speed={params.speed}
+					paused={params.paused}
 					onChange={onChange}
 					onSetVoice={onSetVoice}
 					lang={getBaseLanguage(params.lang)}
@@ -394,7 +424,7 @@ function ReadAloudPopup(props) {
 				/>
 				<LanguageRegionSelect
 					languages={languages}
-					lang={params.lang}
+					lang={currentVoiceRegion ? `${params.lang}-${currentVoiceRegion}` : params.lang}
 					onLangChange={handleLangChange}
 					tabIndex="-1"
 				/>
@@ -430,7 +460,7 @@ function ReadAloudPopup(props) {
 function PlaybackControls(props) {
 	const { l10n } = useLocalization();
 
-	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation, onSkip } = props;
+	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation, onLockPosition } = props;
 
 	function handleAddAnnotation() {
 		let segment = controller?.getSegmentToAnnotate();
@@ -456,7 +486,7 @@ function PlaybackControls(props) {
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipBack(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
-						onSkip();
+						onLockPosition();
 					}}
 				><IconSkipBack/></button>
 				{showSpinner
@@ -468,7 +498,12 @@ function PlaybackControls(props) {
 						className="toolbar-button"
 						title={l10n.getString(`reader-read-aloud-${paused ? 'play' : 'pause'}`)}
 						tabIndex="-1"
-						onClick={onPlayPause}
+						onClick={() => {
+							if (paused) {
+								onLockPosition();
+							}
+							onPlayPause();
+						}}
 					>{paused ? <IconPlay/> : <IconPause/>}</button>
 				}
 				<button
@@ -477,7 +512,7 @@ function PlaybackControls(props) {
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipAhead(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
-						onSkip();
+						onLockPosition();
 					}}
 				><IconSkipAhead/></button>
 			</div>
@@ -496,24 +531,35 @@ function PlaybackControls(props) {
 function SpeedSlider(props) {
 	const { l10n } = useLocalization();
 
-	let { speed, onChange, onSetVoice, lang, region, voice, tier } = props;
+	let { speed, paused, onChange, onSetVoice, lang, region, voice, tier } = props;
 	let [speedWhileDragging, setSpeedWhileDragging] = useState(null);
 	let draggingRef = useRef(false);
+	let wasPlayingRef = useRef(false);
+	let isLocal = tier === 'local';
 
 	function handleSpeedChange(event) {
+		let newSpeed = parseFloat(event.target.value);
 		if (!draggingRef.current) {
-			let newSpeed = parseFloat(event.target.value);
 			onChange({ speed: newSpeed });
 			onSetVoice({ lang, region, voice, speed: newSpeed, tier });
 		}
+		else if (isLocal) {
+			setSpeedWhileDragging(newSpeed);
+		}
 		else {
-			setSpeedWhileDragging(parseFloat(event.target.value));
+			onChange({ speed: newSpeed });
 		}
 	}
 
 	function handleSpeedPointerDown() {
 		draggingRef.current = true;
-		setSpeedWhileDragging(speed);
+		if (isLocal) {
+			setSpeedWhileDragging(speed);
+			wasPlayingRef.current = !paused;
+			if (!paused) {
+				onChange({ paused: true });
+			}
+		}
 	}
 
 	function handleSpeedPointerUp() {
@@ -521,13 +567,24 @@ function SpeedSlider(props) {
 			return;
 		}
 		draggingRef.current = false;
-		let newSpeed = speedWhileDragging;
-		if (newSpeed === null) {
-			return;
+		if (isLocal) {
+			let newSpeed = speedWhileDragging;
+			setSpeedWhileDragging(null);
+			let changes = {};
+			if (newSpeed !== null && newSpeed !== speed) {
+				changes.speed = newSpeed;
+			}
+			if (wasPlayingRef.current) {
+				changes.paused = false;
+			}
+			if (Object.keys(changes).length) {
+				onChange(changes);
+			}
+			onSetVoice({ lang, region, voice, speed: newSpeed ?? speed, tier });
 		}
-		onChange({ speed: newSpeed });
-		onSetVoice({ lang, region, voice, speed: newSpeed, tier });
-		setSpeedWhileDragging(null);
+		else {
+			onSetVoice({ lang, region, voice, speed, tier });
+		}
 	}
 
 	return (

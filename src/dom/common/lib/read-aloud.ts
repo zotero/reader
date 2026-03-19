@@ -53,6 +53,7 @@ export class ReadAloud<View extends DOMView<any, any>> {
 
 		if (!state.popupOpen) {
 			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
+			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, null);
 			return null;
 		}
 
@@ -95,6 +96,16 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			let selector = this._view.toSelector(range.toRange());
 			if (selector) {
 				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
+
+				// After a sentence skip, briefly highlight the active sentence segment
+				if (state.lastSkipGranularity === 'sentence' && state.activeSegment) {
+					let sentenceRange = (state.activeSegment.position as RangeRef).range;
+					let sentenceSelector = this._view.toSelector(sentenceRange.toRange());
+					this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, sentenceSelector, 2000);
+				}
+				else {
+					this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, null);
+				}
 
 				// If the Read Aloud annotation popup isn't open and position is locked, navigate to the current segment
 				if (!state.annotationPopup && this.positionLocked) {
