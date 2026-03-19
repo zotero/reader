@@ -501,7 +501,7 @@ function PlaybackControls(props) {
 			<div className="group">
 				<button
 					className="toolbar-button"
-					title={l10n.getString('reader-read-aloud-skip-back')}
+					title={l10n.getString(altDown ? 'reader-read-aloud-skip-back-sentence' : 'reader-read-aloud-skip-back')}
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipBack(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
@@ -527,7 +527,7 @@ function PlaybackControls(props) {
 				}
 				<button
 					className="toolbar-button"
-					title={l10n.getString('reader-read-aloud-skip-ahead')}
+					title={l10n.getString(altDown ? 'reader-read-aloud-skip-ahead-sentence' : 'reader-read-aloud-skip-ahead')}
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipAhead(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
