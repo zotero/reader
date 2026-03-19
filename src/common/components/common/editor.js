@@ -4,6 +4,64 @@ import cx from 'classnames';
 const supportedFormats = ['i', 'b', 'sub', 'sup'];
 const multiline = true;
 
+function getSelectionOffsets(root) {
+	let selection = root.ownerDocument.defaultView.getSelection();
+	if (!selection || selection.rangeCount === 0) {
+		return null;
+	}
+	let range = selection.getRangeAt(0);
+	if (!root.contains(range.startContainer) || !root.contains(range.endContainer)) {
+		return null;
+	}
+	let startRange = range.cloneRange();
+	startRange.selectNodeContents(root);
+	startRange.setEnd(range.startContainer, range.startOffset);
+	let endRange = range.cloneRange();
+	endRange.selectNodeContents(root);
+	endRange.setEnd(range.endContainer, range.endOffset);
+	return {
+		start: startRange.toString().length,
+		end: endRange.toString().length
+	};
+}
+
+function getTextNodeAtOffset(root, offset) {
+	let walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+	let currentOffset = 0;
+	let node;
+	while ((node = walker.nextNode())) {
+		let nextOffset = currentOffset + node.nodeValue.length;
+		if (offset <= nextOffset) {
+			return {
+				node,
+				offset: offset - currentOffset
+			};
+		}
+		currentOffset = nextOffset;
+	}
+	return {
+		node: root,
+		offset: root.childNodes.length
+	};
+}
+
+function restoreSelectionOffsets(root, savedSelection) {
+	if (!savedSelection) {
+		return;
+	}
+	let selection = root.ownerDocument.defaultView.getSelection();
+	if (!selection) {
+		return;
+	}
+	let start = getTextNodeAtOffset(root, savedSelection.start);
+	let end = getTextNodeAtOffset(root, savedSelection.end);
+	let range = root.ownerDocument.createRange();
+	range.setStart(start.node, start.offset);
+	range.setEnd(end.node, end.offset);
+	selection.removeAllRanges();
+	selection.addRange(range);
+}
+
 function getFormatter(str) {
 	let results = supportedFormats.map(format => str.toLowerCase().indexOf('<' + format + '>'));
 	results = results.map((offset, idx) => [supportedFormats[idx], offset]);
@@ -262,10 +320,12 @@ let Content = React.forwardRef((props, ref) => {
 	useEffect(() => {
 		if (lastValueRef.current !== props.text) {
 			lastValueRef.current = props.text;
+			let savedSelection = getSelectionOffsets(innerRef.current);
 			innerRef.current.innerText = props.text;
 			if (props.enableRichText) {
 				walkFormat(innerRef.current);
 			}
+			restoreSelectionOffsets(innerRef.current, savedSelection);
 		}
 	});
 
