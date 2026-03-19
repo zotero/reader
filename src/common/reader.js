@@ -989,14 +989,25 @@ class Reader {
 		this._handleReadAloudStateChange({ paused });
 	}
 
-	startReadAloudAtPosition(position = null) {
+	/**
+	 * @param {'move' | 'toggle'} behavior If 'move', always start Read Aloud, or move the reading position.
+	 * 		If 'toggle', use smart toggle logic: when there's a selection, move to it; otherwise, close Read Aloud.
+	 * @param {Position | null} position
+	 */
+	startReadAloudAtPosition({ behavior = 'move', position = null } = {}) {
 		if (!this._enableReadAloud) {
 			return;
 		}
-		if (!position && this._state[this._lastView + 'SelectionPopup']) {
-			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
+		let selectionPosition = this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
+			?.annotation?.position;
+		if (!position && selectionPosition) {
+			position = selectionPosition;
 		}
 		position ??= null;
+		if (behavior === 'toggle' && !position && this._state.readAloudState.popupOpen) {
+			this.toggleReadAloudPopup(false);
+			return;
+		}
 		this._handleReadAloudStateChange({
 			popupOpen: true,
 			active: true,

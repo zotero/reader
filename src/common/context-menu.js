@@ -199,7 +199,10 @@ export function createViewContextMenu(reader, params) {
 				{
 					label: reader._getString('reader-read-aloud'),
 					disabled: !params.position || !reader._enableReadAloud,
-					onCommand: () => reader.startReadAloudAtPosition(params.position)
+					onCommand: () => reader.startReadAloudAtPosition({
+						behavior: 'move',
+						position: params.position,
+					})
 				}
 			],
 			[
