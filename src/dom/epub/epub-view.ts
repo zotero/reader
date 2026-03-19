@@ -25,8 +25,8 @@ import DOMView, {
 	DOMViewState,
 	SpotlightKey,
 	NavigateOptions,
-	ReflowableAppearance
 } from "../common/dom-view";
+import { DEFAULT_REFLOWABLE_APPEARANCE, ReflowableAppearance } from "../common/lib/appearance";
 import SectionRenderer from "./section-renderer";
 import Section from "epubjs/types/section";
 import { closestElement, getContainingBlock } from "../common/lib/nodes";
@@ -46,7 +46,6 @@ import LRUCacheMap from "../../common/lib/lru-cache-map";
 import { mode } from "../common/lib/collection";
 import { debounce } from '../../common/lib/debounce';
 import { placeA11yVirtualCursor } from '../../common/lib/utilities';
-import { DEFAULT_REFLOWABLE_APPEARANCE } from "../common/defines";
 
 class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	protected _find: EPUBFindProcessor | null = null;
