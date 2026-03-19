@@ -293,7 +293,7 @@ export class KeyboardManager {
 		else if (code === `${pm}-Alt-KeyR` || code === `${pm}-Alt-KeyL`) {
 			event.preventDefault();
 			event.stopPropagation();
-			this._reader.startReadAloudAtPosition();
+			this._reader.startReadAloudAtPosition({ behavior: 'toggle' });
 		}
 		else if (['Delete', 'Backspace'].includes(key)) {
 			// Prevent the deletion of annotations when they are selected and the focus is within
