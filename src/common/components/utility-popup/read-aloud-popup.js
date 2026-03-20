@@ -59,9 +59,18 @@ function ReadAloudPopup(props) {
 		[voices]
 	);
 
+	let currentVoiceRegion = useMemo(() => {
+		let voice = allVoices.find(v => v.id === params.voice);
+		return voice ? getVoiceRegion(voice) : null;
+	}, [allVoices, params.voice]);
+
 	let voicesForLanguage = useMemo(
-		() => getVoicesForLanguage(voices, params.lang),
-		[voices, params.lang]
+		() => {
+			let region = currentVoiceRegion ?? params.region;
+			let lang = region ? `${params.lang}-${region}` : params.lang;
+			return getVoicesForLanguage(voices, lang);
+		},
+		[voices, params.lang, params.region, currentVoiceRegion]
 	);
 
 	let { voice: persistedVoice, region: persistedRegion, speed: persistedSpeed, tierVoices: persistedTierVoices } = useMemo(() => {
@@ -69,11 +78,6 @@ function ReadAloudPopup(props) {
 		if (!lang) return {};
 		return persistedVoices.get(lang) ?? {};
 	}, [params.lang, persistedVoices]);
-
-	let currentVoiceRegion = useMemo(() => {
-		let voice = allVoices.find(v => v.id === params.voice);
-		return voice ? getVoiceRegion(voice) : null;
-	}, [allVoices, params.voice]);
 
 	// Memoize the best fallback voice ID to avoid non-primitive useEffect deps
 	let fallbackVoiceID = useMemo(() => {
