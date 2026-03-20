@@ -356,7 +356,20 @@ export function splitRanges(
 		if (containedEnd) {
 			let after = range.cloneRange();
 			after.setStart(splitAtRange.endContainer, splitAtRange.endOffset);
-			if (!after.collapsed) splitRanges.push(after);
+			if (!after.collapsed) {
+				splitRanges.push(after);
+				// When splitAtRange is collapsed and falls in a gap between
+				// ranges, both containedStart and containedEnd are true for
+				// the range after the gap. The 'middle' portion (from
+				// splitAt.start to splitAt.end) is also collapsed and gets
+				// skipped, leaving splitIndex at -1. Without this fix,
+				// startIndex would be newRanges.length + (-1), incorrectly
+				// pointing to the previous range. Point to 'after' instead,
+				// which is the first range at/after the split point.
+				if (containedStart && splitIndex === -1) {
+					splitIndex = splitRanges.length - 1;
+				}
+			}
 		}
 
 		if (containedStart) {
