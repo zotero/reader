@@ -1403,6 +1403,10 @@ class Reader {
 		};
 
 		let onSetReadAloudState = (params) => {
+			if (typeof params.lang === 'string' && params.lang.includes('-')) {
+				console.warn(`View tried to set Read Aloud lang to tag containing region: ${params.lang}. Return only the bare language.`);
+				params.lang = params.lang.replace(/-.*$/, '');
+			}
 			this._updateState({ readAloudState: params });
 		};
 

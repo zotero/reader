@@ -23,6 +23,7 @@ import {
 } from "./rect";
 import { getContainingBlock, closestElement, iterateWalker } from "./nodes";
 import { debounceUntilScrollFinishes } from "../../../common/lib/utilities";
+import { getBaseLanguage } from '../../../common/read-aloud/lang';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class ReadAloud<View extends DOMView<any, any>> {
@@ -135,7 +136,7 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		if (!state.lang && this._view.lang) {
 			return {
 				...state,
-				lang: this._view.lang,
+				lang: getBaseLanguage(this._view.lang),
 			};
 		}
 
