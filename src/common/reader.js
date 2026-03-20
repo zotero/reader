@@ -997,13 +997,24 @@ class Reader {
 			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
 		}
 		position ??= null;
-		this._handleReadAloudStateChange({
-			popupOpen: true,
-			active: true,
-			paused: false,
-			targetPosition: position,
-			...this._getReadAloudSegmentResetState(),
-		});
+		// If already active with segments, just reposition without reinitializing
+		if (this._state.readAloudState.active && this._state.readAloudState.segments) {
+			this._handleReadAloudStateChange({
+				paused: false,
+				targetPosition: position,
+				activeSegment: null,
+				forwardStopIndex: null,
+			});
+		}
+		else {
+			this._handleReadAloudStateChange({
+				popupOpen: true,
+				active: true,
+				paused: false,
+				targetPosition: position,
+				...this._getReadAloudSegmentResetState(),
+			});
+		}
 	}
 
 	_setReadAloudVoice({ lang, region, voice, speed, tier }) {

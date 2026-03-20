@@ -1080,9 +1080,32 @@ class PDFView {
 			return;
 		}
 
-		if (!state.active
-			|| state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
-			|| !state.segmentGranularity) {
+		if (!state.active || !state.segmentGranularity) {
+			return;
+		}
+
+		// Reposition within existing segments without reinitializing
+		if (state.segments !== null && state.targetPosition) {
+			let backwardStopIndex = null;
+			for (let i = 0; i < state.segments.length; i++) {
+				let segment = state.segments[i];
+				if (segment.position.pageIndex === state.targetPosition.pageIndex
+					&& intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
+					backwardStopIndex = i;
+					break;
+				}
+			}
+			this._options.onSetReadAloudState({
+				...state,
+				paused: false,
+				backwardStopIndex,
+				forwardStopIndex: null,
+				targetPosition: undefined,
+			});
+			return;
+		}
+
+		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity) {
 			return;
 		}
 

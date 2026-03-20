@@ -139,9 +139,34 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			};
 		}
 
-		if (!state.active
-				|| state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity
-				|| !state.segmentGranularity) {
+		if (!state.active || !state.segmentGranularity) {
+			return null;
+		}
+
+		// Reposition within existing segments without reinitializing
+		if (state.segments !== null && state.targetPosition) {
+			let targetRange = this._view.toDisplayedRange(state.targetPosition as Selector);
+			if (targetRange) {
+				let backwardStopIndex: number | null = null;
+				for (let i = 0; i < state.segments.length; i++) {
+					let segmentRange = (state.segments[i].position as RangeRef).range.toRange();
+					// Find the first segment whose end is at or past the target start
+					if (segmentRange.compareBoundaryPoints(Range.END_TO_START, targetRange) >= 0) {
+						backwardStopIndex = i;
+						break;
+					}
+				}
+				return {
+					...state,
+					paused: false,
+					backwardStopIndex,
+					forwardStopIndex: null,
+					targetPosition: undefined,
+				};
+			}
+		}
+
+		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity) {
 			return null;
 		}
 
