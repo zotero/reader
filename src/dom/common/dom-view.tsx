@@ -17,6 +17,7 @@ import {
 	ReadAloudGranularity,
 	ReadAloudSegment,
 	ReadAloudState,
+	RangeRef,
 	SelectionPopupParams,
 	Theme,
 	Tool,
@@ -47,6 +48,7 @@ import {
 	READ_ALOUD_ACTIVE_SENTENCE_COLOR,
 	SELECTION_COLOR
 } from "../../common/defines";
+import { ReadAloudJumpButton } from "../../common/read-aloud/jump-button";
 import {
 	debounceUntilScrollFinishes,
 	getCodeCombination,
@@ -56,9 +58,10 @@ import {
 	isFirefox,
 	isMac,
 	isSafari,
-	placeA11yVirtualCursor
+	placeA11yVirtualCursor,
+	throttle
 } from "../../common/lib/utilities";
-import { closestElement, getContainingBlock, getLang, isBlock } from "./lib/nodes";
+import { closestElement, getContainingBlock, getLang, isBlock, isRTL } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
 	expandRect,
@@ -154,6 +157,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _lastSelectionRange: PersistentRange | null = null;
 
 	protected _readAloud!: ReadAloud<typeof this>;
+
+	protected _readAloudJumpButton!: ReadAloudJumpButton;
+
+	protected _readAloudJumpButtonBlock: Element | null = null;
 
 	protected _iframeCoordScaleFactor = 1;
 
@@ -302,7 +309,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
 		this._iframeWindow.addEventListener('click', this._handleClick.bind(this));
 		this._iframeDocument.addEventListener('pointerover', this._handlePointerOver.bind(this));
-		this._iframeDocument.addEventListener('pointerout', this._handlePointerLeave.bind(this));
+		this._iframeDocument.addEventListener('pointerout', this._handlePointerOut.bind(this));
 		this._iframeDocument.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		this._iframeDocument.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeDocument.addEventListener('pointercancel', this._handlePointerUp.bind(this));
@@ -322,6 +329,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframeDocument.addEventListener('wheel', this._handleWheelCapture.bind(this), { passive: false, capture: true });
 		this._iframeDocument.addEventListener('selectionchange', this._handleSelectionChange.bind(this));
 
+		this._iframeDocument.body.addEventListener('pointerleave', this._handlePointerLeave.bind(this));
+
 		let injectStyle = this._iframeDocument.createElement('style');
 		injectStyle.innerHTML = injectCSS;
 		this._iframeDocument.head.append(injectStyle);
@@ -340,6 +349,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let annotationsStyle = this._iframeDocument.createElement('style');
 		annotationsStyle.innerHTML = annotationsCSS;
 		this._annotationShadowRoot.append(annotationsStyle);
+
+		this._readAloudJumpButton = new ReadAloudJumpButton(this._iframeDocument, {
+			title: this._options.getLocalizedString?.('reader-read-aloud'),
+			onClick: () => this._handleReadAloudJumpButtonClick(),
+		});
 
 		this._iframeDocument.documentElement.classList.toggle('is-firefox', isFirefox);
 		this._iframeDocument.documentElement.classList.toggle('is-safari', isSafari);
@@ -880,11 +894,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
-	protected _handlePointerLeave(event: PointerEvent) {
-		const link = (event.target as Element).closest('a');
+	protected _handlePointerOut(event: PointerEvent) {
+		let link = (event.target as Element).closest('a');
 		if (link && !this._isExternalLink(link) && event.relatedTarget) {
 			this._handlePointerLeftInternalLink();
 		}
+	}
+
+	protected _handlePointerLeave(event: PointerEvent) {
+		this._hideReadAloudJumpButton();
 	}
 
 	protected _handlePointerOverInternalLink(link: HTMLAnchorElement) {
@@ -1608,6 +1626,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerMove(event: PointerEvent) {
+		this._handlePointerMoveForReadAloud(event);
+
 		if ((event.buttons & 1) !== 1 || !event.isPrimary) {
 			return;
 		}
@@ -1638,6 +1658,72 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._penActive ||= event.pointerType === 'pen';
 			event.stopPropagation();
 		}
+	}
+
+	protected _handlePointerMoveForReadAloud = throttle((event: MouseEvent) => {
+		if (!this._readAloud.state?.popupOpen || event.buttons !== 0) {
+			return;
+		}
+
+		let target = this._iframeDocument.elementFromPoint(event.clientX, event.clientY);
+		if (!target || this._readAloudJumpButton.contains(target)) {
+			return;
+		}
+
+		let element = closestElement(target);
+		if (!element) return;
+
+		let block = getContainingBlock(element);
+		if (!block || block === this._readAloudJumpButtonBlock) {
+			return;
+		}
+
+		// Only show for blocks that are the direct containing block of a segment,
+		// not ancestor blocks (e.g. a wrapper <div> containing <p>s in snapshots)
+		let segments = this._readAloud.state!.segments;
+		if (!segments
+				|| !segments.some(s => getContainingBlock(
+					closestElement((s.position as RangeRef).range.startContainer)!
+				) === block)) {
+			return;
+		}
+
+		this._readAloudJumpButtonBlock = block;
+
+		let blockRect = block.getBoundingClientRect();
+		let scrollX = this._iframeWindow.scrollX;
+		let scrollY = this._iframeWindow.scrollY;
+
+		let rtl = isRTL(block);
+		let width = rtl
+			? this._iframeDocument.documentElement.scrollWidth - blockRect.right - scrollX
+			: blockRect.left + scrollX;
+		this._readAloudJumpButton.show({
+			marginWidth: `${width}px`,
+			top: `${blockRect.top + scrollY}px`,
+			height: `${blockRect.height}px`,
+		});
+	}, 50);
+
+	protected _hideReadAloudJumpButton() {
+		this._readAloudJumpButton.hide();
+		this._readAloudJumpButtonBlock = null;
+	}
+
+	protected _handleReadAloudJumpButtonClick() {
+		if (!this._readAloudJumpButtonBlock || !this._readAloud.state) return;
+
+		let range = this._iframeDocument.createRange();
+		range.selectNodeContents(this._readAloudJumpButtonBlock);
+		range.collapse(true);
+		let selector = this.toSelector(range);
+		if (!selector) return;
+
+		this._options.onSetReadAloudState({
+			...this._readAloud.state,
+			activeSegment: null,
+			targetPosition: selector,
+		});
 	}
 
 	protected _canToolDoTouchAnnotation(toolType: ToolType): toolType is 'highlight' | 'underline' {
@@ -1999,6 +2085,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	setReadAloudState(state: ReadAloudState): void {
+		if (!state.popupOpen) {
+			this._hideReadAloudJumpButton();
+		}
 		let updatedState = this._readAloud.setState(state);
 		if (updatedState) {
 			this._options.onSetReadAloudState(updatedState);

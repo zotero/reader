@@ -20,8 +20,9 @@ export const DARKEN_INK_AND_TEXT_COLOR = 5; // percent
 //export let SELECTION_COLOR = navigator.platform.includes('Mac') ? '#71ADFD' : 'Highlight';
 // TEMP: Use Mac color everywhere, since Highlight is too dark on Windows without opacity
 export let SELECTION_COLOR = '#71ADFD';
-export const READ_ALOUD_ACTIVE_SEGMENT_COLOR = '#4072e573';
-export const READ_ALOUD_ACTIVE_SENTENCE_COLOR = '#4072e54d';
+export const READ_ALOUD_BASE_COLOR = '#4072e5';
+export const READ_ALOUD_ACTIVE_SEGMENT_COLOR = READ_ALOUD_BASE_COLOR + '73';
+export const READ_ALOUD_ACTIVE_SENTENCE_COLOR = READ_ALOUD_BASE_COLOR + '4d';
 
 export const PDF_NOTE_DIMENSIONS = 22; // pt
 export const MIN_IMAGE_ANNOTATION_SIZE = 10; // pt
