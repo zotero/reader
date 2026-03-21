@@ -4,6 +4,7 @@ import cx from 'classnames';
 // TODO: Resizing window doesn't properly reposition annotation popup on x axis, in EPUB view
 function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender }) {
 	const [popupPosition, setPopupPosition] = useState(null);
+	const [disableTransformForCaret, setDisableTransformForCaret] = useState(false);
 	const containerRef = useRef();
 	const xrect = useRef();
 
@@ -136,11 +137,42 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 		pointerClass['page-popup-' + pos.current.side + '-center'] = true;
 	}
 
+	function isTextEditableTarget(target) {
+		return !!target?.closest?.('div[contenteditable="true"], input, textarea');
+	}
+
+	function handleFocusCapture(event) {
+		if (isTextEditableTarget(event.target)) {
+			setDisableTransformForCaret(true);
+		}
+	}
+
+	function handleBlurCapture(event) {
+		let stillInsidePopup = containerRef.current?.contains(event.relatedTarget);
+		if (!stillInsidePopup) {
+			setDisableTransformForCaret(false);
+		}
+	}
+
+	let style = {};
+	if (pos.current) {
+		style = disableTransformForCaret
+			? {
+				left: pos.current.left, top: pos.current.top
+			}
+			: {
+				transform: `translate(${pos.current.left}px, ${pos.current.top}px)`
+			};
+
+	}
+
 	return (
 		<div
 			ref={containerRef}
 			className={cx('view-popup', className, { ...pointerClass })}
-			style={pos.current ? { transform: `translate(${pos.current.left}px, ${pos.current.top}px)` } : {}}
+			onFocusCapture={handleFocusCapture}
+			onBlurCapture={handleBlurCapture}
+			style={style}
 		>
 			{children}
 		</div>
