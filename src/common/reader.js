@@ -2116,8 +2116,15 @@ class Reader {
 		let currentAnnotation = this._annotationManager._getAnnotationByID(id);
 		let selectedAnnotations = this._annotationManager._annotations.filter(x => selectedIDs.includes(x.id));
 		let allAnnotations = this._annotationManager._annotations;
-		// Get target rect from preview component in the sidebar or a view popup
-		let labelNode = document.querySelector(`[data-sidebar-annotation-id="${id}"] header .label, .view-popup header .label`);
+		// Get target rect from the currently visible source: sidebar annotation item
+		// (when annotations sidebar is active) or the view annotation popup label.
+		let labelNode;
+		if (this._state.sidebarOpen && this._state.sidebarView === 'annotations') {
+			labelNode = document.querySelector(`[data-sidebar-annotation-id="${id}"] header .label`);
+		}
+		else {
+			labelNode = document.querySelector('.annotation-popup header .label');
+		}
 		let { left, top, right, bottom } = labelNode.getBoundingClientRect();
 		let rect = [left, top, right, bottom];
 		this._updateState({ labelPopup: { currentAnnotation, selectedAnnotations, allAnnotations, rect, selectedIDs, pageLabels } });
