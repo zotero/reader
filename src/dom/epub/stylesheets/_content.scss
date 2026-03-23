@@ -41,15 +41,6 @@
 	}
 }
 
-:root {
-	--link-color: #0000ee;
-	--visited-link-color: #551a8b;
-
-	&[data-color-scheme="dark"] {
-		--link-color: #63caff;
-		--visited-link-color: #0099e5;
-	}
-}
 
 :root {
 	font-size: calc(var(--content-scale) * 13pt) !important;

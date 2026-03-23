@@ -48,10 +48,10 @@ export const INK_ANNOTATION_WIDTH_STEPS = [
 export const TEXT_ANNOTATION_FONT_SIZE_STEPS = [6, 8, 10, 12, 14, 18, 24, 36, 48, 64, 72, 96, 144, 192];
 
 export const DEFAULT_THEMES = [
-	{ id: 'dark', label: 'Dark', background: "#2E3440", foreground: "#D8DEE9" },
-	{ id: 'black', label: 'Black', background: "#000000", foreground: "#FFFFFF", invertImages: true },
-	{ id: 'snow', label: 'Snow', background: "#ECEFF4", foreground: "#3B4252" },
-	{ id: 'sepia', label: 'Sepia', background: "#F4ECD8", foreground: "#5B4636" }
+	{ id: 'dark', label: 'Dark', background: "#2E3440", foreground: "#D8DEE9", linkColor: "#88C0D0", visitedLinkColor: "#6E9FAB" },
+	{ id: 'black', label: 'Black', background: "#000000", foreground: "#FFFFFF", linkColor: "#6CB6FF", visitedLinkColor: "#5A92CC", invertImages: true },
+	{ id: 'snow', label: 'Snow', background: "#ECEFF4", foreground: "#3B4252", linkColor: "#4C6E96", visitedLinkColor: "#3D5975" },
+	{ id: 'sepia', label: 'Sepia', background: "#F4ECD8", foreground: "#5B4636", linkColor: "#8A4F3D", visitedLinkColor: "#6E3F31" }
 ];
 
 export const A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH = 500; // ms
