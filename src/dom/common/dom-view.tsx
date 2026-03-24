@@ -1009,6 +1009,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let f = this._getFocusState();
 
 		if (key === 'Escape' && !this._resizingAnnotationID) {
+			let handled = false;
 			if (this._selectedAnnotationIDs.length) {
 				this._options.onSelectAnnotations([], event);
 				if (this._lastKeyboardFocusedAnnotationID) {
@@ -1017,14 +1018,23 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					) as HTMLElement | SVGElement | null)
 					?.focus({ preventScroll: true });
 				}
+				handled = true;
 			}
 			else if (f.focusedElement) {
 				f.focusedElement.blur();
+				handled = true;
 			}
-			this._iframeWindow.getSelection()?.removeAllRanges();
-			// The keyboard shortcut was handled here, therefore no need to
-			// pass it to this._onKeyDown(event) below
-			return;
+			const selection = this._iframeWindow.getSelection();
+			if (selection && !selection.isCollapsed) {
+				selection.removeAllRanges();
+				handled = true;
+			}
+
+			// If Escape was handled locally (annotation selection/focus/text selection),
+			// don't forward it to common shortcuts.
+			if (handled) {
+				return;
+			}
 		}
 		else if (key === 'Shift-Tab') {
 			if (f.focusedElement) {
