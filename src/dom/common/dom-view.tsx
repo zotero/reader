@@ -1264,7 +1264,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	private _handleContextMenu(event: MouseEvent) {
-		if (this._options.platform === 'web') {
+		if (this._options.platform === 'web'
+				// Android fires contextmenu event before showing text selection context menu
+				|| this._options.platform === 'android') {
 			return;
 		}
 		// Prevent native context menu
