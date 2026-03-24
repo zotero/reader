@@ -203,6 +203,7 @@ export type ReadAloudState = {
 	voice: string | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
 	lastSkipGranularity?: 'sentence' | 'paragraph' | null;
+	savedPosition?: Position | null;
 };
 
 export type ReadAloudSegment = {

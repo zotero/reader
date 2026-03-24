@@ -1273,6 +1273,17 @@ class PDFView {
 		this._readAloudPositionLocked = true;
 	}
 
+	getSerializableReadAloudPosition(position) {
+		return position;
+	}
+
+	isReadAloudPositionTooFar(savedPosition, viewState) {
+		if (savedPosition.pageIndex === undefined) {
+			return false;
+		}
+		return Math.abs(viewState.pageIndex - savedPosition.pageIndex) > 2;
+	}
+
 	_isPositionInViewBounds(position) {
 		let viewerContainer = this._iframeWindow?.document.getElementById('viewerContainer');
 		if (!viewerContainer) {
