@@ -139,7 +139,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _spotlights = new Map<SpotlightKey, Selector>();
 
-	protected _pointerMovedWhileDown = false;
+	protected _pointerMovementWhileDown = 0;
+
+	protected _lastPointerPosition: { x: number, y: number } | null = null;
 
 	protected _gotPointerUp = false;
 
@@ -1435,7 +1437,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		if (event.button !== 0
-				|| this._options.mobile && this._pointerMovedWhileDown) {
+				|| this._options.mobile && this._pointerMovementWhileDown > 5) {
 			return;
 		}
 
@@ -1527,7 +1529,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handlePointerDown(event: PointerEvent) {
 		if ((event.buttons & 1) === 1 && event.isPrimary) {
 			this._gotPointerUp = false;
-			this._pointerMovedWhileDown = false;
+			this._pointerMovementWhileDown = 0;
+			this._lastPointerPosition = { x: event.clientX, y: event.clientY };
 
 			let touchCaretPosition = this._getTouchAnnotationStartPosition(event);
 			if (touchCaretPosition) {
@@ -1587,13 +1590,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// If we're using a tool that immediately creates an annotation based on the current selection, we want to use
 		// debounced _tryUseTool() in order to wait for double- and triple-clicks to complete. A multi-click is only
 		// possible if the pointer hasn't moved while down.
-		else if (!this._pointerMovedWhileDown && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
+		else if (this._pointerMovementWhileDown <= 5 && (this._tool.type == 'highlight' || this._tool.type == 'underline')) {
 			this._tryUseToolDebounced();
 		}
 		else {
 			let wasToolUsed = this._tryUseTool();
 			if (!wasToolUsed
-					&& !this._pointerMovedWhileDown
+					&& this._pointerMovementWhileDown <= 5
 					&& !this._handledPointerIDs.has(event.pointerId)
 					&& !(event.target as Element).closest('a')) {
 				this._options.onBackdropTap?.(event);
@@ -1608,7 +1611,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if ((event.buttons & 1) !== 1 || !event.isPrimary) {
 			return;
 		}
-		this._pointerMovedWhileDown = true;
+		if (this._lastPointerPosition) {
+			this._pointerMovementWhileDown
+				+= Math.abs(event.clientX - this._lastPointerPosition.x)
+				+ Math.abs(event.clientY - this._lastPointerPosition.y);
+		}
+		this._lastPointerPosition = { x: event.clientX, y: event.clientY };
 		if (this._touchAnnotationStartPosition
 				&& this._canToolDoTouchAnnotation(this._tool.type)
 				&& this._canPointerEventDoTouchAnnotation(event)) {
