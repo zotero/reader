@@ -20,6 +20,7 @@ function decodeBase64(base64) {
 }
 
 window.createView = options => {
+	options.platform = 'ios';
     log("Create " + options.type + " view");
 	const annotations = JSON.parse(decodeBase64(options.annotations));
     log("Loaded " + annotations.length + " annotations");
