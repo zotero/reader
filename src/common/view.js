@@ -68,6 +68,7 @@ class View {
 
 		let common = {
 			primary: true,
+			platform: this._options.platform,
 			mobile: true,
 			showAnnotations: true,
 			container: this._options.container,
