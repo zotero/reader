@@ -1546,13 +1546,8 @@ class PDFView {
 		}
 	}
 
-	_updateReadAloudJumpButton(position, event) {
+	_updateReadAloudJumpButton(position) {
 		if (!this._readAloudState?.popupOpen || !this._readAloudSegments?.paragraphs || !position) {
-			return;
-		}
-
-		let target = this._iframeWindow.document.elementFromPoint(event.clientX, event.clientY);
-		if (this._readAloudJumpButton.contains(target)) {
 			return;
 		}
 
@@ -4078,7 +4073,8 @@ class PDFView {
 	}
 
 	pointerEventToPosition(event) {
-		let target = this._iframeWindow.document.elementFromPoint(event.clientX, event.clientY);
+		let targets = this._iframeWindow.document.elementsFromPoint(event.clientX, event.clientY);
+		let target = targets.find(t => t.closest('.page'));
 		if (!target) {
 			return null;
 		}

@@ -1665,8 +1665,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
-		let target = this._iframeDocument.elementFromPoint(event.clientX, event.clientY);
-		if (!target || this._readAloudJumpButton.contains(target)) {
+		let targets = this._iframeDocument.elementsFromPoint(event.clientX, event.clientY)
+			.filter(target => !this._readAloudJumpButton.contains(target));
+		let target = targets[0];
+		if (!target) {
 			return;
 		}
 
