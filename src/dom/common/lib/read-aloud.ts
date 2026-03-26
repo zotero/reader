@@ -7,7 +7,7 @@ import {
 	WADMAnnotation,
 } from "../../../common/types";
 import { exceedsSegmentMaxLength, splitTextToChunks } from "../../../common/read-aloud/segment-split";
-import { Selector } from "./selector";
+import { isSelector, Selector } from "./selector";
 import DOMView, { SpotlightKey } from "../dom-view";
 import {
 	createRangeWalker, getBoundingPageRect,
@@ -24,6 +24,7 @@ import {
 import { getContainingBlock, closestElement, iterateWalker } from "./nodes";
 import { debounceUntilScrollFinishes } from "../../../common/lib/utilities";
 import { getBaseLanguage } from '../../../common/read-aloud/lang';
+import EPUBView from '../../epub/epub-view';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class ReadAloud<View extends DOMView<any, any>> {
@@ -146,22 +147,21 @@ export class ReadAloud<View extends DOMView<any, any>> {
 
 		// Reposition within existing segments without reinitializing
 		if (state.segments !== null && state.targetPosition) {
-			let targetRange = this._view.toDisplayedRange(state.targetPosition as Selector);
+			let targetRange;
+			if (isSelector(state.targetPosition)) {
+				targetRange = this._view.toDisplayedRange(state.targetPosition as Selector);
+			}
+			else if ('range' in state.targetPosition) {
+				targetRange = state.targetPosition.range.toRange();
+			}
 			if (targetRange) {
 				let backwardStopIndex: number | null = null;
 				for (let i = 0; i < state.segments.length; i++) {
 					let segmentRange = (state.segments[i].position as RangeRef).range.toRange();
 					// Find the first segment whose end is at or past the target start
-					try {
-						if (segmentRange.compareBoundaryPoints(Range.END_TO_START, targetRange) >= 0) {
-							backwardStopIndex = i;
-							break;
-						}
-					}
-					catch {
-						// Firefox bug - throws "Node cannot be used in a document other than the one in which it was
-						// created" even though the ranges are in the same document. Odd! Doesn't seem to cause problems
-						// if we ignore it.
+					if (EPUBView.compareBoundaryPoints(Range.END_TO_START, segmentRange, targetRange) >= 0) {
+						backwardStopIndex = i;
+						break;
 					}
 				}
 				return {

@@ -1735,13 +1735,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		blockRange.collapse(true);
-		let selector = this.toSelector(blockRange);
-		if (!selector) return;
 
 		this._options.onSetReadAloudState({
 			...this._readAloud.state,
 			activeSegment: null,
-			targetPosition: selector,
+			targetPosition: { range: new PersistentRange(blockRange) },
 		});
 	}
 
