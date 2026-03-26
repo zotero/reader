@@ -14,7 +14,7 @@ button {
 	all: unset;
 	dir: inherit;
 	display: flex;
-	align-items: center;
+	align-items: flex-start;
 	justify-content: flex-end;
 	width: 100%;
 	height: 100%;
