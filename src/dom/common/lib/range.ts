@@ -37,7 +37,7 @@ export class PersistentRange {
 	}
 
 	toRange(): Range {
-		let range = new Range();
+		let range = this.startContainer.ownerDocument!.createRange();
 		range.setStart(this.startContainer, this.startOffset);
 		range.setEnd(this.endContainer, this.endOffset);
 		return range;
@@ -164,7 +164,7 @@ export function splitRangeToTextNodes(range: Range): Range[] {
 			node = treeWalker.nextNode();
 			continue;
 		}
-		let subRange = document.createRange();
+		let subRange = node.ownerDocument!.createRange();
 		subRange.setStart(node, range.startContainer == node ? range.startOffset : 0);
 		subRange.setEnd(node, range.endContainer == node ? range.endOffset : node.nodeValue.length);
 		ranges.push(subRange);
@@ -398,9 +398,9 @@ export function splitRanges(
  * at offset 0 to nodeD at offset 9, the output of makeRangeSpanning(rangeA, rangeB) would be a
  * range from nodeA at offset 5 to nodeD at offset 9.
  */
-export function makeRangeSpanning(ranges: Range[], sorted = false): Range {
+export function makeRangeSpanning(ranges: Range[], sorted = false, doc = document): Range {
 	if (!ranges.length) {
-		return document.createRange();
+		return doc.createRange();
 	}
 	if (sorted) {
 		let range = ranges[0].cloneRange();

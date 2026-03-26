@@ -60,6 +60,7 @@ import {
 	MIN_TEXT_ANNOTATION_WIDTH,
 	PDF_NOTE_DIMENSIONS
 } from '../common/defines';
+import { ReadAloudJumpButton } from '../common/read-aloud/jump-button';
 import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
@@ -313,6 +314,12 @@ class PDFView {
 		this._dragCanvas.style.left = '-100%';
 		this._iframeWindow.document.body.append(this._dragCanvas);
 
+		this._readAloudJumpButton = new ReadAloudJumpButton(this._iframeWindow.document, {
+			container: this._iframeWindow.document.getElementById('viewerContainer'),
+			title: this._options.getLocalizedString?.('reader-read-aloud'),
+			onClick: () => this._handleReadAloudJumpButtonClick(),
+		});
+		this._readAloudJumpButtonParagraph = null;
 
 		this._autoScroll = new AutoScroll({
 			container: this._iframeWindow.document.getElementById('viewerContainer')
@@ -1019,6 +1026,7 @@ class PDFView {
 			this._readAloudHighlightedPosition = null;
 			this._readAloudSentenceHighlightedPosition = null;
 			clearTimeout(this._readAloudSentenceTimeout);
+			this._hideReadAloudJumpButton();
 			this._render();
 			return;
 		}
@@ -1536,6 +1544,63 @@ class PDFView {
 		if (this._readAloudState?.active) {
 			this._readAloudPositionLocked = false;
 		}
+	}
+
+	_updateReadAloudJumpButton(position) {
+		if (!this._readAloudState?.popupOpen || !this._readAloudSegments?.paragraphs || !position) {
+			return;
+		}
+
+		let paragraph = null;
+		for (let p of this._readAloudSegments.paragraphs) {
+			if (p.position.pageIndex !== position.pageIndex) continue;
+			if (intersectAnnotationWithPoint(p.position, position)) {
+				paragraph = p;
+				break;
+			}
+		}
+
+		if (!paragraph || paragraph === this._readAloudJumpButtonParagraph) {
+			return;
+		}
+
+		this._readAloudJumpButtonParagraph = paragraph;
+		let paraRect = getPositionBoundingRect(paragraph.position);
+		let clientRect = this.getClientRect(paraRect, paragraph.position.pageIndex);
+		let container = this._iframeWindow.document.getElementById('viewerContainer');
+		let containerRect = container.getBoundingClientRect();
+
+		let width = clientRect[0] - containerRect.left;
+		let height = clientRect[3] - clientRect[1];
+		this._readAloudJumpButton.show({
+			marginWidth: `${width}px`,
+			top: `${clientRect[1] - containerRect.top + container.scrollTop}px`,
+			height: `${Math.max(height, 20)}px`,
+		});
+	}
+
+	_hideReadAloudJumpButton() {
+		this._readAloudJumpButton.hide();
+		this._readAloudJumpButtonParagraph = null;
+	}
+
+	_handleReadAloudJumpButtonClick() {
+		if (!this._readAloudJumpButtonParagraph || !this._readAloudState) return;
+
+		let paragraph = this._readAloudJumpButtonParagraph;
+
+		// Immediately move the highlight to the target paragraph
+		this._readAloudHighlightedPosition = paragraph.position;
+		this._render();
+
+		this._options.onSetReadAloudState({
+			...this._readAloudState,
+			activeSegment: null,
+			targetPosition: {
+				pageIndex: paragraph.position.pageIndex,
+				rects: paragraph.position.rects,
+			},
+		});
 	}
 
 	async navigate(location, options = {}) {
@@ -2618,6 +2683,7 @@ class PDFView {
 			else {
 				this.updateCursor();
 			}
+			this._updateReadAloudJumpButton(position, event);
 			this._render();
 			return;
 		}
@@ -4012,7 +4078,8 @@ class PDFView {
 	}
 
 	pointerEventToPosition(event) {
-		let target = this._iframeWindow.document.elementFromPoint(event.clientX, event.clientY);
+		let targets = this._iframeWindow.document.elementsFromPoint(event.clientX, event.clientY);
+		let target = targets.find(t => t.closest('.page'));
 		if (!target) {
 			return null;
 		}
