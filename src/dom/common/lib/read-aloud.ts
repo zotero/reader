@@ -152,9 +152,16 @@ export class ReadAloud<View extends DOMView<any, any>> {
 				for (let i = 0; i < state.segments.length; i++) {
 					let segmentRange = (state.segments[i].position as RangeRef).range.toRange();
 					// Find the first segment whose end is at or past the target start
-					if (segmentRange.compareBoundaryPoints(Range.END_TO_START, targetRange) >= 0) {
-						backwardStopIndex = i;
-						break;
+					try {
+						if (segmentRange.compareBoundaryPoints(Range.END_TO_START, targetRange) >= 0) {
+							backwardStopIndex = i;
+							break;
+						}
+					}
+					catch {
+						// Firefox bug - throws "Node cannot be used in a document other than the one in which it was
+						// created" even though the ranges are in the same document. Odd! Doesn't seem to cause problems
+						// if we ignore it.
 					}
 				}
 				return {
@@ -280,7 +287,8 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		}
 		let range = makeRangeSpanning(
 			segments.map(s => (s.position as RangeRef).range.toRange()),
-			true
+			true,
+			this._view.iframeDocument,
 		);
 		let annotation = this._view.getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
@@ -338,7 +346,7 @@ export class ReadAloud<View extends DOMView<any, any>> {
 					return sentences;
 				}
 				let firstRange = sentences[0];
-				let restRange = makeRangeSpanning(sentences.slice(1), true);
+				let restRange = makeRangeSpanning(sentences.slice(1), true, this._view.iframeDocument);
 				return [firstRange, restRange];
 			});
 		}

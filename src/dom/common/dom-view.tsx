@@ -471,7 +471,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 		let range: Range;
 		if (type === 'highlight' || type === 'underline') {
-			range = makeRangeSpanning(getSelectionRanges(selection));
+			range = makeRangeSpanning(
+				getSelectionRanges(selection),
+				false,
+				this._iframeDocument,
+			);
 		}
 		else if (type === 'note') {
 			let element = closestElement(selection.getRangeAt(0).commonAncestorContainer);
@@ -754,7 +758,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (selection.isCollapsed) {
 			return;
 		}
-		let range = moveRangeEndsIntoTextNodes(makeRangeSpanning(getSelectionRanges(selection)));
+		let range = moveRangeEndsIntoTextNodes(
+			makeRangeSpanning(
+				getSelectionRanges(selection),
+				false,
+				this._iframeDocument,
+			)
+		);
 		// Split the selection into its column-separated parts and get the
 		// bounding rect encompassing the visible ones. This gives us a more
 		// accurate anchor for the popup.
