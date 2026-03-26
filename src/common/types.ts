@@ -223,6 +223,8 @@ export type Theme = {
 	label: string;
 	background: string;
 	foreground: string;
+	linkColor?: string;
+	visitedLinkColor?: string;
 	invertImages?: boolean;
 };
 

@@ -874,6 +874,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			root.style.colorScheme = themeColorScheme;
 			root.style.setProperty('--background-color', theme.background);
 			root.style.setProperty('--text-color', theme.foreground);
+			root.style.setProperty('--link-color', theme.linkColor || theme.foreground);
+			root.style.setProperty('--visited-link-color', theme.visitedLinkColor || theme.linkColor || theme.foreground);
 		}
 
 		this._theme = theme;
