@@ -1715,10 +1715,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleReadAloudJumpButtonClick() {
 		if (!this._readAloudJumpButtonBlock || !this._readAloud.state) return;
 
-		let range = this._iframeDocument.createRange();
-		range.selectNodeContents(this._readAloudJumpButtonBlock);
-		range.collapse(true);
-		let selector = this.toSelector(range);
+		let blockRange = this._iframeDocument.createRange();
+		blockRange.selectNodeContents(this._readAloudJumpButtonBlock);
+
+		// Immediately move the highlight to the target block
+		let blockSelector = this.toSelector(blockRange);
+		if (blockSelector) {
+			this.setSpotlight(SpotlightKey.ReadAloudActiveSegment, blockSelector, null);
+		}
+
+		blockRange.collapse(true);
+		let selector = this.toSelector(blockRange);
 		if (!selector) return;
 
 		this._options.onSetReadAloudState({

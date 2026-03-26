@@ -1588,6 +1588,11 @@ class PDFView {
 		if (!this._readAloudJumpButtonParagraph || !this._readAloudState) return;
 
 		let paragraph = this._readAloudJumpButtonParagraph;
+
+		// Immediately move the highlight to the target paragraph
+		this._readAloudHighlightedPosition = paragraph.position;
+		this._render();
+
 		this._options.onSetReadAloudState({
 			...this._readAloudState,
 			activeSegment: null,
