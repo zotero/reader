@@ -216,6 +216,7 @@ class Reader {
 				voice: null,
 				annotationPopup: null,
 				segmentAnnotations: new Map(),
+				savedPosition: options.primaryViewState?.lastReadAloudPosition ?? null,
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
@@ -554,6 +555,19 @@ class Reader {
 					&& this._primaryView?.hasReadAloudTarget) {
 				Object.assign(this._state.readAloudState, this._getReadAloudSegmentResetState());
 			}
+
+			// Update savedPosition when the active segment changes.
+			// Convert to a format usable as targetPosition and serializable
+			// for the synced setting.
+			let { activeSegment } = this._state.readAloudState;
+			if (activeSegment && activeSegment !== previousState.readAloudState.activeSegment) {
+				let savedPosition = activeSegment.position;
+				if (this._primaryView) {
+					savedPosition = this._primaryView.getSerializableReadAloudPosition(savedPosition);
+				}
+				this._state.readAloudState.savedPosition = savedPosition;
+			}
+
 			this._primaryView?.setReadAloudState(this._state.readAloudState);
 			this._secondaryView?.setReadAloudState(this._state.readAloudState);
 
@@ -919,6 +933,13 @@ class Reader {
 		// Ignore late changes due to event handlers after popup has closed
 		if (!this._state.readAloudState.popupOpen && !state.popupOpen) {
 			return;
+		}
+		// When Read Aloud becomes active with no explicit target, resume from
+		// the saved position, which may have been persisted from a previous session
+		if (state.active && !this._state.readAloudState.active
+				&& !state.targetPosition
+				&& this._state.readAloudState.savedPosition) {
+			state = { ...state, targetPosition: this._state.readAloudState.savedPosition };
 		}
 		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
 	}
@@ -1323,6 +1344,20 @@ class Reader {
 			if (!primary) {
 				let { splitType, splitSize } = this._state;
 				state = { ...state, splitType, splitSize };
+			}
+			// Include lastReadAloudPosition in the view state so Zotero can
+			// persist it as a synced setting. If the user has scrolled too far
+			// from the saved position, clear the synced setting.
+			if (primary) {
+				let { savedPosition } = this._state.readAloudState;
+				let lastReadAloudPosition = savedPosition ?? null;
+				if (lastReadAloudPosition) {
+					let tooFar = this._primaryView?.isReadAloudPositionTooFar(lastReadAloudPosition, state);
+					if (tooFar) {
+						lastReadAloudPosition = null;
+					}
+				}
+				state = { ...state, lastReadAloudPosition };
 			}
 			this._onChangeViewState(state, primary);
 		}, DEBOUNCE_STATE_CHANGE);

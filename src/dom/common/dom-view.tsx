@@ -31,7 +31,7 @@ import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
 import { AnnotationOverlay, DisplayedAnnotation } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { Selector } from "./lib/selector";
+import { isSelector, Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
 	getBoundingPageRect,
@@ -1845,6 +1845,26 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	lockPositionToReadAloud(): void {
 		this._readAloud.setPositionLocked(true);
+	}
+
+	getSerializableReadAloudPosition(position: Position): Selector | null {
+		if ('range' in position) {
+			return this.toSelector(position.range.toRange());
+		}
+		if (!isSelector(position)) {
+			return null;
+		}
+		return position;
+	}
+
+	isReadAloudPositionTooFar(savedPosition: Position, _viewState: Record<string, unknown>): boolean {
+		let range = this.toDisplayedRange(savedPosition as Selector);
+		if (!range) {
+			// Can't resolve the selector - not in a displayed root
+			return true;
+		}
+		let rect = getBoundingPageRect(range);
+		return !isPageRectVisible(rect, this._iframeWindow, this._iframeWindow.innerHeight * 3);
 	}
 
 	protected _handleScrollCapture(event: Event) {
