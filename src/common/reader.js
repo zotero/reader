@@ -1346,12 +1346,12 @@ class Reader {
 				state = { ...state, splitType, splitSize };
 			}
 			// Include lastReadAloudPosition in the view state so Zotero can
-			// persist it as a synced setting. If Read Aloud is not active
-			// and the user has scrolled far from the saved position, clear it.
+			// persist it as a synced setting. If the user has scrolled too far
+			// from the saved position, clear the synced setting.
 			if (primary) {
-				let { savedPosition, active } = this._state.readAloudState;
+				let { savedPosition } = this._state.readAloudState;
 				let lastReadAloudPosition = savedPosition ?? null;
-				if (lastReadAloudPosition && !active) {
+				if (lastReadAloudPosition) {
 					let tooFar = this._primaryView?.isReadAloudPositionTooFar(lastReadAloudPosition, state);
 					if (tooFar) {
 						lastReadAloudPosition = null;
