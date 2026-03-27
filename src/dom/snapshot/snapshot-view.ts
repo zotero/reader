@@ -6,17 +6,16 @@ import {
 	NewAnnotation,
 	ViewStats,
 	OutlineItem,
-	ReadAloudGranularity
+	Position,
 } from "../../common/types";
 import {
 	getBoundingPageRect,
 	getInnerText,
 	getStartElement,
-	moveRangeEndsIntoTextNodes,
-	PersistentRange
 } from "../common/lib/range";
 import {
 	CssSelector,
+	isSelector,
 	textPositionFromRange,
 	Selector,
 	textPositionToRange
@@ -39,15 +38,13 @@ import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
-import { ReadingMode } from "./reading-mode";
 import { detectLang } from '../../common/lib/detect-lang';
+import type { StructuredDocumentText } from '../../../structured-document-text/schema';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
 
 	private _isDynamicThemeSupported = true;
-
-	protected _readingMode!: ReadingMode;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -156,8 +153,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			}
 		}
 
-		this._readingMode = new ReadingMode(this._iframeDocument);
-
 		this._iframeDocument.addEventListener('visibilitychange', this._handleVisibilityChange.bind(this));
 
 		return super._handleIFrameLoaded();
@@ -188,8 +183,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 		try {
 			// Update old sortIndexes (determined based on length)
-			// We used to count characters from <html>, which was volatile and led
-			// to unnecessarily large sortIndexes. Now we count from <body>.
 			if (!this._options.readOnly) {
 				this._options.onUpdateAnnotations(this._annotations
 					.filter(a => !a.readOnly && a.sortIndex && a.sortIndex.length === SORT_INDEX_LENGTH_OLD)
@@ -224,9 +217,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	private _initOutline() {
 		let bodyFontSize = parseFloat(getComputedStyle(this._iframeDocument.body).fontSize);
 		let flatOutline: (OutlineItem & { level: number })[] = [];
-		// Create a flat outline array from the headings on the page
 		for (let heading of this._iframeDocument.body.querySelectorAll('h1, h2, h3, h4, h5, h6') as NodeListOf<HTMLElement>) {
-			// If the site uses semantic HTML, we can try to skip probably-irrelevant headings
 			if (heading.closest('aside, nav, footer, template, [hidden]')) {
 				continue;
 			}
@@ -253,7 +244,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				level
 			});
 		}
-		// For each heading, move subsequent headings with deeper levels into its items array
 		let outline = [];
 		let stack: (OutlineItem & { level: number })[] = [];
 		for (let item of flatOutline) {
@@ -276,7 +266,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			return null;
 		}
 		let text = type == 'highlight' || type == 'underline' ? getInnerText(range).trim() : undefined;
-		// If this annotation type wants text, but we didn't get any, abort
 		if (text === '') {
 			return null;
 		}
@@ -306,14 +295,10 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				}
 				count += node.nodeValue!.trim().length;
 			}
-			// If we never terminated, just return 0
 			return 0;
 		};
 
-		let mappedRange = this._readingMode.enabled ? this._readingMode.mapRangeFromFocus(range) : range;
-		let count = mappedRange
-			? getCount(this._readingMode.preBody, mappedRange.startContainer, mappedRange.startOffset)
-			: 0;
+		let count = getCount(this._iframeDocument.body, range.startContainer, range.startOffset);
 		let countString = String(count).padStart(SORT_INDEX_LENGTH, '0');
 		if (countString.length > SORT_INDEX_LENGTH) {
 			countString = countString.substring(0, SORT_INDEX_LENGTH);
@@ -321,21 +306,38 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		return countString;
 	}
 
-	toSelector(range: Range): Selector | null {
-		if (this._readingMode.enabled) {
-			let newRange = this._readingMode.mapRangeFromFocus(range);
-			if (!newRange) {
-				return null;
-			}
-			range = newRange;
-		}
+	getSDTLocation(_sdtData: StructuredDocumentText): NavLocation | null {
+		return { scrollYPercent: this._getScrollYPercent() };
+	}
 
+	navigateToSDTBlock(sdtData: StructuredDocumentText, blockIndex: number) {
+		let block = sdtData.content[blockIndex];
+		if (!block.anchor || !('selectorMap' in block.anchor)) return;
+		let el = this._iframeDocument.body.querySelector(block.anchor.selectorMap);
+		if (el) {
+			el.scrollIntoView({ behavior: 'instant', block: 'start' });
+		}
+	}
+
+	private _getScrollYPercent(): number {
+		return this._iframeWindow.scrollY
+			/ Math.max(1, this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight)
+			* 100;
+	}
+
+	getAnnotationMeta(position: Selector): { sortIndex: string; pageLabel: string } | null {
+		let range = this.toDisplayedRange(position);
+		if (!range) return null;
+		return {
+			sortIndex: this._getSortIndex(range),
+			pageLabel: '',
+		};
+	}
+
+	toSelector(range: Range): Selector | null {
 		let doc = range.commonAncestorContainer.ownerDocument;
 		if (!doc) return null;
 		let targetNode;
-		// In most cases, the range will wrap a single child of the
-		// commonAncestorContainer. Build a selector targeting that element,
-		// not the container.
 		if (range.startContainer === range.endContainer
 				&& range.startOffset == range.endOffset - 1
 				&& range.startContainer.nodeType == Node.ELEMENT_NODE) {
@@ -354,8 +356,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				type: 'CssSelector',
 				value: targetElementQuery
 			};
-			// If the user has highlighted the full text content of the element, no need to add a
-			// TextPositionSelector.
 			if (range.toString().trim() !== (targetElement.textContent || '').trim()) {
 				selector.refinedBy = textPositionFromRange(range, targetElement) || undefined;
 			}
@@ -366,15 +366,17 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	toDisplayedRange(selector: Selector): Range | null {
+	toDisplayedRange(position: Position): Range | null {
+		if (!isSelector(position)) return null;
+		let selector = position;
 		switch (selector.type) {
 			case 'CssSelector': {
 				if (selector.refinedBy && selector.refinedBy.type != 'TextPositionSelector') {
 					throw new Error('CssSelectors can only be refined by TextPositionSelectors');
 				}
-				let root = this._readingMode.preBody.querySelector(selector.value);
+				let root = this._iframeDocument.body.querySelector(selector.value);
 				if (!root) {
-					console.error(`Unable to locate selector root for selector '${selector.value}' (reading mode: ${this._readingMode.enabled})`);
+					console.error(`Unable to locate selector root for selector '${selector.value}'`);
 					return null;
 				}
 				let range;
@@ -385,19 +387,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					range = this._iframeDocument.createRange();
 					range.selectNodeContents(root);
 				}
-				if (this._readingMode.enabled) {
-					let newRange = this._readingMode.mapRangeToFocus(range);
-					if (!newRange) {
-						newRange = this._readingMode.mapRangeToFocus(moveRangeEndsIntoTextNodes(range));
-					}
-					if (!newRange) {
-						return null;
-					}
-					range = newRange;
-				}
-				if (!range.getClientRects().length) {
+				if (!range?.getClientRects().length) {
 					try {
-						range.selectNode(range.commonAncestorContainer);
+						range?.selectNode(range.commonAncestorContainer);
 					}
 					catch (e) {
 						return null;
@@ -423,10 +415,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
 		let range = this.toDisplayedRange(selector);
 		if (!range) {
-			// Suppress log when failure is likely just due to reading mode
-			if (!this._readingMode.enabled) {
-				console.warn('Unable to resolve selector to range', selector);
-			}
+			console.warn('Unable to resolve selector to range', selector);
 			return;
 		}
 
@@ -442,8 +431,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 		if (elem) {
 			elem.scrollIntoView(options);
-			// Remember which node was navigated to for screen readers to place
-			// virtual cursor on it later. Used for navigating between sections in the outline.
 			debounceUntilScrollFinishes(this._iframeDocument).then(() => {
 				this._a11yVirtualCursorTarget = elem;
 			});
@@ -453,17 +440,15 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	}
 
 	protected override _updateViewState() {
-		let scale = Math.round(this.scale * 1000) / 1000; // Three decimal places
+		let scale = Math.round(this.scale * 1000) / 1000;
 		let scrollYPercent = this._iframeWindow.scrollY
 			/ (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight)
 			* 100;
-		// The calculation above shouldn't ever yield NaN, but just to be safe:
 		if (isNaN(scrollYPercent)) {
 			scrollYPercent = 0;
 		}
-		// Keep it within [0, 100]
 		scrollYPercent = Math.max(0, Math.min(100, scrollYPercent));
-		scrollYPercent = Math.round(scrollYPercent * 10) / 10; // One decimal place
+		scrollYPercent = Math.round(scrollYPercent * 10) / 10;
 		let viewState: SnapshotViewState = {
 			scale,
 			scrollYPercent,
@@ -481,7 +466,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
 			appearance: this.appearance,
-			readingModeEnabled: this._readingMode.enabled,
 		};
 		this._options.onChangeViewStats(viewStats);
 	}
@@ -492,17 +476,13 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	protected override _updateColorScheme() {
 		super._updateColorScheme();
-		if (this._isDynamicThemeSupported || this._readingMode.enabled) {
-			// Pages with a reasonable amount of CSS: Use Dark Reader
+		if (this._isDynamicThemeSupported) {
 			this._iframeDocument.body.classList.remove('force-static-theme');
 			if (!('DarkReader' in this._iframeWindow)) {
 				let url = this._getSnapshotLocation() || 'about:blank';
-				// Dark Reader gets the page location by accessing the global property 'location'
-				// Horrifying, but it works
 				this._iframeWindow.eval(`{ let location = new URL(${JSON.stringify(url)}); ${darkReaderJS} }`);
 			}
 			let DarkReader = this._iframeWindow.DarkReader!;
-			// Stock light theme: Just let the page use its default styles
 			if (this._themeColorScheme === 'light' && this._theme.id === 'light') {
 				DarkReader.disable();
 			}
@@ -515,14 +495,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 					lightSchemeTextColor: this._theme.foreground,
 				}, {
 					invert: [
-						// Invert Mediawiki equations
 						'.mw-invert'
 					]
 				} satisfies Partial<DynamicThemeFix> as DynamicThemeFix);
 			}
 		}
 		else {
-			// Pages with a *lot* of CSS: Use static theme
 			if ('DarkReader' in this._iframeWindow) {
 				this._iframeWindow.DarkReader!.disable();
 			}
@@ -561,8 +539,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	// Setters that get called once there are changes in reader._state
 	// ***
 
-	// Unlike annotation, selection and overlay popups, find popup open state is determined
-	// with .open property. All popup properties are preserved even when it's closed
 	async setFindState(state: FindState) {
 		let previousState = this._findState;
 		this._findState = state;
@@ -599,7 +575,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 							}
 						});
 						if (result.range) {
-							// Record the result that screen readers should focus on after search popup is closed
 							this._a11yVirtualCursorTarget = getStartElement(result.range);
 						}
 					},
@@ -650,33 +625,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
-	override getReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
-		if (this._readingMode.enabled) {
-			return super.getReadAloudRanges(granularity);
-		}
-
-		let segmentsWithReadingModeEnabled = this._keepSelection(() => {
-			try {
-				this._readingMode.enabled = true;
-				return super.getReadAloudRanges(granularity).map((range) => {
-					let mappedRange = this._readingMode.mapRangeFromFocus(range);
-					if (!mappedRange) return null;
-					return new PersistentRange(mappedRange);
-				}).filter(Boolean) as PersistentRange[];
-			}
-			finally {
-				this._readingMode.enabled = false;
-			}
-		});
-		this._handleViewUpdate(false);
-
-		if (segmentsWithReadingModeEnabled.length) {
-			return segmentsWithReadingModeEnabled.map(r => r.toRange());
-		}
-
-		return super.getReadAloudRanges(granularity);
-	}
-
 	protected _setScale(scale: number) {
 		this.scale = scale;
 
@@ -684,7 +632,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (CSS.supports('scale', scaleString)) {
 			this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
 			if (isSafari) {
-				// Scaling doesn't affect getClientRects() in Safari
 				this._iframeCoordScaleFactor = scale;
 			}
 		}
@@ -694,9 +641,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 				return;
 			}
 
-			// Calculate the default root font size, then multiply by scale.
-			// Can't just set font-size to an em value -- the page itself might set a font-size on <html>, and we need to
-			// scale relative to that.
 			this._iframeDocument.documentElement.style.fontSize = '';
 			let defaultSize = parseFloat(getComputedStyle(this._iframeDocument.documentElement).fontSize);
 			this._iframeDocument.documentElement.style.fontSize = (defaultSize * scale) + 'px';
@@ -734,32 +678,6 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	setSidebarOpen(_sidebarOpen: boolean) {
 		// Ignore
-	}
-
-	setReadingModeEnabled(enabled: boolean) {
-		this._readingMode.enabled = enabled;
-		// Hide inaccessible annotations
-		if (enabled) {
-			this._options.onSetHiddenAnnotations(
-				this._annotations
-					.filter(a => !this.toDisplayedRange(a.position))
-					.map(a => a.id)
-			);
-		}
-		else {
-			this._options.onSetHiddenAnnotations([]);
-		}
-		// Reinitialize outline to remove inaccessible sections
-		this._initOutline();
-		// Reset Read Aloud segments, since ranges will no longer be valid
-		if (this._readAloud.state?.active && this._readAloud.state.segments !== null) {
-			this._options.onSetReadAloudState({ segments: null });
-		}
-		// Wait a frame due to layout not updating synchronously after <body>
-		// is replaced in Firefox
-		requestAnimationFrame(() => {
-			this._handleViewUpdate();
-		});
 	}
 }
 

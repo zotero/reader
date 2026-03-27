@@ -1,0 +1,164 @@
+:root {
+	&:not(.use-original-font) {
+		font-family: var(--content-font-family, "Georgia", serif);
+	}
+	text-align: justify;
+	text-rendering: optimizeLegibility;
+
+	// Dynamic leading (from readium-css)
+	--content-line-height-compensation: 1;
+	--content-line-height: calc(
+		(1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667))
+		* var(--content-line-height-compensation)
+		* var(--content-line-height-adjust, 1.2)
+	);
+	--content-word-spacing: calc(var(--content-word-spacing-adjust, 0) * 1%);
+	--content-letter-spacing: calc(var(--content-letter-spacing-adjust, 0) * 1em);
+
+	font-size: 1.1rem;
+	background-color: var(--background-color);
+	color: var(--text-color);
+
+	--link-color: #0000ee;
+	--visited-link-color: #551a8b;
+
+	&[data-color-scheme="dark"] {
+		--link-color: #63caff;
+		--visited-link-color: #0099e5;
+	}
+}
+
+body {
+	margin-inline: auto;
+	padding: 3rem;
+
+	:root[data-page-width="narrow"] & {
+		max-inline-size: 650px;
+	}
+
+	:root[data-page-width="normal"] & {
+		max-inline-size: 800px;
+	}
+
+	:root[data-page-width="full"] & {
+		max-inline-size: 100%;
+	}
+
+	:root.hyphenate & {
+		hyphens: auto;
+	}
+
+	&, * {
+		line-height: var(--content-line-height);
+		word-spacing: var(--content-word-spacing);
+		letter-spacing: var(--content-letter-spacing);
+	}
+}
+
+::selection {
+	background-color: var(--selection-color);
+}
+
+:link {
+	color: var(--link-color);
+}
+
+:visited {
+	color: var(--visited-link-color);
+}
+
+// Internal cross-reference links (citations, footnotes)
+a.sdt-ref {
+	color: var(--link-color);
+	text-decoration: none;
+	cursor: pointer;
+
+	&:hover {
+		text-decoration: underline;
+	}
+}
+
+h1, h2, h3, h4, h5, h6 {
+	text-align: start;
+	text-wrap: balance;
+	hyphens: none !important;
+}
+
+// Tables
+table {
+	border-collapse: collapse;
+	width: 100%;
+	margin-block: 1em;
+
+	th, td {
+		border: 1px solid var(--text-color, #333);
+		padding: 0.4em 0.6em;
+		text-align: start;
+	}
+
+	th {
+		font-weight: bold;
+		background: rgba(128, 128, 128, 0.1);
+	}
+}
+
+// Block types
+.sdt-math {
+	font-family: serif; // TODO
+	text-align: center;
+	margin-block: 0.5em;
+}
+
+.sdt-image {
+	text-align: center;
+	color: #666;
+	font-style: italic;
+	margin-block: 1em;
+}
+
+.sdt-note {
+	font-size: 0.9em;
+	color: #555;
+	border-inline-start: 3px solid #ccc;
+	padding-inline-start: 1em;
+	margin-block: 0.5em;
+
+	:root[data-color-scheme="dark"] & {
+		color: #aaa;
+		border-color: #555;
+	}
+}
+
+.sdt-reference {
+	font-size: 0.9em;
+}
+
+figcaption {
+	font-size: 0.9em;
+	text-align: center;
+	margin-block: 0.5em;
+	color: #555;
+
+	:root[data-color-scheme="dark"] & {
+		color: #aaa;
+	}
+}
+
+pre {
+	overflow-x: auto;
+	font-size: 0.85em;
+	background: rgba(128, 128, 128, 0.05);
+	padding: 1em;
+	border-radius: 4px;
+}
+
+blockquote {
+	border-inline-start: 3px solid #ccc;
+	padding-inline-start: 1em;
+	margin-inline-start: 0;
+	font-style: italic;
+
+	:root[data-color-scheme="dark"] & {
+		border-color: #555;
+	}
+}

@@ -106,7 +106,6 @@ class View {
 			onKeyDown: nop,
 			onKeyUp: nop,
 			onFocusAnnotation: nop,
-			onSetHiddenAnnotations: nop,
 			onBackdropTap: this._options.onBackdropTap,
 		};
 

@@ -5,3 +5,6 @@
 [submodule "epubjs/epub.js"]
 	path = epubjs/epub.js
 	url = https://github.com/zotero/epub.js.git
+[submodule "structured-document-text"]
+	path = structured-document-text
+	url = https://github.com/zotero/structured-document-text.git
