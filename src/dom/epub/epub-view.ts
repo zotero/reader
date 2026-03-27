@@ -9,8 +9,10 @@ import {
 	OutlineItem,
 	OverlayPopupParams,
 	ViewStats,
+	Position,
 	WADMAnnotation
 } from "../../common/types";
+import type { StructuredDocumentText } from '../../../structured-document-text/schema';
 import Epub, { Book, EpubCFI, NavItem } from "epubjs";
 import {
 	getStartElement,
@@ -18,7 +20,7 @@ import {
 	PersistentRange,
 	splitRangeToTextNodes
 } from "../common/lib/range";
-import { FragmentSelector, FragmentSelectorConformsTo, isFragment, Selector } from "../common/lib/selector";
+import { FragmentSelector, FragmentSelectorConformsTo, isFragment, isSelector, Selector } from "../common/lib/selector";
 import { EPUBFindProcessor } from "./find";
 import DOMView, {
 	DOMViewOptions,
@@ -445,7 +447,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		};
 	}
 
-	override toDisplayedRange(selector: Selector): Range | null {
+	override toDisplayedRange(position: Position): Range | null {
+		if (!isSelector(position)) return null;
+		let selector = position;
 		switch (selector.type) {
 			case 'FragmentSelector': {
 				if (selector.conformsTo !== FragmentSelectorConformsTo.EPUB3) {
@@ -1428,6 +1432,27 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	navigateToLastPage() {
 		this._onManualNavigation();
 		this.flow.navigateToLastPage();
+	}
+
+	getSDTLocation(sdtData: StructuredDocumentText): NavLocation | null {
+		let cfi = this.flow.startCFI?.toString();
+		if (!cfi) return null;
+		// Find the block whose anchor CFI is closest to the current position
+		for (let i = sdtData.content.length - 1; i >= 0; i--) {
+			let block = sdtData.content[i];
+			if (block.artifact || !block.anchor || !('selectorMap' in block.anchor)) continue;
+			if (cfi.includes(block.anchor.selectorMap)) {
+				return { href: '#sdt-' + i };
+			}
+		}
+		return null;
+	}
+
+	navigateToSDTBlock(sdtData: StructuredDocumentText, blockIndex: number) {
+		let block = sdtData.content[blockIndex];
+		if (!block?.anchor || !('selectorMap' in block.anchor)) return;
+		let cfi = 'epubcfi(' + block.anchor.selectorMap + ')';
+		this.navigate({ pageNumber: cfi }, { skipHistory: true, behavior: 'instant' });
 	}
 
 	canNavigateToPreviousPage() {
