@@ -21,6 +21,10 @@ class SectionRenderer {
 
 	private readonly _sectionsContainer: HTMLElement;
 
+	private _fixedPageWidth: number | null = null;
+
+	private _fixedPageHeight: number | null = null;
+
 	constructor(options: {
 		section: Section,
 		sectionsContainer: HTMLElement,
@@ -79,11 +83,43 @@ class SectionRenderer {
 				return;
 			}
 			this.body = body;
+			this._applyFixedLayoutViewport();
 		}
 		catch (e) {
 			console.error('Error rendering section ' + this.section.index + ' (' + this.section.href + ')', e);
 			this._displayError('Invalid content');
 		}
+	}
+
+	private _applyFixedLayoutViewport() {
+		if (!this._document.body.classList.contains('fixed-layout')) {
+			return;
+		}
+		let meta = this.container.querySelector('replaced-meta[name="viewport"]');
+		if (!meta) {
+			return;
+		}
+		let content = meta.getAttribute('content') || '';
+		let width = content.match(/width\s*=\s*(\d+)/)?.[1];
+		let height = content.match(/height\s*=\s*(\d+)/)?.[1];
+		if (!width || !height) {
+			return;
+		}
+		this._fixedPageWidth = parseInt(width);
+		this._fixedPageHeight = parseInt(height);
+		this.container.style.setProperty('--page-width', width);
+		this.container.style.setProperty('--page-height', height);
+		this.updateFixedLayoutScale();
+	}
+
+	updateFixedLayoutScale() {
+		if (!this._fixedPageWidth || !this._fixedPageHeight) {
+			return;
+		}
+		let viewportWidth = this._document.defaultView!.innerWidth;
+		let viewportHeight = this._document.defaultView!.innerHeight;
+		let scale = Math.min(viewportWidth / this._fixedPageWidth, viewportHeight / this._fixedPageHeight);
+		this.container.style.setProperty('--page-scale', String(scale));
 	}
 
 	private _displayError(message: string) {

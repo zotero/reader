@@ -329,28 +329,30 @@ function AppearancePopup(props) {
 								><IconFlowScrolled/></button>
 							</div>
 						</div>
-						<div className="option">
-							<label>{l10n.getString('reader-columns')}</label>
-							<div className="split-toggle" data-tabstop={1}>
-								<button
-									tabIndex={-1}
-									className={cx({ active: props.viewStats.spreadMode === 0 })}
-									title={l10n.getString('reader-single')}
-									onClick={() => props.onChangeSpreadMode(0)}
-									disabled={props.viewStats.flowMode === 'scrolled'}
-								><IconColumnSingle/></button>
-								<button
-									tabIndex={-1}
-									className={cx({ active: props.viewStats.spreadMode === 1 })}
-									title={l10n.getString('reader-double')}
-									onClick={() => props.onChangeSpreadMode(1)}
-									disabled={props.viewStats.flowMode === 'scrolled'}
-								><IconColumnDouble/></button>
+						{!props.viewStats.fixedLayout && (
+							<div className="option">
+								<label>{l10n.getString('reader-columns')}</label>
+								<div className="split-toggle" data-tabstop={1}>
+									<button
+										tabIndex={-1}
+										className={cx({ active: props.viewStats.spreadMode === 0 })}
+										title={l10n.getString('reader-single')}
+										onClick={() => props.onChangeSpreadMode(0)}
+										disabled={props.viewStats.flowMode === 'scrolled'}
+									><IconColumnSingle/></button>
+									<button
+										tabIndex={-1}
+										className={cx({ active: props.viewStats.spreadMode === 1 })}
+										title={l10n.getString('reader-double')}
+										onClick={() => props.onChangeSpreadMode(1)}
+										disabled={props.viewStats.flowMode === 'scrolled'}
+									><IconColumnDouble/></button>
+								</div>
 							</div>
-						</div>
+						)}
 					</div>
 				)}
-				{(type === 'epub' || type === 'snapshot') && (
+				{(type === 'epub' || type === 'snapshot') && !(type === 'epub' && props.viewStats.fixedLayout) && (
 					<div className="group">
 						{type === 'snapshot' && (
 							<div className="option">

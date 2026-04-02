@@ -575,12 +575,14 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private get _spreadWidth(): number {
 		return this._sectionsContainer.offsetWidth
-			+ parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
+			// NaN (fixed-layout, non-columnar book) -> 0
+			+ (parseFloat(getComputedStyle(this._sectionsContainer).columnGap) || 0);
 	}
 
 	private get _spreadHeight(): number {
 		return this._sectionsContainer.offsetHeight
-			+ parseFloat(getComputedStyle(this._sectionsContainer).columnGap);
+			// NaN (fixed-layout, non-columnar book) -> 0
+			+ (parseFloat(getComputedStyle(this._sectionsContainer).columnGap) || 0);
 	}
 
 	get currentSectionIndex(): number {

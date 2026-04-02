@@ -1,7 +1,10 @@
 & {
-	margin: 40px !important;
 	overflow: hidden;
 	overscroll-behavior: none;
+}
+
+&:not(.fixed-layout) {
+	margin: 40px !important;
 }
 
 .swipe-indicators {
@@ -32,6 +35,19 @@
 }
 
 > .sections {
+	overflow: hidden;
+	overscroll-behavior: none;
+}
+
+&.fixed-layout > .sections {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	width: 100vw;
+	height: 100vh;
+}
+
+&:not(.fixed-layout) > .sections {
 	max-width: calc(100vw - 80px);
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
@@ -40,8 +56,6 @@
 	-webkit-column-fill: auto;
 	column-gap: 60px;
 	column-width: 800px;
-	overflow: hidden;
-	overscroll-behavior: none;
 
 	&.spread-mode-odd {
 		column-width: calc(50vw - 80px);
@@ -87,7 +101,7 @@
 	}
 }
 
-replaced-body {
+&:not(.fixed-layout) replaced-body {
 	section {
 		position: relative !important;
 	}

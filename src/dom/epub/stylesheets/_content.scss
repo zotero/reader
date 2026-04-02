@@ -52,9 +52,12 @@
 }
 
 :root {
-	font-size: calc(var(--content-scale) * 13pt) !important;
 	background-color: var(--background-color) !important;
 	color: var(--text-color) !important;
+
+	&:not(.fixed-layout) {
+		font-size: calc(var(--content-scale) * 13pt) !important;
+	}
 
 	&:not(.hyphenate) * {
 		hyphens: none !important;
@@ -87,74 +90,79 @@ replaced-body {
 		display: none !important;
 	}
 
-	// https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height
-	--content-line-height-compensation: 1;
-	--content-line-height: calc(
-		(1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667))
-		* var(--content-line-height-compensation)
-		* var(--content-line-height-adjust, 1.2)
-	);
-	--content-word-spacing: calc(var(--content-word-spacing-adjust, 0) * 1%);
-	--content-letter-spacing: calc(var(--content-letter-spacing-adjust, 0) * 1em);
-
 	display: block;
-	@include unset-properties(
-			margin, padding, width, height, min-width, min-height, max-width, max-height,
-			background, color, border, overflow, font-size
-	);
 
-	:root:not(.use-original-font) & {
-		font-family: var(--content-font-family, "Georgia", serif);
-	}
-	text-align: justify;
-	text-rendering: optimizeLegibility;
+	body:not(.fixed-layout) & {
+		// https://readium.org/readium-css/docs/CSS08-defaults.html#dynamic-leading-line-height
+		--content-line-height-compensation: 1;
+		--content-line-height: calc(
+			(1em + (2ex - 1ch) - ((1rem - 16px) * 0.1667))
+			* var(--content-line-height-compensation)
+			* var(--content-line-height-adjust, 1.2)
+		);
+		--content-word-spacing: calc(var(--content-word-spacing-adjust, 0) * 1%);
+		--content-letter-spacing: calc(var(--content-letter-spacing-adjust, 0) * 1em);
 
-	&:lang(bn),
-	&:lang(km),
-	&:lang(ml),
-	&:lang(ta),
-	&:lang(th) {
-		--content-line-height-compensation: 1.067;
-	}
+		@include unset-properties(
+				margin, padding, width, height, min-width, min-height, max-width, max-height,
+				background, color, border, overflow, font-size
+		);
 
-	&:lang(he),
-	&:lang(hi),
-	&:lang(kn),
-	&:lang(pa) {
-		--content-line-height-compensation: 1.1;
-	}
-
-	&:lang(am),
-	&:lang(chr),
-	&:lang(gu),
-	&:lang(ja),
-	&:lang(ko),
-	&:lang(or),
-	&:lang(si),
-	&:lang(zh) {
-		--content-line-height-compensation: 1.167;
-	}
-
-	&, * {
-		line-height: var(--content-line-height) !important;
-		word-spacing: var(--content-word-spacing) !important;
-		letter-spacing: var(--content-letter-spacing) !important;
-	}
-
-	p, [role="paragraph"] {
-		// Really enforce some of our formatting choices on body paragraphs
 		:root:not(.use-original-font) & {
 			font-family: var(--content-font-family, "Georgia", serif);
 		}
-		line-height: var(--content-line-height) !important;
-		word-spacing: var(--content-word-spacing) !important;
-		letter-spacing: var(--content-letter-spacing) !important;
-		background: transparent !important;
-		color: inherit !important;
+		text-align: justify;
+		text-rendering: optimizeLegibility;
+	}
 
-		widows: 2;
-		orphans: 2;
-		hyphens: auto;
+	body:not(.fixed-layout) & {
+		&:lang(bn),
+		&:lang(km),
+		&:lang(ml),
+		&:lang(ta),
+		&:lang(th) {
+			--content-line-height-compensation: 1.067;
+		}
+
+		&:lang(he),
+		&:lang(hi),
+		&:lang(kn),
+		&:lang(pa) {
+			--content-line-height-compensation: 1.1;
+		}
+
+		&:lang(am),
+		&:lang(chr),
+		&:lang(gu),
+		&:lang(ja),
+		&:lang(ko),
+		&:lang(or),
+		&:lang(si),
+		&:lang(zh) {
+			--content-line-height-compensation: 1.167;
+		}
+
+		&, * {
+			line-height: var(--content-line-height) !important;
+			word-spacing: var(--content-word-spacing) !important;
+			letter-spacing: var(--content-letter-spacing) !important;
+		}
+
+		p, [role="paragraph"] {
+			// Really enforce some of our formatting choices on body paragraphs
+			:root:not(.use-original-font) & {
+				font-family: var(--content-font-family, "Georgia", serif);
+			}
+			line-height: var(--content-line-height) !important;
+			word-spacing: var(--content-word-spacing) !important;
+			letter-spacing: var(--content-letter-spacing) !important;
+			background: transparent !important;
+			color: inherit !important;
+
+			widows: 2;
+			orphans: 2;
+			hyphens: auto;
+		}
 	}
 
 	a {

@@ -16,6 +16,20 @@
 		padding: 0 !important;
 	}
 
+	body.fixed-layout > .sections > .section-container {
+		width: calc(var(--page-width) * var(--page-scale, 1) * 1px);
+		height: calc(var(--page-height) * var(--page-scale, 1) * 1px);
+		overflow: hidden;
+
+		> replaced-html {
+			display: block;
+			width: calc(var(--page-width) * 1px);
+			height: calc(var(--page-height) * 1px);
+			transform: scale(var(--page-scale, 1));
+			transform-origin: 0 0;
+		}
+	}
+
 	body.flow-mode-scrolled {
 		@import "layout/scrolled";
 	}

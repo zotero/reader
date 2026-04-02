@@ -62,6 +62,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	pageProgressionRTL!: boolean;
 
+	private _isFixedLayout = false;
+
 	private _lastResizeWidth: number | null = null;
 
 	private _lastResizeHeight: number | null = null;
@@ -120,6 +122,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		await this.book.opened;
 
 		this._iframeDocument.documentElement.lang = this.lang;
+
+		if (this.book.packaging.metadata.layout === 'pre-paginated'
+				|| this.book.displayOptions.fixedLayout === 'true') {
+			this._isFixedLayout = true;
+			this._iframeDocument.documentElement.classList.add('fixed-layout');
+			this._iframeDocument.body.classList.add('fixed-layout');
+		}
 
 		let cspMeta = this._iframeDocument.createElement('meta');
 		cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
@@ -255,7 +264,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	private async _displaySections() {
-		let cssRewriter = new CSSRewriter(this._iframeDocument);
+		let cssRewriter = new CSSRewriter(this._iframeDocument, {
+			fixedLayout: this._isFixedLayout,
+		});
 		for (let section of this.book.spine.spineItems) {
 			// We should filter to linear sections only,
 			// but we need to be sure it won't break anything
@@ -735,6 +746,12 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._lastResizeWidth = this._iframeWindow.innerWidth;
 		this._lastResizeHeight = this._iframeWindow.innerHeight;
 
+		if (this._isFixedLayout) {
+			for (let renderer of this._sectionRenderers) {
+				renderer.updateFixedLayoutScale();
+			}
+		}
+
 		this._keepPosition();
 		this._handleViewUpdate();
 	}
@@ -934,6 +951,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			flowMode: this.flowMode,
 			spreadMode: this.spreadMode,
 			appearance: this.appearance,
+			fixedLayout: this._isFixedLayout,
 			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
 		};
 		this._options.onChangeViewStats(viewStats);
@@ -1223,6 +1241,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	setSpreadMode(spreadMode: SpreadMode) {
 		if (spreadMode !== SpreadMode.None && spreadMode !== SpreadMode.Odd) {
 			throw new Error('Unsupported spread mode');
+		}
+		if (this._isFixedLayout && spreadMode !== SpreadMode.None) {
+			console.error('Unsupported spread mode in fixed-layout book');
+			return;
 		}
 
 		if (spreadMode == this.spreadMode) {
