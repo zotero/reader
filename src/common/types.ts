@@ -119,7 +119,6 @@ export type ViewStats = {
 	flowMode?: string;
 	appearance?: Partial<ReflowableAppearance>;
 	fixedLayout?: boolean;
-	fontFamily?: string;
 	outlinePath?: number[];
 	readingModeEnabled?: boolean;
 };
