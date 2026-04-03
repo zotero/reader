@@ -309,6 +309,8 @@ class PDFView {
 		this._iframeWindow.addEventListener('copy', this._handleCopy.bind(this), true);
 		this._iframeWindow.addEventListener('input', this._handleInput.bind(this));
 
+		this._iframeWindow.document.body.addEventListener('pointerleave', this._handlePointerLeave.bind(this));
+
 		this._dragCanvas = this._iframeWindow.document.createElement('canvas');
 		this._dragCanvas.style.position = 'absolute';
 		this._dragCanvas.style.left = '-100%';
@@ -4068,6 +4070,10 @@ class PDFView {
 			this._onUpdateAnnotations([{ id, comment }]);
 
 		}
+	}
+
+	_handlePointerLeave() {
+		this._readAloudJumpButton.hide();
 	}
 
 	getDragMultiIcon() {
