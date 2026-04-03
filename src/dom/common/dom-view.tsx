@@ -1674,6 +1674,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!this._readAloud.state?.popupOpen || event.buttons !== 0) {
 			return;
 		}
+		let iconTargetRect = this._readAloudJumpButton.iconTargetRect;
+		if (iconTargetRect && rectContainsPoint(iconTargetRect, event.clientX, event.clientY)) {
+			return;
+		}
 
 		let targets = this._iframeDocument.elementsFromPoint(event.clientX, event.clientY)
 			.filter(target => !this._readAloudJumpButton.contains(target));

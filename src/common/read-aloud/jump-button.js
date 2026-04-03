@@ -92,4 +92,42 @@ export class ReadAloudJumpButton {
 	hide() {
 		this._el.style.display = 'none';
 	}
+
+	/**
+	 * A DOMRect spanning the primary click target of the jump button.
+	 * While the actual click target spans the entire margin from top to bottom,
+	 * this rect is the only area that should prevent the jump button from moving
+	 * while hovered, even if the pointer technically enters another paragraph.
+	 *
+	 * @return {DOMRect | null}
+	 */
+	get iconTargetRect() {
+		if (this._el.style.display === 'none') {
+			return null;
+		}
+		let hostRect = this._el.getBoundingClientRect();
+		let rtl = getComputedStyle(this._el).direction === 'rtl';
+
+		// The icon is 20x20, inset 8px from the paragraph-side edge of the host
+		let iconSize = 20;
+		let iconInlineEnd = 8;
+		let verticalMargin = 4;
+
+		let x, width;
+		if (rtl) {
+			// In RTL, paragraph edge is host's left edge, icon is near the left
+			x = hostRect.left;
+			width = iconInlineEnd + iconSize;
+		}
+		else {
+			// In LTR, paragraph edge is host's right edge, icon is near the right
+			x = hostRect.right - iconInlineEnd - iconSize;
+			width = iconInlineEnd + iconSize;
+		}
+
+		let y = hostRect.top - verticalMargin;
+		let height = iconSize + verticalMargin * 2;
+
+		return new DOMRect(x, y, width, height);
+	}
 }
