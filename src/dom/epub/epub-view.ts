@@ -78,10 +78,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private _lastNavigationTime = 0;
 
-	private _debugStartCFI = true;
-
-	private _debugMarker: HTMLElement | null = null;
-
 	constructor(options: DOMViewOptions<EPUBViewState, EPUBViewData>) {
 		super(options);
 		if (options.data.buf) {
@@ -467,112 +463,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
-	protected override _renderAnnotations(synchronous = false) {
-		super._renderAnnotations(synchronous);
-		if (!this._debugStartCFI) {
-			if (this._debugMarker) {
-				this._debugMarker.remove();
-				this._debugMarker = null;
-			}
-			return;
-		}
-		let cfi = this.flow?.startCFI;
-		if (!cfi) {
-			if (this._debugMarker) {
-				this._debugMarker.style.display = 'none';
-			}
-			return;
-		}
-		// Resolve CFI to a range exactly as _keepPosition -> navigate does
-		let range = this.getRange(cfi.toString(), false);
-		if (!range) {
-			if (this._debugMarker) {
-				this._debugMarker.style.display = 'none';
-			}
-			return;
-		}
-		let nativeRange = range.toRange();
-		let rect = nativeRange.getBoundingClientRect();
-		let offsetBlock = this.flow.startCFIOffset ?? 0;
-		let textNear = this._getTextNear(nativeRange);
-		let cfiShort = cfi.toString().slice(0, 60) + (cfi.toString().length > 60 ? '...' : '');
-		let cached = this._rangeCache.has(cfi.toString());
-		if (!this._debugMarker) {
-			this._debugMarker = this._iframeDocument.createElement('div');
-			this._debugMarker.style.cssText = `
-				position: fixed;
-				z-index: 999999;
-				pointer-events: none;
-			`;
-			this._annotationShadowRoot.append(this._debugMarker);
-		}
-		this._debugMarker.style.display = '';
-		// CFI range marker (red): where getRange() resolves the CFI
-		// offsetBlock marker (blue): the offset from the top of the viewport
-		// _keepPosition scrolls so that the CFI rect.top == offsetBlock
-		let escHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-		this._debugMarker.innerHTML = `
-			<div style="
-				position: fixed;
-				left: 0;
-				top: ${rect.top}px;
-				width: 100%;
-				height: 2px;
-				background: red;
-				opacity: 0.7;
-			"></div>
-			<div style="
-				position: fixed;
-				right: 4px;
-				top: ${rect.top + 2}px;
-				background: red;
-				color: white;
-				font: bold 10px sans-serif;
-				padding: 1px 4px;
-				border-radius: 2px;
-				opacity: 0.8;
-				max-width: 50%;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			">CFI top=${Math.round(rect.top)} ${cached ? '(cached)' : '(fresh)'} "${escHtml(textNear)}"</div>
-			<div style="
-				position: fixed;
-				left: 0;
-				top: ${offsetBlock}px;
-				width: 100%;
-				height: 2px;
-				background: blue;
-				opacity: 0.7;
-			"></div>
-			<div style="
-				position: fixed;
-				left: 4px;
-				top: ${offsetBlock + 2}px;
-				background: blue;
-				color: white;
-				font: bold 10px sans-serif;
-				padding: 1px 4px;
-				border-radius: 2px;
-				opacity: 0.8;
-			">offsetBlock=${Math.round(offsetBlock)}</div>
-			<div style="
-				position: fixed;
-				left: 4px;
-				bottom: 4px;
-				background: rgba(0,0,0,0.75);
-				color: #0f0;
-				font: 9px monospace;
-				padding: 2px 4px;
-				border-radius: 2px;
-				max-width: 90%;
-				overflow: hidden;
-				text-overflow: ellipsis;
-				white-space: nowrap;
-			">${escHtml(cfiShort)}</div>
-		`;
-	}
-
 	protected override _getHistoryLocation(): NavLocation | null {
 		let cfi = this.flow.startCFI?.toString();
 		if (!cfi) return null;
@@ -582,39 +472,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	private _keepPosition<T>(block?: () => T) {
 		let cfiBefore = this.flow?.startCFI;
 		let offsetBefore = this.flow?.startCFIOffset;
-		let caller = block ? 'block' : 'resize';
-
-		if (this._debugStartCFI && cfiBefore) {
-			let cfiStr = cfiBefore.toString();
-			let rangeBefore = this.getRange(cfiStr, false);
-			let rectBefore = rangeBefore?.toRange().getBoundingClientRect();
-			let textBefore = rangeBefore ? this._getTextNear(rangeBefore.toRange()) : null;
-			console.group(`_keepPosition (${caller})`);
-			console.log('CFI:', cfiStr);
-			console.log('offsetBlock:', offsetBefore);
-			console.log('range before block:', rangeBefore ? 'resolved' : 'NULL');
-			console.log('rect before block:', rectBefore ? `top=${Math.round(rectBefore.top)} left=${Math.round(rectBefore.left)}` : 'N/A');
-			console.log('text near CFI:', textBefore);
-			console.log('rangeCache hit:', this._rangeCache.has(cfiStr));
-		}
-
 		let result = block?.();
-
 		if (cfiBefore) {
-			if (this._debugStartCFI) {
-				let cfiStr = cfiBefore.toString();
-				let rangeAfter = this.getRange(cfiStr, true);
-				let rectAfter = rangeAfter?.toRange().getBoundingClientRect();
-				let textAfter = rangeAfter ? this._getTextNear(rangeAfter.toRange()) : null;
-				console.log('--- after block ---');
-				console.log('range after block:', rangeAfter ? 'resolved' : 'NULL');
-				console.log('rect after block:', rectAfter ? `top=${Math.round(rectAfter.top)} left=${Math.round(rectAfter.left)}` : 'N/A');
-				console.log('text near CFI (after):', textAfter);
-				if (rangeAfter && rectAfter) {
-					let scrollDelta = rectAfter.top - (offsetBefore ?? 0);
-					console.log('will scrollBy:', Math.round(scrollDelta), 'px');
-				}
-			}
 			this.navigate(
 				{ pageNumber: cfiBefore.toString() },
 				{
@@ -623,30 +482,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					offsetBlock: offsetBefore ?? undefined
 				}
 			);
-			if (this._debugStartCFI) {
-				let cfiStr = cfiBefore.toString();
-				let rangeAfterNav = this.getRange(cfiStr, false);
-				let rectAfterNav = rangeAfterNav?.toRange().getBoundingClientRect();
-				console.log('--- after navigate ---');
-				console.log('rect after navigate:', rectAfterNav ? `top=${Math.round(rectAfterNav.top)} left=${Math.round(rectAfterNav.left)}` : 'N/A');
-				console.log('target was top=' + (offsetBefore ?? 0));
-				console.groupEnd();
-			}
-		}
-		else if (this._debugStartCFI) {
-			console.warn('_keepPosition: no startCFI, skipping navigation');
-			console.groupEnd();
 		}
 		return result;
-	}
-
-	private _getTextNear(range: Range): string {
-		let node = range.startContainer;
-		let text = node.textContent ?? '';
-		let offset = range.startOffset;
-		let start = Math.max(0, offset - 20);
-		let end = Math.min(text.length, offset + 20);
-		return '...' + text.slice(start, offset) + '|' + text.slice(offset, end) + '...';
 	}
 
 	navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
