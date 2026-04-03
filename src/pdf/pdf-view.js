@@ -4074,6 +4074,7 @@ class PDFView {
 
 	_handlePointerLeave() {
 		this._readAloudJumpButton.hide();
+		this._readAloudJumpButtonParagraph = null;
 	}
 
 	getDragMultiIcon() {
