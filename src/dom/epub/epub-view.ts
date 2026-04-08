@@ -230,8 +230,15 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			this.navigateToFirstPage();
 		}
 		else {
-			let cfi = lengthenCFI(viewState.cfi);
-			this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetBlock: viewState.cfiElementOffset });
+			try {
+				let cfi = lengthenCFI(viewState.cfi);
+				this.navigate({ pageNumber: cfi }, { behavior: 'auto', offsetBlock: viewState.cfiElementOffset });
+			}
+			catch (e) {
+				console.error('Failed to navigate to initial viewState.cfi', viewState.cfi);
+				console.error(e);
+				this.navigateToFirstPage();
+			}
 		}
 
 		this._lastResizeWidth = this._iframeWindow.innerWidth;
