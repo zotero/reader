@@ -50,7 +50,7 @@ export class KeyboardManager {
 		let code = getCodeCombination(event);
 
 		let sidebarAnnotationFocused = document.activeElement.classList.contains('annotation');
-		let readAloudActive = this._reader._state.readAloudState.active;
+		let readAloudActive = this._reader._readAloudManager.active;
 
 		if (this._reader._state.readAloudState.annotationPopup) {
 			if (['Escape', 'Enter'].includes(key)) {
@@ -293,7 +293,7 @@ export class KeyboardManager {
 		else if (code === 'KeyR' || code === 'KeyL') {
 			event.preventDefault();
 			event.stopPropagation();
-			if (this._reader._state.readAloudState.active && !this._reader.getSelectionPosition()) {
+			if (this._reader._readAloudManager.active && !this._reader.getSelectionPosition()) {
 				this._reader.toggleReadAloudPopup(false);
 			}
 			else {
@@ -401,7 +401,7 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (this._reader._type === 'pdf' && key === 'h' && !this._reader._state.readAloudState.active) {
+			else if (this._reader._type === 'pdf' && key === 'h' && !this._reader._readAloudManager.active) {
 				this._reader.toggleHandTool();
 			}
 			else if (this._reader._type === 'pdf' && key === 's') {
@@ -416,31 +416,31 @@ export class KeyboardManager {
 				else if (key === `Alt-${arrowPrev}` || key === `Alt-Shift-${arrowPrev}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._state.readAloudState.controller?.skipBack('sentence', event.shiftKey);
+					this._reader._readAloudManager.skipBack('sentence', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === `Alt-${arrowNext}` || key === `Alt-Shift-${arrowNext}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._state.readAloudState.controller?.skipAhead('sentence', event.shiftKey);
+					this._reader._readAloudManager.skipAhead('sentence', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === arrowPrev || key === `Shift-${arrowPrev}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._state.readAloudState.controller?.skipBack('paragraph', event.shiftKey);
+					this._reader._readAloudManager.skipBack('paragraph', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === arrowNext || key === `Shift-${arrowNext}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._state.readAloudState.controller?.skipAhead('paragraph', event.shiftKey);
+					this._reader._readAloudManager.skipAhead('paragraph', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
 					event.preventDefault();
 					event.stopPropagation();
-					let segment = this._reader._state.readAloudState.controller?.getSegmentToAnnotate();
+					let segment = this._reader._readAloudManager.getSegmentToAnnotate();
 					if (segment) {
 						this._reader.addAnnotationFromReadAloudSegment(
 							segment,

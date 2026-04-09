@@ -29,6 +29,8 @@ import { debounce } from './lib/debounce';
 import { flushSync } from 'react-dom';
 import { addFTL, getLocalizedString } from '../fluent';
 import { getVoicePreferencesURL } from './lib/read-aloud-links';
+import { resolveLanguage } from './read-aloud/lang';
+import { ReadAloudManager } from './read-aloud/manager';
 
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
@@ -100,6 +102,8 @@ class Reader {
 
 		this._enableAnnotationDeletionFromComment = false;
 		this._annotationSelectionTriggeredFromView = false;
+		this._lastReadAloudPaused = true;
+		this._lastReadAloudActiveSegment = null;
 
 		// Stores the default or current values for each annotation type
 		this._tools = {
@@ -155,6 +159,23 @@ class Reader {
 		this._enableReadAloud = options.enableReadAloud || false;
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
+		this._readAloudManager = new ReadAloudManager({
+			remoteInterface: this._readAloudRemoteInterface,
+			onStateChange: () => this._onReadAloudEngineStateChanged(),
+			onRequestSegments: () => {
+				// Push composed view state to views. The view will see
+				// segments == null along with segmentGranularity, compute segments,
+				// and feed them back via onSetReadAloudState(), which calls setSegments().
+				this._pushReadAloudToViews();
+			},
+			onComputeRepositionIndex: (position) => {
+				let segments = this._readAloudManager.segments;
+				if (!segments || !this._primaryView) return null;
+				return this._primaryView.computeReadAloudRepositionIndex(position, segments);
+			},
+			onSetVoice: data => this._setReadAloudVoice(data),
+		});
+
 		this._state = {
 			splitType: null,
 			splitSize: '50%',
@@ -206,14 +227,6 @@ class Reader {
 			contextMenu: null,
 			readAloudState: {
 				popupOpen: false,
-				active: false,
-				paused: false,
-				segments: null,
-				backwardStopIndex: null,
-				forwardStopIndex: null,
-				activeSegment: null,
-				speed: 1,
-				voice: null,
 				annotationPopup: null,
 				segmentAnnotations: new Map(),
 				savedPosition: options.primaryViewState?.lastReadAloudPosition ?? null,
@@ -335,7 +348,7 @@ class Reader {
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
 						enableReadAloud={this._enableReadAloud}
-						onChangeReadAloudState={this._handleReadAloudStateChange.bind(this)}
+						readAloudManager={this._readAloudManager}
 						readAloudRemoteInterface={this._readAloudRemoteInterface}
 						onSetReadAloudVoice={this._setReadAloudVoice.bind(this)}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
@@ -550,34 +563,8 @@ class Reader {
 		}
 
 		if (this._state.readAloudState !== previousState.readAloudState) {
-			// If the view has a new Read Aloud target, reset our state
-			if (!this._state.readAloudState.paused && previousState.readAloudState.paused
-					&& this._primaryView?.hasReadAloudTarget) {
-				Object.assign(this._state.readAloudState, this._getReadAloudSegmentResetState());
-			}
-
-			// Update savedPosition when the active segment changes.
-			// Convert to a format usable as targetPosition and serializable
-			// for the synced setting.
-			let { activeSegment } = this._state.readAloudState;
-			if (activeSegment && activeSegment !== previousState.readAloudState.activeSegment) {
-				let savedPosition = activeSegment.position;
-				if (this._primaryView) {
-					savedPosition = this._primaryView.getSerializableReadAloudPosition(savedPosition);
-				}
-				this._state.readAloudState.savedPosition = savedPosition;
-			}
-
-			this._primaryView?.setReadAloudState(this._state.readAloudState);
-			this._secondaryView?.setReadAloudState(this._state.readAloudState);
-
-			// Tell Zotero about the two main status flags
-			let { active, paused } = this._state.readAloudState;
-			let status = { active, paused };
-			if (!basicDeepEqual(status, this._lastReadAloudStatus)) {
-				this._lastReadAloudStatus = status;
-				this._onSetReadAloudStatus?.(status);
-			}
+			// Push composed view state (from manager + UI state) to views
+			this._pushReadAloudToViews();
 
 			// If the first-run popup should be shown and we have an external handler,
 			// call it instead of rendering the inline popup
@@ -937,29 +924,110 @@ class Reader {
 		}
 	}
 
-	_handleReadAloudStateChange(state) {
+	/**
+	 * Update UI-only Read Aloud state (popupOpen, annotationPopup, etc.)
+	 * and push the composed view state to views.
+	 */
+	_updateReadAloudUIState(state) {
 		// Ignore late changes due to event handlers after popup has closed
 		if (!this._state.readAloudState.popupOpen && !state.popupOpen) {
 			return;
 		}
-		// When Read Aloud becomes active with no explicit target, resume from
-		// the saved position, which may have been persisted from a previous session
-		if (state.active && !this._state.readAloudState.active
-				&& !state.targetPosition
-				&& this._state.readAloudState.savedPosition) {
-			state = { ...state, targetPosition: this._state.readAloudState.savedPosition };
-		}
 		this._updateState({ readAloudState: { ...this._state.readAloudState, ...state } });
 	}
 
-	_getReadAloudSegmentResetState() {
+	/**
+	 * Called when the manager's engine state changes.
+	 * Pushes composed view state to views, updates savedPosition,
+	 * reports status to Zotero, and triggers a React re-render.
+	 */
+	_onReadAloudEngineStateChanged() {
+		let manager = this._readAloudManager;
+
+		// Auto-activate once a voice is resolved and the popup is open
+		// (but not during first-run, where the user picks a tier first)
+		if (this._state.readAloudState.popupOpen
+				&& !this._state.readAloudFirstRunPopup
+				&& manager.selectedVoiceID
+				&& !manager.active) {
+			manager.activate();
+			return;
+		}
+
+		// If the view has a selection target and we're unpausing, reset segments
+		// so they'll be recomputed from the selection
+		if (!manager.paused && this._lastReadAloudPaused
+				&& this._primaryView?.hasReadAloudTarget) {
+			manager.clearSegments();
+		}
+		this._lastReadAloudPaused = manager.paused;
+
+		// Update savedPosition when the active segment changes
+		let activeSegment = manager.activeSegment;
+		if (activeSegment && activeSegment !== this._lastReadAloudActiveSegment) {
+			let savedPosition = activeSegment.position;
+			if (this._primaryView) {
+				savedPosition = this._primaryView.getSerializableReadAloudPosition(savedPosition);
+			}
+			this._state.readAloudState.savedPosition = savedPosition;
+		}
+		this._lastReadAloudActiveSegment = activeSegment;
+
+		// Report active/paused status to Zotero
+		let status = { active: manager.active, paused: manager.paused };
+		if (!basicDeepEqual(status, this._lastReadAloudStatus)) {
+			this._lastReadAloudStatus = status;
+			this._onSetReadAloudStatus?.(status);
+		}
+
+		// Trigger React re-render so the popup reads fresh manager state.
+		// Spread creates a new reference without changing content.
+		this._updateState({
+			readAloudState: { ...this._state.readAloudState },
+		});
+	}
+
+	/**
+	 * Compose a ReadAloudStateSnapshot from manager + UI state, and push to views.
+	 */
+	_pushReadAloudToViews() {
+		let stateSnapshot = this._composeReadAloudStateSnapshot();
+		this._primaryView?.setReadAloudState(stateSnapshot);
+		this._secondaryView?.setReadAloudState(stateSnapshot);
+	}
+
+	_composeReadAloudStateSnapshot() {
+		let manager = this._readAloudManager;
 		return {
-			segments: null,
+			popupOpen: this._state.readAloudState.popupOpen,
+			active: manager.active,
+			paused: manager.paused,
+			segmentGranularity: manager.segmentGranularity,
+			segments: manager.segments,
+			activeSegment: manager.activeSegment,
 			backwardStopIndex: null,
 			forwardStopIndex: null,
-			activeSegment: null,
-			segmentAnnotations: new Map(),
+			targetPosition: manager.consumeTargetPosition(),
+			lastSkipGranularity: manager.lastSkipGranularity,
+			annotationPopup: this._state.readAloudState.annotationPopup,
+			lang: manager.lang || this._state.readAloudState.lang,
 		};
+	}
+
+	_syncPersistedVoicesToManager() {
+		let manager = this._readAloudManager;
+		let lang = manager.lang;
+		if (!lang) return;
+		let resolvedLang = resolveLanguage(lang, [...this._state.readAloudVoices.keys()]);
+		let persisted = resolvedLang ? this._state.readAloudVoices.get(resolvedLang) : {};
+		manager.applyPersistedVoices(persisted || {});
+		if (persisted?.speed) {
+			manager.setSpeed(persisted.speed);
+		}
+	}
+
+	_resetReadAloudSegmentState() {
+		this._state.readAloudState.segmentAnnotations = new Map();
 	}
 
 	_lockPositionToReadAloud() {
@@ -984,20 +1052,21 @@ class Reader {
 			this._updateState({
 				readAloudFirstRunPopup: !this._state.readAloudVoices.size,
 			});
-			this._handleReadAloudStateChange({
+			this._updateReadAloudUIState({
 				popupOpen: true,
 			});
+			this._readAloudManager.loadVoices(this._state.loggedIn);
+			this._syncPersistedVoicesToManager();
 		}
 		else {
+			this._readAloudManager.deactivate();
+			this._resetReadAloudSegmentState();
 			this._updateState({
 				readAloudFirstRunPopup: false,
 			});
-			this._handleReadAloudStateChange({
+			this._updateReadAloudUIState({
 				popupOpen: false,
-				active: false,
-				paused: false,
 				annotationPopup: null,
-				...this._getReadAloudSegmentResetState(),
 			});
 		}
 	}
@@ -1006,16 +1075,21 @@ class Reader {
 		if (!this._enableReadAloud) {
 			return;
 		}
-		if (!this._state.readAloudState.active) {
+		if (!this._readAloudManager.active) {
 			return;
 		}
 		if (paused === undefined) {
-			paused = !this._state.readAloudState.paused;
+			paused = !this._readAloudManager.paused;
 		}
 		if (!paused) {
 			this._lockPositionToReadAloud();
 		}
-		this._handleReadAloudStateChange({ paused });
+		if (paused) {
+			this._readAloudManager.pause();
+		}
+		else {
+			this._readAloudManager.play();
+		}
 	}
 
 	startReadAloudAtPosition(position = null) {
@@ -1023,23 +1097,28 @@ class Reader {
 			return;
 		}
 		position ||= this.getSelectionPosition();
-		// If already active with segments, just reposition without reinitializing
-		if (this._state.readAloudState.active && this._state.readAloudState.segments) {
-			this._handleReadAloudStateChange({
-				paused: false,
-				targetPosition: position,
-				activeSegment: null,
-				forwardStopIndex: null,
-			});
+		// If already active with segments, jump
+		if (this._readAloudManager.active && this._readAloudManager.segments) {
+			this._lockPositionToReadAloud();
+			if (position) {
+				this._readAloudManager.jumpTo(position);
+			}
+			else {
+				this._readAloudManager.play();
+			}
 		}
 		else {
-			this._handleReadAloudStateChange({
-				popupOpen: true,
-				active: true,
-				paused: false,
-				targetPosition: position,
-				...this._getReadAloudSegmentResetState(),
-			});
+			// Not yet active: Open popup and start with target position.
+			// Store targetPosition on the manager so it's included when
+			// the view state is composed for initial segment computation.
+			this._readAloudManager.setTargetPosition(position);
+			if (this._state.readAloudState.savedPosition && !position) {
+				this._readAloudManager.setTargetPosition(this._state.readAloudState.savedPosition);
+			}
+			this._resetReadAloudSegmentState();
+			this._updateReadAloudUIState({ popupOpen: true });
+			this._readAloudManager.loadVoices(this._state.loggedIn);
+			this._syncPersistedVoicesToManager();
 		}
 	}
 
@@ -1063,6 +1142,17 @@ class Reader {
 				lang,
 			},
 		});
+		// If the manager isn't active yet (first-run popup flow), sync
+		// persisted voices so it can resolve, then activate.
+		// When already active, the manager already has the right voice --
+		// don't re-sync (which would nuke and recreate the controller).
+		if (!this._readAloudManager.active) {
+			this._readAloudManager.setLanguage(lang);
+			this._syncPersistedVoicesToManager();
+			if (this._readAloudManager.selectedVoiceID) {
+				this._readAloudManager.activate();
+			}
+		}
 	}
 
 	setReadAloudVoices(readAloudVoices) {
@@ -1070,7 +1160,8 @@ class Reader {
 	}
 
 	addAnnotationFromReadAloudSegment(segment, type) {
-		let { annotationPopup: popup, segments, segmentAnnotations } = this._state.readAloudState;
+		let { annotationPopup: popup, segmentAnnotations } = this._state.readAloudState;
+		let segments = this._readAloudManager.segments;
 		// If the annotation popup is already open, just change the type if specified
 		if (popup) {
 			if (type) {
@@ -1094,7 +1185,7 @@ class Reader {
 					endSegmentIndex = Math.max(endSegmentIndex, idx);
 				}
 			}
-			this._handleReadAloudStateChange({
+			this._updateReadAloudUIState({
 				annotationPopup: {
 					annotation: existingAnnotation,
 					baseSegmentIndex: segmentIndex,
@@ -1127,7 +1218,7 @@ class Reader {
 		);
 		if (annotation && segments && segmentIndex >= 0) {
 			segmentAnnotations.set(segmentIndex, annotation.id);
-			this._handleReadAloudStateChange({
+			this._updateReadAloudUIState({
 				annotationPopup: {
 					annotation,
 					baseSegmentIndex: segmentIndex,
@@ -1174,7 +1265,7 @@ class Reader {
 			for (let i = newStartIndex; i <= newEndIndex; i++) {
 				segmentAnnotations.set(i, newAnnotation.id);
 			}
-			this._handleReadAloudStateChange({
+			this._updateReadAloudUIState({
 				annotationPopup: {
 					annotation: newAnnotation,
 					baseSegmentIndex: newBaseIndex,
@@ -1239,7 +1330,7 @@ class Reader {
 	}
 
 	dismissReadAloudAnnotationPopup() {
-		this._handleReadAloudStateChange({ annotationPopup: null });
+		this._updateReadAloudUIState({ annotationPopup: null });
 	}
 
 	deleteReadAloudAnnotation() {
@@ -1254,7 +1345,7 @@ class Reader {
 			segmentAnnotations.delete(i);
 		}
 		this._annotationManager.deleteAnnotations([popup.annotation.id]);
-		this._handleReadAloudStateChange({ annotationPopup: null });
+		this._updateReadAloudUIState({ annotationPopup: null });
 	}
 
 	setReadAloudAnnotationColor(color) {
@@ -1266,7 +1357,7 @@ class Reader {
 			id: popup.annotation.id,
 			color,
 		}]);
-		this._handleReadAloudStateChange({
+		this._updateReadAloudUIState({
 			annotationPopup: {
 				...popup,
 				annotation: this._annotationManager._getAnnotationByID(popup.annotation.id),
@@ -1283,7 +1374,7 @@ class Reader {
 			id: popup.annotation.id,
 			type,
 		}]);
-		this._handleReadAloudStateChange({
+		this._updateReadAloudUIState({
 			annotationPopup: {
 				...popup,
 				annotation: this._annotationManager._getAnnotationByID(popup.annotation.id),
@@ -1447,7 +1538,31 @@ class Reader {
 				console.warn(`View tried to set Read Aloud lang to tag containing region: ${params.lang}. Return only the bare language.`);
 				params.lang = params.lang.replace(/-.*$/, '');
 			}
-			this._updateState({ readAloudState: params });
+			// Route view outputs to the appropriate owner:
+
+			// targetPosition: manager (imperative jump)
+			if (params.targetPosition && this._readAloudManager.active && this._readAloudManager.segments) {
+				this._readAloudManager.jumpTo(params.targetPosition);
+			}
+			// segments: manager (new segments or segment clear)
+			if ('segments' in params) {
+				if (params.segments && params.segments !== this._readAloudManager.segments) {
+					this._readAloudManager.setSegments(
+						params.segments,
+						params.backwardStopIndex,
+						params.forwardStopIndex,
+					);
+				}
+				else if (params.segments === null) {
+					this._readAloudManager.clearSegments();
+				}
+			}
+			// lang: manager and readAloudState (for rendering gate)
+			if (params.lang && !this._readAloudManager.lang) {
+				this._readAloudManager.setLanguage(params.lang);
+				this._updateReadAloudUIState({ lang: params.lang });
+				this._syncPersistedVoicesToManager();
+			}
 		};
 
 		let onSelectAnnotations = (ids, triggeringEvent) => {
@@ -1524,7 +1639,7 @@ class Reader {
 			lightTheme: this._state.lightTheme,
 			darkTheme: this._state.darkTheme,
 			colorScheme: this._state.colorScheme,
-			readAloudState: this._state.readAloudState,
+			readAloudState: this._composeReadAloudStateSnapshot(),
 			findState: this._state[primary ? 'primaryViewFindState' : 'secondaryViewFindState'],
 			viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState'],
 			location,

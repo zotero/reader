@@ -16,7 +16,6 @@ import {
 	Position,
 	ReadAloudGranularity,
 	ReadAloudSegment,
-	ReadAloudState,
 	RangeRef,
 	SelectionPopupParams,
 	Theme,
@@ -24,7 +23,7 @@ import {
 	ToolType,
 	ViewContextMenuOverlay,
 	ViewStats,
-	WADMAnnotation,
+	WADMAnnotation, ReadAloudStateDelta, ReadAloudStateSnapshot,
 } from "../../common/types";
 import PopupDelayer from "../../common/lib/popup-delayer";
 import { flushSync } from "react-dom";
@@ -1741,8 +1740,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		blockRange.collapse(true);
 
 		this._options.onSetReadAloudState({
-			...this._readAloud.state,
-			activeSegment: null,
 			targetPosition: { range: new PersistentRange(blockRange) },
 		});
 	}
@@ -2125,7 +2122,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._penExclusive = penExclusive;
 	}
 
-	setReadAloudState(state: ReadAloudState): void {
+	setReadAloudState(state: ReadAloudStateSnapshot): void {
 		if (!state.popupOpen) {
 			this._hideReadAloudJumpButton();
 		}
@@ -2145,6 +2142,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return this._options.onAddAnnotation(annotation);
 		}
 		return null;
+	}
+
+	computeReadAloudRepositionIndex(position: Position, segments: ReadAloudSegment[]): number | null {
+		return this._readAloud.computeRepositionIndex(position, segments);
 	}
 
 	getReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
@@ -2298,7 +2299,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onSetAnnotationPopup: (params?: AnnotationPopupParams<WADMAnnotation> | null) => void;
 	onSetOverlayPopup: (params?: OverlayPopupParams) => void;
 	onSetFindState: (state?: FindState) => void;
-	onSetReadAloudState: (state?: ReadAloudState) => void;
+	onSetReadAloudState: (state: ReadAloudStateDelta) => void;
 	onSetZoom?: (iframe: HTMLIFrameElement, zoom: number) => void;
 	onOpenViewContextMenu: (params: {
 		x: number;

@@ -753,11 +753,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		this._initOutline();
 		// Reset Read Aloud segments, since ranges will no longer be valid
 		if (this._readAloud.state?.active && this._readAloud.state.segments !== null) {
-			this._options.onSetReadAloudState({
-				...this._readAloud.state,
-				segments: null,
-				activeSegment: null,
-			});
+			this._options.onSetReadAloudState({ segments: null });
 		}
 		// Wait a frame due to layout not updating synchronously after <body>
 		// is replaced in Firefox

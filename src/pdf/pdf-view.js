@@ -1100,38 +1100,12 @@ class PDFView {
 				.map(p => p.text)
 				.join('\n');
 			this._options.onSetReadAloudState({
-				...state,
 				lang: detectLang(textSample) || 'en',
 			});
 			return;
 		}
 
 		if (!state.active || !state.segmentGranularity) {
-			return;
-		}
-
-		// Reposition within existing segments without reinitializing
-		if (state.segments !== null && state.targetPosition) {
-			let backwardStopIndex = null;
-			for (let i = 0; i < state.segments.length; i++) {
-				let segment = state.segments[i];
-				if (segment.position.pageIndex === state.targetPosition.pageIndex
-					&& intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
-					backwardStopIndex = i;
-					break;
-				}
-			}
-			this._options.onSetReadAloudState({
-				...state,
-				paused: false,
-				// New array reference so the controller is always recreated,
-				// even when repositioning to the same backwardStopIndex
-				// TODO: This is not ideal; replace with a cleaner imperative approach
-				segments: [...state.segments],
-				backwardStopIndex,
-				forwardStopIndex: null,
-				targetPosition: undefined,
-			});
 			return;
 		}
 
@@ -1222,13 +1196,9 @@ class PDFView {
 		}
 
 		this._options.onSetReadAloudState({
-			...state,
-			paused: false,
 			segments,
-			activeSegment: null,
 			backwardStopIndex,
 			forwardStopIndex,
-			targetPosition: undefined,
 		});
 	}
 
@@ -1293,6 +1263,17 @@ class PDFView {
 		}
 
 		return { pageIndex, rects: paragraphRects };
+	}
+
+	computeReadAloudRepositionIndex(position, segments) {
+		for (let i = 0; i < segments.length; i++) {
+			let segment = segments[i];
+			if (segment.position.pageIndex === position.pageIndex
+					&& intersectAnnotationWithPoint(segment.position, position)) {
+				return i;
+			}
+		}
+		return null;
 	}
 
 	get hasReadAloudTarget() {
@@ -1627,8 +1608,6 @@ class PDFView {
 		this._render();
 
 		this._options.onSetReadAloudState({
-			...this._readAloudState,
-			activeSegment: null,
 			targetPosition: {
 				pageIndex: paragraph.position.pageIndex,
 				rects: paragraph.position.rects,
