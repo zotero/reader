@@ -35,9 +35,10 @@ function decodeBase64(base64) {
 	return decoder.decode(bytes);
 }
 
-window.createView = (options) => {
+window.createView = (encodedOptions) => {
+	const options = JSON.parse(decodeBase64(encodedOptions));
 	log("Create " + options.type + " view");
-	const annotations = JSON.parse(decodeBase64(options.annotations));
+	const annotations = options.annotations;
 	log("Loaded " + annotations.length + " annotations");
 	window._view = new View({
 		platform: 'android',
