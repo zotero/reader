@@ -159,7 +159,7 @@ export class ReadAloud<View extends DOMView<any, any>> {
 				for (let i = 0; i < state.segments.length; i++) {
 					let segmentRange = (state.segments[i].position as RangeRef).range.toRange();
 					// Find the first segment whose end is at or past the target start
-					if (EPUBView.compareBoundaryPoints(Range.END_TO_START, segmentRange, targetRange) >= 0) {
+					if (EPUBView.compareBoundaryPoints(Range.START_TO_END, segmentRange, targetRange) >= 0) {
 						backwardStopIndex = i;
 						break;
 					}
