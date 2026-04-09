@@ -1108,6 +1108,10 @@ class PDFView {
 			this._options.onSetReadAloudState({
 				...state,
 				paused: false,
+				// New array reference so the controller is always recreated,
+				// even when repositioning to the same backwardStopIndex
+				// TODO: This is not ideal; replace with a cleaner imperative approach
+				segments: [...state.segments],
 				backwardStopIndex,
 				forwardStopIndex: null,
 				targetPosition: undefined,
