@@ -573,16 +573,34 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.body.classList.remove('flow-mode-paginated');
 	}
 
+	private get _useBoundingRect() {
+		// Android uses noninteger devicePixelRatios, so our math needs to account for that
+		// by using noninteger layout getters
+		return !Number.isInteger(window.devicePixelRatio);
+	}
+
+	/**
+	 * Width of one page spread without the gap before the next spread.
+	 */
+	private get _innerSpreadWidth(): number {
+		return this._useBoundingRect
+			? this._sectionsContainer.getBoundingClientRect().width
+			: this._sectionsContainer.offsetWidth;
+	}
+
+	/**
+	 * Width of one page spread, including the gap before the next spread.
+	 */
 	private get _spreadWidth(): number {
-		return this._sectionsContainer.offsetWidth
-			// NaN (fixed-layout, non-columnar book) -> 0
-			+ (parseFloat(getComputedStyle(this._sectionsContainer).columnGap) || 0);
+		// NaN (fixed-layout, non-columnar book) -> 0
+		let columnGap = parseFloat(getComputedStyle(this._sectionsContainer).columnGap) || 0;
+		return this._innerSpreadWidth + columnGap;
 	}
 
 	private get _spreadHeight(): number {
 		return this._sectionsContainer.offsetHeight
 			// NaN (fixed-layout, non-columnar book) -> 0
-			+ (parseFloat(getComputedStyle(this._sectionsContainer).columnGap) || 0);
+			+ parseFloat(getComputedStyle(this._sectionsContainer).columnGap) || 0;
 	}
 
 	get currentSectionIndex(): number {
@@ -656,17 +674,17 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this.canNavigateToNextSection()) {
 			return true;
 		}
-		return this._sectionsContainer.scrollLeft < this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth
-			|| this._sectionsContainer.scrollTop < this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight;
+		return this._sectionsContainer.scrollLeft < this._sectionsContainer.scrollWidth - this._innerSpreadWidth - 1
+			|| this._sectionsContainer.scrollTop < this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight - 1;
 	}
 
 	atStartOfSection(): boolean {
-		return this._sectionsContainer.scrollLeft == 0 && this._sectionsContainer.scrollTop == 0;
+		return this._sectionsContainer.scrollLeft < 1 && this._sectionsContainer.scrollTop < 1;
 	}
 
 	atEndOfSection(): boolean {
-		return this._sectionsContainer.scrollLeft > this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth - this._spreadWidth
-			&& this._sectionsContainer.scrollTop > this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight - this._spreadHeight;
+		return this._sectionsContainer.scrollLeft > this._sectionsContainer.scrollWidth - this._innerSpreadWidth - 1
+			&& this._sectionsContainer.scrollTop > this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight - this._spreadHeight - 1;
 	}
 
 	canNavigateToPreviousSection(): boolean {
@@ -702,16 +720,19 @@ export class PaginatedFlow extends AbstractFlow {
 			this._onViewUpdate();
 			return;
 		}
-		if (this._sectionsContainer.scrollLeft === 0) {
+		let spreadWidth = this._spreadWidth;
+		let spreadHeight = this._spreadHeight;
+		let atFirstColumn = this._sectionsContainer.scrollLeft < 1;
+		if (atFirstColumn) {
 			this._sectionsContainer.scrollTo({
 				left: 0,
-				top: this._sectionsContainer.scrollTop - this._spreadHeight,
+				top: Math.round(this._sectionsContainer.scrollTop / spreadHeight - 1) * spreadHeight,
 				behavior: 'auto'
 			});
 		}
 		else {
-			this._sectionsContainer.scrollBy({
-				left: -this._spreadWidth,
+			this._sectionsContainer.scrollTo({
+				left: Math.round(this._sectionsContainer.scrollLeft / spreadWidth - 1) * spreadWidth,
 				behavior: 'auto'
 			});
 		}
@@ -726,16 +747,20 @@ export class PaginatedFlow extends AbstractFlow {
 			this.navigateToNextSection();
 			return;
 		}
-		if (this._sectionsContainer.scrollLeft === this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth) {
+		let spreadWidth = this._spreadWidth;
+		let spreadHeight = this._spreadHeight;
+		let lastColumnLeft = this._sectionsContainer.scrollWidth - this._innerSpreadWidth;
+		let atLastColumn = this._sectionsContainer.scrollLeft > lastColumnLeft - 1;
+		if (atLastColumn) {
 			this._sectionsContainer.scrollTo({
 				left: 0,
-				top: this._sectionsContainer.scrollTop + this._spreadHeight,
+				top: Math.round(this._sectionsContainer.scrollTop / spreadHeight + 1) * spreadHeight,
 				behavior: 'auto'
 			});
 		}
 		else {
-			this._sectionsContainer.scrollBy({
-				left: this._spreadWidth,
+			this._sectionsContainer.scrollTo({
+				left: Math.round(this._sectionsContainer.scrollLeft / spreadWidth + 1) * spreadWidth,
 				behavior: 'auto'
 			});
 		}
