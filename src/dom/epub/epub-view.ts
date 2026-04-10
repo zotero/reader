@@ -64,9 +64,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	private _isFixedLayout = false;
 
-	private _lastResizeWidth: number | null = null;
+	private _lastIframeWindowWidth: number | null = null;
 
-	private _lastResizeHeight: number | null = null;
+	private _lastIframeWindowHeight: number | null = null;
 
 	private _sectionsContainer!: HTMLElement;
 
@@ -241,8 +241,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 		}
 
-		this._lastResizeWidth = this._iframeWindow.innerWidth;
-		this._lastResizeHeight = this._iframeWindow.innerHeight;
+		this._lastIframeWindowWidth = this._iframeWindow.innerWidth;
+		this._lastIframeWindowHeight = this._iframeWindow.innerHeight;
 
 		this._handleViewUpdate();
 
@@ -744,14 +744,40 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._handleViewUpdate();
 	}
 
-	protected override _handleResize() {
-		if (!this.flow || document.hidden
-				|| (this._iframeWindow.innerWidth === this._lastResizeWidth
-					&& this._iframeWindow.innerHeight === this._lastResizeHeight)) {
+	protected override _resizeIframeImmediate() {
+		if (!this.flow) {
+			super._resizeIframeImmediate();
 			return;
 		}
-		this._lastResizeWidth = this._iframeWindow.innerWidth;
-		this._lastResizeHeight = this._iframeWindow.innerHeight;
+		this._keepPosition(() => {
+			super._resizeIframeImmediate();
+		});
+	}
+
+	protected override _resizeIframeLeading() {
+		let dpr = window.devicePixelRatio || 1;
+		let targetWidth = Math.floor(this._container.clientWidth * dpr) / dpr;
+		let currentWidth = this._iframe.offsetWidth;
+		if (currentWidth > 0) {
+			this._iframe.style.transform = `scaleX(${targetWidth / currentWidth})`;
+		}
+		this._iframe.classList.add('mask-resizing');
+	}
+
+	protected override _resizeIframeTrailing = debounce(() => {
+		this._iframe.style.transform = '';
+		this._resizeIframeImmediate();
+		this._iframe.classList.remove('mask-resizing');
+	}, 250);
+
+	protected override _handleResize() {
+		if (!this.flow || document.hidden
+				|| (this._iframeWindow.innerWidth === this._lastIframeWindowWidth
+					&& this._iframeWindow.innerHeight === this._lastIframeWindowHeight)) {
+			return;
+		}
+		this._lastIframeWindowWidth = this._iframeWindow.innerWidth;
+		this._lastIframeWindowHeight = this._iframeWindow.innerHeight;
 
 		if (this._isFixedLayout) {
 			for (let renderer of this._sectionRenderers) {
@@ -759,7 +785,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 		}
 
-		this._keepPosition();
 		this._handleViewUpdate();
 	}
 

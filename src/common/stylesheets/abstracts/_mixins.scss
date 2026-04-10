@@ -383,3 +383,18 @@
 	text-decoration: underline;
 	cursor: pointer;
 }
+
+// EPUBView sets .mask-resizing while debouncing resize.
+// Use it to apply a blur and transform masking intermediate layout shifts.
+// (Transform properties are set in EPUBView.)
+@mixin handle-mask-resizing {
+	transform-origin: top left;
+	filter: blur(0px);
+	transition: filter 0.2s ease-in;
+
+	&.mask-resizing {
+		filter: blur(10px);
+		transition: filter 0.1s ease-in;
+		position: absolute;
+	}
+}
