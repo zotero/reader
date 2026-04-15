@@ -526,7 +526,7 @@ export class ScrolledFlow extends AbstractFlow {
 }
 
 const PAGE_TURN_SWIPE_LENGTH_PX = 100;
-const PAGE_TURN_TAP_MARGIN_PX = 150;
+const PAGE_TURN_TAP_MARGIN_FRACTION = 0.2;
 const EPSILON_PX = 10;
 
 export class PaginatedFlow extends AbstractFlow {
@@ -884,12 +884,12 @@ export class PaginatedFlow extends AbstractFlow {
 				&& Math.abs(event.clientX - this._touchStartX) < EPSILON_PX
 				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX
 				&& !(event.target as Element).closest('a, .clickable-image')) {
-			if (event.clientX >= this._iframeWindow.innerWidth - PAGE_TURN_TAP_MARGIN_PX) {
+			if (event.clientX >= this._iframeWindow.innerWidth * (1 - PAGE_TURN_TAP_MARGIN_FRACTION)) {
 				this._onManualNavigation();
 				this.navigateRight();
 				event.preventDefault();
 			}
-			else if (event.clientX <= PAGE_TURN_TAP_MARGIN_PX) {
+			else if (event.clientX <= this._iframeWindow.innerWidth * PAGE_TURN_TAP_MARGIN_FRACTION) {
 				this._onManualNavigation();
 				this.navigateLeft();
 				event.preventDefault();
