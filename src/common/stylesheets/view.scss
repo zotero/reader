@@ -20,6 +20,6 @@ html, body {
 		// resizing automatically when the container resizes (e.g., during
 		// toolbar show/hide), letting us debounce the resize instead.
 		pointer-events: auto;
-		@include blur-while-resizing;
+		@include handle-mask-resizing;
 	}
 }
