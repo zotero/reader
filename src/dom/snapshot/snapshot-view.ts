@@ -126,27 +126,33 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		let foundSFImg = false;
 		let foundFontFace = false;
 		for (let sheet of this._iframeDocument.styleSheets) {
-			// Ignore SingleFile embedded image stylesheet
-			// https://github.com/gildas-lormeau/single-file-core/blob/1b6cecbe0/core/index.js#L1548-L1560
-			if (!foundSFImg && sheet.ownerNode?.textContent?.startsWith(':root{--sf-img-')) {
-				foundSFImg = true;
-				continue;
+			try {
+				// Ignore SingleFile embedded image stylesheet
+				// https://github.com/gildas-lormeau/single-file-core/blob/1b6cecbe0/core/index.js#L1548-L1560
+				if (!foundSFImg && sheet.ownerNode?.textContent?.startsWith(':root{--sf-img-')) {
+					foundSFImg = true;
+					continue;
+				}
+				// Ignore SingleFile font-face stylesheet
+				// https://github.com/gildas-lormeau/single-file-core/blob/1b6cecbe0/core/index.js#L1047-L1055
+				if (!foundFontFace && sheet.ownerNode?.textContent?.startsWith('@font-face{')
+					&& Array.prototype.every.call(
+						sheet.cssRules,
+						rule => rule.constructor.name === 'CSSFontFaceRule'
+					)
+				) {
+					foundFontFace = true;
+					continue;
+				}
+				numRules += sheet.cssRules.length;
+				if (numRules > maxRules) {
+					this._isDynamicThemeSupported = false;
+					break;
+				}
 			}
-			// Ignore SingleFile font-face stylesheet
-			// https://github.com/gildas-lormeau/single-file-core/blob/1b6cecbe0/core/index.js#L1047-L1055
-			if (!foundFontFace && sheet.ownerNode?.textContent?.startsWith('@font-face{')
-				&& Array.prototype.every.call(
-					sheet.cssRules,
-					rule => rule.constructor.name === 'CSSFontFaceRule'
-				)
-			) {
-				foundFontFace = true;
-				continue;
-			}
-			numRules += sheet.cssRules.length;
-			if (numRules > maxRules) {
-				this._isDynamicThemeSupported = false;
-				break;
+			catch {
+				// Cross-origin violation, etc.
+				// Doesn't matter, this is just a heuristic for disabling Reading Mode
 			}
 		}
 
