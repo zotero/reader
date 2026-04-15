@@ -7,9 +7,9 @@
 		"build:all": "PDFJS_CONFIG=all bash pdfjs/build && webpack",
 		"build:zotero": "PDFJS_CONFIG=zotero bash pdfjs/build && webpack --config-name zotero",
 		"build:ios": "webpack --config-name ios",
-		"build:android": "webpack --config-name android",
+		"build:android": "PDFJS_CONFIG=mobile bash pdfjs/build && webpack --config-name android",
 		"start": "webpack-dev-server --mode development --config-name dev",
-		"view-dev": "webpack-dev-server --mode development --config-name view-dev",
+		"view-dev": "PDFJS_CONFIG=mobile bash pdfjs/build && webpack-dev-server --mode development --config-name view-dev",
 		"test": "echo \"No tests yet\""
 	},
 	"license": "AGPL-3.0",

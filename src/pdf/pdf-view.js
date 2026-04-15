@@ -84,6 +84,7 @@ class PDFView {
 		this._preview = options.preview;
 		this._container = options.container;
 		this._password = options.password;
+		this._passwordUpdateCallback = null;
 		this._tools = options.tools;
 		this._outline = options.outline;
 		this._lightTheme = options.lightTheme;
@@ -204,6 +205,10 @@ class PDFView {
 			this._updateColorScheme();
 			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
+				let handlePasswordRequest = (updateCallback) => {
+					this._passwordUpdateCallback = updateCallback;
+					this._onRequestPassword();
+				};
 				// Delete existing local history data
 				// TODO: This can be removed in future
 				try {
@@ -218,6 +223,7 @@ class PDFView {
 				}
 				setOptions();
 				this._iframeWindow.onDestroyPage = this._handlePageDestroy.bind(this);
+				this._iframeWindow.PDFViewerApplication.onPassword = handlePasswordRequest;
 				if (this._preview) {
 					// Necessary for view stats update
 					this._iframeWindow.PDFViewerApplication.eventBus.on('pagerendered', this._handlePageRendered.bind(this));
@@ -231,6 +237,9 @@ class PDFView {
 				}
 				else {
 					this._iframeWindow.PDFViewerApplication.open({ url: options.data.url, password: this._password });
+				}
+				if (this._iframeWindow.PDFViewerApplication.pdfLoadingTask) {
+					this._iframeWindow.PDFViewerApplication.pdfLoadingTask.onPassword = handlePasswordRequest;
 				}
 				window.PDFViewerApplication = this._iframeWindow.PDFViewerApplication;
 				window.if = this._iframeWindow;
@@ -287,6 +296,17 @@ class PDFView {
 		this._options.container.append(this._iframe);
 	}
 
+	enterPassword(password) {
+		this._password = password;
+		if (this._passwordUpdateCallback) {
+			let updateCallback = this._passwordUpdateCallback;
+			this._passwordUpdateCallback = null;
+			updateCallback(password);
+			return true;
+		}
+		return false;
+	}
+
 	async _init() {
 		// this._iframeWindow.document.body.draggable = true;
 
@@ -326,10 +346,6 @@ class PDFView {
 		this._autoScroll = new AutoScroll({
 			container: this._iframeWindow.document.getElementById('viewerContainer')
 		});
-
-		this._iframeWindow.PDFViewerApplication.onPassword = () => {
-			this._onRequestPassword();
-		};
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));

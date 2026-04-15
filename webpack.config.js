@@ -206,10 +206,31 @@ function generateViewConfig(build) {
 		],
 	};
 
+	if (build === 'android' || build === 'view-dev') {
+		config.plugins.push(
+			new CopyWebpackPlugin({
+				patterns: [
+					{ from: 'build/mobile/pdf/LICENSE', to: './pdf/' },
+					{ from: 'build/mobile/pdf/build/pdf.mjs', to: './pdf/build/' },
+					{ from: 'build/mobile/pdf/build/pdf.worker.mjs', to: './pdf/build/' },
+					{ from: 'build/mobile/pdf/web/cmaps', to: './pdf/web/cmaps' },
+					{ from: 'build/mobile/pdf/web/standard_fonts', to: './pdf/web/standard_fonts' },
+					{ from: 'build/mobile/pdf/web/iccs', to: './pdf/web/iccs' },
+					{ from: 'build/mobile/pdf/web/wasm', to: './pdf/web/wasm' },
+					{ from: 'build/mobile/pdf/web/viewer.html', to: './pdf/web/' },
+					{ from: 'build/mobile/pdf/web/viewer.mjs', to: './pdf/web/' },
+					{ from: 'build/mobile/pdf/web/images/loading-icon.gif', to: './pdf/web/images/' },
+					{ from: 'build/mobile/pdf/web/viewer.css', to: './pdf/web/' },
+				],
+			})
+		);
+	}
+
 	if (build === 'view-dev') {
 		config.plugins.push(
 			new CopyWebpackPlugin({
 				patterns: [
+					{ from: 'demo/pdf/demo.pdf', to: './' },
 					{ from: 'demo/epub/demo.epub', to: './' },
 					{ from: 'demo/snapshot/demo.html', to: './' }
 				],

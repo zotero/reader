@@ -1,4 +1,5 @@
 import View from './common/view';
+import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
 
@@ -17,6 +18,18 @@ window.createView = (options) => {
 		// will happen outside the view
 		onSetOutline: (outline) => {
 			console.log('Set outline', outline);
+		},
+		onRequestPassword: () => {
+			console.log('Request password');
+		},
+		onSetThumbnails: (thumbnails) => {
+			console.log('Set thumbnails', thumbnails);
+		},
+		onSetPageLabels: (pageLabels) => {
+			console.log('Set page labels', pageLabels);
+		},
+		onDeleteAnnotations: (ids) => {
+			console.log('Delete annotations', ids);
 		},
 		onSelectAnnotations: (ids) => {
 			console.log('Select annotations', ids);
@@ -81,7 +94,10 @@ async function main() {
 	let urlParams = new URLSearchParams(queryString);
 	let type = urlParams.get('type') || 'snapshot';
 	let demo;
-	if (type === 'epub') {
+	if (type === 'pdf') {
+		demo = pdf;
+	}
+	else if (type === 'epub') {
 		demo = epub;
 	}
 	else if (type === 'snapshot') {
@@ -94,6 +110,7 @@ async function main() {
 			buf: new Uint8Array(await res.arrayBuffer()),
 		},
 		annotations: demo.annotations,
+		viewState: demo.state,
 		// location: {
 		// 	annotationID: 123
 		// },

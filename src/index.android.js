@@ -46,12 +46,14 @@ window.createView = (encodedOptions) => {
 		annotations: annotations,
 		viewState: options.viewState,
 		location: options.location,
+		password: options.password,
+		pageLabels: options.pageLabels,
 		container: document.getElementById('view'),
 		penConnected: options.penConnected,
 		penActive: false,
 		penExclusive: options.penExclusive,
 		data: {
-			url: new URL(options.url)
+			url: new URL(options.url).toString()
 		},
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
@@ -62,6 +64,18 @@ window.createView = (encodedOptions) => {
 		},
 		onSetOutline: (outline) => {
 			postMessage('onSetOutline', { outline });
+		},
+		onRequestPassword: () => {
+			postMessage('onRequestPassword');
+		},
+		onSetThumbnails: (thumbnails) => {
+			postMessage('onSetThumbnails', { thumbnails });
+		},
+		onSetPageLabels: (pageLabels) => {
+			postMessage('onSetPageLabels', { pageLabels });
+		},
+		onDeleteAnnotations: (ids) => {
+			postMessage('onDeleteAnnotations', { ids });
 		},
 		onSelectAnnotations: (ids) => {
 			postMessage('onSelectAnnotations', { ids });
@@ -133,6 +147,18 @@ window.navigate = (options) => {
 	const decodedLocation = JSON.parse(decodeBase64(options.location));
 	log("Show location: " + JSON.stringify(decodedLocation));
 	window._view.navigate(decodedLocation);
+};
+
+window.setPageLabels = (options) => {
+	const pageLabels = JSON.parse(decodeBase64(options.pageLabels));
+	log("Set page labels: " + JSON.stringify(pageLabels));
+	window._view.setPageLabels(pageLabels);
+};
+
+window.enterPassword = (options) => {
+	const password = decodeBase64(options.password);
+	log("Enter password");
+	window._view.enterPassword(password);
 };
 
 // Notify when iframe is loaded
