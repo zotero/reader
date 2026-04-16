@@ -34,12 +34,9 @@
 	}
 }
 
-> .sections {
+&.fixed-layout > .sections {
 	overflow: hidden;
 	overscroll-behavior: none;
-}
-
-&.fixed-layout > .sections {
 	display: flex;
 	justify-content: center;
 	align-items: center;
@@ -48,6 +45,8 @@
 }
 
 &:not(.fixed-layout) > .sections {
+	overflow: visible;
+	position: relative;
 	max-width: calc(100vw - 80px);
 	min-height: calc(100vh - 80px);
 	max-height: calc(100vh - 80px);
