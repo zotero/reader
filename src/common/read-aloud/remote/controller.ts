@@ -10,13 +10,14 @@ const AUDIO_BUFFER_CACHE_CAPACITY = 32;
 const EST_PLAYBACK_CHARS_PER_SECOND = 16;
 const EXP_MOVING_AVERAGE_ALPHA = 0.25;
 const SKIP_DEBOUNCE_DELAY = 600;
+const STALL_PROBE_DELAY_MS = 400;
 
 abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 	declare readonly voice: RemoteReadAloudVoice;
 
-	private readonly _audioContext: AudioContext;
+	private _audioContext!: AudioContext;
 
-	private readonly _filterChainInput: AudioNode;
+	private _filterChainInput!: AudioNode;
 
 	private _sourceNode: AudioBufferSourceNode | null = null;
 
@@ -38,6 +39,17 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 	constructor(voice: RemoteReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super(voice, segments, backwardStopIndex, forwardStopIndex);
 
+		this._initAudioContext();
+
+		// Gecko on Windows doesn't transparently re-route an AudioContext's
+		// output when the system default device changes (e.g., headphones
+		// unplugged); the context stays bound to the removed sink and
+		// playback goes silent. devicechange fires for all input/output
+		// devices, so we only act if the context actually stops advancing
+		navigator.mediaDevices?.addEventListener('devicechange', this._handleDeviceChange);
+	}
+
+	private _initAudioContext(): void {
 		// Build audio processing chain for speech clarity
 		this._audioContext = new AudioContext();
 
@@ -63,6 +75,43 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 			.connect(this._audioContext.destination);
 		this._filterChainInput = highpass;
 	}
+
+	private _handleDeviceChange = (): void => {
+		if (this._destroyed || !this._isPlaying || !this._currentBuffer) {
+			return;
+		}
+
+		// Probe whether the sink actually died: sample currentTime now, and
+		// after a short delay check whether it advanced. A healthy context
+		// ticks currentTime continuously, but a context bound to a removed
+		// sink stalls. This avoids spurious rebuilds on unrelated events.
+		let sampledContext = this._audioContext;
+		let sampledTime = sampledContext.currentTime;
+
+		setTimeout(() => {
+			// Destroyed, already rebuilt by a prior probe, or state changed out from under us
+			if (this._destroyed
+					|| this._audioContext !== sampledContext
+					|| !this._isPlaying
+					|| !this._currentBuffer) {
+				return;
+			}
+			// currentTime advanced, so the sink is still alive
+			if (sampledContext.currentTime > sampledTime) {
+				return;
+			}
+
+			let buffer = this._currentBuffer;
+			let offset = this._currentPlaybackTime;
+			let rate = this._playbackRate;
+
+			this._stopSource();
+			sampledContext.close();
+			this._initAudioContext();
+
+			this._playAudioBuffer(buffer, offset, rate);
+		}, STALL_PROBE_DELAY_MS);
+	};
 
 	// Progress is tracked in terms of the *original* (unstretched) buffer.
 	// The stretched buffer plays at 1x, so elapsed real time = elapsed
@@ -93,7 +142,7 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 		return this._audioContext.decodeAudioData(arrayBuffer);
 	}
 
-	protected _playAudioBuffer(buffer: AudioBuffer, offset: number, rate: number): Promise<void> {
+	protected _playAudioBuffer(buffer: AudioBuffer, offset: number, rate: number): void {
 		this._stopSource();
 
 		this._currentBuffer = buffer;
@@ -115,27 +164,21 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 		this._isPlaying = true;
 		source.start(0, stretchedOffset);
 
-		return new Promise<void>((resolve) => {
-			source.onended = () => {
-				if (this._sourceNode === source) {
-					this._isPlaying = false;
-					resolve();
-				}
-			};
-		});
+		source.onended = () => {
+			if (this._sourceNode !== source) return;
+			this._isPlaying = false;
+			let segment = this._currentSegment;
+			if (segment) {
+				this._handleSegmentEnd(segment, this._position);
+			}
+		};
 	}
 
 	protected override _onSpeedChange(): void {
 		if (this._isPlaying && this._currentBuffer) {
 			let offset = this._currentPlaybackTime;
 			this._stopSource();
-			this._playAudioBuffer(this._currentBuffer, offset, this._speed)
-				.then(() => {
-					let segment = this._currentSegment;
-					if (segment) {
-						this._handleSegmentEnd(segment, this._position);
-					}
-				});
+			this._playAudioBuffer(this._currentBuffer, offset, this._speed);
 		}
 	}
 
@@ -163,6 +206,7 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 
 	override destroy(): void {
 		super.destroy();
+		navigator.mediaDevices?.removeEventListener('devicechange', this._handleDeviceChange);
 		this._stopSource();
 		this._audioContext.close();
 	}
@@ -258,8 +302,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 				else {
 					offset = 0;
 				}
-				this._playAudioBuffer(audioBuffer, offset, this._speed)
-					.then(() => this._handleSegmentEnd(segment, index));
+				this._playAudioBuffer(audioBuffer, offset, this._speed);
 
 				this._prefetchFrom(index + 1);
 			})
@@ -479,8 +522,7 @@ export class RemoteSampleReadAloudController extends RemoteReadAloudControllerBa
 				if (audio) {
 					let audioBuffer = await this._decodeAudioData(audio);
 					this._handleSegmentStart(segment, 0);
-					this._playAudioBuffer(audioBuffer, 0, this._speed)
-						.then(() => this._handleSegmentEnd(segment, 0));
+					this._playAudioBuffer(audioBuffer, 0, this._speed);
 				}
 				else if (error) {
 					console.error(error);
