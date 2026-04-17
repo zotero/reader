@@ -486,7 +486,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				{
 					skipHistory: true,
 					behavior: 'auto',
-					offsetBlock: offsetBefore ?? undefined
+					offsetBlock: offsetBefore ?? undefined,
+					keepAnchor: true,
 				}
 			);
 		}
