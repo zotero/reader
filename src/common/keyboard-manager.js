@@ -48,6 +48,7 @@ export class KeyboardManager {
 
 		let key = getKeyCombination(event);
 		let code = getCodeCombination(event);
+		let textSelectionPopup = this._reader._state.primaryViewSelectionPopup || this._reader._state.secondaryViewSelectionPopup;
 
 		let sidebarAnnotationFocused = document.activeElement.classList.contains('annotation');
 		let readAloudActive = this._reader._state.readAloudState.active;
@@ -361,6 +362,35 @@ export class KeyboardManager {
 		}
 
 		if (!isTextBox(event.target)) {
+			if (textSelectionPopup) {
+				if (key === 'h') {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader.setTextSelectionAnnotationMode('highlight');
+					return;
+				}
+				else if (key === 'u') {
+					event.preventDefault();
+					event.stopPropagation();
+					this._reader.setTextSelectionAnnotationMode('underline');
+					return;
+				}
+				else if (code.startsWith('Digit')) {
+					let idx = parseInt(code.slice(5)) - 1;
+					if (ANNOTATION_COLORS[idx]) {
+						event.preventDefault();
+						event.stopPropagation();
+						this._reader._annotationManager.addAnnotation({
+							...textSelectionPopup.annotation,
+							type: this._reader._state.textSelectionAnnotationMode,
+							color: ANNOTATION_COLORS[idx][1]
+						});
+						this._reader.setSelectedAnnotations([]);
+						return;
+					}
+				}
+			}
+
 			if (code === 'Alt-Digit1') {
 				this._reader.toggleTool('highlight');
 			}
@@ -401,7 +431,7 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (this._reader._type === 'pdf' && key === 'h' && !this._reader._state.readAloudState.active) {
+			else if (this._reader._type === 'pdf' && key === 'h' && !textSelectionPopup && !readAloudActive) {
 				this._reader.toggleHandTool();
 			}
 			else if (this._reader._type === 'pdf' && key === 's') {
