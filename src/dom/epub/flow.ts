@@ -123,28 +123,28 @@ abstract class AbstractFlow implements Flow {
 
 	get startSection(): Section | null {
 		if (!this._cachedStartSection) {
-			this.update();
+			this._updateDisplayCache();
 		}
 		return this._cachedStartSection;
 	}
 
 	get startRange(): Range | null {
 		if (!this._cachedStartRange) {
-			this.update();
+			this._updateDisplayCache();
 		}
 		return this._cachedStartRange?.toRange() ?? null;
 	}
 
 	get startCFI(): EpubCFI | null {
 		if (!this._cachedStartCFI) {
-			this.update();
+			this._updateUserAnchor();
 		}
 		return this._cachedStartCFI;
 	}
 
 	get startCFIOffset(): number | null {
 		if (this._cachedStartCFIOffset === null) {
-			this.update();
+			this._updateUserAnchor();
 		}
 		return this._cachedStartCFIOffset;
 	}
@@ -268,12 +268,12 @@ abstract class AbstractFlow implements Flow {
 		}
 	}
 
+	// Debounced refresh: runs 200ms after the last view update. Only touches the display
+	// cache -- the user anchor (see _refreshUserAnchor) is managed eagerly by navigation
+	// methods so that sequential resizes don't compound drift.
 	invalidate = debounce(
 		() => {
-			this._cachedStartRange = null;
-			this._cachedStartCFIOffset = null;
-			this._cachedStartCFI = null;
-			this.update();
+			this._refreshDisplayCache();
 			this._onUpdateViewState();
 			this._onUpdateViewStats();
 			this._pushHistoryPoint();
@@ -281,12 +281,32 @@ abstract class AbstractFlow implements Flow {
 		200
 	);
 
+	protected _refreshDisplayCache(): void {
+		this._cachedStartRange = null;
+		this._cachedStartSection = null;
+		this._updateDisplayCache();
+	}
+
+	protected _refreshUserAnchor(): void {
+		this._cachedStartCFI = null;
+		this._cachedStartCFIOffset = null;
+		this._updateUserAnchor();
+	}
+
+	protected _refreshUserAnchorAfterScroll = debounce(() => {
+		this._refreshUserAnchor();
+	}, 100);
+
 	protected _pushHistoryPoint = () => {
 		this._onPushHistoryPoint(!this._nextHistoryPushIsFromNavigation);
 		this._nextHistoryPushIsFromNavigation = false;
 	};
 
-	protected abstract update(): void;
+	/** Populate _cachedStartRange and _cachedStartSection from the current layout. */
+	protected abstract _updateDisplayCache(): void;
+
+	/** Populate _cachedStartCFI and _cachedStartCFIOffset from the current layout. */
+	protected abstract _updateUserAnchor(): void;
 
 	setScale(scale: number) {
 		this._scale = scale;
@@ -313,6 +333,7 @@ export class ScrolledFlow extends AbstractFlow {
 
 		this._iframe.classList.add('flow-mode-scrolled');
 		this._iframeDocument.body.classList.add('flow-mode-scrolled');
+		this._iframeWindow.addEventListener('scroll', this._refreshUserAnchorAfterScroll, { passive: true });
 
 		this._isVertical = isVertical(this._iframeDocument.body);
 
@@ -334,6 +355,7 @@ export class ScrolledFlow extends AbstractFlow {
 		super.destroy();
 		this._iframe.classList.remove('flow-mode-scrolled');
 		this._iframeDocument.body.classList.remove('flow-mode-scrolled');
+		this._iframeWindow.removeEventListener('scroll', this._refreshUserAnchorAfterScroll);
 
 		if (isSafari) {
 			// Undo our Safari workaround above
@@ -365,6 +387,7 @@ export class ScrolledFlow extends AbstractFlow {
 
 		if ('nodeType' in target) {
 			target.scrollIntoView(options);
+			this._settleAnchorAfterProgrammaticScroll(options);
 			this.invalidate();
 			return;
 		}
@@ -395,7 +418,17 @@ export class ScrolledFlow extends AbstractFlow {
 			left: x,
 			top: y,
 		});
+		this._settleAnchorAfterProgrammaticScroll(options);
 		this.invalidate();
+	}
+
+	private _settleAnchorAfterProgrammaticScroll(options?: NavigateOptions) {
+		// scroll should have fired before this, so cancel
+		// the debounced refresh that triggered
+		this._refreshUserAnchorAfterScroll.cancel();
+		if (!options?.keepAnchor) {
+			this._refreshUserAnchor();
+		}
 	}
 
 	get scrollPadding() {
@@ -472,51 +505,48 @@ export class ScrolledFlow extends AbstractFlow {
 		this._onViewUpdate();
 	}
 
-	update() {
-		let foundStart = false;
+	private* _visibleRenderers(): Generator<SectionRenderer> {
+		let foundVisible = false;
 		for (let renderer of this._view.renderers) {
-			if (!renderer.mounted) {
-				continue;
-			}
+			if (!renderer.mounted) continue;
 			let visible = isPageRectVisible(getBoundingPageRect(renderer.container), this._iframeWindow);
-			if (!foundStart) {
-				if (!visible) {
-					continue;
-				}
-				this._cachedStartSection = renderer.section;
-				let startRange = this._getFirstVisibleRange(
-					renderer,
-					false
-				);
-				let startCFIRange = this._getFirstVisibleRange(
-					renderer,
-					true
-				);
-				if (startRange) {
-					// Navigating to page N might put us on a line containing the boundary between page N-1 and page N
-					// somewhere in its middle. We want the page number field to show N in that case, not N-1.
-					// We collapse the range to its end so that, for the purpose of comparing with page
-					// number-delineating ranges, it looks like we're scrolled down a little further than we actually
-					// are - to the end of the uppermost element or text node.
-					// TODO: Make sure this doesn't break anything involving images / block elements / long text
-					startRange.collapse(false);
-					this._cachedStartRange = new PersistentRange(startRange);
-				}
-				if (startCFIRange) {
-					// But CFIs should be calculated based on the start of the range, so collapse to the start
-					startCFIRange.collapse(true);
-					this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
+			if (foundVisible && !visible) break;
+			if (!visible) continue;
+			foundVisible = true;
+			yield renderer;
+		}
+	}
 
-					let rect = startCFIRange.getBoundingClientRect();
-					this._cachedStartCFIOffset = isVertical(renderer.body) ? rect.left : rect.top;
-				}
-				if (startRange && startCFIRange) {
-					foundStart = true;
-				}
-			}
-			else if (!visible) {
-				break;
-			}
+	protected _updateDisplayCache(): void {
+		for (let renderer of this._visibleRenderers()) {
+			this._cachedStartSection = renderer.section;
+			let startRange = this._getFirstVisibleRange(renderer, false);
+			if (!startRange) continue;
+			// Navigating to page N might put us on a line containing the boundary between
+			// page N-1 and page N somewhere in its middle. We want the page number field to
+			// show N in that case, not N-1. We collapse the range to its end so that, for
+			// the purpose of comparing with page number-delineating ranges, it looks like
+			// we're scrolled down a little further than we actually are -- to the end of
+			// the uppermost element or text node.
+			// TODO: Make sure this doesn't break anything involving images / block elements / long text
+			startRange.collapse(false);
+			this._cachedStartRange = new PersistentRange(startRange);
+			break;
+		}
+	}
+
+	protected _updateUserAnchor(): void {
+		for (let renderer of this._visibleRenderers()) {
+			let startCFIRange = this._getFirstVisibleRange(renderer, true);
+			if (!startCFIRange) continue;
+			// CFIs should be calculated based on the start of the range, so collapse to the
+			// start. The offset is the Y coord of that point in the viewport, which we use
+			// to restore scroll position precisely after a resize.
+			startCFIRange.collapse(true);
+			this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
+			let rect = startCFIRange.getBoundingClientRect();
+			this._cachedStartCFIOffset = isVertical(renderer.body) ? rect.left : rect.top;
+			break;
 		}
 	}
 
@@ -594,6 +624,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._offsetTop = top;
 		this._sectionsContainer.style.left = `${-left}px`;
 		this._sectionsContainer.style.top = `${-top}px`;
+		this._refreshDisplayCache();
 	}
 
 	get currentSectionIndex(): number {
@@ -606,7 +637,6 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		let oldIndex = this._currentSectionIndex;
 		this._currentSectionIndex = index;
-		this._setOffset(0, 0);
 		if (oldIndex === undefined) {
 			for (let view of this._view.renderers) {
 				view.unmount();
@@ -615,9 +645,8 @@ export class PaginatedFlow extends AbstractFlow {
 		else {
 			this._view.renderers[oldIndex].unmount();
 		}
-
-		let view = this._view.renderers[index];
-		view.mount();
+		this._view.renderers[index].mount();
+		this._setOffset(0, 0);
 		this._onViewUpdate();
 	}
 
@@ -642,17 +671,21 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 
 		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
-		let x = rect.x + this._offsetLeft;
-		let y = rect.y + this._offsetTop;
+		let containerRect = this._sectionsContainer.getBoundingClientRect();
+		let internalX = rect.x - containerRect.x;
+		let internalY = rect.y - containerRect.y;
 		if (options?.block === 'center') {
-			x += rect.width / 2;
+			internalX += rect.width / 2;
 		}
 		let spreadWidth = this._spreadWidth;
 		let spreadHeight = this._spreadHeight;
 		this._setOffset(
-			Math.floor(x / spreadWidth) * spreadWidth,
-			Math.floor(y / spreadHeight) * spreadHeight,
+			Math.max(0, Math.floor(internalX / spreadWidth)) * spreadWidth,
+			Math.max(0, Math.floor(internalY / spreadHeight)) * spreadHeight,
 		);
+		if (!options?.keepAnchor) {
+			this._refreshUserAnchor();
+		}
 		this._onViewUpdate();
 	}
 
@@ -710,15 +743,14 @@ export class PaginatedFlow extends AbstractFlow {
 				this._sectionsContainer.scrollWidth,
 				this._sectionsContainer.offsetHeight - this._spreadHeight - this._sectionsContainer.scrollHeight
 			);
-			this._onViewUpdate();
-			return;
 		}
-		if (this._offsetLeft === 0) {
+		else if (this._offsetLeft === 0) {
 			this._setOffset(0, this._offsetTop - this._spreadHeight);
 		}
 		else {
 			this._setOffset(this._offsetLeft - this._spreadWidth, this._offsetTop);
 		}
+		this._refreshUserAnchor();
 		this._onViewUpdate();
 	}
 
@@ -728,26 +760,28 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		if (this.atEndOfSection()) {
 			this.navigateToNextSection();
-			return;
 		}
-		if (this._offsetLeft === this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth) {
+		else if (this._offsetLeft === this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth) {
 			this._setOffset(0, this._offsetTop + this._spreadHeight);
 		}
 		else {
 			this._setOffset(this._offsetLeft + this._spreadWidth, this._offsetTop);
 		}
+		this._refreshUserAnchor();
 		this._onViewUpdate();
 	}
 
 	navigateToFirstPage(): void {
 		this.currentSectionIndex = this._view.renderers[0].section.index;
 		this._setOffset(0, 0);
+		this._refreshUserAnchor();
 		this._onViewUpdate();
 	}
 
 	navigateToLastPage(): void {
 		this.currentSectionIndex = this._view.renderers[this._view.renderers.length - 1].section.index;
 		this._setOffset(this._sectionsContainer.scrollWidth, 0);
+		this._refreshUserAnchor();
 		this._onViewUpdate();
 	}
 
@@ -926,44 +960,39 @@ export class PaginatedFlow extends AbstractFlow {
 		this._touchDown = false;
 	};
 
-	update() {
-		let foundStart = false;
+	private* _visibleRenderers(): Generator<SectionRenderer> {
 		for (let renderer of this._view.renderers.values()) {
-			if (!renderer.mounted) {
-				continue;
-			}
-			// Avoid calling getBoundingClientRect() because that would force a layout, which is expensive
+			if (!renderer.mounted) continue;
+			// Avoid getBoundingClientRect here -- cheap offsetLeft check is enough, and
+			// this runs in the hot path for display/anchor refresh.
 			let visible = renderer.container.offsetLeft < this._iframeWindow.scrollX + this._iframe.clientWidth
 				&& renderer.container.offsetLeft + renderer.container.offsetWidth >= this._iframeWindow.scrollX;
-			if (!foundStart) {
-				if (!visible) {
-					continue;
-				}
-				this._cachedStartSection = renderer.section;
-				let startRange = this._getFirstVisibleRange(
-					renderer,
-					true
-				);
-				let startCFIRange = this._getFirstVisibleRange(
-					renderer,
-					true
-				);
-				if (startRange) {
-					startRange.collapse(false);
-					this._cachedStartRange = new PersistentRange(startRange);
-				}
-				if (startCFIRange) {
-					startCFIRange.collapse(false);
-					this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
-					this._cachedStartCFIOffset = 0;
-				}
-				if (startRange && startCFIRange) {
-					foundStart = true;
-				}
-			}
-			else if (!visible) {
-				break;
-			}
+			if (!visible) continue;
+			yield renderer;
+		}
+	}
+
+	protected _updateDisplayCache(): void {
+		for (let renderer of this._visibleRenderers()) {
+			this._cachedStartSection = renderer.section;
+			let startRange = this._getFirstVisibleRange(renderer, true);
+			if (!startRange) continue;
+			// Collapse to end so the page label is biased toward the later page when the
+			// first visible line straddles a page boundary
+			startRange.collapse(false);
+			this._cachedStartRange = new PersistentRange(startRange);
+			break;
+		}
+	}
+
+	protected _updateUserAnchor(): void {
+		for (let renderer of this._visibleRenderers()) {
+			let range = this._getFirstVisibleRange(renderer, true);
+			if (!range) continue;
+			range.collapse(true);
+			this._cachedStartCFI = new EpubCFI(range, renderer.section.cfiBase);
+			this._cachedStartCFIOffset = 0;
+			break;
 		}
 	}
 

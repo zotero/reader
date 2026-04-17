@@ -2336,6 +2336,9 @@ export interface CustomScrollIntoViewOptions extends Omit<ScrollIntoViewOptions,
 
 export interface NavigateOptions extends CustomScrollIntoViewOptions {
 	skipHistory?: boolean;
+
+	/** Don't refresh the user anchor as part of this navigation. */
+	keepAnchor?: boolean;
 }
 
 export const enum SpotlightKey {
