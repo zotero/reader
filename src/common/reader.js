@@ -851,6 +851,14 @@ class Reader {
 		this._contextMenuCloseResolve = null;
 	}
 
+	/**
+	 * @returns {Object | null}
+	 */
+	getSelectionPosition() {
+		return this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
+			?.annotation?.position ?? null;
+	}
+
 	_handleAppearanceChange(params) {
 		this._ensureType('epub', 'snapshot');
 		this._primaryView?.setAppearance(params);
@@ -1014,10 +1022,7 @@ class Reader {
 		if (!this._enableReadAloud) {
 			return;
 		}
-		if (!position && this._state[this._lastView + 'SelectionPopup']) {
-			position = this._state[this._lastView + 'SelectionPopup'].annotation?.position;
-		}
-		position ??= null;
+		position ||= this.getSelectionPosition();
 		// If already active with segments, just reposition without reinitializing
 		if (this._state.readAloudState.active && this._state.readAloudState.segments) {
 			this._handleReadAloudStateChange({
