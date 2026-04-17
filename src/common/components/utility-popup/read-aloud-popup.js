@@ -7,6 +7,8 @@ import IconSkipBack from '../../../../res/icons/20/skip-back.svg';
 import IconPlay from '../../../../res/icons/20/play.svg';
 import IconPause from '../../../../res/icons/20/pause.svg';
 import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
+import IconSkipBackGranular from '../../../../res/icons/20/skip-back-granular.svg';
+import IconSkipAheadGranular from '../../../../res/icons/20/skip-ahead-granular.svg';
 import IconAnnotate from '../../../../res/icons/20/read-aloud-annotate.svg';
 import IconLoading from '../../../../res/icons/16/loading.svg';
 import IconClock from '../../../../res/icons/12/clock.svg';
@@ -465,6 +467,19 @@ function PlaybackControls(props) {
 	const { l10n } = useLocalization();
 
 	let { showOptions, onToggleOptions, showSpinner, paused, onPlayPause, controller, onAddAnnotation, onLockPosition } = props;
+	let [altDown, setAltDown] = useState(false);
+
+	useEffect(() => {
+		let handleKey = (event) => {
+			setAltDown(event.altKey);
+		};
+		window.addEventListener('keydown', handleKey);
+		window.addEventListener('keyup', handleKey);
+		return () => {
+			window.removeEventListener('keydown', handleKey);
+			window.removeEventListener('keyup', handleKey);
+		};
+	}, []);
 
 	function handleAddAnnotation() {
 		let segment = controller?.getSegmentToAnnotate();
@@ -474,7 +489,11 @@ function PlaybackControls(props) {
 	}
 
 	return (
-		<div className="row buttons" data-tabstop={1}>
+		<div
+			className="row buttons"
+			data-tabstop={1}
+			onMouseMove={event => setAltDown(event.altKey)}
+		>
 			<div className="group">
 				<button
 					className={cx('toolbar-button', { active: showOptions })}
@@ -486,13 +505,13 @@ function PlaybackControls(props) {
 			<div className="group">
 				<button
 					className="toolbar-button"
-					title={l10n.getString('reader-read-aloud-skip-back')}
+					title={l10n.getString(altDown ? 'reader-read-aloud-skip-back-sentence' : 'reader-read-aloud-skip-back')}
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipBack(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
 						onLockPosition();
 					}}
-				><IconSkipBack/></button>
+				>{altDown ? <IconSkipBackGranular/> : <IconSkipBack/>}</button>
 				{showSpinner
 					? <IconLoading
 						className="loading-spinner"
@@ -512,13 +531,13 @@ function PlaybackControls(props) {
 				}
 				<button
 					className="toolbar-button"
-					title={l10n.getString('reader-read-aloud-skip-ahead')}
+					title={l10n.getString(altDown ? 'reader-read-aloud-skip-ahead-sentence' : 'reader-read-aloud-skip-ahead')}
 					tabIndex="-1"
 					onClick={(event) => {
 						controller?.skipAhead(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
 						onLockPosition();
 					}}
-				><IconSkipAhead/></button>
+				>{altDown ? <IconSkipAheadGranular/> : <IconSkipAhead/>}</button>
 			</div>
 			<div className="group">
 				<button
