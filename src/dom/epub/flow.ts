@@ -102,6 +102,7 @@ abstract class AbstractFlow implements Flow {
 		this._onManualNavigation = options.onManualNavigation;
 
 		this._isRTL = isRTL(this._iframeDocument.body);
+		this._isVertical = isVertical(this._iframeDocument.body);
 
 		this._iframeWindow.addEventListener('scroll', this._pushHistoryPoint);
 
@@ -334,8 +335,6 @@ export class ScrolledFlow extends AbstractFlow {
 		this._iframe.classList.add('flow-mode-scrolled');
 		this._iframeDocument.body.classList.add('flow-mode-scrolled');
 		this._iframeWindow.addEventListener('scroll', this._refreshUserAnchorAfterScroll, { passive: true });
-
-		this._isVertical = isVertical(this._iframeDocument.body);
 
 		for (let view of this._view.renderers) {
 			view.mount();
@@ -627,6 +626,21 @@ export class PaginatedFlow extends AbstractFlow {
 		this._refreshDisplayCache();
 	}
 
+	private _setOffsetToEndOfSection() {
+		if (this._isVertical) {
+			this._setOffset(
+				0,
+				Math.max(0, this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight)
+			);
+		}
+		else {
+			this._setOffset(
+				Math.max(0, this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth),
+				0
+			);
+		}
+	}
+
 	get currentSectionIndex(): number {
 		return this._currentSectionIndex;
 	}
@@ -675,14 +689,25 @@ export class PaginatedFlow extends AbstractFlow {
 		let internalX = rect.x - containerRect.x;
 		let internalY = rect.y - containerRect.y;
 		if (options?.block === 'center') {
-			internalX += rect.width / 2;
+			if (this._isVertical) {
+				internalY += rect.height / 2;
+			}
+			else {
+				internalX += rect.width / 2;
+			}
 		}
-		let spreadWidth = this._spreadWidth;
-		let spreadHeight = this._spreadHeight;
-		this._setOffset(
-			Math.max(0, Math.floor(internalX / spreadWidth)) * spreadWidth,
-			Math.max(0, Math.floor(internalY / spreadHeight)) * spreadHeight,
-		);
+		if (this._isVertical) {
+			this._setOffset(
+				0,
+				Math.max(0, Math.floor(internalY / this._spreadHeight)) * this._spreadHeight
+			);
+		}
+		else {
+			this._setOffset(
+				Math.max(0, Math.floor(internalX / this._spreadWidth)) * this._spreadWidth,
+				0
+			);
+		}
 		if (!options?.keepAnchor) {
 			this._refreshUserAnchor();
 		}
@@ -693,24 +718,26 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this.canNavigateToPreviousSection()) {
 			return true;
 		}
-		return this._offsetLeft > 0 || this._offsetTop > 0;
+		return this._isVertical ? this._offsetTop > 0 : this._offsetLeft > 0;
 	}
 
 	canNavigateToNextPage(): boolean {
 		if (this.canNavigateToNextSection()) {
 			return true;
 		}
-		return this._offsetLeft < this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth
-			|| this._offsetTop < this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight;
+		return this._isVertical
+			? this._offsetTop < this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight
+			: this._offsetLeft < this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth;
 	}
 
 	atStartOfSection(): boolean {
-		return this._offsetLeft == 0 && this._offsetTop == 0;
+		return this._isVertical ? this._offsetTop == 0 : this._offsetLeft == 0;
 	}
 
 	atEndOfSection(): boolean {
-		return this._offsetLeft > this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth - this._spreadWidth
-			&& this._offsetTop > this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight - this._spreadHeight;
+		return this._isVertical
+			? this._offsetTop > this._sectionsContainer.scrollHeight - this._sectionsContainer.offsetHeight - this._spreadHeight
+			: this._offsetLeft > this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth - this._spreadWidth;
 	}
 
 	canNavigateToPreviousSection(): boolean {
@@ -739,16 +766,13 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 		if (this.atStartOfSection()) {
 			this.navigateToPreviousSection();
-			this._setOffset(
-				this._sectionsContainer.scrollWidth,
-				this._sectionsContainer.offsetHeight - this._spreadHeight - this._sectionsContainer.scrollHeight
-			);
+			this._setOffsetToEndOfSection();
 		}
-		else if (this._offsetLeft === 0) {
+		else if (this._isVertical) {
 			this._setOffset(0, this._offsetTop - this._spreadHeight);
 		}
 		else {
-			this._setOffset(this._offsetLeft - this._spreadWidth, this._offsetTop);
+			this._setOffset(this._offsetLeft - this._spreadWidth, 0);
 		}
 		this._refreshUserAnchor();
 		this._onViewUpdate();
@@ -761,11 +785,11 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this.atEndOfSection()) {
 			this.navigateToNextSection();
 		}
-		else if (this._offsetLeft === this._sectionsContainer.scrollWidth - this._sectionsContainer.offsetWidth) {
+		else if (this._isVertical) {
 			this._setOffset(0, this._offsetTop + this._spreadHeight);
 		}
 		else {
-			this._setOffset(this._offsetLeft + this._spreadWidth, this._offsetTop);
+			this._setOffset(this._offsetLeft + this._spreadWidth, 0);
 		}
 		this._refreshUserAnchor();
 		this._onViewUpdate();
@@ -780,7 +804,7 @@ export class PaginatedFlow extends AbstractFlow {
 
 	navigateToLastPage(): void {
 		this.currentSectionIndex = this._view.renderers[this._view.renderers.length - 1].section.index;
-		this._setOffset(this._sectionsContainer.scrollWidth, 0);
+		this._setOffsetToEndOfSection();
 		this._refreshUserAnchor();
 		this._onViewUpdate();
 	}
