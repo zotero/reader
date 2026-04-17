@@ -290,7 +290,7 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.zoomReset();
 		}
-		else if (code === `${pm}-Alt-KeyR` || code === `${pm}-Alt-KeyL`) {
+		else if (code === 'KeyR' || code === 'KeyL') {
 			event.preventDefault();
 			event.stopPropagation();
 			if (this._reader._state.readAloudState.active && !this._reader.getSelectionPosition()) {
