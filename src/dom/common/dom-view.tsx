@@ -183,6 +183,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _penExclusive: boolean;
 
+	private _resizeObserver: ResizeObserver;
+
 	protected _a11yVirtualCursorTarget: Node | null;
 
 	protected _a11yShouldFocusVirtualCursorTarget: boolean;
@@ -236,6 +238,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._iframe.setAttribute('csp', this._getCSP());
 		this.initializedPromise = this._initialize();
 		this.initializedPromise.then(() => this.initialized = true);
+		this._resizeIframeImmediate();
+		this._resizeObserver = new ResizeObserver(() => {
+			this._resizeIframeLeading();
+			this._resizeIframeTrailing();
+		});
+		this._resizeObserver.observe(options.container);
 		options.container.append(this._iframe);
 	}
 
@@ -1828,6 +1836,26 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
+	protected _resizeIframeImmediate() {
+		let dpr = window.devicePixelRatio || 1;
+		let width = Math.floor(this._container.clientWidth * dpr) / dpr;
+		let height = Math.floor(this._container.clientHeight * dpr) / dpr;
+		this._iframe.style.width = width + 'px';
+		this._iframe.style.height = height + 'px';
+		if (this._iframeDocument) {
+			this._iframeDocument.documentElement.style.width = width + 'px';
+			this._iframeDocument.documentElement.style.height = height + 'px';
+		}
+	}
+
+	protected _resizeIframeLeading() {
+		// No-op besides EPUB
+	}
+
+	protected _resizeIframeTrailing() {
+		this._resizeIframeImmediate();
+	}
+
 	protected _handleResize() {
 		this._handleViewUpdate();
 	}
@@ -1982,6 +2010,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	destroy() {
 		this._overlayPopupDelayer.destroy();
 		this._annotationRenderRoot.unmount();
+		this._resizeObserver.disconnect();
 	}
 
 	// ***
