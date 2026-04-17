@@ -1,10 +1,10 @@
 import {
 	NewAnnotation,
+	Position,
 	ReadAloudGranularity,
 	ReadAloudSegment,
-	ReadAloudState,
 	RangeRef,
-	WADMAnnotation,
+	WADMAnnotation, ReadAloudStateSnapshot, ReadAloudStateDelta,
 } from "../../../common/types";
 import { exceedsSegmentMaxLength, splitTextToChunks } from "../../../common/read-aloud/segment-split";
 import { isSelector, Selector } from "./selector";
@@ -28,7 +28,7 @@ import EPUBView from '../../epub/epub-view';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class ReadAloud<View extends DOMView<any, any>> {
-	state: ReadAloudState | null = null;
+	state: ReadAloudStateSnapshot | null = null;
 
 	positionLocked = true;
 
@@ -40,7 +40,7 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		this._view = view;
 	}
 
-	setState(state: ReadAloudState): ReadAloudState | null {
+	setState(state: ReadAloudStateSnapshot): ReadAloudStateDelta | null {
 		let previousState = this.state;
 		this.state = state;
 
@@ -136,46 +136,12 @@ export class ReadAloud<View extends DOMView<any, any>> {
 
 		if (!state.lang && this._view.lang) {
 			return {
-				...state,
 				lang: getBaseLanguage(this._view.lang),
 			};
 		}
 
 		if (!state.active || !state.segmentGranularity) {
 			return null;
-		}
-
-		// Reposition within existing segments without reinitializing
-		if (state.segments !== null && state.targetPosition) {
-			let targetRange;
-			if (isSelector(state.targetPosition)) {
-				targetRange = this._view.toDisplayedRange(state.targetPosition as Selector);
-			}
-			else if ('range' in state.targetPosition) {
-				targetRange = state.targetPosition.range.toRange();
-			}
-			if (targetRange) {
-				let backwardStopIndex: number | null = null;
-				for (let i = 0; i < state.segments.length; i++) {
-					let segmentRange = (state.segments[i].position as RangeRef).range.toRange();
-					// Find the first segment whose end is at or past the target start
-					if (EPUBView.compareBoundaryPoints(Range.START_TO_END, segmentRange, targetRange) >= 0) {
-						backwardStopIndex = i;
-						break;
-					}
-				}
-				return {
-					...state,
-					paused: false,
-					// New array reference so the controller is always recreated,
-					// even when repositioning to the same backwardStopIndex
-					// TODO: This is not ideal; replace with a cleaner imperative approach
-					segments: [...state.segments],
-					backwardStopIndex,
-					forwardStopIndex: null,
-					targetPosition: undefined,
-				};
-			}
 		}
 
 		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity) {
@@ -264,13 +230,9 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		let lang = state.lang || this._view.lang;
 
 		return {
-			...state,
-			paused: false,
 			segments,
-			activeSegment: null,
 			backwardStopIndex,
 			forwardStopIndex,
-			targetPosition: undefined,
 			lang,
 		};
 	}
@@ -301,6 +263,31 @@ export class ReadAloud<View extends DOMView<any, any>> {
 				...init,
 			};
 			return annotation;
+		}
+		return null;
+	}
+
+	/**
+	 * Given a target position and existing segments, find the segment index
+	 * to reposition to. Returns null if the position can't be resolved.
+	 */
+	computeRepositionIndex(position: Position, segments: ReadAloudSegment[]): number | null {
+		let targetRange;
+		if (isSelector(position)) {
+			targetRange = this._view.toDisplayedRange(position as Selector);
+		}
+		else if ('range' in position) {
+			targetRange = (position as RangeRef).range.toRange();
+		}
+		if (!targetRange) {
+			return null;
+		}
+		for (let i = 0; i < segments.length; i++) {
+			let segmentRange = (segments[i].position as RangeRef).range.toRange();
+			// Find the first segment whose end is at or past the target start
+			if (EPUBView.compareBoundaryPoints(Range.START_TO_END, segmentRange, targetRange) >= 0) {
+				return i;
+			}
 		}
 		return null;
 	}

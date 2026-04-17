@@ -29,6 +29,7 @@ async function createReader() {
 	else if (type === 'snapshot') {
 		demo = snapshot;
 	}
+	let readAloudVoices = {};
 	let res = await fetch(demo.fileName);
 	let reader = new Reader({
 		type,
@@ -106,13 +107,25 @@ async function createReader() {
 		onSaveCustomThemes(customThemes) {
 			console.log('Save custom themes', customThemes);
 		},
-		onSetReadAloudVoice(options) {
-			console.log('Set read aloud voice', options);
+		onSetReadAloudVoice({ lang, region, voice, speed, tier }) {
+			console.log('Set read aloud voice', { lang, region, voice, speed, tier });
+			let existing = readAloudVoices[lang] || {};
+			let tierVoices = { ...existing.tierVoices };
+			if (tier) {
+				delete tierVoices[tier];
+				tierVoices[tier] = voice;
+			}
+			readAloudVoices = {
+				...readAloudVoices,
+				[lang]: { region, voice, speed, tierVoices },
+			};
+			reader.setReadAloudVoices(readAloudVoices);
 		},
 		onSetReadAloudStatus(status) {
 			console.log('Set read aloud status', status);
 		},
 		enableReadAloud: true,
+		readAloudVoices,
 		readAloudRemoteInterface: ZOTERO_API_KEY && {
 			async getVoices() {
 				let url = 'https://api.zotero.org/tts/voices';

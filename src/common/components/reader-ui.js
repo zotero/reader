@@ -158,8 +158,6 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeTool={props.onChangeTool}
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
 						onToggleAppearancePopup={props.onToggleAppearancePopup}
-						onChangeReadAloudState={props.onChangeReadAloudState}
-						onSetReadAloudVoice={props.onSetReadAloudVoice}
 						onToggleReadAloud={props.onToggleReadAloud}
 						onToggleFind={props.onToggleFind}
 						onToggleContextPane={props.onToggleContextPane}
@@ -265,13 +263,9 @@ const ReaderUI = React.forwardRef((props, ref) => {
 				{props.enableReadAloud && state.readAloudState.popupOpen && state.readAloudState.lang && (
 					!state.readAloudFirstRunPopup
 						? <ReadAloudPopup
-							params={state.readAloudState}
-							persistedVoices={state.readAloudVoices}
-							remoteInterface={props.readAloudRemoteInterface}
+							manager={props.readAloudManager}
 							title={state.title}
 							loggedIn={state.loggedIn}
-							onChange={props.onChangeReadAloudState}
-							onSetVoice={props.onSetReadAloudVoice}
 							onOpenVoicePreferences={props.onOpenVoicePreferences}
 							onPurchaseCredits={props.onPurchaseReadAloudCredits}
 							onLogIn={props.onLogIn}

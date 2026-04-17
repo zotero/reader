@@ -1,7 +1,6 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/lib/appearance";
 import { PersistentRange } from '../dom/common/lib/range';
-import { ReadAloudController } from './read-aloud/controller';
 
 export type ToolType =
 	| 'highlight'
@@ -187,23 +186,47 @@ export type ReadAloudAnnotationPopup = {
 	segments: ReadAloudSegment[];
 };
 
+/**
+ * UI-only state stored on the React state tree.
+ * Engine state (playback, segments, and voice) lives in ReadAloudManager.
+ */
 export type ReadAloudState = {
+	popupOpen: boolean;
+	lang?: string;
+	annotationPopup: ReadAloudAnnotationPopup | null;
+	segmentAnnotations: Map<number, string>;
+	savedPosition?: Position | null;
+};
+
+/**
+ * Composed state pushed to views for display (spotlights and scrolling)
+ * and segment computation.
+ */
+export type ReadAloudStateSnapshot = {
 	popupOpen: boolean;
 	active: boolean;
 	paused: boolean;
-	controller?: ReadAloudController;
-	segmentGranularity?: ReadAloudGranularity;
+	segmentGranularity: ReadAloudGranularity | null;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;
 	backwardStopIndex: number | null;
 	forwardStopIndex: number | null;
 	targetPosition?: Position;
-	lang?: string;
-	speed: number;
-	voice: string | null;
+	lang: string | null;
+	lastSkipGranularity: 'sentence' | 'paragraph' | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
-	lastSkipGranularity?: 'sentence' | 'paragraph' | null;
-	savedPosition?: Position | null;
+};
+
+/**
+ * Modifications to composed state that can be returned by views
+ * using onSetReadAloudState().
+ */
+export type ReadAloudStateDelta = {
+	segments?: ReadAloudSegment[] | null;
+	backwardStopIndex?: number | null;
+	forwardStopIndex?: number | null;
+	targetPosition?: Position;
+	lang?: string | null;
 };
 
 export type ReadAloudSegment = {
