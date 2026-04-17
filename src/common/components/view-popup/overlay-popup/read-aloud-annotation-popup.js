@@ -56,6 +56,12 @@ function ReadAloudAnnotationPopup(props) {
 	}, []);
 
 	useEffect(() => {
+		let handleBlur = () => {
+			if (contextMenuOpenRef.current) {
+				return;
+			}
+			onDismiss();
+		};
 		let handlePointerDownCapture = (event) => {
 			if (contextMenuOpenRef.current) {
 				return;
@@ -64,17 +70,26 @@ function ReadAloudAnnotationPopup(props) {
 				onDismiss();
 			}
 		};
-		let handleBlur = () => {
-			if (contextMenuOpenRef.current) {
-				return;
-			}
-			onDismiss();
-		};
-		document.addEventListener('pointerdown', handlePointerDownCapture, { capture: true });
+
 		window.addEventListener('blur', handleBlur);
+
+		// Add pointerdown listener to our own document and to all iframes,
+		// since even during the capture phase, a pointer event on a child
+		// iframe doesn't reach the parent document
+		let pointerDownTargets = Array.from(document.querySelectorAll('iframe'))
+			.map(iframe => iframe.contentDocument)
+			.filter(Boolean);
+		pointerDownTargets.push(document);
+		for (let target of pointerDownTargets) {
+			target.addEventListener('pointerdown', handlePointerDownCapture, { capture: true });
+		}
+
 		return () => {
-			document.removeEventListener('pointerdown', handlePointerDownCapture, { capture: true });
 			window.removeEventListener('blur', handleBlur);
+
+			for (let target of pointerDownTargets) {
+				target.removeEventListener('pointerdown', handlePointerDownCapture, { capture: true });
+			}
 		};
 	}, [onDismiss]);
 
