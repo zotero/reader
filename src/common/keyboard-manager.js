@@ -290,16 +290,6 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.zoomReset();
 		}
-		else if (code === 'KeyR' || code === 'KeyL') {
-			event.preventDefault();
-			event.stopPropagation();
-			if (this._reader._state.readAloudState.active && !this._reader.getSelectionPosition()) {
-				this._reader.toggleReadAloudPopup(false);
-			}
-			else {
-				this._reader.startReadAloudAtPosition();
-			}
-		}
 		else if (['Delete', 'Backspace'].includes(key)) {
 			// Prevent the deletion of annotations when they are selected and the focus is within
 			// an input or label popup. Normally, the focus should not be inside an input unless
@@ -406,6 +396,16 @@ export class KeyboardManager {
 			}
 			else if (this._reader._type === 'pdf' && key === 's') {
 				this._reader.setTool({ type: 'pointer' });
+			}
+			else if (code === 'KeyR' || code === 'KeyL') {
+				event.preventDefault();
+				event.stopPropagation();
+				if (this._reader._state.readAloudState.active && !this._reader.getSelectionPosition()) {
+					this._reader.toggleReadAloudPopup(false);
+				}
+				else {
+					this._reader.startReadAloudAtPosition();
+				}
 			}
 			else if (readAloudActive && !event.target.matches('button, select')) {
 				if (key === 'Space') {
