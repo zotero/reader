@@ -344,30 +344,23 @@ export class ReadAloudManager {
 		}
 
 		// If current voice is still valid, keep it
+		let voiceResolved = false;
 		if (this._voiceID && voicesForLang.some(v => v.id === this._voiceID)) {
 			this._applyVoice();
-			return;
+			voiceResolved = true;
+		}
+		// Otherwise, find a fallback
+		else if (voicesForLang.length) {
+			let voiceID = this._findFallbackVoice(voicesForLang) ?? voicesForLang[0].id;
+			if (voiceID !== this._voiceID) {
+				this._voiceID = voiceID;
+				this._applyVoice();
+			}
+			voiceResolved = true;
 		}
 
-		if (!voicesForLang.length) {
-			return;
-		}
-
-		// Find fallback voice
-		let voiceID = this._findFallbackVoice(voicesForLang);
-		if (!voiceID) {
-			voiceID = voicesForLang[0].id;
-		}
-
-		let wasVoiceID = this._voiceID;
-		this._voiceID = voiceID;
-
-		if (voiceID !== wasVoiceID) {
-			this._applyVoice();
-		}
-
-		// Handle pending set voice (after language/tier change)
-		if (this._pendingSetVoice && this._voiceID) {
+		// Persist if this change was initiated by the user
+		if (voiceResolved && this._pendingSetVoice) {
 			this._pendingSetVoice = false;
 			this._persistCurrentVoice();
 		}
