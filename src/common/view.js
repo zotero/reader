@@ -40,6 +40,7 @@ class View {
 			annotations: options.annotations,
 			onSave: options.onSaveAnnotations,
 			onDelete: nop,
+			adjustTextAnnotationPosition: (annotation, adjustOptions) => this._view.adjustTextAnnotationPosition(annotation, adjustOptions),
 			onRender: (annotations) => {
 				this._view.setAnnotations(annotations);
 			},
