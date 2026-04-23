@@ -65,7 +65,7 @@ import PDFRenderer from './pdf-renderer';
 import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
 import { adjustTextAnnotationPosition } from './lib/text-annotation';
-import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
+import { applyTransformationMatrixToInkPosition, densifyPath, eraseInk, smoothPath } from './lib/path';
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import {
@@ -2523,6 +2523,7 @@ class PDFView {
 					paths: [[...point]]
 				}
 			};
+			action.shiftConstrained = false;
 			action.triggered = true;
 		}
 		else if (action.type === 'erase') {
@@ -2952,8 +2953,26 @@ class PDFView {
 			action.triggered = true;
 		}
 		else if (action.type === 'ink') {
-			let point = originalPagePosition.rects[0].slice(0, 2);
-			action.annotation.position.paths[0].push(...point);
+			let [x, y] = originalPagePosition.rects[0].slice(0, 2);
+			let path = action.annotation.position.paths[0];
+			let shiftConstrained = event.shiftKey && path.length >= 2;
+
+			if (shiftConstrained) {
+				let x0 = path[0];
+				let y0 = path[1];
+				let dx = x - x0;
+				let dy = y - y0;
+
+				if (Math.abs(dx) >= Math.abs(dy)) {
+					y = y0;
+				}
+				else {
+					x = x0;
+				}
+			}
+
+			path.push(x, y);
+			action.shiftConstrained = shiftConstrained;
 			// Already triggered on pointerdown
 		}
 		else if (action.type === 'erase') {
@@ -3075,7 +3094,13 @@ class PDFView {
 					else if (action.type === 'ink' && action.annotation) {
 						let lastInkAnnotation = this._annotations.find(x => x.id === this._lastAddedInkAnnotationID);
 						let path = action.annotation.position.paths[0];
-						path = smoothPath(path);
+						if (action.shiftConstrained && path.length >= 4) {
+							let maxStep = Math.max(2, action.annotation.position.width / 2);
+							path = densifyPath(path, maxStep);
+						}
+						else {
+							path = smoothPath(path);
+						}
 						path = path.map(value => parseFloat(value.toFixed(3)));
 						action.annotation.position.paths[0] = path;
 						let dist;
