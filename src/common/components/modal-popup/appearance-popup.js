@@ -18,9 +18,9 @@ import IconSplitVertical from '../../../../res/icons/16/split-vertical.svg';
 import IconSpreadEven from '../../../../res/icons/16/spread-even.svg';
 import IconSpreadNone from '../../../../res/icons/16/spread-none.svg';
 import IconSpreadOdd from '../../../../res/icons/16/spread-odd.svg';
-import IconX from '../../../../res/icons/16/x-8.svg';
 import IconOptions from '../../../../res/icons/16/options.svg';
 import IconPlus from '../../../../res/icons/20/plus.svg';
+import IconLoading from '../../../../res/icons/16/loading.svg';
 import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
@@ -307,15 +307,21 @@ function AppearancePopup(props) {
 						{(type === 'snapshot' || type === 'pdf') && (
 							<div className="option">
 								<label htmlFor="reading-mode-enabled">{l10n.getString('reader-reading-mode')}</label>
-								<input
-									data-tabstop={1}
-									tabIndex={-1}
-									className="switch"
-									type="checkbox"
-									id="reading-mode-enabled"
-									checked={props.readingModeEnabled}
-									onChange={e => props.onChangeReadingModeEnabled(e.target.checked)}
-								/>
+								<div className="reading-mode-control">
+									{props.readingModeLoading && (
+										<IconLoading className="loading-spinner" aria-busy={true}/>
+									)}
+									<input
+										data-tabstop={1}
+										tabIndex={-1}
+										className="switch"
+										type="checkbox"
+										id="reading-mode-enabled"
+										checked={props.readingModeEnabled || props.readingModeLoading}
+										disabled={props.readingModeLoading}
+										onChange={e => props.onChangeReadingModeEnabled(e.target.checked)}
+									/>
+								</div>
 							</div>
 						)}
 						{(type === 'epub' || props.readingModeEnabled) && (

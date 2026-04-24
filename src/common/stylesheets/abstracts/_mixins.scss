@@ -384,6 +384,11 @@
 	cursor: pointer;
 }
 
+@mixin loading-spinner {
+	color: var(--fill-secondary);
+	animation: rotating 0.5s steps(12) infinite;
+}
+
 // EPUBView sets .mask-resizing while debouncing resize.
 // Use it to apply a blur and transform masking intermediate layout shifts.
 // (Transform properties are set in EPUBView.)
