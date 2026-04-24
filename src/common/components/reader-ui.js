@@ -236,6 +236,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						lightTheme={state.lightTheme}
 						darkTheme={state.darkTheme}
 						readingModeEnabled={state.readingModeEnabled}
+						readingModeLoading={state.readingModeLoading}
 						splitType={state.splitType}
 						viewStats={viewStats}
 						onChangeSplitType={props.onChangeSplitType}

@@ -244,6 +244,7 @@ class Reader {
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
 			readingModeEnabled: false,
+			readingModeLoading: false,
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -899,7 +900,13 @@ class Reader {
 			let baseView = primary ? this._primaryView : this._secondaryView;
 
 			if (enabled && !this[sdtViewKey]) {
-				await this._loadSDTData();
+				this._updateState({ readingModeLoading: true });
+				try {
+					await this._loadSDTData();
+				}
+				finally {
+					this._updateState({ readingModeLoading: false });
+				}
 				if (!this._sdtData) {
 					throw new Error('SDT data unavailable');
 				}
