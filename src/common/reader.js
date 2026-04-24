@@ -49,6 +49,16 @@ window.computedWidthFocusBorder = window.getComputedStyle(document.body).getProp
 
 export const ReaderContext = createContext({});
 
+// View stats to delegate to the base view when the ZST overlay
+// view is active
+const BASE_VIEW_STATS_KEYS = new Set([
+	'pageIndex',
+	'pageLabel',
+	'pagesCount',
+	'usePhysicalPageNumbers',
+	'percentage',
+]);
+
 class Reader {
 	constructor(options) {
 		window.rtl = options.rtl;
@@ -1770,7 +1780,7 @@ class Reader {
 		return getLocalizedString(name, args);
 	}
 
-	_createView(primary, location, { sdt } = {}) {
+	_createView(primary, location, { sdt = false } = {}) {
 		let view;
 
 		let container = primary ? this._primaryViewContainer : this._secondaryViewContainer;
@@ -1814,8 +1824,19 @@ class Reader {
 			this._onChangeViewState(state, primary);
 		}, DEBOUNCE_STATE_CHANGE);
 
-		let onChangeViewStats = debounce((state) => {
-			this._updateState({ [primary ? 'primaryViewStats' : 'secondaryViewStats']: state });
+		let onChangeViewStats = debounce((stats) => {
+			let stateKey = primary ? 'primaryViewStats' : 'secondaryViewStats';
+			let isSDTActive = !!(primary ? this._primarySDTView : this._secondarySDTView);
+			if (isSDTActive) {
+				let merged = { ...this._state[stateKey] };
+				for (let key in stats) {
+					if (BASE_VIEW_STATS_KEYS.has(key) === !sdt) {
+						merged[key] = stats[key];
+					}
+				}
+				stats = merged;
+			}
+			this._updateState({ [stateKey]: stats });
 		}, DEBOUNCE_STATS_CHANGE);
 
 		let onAddAnnotation = (annotation, select) => {
