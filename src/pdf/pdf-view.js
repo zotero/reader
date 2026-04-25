@@ -166,6 +166,8 @@ class PDFView {
 		this._readAloudSentenceHighlightedPosition = null;
 
 		this._iframe = document.createElement('iframe');
+		this._iframe.style.width = '100%';
+		this._iframe.style.height = '100%';
 		this._iframe.addEventListener('load', () => this._iframe.classList.add('loaded'));
 		this._iframe.src = 'pdf/web/viewer.html';
 
