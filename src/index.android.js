@@ -68,8 +68,11 @@ window.createView = (encodedOptions) => {
 		onRequestPassword: () => {
 			postMessage('onRequestPassword');
 		},
-		onSetThumbnails: (thumbnails) => {
-			postMessage('onSetThumbnails', { thumbnails });
+		onInitThumbnails: (thumbnails) => {
+			postMessage('onInitThumbnails', { thumbnails });
+		},
+		onRenderThumbnail: (thumbnail) => {
+			postMessage('onRenderThumbnail', { thumbnail });
 		},
 		onSetPageLabels: (pageLabels) => {
 			postMessage('onSetPageLabels', { pageLabels });
@@ -153,6 +156,11 @@ window.setPageLabels = (options) => {
 	const pageLabels = JSON.parse(decodeBase64(options.pageLabels));
 	log("Set page labels: " + JSON.stringify(pageLabels));
 	window._view.setPageLabels(pageLabels);
+};
+
+window.renderThumbnails = (pageIndexes) => {
+	log("Render thumbnails: " + JSON.stringify(pageIndexes));
+	window._view.renderThumbnails(pageIndexes);
 };
 
 window.enterPassword = (options) => {

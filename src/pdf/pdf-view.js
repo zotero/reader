@@ -91,7 +91,9 @@ class PDFView {
 		this._darkTheme = options.darkTheme;
 		this._preferedColorTheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
+		this._onInitThumbnails = options.onInitThumbnails;
 		this._onSetThumbnails = options.onSetThumbnails;
+		this._onRenderThumbnail = options.onRenderThumbnail;
 		this._onSetOutline = options.onSetOutline;
 		this._onSetPageLabels = options.onSetPageLabels;
 		this._onChangeViewState = options.onChangeViewState;
@@ -544,10 +546,14 @@ class PDFView {
 		this._pdfThumbnails = new PDFThumbnails({
 			pdfView: this,
 			window: this._iframeWindow,
+			onInit: (thumbnails) => {
+				(this._onInitThumbnails || this._onSetThumbnails)(thumbnails);
+			},
 			onUpdate: (thumbnails) => {
 				// TODO: When rendering thumbnails it's also a good chance to getPageData with extracted pageLabel
 				this._onSetThumbnails(thumbnails);
-			}
+			},
+			onRender: this._onRenderThumbnail && ((thumbnail) => this._onRenderThumbnail(thumbnail))
 		});
 	}
 
@@ -948,6 +954,10 @@ class PDFView {
 				page.div.setAttribute('aria-label', `Page: cd ${i + 1}`);
 			}
 		}
+	}
+
+	renderThumbnails(pageIndexes) {
+		this._pdfThumbnails?.render(pageIndexes);
 	}
 
 	setReadOnly(readOnly) {

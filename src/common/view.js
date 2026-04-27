@@ -117,7 +117,9 @@ class View {
 				password: this._options.password,
 				pageLabels: this._options.pageLabels || [],
 				onRequestPassword: this._options.onRequestPassword || nop,
+				onInitThumbnails: this._options.onInitThumbnails,
 				onSetThumbnails: this._options.onSetThumbnails || nop,
+				onRenderThumbnail: this._options.onRenderThumbnail,
 				onSetPageLabels: this._options.onSetPageLabels || nop,
 				// PDF can delete annotations inside the view, for example by completely erasing ink.
 				onDeleteAnnotations: this._options.onDeleteAnnotations || nop
@@ -336,6 +338,11 @@ class View {
 
 	setPageLabels(pageLabels) {
 		this._view.setPageLabels?.(pageLabels);
+	}
+
+	renderThumbnails(pageIndexes) {
+		this._ensureType('pdf');
+		this._view.renderThumbnails?.(pageIndexes);
 	}
 
 	setReadAloudSpotlight(selector) {
