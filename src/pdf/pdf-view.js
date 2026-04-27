@@ -80,6 +80,7 @@ class PDFView {
 	constructor(options) {
 		this._options = options;
 		this._primary = options.primary;
+		this._mobile = options.mobile;
 		this._readOnly = options.readOnly;
 		this._preview = options.preview;
 		this._container = options.container;
@@ -449,6 +450,10 @@ class PDFView {
 		}
 
 		this._resolveInitializedPromise();
+
+		if (this._mobile && this._primary) {
+			this._initNativeOutline();
+		}
 
 		await this._initProcessedData();
 		this._findController.setDocument(this._iframeWindow.PDFViewerApplication.pdfDocument);
@@ -4179,6 +4184,47 @@ class PDFView {
 		}
 	}
 
+	async _initNativeOutline() {
+		await this._iframeWindow.PDFViewerApplication.pdfViewer.pagesPromise;
+		let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline();
+		outline = await this._transformNativeOutline(outline || []);
+		this._onSetOutline(outline);
+	}
+
+	async _transformNativeOutline(items) {
+		let outline = [];
+		for (let item of items) {
+			let newItem = {
+				title: item.title,
+				items: await this._transformNativeOutline(item.items || []),
+			};
+			if (item.dest) {
+				try {
+					let position = await this._getPositionFromDestination(item.dest);
+					if (position) {
+						newItem.location = {
+							position: {
+								pageIndex: position.pageIndex,
+								rects: [[position.x, position.y, position.x, position.y]]
+							}
+						};
+					}
+				}
+				catch (e) {
+					console.log(e);
+				}
+			}
+			else if (item.unsafeUrl) {
+				newItem.url = item.unsafeUrl;
+			}
+			outline.push(newItem);
+		}
+		if (outline.length === 1 && outline[0].items.length > 1) {
+			outline = outline[0].items;
+		}
+		return outline;
+	}
+
 	setOutline(outline) {
 		this._outline = outline;
 	}
@@ -4203,17 +4249,27 @@ class PDFView {
 		}
 
 		const ref = destArray[0];
-		const pageNumber = await pdfDocument.getPageIndex(ref) + 1;
-
-		const pageView = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(pageNumber - 1);
-		if (!pageView) {
-			throw new Error(`"${pageNumber}" is not a valid pageNumber.`);
+		let pageIndex;
+		if (ref && typeof ref === 'object') {
+			pageIndex = await pdfDocument.getPageIndex(ref);
 		}
+		else if (Number.isInteger(ref)) {
+			pageIndex = ref;
+			if (pageIndex < 0 || pageIndex > pdfDocument.numPages - 1) {
+				throw new Error(`"${pageIndex}" is not a valid page index.`);
+			}
+		}
+		else {
+			throw new Error(`Invalid destination: "${dest}"`);
+		}
+		const pageNumber = pageIndex + 1;
 
 		let x = 0, y = 0;
-		const changeOrientation = pageView.rotation % 180 !== 0;
-		const PixelsPerInch = { PDF_TO_CSS_UNITS: 96 / 72 }; // Assuming default values here
-		const pageHeight = (changeOrientation ? pageView.width : pageView.height) / pageView.scale / PixelsPerInch.PDF_TO_CSS_UNITS;
+		const { rotate, view } = await pdfDocument.getPage(pageNumber);
+		const width = view[2] - view[0];
+		const height = view[3] - view[1];
+		const changeOrientation = rotate % 180 !== 0;
+		const pageHeight = changeOrientation ? width : height;
 
 		switch (destArray[1].name) {
 			case "XYZ":
@@ -4222,6 +4278,7 @@ class PDFView {
 				break;
 			case "Fit":
 			case "FitB":
+				y = pageHeight;
 				break;
 			case "FitH":
 			case "FitBH":
@@ -4230,15 +4287,22 @@ class PDFView {
 			case "FitV":
 			case "FitBV":
 				x = destArray[2] !== null ? destArray[2] : 0;
+				y = pageHeight;
 				break;
 			case "FitR":
-				x = destArray[2];
-				y = destArray[5];
+				x = destArray[2] !== null ? destArray[2] : 0;
+				y = destArray[5] !== null ? destArray[5] : pageHeight;
 				break;
 			default:
 				console.error(`"${destArray[1].name}" is not a valid destination type.`);
 				return;
 		}
+
+		x = Math.max(view[0], x);
+		x = Math.min(view[2], x);
+
+		y = Math.max(view[1], y);
+		y = Math.min(view[3], y);
 
 		return {
 			pageIndex: pageNumber - 1,
