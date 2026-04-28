@@ -68,13 +68,6 @@ import { adjustTextAnnotationPosition } from './lib/text-annotation';
 import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
-import {
-	buildReadAloudSegments,
-	buildReadAloudSegmentsFromRanges,
-	getReadAloudSelectionBounds,
-	splitReadAloudSegmentsBySelection
-} from './read-aloud-segments';
-import { detectLang } from '../common/lib/detect-lang';
 
 class PDFView {
 	constructor(options) {
@@ -347,6 +340,8 @@ class PDFView {
 			onClick: () => this._handleReadAloudJumpButtonClick(),
 		});
 		this._readAloudJumpButtonParagraph = null;
+		this._readAloudJumpButtonMatch = null;
+		this._readAloudParagraphIndex = [];
 
 		this._autoScroll = new AutoScroll({
 			container: this._iframeWindow.document.getElementById('viewerContainer')
@@ -457,37 +452,6 @@ class PDFView {
 
 		await this._initProcessedData();
 		this._findController.setDocument(this._iframeWindow.PDFViewerApplication.pdfDocument);
-	}
-
-	async _initReadAloudSegments() {
-		if (this._readAloudSegmentsPromise) {
-			return this._readAloudSegmentsPromise;
-		}
-		let resolvePromise;
-		this._readAloudSegmentsPromise = new Promise(r => (resolvePromise = r));
-		let allParagraphs = [];
-		let allSentences = [];
-		let { pagesCount } = this._iframeWindow.PDFViewerApplication.pdfViewer;
-		for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) {
-			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
-			let chars = pageData.chars;
-			if (!chars.length) {
-				continue;
-			}
-			let { paragraphs, sentences } = buildReadAloudSegments(chars, pageIndex);
-			let paragraphOffset = allParagraphs.length;
-			for (let sentence of sentences) {
-				sentence.paragraphIndex += paragraphOffset;
-			}
-			allParagraphs.push(...paragraphs);
-			allSentences.push(...sentences);
-		}
-		this._readAloudSegments = {
-			paragraphs: allParagraphs,
-			sentences: allSentences
-		};
-		resolvePromise();
-		return allParagraphs;
 	}
 
 	async _setState(state, skipScroll) {
@@ -681,6 +645,43 @@ class PDFView {
 		let pageIndex = originalPage.id - 1;
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
 		delete this._pdfPages[pageIndex];
+	}
+
+	/**
+	 * Get sortIndex and pageLabel for a given position.
+	 * Used by the SDT overlay to produce source-format annotation metadata.
+	 */
+	getAnnotationMeta(position) {
+		let pageIndex = position.pageIndex ?? 0;
+		return {
+			sortIndex: getSortIndex(this._pdfPages, position),
+			pageLabel: this._getPageLabel(pageIndex, true),
+		};
+	}
+
+	getSDTLocation(sdtData) {
+		let pageIndex = this._iframeWindow?.PDFViewerApplication?.pdfViewer?.currentPageNumber - 1;
+		if (pageIndex === undefined || !sdtData?.pages) return null;
+		let page = sdtData.pages[pageIndex];
+		if (!page?.contentRanges?.length) return null;
+		let firstBlockIndex = page.contentRanges[0].start?.ref?.[0];
+		if (firstBlockIndex === undefined) return null;
+		return { href: '#sdt-' + firstBlockIndex };
+	}
+
+	navigateToSDTBlock(sdtData, blockIndex) {
+		if (!sdtData.pages) return;
+		for (let [pageIdx, page] of sdtData.pages.entries()) {
+			if (!page.contentRanges) continue;
+			for (let range of page.contentRanges) {
+				let startBlock = range.start.ref[0];
+				let endBlock = range.end.ref[0];
+				if (blockIndex >= startBlock && blockIndex <= endBlock) {
+					this.navigate({ pageIndex: pageIdx }, { skipHistory: true, behavior: 'instant' });
+					return;
+				}
+			}
+		}
 	}
 
 	_getPageLabel(pageIndex, usePrevAnnotation) {
@@ -1047,13 +1048,19 @@ class PDFView {
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
 
+		if (state.segments !== previousState?.segments) {
+			this._buildReadAloudParagraphIndex(state.segments);
+		}
+
 		if (state.active && !previousState?.active) {
 			this._readAloudPositionLocked = true;
 		}
 
+		let activePosition = state.activeSegment?.sourcePosition;
+
 		if (state.active && previousState?.paused && !state.paused
-			&& state.activeSegment?.position
-			&& this._isPositionInViewBounds(state.activeSegment.position)) {
+			&& activePosition
+			&& this._isPositionInViewBounds(activePosition)) {
 			this._readAloudPositionLocked = true;
 		}
 
@@ -1066,15 +1073,17 @@ class PDFView {
 			return;
 		}
 
-		if (state.activeSegment?.position) {
-			// Highlight the whole paragraph containing the active segment (matching dom-view behavior)
-			this._readAloudHighlightedPosition = this._getReadAloudParagraphPosition(state)
-				|| state.activeSegment.position;
+		if (activePosition?.pageIndex !== undefined) {
+			let paragraphPosition = state.activeSegment?.paragraphSourcePosition;
+			if (paragraphPosition?.pageIndex === undefined) {
+				paragraphPosition = activePosition;
+			}
+			this._readAloudHighlightedPosition = paragraphPosition;
 
-			// After a sentence skip, briefly highlight the active sentence segment
+			// Briefly highlight the active sentence after a sentence skip
 			clearTimeout(this._readAloudSentenceTimeout);
 			if (state.lastSkipGranularity === 'sentence') {
-				this._readAloudSentenceHighlightedPosition = state.activeSegment.position;
+				this._readAloudSentenceHighlightedPosition = activePosition;
 				this._readAloudSentenceTimeout = setTimeout(() => {
 					this._readAloudSentenceHighlightedPosition = null;
 					this._render();
@@ -1089,7 +1098,7 @@ class PDFView {
 			if (!state.annotationPopup && this._readAloudPositionLocked) {
 				setTimeout(() => {
 					this._readAloudScrolling = true;
-					this.navigateToPosition(state.activeSegment.position, {
+					this.navigateToPosition(activePosition, {
 						ifNeeded: true,
 						visibilityMargin: -this._iframeWindow.innerHeight / 4,
 						block: 'center',
@@ -1108,189 +1117,6 @@ class PDFView {
 				});
 			}
 		}
-
-		await this._initReadAloudSegments();
-
-		if (!state.lang) {
-			let textSample = this._readAloudSegments.paragraphs
-				.slice(0, 25)
-				.map(p => p.text)
-				.join('\n');
-			this._options.onSetReadAloudState({
-				lang: detectLang(textSample) || 'en',
-			});
-			return;
-		}
-
-		if (!state.active || !state.segmentGranularity) {
-			return;
-		}
-
-		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity) {
-			return;
-		}
-
-		let segments = state.segmentGranularity === 'sentence'
-			? this._readAloudSegments.sentences
-			: this._readAloudSegments.paragraphs;
-
-		let backwardStopIndex = null;
-		let forwardStopIndex = null;
-
-		let selectionInfo = getReadAloudSelectionBounds(this._selectionRanges);
-		if (selectionInfo) {
-			await this._ensureBasicPageData(selectionInfo.start.pageIndex);
-			if (selectionInfo.end.pageIndex !== selectionInfo.start.pageIndex) {
-				await this._ensureBasicPageData(selectionInfo.end.pageIndex);
-			}
-
-			this._setSelectionRanges();
-
-			let split = splitReadAloudSegmentsBySelection(
-				segments,
-				selectionInfo.start,
-				selectionInfo.end,
-				pageIndex => this._pdfPages[pageIndex]?.chars
-			);
-
-			if (split) {
-				segments = split.segments;
-				backwardStopIndex = split.startIndex;
-				forwardStopIndex = split.endIndex;
-			}
-			else if (selectionInfo.selectionRanges.length) {
-				let selectionSegments = { paragraphs: [], sentences: [] };
-
-				for (let selectionRange of selectionInfo.selectionRanges) {
-					let { pageIndex } = selectionRange.position;
-					await this._ensureBasicPageData(pageIndex);
-					let page = this._pdfPages[pageIndex];
-					if (!page?.chars?.length) {
-						continue;
-					}
-					let { chars } = page;
-					let start = Math.min(selectionRange.anchorOffset, selectionRange.headOffset);
-					let end = Math.max(selectionRange.anchorOffset, selectionRange.headOffset);
-
-					let { paragraphs, sentences } = buildReadAloudSegmentsFromRanges(
-						chars, pageIndex, [[start, end - 1]]
-					);
-
-					let paragraphOffset = selectionSegments.paragraphs.length;
-					for (let sentence of sentences) {
-						sentence.paragraphIndex += paragraphOffset;
-					}
-
-					selectionSegments.paragraphs.push(...paragraphs);
-					selectionSegments.sentences.push(...sentences);
-				}
-
-				segments = state.segmentGranularity === 'sentence'
-					? selectionSegments.sentences
-					: selectionSegments.paragraphs;
-				if (segments.length) {
-					backwardStopIndex = 0;
-					forwardStopIndex = segments.length;
-				}
-			}
-		}
-		else if (state.targetPosition) {
-			for (let i = 0; i < segments.length; i++) {
-				let segment = segments[i];
-				if (segment.position.pageIndex === state.targetPosition.pageIndex
-					&& intersectAnnotationWithPoint(segment.position, state.targetPosition)) {
-					backwardStopIndex = i;
-					break;
-				}
-			}
-		}
-		else {
-			let objects = segments.map((object, index) => ({ index, object }));
-			let visibleObjects = this._getVisibleObjects(objects);
-			if (visibleObjects.length) {
-				backwardStopIndex = visibleObjects[0].index;
-			}
-		}
-
-		this._options.onSetReadAloudState({
-			segments,
-			backwardStopIndex,
-			forwardStopIndex,
-		});
-	}
-
-	_getReadAloudParagraphPosition(state) {
-		if (!state.activeSegment?.position) {
-			return null;
-		}
-
-		let pageIndex = state.activeSegment.position.pageIndex;
-		let paragraphPosition = null;
-
-		if (state.segmentGranularity === 'sentence') {
-			let paragraphIndex = state.activeSegment.paragraphIndex;
-			let paragraph = Number.isInteger(paragraphIndex)
-				? this._readAloudSegments?.paragraphs?.[paragraphIndex]
-				: null;
-			if (paragraph?.position?.rects?.length && paragraph.position.pageIndex === pageIndex) {
-				paragraphPosition = paragraph.position;
-			}
-		}
-		else if (state.segmentGranularity === 'paragraph') {
-			paragraphPosition = state.activeSegment.position;
-		}
-
-		if (paragraphPosition) {
-			return paragraphPosition;
-		}
-
-		let segments = state.segments || [];
-		let activeIndex = segments.indexOf(state.activeSegment);
-		if (activeIndex === -1) {
-			return null;
-		}
-
-		// Find paragraph boundaries using anchor === 'paragraphStart'
-		let paragraphStartIndex = activeIndex;
-		for (let i = activeIndex; i >= 0; i--) {
-			paragraphStartIndex = i;
-			if (segments[i].anchor === 'paragraphStart') {
-				break;
-			}
-		}
-		let paragraphEndIndex = activeIndex;
-		for (let i = activeIndex + 1; i < segments.length; i++) {
-			if (segments[i].anchor === 'paragraphStart') {
-				break;
-			}
-			paragraphEndIndex = i;
-		}
-
-		// Combine positions of all segments in the paragraph
-		let paragraphRects = [];
-		for (let i = paragraphStartIndex; i <= paragraphEndIndex; i++) {
-			let seg = segments[i];
-			if (seg.position.pageIndex === pageIndex && seg.position.rects) {
-				paragraphRects.push(...seg.position.rects);
-			}
-		}
-
-		if (!paragraphRects.length) {
-			return null;
-		}
-
-		return { pageIndex, rects: paragraphRects };
-	}
-
-	computeReadAloudRepositionIndex(position, segments) {
-		for (let i = 0; i < segments.length; i++) {
-			let segment = segments[i];
-			if (segment.position.pageIndex === position.pageIndex
-					&& intersectAnnotationWithPoint(segment.position, position)) {
-				return i;
-			}
-		}
-		return null;
 	}
 
 	get hasReadAloudTarget() {
@@ -1299,17 +1125,6 @@ class PDFView {
 
 	lockPositionToReadAloud() {
 		this._readAloudPositionLocked = true;
-	}
-
-	getSerializableReadAloudPosition(position) {
-		return position;
-	}
-
-	isReadAloudPositionTooFar(savedPosition, viewState) {
-		if (savedPosition.pageIndex === undefined) {
-			return false;
-		}
-		return Math.abs(viewState.pageIndex - savedPosition.pageIndex) > 2;
 	}
 
 	_isPositionInViewBounds(position) {
@@ -1327,48 +1142,6 @@ class PDFView {
 		];
 
 		return quickIntersectRect(rect, visibleRect);
-	}
-
-	addAnnotationFromReadAloudSegments(segments, init) {
-		if (!segments.length) {
-			return undefined;
-		}
-		let firstSegment = segments[0];
-		let rects = [];
-		let nextPageRects = [];
-		let texts = [];
-		let pageIndex = firstSegment.position.pageIndex;
-		let nextPageIndex = pageIndex + 1;
-
-		for (let segment of segments) {
-			texts.push(segment.text);
-			if (segment.position.pageIndex === pageIndex) {
-				rects.push(...segment.position.rects);
-			}
-			else if (segment.position.pageIndex === nextPageIndex) {
-				nextPageRects.push(...segment.position.rects);
-			}
-			else {
-				break;
-			}
-		}
-
-		let position = {
-			pageIndex,
-			rects,
-		};
-		if (nextPageRects.length) {
-			position.nextPageRects = nextPageRects;
-		}
-
-		let annotation = {
-			pageLabel: this._getPageLabel(pageIndex, true),
-			sortIndex: getSortIndex(this._pdfPages, position),
-			position,
-			text: texts.join(' '), // TODO: Is this always right?
-			...init,
-		};
-		return this._onAddAnnotation(annotation);
 	}
 
 	setFindState(state) {
@@ -1577,27 +1350,93 @@ class PDFView {
 		}
 	}
 
+	/**
+	 * Pre-compute paragraph column regions from segments.
+	 * Each entry is { segment, pageIndex, rect } where rect is the bounding
+	 * rect of the paragraph's rects in one column on one page.
+	 */
+	_buildReadAloudParagraphIndex(segments) {
+		this._readAloudParagraphIndex = [];
+		if (!segments) return;
+
+		let i = 0;
+		while (i < segments.length) {
+			let paragraphStart = i;
+			let paragraphEnd = i;
+			for (let j = i + 1; j < segments.length; j++) {
+				if (segments[j].anchor === 'paragraphStart') break;
+				paragraphEnd = j;
+			}
+			i = paragraphEnd + 1;
+
+			let paragraph = segments[paragraphStart];
+
+			// Group rects by page
+			let pageGroups = new Map();
+			for (let j = paragraphStart; j <= paragraphEnd; j++) {
+				let segPos = segments[j].sourcePosition;
+				if (!segPos?.rects || segPos.pageIndex === undefined) continue;
+				let key = segPos.pageIndex;
+				if (!pageGroups.has(key)) pageGroups.set(key, []);
+				pageGroups.get(key).push(...segPos.rects);
+			}
+
+			for (let [pageIndex, rects] of pageGroups) {
+				// Cluster rects into columns by x-overlap
+				let columns = [];
+				for (let rect of rects) {
+					let placed = false;
+					for (let col of columns) {
+						if (rect[0] < col.maxX && rect[2] > col.minX) {
+							col.rects.push(rect);
+							col.minX = Math.min(col.minX, rect[0]);
+							col.maxX = Math.max(col.maxX, rect[2]);
+							placed = true;
+							break;
+						}
+					}
+					if (!placed) {
+						columns.push({ rects: [rect], minX: rect[0], maxX: rect[2] });
+					}
+				}
+
+				for (let col of columns) {
+					let boundingRect = getPositionBoundingRect({ rects: col.rects });
+					this._readAloudParagraphIndex.push({
+						segment: paragraph,
+						pageIndex,
+						rect: boundingRect,
+					});
+				}
+			}
+		}
+	}
+
 	_updateReadAloudJumpButton(position) {
-		if (!this._readAloudState?.popupOpen || !this._readAloudSegments?.paragraphs || !position) {
+		if (!this._readAloudState?.popupOpen || !position) {
 			return;
 		}
 
-		let paragraph = null;
-		for (let p of this._readAloudSegments.paragraphs) {
-			if (p.position.pageIndex !== position.pageIndex) continue;
-			if (intersectAnnotationWithPoint(p.position, position)) {
-				paragraph = p;
+		let match = null;
+		for (let entry of this._readAloudParagraphIndex) {
+			if (entry.pageIndex !== position.pageIndex) continue;
+			if (intersectAnnotationWithPoint({ rects: [entry.rect] }, position)) {
+				match = entry;
 				break;
 			}
 		}
 
-		if (!paragraph || paragraph === this._readAloudJumpButtonParagraph) {
+		if (!match) {
+			this._hideReadAloudJumpButton();
 			return;
 		}
+		if (match === this._readAloudJumpButtonMatch) {
+			return;
+		}
+		this._readAloudJumpButtonMatch = match;
+		this._readAloudJumpButtonParagraph = match.segment;
 
-		this._readAloudJumpButtonParagraph = paragraph;
-		let paraRect = getPositionBoundingRect(paragraph.position);
-		let clientRect = this.getClientRect(paraRect, paragraph.position.pageIndex);
+		let clientRect = this.getClientRect(match.rect, match.pageIndex);
 		let container = this._iframeWindow.document.getElementById('viewerContainer');
 		let containerRect = container.getBoundingClientRect();
 
@@ -1613,6 +1452,7 @@ class PDFView {
 	_hideReadAloudJumpButton() {
 		this._readAloudJumpButton.hide();
 		this._readAloudJumpButtonParagraph = null;
+		this._readAloudJumpButtonMatch = null;
 	}
 
 	_handleReadAloudJumpButtonClick() {
@@ -1621,9 +1461,10 @@ class PDFView {
 		let paragraph = this._readAloudJumpButtonParagraph;
 
 		// Immediately move the highlight to the target paragraph
-		this._readAloudHighlightedPosition = paragraph.position;
+		this._readAloudHighlightedPosition = paragraph.sourcePosition;
 		this._render();
 
+		// Jump using the segment's SDT position, which reader.js handles directly
 		this._options.onSetReadAloudState({
 			targetPosition: {
 				pageIndex: paragraph.position.pageIndex,

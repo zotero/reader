@@ -96,6 +96,18 @@
 			align-items: center;
 		}
 
+		.reading-mode-control {
+			display: flex;
+			align-items: center;
+			gap: 6px;
+
+			.loading-spinner {
+				width: 16px;
+				height: 16px;
+				@include loading-spinner;
+			}
+		}
+
 		.option.themes {
 			flex-direction: column;
 			gap: 8px;
@@ -554,8 +566,7 @@
 						}
 
 						&.buffering svg {
-							color: var(--fill-secondary);
-							animation: rotating 0.5s steps(12) infinite;
+							@include loading-spinner;
 						}
 					}
 
@@ -666,8 +677,7 @@
 				}
 
 				&.buffering svg {
-					color: var(--fill-secondary);
-					animation: rotating 0.5s steps(12) infinite;
+					@include loading-spinner;
 				}
 			}
 		}

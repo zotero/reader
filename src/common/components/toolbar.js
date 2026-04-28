@@ -211,7 +211,7 @@ function Toolbar(props) {
 						onClick={() => handleToolClick('note')}
 					><IconNote/></button>
 				</Localized>
-				{props.type === 'pdf' && (
+				{props.type === 'pdf' && !props.readingModeEnabled && (
 					<Localized id="reader-toolbar-text" attrs={{ title: true, 'aria-description': true }}>
 						<button
 							tabIndex={-1}
@@ -221,7 +221,7 @@ function Toolbar(props) {
 						><IconText/></button>
 					</Localized>
 				)}
-				{props.type === 'pdf' && (
+				{props.type === 'pdf' && !props.readingModeEnabled && (
 					<Localized id="reader-toolbar-area" attrs={{ title: true, 'aria-description': true }}>
 						<button
 							tabIndex={-1}
@@ -231,7 +231,7 @@ function Toolbar(props) {
 						><IconImage/></button>
 					</Localized>
 				)}
-				{props.type === 'pdf' && (
+				{props.type === 'pdf' && !props.readingModeEnabled && (
 					<Localized id="reader-toolbar-draw" attrs={{ title: true, 'aria-description': true }}>
 						<button
 							tabIndex={-1}

@@ -1,30 +1,16 @@
 import {
-	NewAnnotation,
-	Position,
-	ReadAloudGranularity,
 	ReadAloudSegment,
-	RangeRef,
-	WADMAnnotation, ReadAloudStateSnapshot, ReadAloudStateDelta,
+	ReadAloudStateSnapshot,
+	ReadAloudStateDelta,
+	Position,
 } from "../../../common/types";
-import { exceedsSegmentMaxLength, splitTextToChunks } from "../../../common/read-aloud/segment-split";
 import { isSelector, Selector } from "./selector";
 import DOMView, { SpotlightKey } from "../dom-view";
-import {
-	createRangeWalker, getBoundingPageRect,
-	makeRangeSpanning,
-	PersistentRange, splitRanges,
-	splitRangeToSentences,
-	splitRangeToTextNodes,
-} from "./range";
-import {
-	isPageRectFullyVisible,
-	isPageRectVisible,
-	isErrorRect,
-} from "./rect";
-import { getContainingBlock, closestElement, iterateWalker } from "./nodes";
+import { getBoundingPageRect } from "./range";
+import { isPageRectVisible } from "./rect";
+import { closestElement } from "./nodes";
 import { debounceUntilScrollFinishes } from "../../../common/lib/utilities";
 import { getBaseLanguage } from '../../../common/read-aloud/lang';
-import EPUBView from '../../epub/epub-view';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export class ReadAloud<View extends DOMView<any, any>> {
@@ -33,6 +19,14 @@ export class ReadAloud<View extends DOMView<any, any>> {
 	positionLocked = true;
 
 	scrolling = false;
+
+	/**
+	 * Map from base-view block elements to their paragraph-start segment.
+	 * Built once when segments change; used by the jump button.
+	 * An empty map means "built successfully, no blocks resolved" (prevents re-trigger).
+	 * Null means "never built" or "segments cleared".
+	 */
+	blockSegmentMap: Map<Element, ReadAloudSegment> | null = null;
 
 	private _view: View;
 
@@ -53,6 +47,15 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			return null;
 		}
 
+		// Rebuild block -> segment map when segments change,
+		// or when the view just became ready (map was null because DOM wasn't available)
+		if (state.segments !== previousState?.segments) {
+			this._buildBlockSegmentMap(state.segments);
+		}
+		else if (state.segments && !this.blockSegmentMap) {
+			this._buildBlockSegmentMap(state.segments);
+		}
+
 		if (!state.popupOpen) {
 			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, null);
 			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, null);
@@ -60,77 +63,45 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		}
 
 		// After resuming playback, re-lock position if the current segment is visible
-		if (state.active && previousState?.paused && !state.paused && state.activeSegment?.position) {
-			let { range } = state.activeSegment.position as RangeRef;
-			if (isPageRectVisible(getBoundingPageRect(range), this._view.iframeWindow)) {
+		if (state.active && previousState?.paused && !state.paused) {
+			let range = this._resolveActiveSegmentRange(state);
+			if (range && isPageRectVisible(getBoundingPageRect(range), this._view.iframeWindow)) {
 				this.positionLocked = true;
 			}
 		}
 
+		// Highlight and scroll to active segment
 		if (state.activeSegment?.position) {
-			let { range } = state.activeSegment.position as RangeRef;
-			let segments = state.segments!;
-			// Highlight the whole paragraph
-			let firstRangeInParagraph: PersistentRange | null = null;
-			for (let i = segments.indexOf(state.activeSegment); i >= 0; i--) {
-				firstRangeInParagraph = (segments[i].position as RangeRef).range;
-				if (segments[i].anchor === 'paragraphStart') {
-					break;
-				}
-			}
-			let lastRangeInParagraph: PersistentRange | null = null;
-			for (let i = segments.indexOf(state.activeSegment) + 1; i < segments.length; i++) {
-				if (segments[i].anchor === 'paragraphStart') {
-					break;
-				}
-				lastRangeInParagraph = (segments[i].position as RangeRef).range;
-			}
-			range = range.clone();
-			if (firstRangeInParagraph) {
-				range.startContainer = firstRangeInParagraph.startContainer;
-				range.startOffset = firstRangeInParagraph.startOffset;
-			}
-			if (lastRangeInParagraph) {
-				range.endContainer = lastRangeInParagraph.endContainer;
-				range.endOffset = lastRangeInParagraph.endOffset;
+			let segmentSelector = this._resolveSegmentSelector(state);
+			if (!segmentSelector) return null;
+
+			// Navigate first so the section is mounted (important for EPUB),
+			// then set spotlights
+			if (!state.annotationPopup && this.positionLocked) {
+				this.scrolling = true;
+
+				let startSelector = this._collapseToStart(segmentSelector);
+				this._view.navigateToSelector(startSelector || segmentSelector, {
+					ifNeeded: true,
+					visibilityMargin: -this._view.iframeWindow.innerHeight / 4,
+					block: 'center',
+					behavior: 'smooth'
+				});
+
+				debounceUntilScrollFinishes(this._view.iframeDocument).then(() => {
+					this.scrolling = false;
+				});
 			}
 
-			let selector = this._view.toSelector(range.toRange());
-			if (selector) {
-				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, selector, null);
+			// Now that the section is mounted, resolve and set spotlights
+			let paragraphSelector = this._resolveParagraphSelector(state);
+			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, paragraphSelector, null);
 
-				// After a sentence skip, briefly highlight the active sentence segment
-				if (state.lastSkipGranularity === 'sentence' && state.activeSegment) {
-					let sentenceRange = (state.activeSegment.position as RangeRef).range;
-					let sentenceSelector = this._view.toSelector(sentenceRange.toRange());
-					this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, sentenceSelector, 2000);
-				}
-				else {
-					this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, null);
-				}
-
-				// If the Read Aloud annotation popup isn't open and position is locked, navigate to the current segment
-				if (!state.annotationPopup && this.positionLocked) {
-					setTimeout(() => {
-						this.scrolling = true;
-
-						// Navigate to the start of the segment if possible
-						let startRange = range.toRange();
-						startRange.collapse(true);
-						let startSelector = this._view.toSelector(startRange);
-
-						this._view.navigateToSelector(startSelector || selector, {
-							ifNeeded: true,
-							visibilityMargin: -this._view.iframeWindow.innerHeight / 4, // Scroll early, scroll not quite as often
-							block: 'center',
-							behavior: 'smooth'
-						});
-
-						debounceUntilScrollFinishes(this._view.iframeDocument).then(() => {
-							this.scrolling = false;
-						});
-					});
-				}
+			if (state.lastSkipGranularity === 'sentence' && state.activeSegment) {
+				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, segmentSelector, 2000);
+			}
+			else {
+				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, null);
 			}
 		}
 
@@ -140,101 +111,7 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			};
 		}
 
-		if (!state.active || !state.segmentGranularity) {
-			return null;
-		}
-
-		if (state.segments !== null && state.segmentGranularity === previousState?.segmentGranularity) {
-			return null;
-		}
-
-		let ranges = this._view.getReadAloudRanges(state.segmentGranularity);
-
-		let targetRange: Range | null = null;
-		let targetIsSelection = false;
-		if (!this._view.iframeDocument.getSelection()!.isCollapsed) {
-			targetRange = this._view.iframeDocument.getSelection()!.getRangeAt(0);
-			this._view.iframeDocument.getSelection()!.collapseToStart();
-			targetIsSelection = true;
-		}
-		else if (state.targetPosition) {
-			targetRange = this._view.toDisplayedRange(state.targetPosition as Selector);
-		}
-
-		let backwardStopIndex: number | null = null;
-		let forwardStopIndex: number | null = null;
-		if (targetRange) {
-			let split = splitRanges(ranges, targetRange);
-			if (split) {
-				ranges = split.ranges;
-				backwardStopIndex = split.startIndex;
-				if (targetIsSelection) {
-					forwardStopIndex = split.endIndex;
-				}
-			}
-			else {
-				ranges = this.getRanges(targetRange, state.segmentGranularity);
-			}
-		}
-		else {
-			backwardStopIndex = ranges.findIndex(
-				range => isPageRectFullyVisible(getBoundingPageRect(range), this._view.iframeWindow)
-			);
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = ranges.findIndex(
-					range => isPageRectVisible(getBoundingPageRect(range), this._view.iframeWindow)
-				);
-			}
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = ranges.findIndex(
-					range => isPageRectVisible(getBoundingPageRect(range), this._view.iframeWindow,
-						this._view.iframeWindow.innerWidth)
-				);
-			}
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = ranges.findIndex((range) => {
-					let rect = range.getBoundingClientRect();
-					return !isErrorRect(rect) && rect.x >= 0;
-				});
-			}
-			if (backwardStopIndex === -1) {
-				backwardStopIndex = null;
-			}
-		}
-
-		let lastContainingBlock: Element | null = null;
-		let segments: ReadAloudSegment[] = ranges
-			.map((range) => {
-				let text = range.toString().trim().replace(/\s+/g, ' ');
-				if (!text) return null;
-				let containingBlock = getContainingBlock(closestElement(range.commonAncestorContainer)!);
-				let differentContainingBlock = containingBlock !== lastContainingBlock;
-				lastContainingBlock = containingBlock;
-				return {
-					text,
-					position: {
-						range: new PersistentRange(range)
-					},
-					granularity: state.segmentGranularity!,
-					anchor: differentContainingBlock ? 'paragraphStart' : null,
-				} satisfies ReadAloudSegment;
-			})
-			.filter((segment, i) => {
-				if (segment) {
-					return true;
-				}
-				if (backwardStopIndex !== null && backwardStopIndex > i) backwardStopIndex--;
-				if (forwardStopIndex !== null && forwardStopIndex > i) forwardStopIndex--;
-				return false;
-			}) as ReadAloudSegment[];
-		let lang = state.lang || this._view.lang;
-
-		return {
-			segments,
-			backwardStopIndex,
-			forwardStopIndex,
-			lang,
-		};
+		return null;
 	}
 
 	setPositionLocked(locked: boolean) {
@@ -247,144 +124,80 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		return !!this._view.iframeDocument.getSelection() && !this._view.iframeDocument.getSelection()!.isCollapsed;
 	}
 
-	getAnnotationFromSegments(segments: ReadAloudSegment[], init: NewAnnotation<WADMAnnotation>): NewAnnotation<WADMAnnotation> | null {
-		if (!segments.length) {
-			return null;
+	private _positionToSelector(position: Position | null | undefined): Selector | null {
+		if (!position) return null;
+
+		if (isSelector(position)) {
+			return position as Selector;
 		}
-		let range = makeRangeSpanning(
-			segments.map(s => (s.position as RangeRef).range.toRange()),
-			true,
-			this._view.iframeDocument,
-		);
-		let annotation = this._view.getAnnotationFromRange(range, 'highlight');
-		if (annotation) {
-			annotation = {
-				...annotation,
-				...init,
-			};
-			return annotation;
+
+		// SDTPosition or other non-Selector: try resolving through the view
+		let range = this._view.toDisplayedRange(position);
+		if (range) {
+			return this._view.toSelector(range);
 		}
+
 		return null;
+	}
+
+	private _resolveSegmentSelector(state: ReadAloudStateSnapshot): Selector | null {
+		let seg = state.activeSegment;
+		if (!seg) return null;
+		// Prefer source position (works in base views), fall back to SDT position (works in SDTView)
+		return this._positionToSelector(seg.sourcePosition)
+			|| this._positionToSelector(seg.position);
+	}
+
+	private _resolveParagraphSelector(state: ReadAloudStateSnapshot): Selector | null {
+		let seg = state.activeSegment;
+		if (!seg) return null;
+		return this._positionToSelector(seg.paragraphSourcePosition);
+	}
+
+	private _collapseToStart(selector: Selector): Selector | null {
+		let range = this._view.toDisplayedRange(selector);
+		if (!range) return null;
+		range.collapse(true);
+		return this._view.toSelector(range);
+	}
+
+	private _resolveActiveSegmentRange(state: ReadAloudStateSnapshot): Range | null {
+		let selector = this._resolveSegmentSelector(state);
+		if (!selector) return null;
+		return this._view.toDisplayedRange(selector);
 	}
 
 	/**
-	 * Given a target position and existing segments, find the segment index
-	 * to reposition to. Returns null if the position can't be resolved.
+	 * Build a map from base-view block elements to their paragraph-start segment.
+	 * Each segment's containing block is mapped to the paragraph's start segment,
+	 * so the jump button works even when a paragraph spans multiple sub-blocks.
 	 */
-	computeRepositionIndex(position: Position, segments: ReadAloudSegment[]): number | null {
-		let targetRange;
-		if (isSelector(position)) {
-			targetRange = this._view.toDisplayedRange(position as Selector);
-		}
-		else if ('range' in position) {
-			targetRange = (position as RangeRef).range.toRange();
-		}
-		if (!targetRange) {
-			return null;
-		}
-		for (let i = 0; i < segments.length; i++) {
-			let segmentRange = (segments[i].position as RangeRef).range.toRange();
-			// Find the first segment whose end is at or past the target start
-			if (EPUBView.compareBoundaryPoints(Range.START_TO_END, segmentRange, targetRange) >= 0) {
-				return i;
+	private _buildBlockSegmentMap(segments: ReadAloudSegment[] | null) {
+		this.blockSegmentMap = null;
+		if (!segments) return;
+
+		let map = new Map<Element, ReadAloudSegment>();
+		let currentParagraphStart: ReadAloudSegment | null = null;
+
+		for (let s of segments) {
+			if (s.anchor === 'paragraphStart') {
+				currentParagraphStart = s;
+			}
+			if (!currentParagraphStart) continue;
+
+			let pos = s.sourcePosition ?? s.position;
+			let selector = this._positionToSelector(pos);
+			if (!selector) continue;
+			let range = this._view.toDisplayedRange(selector);
+			if (!range) continue;
+			let el = closestElement(range.startContainer);
+			if (!el) continue;
+			let block = this._view.getReadAloudBlock(el);
+			if (block && !map.has(block)) {
+				map.set(block, currentParagraphStart);
 			}
 		}
-		return null;
-	}
-
-	getRanges(rootRange: Range, granularity: ReadAloudGranularity): Range[] {
-		// https://searchfox.org/mozilla-central/rev/b4412cedce6e2900f5553cbdc43c3fa49c4b9adb/toolkit/components/narrate/Narrator.sys.mjs#54-82
-		let matches = new Set();
-		let filter = (node: Node) => {
-			if (matches.has(node.parentNode)) {
-				// Reject sub-trees of accepted nodes.
-				return NodeFilter.FILTER_REJECT;
-			}
-			if (!/\S/.test(node.textContent!)) {
-				// Reject nodes with no text.
-				return NodeFilter.FILTER_REJECT;
-			}
-			for (let c = node.firstChild; c; c = c.nextSibling) {
-				if (c.nodeType == c.TEXT_NODE && /\S/.test(c.textContent!)) {
-					// If node has a non-empty text child accept it.
-					matches.add(node);
-					return NodeFilter.FILTER_ACCEPT;
-				}
-			}
-			return NodeFilter.FILTER_SKIP;
-		};
-
-		let walker = createRangeWalker(rootRange, NodeFilter.SHOW_ELEMENT, filter);
-		let segmentRanges = [...iterateWalker(walker)].map((el) => {
-			let range = this._view.iframeDocument.createRange();
-			range.selectNodeContents(el);
-			return range;
-		});
-
-		// If there weren't any element children, just use the whole root range
-		if (!segmentRanges.length) {
-			segmentRanges = [rootRange];
-		}
-
-		if (granularity === 'sentence') {
-			segmentRanges = segmentRanges.flatMap(range => splitRangeToSentences(range));
-		}
-		else if (granularity === 'paragraph') {
-			// Split each paragraph into first sentence + rest of paragraph
-			segmentRanges = segmentRanges.flatMap((range) => {
-				let sentences = splitRangeToSentences(range);
-				if (sentences.length <= 1) {
-					return sentences;
-				}
-				let firstRange = sentences[0];
-				let restRange = makeRangeSpanning(sentences.slice(1), true, this._view.iframeDocument);
-				return [firstRange, restRange];
-			});
-		}
-
-		// Enforce max byte length per segment
-		segmentRanges = segmentRanges.flatMap((segmentRange) => {
-			if (!exceedsSegmentMaxLength(segmentRange.toString())) {
-				return [segmentRange];
-			}
-
-			let textNodeRanges = splitRangeToTextNodes(segmentRange);
-			let fullText = '';
-			let parts: { range: Range; start: number; end: number }[] = [];
-			for (let textNodeRange of textNodeRanges) {
-				let text = textNodeRange.toString();
-				parts.push({ range: textNodeRange, start: fullText.length, end: fullText.length + text.length });
-				fullText += text;
-			}
-
-			let chunks = splitTextToChunks(fullText);
-			if (chunks.length <= 1) {
-				return [segmentRange];
-			}
-
-			let doc = segmentRange.commonAncestorContainer.ownerDocument!;
-			let result: Range[] = [];
-			for (let [chunkStart, chunkEnd] of chunks) {
-				let startPart = parts.find(p => p.start <= chunkStart && chunkStart < p.end);
-				let endPart = parts.find(p => p.start < chunkEnd && chunkEnd <= p.end);
-				if (!startPart || !endPart) continue;
-
-				let partRange = doc.createRange();
-				partRange.setStart(
-					startPart.range.startContainer,
-					startPart.range.startOffset + (chunkStart - startPart.start)
-				);
-				partRange.setEnd(
-					endPart.range.startContainer,
-					endPart.range.startOffset + (chunkEnd - endPart.start)
-				);
-				if (!partRange.collapsed) {
-					result.push(partRange);
-				}
-			}
-			return result.length ? result : [segmentRange];
-		});
-
-		return segmentRanges;
+		// Always set a Map (even empty) so we don't re-trigger on every setState
+		this.blockSegmentMap = map;
 	}
 }

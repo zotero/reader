@@ -54,25 +54,48 @@ export interface WADMAnnotation extends Annotation {
 }
 
 export type NavLocation = {
-	pageNumber?: string;
-	pageIndex?: number;
+	// All
 	annotationID?: string;
 	position?: Position;
+	// All besides snapshot
+	pageNumber?: string;
+	pageIndex?: number;
+	// EPUB
 	href?: string;
+	// PDF
 	scrollCoords?: [number, number];
+	// Snapshot
+	scrollYPercent?: number;
 };
 
-export type Position = PDFPosition | Selector | RangeRef;
+export type Position = PDFPosition | Selector | RangeRef | SDTPosition;
 
 export type PDFPosition = {
 	pageIndex: number;
 	rects?: number[][];
 	paths?: number[][];
+	nextPageRects?: number[][];
 };
 
 export type RangeRef = {
 	range: PersistentRange;
 };
+
+export type SDTPosition = {
+	startBlockRefPath: string;
+	startTextIndex: number;
+	startCharOffset: number;
+	endBlockRefPath: string;
+	endTextIndex: number;
+	endCharOffset: number;
+};
+
+export function isSDTPosition(position: unknown): position is SDTPosition {
+	return !!position
+		&& typeof position === 'object'
+		&& 'startBlockRefPath' in position
+		&& 'endBlockRefPath' in position;
+}
 
 type NewAnnotationOptionalFields =
 	'id'
@@ -119,7 +142,6 @@ export type ViewStats = {
 	appearance?: Partial<ReflowableAppearance>;
 	fixedLayout?: boolean;
 	outlinePath?: number[];
-	readingModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -229,8 +251,12 @@ export type ReadAloudStateDelta = {
 	lang?: string | null;
 };
 
+export type SourcePosition = Exclude<Position, SDTPosition>;
+
 export type ReadAloudSegment = {
-	position: Position;
+	position: SDTPosition;
+	sourcePosition?: SourcePosition | null;
+	paragraphSourcePosition?: SourcePosition | null;
 	text: string;
 	granularity: ReadAloudGranularity;
 	anchor: 'paragraphStart' | null;
