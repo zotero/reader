@@ -4185,7 +4185,6 @@ class PDFView {
 	}
 
 	async _initNativeOutline() {
-		await this._iframeWindow.PDFViewerApplication.pdfViewer.pagesPromise;
 		let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline();
 		outline = await this._transformNativeOutline(outline || []);
 		this._onSetOutline(outline);

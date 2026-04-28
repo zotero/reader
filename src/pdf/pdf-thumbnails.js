@@ -143,6 +143,9 @@ class PDFThumbnails {
 	async _render(pageIndex) {
 		let thumbnail = this._thumbnails[pageIndex];
 		if (thumbnail?.image && !thumbnail.forceRerender) {
+			if (this._onRender) {
+				this._onRender(thumbnail);
+			}
 			return;
 		}
 		let { pdfDocument } = this._window.PDFViewerApplication;
