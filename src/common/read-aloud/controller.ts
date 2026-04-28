@@ -115,8 +115,8 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	getSegmentToAnnotate(): ReadAloudSegment | null {
-		// If less than 50% or 3 seconds into the current segment, use the previous one
-		if (this._segmentProgressFraction < 0.5 || this._segmentProgressSeconds < 3) {
+		// If less than 50% and less than 3 seconds into the current segment, use the previous one
+		if (this._segmentProgressFraction < 0.5 && this._segmentProgressSeconds < 3) {
 			let previousIndex = this._position - 1;
 			if (previousIndex >= 0) {
 				return this._segments[previousIndex];
