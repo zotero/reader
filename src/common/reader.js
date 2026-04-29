@@ -250,6 +250,7 @@ class Reader {
 				annotationPopup: null,
 				segmentAnnotations: new Map(),
 				savedPosition: options.primaryViewState?.lastReadAloudPosition ?? null,
+				highlightGranularity: options.readAloudHighlightGranularity === 'sentence' ? 'sentence' : 'paragraph',
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
@@ -1153,7 +1154,20 @@ class Reader {
 			lastSkipGranularity: manager.lastSkipGranularity,
 			annotationPopup: this._state.readAloudState.annotationPopup,
 			lang: manager.lang || this._state.readAloudState.lang,
+			highlightGranularity: this._state.readAloudState.highlightGranularity,
 		};
+	}
+
+	setReadAloudHighlightGranularity(granularity) {
+		if (granularity !== 'paragraph' && granularity !== 'sentence') {
+			return;
+		}
+		if (this._state.readAloudState.highlightGranularity === granularity) {
+			return;
+		}
+		this._updateState({
+			readAloudState: { ...this._state.readAloudState, highlightGranularity: granularity },
+		});
 	}
 
 	_syncPersistedVoicesToManager() {

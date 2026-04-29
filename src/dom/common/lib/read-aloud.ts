@@ -93,11 +93,22 @@ export class ReadAloud<View extends DOMView<any, any>> {
 				});
 			}
 
+			// Sub-paragraph (sentence) highlighting requires sentence-granularity segments;
+			// at paragraph granularity, the active segment is already the paragraph.
+			let useSentenceHighlight = state.highlightGranularity === 'sentence'
+				&& state.segmentGranularity === 'sentence';
+
 			// Now that the section is mounted, resolve and set spotlights
-			let paragraphSelector = this._resolveParagraphSelector(state);
+			let paragraphSelector = useSentenceHighlight
+				? segmentSelector
+				: this._resolveParagraphSelector(state);
 			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, paragraphSelector, null);
 
-			if (state.lastSkipGranularity === 'sentence' && state.activeSegment) {
+			// After a sentence skip, briefly highlight the active sentence segment
+			// (unless we're already highlighting by sentence)
+			if (!useSentenceHighlight
+					&& state.lastSkipGranularity === 'sentence'
+					&& state.activeSegment) {
 				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, segmentSelector, 2000);
 			}
 			else {
