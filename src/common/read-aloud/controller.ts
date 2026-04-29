@@ -110,6 +110,13 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected abstract get _segmentProgressSeconds(): number;
 
+	/**
+	 * Index into the active segment's timestamp array for the word currently
+	 * being spoken, or null if no word-level data is available. Updated by the
+	 * controller as audio plays.
+	 */
+	activeTimestampIndex: number | null = null;
+
 	protected get _currentSegment() {
 		return this._segments[this._position];
 	}

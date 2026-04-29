@@ -1,4 +1,5 @@
 import {
+	ReadAloudGranularity,
 	ReadAloudSegment,
 	ReadAloudStateSnapshot,
 	ReadAloudStateDelta,
@@ -23,8 +24,8 @@ export class ReadAloud<View extends DOMView<any, any>> {
 	/**
 	 * Map from base-view block elements to their paragraph-start segment.
 	 * Built once when segments change; used by the jump button.
-	 * An empty map means "built successfully, no blocks resolved" (prevents re-trigger).
-	 * Null means "never built" or "segments cleared".
+	 * An empty map means that the map was built successfully with no resolved
+	 * segments. null means that it was never built or was cleared.
 	 */
 	blockSegmentMap: Map<Element, ReadAloudSegment> | null = null;
 
@@ -93,26 +94,24 @@ export class ReadAloud<View extends DOMView<any, any>> {
 				});
 			}
 
-			// Sub-paragraph (sentence) highlighting requires sentence-granularity segments;
-			// at paragraph granularity, the active segment is already the paragraph.
-			let useSentenceHighlight = state.highlightGranularity === 'sentence'
-				&& state.segmentGranularity === 'sentence';
+			// The primary highlight tracks the user's chosen granularity; it falls
+			// back to a coarser level when finer-grained data isn't available
+			// (e.g. paragraph-granularity segments have no sentence/word data)
+			let primarySelector = this._resolvePrimarySelector(state, segmentSelector);
+			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, primarySelector, null);
 
-			// Now that the section is mounted, resolve and set spotlights
-			let paragraphSelector = useSentenceHighlight
-				? segmentSelector
-				: this._resolveParagraphSelector(state);
-			this._view.setSpotlight(SpotlightKey.ReadAloudActiveSegment, paragraphSelector, null);
-
-			// After a sentence skip, briefly highlight the active sentence segment
-			// (unless we're already highlighting by sentence)
-			if (!useSentenceHighlight
-					&& state.lastSkipGranularity === 'sentence'
-					&& state.activeSegment) {
-				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, segmentSelector, 2000);
-			}
-			else {
-				this._view.setSpotlight(SpotlightKey.ReadAloudActiveSentence, null);
+			// After a skip whose granularity differs from the primary highlight,
+			// briefly flash the unit at the skip granularity so it's clear what
+			// the skip moved by. Only retrigger when the active segment changes
+			// so word-level updates don't keep resetting the spotlight.
+			let segmentChanged = state.activeSegment !== previousState?.activeSegment;
+			if (segmentChanged) {
+				let spotlightSelector = this._resolveSkipSpotlightSelector(state, segmentSelector);
+				this._view.setSpotlight(
+					SpotlightKey.ReadAloudActiveSentence,
+					spotlightSelector,
+					spotlightSelector ? 2000 : null,
+				);
 			}
 		}
 
@@ -163,6 +162,62 @@ export class ReadAloud<View extends DOMView<any, any>> {
 		let seg = state.activeSegment;
 		if (!seg) return null;
 		return this._positionToSelector(seg.paragraphSourcePosition);
+	}
+
+	/**
+	 * Resolve the primary highlight for the user's chosen granularity. Falls
+	 * back coarser when finer-grained data isn't available (e.g. the segment
+	 * is a paragraph because the voice supplies paragraph-granularity audio).
+	 */
+	private _resolvePrimarySelector(
+		state: ReadAloudStateSnapshot,
+		segmentSelector: Selector,
+	): Selector | null {
+		switch (this._effectivePrimaryGranularity(state)) {
+			case 'word':
+				return this._positionToSelector(state.activeWordSourcePosition);
+			case 'sentence':
+				return segmentSelector;
+			case 'paragraph':
+			default:
+				return this._resolveParagraphSelector(state);
+		}
+	}
+
+	/**
+	 * Resolve the brief flash highlight that should appear after a skip
+	 * whose granularity isn't already shown by the primary highlight.
+	 * Returns null when the skip granularity matches the primary, or there's
+	 * no recent skip to acknowledge.
+	 */
+	private _resolveSkipSpotlightSelector(
+		state: ReadAloudStateSnapshot,
+		segmentSelector: Selector,
+	): Selector | null {
+		if (!state.lastSkipGranularity || !state.activeSegment) {
+			return null;
+		}
+		if (state.lastSkipGranularity === this._effectivePrimaryGranularity(state)) {
+			return null;
+		}
+		switch (state.lastSkipGranularity) {
+			case 'sentence':
+				return segmentSelector;
+			case 'paragraph':
+				return this._resolveParagraphSelector(state);
+			default:
+				return null;
+		}
+	}
+
+	private _effectivePrimaryGranularity(state: ReadAloudStateSnapshot): ReadAloudGranularity {
+		if (state.highlightGranularity === 'word' && state.segmentGranularity === 'sentence') {
+			return 'word';
+		}
+		if (state.highlightGranularity === 'sentence' && state.segmentGranularity === 'sentence') {
+			return 'sentence';
+		}
+		return 'paragraph';
 	}
 
 	private _collapseToStart(selector: Selector): Selector | null {

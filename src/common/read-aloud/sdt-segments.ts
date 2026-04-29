@@ -7,38 +7,48 @@ import type {
 } from '../../../structured-document-text/schema';
 import { getNestedBlockPlainText } from '../../../structured-document-text/src/text';
 import { getSentenceBoundaries } from 'sentencex-ts';
-import type { ReadAloudGranularity, ReadAloudSegment, SDTPosition } from '../types';
+import type {
+	ReadAloudGranularity,
+	ReadAloudSegment,
+	SDTPosition,
+} from '../types';
 import { splitTextToChunks } from './segment-split';
 import { detectLang } from '../lib/detect-lang';
 import { getBaseLanguage } from './lang';
 import { isTextNodeArray } from '../../dom/sdt/lib/utilities';
 
 /**
- * A char-offset mapping entry: tracks which (blockRefPath, textIndex, charOffset)
- * corresponds to each character in the concatenated block text.
- */
-interface CharMapping {
-	blockRefPath: string;
-	textIndex: number;
-
-	/** Start char offset within this text node. */
-	nodeCharStart: number;
-
-	/** Absolute start offset in the concatenated block text. */
-	absStart: number;
-
-	/** Absolute end offset (exclusive) in the concatenated block text. */
-	absEnd: number;
-}
-
-/**
- * One leaf block's concatenated text with its char mapping.
+ * One leaf block's concatenated text with its text-node mappings. The
+ * mappings let us convert offsets in the concatenated text back to
+ * (blockRefPath, textIndex, charOffset).
  */
 interface BlockText {
 	blockRefPath: string;
 	text: string;
-	mappings: CharMapping[];
+	mappings: TextNodeMapping[];
 }
+
+/**
+ * Footprint of one SDT text node within its block's concatenated text:
+ * text node `textIndex` of block `blockRefPath` covers chars
+ * [absStart, absEnd) of the concatenation.
+ */
+interface TextNodeMapping {
+	blockRefPath: string;
+	textIndex: number;
+	absStart: number;
+	absEnd: number;
+}
+
+/**
+ * Index of every leaf block's concatenated text, keyed by blockRefPath. The
+ * reader builds this once per loaded SDT and passes it to getSubSDTPosition()
+ * when it needs to convert an API word-timestamp into an SDTPosition.
+ *
+ * Opaque to consumers; the value type isn't exported because nothing
+ * outside this module needs to look inside.
+ */
+export type ReadAloudBlockIndex = ReadonlyMap<string, BlockText>;
 
 /**
  * Extract language from SDT metadata, falling back to content detection.
@@ -87,6 +97,18 @@ export function buildSDTReadAloudSegments(
 	}
 
 	return segments;
+}
+
+/**
+ * Build the per-block index that `getSubSDTPosition` consumes. Cheap and only
+ * needs to run once per loaded SDT.
+ */
+export function buildReadAloudBlockIndex(sdt: StructuredDocumentText): ReadAloudBlockIndex {
+	let index = new Map<string, BlockText>();
+	for (let block of extractBlockTexts(sdt.content)) {
+		index.set(block.blockRefPath, block);
+	}
+	return index;
 }
 
 /**
@@ -152,7 +174,7 @@ function walkListItem(item: ListItemNode, refPath: string, result: BlockText[]):
 
 function collectTextNodes(textNodes: TextNode[], refPath: string, result: BlockText[]): void {
 	let text = '';
-	let mappings: CharMapping[] = [];
+	let mappings: TextNodeMapping[] = [];
 
 	for (let [i, textNode] of textNodes.entries()) {
 		let nodeText = textNode.text;
@@ -163,7 +185,6 @@ function collectTextNodes(textNodes: TextNode[], refPath: string, result: BlockT
 		mappings.push({
 			blockRefPath: refPath,
 			textIndex: i,
-			nodeCharStart: 0,
 			absStart: text.length,
 			absEnd: text.length + nodeText.length,
 		});
@@ -179,17 +200,17 @@ function collectTextNodes(textNodes: TextNode[], refPath: string, result: BlockT
  * Segment a single block's text into ReadAloudSegments.
  */
 function segmentBlock(
-	bt: BlockText,
+	block: BlockText,
 	granularity: ReadAloudGranularity,
 	lang: string,
 ): ReadAloudSegment[] {
-	let sentences = splitToSentences(bt.text, lang);
+	let sentences = splitToSentences(block.text, lang);
 
 	if (sentences.length === 0) {
 		// If sentence splitting failed, treat the whole block as one segment
-		let text = bt.text.trim().replace(/\s+/g, ' ');
+		let text = block.text.trim().replace(/\s+/g, ' ');
 		if (!text) return [];
-		let pos = charRangeToSDTPosition(bt, 0, bt.text.length);
+		let pos = offsetRangeToSDTPosition(block.mappings, 0, block.text.length);
 		if (!pos) return [];
 		return [{
 			text,
@@ -200,9 +221,9 @@ function segmentBlock(
 	}
 
 	if (granularity === 'paragraph') {
-		return segmentBlockAsParagraphs(bt, sentences, granularity);
+		return segmentBlockAsParagraphs(block, sentences, granularity);
 	}
-	return segmentBlockAsSentences(bt, sentences, granularity);
+	return segmentBlockAsSentences(block, sentences, granularity);
 }
 
 /**
@@ -234,14 +255,16 @@ function segmentBlockAsSentences(
 			let text = sentText.slice(chunkStart, chunkEnd).trim().replace(/\s+/g, ' ');
 			if (!text) continue;
 
-			let pos = charRangeToSDTPosition(bt, sentStart + chunkStart, sentStart + chunkEnd);
+			let sourceStart = sentStart + chunkStart;
+			let sourceEnd = sentStart + chunkEnd;
+			let pos = offsetRangeToSDTPosition(bt.mappings, sourceStart, sourceEnd);
 			if (!pos) continue;
 
 			segments.push({
 				text,
 				position: pos,
 				granularity,
-				anchor: null
+				anchor: null,
 			});
 		}
 	}
@@ -250,28 +273,116 @@ function segmentBlockAsSentences(
 }
 
 /**
+ * Resolve a char range in the segment's normalized text to an SDTPosition
+ * pointing at the corresponding chars in the underlying block.
+ *
+ * Two coordinate systems are involved: the TTS API works in the normalized
+ * text we sent (whitespace collapsed and trimmed), while SDTPositions address
+ * (text node, char offset) inside the original block text. We re-derive the
+ * normalized-to-raw mapping on demand by walking the segment's source slice in
+ * lockstep with its normalized form. Out-of-range indices are clamped.
+ *
+ * Returns null if the segment's block isn't in the index (e.g., the SDT was
+ * reloaded after the segments were built).
+ */
+export function getSubSDTPosition(
+	blocks: ReadAloudBlockIndex,
+	segment: ReadAloudSegment,
+	charStart: number,
+	charEnd: number,
+): SDTPosition | null {
+	let block = blocks.get(segment.position.startBlockRefPath);
+	if (!block) return null;
+
+	let sourceRange = sourceRangeForSegment(block, segment.position);
+	if (!sourceRange) return null;
+
+	let normalizedLength = segment.text.length;
+	let clampedStart = Math.max(0, Math.min(charStart, normalizedLength));
+	let clampedEnd = Math.max(clampedStart, Math.min(charEnd, normalizedLength));
+
+	// Walk the source slice and the normalized text together, recording the
+	// raw offset where each requested normalized index sits
+	let rawSlice = block.text.slice(sourceRange.start, sourceRange.end);
+	let rawOffsetAtStart = -1;
+	let rawOffsetAtEnd = -1;
+	let rawOffset = 0;
+	while (rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
+		rawOffset++;
+	}
+	for (let normalizedIndex = 0; normalizedIndex <= normalizedLength; normalizedIndex++) {
+		if (normalizedIndex === clampedStart) rawOffsetAtStart = rawOffset;
+		if (normalizedIndex === clampedEnd) {
+			rawOffsetAtEnd = rawOffset;
+			break;
+		}
+		if (normalizedIndex === normalizedLength) break;
+		if (segment.text[normalizedIndex] === ' '
+				&& rawOffset < rawSlice.length
+				&& /\s/.test(rawSlice[rawOffset])) {
+			while (rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
+				rawOffset++;
+			}
+		}
+		else {
+			rawOffset++;
+		}
+	}
+	if (rawOffsetAtStart < 0 || rawOffsetAtEnd < 0) return null;
+
+	return offsetRangeToSDTPosition(
+		block.mappings,
+		sourceRange.start + rawOffsetAtStart,
+		sourceRange.start + rawOffsetAtEnd,
+	);
+}
+
+/**
+ * Translate a segment's SDTPosition (text-node-relative offsets) back to the
+ * [start, end) range it covers in the block's concatenated text.
+ */
+function sourceRangeForSegment(
+	block: BlockText,
+	position: SDTPosition,
+): { start: number; end: number } | null {
+	let startMapping = block.mappings.find(
+		mapping => mapping.blockRefPath === position.startBlockRefPath
+			&& mapping.textIndex === position.startTextIndex
+	);
+	let endMapping = block.mappings.find(
+		mapping => mapping.blockRefPath === position.endBlockRefPath
+			&& mapping.textIndex === position.endTextIndex
+	);
+	if (!startMapping || !endMapping) return null;
+	return {
+		start: startMapping.absStart + position.startCharOffset,
+		end: endMapping.absStart + position.endCharOffset,
+	};
+}
+
+/**
  * For paragraph granularity, two segments: first sentence + rest of block.
  */
 function segmentBlockAsParagraphs(
-	bt: BlockText,
+	block: BlockText,
 	sentences: [number, number][],
 	granularity: ReadAloudGranularity,
 ): ReadAloudSegment[] {
 	if (sentences.length <= 1) {
 		// Single sentence: treat as one paragraph segment
-		return segmentBlockAsSentences(bt, sentences, granularity);
+		return segmentBlockAsSentences(block, sentences, granularity);
 	}
 
 	let segments: ReadAloudSegment[] = [];
 
 	// First sentence
 	let [firstStart, firstEnd] = sentences[0];
-	let firstSlice = bt.text.slice(firstStart, firstEnd);
+	let firstSlice = block.text.slice(firstStart, firstEnd);
 	let firstChunks = splitTextToChunks(firstSlice);
 	for (let [chunkStart, chunkEnd] of firstChunks) {
 		let text = firstSlice.slice(chunkStart, chunkEnd).trim().replace(/\s+/g, ' ');
 		if (!text) continue;
-		let pos = charRangeToSDTPosition(bt, firstStart + chunkStart, firstStart + chunkEnd);
+		let pos = offsetRangeToSDTPosition(block.mappings, firstStart + chunkStart, firstStart + chunkEnd);
 		if (!pos) continue;
 		segments.push({ text, position: pos, granularity, anchor: null });
 	}
@@ -279,12 +390,12 @@ function segmentBlockAsParagraphs(
 	// Rest of block (all remaining sentences joined)
 	let restStart = sentences[1][0];
 	let restEnd = sentences[sentences.length - 1][1];
-	let restSlice = bt.text.slice(restStart, restEnd);
+	let restSlice = block.text.slice(restStart, restEnd);
 	let restChunks = splitTextToChunks(restSlice);
 	for (let [chunkStart, chunkEnd] of restChunks) {
 		let text = restSlice.slice(chunkStart, chunkEnd).trim().replace(/\s+/g, ' ');
 		if (!text) continue;
-		let pos = charRangeToSDTPosition(bt, restStart + chunkStart, restStart + chunkEnd);
+		let pos = offsetRangeToSDTPosition(block.mappings, restStart + chunkStart, restStart + chunkEnd);
 		if (!pos) continue;
 		segments.push({ text, position: pos, granularity, anchor: null });
 	}
@@ -293,11 +404,16 @@ function segmentBlockAsParagraphs(
 }
 
 /**
- * Convert a character range [start, end) in a BlockText to a SDTPosition.
+ * Convert a character range [start, end) in a block's concatenated text to an
+ * SDTPosition by locating the start and end text-node mappings.
  */
-function charRangeToSDTPosition(bt: BlockText, start: number, end: number): SDTPosition | null {
-	let startMapping = findMappingForOffset(bt.mappings, start);
-	let endMapping = findMappingForOffset(bt.mappings, Math.max(start, end - 1));
+function offsetRangeToSDTPosition(
+	mappings: TextNodeMapping[],
+	start: number,
+	end: number,
+): SDTPosition | null {
+	let startMapping = findMappingForOffset(mappings, start);
+	let endMapping = findMappingForOffset(mappings, Math.max(start, end - 1));
 	if (!startMapping || !endMapping) return null;
 
 	return {
@@ -313,7 +429,7 @@ function charRangeToSDTPosition(bt: BlockText, start: number, end: number): SDTP
 /**
  * Find the mapping entry that contains the given absolute offset.
  */
-function findMappingForOffset(mappings: CharMapping[], offset: number): CharMapping | null {
+function findMappingForOffset(mappings: TextNodeMapping[], offset: number): TextNodeMapping | null {
 	for (let i = mappings.length - 1; i >= 0; i--) {
 		if (mappings[i].absStart <= offset) {
 			return mappings[i];

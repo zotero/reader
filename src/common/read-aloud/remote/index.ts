@@ -1,6 +1,8 @@
-import { ReadAloudGranularity, ReadAloudSegment } from '../../types';
+import { ReadAloudGranularity, ReadAloudSegment, ReadAloudTimestamp } from '../../types';
 import { ErrorState } from '../controller';
 import { Tier } from '../voice';
+
+export type { ReadAloudTimestamp };
 
 export type RemoteVoiceConfig = {
 	id: string;
@@ -43,6 +45,7 @@ export type RemoteInterface = {
 
 	getAudio(segment: ReadAloudSegment | 'sample', voice: RemoteVoiceConfig): Promise<{
 		audio: Blob | null;
+		timestamps?: ReadAloudTimestamp[];
 		error?: ErrorState;
 	}>;
 
