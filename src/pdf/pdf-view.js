@@ -1057,30 +1057,29 @@ class PDFView {
 		}
 
 		if (activePosition?.pageIndex !== undefined) {
-			// Sentence highlighting requires sentence-granularity segments
-			let useSentenceHighlight = state.highlightGranularity === 'sentence'
-				&& state.segmentGranularity === 'sentence';
+			// The primary highlight tracks the user's chosen granularity; it falls
+			// back to a coarser level when finer-grained data isn't available
+			// (e.g., paragraph-granularity segments have no sentence/word data).
+			this._readAloudHighlightedPosition = this._resolveReadAloudPrimaryPosition(state, activePosition);
 
-			let paragraphPosition = state.activeSegment?.paragraphSourcePosition;
-			if (paragraphPosition?.pageIndex === undefined) {
-				paragraphPosition = activePosition;
-			}
-			this._readAloudHighlightedPosition = useSentenceHighlight
-				? activePosition
-				: paragraphPosition;
-
-			// Briefly highlight the active sentence after a sentence skip
-			// (unless we're already highlighting by sentence)
-			clearTimeout(this._readAloudSentenceTimeout);
-			if (!useSentenceHighlight && state.lastSkipGranularity === 'sentence') {
-				this._readAloudSentenceHighlightedPosition = activePosition;
-				this._readAloudSentenceTimeout = setTimeout(() => {
+			// After a skip whose granularity differs from the primary highlight,
+			// briefly flash the unit at the skip granularity so it's clear what
+			// the skip moved by. Only retrigger when the active segment changes
+			// so word-level updates don't keep resetting the timeout.
+			let segmentChanged = state.activeSegment !== previousState?.activeSegment;
+			if (segmentChanged) {
+				clearTimeout(this._readAloudSentenceTimeout);
+				let highlightSelector = this._resolveReadAloudSkipHighlightPosition(state, activePosition);
+				if (highlightSelector) {
+					this._readAloudSentenceHighlightedPosition = highlightSelector;
+					this._readAloudSentenceTimeout = setTimeout(() => {
+						this._readAloudSentenceHighlightedPosition = null;
+						this._render();
+					}, 2000);
+				}
+				else {
 					this._readAloudSentenceHighlightedPosition = null;
-					this._render();
-				}, 2000);
-			}
-			else {
-				this._readAloudSentenceHighlightedPosition = null;
+				}
 			}
 			this._render();
 
@@ -1115,6 +1114,59 @@ class PDFView {
 
 	lockPositionToReadAloud() {
 		this._readAloudPositionLocked = true;
+	}
+
+	/**
+	 * Resolve the primary Read Aloud highlight position for the user's chosen
+	 * granularity, falling back coarser when finer-grained data isn't available
+	 */
+	_resolveReadAloudPrimaryPosition(state, activePosition) {
+		switch (this._effectiveReadAloudPrimaryGranularity(state)) {
+			case 'word': {
+				let wordPosition = state.activeWordSourcePosition;
+				return wordPosition?.pageIndex !== undefined ? wordPosition : null;
+			}
+			case 'sentence':
+				return activePosition;
+			case 'paragraph':
+			default: {
+				let paragraphPosition = state.activeSegment?.paragraphSourcePosition;
+				return paragraphPosition?.pageIndex !== undefined ? paragraphPosition : activePosition;
+			}
+		}
+	}
+
+	/**
+	 * Resolve the brief flash highlight position that should appear after a
+	 * skip whose granularity isn't already shown by the primary highlight.
+	 * Returns null when the skip granularity matches the primary or there's
+	 * no recent skip to acknowledge.
+	 */
+	_resolveReadAloudSkipHighlightPosition(state, activePosition) {
+		if (!state.lastSkipGranularity) {
+			return null;
+		}
+		if (state.lastSkipGranularity === this._effectiveReadAloudPrimaryGranularity(state)) {
+			return null;
+		}
+		if (state.lastSkipGranularity === 'sentence') {
+			return activePosition;
+		}
+		if (state.lastSkipGranularity === 'paragraph') {
+			let paragraphPosition = state.activeSegment?.paragraphSourcePosition;
+			return paragraphPosition ?? null;
+		}
+		return null;
+	}
+
+	_effectiveReadAloudPrimaryGranularity(state) {
+		if (state.highlightGranularity === 'word' && state.segmentGranularity === 'sentence') {
+			return 'word';
+		}
+		if (state.highlightGranularity === 'sentence' && state.segmentGranularity === 'sentence') {
+			return 'sentence';
+		}
+		return 'paragraph';
 	}
 
 	_isPositionInViewBounds(position) {

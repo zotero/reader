@@ -82,6 +82,12 @@ export class SnapshotPositionMapper implements PositionMapper {
 			selectorMap = blockAnchor.selectorMap;
 		}
 
+		// When both endpoints are in the same text node, the offsets are already
+		// relative to the selectorMap's element
+		if (startBlockRefPath === endBlockRefPath && startTextIndex === endTextIndex) {
+			return resolveSelectorMap(selectorMap, startCharOffset, endCharOffset, textAnchor?.deltaMap);
+		}
+
 		let startAbsOffset = this._index.computeAbsoluteCharOffset(startBlockRefPath, startTextIndex, startCharOffset);
 		let endAbsOffset = this._index.computeAbsoluteCharOffset(endBlockRefPath, endTextIndex, endCharOffset);
 

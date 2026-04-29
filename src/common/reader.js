@@ -35,9 +35,11 @@ import { ReadAloudManager } from './read-aloud/manager';
 import { createPositionMapper } from '../dom/sdt/lib/create-position-mapper';
 import {
 	buildSDTReadAloudSegments,
+	buildReadAloudBlockIndex,
 	getSDTLang,
 	findSegmentIndexForSDTPosition,
 	findSegmentIndexForSourcePosition,
+	getSubSDTPosition,
 } from './read-aloud/sdt-segments';
 import { isSDTPosition } from './types';
 
@@ -71,6 +73,7 @@ class Reader {
 		this._preview = options.preview;
 		this._sdtData = null;
 		this._sdtPositionMapper = null;
+		this._readAloudBlocks = null;
 		this._sdtLoadPromise = null;
 
 		this._readerContext = { type: this._type, platform: this._platform };
@@ -250,7 +253,9 @@ class Reader {
 				annotationPopup: null,
 				segmentAnnotations: new Map(),
 				savedPosition: options.primaryViewState?.lastReadAloudPosition ?? null,
-				highlightGranularity: options.readAloudHighlightGranularity === 'sentence' ? 'sentence' : 'paragraph',
+				highlightGranularity: ['paragraph', 'sentence', 'word'].includes(options.readAloudHighlightGranularity)
+					? options.readAloudHighlightGranularity
+					: 'sentence',
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
@@ -1124,6 +1129,7 @@ class Reader {
 				}
 				this._sdtData = data;
 				this._sdtPositionMapper = createPositionMapper(data);
+				this._readAloudBlocks = buildReadAloudBlockIndex(data);
 			})();
 		}
 		return this._sdtLoadPromise;
@@ -1148,6 +1154,7 @@ class Reader {
 			segmentGranularity: manager.segmentGranularity,
 			segments: manager.segments,
 			activeSegment: manager.activeSegment,
+			activeWordSourcePosition: this._computeActiveWordSourcePosition(manager),
 			backwardStopIndex: null,
 			forwardStopIndex: null,
 			targetPosition: manager.consumeTargetPosition(),
@@ -1158,8 +1165,18 @@ class Reader {
 		};
 	}
 
+	_computeActiveWordSourcePosition(manager) {
+		let segment = manager.activeSegment;
+		let timestamp = manager.activeTimestamp;
+		if (!segment || !timestamp || !this._readAloudBlocks || !this._sdtPositionMapper) {
+			return null;
+		}
+		let sdtPos = getSubSDTPosition(this._readAloudBlocks, segment, timestamp.charStart, timestamp.charEnd);
+		return sdtPos && this._sdtPositionMapper.sdtToSourcePosition(sdtPos);
+	}
+
 	setReadAloudHighlightGranularity(granularity) {
-		if (granularity !== 'paragraph' && granularity !== 'sentence') {
+		if (!['paragraph', 'sentence', 'word'].includes(granularity)) {
 			return;
 		}
 		if (this._state.readAloudState.highlightGranularity === granularity) {

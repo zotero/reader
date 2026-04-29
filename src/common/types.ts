@@ -233,6 +233,7 @@ export type ReadAloudStateSnapshot = {
 	highlightGranularity: ReadAloudGranularity;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;
+	activeWordSourcePosition: SourcePosition | null;
 	backwardStopIndex: number | null;
 	forwardStopIndex: number | null;
 	targetPosition?: Position;
@@ -264,7 +265,14 @@ export type ReadAloudSegment = {
 	anchor: 'paragraphStart' | null;
 };
 
-export type ReadAloudGranularity = 'paragraph' | 'sentence';
+export type ReadAloudGranularity = 'paragraph' | 'sentence' | 'word';
+
+export type ReadAloudTimestamp = {
+	start: number;
+	end: number;
+	charStart: number;
+	charEnd: number;
+};
 
 export type MaybePromise<T> = Promise<T> | T;
 

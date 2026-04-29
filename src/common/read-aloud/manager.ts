@@ -2,8 +2,9 @@ import { Position, ReadAloudGranularity, ReadAloudSegment } from '../types';
 import { ErrorState, ReadAloudController, ReadAloudEvent } from './controller';
 import { getSupportedLanguages, getVoiceRegion, getVoicesForLanguage, ReadAloudVoice, Tier } from './voice';
 import { RemoteReadAloudProvider } from './remote/provider';
+import { RemoteReadAloudController } from './remote/controller';
 import { BrowserReadAloudProvider } from './browser/provider';
-import { RemoteInterface } from './remote';
+import { ReadAloudTimestamp, RemoteInterface } from './remote';
 import { getBaseLanguage, getPreferredRegion, resolveLanguage } from './lang';
 
 const URGENT_THRESHOLD_MINUTES = 3;
@@ -59,6 +60,8 @@ export class ReadAloudManager {
 
 	private _activeSegment: ReadAloudSegment | null = null;
 
+	private _activeTimestampIndex: number | null = null;
+
 	private _lastSkipGranularity: 'sentence' | 'paragraph' | null = null;
 
 	private _buffering = false;
@@ -105,6 +108,21 @@ export class ReadAloudManager {
 
 	get activeSegment(): ReadAloudSegment | null {
 		return this._activeSegment;
+	}
+
+	/**
+	 * Word-level timestamp for the chunk of audio currently playing within the
+	 * active segment, or null when the controller hasn't reached one yet (or
+	 * doesn't supply word-level data).
+	 */
+	get activeTimestamp(): ReadAloudTimestamp | null {
+		if (this._activeTimestampIndex === null
+				|| !this._activeSegment
+				|| !(this._controller instanceof RemoteReadAloudController)) {
+			return null;
+		}
+		let timestamps = this._controller.getTimestampsForSegment(this._activeSegment);
+		return timestamps?.[this._activeTimestampIndex] ?? null;
 	}
 
 	get lastSkipGranularity(): 'sentence' | 'paragraph' | null {
@@ -619,17 +637,26 @@ export class ReadAloudManager {
 		});
 		controller.addEventListener('ActiveSegmentChanging', (event: Event) => {
 			this._activeSegment = (event as ReadAloudEvent).segment;
+			this._activeTimestampIndex = null;
 			this._lastSkipGranularity = controller.lastSkipGranularity;
 			this._stateChanged();
 		});
 		controller.addEventListener('ActiveSegmentChange', (event: Event) => {
 			this._activeSegment = (event as ReadAloudEvent).segment;
+			this._activeTimestampIndex = null;
 			this._lastSkipGranularity = controller.lastSkipGranularity;
+			this._stateChanged();
+		});
+		controller.addEventListener('ActiveWordChange', () => {
+			let newIndex = controller.activeTimestampIndex;
+			if (this._activeTimestampIndex === newIndex) return;
+			this._activeTimestampIndex = newIndex;
 			this._stateChanged();
 		});
 		controller.addEventListener('Complete', () => {
 			this._paused = true;
 			this._activeSegment = null;
+			this._activeTimestampIndex = null;
 			this._stateChanged();
 		});
 		controller.addEventListener('Error', () => {
@@ -656,6 +683,7 @@ export class ReadAloudManager {
 			this._buffering = false;
 		}
 		this._stopCreditRefresh();
+		this._activeTimestampIndex = null;
 	}
 
 	deactivate(): void {
