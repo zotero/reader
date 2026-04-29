@@ -218,6 +218,7 @@ export type ReadAloudState = {
 	annotationPopup: ReadAloudAnnotationPopup | null;
 	segmentAnnotations: Map<number, string>;
 	savedPosition?: Position | null;
+	highlightGranularity: ReadAloudGranularity;
 };
 
 /**
@@ -229,13 +230,14 @@ export type ReadAloudStateSnapshot = {
 	active: boolean;
 	paused: boolean;
 	segmentGranularity: ReadAloudGranularity | null;
+	highlightGranularity: ReadAloudGranularity;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;
 	backwardStopIndex: number | null;
 	forwardStopIndex: number | null;
 	targetPosition?: Position;
 	lang: string | null;
-	lastSkipGranularity: 'sentence' | 'paragraph' | null;
+	lastSkipGranularity: ReadAloudGranularity | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
 };
 

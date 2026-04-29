@@ -1057,15 +1057,22 @@ class PDFView {
 		}
 
 		if (activePosition?.pageIndex !== undefined) {
+			// Sentence highlighting requires sentence-granularity segments
+			let useSentenceHighlight = state.highlightGranularity === 'sentence'
+				&& state.segmentGranularity === 'sentence';
+
 			let paragraphPosition = state.activeSegment?.paragraphSourcePosition;
 			if (paragraphPosition?.pageIndex === undefined) {
 				paragraphPosition = activePosition;
 			}
-			this._readAloudHighlightedPosition = paragraphPosition;
+			this._readAloudHighlightedPosition = useSentenceHighlight
+				? activePosition
+				: paragraphPosition;
 
 			// Briefly highlight the active sentence after a sentence skip
+			// (unless we're already highlighting by sentence)
 			clearTimeout(this._readAloudSentenceTimeout);
-			if (state.lastSkipGranularity === 'sentence') {
+			if (!useSentenceHighlight && state.lastSkipGranularity === 'sentence') {
 				this._readAloudSentenceHighlightedPosition = activePosition;
 				this._readAloudSentenceTimeout = setTimeout(() => {
 					this._readAloudSentenceHighlightedPosition = null;
