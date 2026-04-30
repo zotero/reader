@@ -6,9 +6,156 @@ import zoteroFTL from '../locales/en-US/zotero.ftl';
 import readerFTL from '../locales/en-US/reader.ftl';
 import brandFTL from '../locales/en-US/brand.ftl';
 
+const CONTENT_TYPES = {
+	pdf: 'application/pdf',
+	epub: 'application/epub+zip',
+	snapshot: 'text/html',
+};
+
+// Served by webpack-dev-server from ../document-worker/build/ (see devServer.static
+// in webpack.config.js). If document-worker hasn't been built, the worker fails
+// to load and getSDT() resolves to null.
+const DOCUMENT_WORKER_BASE = 'document-worker/';
+
+let documentWorker = null;
+let documentWorkerFailed = false;
+let lastWorkerPromiseID = 0;
+let workerPromises = {};
+
+function failAllPending(error) {
+	for (let id of Object.keys(workerPromises)) {
+		workerPromises[id].reject(error);
+		delete workerPromises[id];
+	}
+}
+
+function initDocumentWorker() {
+	if (documentWorker || documentWorkerFailed) {
+		return documentWorker;
+	}
+	documentWorker = new Worker(DOCUMENT_WORKER_BASE + 'worker.js');
+	documentWorker.addEventListener('error', (event) => {
+		console.warn(`Document worker failed to load from ${DOCUMENT_WORKER_BASE}:`, event.message || event);
+		documentWorkerFailed = true;
+		failAllPending(new Error('Document worker unavailable'));
+		documentWorker = null;
+	});
+	documentWorker.addEventListener('message', async (event) => {
+		let message = event.data;
+		if (message.responseID) {
+			let { resolve, reject } = workerPromises[message.responseID];
+			delete workerPromises[message.responseID];
+			if (message.data !== null && message.data !== undefined) {
+				resolve(message.data);
+			}
+			else {
+				reject(new Error(JSON.stringify(message.error)));
+			}
+			return;
+		}
+		if (message.id) {
+			let respData = null;
+			try {
+				if (message.action === 'FetchBuiltInCMap') {
+					let res = await fetch(DOCUMENT_WORKER_BASE + 'cmaps/' + message.data + '.bcmap');
+					respData = { isCompressed: true, cMapData: new Uint8Array(await res.arrayBuffer()) };
+				}
+				else if (message.action === 'FetchStandardFontData') {
+					let res = await fetch(DOCUMENT_WORKER_BASE + 'standard_fonts/' + message.data);
+					respData = new Uint8Array(await res.arrayBuffer());
+				}
+				else if (message.action === 'FetchWasm') {
+					let res = await fetch(DOCUMENT_WORKER_BASE + 'wasm/' + message.data);
+					respData = new Uint8Array(await res.arrayBuffer());
+				}
+				else if (message.action === 'FetchData') {
+					let res = await fetch(DOCUMENT_WORKER_BASE + message.data);
+					respData = new Uint8Array(await res.arrayBuffer());
+				}
+			}
+			catch (e) {
+				console.warn(`Document worker ${message.action} failed:`, e);
+			}
+			documentWorker.postMessage({ responseID: message.id, data: respData });
+		}
+	});
+	return documentWorker;
+}
+
+function queryDocumentWorker(action, data, transfer) {
+	let worker = initDocumentWorker();
+	if (!worker) {
+		return Promise.reject(new Error('Document worker unavailable'));
+	}
+	return new Promise((resolve, reject) => {
+		lastWorkerPromiseID++;
+		workerPromises[lastWorkerPromiseID] = { resolve, reject };
+		worker.postMessage({ id: lastWorkerPromiseID, action, data }, transfer || []);
+	});
+}
+
+async function generateSDT(type, fileName, password) {
+	let contentType = CONTENT_TYPES[type];
+	if (!contentType) return null;
+	try {
+		let res = await fetch(fileName);
+		let buf = await res.arrayBuffer();
+		return await queryDocumentWorker(
+			'getStructuredData',
+			{ buf, contentType, password },
+			[buf]
+		);
+	}
+	catch (e) {
+		console.warn('Failed to generate SDT:', e);
+		return null;
+	}
+}
+
 // Injected by Webpack in dev builds
 // eslint-disable-next-line no-process-env
 const ZOTERO_API_KEY = process.env.ZOTERO_API_KEY;
+
+const READ_ALOUD_CACHE = 'zotero-read-aloud';
+
+function readAloudCacheURL(voiceId, text) {
+	return 'https://read-aloud.zotero.invalid/audio?'
+		+ new URLSearchParams({ voice: voiceId, text });
+}
+
+async function loadCachedReadAloudAudio(voiceId, text) {
+	try {
+		let cache = await caches.open(READ_ALOUD_CACHE);
+		let baseURL = readAloudCacheURL(voiceId, text);
+		let [audioResponse, timestampsResponse] = await Promise.all([
+			cache.match(baseURL),
+			cache.match(baseURL + '&meta=timestamps'),
+		]);
+		// Both entries must be present. A lone audio entry means an older
+		// format -- treat it as a miss so we re-fetch and rewrite paired.
+		if (!audioResponse || !timestampsResponse) return null;
+		let timestamps = await timestampsResponse.json();
+		return { audio: await audioResponse.blob(), timestamps: timestamps ?? undefined };
+	}
+	catch (e) {
+		console.error(e);
+		return null;
+	}
+}
+
+async function storeCachedReadAloudAudio(voiceId, text, audio, timestamps) {
+	try {
+		let cache = await caches.open(READ_ALOUD_CACHE);
+		let baseURL = readAloudCacheURL(voiceId, text);
+		await Promise.all([
+			cache.put(baseURL, new Response(audio)),
+			cache.put(baseURL + '&meta=timestamps', Response.json(timestamps ?? null)),
+		]);
+	}
+	catch (e) {
+		console.error(e);
+	}
+}
 
 window.dev = true;
 
@@ -31,10 +178,12 @@ async function createReader() {
 	}
 	let readAloudVoices = {};
 	let res = await fetch(demo.fileName);
+
 	let reader = new Reader({
 		type,
 		ftl: [zoteroFTL, readerFTL, brandFTL],
 		readOnly: false,
+		getSDT: password => generateSDT(type, demo.fileName, password),
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 			url: new URL('/', window.location).toString()
@@ -227,25 +376,15 @@ async function createReader() {
 			},
 
 			async getAudio(segment, voice) {
-				let cacheURL = 'https://read-aloud.zotero.invalid/audio?'
-					+ new URLSearchParams({ voice: voice.id, text: segment.text });
-				let cache;
-				try {
-					cache = await caches.open('zotero-read-aloud');
-					let cached = await cache.match(cacheURL);
-					if (cached) {
-						return { audio: await cached.blob() };
-					}
-				}
-				catch (e) {
-					console.error(e);
-				}
+				let cached = await loadCachedReadAloudAudio(voice.id, segment.text);
+				if (cached) return cached;
 
 				let url;
 				let fetchOptions;
 				if (segment === 'sample') {
 					let params = new URLSearchParams();
 					params.set('voice', voice.id);
+					params.set('timestamps', '1');
 					url = 'https://api.zotero.org/tts/sample?' + params;
 					fetchOptions = {
 						headers: {
@@ -264,6 +403,7 @@ async function createReader() {
 						body: JSON.stringify({
 							voice: voice.id,
 							text: segment.text,
+							timestamps: 1,
 						}),
 					};
 				}
@@ -292,14 +432,30 @@ async function createReader() {
 					};
 				}
 
-				let audio = await response.blob();
-				try {
-					await cache?.put(cacheURL, new Response(audio));
+				// Either we got a redirect-followed audio response, or a JSON envelope with
+				// `audioURL` and `timestamps` for word-level highlighting.
+				let audio;
+				let timestamps;
+				if (response.headers.get('Content-Type')?.includes('application/json')) {
+					let json = await response.json();
+					timestamps = json.timestamps;
+					try {
+						let audioResponse = await fetch(json.audioURL);
+						if (!audioResponse.ok) {
+							return { audio: null, error: 'unknown' };
+						}
+						audio = await audioResponse.blob();
+					}
+					catch {
+						return { audio: null, error: 'network' };
+					}
 				}
-				catch (e) {
-					console.error(e);
+				else {
+					audio = await response.blob();
 				}
-				return { audio };
+
+				await storeCachedReadAloudAudio(voice.id, segment.text, audio, timestamps);
+				return { audio, timestamps };
 			},
 		},
 		onLogIn() {

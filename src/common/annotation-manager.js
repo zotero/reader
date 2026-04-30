@@ -14,7 +14,7 @@ class AnnotationManager {
 			colors: [],
 			tags: [],
 			authors: [],
-			hiddenIDs: [],
+			enabledTypes: null,
 		};
 		this._readOnly = options.readOnly;
 		this._authorName = options.authorName;
@@ -393,10 +393,10 @@ class AnnotationManager {
 		this._annotations.forEach(x => delete x._score);
 
 		let annotations = this._annotations.slice();
-		let { tags, colors, authors, query, hiddenIDs } = this._filter;
+		let { tags, colors, authors, query, enabledTypes } = this._filter;
 
-		if (hiddenIDs.length) {
-			annotations = annotations.filter(x => !hiddenIDs.includes(x.id));
+		if (enabledTypes) {
+			annotations = annotations.filter(x => enabledTypes.includes(x.type));
 		}
 
 		if (tags.length || colors.length || authors.length) {

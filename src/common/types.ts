@@ -54,25 +54,48 @@ export interface WADMAnnotation extends Annotation {
 }
 
 export type NavLocation = {
-	pageNumber?: string;
-	pageIndex?: number;
+	// All
 	annotationID?: string;
 	position?: Position;
+	// All besides snapshot
+	pageNumber?: string;
+	pageIndex?: number;
+	// EPUB
 	href?: string;
+	// PDF
 	scrollCoords?: [number, number];
+	// Snapshot
+	scrollYPercent?: number;
 };
 
-export type Position = PDFPosition | Selector | RangeRef;
+export type Position = PDFPosition | Selector | RangeRef | SDTPosition;
 
 export type PDFPosition = {
 	pageIndex: number;
 	rects?: number[][];
 	paths?: number[][];
+	nextPageRects?: number[][];
 };
 
 export type RangeRef = {
 	range: PersistentRange;
 };
+
+export type SDTPosition = {
+	startBlockRefPath: string;
+	startTextIndex: number;
+	startCharOffset: number;
+	endBlockRefPath: string;
+	endTextIndex: number;
+	endCharOffset: number;
+};
+
+export function isSDTPosition(position: unknown): position is SDTPosition {
+	return !!position
+		&& typeof position === 'object'
+		&& 'startBlockRefPath' in position
+		&& 'endBlockRefPath' in position;
+}
 
 type NewAnnotationOptionalFields =
 	'id'
@@ -119,7 +142,6 @@ export type ViewStats = {
 	appearance?: Partial<ReflowableAppearance>;
 	fixedLayout?: boolean;
 	outlinePath?: number[];
-	readingModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -196,6 +218,7 @@ export type ReadAloudState = {
 	annotationPopup: ReadAloudAnnotationPopup | null;
 	segmentAnnotations: Map<number, string>;
 	savedPosition?: Position | null;
+	highlightGranularity: ReadAloudGranularity;
 };
 
 /**
@@ -207,13 +230,15 @@ export type ReadAloudStateSnapshot = {
 	active: boolean;
 	paused: boolean;
 	segmentGranularity: ReadAloudGranularity | null;
+	highlightGranularity: ReadAloudGranularity;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;
+	activeWordSourcePosition: SourcePosition | null;
 	backwardStopIndex: number | null;
 	forwardStopIndex: number | null;
 	targetPosition?: Position;
 	lang: string | null;
-	lastSkipGranularity: 'sentence' | 'paragraph' | null;
+	lastSkipGranularity: ReadAloudGranularity | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
 };
 
@@ -229,14 +254,25 @@ export type ReadAloudStateDelta = {
 	lang?: string | null;
 };
 
+export type SourcePosition = Exclude<Position, SDTPosition>;
+
 export type ReadAloudSegment = {
-	position: Position;
+	position: SDTPosition;
+	sourcePosition?: SourcePosition | null;
+	paragraphSourcePosition?: SourcePosition | null;
 	text: string;
 	granularity: ReadAloudGranularity;
 	anchor: 'paragraphStart' | null;
 };
 
-export type ReadAloudGranularity = 'paragraph' | 'sentence';
+export type ReadAloudGranularity = 'paragraph' | 'sentence' | 'word';
+
+export type ReadAloudTimestamp = {
+	start: number;
+	end: number;
+	charStart: number;
+	charEnd: number;
+};
 
 export type MaybePromise<T> = Promise<T> | T;
 
