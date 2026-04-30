@@ -24,6 +24,8 @@ export interface TextSpanEntry {
  * Converts between SDT DOM positions and source-format positions.
  */
 export interface PositionMapper {
+	readonly index: PositionIndex;
+
 	sdtToSourcePosition(sdtPos: SDTPosition): Position | null;
 
 	sourceToSDTPosition(position: Position): SDTPosition | null;

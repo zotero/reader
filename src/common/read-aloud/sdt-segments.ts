@@ -1,10 +1,4 @@
-import type {
-	StructuredDocumentText,
-	ContentBlockNode,
-	TextNode,
-	ListItemNode,
-	TableRowNode,
-} from '../../../structured-document-text/schema';
+import type { StructuredDocumentText } from '../../../structured-document-text/schema';
 import { getNestedBlockPlainText } from '../../../structured-document-text/src/text';
 import { getSentenceBoundaries } from 'sentencex-ts';
 import type {
@@ -15,12 +9,12 @@ import type {
 import { splitTextToChunks } from './segment-split';
 import { detectLang } from '../lib/detect-lang';
 import { getBaseLanguage } from './lang';
-import { isTextNodeArray } from '../../dom/sdt/lib/utilities';
+import type { PositionIndex } from '../../dom/sdt/lib/position-index';
 
 /**
  * One leaf block's concatenated text with its text-node mappings. The
  * mappings let us convert offsets in the concatenated text back to
- * (blockRefPath, textIndex, charOffset).
+ * (textIndex, charOffset) within the block.
  */
 interface BlockText {
 	blockRefPath: string;
@@ -30,11 +24,9 @@ interface BlockText {
 
 /**
  * Footprint of one SDT text node within its block's concatenated text:
- * text node `textIndex` of block `blockRefPath` covers chars
- * [absStart, absEnd) of the concatenation.
+ * text node `textIndex` covers chars [absStart, absEnd) of the concatenation.
  */
 interface TextNodeMapping {
-	blockRefPath: string;
 	textIndex: number;
 	absStart: number;
 	absEnd: number;
@@ -78,18 +70,16 @@ export function getSDTLang(sdt: StructuredDocumentText): string {
 
 export function buildSDTReadAloudSegments(
 	sdt: StructuredDocumentText,
+	index: PositionIndex,
 	granularity: ReadAloudGranularity,
 	lang?: string,
 ): ReadAloudSegment[] {
-	let blockTexts = extractBlockTexts(sdt.content);
+	let blockTexts = buildBlockTexts(index);
 	let detectedLang = lang || getSDTLang(sdt);
 	let segments: ReadAloudSegment[] = [];
 
-	for (let bt of blockTexts) {
-		let trimmed = bt.text.trim();
-		if (!trimmed) continue;
-
-		let blockSegments = segmentBlock(bt, granularity, detectedLang);
+	for (let block of blockTexts) {
+		let blockSegments = segmentBlock(block, granularity, detectedLang);
 		if (blockSegments.length) {
 			blockSegments[0].anchor = 'paragraphStart';
 		}
@@ -103,97 +93,43 @@ export function buildSDTReadAloudSegments(
  * Build the per-block index that `getSubSDTPosition` consumes. Cheap and only
  * needs to run once per loaded SDT.
  */
-export function buildReadAloudBlockIndex(sdt: StructuredDocumentText): ReadAloudBlockIndex {
-	let index = new Map<string, BlockText>();
-	for (let block of extractBlockTexts(sdt.content)) {
-		index.set(block.blockRefPath, block);
+export function buildReadAloudBlockIndex(index: PositionIndex): ReadAloudBlockIndex {
+	let map = new Map<string, BlockText>();
+	for (let block of buildBlockTexts(index)) {
+		map.set(block.blockRefPath, block);
 	}
-	return index;
+	return map;
 }
 
 /**
- * Walk the SDT content tree and extract concatenated text for each leaf block.
+ * Group PositionIndex entries into per-block concatenated text + mappings.
+ * Reference-marker and back-reference text nodes are dropped from the
+ * concatenated text, but their textIndex slots remain because PositionIndex
+ * still counts them — keeping SDTPositions interchangeable across consumers.
  */
-function extractBlockTexts(content: ContentBlockNode[]): BlockText[] {
-	let result: BlockText[] = [];
-	for (let [i, block] of content.entries()) {
-		if (block.artifact) continue;
-		walkBlock(block, String(i), result);
-	}
-	return result;
-}
-
-function walkBlock(block: ContentBlockNode, refPath: string, result: BlockText[]): void {
-	let content = block.content;
-	if (!content || content.length === 0) return;
-
-	if (isTextNodeArray(content)) {
-		collectTextNodes(content, refPath, result);
-		return;
-	}
-
-	// Container blocks: blockquote, list, table
-	switch (block.type) {
-		case 'blockquote':
-			for (let [i, child] of block.content.entries()) {
-				walkBlock(child, `${refPath}.${i}`, result);
-			}
-			break;
-		case 'list':
-			for (let [i, item] of block.content.entries()) {
-				walkListItem(item, `${refPath}.${i}`, result);
-			}
-			break;
-		case 'table':
-			if (!isTextNodeArray(block.content)) {
-				for (let [i, row] of (block.content as TableRowNode[]).entries()) {
-					for (let [j, cell] of row.content.entries()) {
-						for (let [k, cellBlock] of cell.content.entries()) {
-							walkBlock(cellBlock, `${refPath}.${i}.${j}.${k}`, result);
-						}
-					}
-				}
-			}
-			break;
-	}
-}
-
-function walkListItem(item: ListItemNode, refPath: string, result: BlockText[]): void {
-	if (!item.content || item.content.length === 0) return;
-	if (item.artifact) return;
-
-	if (isTextNodeArray(item.content)) {
-		collectTextNodes(item.content, refPath, result);
-	}
-	else {
-		for (let [j, child] of (item.content as ContentBlockNode[]).entries()) {
-			walkBlock(child, `${refPath}.${j}`, result);
+function buildBlockTexts(index: PositionIndex): BlockText[] {
+	let byPath = new Map<string, BlockText>();
+	let order: string[] = [];
+	for (let entry of index.entries) {
+		let block = byPath.get(entry.blockRefPath);
+		if (!block) {
+			block = { blockRefPath: entry.blockRefPath, text: '', mappings: [] };
+			byPath.set(entry.blockRefPath, block);
+			order.push(entry.blockRefPath);
 		}
-	}
-}
-
-function collectTextNodes(textNodes: TextNode[], refPath: string, result: BlockText[]): void {
-	let text = '';
-	let mappings: TextNodeMapping[] = [];
-
-	for (let [i, textNode] of textNodes.entries()) {
-		let nodeText = textNode.text;
+		if (entry.textNode.refs || entry.textNode.backRefs) continue;
+		let nodeText = entry.textNode.text;
 		if (!nodeText) continue;
-		// Skip reference markers and back-reference targets (e.g. "[1]", footnote numbers)
-		// but keep textIndex counting intact so positions align with the PositionIndex
-		if (textNode.refs || textNode.backRefs) continue;
-		mappings.push({
-			blockRefPath: refPath,
-			textIndex: i,
-			absStart: text.length,
-			absEnd: text.length + nodeText.length,
+		block.mappings.push({
+			textIndex: entry.textIndex,
+			absStart: block.text.length,
+			absEnd: block.text.length + nodeText.length,
 		});
-		text += nodeText;
+		block.text += nodeText;
 	}
-
-	if (text.trim()) {
-		result.push({ blockRefPath: refPath, text, mappings });
-	}
+	return order
+		.map(path => byPath.get(path)!)
+		.filter(b => b.text.trim());
 }
 
 /**
@@ -210,7 +146,7 @@ function segmentBlock(
 		// If sentence splitting failed, treat the whole block as one segment
 		let text = block.text.trim().replace(/\s+/g, ' ');
 		if (!text) return [];
-		let pos = offsetRangeToSDTPosition(block.mappings, 0, block.text.length);
+		let pos = offsetRangeToSDTPosition(block, 0, block.text.length);
 		if (!pos) return [];
 		return [{
 			text,
@@ -241,14 +177,14 @@ function splitToSentences(text: string, lang: string): [number, number][] {
  * becomes one segment.
  */
 function segmentBlockAsSentences(
-	bt: BlockText,
+	block: BlockText,
 	sentences: [number, number][],
 	granularity: ReadAloudGranularity,
 ): ReadAloudSegment[] {
 	let segments: ReadAloudSegment[] = [];
 
 	for (let [sentStart, sentEnd] of sentences) {
-		let sentText = bt.text.slice(sentStart, sentEnd);
+		let sentText = block.text.slice(sentStart, sentEnd);
 		let chunks = splitTextToChunks(sentText);
 
 		for (let [chunkStart, chunkEnd] of chunks) {
@@ -257,7 +193,7 @@ function segmentBlockAsSentences(
 
 			let sourceStart = sentStart + chunkStart;
 			let sourceEnd = sentStart + chunkEnd;
-			let pos = offsetRangeToSDTPosition(bt.mappings, sourceStart, sourceEnd);
+			let pos = offsetRangeToSDTPosition(block, sourceStart, sourceEnd);
 			if (!pos) continue;
 
 			segments.push({
@@ -331,7 +267,7 @@ export function getSubSDTPosition(
 	if (rawOffsetAtStart < 0 || rawOffsetAtEnd < 0) return null;
 
 	return offsetRangeToSDTPosition(
-		block.mappings,
+		block,
 		sourceRange.start + rawOffsetAtStart,
 		sourceRange.start + rawOffsetAtEnd,
 	);
@@ -339,20 +275,16 @@ export function getSubSDTPosition(
 
 /**
  * Translate a segment's SDTPosition (text-node-relative offsets) back to the
- * [start, end) range it covers in the block's concatenated text.
+ * [start, end) range it covers in the block's concatenated text. The block was
+ * already looked up by startBlockRefPath, so endBlockRefPath equality is
+ * implicit for any well-formed in-block segment.
  */
 function sourceRangeForSegment(
 	block: BlockText,
 	position: SDTPosition,
 ): { start: number; end: number } | null {
-	let startMapping = block.mappings.find(
-		mapping => mapping.blockRefPath === position.startBlockRefPath
-			&& mapping.textIndex === position.startTextIndex
-	);
-	let endMapping = block.mappings.find(
-		mapping => mapping.blockRefPath === position.endBlockRefPath
-			&& mapping.textIndex === position.endTextIndex
-	);
+	let startMapping = block.mappings.find(m => m.textIndex === position.startTextIndex);
+	let endMapping = block.mappings.find(m => m.textIndex === position.endTextIndex);
 	if (!startMapping || !endMapping) return null;
 	return {
 		start: startMapping.absStart + position.startCharOffset,
@@ -382,7 +314,7 @@ function segmentBlockAsParagraphs(
 	for (let [chunkStart, chunkEnd] of firstChunks) {
 		let text = firstSlice.slice(chunkStart, chunkEnd).trim().replace(/\s+/g, ' ');
 		if (!text) continue;
-		let pos = offsetRangeToSDTPosition(block.mappings, firstStart + chunkStart, firstStart + chunkEnd);
+		let pos = offsetRangeToSDTPosition(block, firstStart + chunkStart, firstStart + chunkEnd);
 		if (!pos) continue;
 		segments.push({ text, position: pos, granularity, anchor: null });
 	}
@@ -395,7 +327,7 @@ function segmentBlockAsParagraphs(
 	for (let [chunkStart, chunkEnd] of restChunks) {
 		let text = restSlice.slice(chunkStart, chunkEnd).trim().replace(/\s+/g, ' ');
 		if (!text) continue;
-		let pos = offsetRangeToSDTPosition(block.mappings, restStart + chunkStart, restStart + chunkEnd);
+		let pos = offsetRangeToSDTPosition(block, restStart + chunkStart, restStart + chunkEnd);
 		if (!pos) continue;
 		segments.push({ text, position: pos, granularity, anchor: null });
 	}
@@ -408,19 +340,19 @@ function segmentBlockAsParagraphs(
  * SDTPosition by locating the start and end text-node mappings.
  */
 function offsetRangeToSDTPosition(
-	mappings: TextNodeMapping[],
+	block: BlockText,
 	start: number,
 	end: number,
 ): SDTPosition | null {
-	let startMapping = findMappingForOffset(mappings, start);
-	let endMapping = findMappingForOffset(mappings, Math.max(start, end - 1));
+	let startMapping = findMappingForOffset(block.mappings, start);
+	let endMapping = findMappingForOffset(block.mappings, Math.max(start, end - 1));
 	if (!startMapping || !endMapping) return null;
 
 	return {
-		startBlockRefPath: startMapping.blockRefPath,
+		startBlockRefPath: block.blockRefPath,
 		startTextIndex: startMapping.textIndex,
 		startCharOffset: start - startMapping.absStart,
-		endBlockRefPath: endMapping.blockRefPath,
+		endBlockRefPath: block.blockRefPath,
 		endTextIndex: endMapping.textIndex,
 		endCharOffset: end - endMapping.absStart,
 	};

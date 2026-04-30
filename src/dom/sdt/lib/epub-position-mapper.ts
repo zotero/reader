@@ -17,7 +17,7 @@ interface PathEntry {
 }
 
 export class EPUBPositionMapper implements PositionMapper {
-	private _index: PositionIndex;
+	readonly index: PositionIndex;
 
 	/**
 	 * All entries with their expanded CFI paths, for text-level matching.
@@ -32,7 +32,7 @@ export class EPUBPositionMapper implements PositionMapper {
 	private readonly _blockPathIndex: Map<string, TextSpanEntry[]>;
 
 	constructor(index: PositionIndex) {
-		this._index = index;
+		this.index = index;
 		this._pathEntries = [];
 		this._blockPathIndex = new Map();
 
@@ -68,10 +68,10 @@ export class EPUBPositionMapper implements PositionMapper {
 	sdtToSourcePosition(sdtPos: SDTPosition): Position | null {
 		let { startBlockRefPath, startTextIndex, startCharOffset,
 			endBlockRefPath, endTextIndex, endCharOffset } = sdtPos;
-		let startEntry = this._index.findEntry(startBlockRefPath, startTextIndex);
+		let startEntry = this.index.findEntry(startBlockRefPath, startTextIndex);
 		let endEntry = (startBlockRefPath === endBlockRefPath && startTextIndex === endTextIndex)
 			? startEntry
-			: this._index.findEntry(endBlockRefPath, endTextIndex);
+			: this.index.findEntry(endBlockRefPath, endTextIndex);
 		if (!startEntry || !endEntry) return null;
 
 		let startPath = this._getExpandedPath(startEntry);
@@ -100,7 +100,7 @@ export class EPUBPositionMapper implements PositionMapper {
 	): number {
 		let cumulative = 0;
 		let started = false;
-		for (let e of this._index.entries) {
+		for (let e of this.index.entries) {
 			if (e === origin) started = true;
 			if (!started) continue;
 			if (e.blockRefPath !== entry.blockRefPath) continue;

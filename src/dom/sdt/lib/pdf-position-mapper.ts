@@ -23,7 +23,7 @@ interface EntryCache {
 }
 
 export class PDFPositionMapper implements PositionMapper {
-	private _index: PositionIndex;
+	readonly index: PositionIndex;
 
 	/** Entries grouped by page index for fast spatial lookups. */
 	private _pageIndex: Map<number, EntryCache[]>;
@@ -32,7 +32,7 @@ export class PDFPositionMapper implements PositionMapper {
 	private _cache: EntryCache[];
 
 	constructor(index: PositionIndex) {
-		this._index = index;
+		this.index = index;
 		this._cache = [];
 		this._pageIndex = new Map();
 
@@ -337,7 +337,7 @@ export class PDFPositionMapper implements PositionMapper {
 		}
 
 		if (!bestEntry) return null;
-		let blockEntries = this._index.getBlockEntries(bestEntry.blockRefPath);
+		let blockEntries = this.index.getBlockEntries(bestEntry.blockRefPath);
 		let first = blockEntries[0];
 		let last = blockEntries[blockEntries.length - 1];
 		return {
