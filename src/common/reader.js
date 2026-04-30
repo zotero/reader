@@ -1129,7 +1129,7 @@ class Reader {
 				}
 				this._sdtData = data;
 				this._sdtPositionMapper = createPositionMapper(data);
-				this._readAloudBlocks = buildReadAloudBlockIndex(data);
+				this._readAloudBlocks = buildReadAloudBlockIndex(this._sdtPositionMapper.index);
 			})();
 		}
 		return this._sdtLoadPromise;
@@ -1211,7 +1211,7 @@ class Reader {
 		let granularity = manager.segmentGranularity;
 		if (!granularity) return;
 
-		let segments = buildSDTReadAloudSegments(this._sdtData, granularity);
+		let segments = buildSDTReadAloudSegments(this._sdtData, this._sdtPositionMapper.index, granularity);
 		if (!segments.length) {
 			manager.clearSegments();
 			return;

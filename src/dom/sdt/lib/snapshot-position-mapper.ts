@@ -15,7 +15,7 @@ interface SelectorEntry {
 }
 
 export class SnapshotPositionMapper implements PositionMapper {
-	private _index: PositionIndex;
+	readonly index: PositionIndex;
 
 	/** Entries grouped by their CSS selector string for O(1) lookup. */
 	private _selectorIndex: Map<string, SelectorEntry[]>;
@@ -24,7 +24,7 @@ export class SnapshotPositionMapper implements PositionMapper {
 	private _blockSelectorIndex: Map<string, TextSpanEntry[]>;
 
 	constructor(index: PositionIndex) {
-		this._index = index;
+		this.index = index;
 		this._selectorIndex = new Map();
 		this._blockSelectorIndex = new Map();
 
@@ -67,7 +67,7 @@ export class SnapshotPositionMapper implements PositionMapper {
 	sdtToSourcePosition(sdtPos: SDTPosition): Position | null {
 		let { startBlockRefPath, startTextIndex, startCharOffset,
 			endBlockRefPath, endTextIndex, endCharOffset } = sdtPos;
-		let startEntry = this._index.findEntry(startBlockRefPath, startTextIndex);
+		let startEntry = this.index.findEntry(startBlockRefPath, startTextIndex);
 		if (!startEntry) return null;
 
 		let blockAnchor = startEntry.blockAnchor as DomAnchor | null;
@@ -88,8 +88,8 @@ export class SnapshotPositionMapper implements PositionMapper {
 			return resolveSelectorMap(selectorMap, startCharOffset, endCharOffset, textAnchor?.deltaMap);
 		}
 
-		let startAbsOffset = this._index.computeAbsoluteCharOffset(startBlockRefPath, startTextIndex, startCharOffset);
-		let endAbsOffset = this._index.computeAbsoluteCharOffset(endBlockRefPath, endTextIndex, endCharOffset);
+		let startAbsOffset = this.index.computeAbsoluteCharOffset(startBlockRefPath, startTextIndex, startCharOffset);
+		let endAbsOffset = this.index.computeAbsoluteCharOffset(endBlockRefPath, endTextIndex, endCharOffset);
 
 		if (startBlockRefPath === endBlockRefPath) {
 			return resolveSelectorMap(selectorMap, startAbsOffset, endAbsOffset, textAnchor?.deltaMap);
