@@ -109,8 +109,7 @@ export class PDFPositionMapper implements PositionMapper {
 				}
 			}
 			else {
-				let anchorPageRects = (entry.textNode.anchor as PdfAnchor | undefined)?.pageRects
-					|| (entry.blockAnchor as PdfAnchor | null)?.pageRects;
+				let anchorPageRects = (entry.textNode.anchor as PdfAnchor | undefined)?.pageRects;
 				if (anchorPageRects) {
 					for (let pr of anchorPageRects) {
 						let pageRects = rectsByPage.get(pr[0]);
@@ -231,8 +230,7 @@ export class PDFPositionMapper implements PositionMapper {
 				}
 			}
 			else {
-				let anchorPageRects = (entry.textNode.anchor as PdfAnchor | undefined)?.pageRects
-					|| (entry.blockAnchor as PdfAnchor | null)?.pageRects;
+				let anchorPageRects = (entry.textNode.anchor as PdfAnchor | undefined)?.pageRects;
 				if (anchorPageRects) {
 					for (let pr of anchorPageRects) {
 						let blockRect = [pr[1], pr[2], pr[3], pr[4]];
@@ -257,6 +255,12 @@ export class PDFPositionMapper implements PositionMapper {
 							}
 						}
 					}
+				}
+				else {
+					// No per-text-node positioning info (typically a whitespace
+					// span). Skip without breaking, so a run of matches can span
+					// across these "transparent" entries.
+					continue;
 				}
 			}
 
