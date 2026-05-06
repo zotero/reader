@@ -215,14 +215,10 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		return this._createDOMRange(sdtPos);
 	}
 
-	/**
-	 * Get the current text selection as SDT coordinates, if any.
-	 */
-	getSelectionAsSDTRange(): SDTPosition | null {
+	override getSelectionPosition(): SDTPosition | null {
 		let sel = this._iframeDocument.getSelection();
-		if (!sel || sel.isCollapsed) return null;
-		let range = sel.getRangeAt(0);
-		return this._resolveRangeToSDT(range);
+		if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+		return this._resolveRangeToSDT(sel.getRangeAt(0));
 	}
 
 	protected override _getAnnotationDisplayedRange(annotation: Partial<WADMAnnotation> & Pick<WADMAnnotation, 'type' | 'position'>): Range | null {

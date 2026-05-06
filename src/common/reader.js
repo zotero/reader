@@ -32,11 +32,13 @@ import { addFTL, getLocalizedString } from '../fluent';
 import { getVoicePreferencesURL } from './lib/read-aloud-links';
 import { resolveLanguage } from './read-aloud/lang';
 import { ReadAloudManager } from './read-aloud/manager';
-import { createPositionMapper } from '../dom/sdt/lib/create-position-mapper';
+import { createPositionMapper, createEmptyPositionMapper } from '../dom/sdt/lib/create-position-mapper';
 import {
 	buildSDTReadAloudSegments,
+	buildSDTReadAloudSegmentsFromChunk,
 	buildReadAloudBlockIndex,
 	getSDTLang,
+	detectLangFromContent,
 	findSegmentIndexForSDTPosition,
 	findSegmentIndexForSourcePosition,
 	getSubSDTPosition,
@@ -110,6 +112,8 @@ class Reader {
 		this._onLogIn = options.onLogIn;
 		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
 		this._getSDT = options.getSDT || null;
+		this._getSDTStream = options.getSDTStream || null;
+		this._sdtStreamState = null;
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
@@ -926,7 +930,7 @@ class Reader {
 				if (!this._sdtData) {
 					throw new Error('SDT data unavailable');
 				}
-				let sdtLocation = baseView?.getSDTLocation?.(this._sdtData);
+				let sdtLocation = baseView?.getSDTLocation(this._sdtData);
 
 				if (baseView?._iframe) {
 					baseView._iframe.style.visibility = 'hidden';
@@ -1203,176 +1207,310 @@ class Reader {
 		this._state.readAloudState.segmentAnnotations = new Map();
 	}
 
+	// Populate the manager with segments at `granularity`, picking from one of
+	// four sources depending on what's available:
+	//   1. An in-flight stream: Adopt it.
+	//   2. Already-cached full SDT: Segment it.
+	//   3. Streaming worker available: Kick off a stream.
+	//   4. No streaming: Fall back to one-shot SDT load and segmentation.
 	async _requestReadAloudSegments() {
-		await this._loadSDTData();
-		if (!this._sdtData) return;
-
-		let manager = this._readAloudManager;
-		let granularity = manager.segmentGranularity;
+		let granularity = this._readAloudManager.segmentGranularity;
 		if (!granularity) return;
 
+		if (this._sdtStreamState) {
+			this._adoptActiveStream(granularity);
+			return;
+		}
+		if (this._sdtData) {
+			await this._setReadAloudSegmentsFromFullSDT(granularity);
+			return;
+		}
+		if (this._getSDTStream) {
+			await this._streamReadAloudSegments(granularity);
+			return;
+		}
+		await this._loadSDTData();
+		if (this._sdtData) {
+			await this._setReadAloudSegmentsFromFullSDT(granularity);
+		}
+	}
+
+	// Hook an existing stream up to the requested granularity. On the first
+	// activation (preload had no granularity) we capture the user's intended
+	// start position; the pivot then rebuilds segments from cached chunks.
+	_adoptActiveStream(granularity) {
+		let state = this._sdtStreamState;
+		if (!state.pendingResolution && state.cachedSegments.length === 0) {
+			state.pendingStart = this._captureReadAloudStart();
+			state.pendingResolution = true;
+		}
+		if (state.granularity !== granularity) {
+			this._pivotStreamGranularity(granularity);
+		}
+	}
+
+	async _setReadAloudSegmentsFromFullSDT(granularity) {
+		let manager = this._readAloudManager;
 		let segments = buildSDTReadAloudSegments(this._sdtData, this._sdtPositionMapper.index, granularity);
 		if (!segments.length) {
 			manager.clearSegments();
 			return;
 		}
-
-		// Pre-materialize source-format positions so base views can resolve them
-		if (this._sdtPositionMapper) {
-			let paragraphStartIndex = 0;
-			for (let i = 0; i < segments.length; i++) {
-				let segment = segments[i];
-				segment.sourcePosition = this._sdtPositionMapper.sdtToSourcePosition(segment.position);
-				if (segment.anchor === 'paragraphStart') {
-					paragraphStartIndex = i;
-				}
-				// At the end of each paragraph, compute the spanning source position
-				if (i + 1 >= segments.length || segments[i + 1].anchor === 'paragraphStart') {
-					let firstPosition = segments[paragraphStartIndex].position;
-					let lastPosition = segment.position;
-					let paragraphSourcePosition = this._sdtPositionMapper.sdtToSourcePosition({
-						startBlockRefPath: firstPosition.startBlockRefPath,
-						startTextIndex: firstPosition.startTextIndex,
-						startCharOffset: firstPosition.startCharOffset,
-						endBlockRefPath: lastPosition.endBlockRefPath,
-						endTextIndex: lastPosition.endTextIndex,
-						endCharOffset: lastPosition.endCharOffset,
-					});
-					for (let j = paragraphStartIndex; j <= i; j++) {
-						segments[j].paragraphSourcePosition = paragraphSourcePosition;
-					}
-				}
-			}
-		}
-
-		let backwardStopIndex = null;
-		let forwardStopIndex = null;
-
-		// Check for a text selection in the active view
-		let selectionSDT = this._getReadAloudSelectionAsSDTRange();
-		if (selectionSDT) {
-			// Collapse selection in the view
-			let activeView = this._lastView;
-			let sel = activeView?._iframeDocument?.getSelection?.();
-			if (sel && !sel.isCollapsed) {
-				sel.collapseToStart();
-			}
-			backwardStopIndex = findSegmentIndexForSDTPosition(segments, selectionSDT);
-		}
-		else {
-			let targetPosition = manager.consumeTargetPosition();
-			if (targetPosition) {
-				backwardStopIndex = this._findReadAloudStartIndex(segments, targetPosition);
-			}
-			else {
-				backwardStopIndex = this._findFirstVisibleSegmentIndex(segments);
-			}
-		}
-
+		this._materializeSourcePositions(segments);
+		let { backwardStopIndex, forwardStopIndex } = this._computeReadAloudStopIndices(segments);
 		if (!manager.lang) {
 			manager.setLanguage(getSDTLang(this._sdtData));
 		}
 		manager.setSegments(segments, backwardStopIndex, forwardStopIndex);
 	}
 
-	/**
-	 * Get the current text selection as SDT coordinates.
-	 */
-	_getReadAloudSelectionAsSDTRange() {
-		let activeView = this._lastView;
-		if (!activeView) return null;
+	async _streamReadAloudSegments(granularity) {
+		if (this._sdtStreamState) return;
 
-		if (activeView instanceof SDTView) {
-			return activeView.getSelectionAsSDTRange?.();
+		let manager = this._readAloudManager;
+		this._sdtPositionMapper = createEmptyPositionMapper(this._type);
+		this._readAloudBlocks = null;
+
+		// granularity is null in preload mode (popup just opened, no voice
+		// picked yet), so we cache chunks and detect language but defer segment
+		// building until the user activates and a granularity is known.
+		// pendingStart is the captured start Position (or null, meaning that we
+		// use _findFirstVisibleSegmentIndex); pendingResolution stays true until
+		// playback locks onto a real segment so we keep retrying as chunks arrive.
+		let state = {
+			granularity,
+			lang: null,
+			rawChunks: [],
+			cachedSegments: [],
+			pendingStart: granularity ? this._captureReadAloudStart() : null,
+			pendingResolution: !!granularity,
+			abort: null,
+		};
+		this._sdtStreamState = state;
+
+		let onChunk = chunk => this._handleStreamChunk(chunk, state);
+		let captureAbort = (abort) => {
+			return state.abort = abort;
+		};
+
+		try {
+			await this._getSDTStream(this._password, onChunk, captureAbort);
+		}
+		catch (e) {
+			console.warn('Streaming SDT request failed:', e);
+		}
+		finally {
+			if (this._sdtStreamState === state) {
+				this._sdtStreamState = null;
+				if (state.cachedSegments.length) {
+					if (state.pendingResolution) {
+						let idx = this._findReadAloudStart(manager.segments ?? [], state.pendingStart);
+						manager.repositionTo(idx ?? 0);
+					}
+					manager.markSegmentsComplete();
+				}
+				else if (state.granularity && this._sdtData) {
+					await this._setReadAloudSegmentsFromFullSDT(state.granularity);
+				}
+			}
+		}
+	}
+
+	_handleStreamChunk(chunk, state) {
+		if (this._sdtStreamState !== state) return;
+		if (chunk.kind === 'final') {
+			this._sdtData = chunk.structure;
+			return;
+		}
+		if (chunk.kind !== 'partial') return;
+
+		state.rawChunks.push(chunk);
+		this._sdtPositionMapper.index.appendContent(chunk.content, chunk.contentIndexOffset);
+		this._sdtPositionMapper.refresh?.();
+		this._readAloudBlocks = buildReadAloudBlockIndex(this._sdtPositionMapper.index);
+
+		if (!state.lang) {
+			let detected = detectLangFromContent(chunk.content);
+			if (detected) {
+				state.lang = detected;
+				if (!this._readAloudManager.lang) {
+					this._readAloudManager.setLanguage(detected);
+					this._updateReadAloudUIState({ lang: detected });
+					this._syncPersistedVoicesToManager();
+				}
+			}
 		}
 
-		// Base view: get selection as source position, then convert to SDT
-		if (!this._sdtPositionMapper) return null;
-		let sel = activeView._iframeDocument?.getSelection?.();
-		if (!sel || sel.isCollapsed) {
-			// PDF uses _selectionRanges
-			if (activeView._selectionRanges?.length && !activeView._selectionRanges[0].collapsed) {
-				// For PDF, we can't easily convert selection to SDT -- let the view handle it
-				return null;
+		if (!state.granularity) return;
+
+		let chunkSegments = buildSDTReadAloudSegmentsFromChunk(chunk, state.granularity, state.lang || 'en');
+		if (!chunkSegments.length) return;
+
+		this._materializeSourcePositions(chunkSegments);
+
+		let manager = this._readAloudManager;
+		if (state.cachedSegments.length === 0) {
+			state.cachedSegments = chunkSegments;
+			let backwardStopIndex = this._resolveStreamBackwardStopIndex(state.cachedSegments, state);
+			manager.setSegments(state.cachedSegments, backwardStopIndex, null, { streaming: true });
+		}
+		else {
+			manager.appendSegments(chunkSegments);
+		}
+
+		if (state.pendingResolution) {
+			let idx = this._findReadAloudStart(state.cachedSegments, state.pendingStart, { exact: true });
+			if (idx !== null) {
+				state.pendingResolution = false;
+				state.pendingStart = null;
+				manager.repositionTo(idx);
 			}
+		}
+	}
+
+	_pivotStreamGranularity(newGranularity) {
+		let state = this._sdtStreamState;
+		if (!state || state.granularity === newGranularity) return;
+		state.granularity = newGranularity;
+
+		let manager = this._readAloudManager;
+		let segments = [];
+		for (let chunk of state.rawChunks) {
+			let chunkSegments = buildSDTReadAloudSegmentsFromChunk(chunk, newGranularity, state.lang || 'en');
+			if (chunkSegments.length) {
+				this._materializeSourcePositions(chunkSegments);
+				segments.push(...chunkSegments);
+			}
+		}
+
+		if (segments.length === 0) {
+			state.cachedSegments = [];
+			manager.clearSegments();
+			return;
+		}
+		state.cachedSegments = segments;
+		let backwardStopIndex = this._resolveStreamBackwardStopIndex(segments, state);
+		manager.setSegments(segments, backwardStopIndex, null, { streaming: true });
+	}
+
+	// Selection > explicit target. Returns the captured Position (or null if
+	// neither). Selection/target is consumed as a side effect.
+	// When null, fall back to the first in-view segment.
+	_captureReadAloudStart() {
+		let selectionPosition = this._lastView?.getSelectionPosition();
+		if (selectionPosition) {
+			this._lastView.clearSelection();
+			return selectionPosition;
+		}
+		return this._readAloudManager.consumeTargetPosition() ?? null;
+	}
+
+	// Resolve the captured start (or visible-position fallback) to a segment
+	// index. With exact: true, returns null when the target hasn't been reached
+	// in segments yet.
+	_findReadAloudStart(segments, capturedStart, { exact = false } = {}) {
+		if (!segments.length) return exact ? null : 0;
+		if (capturedStart) {
+			return this._findReadAloudStartIndex(segments, capturedStart, { exact });
+		}
+		return this._findFirstVisibleSegmentIndex(segments, { exact });
+	}
+
+	// Returns the segment index for the controller's start, or segments.length
+	// to park playback when the target isn't yet loaded.
+	_resolveStreamBackwardStopIndex(segments, state) {
+		if (!segments.length) return 0;
+		if (!state.pendingResolution) return 0;
+		let idx = this._findReadAloudStart(segments, state.pendingStart, { exact: true });
+		if (idx !== null) {
+			state.pendingResolution = false;
+			state.pendingStart = null;
+			return idx;
+		}
+		return segments.length;
+	}
+
+	_cancelStreamingSDT() {
+		let state = this._sdtStreamState;
+		if (!state) return;
+		try {
+			state.abort?.();
+		}
+		catch {}
+		this._sdtStreamState = null;
+	}
+
+	// Pre-materialize sourcePosition and paragraphSourcePosition so base views can
+	// highlight the active paragraph regardless of which segment within it is
+	// playing.
+	_materializeSourcePositions(segments) {
+		if (!this._sdtPositionMapper) return;
+		let paragraphStartIndex = 0;
+		for (let i = 0; i < segments.length; i++) {
+			let segment = segments[i];
+			segment.sourcePosition = this._sdtPositionMapper.sdtToSourcePosition(segment.position);
+			if (segment.anchor === 'paragraphStart') {
+				paragraphStartIndex = i;
+			}
+			if (i + 1 >= segments.length || segments[i + 1].anchor === 'paragraphStart') {
+				let firstPosition = segments[paragraphStartIndex].position;
+				let lastPosition = segment.position;
+				let paragraphSourcePosition = this._sdtPositionMapper.sdtToSourcePosition({
+					startBlockRefPath: firstPosition.startBlockRefPath,
+					startTextIndex: firstPosition.startTextIndex,
+					startCharOffset: firstPosition.startCharOffset,
+					endBlockRefPath: lastPosition.endBlockRefPath,
+					endTextIndex: lastPosition.endTextIndex,
+					endCharOffset: lastPosition.endCharOffset,
+				});
+				for (let j = paragraphStartIndex; j <= i; j++) {
+					segments[j].paragraphSourcePosition = paragraphSourcePosition;
+				}
+			}
+		}
+	}
+
+	_computeReadAloudStopIndices(segments) {
+		let position = this._captureReadAloudStart();
+		return {
+			backwardStopIndex: position
+				? this._findReadAloudStartIndex(segments, position)
+				: this._findFirstVisibleSegmentIndex(segments),
+			forwardStopIndex: null,
+		};
+	}
+
+	// `exact: true` returns null if the target hasn't been reached in `segments`
+	// (used by streaming consumers that need to know if their start position
+	// has actually arrived yet); without it, falls back to the last segment.
+	_findReadAloudStartIndex(segments, targetPosition, { exact = false } = {}) {
+		let opts = { exact };
+		if (isSDTPosition(targetPosition)) {
+			return findSegmentIndexForSDTPosition(segments, targetPosition, opts);
+		}
+		if (!this._sdtPositionMapper) {
 			return null;
 		}
-		let range = sel.getRangeAt(0);
-		let selector = activeView.toSelector?.(range);
-		if (!selector) return null;
-		return this._sdtPositionMapper.sourceToSDTPosition(selector);
+		return findSegmentIndexForSourcePosition(segments, targetPosition, this._sdtPositionMapper, opts);
 	}
 
-	/**
-	 * Find the segment index for a target position (SDT or source-format).
-	 */
-	_findReadAloudStartIndex(segments, targetPosition) {
-		if (isSDTPosition(targetPosition)) {
-			return findSegmentIndexForSDTPosition(segments, targetPosition);
-		}
-		if (!this._sdtPositionMapper) return null;
-		// RangeRef from a DOM view: convert to a Selector via that view
-		if (targetPosition && typeof targetPosition === 'object' && 'range' in targetPosition) {
-			let activeView = this._lastView;
-			let selector = activeView?.toSelector?.(targetPosition.range.toRange());
-			if (!selector) return null;
-			return findSegmentIndexForSourcePosition(segments, selector, this._sdtPositionMapper);
-		}
-		return findSegmentIndexForSourcePosition(segments, targetPosition, this._sdtPositionMapper);
-	}
-
-	/**
-	 * Find the first segment that corresponds to the currently visible content.
-	 */
-	_findFirstVisibleSegmentIndex(segments) {
+	// Find the first segment containing the user's currently-visible block.
+	// Each view exposes `getVisibleBlockIndex(sdtData)`; we just scan segments
+	// for one whose blockRefPath sits within that top-level block. With
+	// `exact: true`, returns null when the visible block isn't in `segments`
+	// (used by streaming to park playback until the region is loaded).
+	_findFirstVisibleSegmentIndex(segments, { exact = false } = {}) {
 		if (!segments.length) return null;
-
-		// Ask the SDT view for visible block index
-		let sdtView = this._primarySDTView;
-		if (sdtView) {
-			let blockIndex = sdtView.getVisibleBlockIndex?.();
-			if (blockIndex !== null && blockIndex !== undefined) {
-				let refPathPrefix = String(blockIndex);
-				for (let i = 0; i < segments.length; i++) {
-					let pos = segments[i].position;
-					if (pos.startBlockRefPath === refPathPrefix
-							|| pos.startBlockRefPath.startsWith(refPathPrefix + '.')) {
-						return i;
-					}
-				}
+		let view = this._primarySDTView ?? this._primaryView;
+		let blockIndex = view.getVisibleBlockIndex(this._sdtData);
+		if (blockIndex !== null && blockIndex !== undefined) {
+			let prefix = String(blockIndex);
+			for (let i = 0; i < segments.length; i++) {
+				let path = segments[i].position.startBlockRefPath;
+				if (path === prefix || path.startsWith(prefix + '.')) return i;
 			}
 		}
-
-		// For base views, ask for the current location and map through
-		let baseView = this._primaryView;
-		if (baseView && this._sdtPositionMapper) {
-			let viewState = this._state.primaryViewState;
-			if (this._type === 'pdf' && viewState?.pageIndex !== undefined) {
-				// Find first segment on the current PDF page
-				for (let i = 0; i < segments.length; i++) {
-					let sourcePos = this._sdtPositionMapper.sdtToSourcePosition(segments[i].position);
-					if (sourcePos && sourcePos.pageIndex >= viewState.pageIndex) {
-						return i;
-					}
-				}
-			}
-			// For DOM views, try to find visible content
-			if (baseView.getSDTLocation) {
-				let sdtLocation = baseView.getSDTLocation(this._sdtData);
-				if (sdtLocation?.blockIndex !== undefined) {
-					let refPathPrefix = String(sdtLocation.blockIndex);
-					for (let i = 0; i < segments.length; i++) {
-						let pos = segments[i].position;
-						if (pos.startBlockRefPath === refPathPrefix
-								|| pos.startBlockRefPath.startsWith(refPathPrefix + '.')) {
-							return i;
-						}
-					}
-				}
-			}
-		}
-
-		return 0;
+		return exact ? null : 0;
 	}
 
 	/**
@@ -1441,6 +1579,7 @@ class Reader {
 		}
 		else {
 			this._readAloudManager.deactivate();
+			this._cancelStreamingSDT();
 			this._resetReadAloudSegmentState();
 			this._updateState({
 				readAloudFirstRunPopup: false,
@@ -1504,14 +1643,21 @@ class Reader {
 
 	_loadSDTDataBeforeReadAloud() {
 		this._readAloudManager.loadVoices(this._state.loggedIn);
-		this._loadSDTData().then(() => {
-			if (this._sdtData && !this._readAloudManager.lang) {
-				let lang = getSDTLang(this._sdtData);
-				this._readAloudManager.setLanguage(lang);
-				this._updateReadAloudUIState({ lang });
-				this._syncPersistedVoicesToManager();
+		if (this._getSDTStream) {
+			if (!this._sdtStreamState) {
+				this._streamReadAloudSegments(null);
 			}
-		});
+		}
+		else {
+			this._loadSDTData().then(() => {
+				if (this._sdtData && !this._readAloudManager.lang) {
+					let lang = getSDTLang(this._sdtData);
+					this._readAloudManager.setLanguage(lang);
+					this._updateReadAloudUIState({ lang });
+					this._syncPersistedVoicesToManager();
+				}
+			});
+		}
 		this._syncPersistedVoicesToManager();
 	}
 
@@ -1841,8 +1987,8 @@ class Reader {
 				let { savedPosition } = this._state.readAloudState;
 				let lastReadAloudPosition = savedPosition ?? null;
 				if (isSDTPosition(lastReadAloudPosition)) {
-					let visibleBlockIndex = this._primarySDTView?.getVisibleBlockIndex?.()
-						?? (this._primaryView?.getSDTLocation?.(this._sdtData)?.blockIndex);
+					let view = this._primarySDTView ?? this._primaryView;
+					let visibleBlockIndex = view.getVisibleBlockIndex(this._sdtData);
 					if (visibleBlockIndex !== null && visibleBlockIndex !== undefined) {
 						let savedBlockIndex = parseInt(lastReadAloudPosition.startBlockRefPath.split('.')[0]);
 						if (Math.abs(savedBlockIndex - visibleBlockIndex) > 50) {

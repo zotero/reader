@@ -396,6 +396,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract toDisplayedRange(position: Position): Range | null;
 
+	getSelectionPosition(): Position | null {
+		let sel = this._iframeWindow.getSelection();
+		if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+		return this.toSelector(sel.getRangeAt(0));
+	}
+
+	clearSelection() {
+		this._iframeWindow.getSelection()?.removeAllRanges();
+	}
+
 	protected _getAnnotationDisplayedRange(annotation: Partial<WADMAnnotation> & Pick<WADMAnnotation, 'type' | 'position'>): Range | null {
 		return this.toDisplayedRange(annotation.position);
 	}

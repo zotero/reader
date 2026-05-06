@@ -1,4 +1,4 @@
-import type { StructuredDocumentText } from '../../../structured-document-text/schema';
+import type { ContentBlockNode, StructuredDocumentText } from '../../../structured-document-text/schema';
 import { getNestedBlockPlainText } from '../../../structured-document-text/src/text';
 import { getSentenceBoundaries } from 'sentencex-ts';
 import type {
@@ -9,7 +9,17 @@ import type {
 import { splitTextToChunks } from './segment-split';
 import { detectLang } from '../lib/detect-lang';
 import { getBaseLanguage } from './lang';
-import type { PositionIndex } from '../../dom/sdt/lib/position-index';
+import { PositionIndex } from '../../dom/sdt/lib/position-index';
+
+export interface PartialSDTChunk {
+	kind: 'partial';
+	pages: unknown[];
+	content: ContentBlockNode[];
+	pageIndexOffset: number;
+	contentIndexOffset: number;
+	pageIndexRange: [number, number];
+	totalPageCount: number;
+}
 
 /**
  * One leaf block's concatenated text with its text-node mappings. The
@@ -52,11 +62,13 @@ export function getSDTLang(sdt: StructuredDocumentText): string {
 	if (typeof lang === 'string' && lang) {
 		return getBaseLanguage(lang);
 	}
+	return detectLangFromContent(sdt.content);
+}
 
-	// Fall back to content detection on first ~25 blocks
+export function detectLangFromContent(content: ContentBlockNode[]): string {
 	let sampleText = '';
 	let count = 0;
-	for (let block of sdt.content) {
+	for (let block of content) {
 		if (block.artifact) continue;
 		let text = getNestedBlockPlainText(block);
 		if (text) {
@@ -76,17 +88,34 @@ export function buildSDTReadAloudSegments(
 ): ReadAloudSegment[] {
 	let blockTexts = buildBlockTexts(index);
 	let detectedLang = lang || getSDTLang(sdt);
-	let segments: ReadAloudSegment[] = [];
+	return buildSegmentsFromBlockTexts(blockTexts, granularity, detectedLang);
+}
 
+function buildSegmentsFromBlockTexts(
+	blockTexts: BlockText[],
+	granularity: ReadAloudGranularity,
+	lang: string,
+): ReadAloudSegment[] {
+	let segments: ReadAloudSegment[] = [];
 	for (let block of blockTexts) {
-		let blockSegments = segmentBlock(block, granularity, detectedLang);
+		let blockSegments = segmentBlock(block, granularity, lang);
 		if (blockSegments.length) {
 			blockSegments[0].anchor = 'paragraphStart';
 		}
 		segments.push(...blockSegments);
 	}
-
 	return segments;
+}
+
+export function buildSDTReadAloudSegmentsFromChunk(
+	chunk: PartialSDTChunk,
+	granularity: ReadAloudGranularity,
+	lang: string,
+): ReadAloudSegment[] {
+	let localIndex = new PositionIndex(null);
+	localIndex.appendContent(chunk.content, chunk.contentIndexOffset);
+	let blockTexts = buildBlockTexts(localIndex);
+	return buildSegmentsFromBlockTexts(blockTexts, granularity, lang);
 }
 
 /**
@@ -386,18 +415,17 @@ export function compareSDTPositions(a: SDTPosition, b: SDTPosition): number {
 	return a.startCharOffset - b.startCharOffset;
 }
 
-/**
- * Find the segment index closest to a given SDT position.
- */
+// Returns the first segment whose end >= target.
+// With exact = false, falls back to the last segment when nothing reaches the target.
+// with exact = true, returns null instead, so streaming consumers can detect whether
+// their start position has actually arrived yet.
 export function findSegmentIndexForSDTPosition(
 	segments: ReadAloudSegment[],
 	sdtPos: SDTPosition,
+	{ exact = false }: { exact?: boolean } = {},
 ): number | null {
-	if (!segments.length) return null;
-
 	for (let i = 0; i < segments.length; i++) {
 		let segPos = segments[i].position as SDTPosition;
-		// Find the first segment whose end is at or past the target start
 		let cmp = compareSDTPositions(
 			{
 				startBlockRefPath: segPos.endBlockRefPath,
@@ -409,23 +437,19 @@ export function findSegmentIndexForSDTPosition(
 			},
 			sdtPos,
 		);
-		if (cmp >= 0) {
-			return i;
-		}
+		if (cmp >= 0) return i;
 	}
-
-	return segments.length - 1;
+	if (exact) return null;
+	return segments.length ? segments.length - 1 : null;
 }
 
-/**
- * Find the segment index for a source-format position by converting through the mapper.
- */
 export function findSegmentIndexForSourcePosition(
 	segments: ReadAloudSegment[],
 	sourcePosition: unknown,
 	mapper: { sourceToSDTPosition(position: unknown): SDTPosition | null },
+	options: { exact?: boolean } = {},
 ): number | null {
 	let sdtPos = mapper.sourceToSDTPosition(sourcePosition);
 	if (!sdtPos) return null;
-	return findSegmentIndexForSDTPosition(segments, sdtPos);
+	return findSegmentIndexForSDTPosition(segments, sdtPos, options);
 }

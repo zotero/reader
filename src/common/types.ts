@@ -68,17 +68,13 @@ export type NavLocation = {
 	scrollYPercent?: number;
 };
 
-export type Position = PDFPosition | Selector | RangeRef | SDTPosition;
+export type Position = PDFPosition | Selector | SDTPosition;
 
 export type PDFPosition = {
 	pageIndex: number;
 	rects?: number[][];
 	paths?: number[][];
 	nextPageRects?: number[][];
-};
-
-export type RangeRef = {
-	range: PersistentRange;
 };
 
 export type SDTPosition = {

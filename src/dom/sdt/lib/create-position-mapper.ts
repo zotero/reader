@@ -4,12 +4,20 @@ import { PDFPositionMapper } from './pdf-position-mapper';
 import { SnapshotPositionMapper } from './snapshot-position-mapper';
 import { EPUBPositionMapper } from './epub-position-mapper';
 
-/**
- * Create a PositionMapper for the given SDT data.
- */
+export type ProcessorType = 'pdf' | 'epub' | 'snapshot';
+
 export function createPositionMapper(sdt: StructuredDocumentText): PositionMapper {
 	let index = new PositionIndex(sdt);
-	switch (sdt.processor.type) {
+	return createPositionMapperForType(sdt.processor.type as ProcessorType, index);
+}
+
+export function createEmptyPositionMapper(type: ProcessorType): PositionMapper {
+	let index = new PositionIndex(null);
+	return createPositionMapperForType(type, index);
+}
+
+function createPositionMapperForType(type: ProcessorType, index: PositionIndex): PositionMapper {
+	switch (type) {
 		case 'pdf':
 			return new PDFPositionMapper(index);
 		case 'epub':
@@ -17,6 +25,6 @@ export function createPositionMapper(sdt: StructuredDocumentText): PositionMappe
 		case 'snapshot':
 			return new SnapshotPositionMapper(index);
 		default:
-			throw new Error(`Unsupported processor type: ${sdt.processor.type}`);
+			throw new Error(`Unsupported processor type: ${type}`);
 	}
 }

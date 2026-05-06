@@ -31,21 +31,32 @@ export interface PositionMapper {
 	sourceToSDTPosition(position: Position): SDTPosition | null;
 
 	transformAnnotationPosition(position: Position, type: AnnotationType): Position;
+
+	// Required by streaming consumers after PositionIndex.appendContent.
+	refresh?(): void;
 }
 
 /**
- * Generic index of SDT text spans. Built once after rendering.
- * This index doesn't know anything about the underlying format.
+ * Generic index of SDT text spans.
+ *
+ * For streaming SDT, pass null to start empty, then call appendContent()
+ * per chunk with the chunk's global content-index offset.
  */
 export class PositionIndex {
 	private _entries: TextSpanEntry[] = [];
 
-	constructor(sdt: StructuredDocumentText) {
-		this._buildIndex(sdt.content);
+	constructor(sdt: StructuredDocumentText | null) {
+		if (sdt) {
+			this._buildIndex(sdt.content, 0);
+		}
 	}
 
 	get entries(): readonly TextSpanEntry[] {
 		return this._entries;
+	}
+
+	appendContent(content: ContentBlockNode[], baseIndex: number) {
+		this._buildIndex(content, baseIndex);
 	}
 
 	findEntry(blockRefPath: string, textIndex: number): TextSpanEntry | null {
@@ -74,10 +85,10 @@ export class PositionIndex {
 		return charOffset;
 	}
 
-	private _buildIndex(content: ContentBlockNode[]) {
+	private _buildIndex(content: ContentBlockNode[], baseIndex: number) {
 		for (let [i, block] of content.entries()) {
 			if (block.artifact) continue;
-			this._walkBlock(block, String(i));
+			this._walkBlock(block, String(baseIndex + i));
 		}
 	}
 

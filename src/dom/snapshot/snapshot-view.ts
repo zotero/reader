@@ -310,6 +310,24 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		return { scrollYPercent: this._getScrollYPercent() };
 	}
 
+	// Top-level SDT block index for the first block at or below the current
+	// scroll position, or null.
+	getVisibleBlockIndex(sdtData: StructuredDocumentText | null): number | null {
+		if (!sdtData?.content?.length) return null;
+		for (let i = 0; i < sdtData.content.length; i++) {
+			let block = sdtData.content[i];
+			if (block.artifact || !block.anchor || !('selectorMap' in block.anchor)) continue;
+			try {
+				let el = this._iframeDocument.body.querySelector(block.anchor.selectorMap);
+				if (el && el.getBoundingClientRect().bottom > 0) {
+					return i;
+				}
+			}
+			catch {}
+		}
+		return null;
+	}
+
 	navigateToSDTBlock(sdtData: StructuredDocumentText, blockIndex: number) {
 		let block = sdtData.content[blockIndex];
 		if (!block.anchor || !('selectorMap' in block.anchor)) return;
