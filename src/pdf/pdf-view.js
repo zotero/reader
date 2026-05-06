@@ -664,13 +664,74 @@ class PDFView {
 		return blockIndex === null ? null : { href: '#sdt-' + blockIndex };
 	}
 
-	// Top-level SDT block index for the page currently in view, or null.
+	// Top-level SDT block index for the first non-artifact block whose
+	// rect overlaps (or is below) the current viewport, or null.
 	getVisibleBlockIndex(sdtData) {
-		let pageIndex = this._iframeWindow?.PDFViewerApplication?.pdfViewer?.currentPageNumber - 1;
-		if (pageIndex === undefined || !sdtData?.pages) return null;
-		let page = sdtData.pages[pageIndex];
-		let firstBlockIndex = page?.contentRanges?.[0]?.start?.ref?.[0];
-		return firstBlockIndex ?? null;
+		let pdfViewer = this._iframeWindow?.PDFViewerApplication?.pdfViewer;
+		let viewerContainer = this._iframeWindow?.document?.getElementById('viewerContainer');
+		if (!pdfViewer || !viewerContainer || !sdtData?.pages || !sdtData?.content) {
+			return null;
+		}
+		let visibleRect = [
+			viewerContainer.scrollLeft,
+			viewerContainer.scrollTop,
+			viewerContainer.scrollLeft + viewerContainer.clientWidth,
+			viewerContainer.scrollTop + viewerContainer.clientHeight,
+		];
+
+		// Cover the page(s) visible in the viewport. Fall back to the current
+		// page when _getVisiblePages reports nothing (e.g., before first paint).
+		let visiblePages = pdfViewer._getVisiblePages().views;
+		let pageIndices = visiblePages.map(v => v.id - 1).sort((a, b) => a - b);
+		if (!pageIndices.length) {
+			let cur = pdfViewer.currentPageNumber - 1;
+			if (cur >= 0) pageIndices = [cur];
+			else return null;
+		}
+
+		for (let pageIdx of pageIndices) {
+			let ranges = sdtData.pages[pageIdx]?.contentRanges;
+			if (!ranges?.length) continue;
+			for (let range of ranges) {
+				let start = range.start?.ref?.[0];
+				let end = range.end?.ref?.[0] ?? start;
+				if (start === undefined) continue;
+				for (let i = start; i <= end; i++) {
+					let block = sdtData.content[i];
+					if (!block || block.artifact) continue;
+					if (this._blockIntersectsRect(block, visibleRect)) {
+						return i;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	// Does any of `block`'s anchor rects, projected into viewer-container
+	// coords, overlap `viewRect` (also in viewer-container coords)? If the
+	// block has no spatial info, treat it as a match so blocks without anchor
+	// data can still anchor a starting point.
+	_blockIntersectsRect(block, viewRect) {
+		let pageRects = block.anchor?.pageRects;
+		if (!pageRects?.length) return true;
+		for (let pr of pageRects) {
+			let rect;
+			try {
+				rect = this.getPositionBoundingViewRect({
+					pageIndex: pr[0],
+					rects: [[pr[1], pr[2], pr[3], pr[4]]],
+				});
+			}
+			catch {
+				continue;
+			}
+
+			if (quickIntersectRect(rect, viewRect)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	// Current text selection as a PDFPosition, or null. Mirrors the position
@@ -1209,6 +1270,13 @@ class PDFView {
 			return 'sentence';
 		}
 		return 'paragraph';
+	}
+
+	isPositionNearView(position) {
+		if (typeof position?.pageIndex !== 'number') return true;
+		let currentPageNumber = this._iframeWindow?.PDFViewerApplication?.pdfViewer?.currentPageNumber;
+		if (!currentPageNumber) return true;
+		return Math.abs(position.pageIndex - (currentPageNumber - 1)) <= 5;
 	}
 
 	_isPositionInViewBounds(position) {

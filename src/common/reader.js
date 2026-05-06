@@ -1094,10 +1094,10 @@ class Reader {
 		}
 		this._lastReadAloudPaused = manager.paused;
 
-		// Update savedPosition when the active segment changes.
+		// Update savedPosition when the active segment changes
 		let activeSegment = manager.activeSegment;
-		if (activeSegment && activeSegment !== this._lastReadAloudActiveSegment) {
-			this._state.readAloudState.savedPosition = activeSegment.position;
+		if (activeSegment && activeSegment !== this._lastReadAloudActiveSegment && activeSegment.sourcePosition) {
+			this._state.readAloudState.savedPosition = activeSegment.sourcePosition;
 		}
 		this._lastReadAloudActiveSegment = activeSegment;
 
@@ -1161,7 +1161,6 @@ class Reader {
 			activeWordSourcePosition: this._computeActiveWordSourcePosition(manager),
 			backwardStopIndex: null,
 			forwardStopIndex: null,
-			targetPosition: manager.consumeTargetPosition(),
 			lastSkipGranularity: manager.lastSkipGranularity,
 			annotationPopup: this._state.readAloudState.annotationPopup,
 			lang: manager.lang || this._state.readAloudState.lang,
@@ -1277,11 +1276,15 @@ class Reader {
 		// pendingStart is the captured start Position (or null, meaning that we
 		// use _findFirstVisibleSegmentIndex); pendingResolution stays true until
 		// playback locks onto a real segment so we keep retrying as chunks arrive.
+		// `partialSDT` accumulates the raw pre-post-processing structure across
+		// chunks so view-supplied position lookups (PDFView.getVisibleBlockIndex
+		// etc.) see the same block indices as our streaming segments.
 		let state = {
 			granularity,
 			lang: null,
 			rawChunks: [],
 			cachedSegments: [],
+			partialSDT: { processor: { type: this._type }, pages: [], content: [], metadata: {} },
 			pendingStart: granularity ? this._captureReadAloudStart() : null,
 			pendingResolution: !!granularity,
 			abort: null,
@@ -1301,10 +1304,18 @@ class Reader {
 		}
 		finally {
 			if (this._sdtStreamState === state) {
-				this._sdtStreamState = null;
 				if (state.cachedSegments.length) {
+					// Last chance to land on the user's start position. Use a
+					// non-exact lookup so we always reposition the controller
+					// off its parked position; otherwise markSegmentsComplete
+					// would dispatch Complete on a parked controller and the
+					// manager would auto-pause with the cursor stranded at the
+					// old parking index.
 					if (state.pendingResolution) {
-						let idx = this._findReadAloudStart(manager.segments ?? [], state.pendingStart);
+						let idx = this._findReadAloudStart(
+							manager.segments ?? [],
+							state.pendingStart,
+						);
 						manager.repositionTo(idx ?? 0);
 					}
 					manager.markSegmentsComplete();
@@ -1312,6 +1323,7 @@ class Reader {
 				else if (state.granularity && this._sdtData) {
 					await this._setReadAloudSegmentsFromFullSDT(state.granularity);
 				}
+				this._sdtStreamState = null;
 			}
 		}
 	}
@@ -1325,8 +1337,10 @@ class Reader {
 		if (chunk.kind !== 'partial') return;
 
 		state.rawChunks.push(chunk);
+		if (chunk.pages) state.partialSDT.pages.push(...chunk.pages);
+		if (chunk.content) state.partialSDT.content.push(...chunk.content);
 		this._sdtPositionMapper.index.appendContent(chunk.content, chunk.contentIndexOffset);
-		this._sdtPositionMapper.refresh?.();
+		this._sdtPositionMapper.refresh();
 		this._readAloudBlocks = buildReadAloudBlockIndex(this._sdtPositionMapper.index);
 
 		if (!state.lang) {
@@ -1393,16 +1407,29 @@ class Reader {
 		manager.setSegments(segments, backwardStopIndex, null, { streaming: true });
 	}
 
-	// Selection > explicit target. Returns the captured Position (or null if
-	// neither). Selection/target is consumed as a side effect.
-	// When null, fall back to the first in-view segment.
+	// Selection > explicit target > persisted savedPosition. Returns the
+	// captured Position (or null if none). Selection/target is consumed as a
+	// side effect; savedPosition is left in place so it remains the fallback
+	// across re-streams. savedPosition only applies while it's still in the
+	// active view. Once the user has scrolled elsewhere, we fall back to the
+	// visible-block lookup so Read Aloud picks up from where they're looking.
+	// When this returns null, segment lookup falls back to the first in-view
+	// segment.
 	_captureReadAloudStart() {
 		let selectionPosition = this._lastView?.getSelectionPosition();
 		if (selectionPosition) {
 			this._lastView.clearSelection();
 			return selectionPosition;
 		}
-		return this._readAloudManager.consumeTargetPosition() ?? null;
+		let target = this._readAloudManager.consumeTargetPosition();
+		if (target) {
+			return target;
+		}
+		let saved = this._state.readAloudState.savedPosition;
+		if (saved && this._activePrimaryView?.isPositionNearView(saved)) {
+			return saved;
+		}
+		return null;
 	}
 
 	// Resolve the captured start (or visible-position fallback) to a segment
@@ -1502,7 +1529,8 @@ class Reader {
 	_findFirstVisibleSegmentIndex(segments, { exact = false } = {}) {
 		if (!segments.length) return null;
 		let view = this._primarySDTView ?? this._primaryView;
-		let blockIndex = view.getVisibleBlockIndex(this._sdtData);
+		let sdtData = this._sdtStreamState?.partialSDT ?? this._sdtData;
+		let blockIndex = view.getVisibleBlockIndex(sdtData);
 		if (blockIndex !== null && blockIndex !== undefined) {
 			let prefix = String(blockIndex);
 			for (let i = 0; i < segments.length; i++) {
@@ -1986,15 +2014,8 @@ class Reader {
 			if (primary) {
 				let { savedPosition } = this._state.readAloudState;
 				let lastReadAloudPosition = savedPosition ?? null;
-				if (isSDTPosition(lastReadAloudPosition)) {
-					let view = this._primarySDTView ?? this._primaryView;
-					let visibleBlockIndex = view.getVisibleBlockIndex(this._sdtData);
-					if (visibleBlockIndex !== null && visibleBlockIndex !== undefined) {
-						let savedBlockIndex = parseInt(lastReadAloudPosition.startBlockRefPath.split('.')[0]);
-						if (Math.abs(savedBlockIndex - visibleBlockIndex) > 50) {
-							lastReadAloudPosition = null;
-						}
-					}
+				if (lastReadAloudPosition && !this._activePrimaryView.isPositionNearView(lastReadAloudPosition)) {
+					lastReadAloudPosition = null;
 				}
 				state = { ...state, lastReadAloudPosition };
 			}

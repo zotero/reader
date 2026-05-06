@@ -33,7 +33,7 @@ export interface PositionMapper {
 	transformAnnotationPosition(position: Position, type: AnnotationType): Position;
 
 	// Required by streaming consumers after PositionIndex.appendContent.
-	refresh?(): void;
+	refresh(): void;
 }
 
 /**

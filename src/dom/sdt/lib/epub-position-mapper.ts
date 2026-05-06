@@ -31,12 +31,22 @@ export class EPUBPositionMapper implements PositionMapper {
 	 */
 	private readonly _blockPathIndex: Map<string, TextSpanEntry[]>;
 
+	/** Number of `index.entries` already absorbed into the caches above. */
+	private _processedEntryCount = 0;
+
 	constructor(index: PositionIndex) {
 		this.index = index;
 		this._pathEntries = [];
 		this._blockPathIndex = new Map();
+		this.refresh();
+	}
 
-		for (let entry of index.entries) {
+	// Bring the cached indexes up to date with `index.entries`. Streaming
+	// consumers append entries via index.appendContent(), then call this so
+	// later sourceToSDTPosition() lookups can find newly-loaded blocks.
+	refresh(): void {
+		for (let i = this._processedEntryCount; i < this.index.entries.length; i++) {
+			let entry = this.index.entries[i];
 			let blockAnchor = entry.blockAnchor as DomAnchor | null;
 			if (!blockAnchor) continue;
 
@@ -49,7 +59,9 @@ export class EPUBPositionMapper implements PositionMapper {
 				path = blockAnchor.selectorMap;
 			}
 
-			let absoluteStart = index.computeAbsoluteCharOffset(entry.blockRefPath, entry.textIndex, 0);
+			let absoluteStart = this.index.computeAbsoluteCharOffset(
+				entry.blockRefPath, entry.textIndex, 0
+			);
 			this._pathEntries.push({ entry, path, absoluteStart });
 
 			// Block-level index
@@ -63,6 +75,7 @@ export class EPUBPositionMapper implements PositionMapper {
 				list.push(entry);
 			}
 		}
+		this._processedEntryCount = this.index.entries.length;
 	}
 
 	sdtToSourcePosition(sdtPos: SDTPosition): Position | null {

@@ -162,13 +162,6 @@ export abstract class ReadAloudController extends EventTarget {
 	}
 
 	notifySegmentsAppended(): void {
-		if (this._streamWait === 'parked') {
-			if (this._position >= this._segments.length) return;
-			this._streamWait = null;
-			this.buffering = false;
-			this._scheduleSpeak(0);
-			return;
-		}
 		if (this._streamWait !== 'tail') return;
 		if (this._position >= this._segments.length - 1) return;
 		this._streamWait = null;
