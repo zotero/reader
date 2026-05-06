@@ -412,6 +412,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract navigateToSelector(selector: Selector, options?: NavigateOptions): void;
 
+	isPositionNearView(position: Position): boolean {
+		let range = this.toDisplayedRange(position);
+		// Don't discard a position we can't resolve
+		if (!range) return true;
+		let rect = range.getBoundingClientRect();
+		let viewportHeight = this._iframeWindow.innerHeight;
+		return rect.bottom > -viewportHeight * 3 && rect.top < viewportHeight * 4;
+	}
+
 	// ***
 	// Abstractions over document structure
 	// ***

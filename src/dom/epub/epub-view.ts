@@ -1441,14 +1441,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 	// Top-level SDT block index for whatever's currently visible, or null.
 	getVisibleBlockIndex(sdtData: StructuredDocumentText | null): number | null {
-		let cfi = this.flow.startCFI?.toString();
+		let cfi = this.flow.startCFI?.toString(true);
 		if (!cfi || !sdtData) return null;
 		// Walk back-to-front so we land on the latest block whose anchor's
 		// CFI is contained in the current page CFI range.
 		for (let i = sdtData.content.length - 1; i >= 0; i--) {
 			let block = sdtData.content[i];
-			if (block.artifact || !block.anchor || !('selectorMap' in block.anchor)) continue;
-			if (cfi.includes(block.anchor.selectorMap)) return i;
+			if (block.artifact || !block.anchor || !('selectorMap' in block.anchor)) {
+				continue;
+			}
+			if (cfiStartsWithSelectorMap(cfi, block.anchor.selectorMap)) {
+				return i;
+			}
 		}
 		return null;
 	}
@@ -1600,6 +1604,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 		return a.compareDocumentPosition(b);
 	}
+}
+
+// Does `cfi` (assertion-free, with the `epubcfi(...)` wrapper) reach into the
+// path described by `selectorMap`? Treats selectorMap as a step-aligned prefix
+// so a different sibling step doesn't accidentally match via substring overlap.
+function cfiStartsWithSelectorMap(cfi: string, selectorMap: string): boolean {
+	let prefix = 'epubcfi(' + selectorMap;
+	if (!cfi.startsWith(prefix)) return false;
+	let next = cfi.charAt(prefix.length);
+	// '/' continues into a deeper step; ':' introduces an offset; ',' starts a
+	// CFI range; ')' closes the wrapper for an exact match.
+	return next === '' || next === '/' || next === ':' || next === ',' || next === ')';
 }
 
 type FlowMode = 'paginated' | 'scrolled';

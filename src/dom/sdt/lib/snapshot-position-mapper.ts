@@ -23,12 +23,22 @@ export class SnapshotPositionMapper implements PositionMapper {
 	/** Entries grouped by their block-level selector for block fallback. */
 	private _blockSelectorIndex: Map<string, TextSpanEntry[]>;
 
+	/** Number of `index.entries` already absorbed into the caches above. */
+	private _processedEntryCount = 0;
+
 	constructor(index: PositionIndex) {
 		this.index = index;
 		this._selectorIndex = new Map();
 		this._blockSelectorIndex = new Map();
+		this.refresh();
+	}
 
-		for (let entry of index.entries) {
+	// Bring the cached indexes up to date with `index.entries`. Streaming
+	// consumers append entries via index.appendContent(), then call this so
+	// later sourceToSDTPosition() lookups can find newly-loaded blocks.
+	refresh(): void {
+		for (let i = this._processedEntryCount; i < this.index.entries.length; i++) {
+			let entry = this.index.entries[i];
 			let blockAnchor = entry.blockAnchor as DomAnchor | null;
 			if (!blockAnchor) continue;
 
@@ -62,6 +72,7 @@ export class SnapshotPositionMapper implements PositionMapper {
 				blockList.push(entry);
 			}
 		}
+		this._processedEntryCount = this.index.entries.length;
 	}
 
 	sdtToSourcePosition(sdtPos: SDTPosition): Position | null {

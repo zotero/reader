@@ -71,6 +71,21 @@ async function createReader() {
 	else if (type === 'snapshot') {
 		demo = snapshot;
 	}
+
+	// Set ?lastReadAloudPosition=base64(JSON) to simulate a persisted Read Aloud position
+	let savedPositionParam = urlParams.get('lastReadAloudPosition');
+	let savedPosition = null;
+	if (savedPositionParam) {
+		try {
+			savedPosition = JSON.parse(atob(savedPositionParam));
+		}
+		catch (e) {
+			console.warn('Failed to parse lastReadAloudPosition param', e);
+		}
+	}
+	let primaryViewState = savedPosition
+		? { ...demo.state, lastReadAloudPosition: savedPosition }
+		: demo.state;
 	let readAloudVoices = {};
 	let res = await fetch(demo.fileName);
 
@@ -86,7 +101,7 @@ async function createReader() {
 		},
 		// rtl: true,
 		annotations: demo.annotations,
-		primaryViewState: demo.state,
+		primaryViewState,
 		sidebarWidth: 240,
 		sidebarView: 'annotations', //thumbnails, outline
 		bottomPlaceholderHeight: null,
@@ -111,6 +126,11 @@ async function createReader() {
 		},
 		onChangeViewState: function (state, primary) {
 			console.log('Set state', state, primary);
+			// Stash the latest persisted Read Aloud position so we can
+			// inspect/reuse it from the test harness.
+			if (primary) {
+				window._lastPersistedReadAloudPosition = state.lastReadAloudPosition ?? null;
+			}
 		},
 		onOpenTagsPopup(annotationID, left, top) {
 			alert(`Opening Zotero tagbox popup for id: ${annotationID}, left: ${left}, top: ${top}`);
