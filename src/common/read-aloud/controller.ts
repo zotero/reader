@@ -30,6 +30,15 @@ export abstract class ReadAloudController extends EventTarget {
 
 	private _delayTimeout: ReturnType<typeof setTimeout> | null = null;
 
+	protected _streaming = false;
+
+	// 'parked': start position is past end of loaded segments (waiting for it
+	// to stream in)
+	// 'tail': finished the last segment but the stream hasn't
+	// completed yet
+	// null: not waiting on the stream
+	private _streamWait: null | 'parked' | 'tail' = null;
+
 	lastSkipGranularity: 'sentence' | 'paragraph' | null = null;
 
 	get paused() {
@@ -144,6 +153,55 @@ export abstract class ReadAloudController extends EventTarget {
 		this._segments = segments;
 	}
 
+	setStreaming(streaming: boolean) {
+		this._streaming = streaming;
+		if (streaming && this._position >= this._segments.length) {
+			this._streamWait = 'parked';
+			this._buffering = true;
+		}
+	}
+
+	notifySegmentsAppended(): void {
+		if (this._streamWait === 'parked') {
+			if (this._position >= this._segments.length) return;
+			this._streamWait = null;
+			this.buffering = false;
+			this._scheduleSpeak(0);
+			return;
+		}
+		if (this._streamWait !== 'tail') return;
+		if (this._position >= this._segments.length - 1) return;
+		this._streamWait = null;
+		this._position++;
+		this.buffering = false;
+		let delay = this.voice.sentenceDelay;
+		if (this._currentSegment?.anchor === 'paragraphStart') {
+			delay += DELAY_PARAGRAPH;
+		}
+		this._scheduleSpeak(delay);
+	}
+
+	setStreamingComplete(): void {
+		this._streaming = false;
+		if (this._streamWait === null) return;
+		this._streamWait = null;
+		this.buffering = false;
+		if (this._backwardStopIndex !== null && this._backwardStopIndex < this._segments.length) {
+			this._position = this._backwardStopIndex;
+		}
+		else {
+			this._position = 0;
+		}
+		this.dispatchEvent(new ReadAloudEvent('Complete', null));
+	}
+
+	private _scheduleSpeak(delay: number) {
+		this._delayTimeout = setTimeout(() => {
+			this._delayTimeout = null;
+			this._speak();
+		}, delay);
+	}
+
 	override dispatchEvent(event: Event): boolean {
 		if (this._destroyed) {
 			return false;
@@ -252,6 +310,11 @@ export abstract class ReadAloudController extends EventTarget {
 				this.dispatchEvent(new ReadAloudEvent('Complete', null));
 			}
 			else if (this._position === this._segments.length - 1) {
+				if (this._streaming) {
+					this._streamWait = 'tail';
+					this.buffering = true;
+					return;
+				}
 				this._position = this._backwardStopIndex ?? 0;
 				this.dispatchEvent(new ReadAloudEvent('Complete', null));
 			}
@@ -261,10 +324,7 @@ export abstract class ReadAloudController extends EventTarget {
 				if (this._currentSegment?.anchor === 'paragraphStart') {
 					delay += DELAY_PARAGRAPH;
 				}
-				this._delayTimeout = setTimeout(() => {
-					this._delayTimeout = null;
-					this._speak();
-				}, delay);
+				this._scheduleSpeak(delay);
 			}
 		}
 	}

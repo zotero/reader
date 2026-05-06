@@ -44,6 +44,8 @@ export class ReadAloudManager {
 
 	private _forwardStopIndex: number | null = null;
 
+	private _streamingSegments = false;
+
 	/**
 	 * Transient target position for initial segment computation.
 	 * Set before activation, consumed by _composeReadAloudStateSnapshot,
@@ -468,6 +470,7 @@ export class ReadAloudManager {
 		this._backwardStopIndex = null;
 		this._forwardStopIndex = null;
 		this._activeSegment = null;
+		this._streamingSegments = false;
 		this._destroyController();
 	}
 
@@ -475,11 +478,28 @@ export class ReadAloudManager {
 		segments: ReadAloudSegment[],
 		backwardStopIndex: number | null,
 		forwardStopIndex: number | null,
+		{ streaming = false }: { streaming?: boolean } = {},
 	): void {
 		this._segments = segments;
 		this._backwardStopIndex = backwardStopIndex;
 		this._forwardStopIndex = forwardStopIndex;
+		this._streamingSegments = streaming;
 		this._createController();
+		this._stateChanged();
+	}
+
+	appendSegments(newSegments: ReadAloudSegment[]): void {
+		if (!this._segments || newSegments.length === 0) {
+			return;
+		}
+		this._segments.push(...newSegments);
+		this._controller?.notifySegmentsAppended();
+		this._stateChanged();
+	}
+
+	markSegmentsComplete(): void {
+		this._streamingSegments = false;
+		this._controller?.setStreamingComplete();
 		this._stateChanged();
 	}
 
@@ -614,9 +634,11 @@ export class ReadAloudManager {
 			backwardStopIndex,
 			this._forwardStopIndex,
 		);
+		controller.setStreaming(this._streamingSegments);
 
 		this._controller = controller;
 		this._error = null;
+		this._buffering = controller.buffering;
 
 		// Sync speed
 		if (controller.speed !== this._speed) {
@@ -685,6 +707,7 @@ export class ReadAloudManager {
 		this._segments = null;
 		this._backwardStopIndex = null;
 		this._forwardStopIndex = null;
+		this._streamingSegments = false;
 		this._activeSegment = null;
 		this._lastSkipGranularity = null;
 		this._error = null;

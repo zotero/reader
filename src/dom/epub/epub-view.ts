@@ -1435,15 +1435,20 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	getSDTLocation(sdtData: StructuredDocumentText): NavLocation | null {
+		let blockIndex = this.getVisibleBlockIndex(sdtData);
+		return blockIndex === null ? null : { href: '#sdt-' + blockIndex };
+	}
+
+	// Top-level SDT block index for whatever's currently visible, or null.
+	getVisibleBlockIndex(sdtData: StructuredDocumentText | null): number | null {
 		let cfi = this.flow.startCFI?.toString();
-		if (!cfi) return null;
-		// Find the block whose anchor CFI is closest to the current position
+		if (!cfi || !sdtData) return null;
+		// Walk back-to-front so we land on the latest block whose anchor's
+		// CFI is contained in the current page CFI range.
 		for (let i = sdtData.content.length - 1; i >= 0; i--) {
 			let block = sdtData.content[i];
 			if (block.artifact || !block.anchor || !('selectorMap' in block.anchor)) continue;
-			if (cfi.includes(block.anchor.selectorMap)) {
-				return { href: '#sdt-' + i };
-			}
+			if (cfi.includes(block.anchor.selectorMap)) return i;
 		}
 		return null;
 	}

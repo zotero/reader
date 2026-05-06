@@ -35,8 +35,12 @@ export class PDFPositionMapper implements PositionMapper {
 		this.index = index;
 		this._cache = [];
 		this._pageIndex = new Map();
+		this.refresh();
+	}
 
-		for (let entry of index.entries) {
+	refresh() {
+		for (let i = this._cache.length; i < this.index.entries.length; i++) {
+			let entry = this.index.entries[i];
 			let textAnchor = entry.textNode.anchor as PdfAnchor | undefined;
 			let blockAnchor = entry.blockAnchor as PdfAnchor | null;
 			let textMap = textAnchor?.textMap || blockAnchor?.textMap;

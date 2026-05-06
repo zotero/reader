@@ -660,13 +660,38 @@ class PDFView {
 	}
 
 	getSDTLocation(sdtData) {
+		let blockIndex = this.getVisibleBlockIndex(sdtData);
+		return blockIndex === null ? null : { href: '#sdt-' + blockIndex };
+	}
+
+	// Top-level SDT block index for the page currently in view, or null.
+	getVisibleBlockIndex(sdtData) {
 		let pageIndex = this._iframeWindow?.PDFViewerApplication?.pdfViewer?.currentPageNumber - 1;
 		if (pageIndex === undefined || !sdtData?.pages) return null;
 		let page = sdtData.pages[pageIndex];
-		if (!page?.contentRanges?.length) return null;
-		let firstBlockIndex = page.contentRanges[0].start?.ref?.[0];
-		if (firstBlockIndex === undefined) return null;
-		return { href: '#sdt-' + firstBlockIndex };
+		let firstBlockIndex = page?.contentRanges?.[0]?.start?.ref?.[0];
+		return firstBlockIndex ?? null;
+	}
+
+	// Current text selection as a PDFPosition, or null. Mirrors the position
+	// shape used by highlight annotations: the rects from the first selected
+	// page, plus nextPageRects when the selection spans onto the next page.
+	getSelectionPosition() {
+		if (!this._selectionRanges?.length || this._selectionRanges[0].collapsed) return null;
+		let ranges = this._selectionRanges
+			.slice()
+			.sort((a, b) => a.pageIndex - b.pageIndex)
+			.slice(0, 2);
+		let position = { ...ranges[0].position };
+		if (ranges.length === 2) {
+			position.nextPageRects = ranges[1].position.rects;
+		}
+		return position;
+	}
+
+	clearSelection() {
+		this._setSelectionRanges();
+		this._iframeWindow.getSelection()?.removeAllRanges();
 	}
 
 	navigateToSDTBlock(sdtData, blockIndex) {

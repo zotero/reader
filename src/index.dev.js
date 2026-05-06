@@ -20,6 +20,7 @@ const DOCUMENT_WORKER_BASE = 'document-worker/';
 let documentWorker = null;
 let documentWorkerFailed = false;
 let lastWorkerPromiseID = 0;
+// id -> { resolve, reject, onPartial? }. onPartial is set for streaming queries.
 let workerPromises = {};
 
 function failAllPending(error) {
@@ -43,13 +44,25 @@ function initDocumentWorker() {
 	documentWorker.addEventListener('message', async (event) => {
 		let message = event.data;
 		if (message.responseID) {
-			let { resolve, reject } = workerPromises[message.responseID];
+			let pending = workerPromises[message.responseID];
+			if (!pending) return;
+			if (message.isPartial) {
+				if (pending.onPartial) {
+					try {
+						pending.onPartial(message.data);
+					}
+					catch (e) {
+						console.warn('onPartial handler threw:', e);
+					}
+				}
+				return;
+			}
 			delete workerPromises[message.responseID];
-			if (message.data !== null && message.data !== undefined) {
-				resolve(message.data);
+			if ('error' in message) {
+				pending.reject(new Error(JSON.stringify(message.error)));
 			}
 			else {
-				reject(new Error(JSON.stringify(message.error)));
+				pending.resolve(message.data);
 			}
 			return;
 		}
@@ -94,6 +107,29 @@ function queryDocumentWorker(action, data, transfer) {
 	});
 }
 
+function streamingQueryDocumentWorker(action, data, transfer, onPartial) {
+	let worker = initDocumentWorker();
+	if (!worker) {
+		return {
+			id: null,
+			promise: Promise.reject(new Error('Document worker unavailable')),
+			abort: () => {},
+		};
+	}
+	lastWorkerPromiseID++;
+	let id = lastWorkerPromiseID;
+	let promise = new Promise((resolve, reject) => {
+		workerPromises[id] = { resolve, reject, onPartial };
+		worker.postMessage({ id, action, data }, transfer || []);
+	});
+	let abort = () => {
+		if (workerPromises[id]) {
+			worker.postMessage({ action: 'abort', id });
+		}
+	};
+	return { id, promise, abort };
+}
+
 async function generateSDT(type, fileName, password) {
 	let contentType = CONTENT_TYPES[type];
 	if (!contentType) return null;
@@ -101,7 +137,7 @@ async function generateSDT(type, fileName, password) {
 		let res = await fetch(fileName);
 		let buf = await res.arrayBuffer();
 		return await queryDocumentWorker(
-			'getStructuredData',
+			'getStructuredDocumentText',
 			{ buf, contentType, password },
 			[buf]
 		);
@@ -110,6 +146,35 @@ async function generateSDT(type, fileName, password) {
 		console.warn('Failed to generate SDT:', e);
 		return null;
 	}
+}
+
+async function streamSDT(type, fileName, password, onChunk, onStart) {
+	let contentType = CONTENT_TYPES[type];
+	if (!contentType) return;
+	let res = await fetch(fileName);
+	let buf = await res.arrayBuffer();
+	let { promise, abort } = streamingQueryDocumentWorker(
+		'getStructuredDocumentText',
+		{ buf, contentType, password, streaming: true },
+		[buf],
+		(chunk) => {
+			try {
+				onChunk(chunk);
+			}
+			catch (e) {
+				console.warn('getSDTStream onChunk threw:', e);
+			}
+		},
+	);
+	if (onStart) {
+		try {
+			onStart(abort);
+		}
+		catch (e) {
+			console.warn('getSDTStream onStart threw:', e);
+		}
+	}
+	await promise;
 }
 
 // Injected by Webpack in dev builds
@@ -186,6 +251,7 @@ async function createReader() {
 		ftl: [zoteroFTL, readerFTL, brandFTL],
 		readOnly: false,
 		getSDT: password => generateSDT(type, demo.fileName, password),
+		getSDTStream: (password, onChunk, onStart) => streamSDT(type, demo.fileName, password, onChunk, onStart),
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 			url: new URL('/', window.location).toString()
