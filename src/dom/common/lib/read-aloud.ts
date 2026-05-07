@@ -68,9 +68,11 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			let segmentSelector = this._resolveSegmentSelector(state);
 			if (!segmentSelector) return null;
 
+			let segmentChanged = state.activeSegment !== previousState?.activeSegment;
+
 			// Navigate first so the section is mounted (important for EPUB),
 			// then set spotlights
-			if (!state.annotationPopup && this.positionLocked) {
+			if (segmentChanged && !state.annotationPopup && this.positionLocked) {
 				this.scrolling = true;
 
 				let startSelector = this._collapseToStart(segmentSelector);
@@ -96,7 +98,6 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			// briefly flash the unit at the skip granularity so it's clear what
 			// the skip moved by. Only retrigger when the active segment changes
 			// so word-level updates don't keep resetting the spotlight.
-			let segmentChanged = state.activeSegment !== previousState?.activeSegment;
 			if (segmentChanged) {
 				let spotlightSelector = this._resolveSkipSpotlightSelector(state, segmentSelector);
 				this._view.setSpotlight(
