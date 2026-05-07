@@ -50,21 +50,16 @@ export class EPUBPositionMapper implements PositionMapper {
 			let blockAnchor = entry.blockAnchor as DomAnchor | null;
 			if (!blockAnchor) continue;
 
-			let textAnchor = entry.textNode.anchor as DomAnchor | undefined;
-			let path: string;
-			if (textAnchor) {
-				path = expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);
-			}
-			else {
-				path = blockAnchor.selectorMap;
+			let path = this._getExpandedPath(entry);
+			if (path) {
+				let absoluteStart = this.index.computeAbsoluteCharOffset(
+					entry.blockRefPath, entry.textIndex, 0
+				);
+				this._pathEntries.push({ entry, path, absoluteStart });
 			}
 
-			let absoluteStart = this.index.computeAbsoluteCharOffset(
-				entry.blockRefPath, entry.textIndex, 0
-			);
-			this._pathEntries.push({ entry, path, absoluteStart });
-
-			// Block-level index
+			// Block-level index (still useful for block-level CFI matching even
+			// when the entry has no text-node anchor, as in image alt text).
 			let blockPath = blockAnchor.selectorMap;
 			let list = this._blockPathIndex.get(blockPath);
 			if (!list) {
@@ -101,9 +96,12 @@ export class EPUBPositionMapper implements PositionMapper {
 			return resolveSelectorMap(startPath, startCharOffset, adjustedEndOffset, deltaMap);
 		}
 
+		let startDeltaMap = (startEntry.textNode.anchor as DomAnchor | undefined)?.deltaMap;
+		let endDeltaMap = (endEntry.textNode.anchor as DomAnchor | undefined)?.deltaMap;
 		return resolveSelectorMapRange(
 			startPath, startCharOffset,
 			endPath, endCharOffset,
+			startDeltaMap, endDeltaMap,
 		);
 	}
 
@@ -229,10 +227,11 @@ export class EPUBPositionMapper implements PositionMapper {
 	private _getExpandedPath(entry: TextSpanEntry): string | null {
 		let blockAnchor = entry.blockAnchor as DomAnchor | null;
 		if (!blockAnchor) return null;
+		// Without a text-node anchor (e.g., synthetic alt-text entries) the
+		// block path doesn't reach a text node, so it can't carry character
+		// offsets in a CFI. Bail out instead of producing an invalid path.
 		let textAnchor = entry.textNode.anchor as DomAnchor | undefined;
-		if (textAnchor) {
-			return expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);
-		}
-		return blockAnchor.selectorMap;
+		if (!textAnchor) return null;
+		return expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);
 	}
 }
