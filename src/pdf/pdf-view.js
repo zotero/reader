@@ -1547,22 +1547,29 @@ class PDFView {
 		}
 	}
 
-	_updateReadAloudJumpButton(position) {
-		if (!this._readAloudState?.popupOpen || !position) {
+	_updateReadAloudJumpButton(position, event) {
+		if (!this._readAloudState?.popupOpen) {
+			return;
+		}
+
+		if (event && this._readAloudJumpButton.iconContainsPoint(event.clientX, event.clientY)) {
+			return;
+		}
+
+		if (!position) {
 			return;
 		}
 
 		let match = null;
 		for (let entry of this._readAloudParagraphIndex) {
 			if (entry.pageIndex !== position.pageIndex) continue;
-			if (intersectAnnotationWithPoint({ rects: [entry.rect] }, position)) {
+			if (intersectAnnotationWithPoint({ pageIndex: entry.pageIndex, rects: [entry.rect] }, position)) {
 				match = entry;
 				break;
 			}
 		}
 
 		if (!match) {
-			this._hideReadAloudJumpButton();
 			return;
 		}
 		if (match === this._readAloudJumpButtonMatch) {
@@ -1595,16 +1602,17 @@ class PDFView {
 
 		let paragraph = this._readAloudJumpButtonParagraph;
 
-		// Immediately move the highlight to the target paragraph
-		this._readAloudHighlightedPosition = paragraph.sourcePosition;
+		// Match the immediate spotlight to the user's highlight granularity,
+		// so we don't show a wrong-granularity flash before the manager overrides
+		// with a new highlight.
+		let granularity = this._effectiveReadAloudPrimaryGranularity(this._readAloudState);
+		this._readAloudHighlightedPosition = granularity === 'paragraph'
+			? (paragraph.paragraphSourcePosition || paragraph.sourcePosition)
+			: paragraph.sourcePosition;
 		this._render();
 
-		// Jump using the segment's SDT position, which reader.js handles directly
 		this._options.onSetReadAloudState({
-			targetPosition: {
-				pageIndex: paragraph.position.pageIndex,
-				rects: paragraph.position.rects,
-			},
+			targetPosition: paragraph.position,
 		});
 	}
 

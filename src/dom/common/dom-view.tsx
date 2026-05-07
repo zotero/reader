@@ -27,7 +27,7 @@ import { flushSync } from "react-dom";
 import { createRoot, Root } from "react-dom/client";
 import { AnnotationOverlay, DisplayedAnnotation } from "./components/overlay/annotation-overlay";
 import React from "react";
-import { Selector } from "./lib/selector";
+import { isSelector, Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
 	getBoundingPageRect,
@@ -1714,8 +1714,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!this._readAloud.state?.popupOpen || event.buttons !== 0) {
 			return;
 		}
-		let iconTargetRect = this._readAloudJumpButton.iconTargetRect;
-		if (iconTargetRect && rectContainsPoint(iconTargetRect, event.clientX, event.clientY)) {
+		if (this._readAloudJumpButton.iconContainsPoint(event.clientX, event.clientY)) {
 			return;
 		}
 
@@ -1736,7 +1735,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		// Only show for blocks that are the direct containing block of a segment,
 		// not ancestor blocks (e.g. a wrapper <div> containing <p>s in snapshots)
-		if (!this._readAloud.blockSegmentMap?.has(block)) {
+		if (!this._readAloud.getSegmentForBlock(block)) {
 			return;
 		}
 
@@ -1765,18 +1764,31 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleReadAloudJumpButtonClick() {
 		if (!this._readAloudJumpButtonBlock || !this._readAloud.state) return;
 
-		let segment = this._readAloud.blockSegmentMap?.get(this._readAloudJumpButtonBlock);
+		let segment = this._readAloud.getSegmentForBlock(this._readAloudJumpButtonBlock);
 		if (!segment) return;
 
-		// Immediately move the highlight to the target block
-		let blockRange = this._iframeDocument.createRange();
-		blockRange.selectNodeContents(this._readAloudJumpButtonBlock);
-		let blockSelector = this.toSelector(blockRange);
-		if (!blockSelector) return;
-		this.setSpotlight(SpotlightKey.ReadAloudActiveSegment, blockSelector, null);
+		// Match the immediate spotlight to the user's highlight granularity,
+		// so we don't show a wrong-granularity flash before the manager overrides
+		// with a new highlight.
+		let state = this._readAloud.state;
+		let useSegmentSpotlight = state.segmentGranularity === 'sentence'
+			&& state.highlightGranularity !== 'paragraph'
+			&& isSelector(segment.sourcePosition);
+		let immediateSelector: Selector | null;
+		if (useSegmentSpotlight) {
+			immediateSelector = segment.sourcePosition as Selector;
+		}
+		else {
+			let blockRange = this._iframeDocument.createRange();
+			blockRange.selectNodeContents(this._readAloudJumpButtonBlock);
+			immediateSelector = this.toSelector(blockRange);
+		}
+		if (immediateSelector) {
+			this.setSpotlight(SpotlightKey.ReadAloudActiveSegment, immediateSelector, null);
+		}
 
 		this._options.onSetReadAloudState({
-			targetPosition: blockSelector,
+			targetPosition: segment.position,
 		});
 	}
 

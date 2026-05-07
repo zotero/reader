@@ -22,12 +22,13 @@ export class ReadAloud<View extends DOMView<any, any>> {
 	scrolling = false;
 
 	/**
-	 * Map from base-view block elements to their paragraph-start segment.
-	 * Built once when segments change; used by the jump button.
-	 * An empty map means that the map was built successfully with no resolved
-	 * segments. null means that it was never built or was cleared.
+	 * Cache from base-view block elements to their paragraph-start segment,
+	 * used by the jump button. Populated lazily by getSegmentForBlock(),
+	 * and invalidated when segments change.
 	 */
-	blockSegmentMap: Map<Element, ReadAloudSegment> | null = null;
+	private _blockSegmentCache = new Map<Element, ReadAloudSegment | null>();
+
+	private _lastCachedSegments: ReadAloudSegment[] | null = null;
 
 	private _view: View;
 
@@ -46,15 +47,6 @@ export class ReadAloud<View extends DOMView<any, any>> {
 
 		if (!this._view.initialized) {
 			return null;
-		}
-
-		// Rebuild block -> segment map when segments change,
-		// or when the view just became ready (map was null because DOM wasn't available)
-		if (state.segments !== previousState?.segments) {
-			this._buildBlockSegmentMap(state.segments);
-		}
-		else if (state.segments && !this.blockSegmentMap) {
-			this._buildBlockSegmentMap(state.segments);
 		}
 
 		if (!state.popupOpen) {
@@ -234,17 +226,43 @@ export class ReadAloud<View extends DOMView<any, any>> {
 	}
 
 	/**
-	 * Build a map from base-view block elements to their paragraph-start segment.
-	 * Each segment's containing block is mapped to the paragraph's start segment,
-	 * so the jump button works even when a paragraph spans multiple sub-blocks.
+	 * Resolve the paragraph-start segment for a hovered block, or null if the
+	 * block doesn't contain any read-aloud text. Used by the jump button.
+	 *
+	 * The cache is populated lazily by scanning all segments on a miss, so
+	 * blocks become resolvable as sections mount, without needing the host
+	 * view to invalidate anything explicitly.
 	 */
-	private _buildBlockSegmentMap(segments: ReadAloudSegment[] | null) {
-		this.blockSegmentMap = null;
+	getSegmentForBlock(block: Element): ReadAloudSegment | null {
+		// Drop stale entries when the segment list itself changes (e.g.,
+		// segmentGranularity changed). Section mounts don't change the list,
+		// just which positions can resolve.
+		if (this.state?.segments !== this._lastCachedSegments) {
+			this._blockSegmentCache = new Map();
+			this._lastCachedSegments = this.state?.segments ?? null;
+		}
+		if (this._blockSegmentCache.has(block)) {
+			return this._blockSegmentCache.get(block) ?? null;
+		}
+		this._populateBlockSegmentCache();
+		// If population didn't add this block, mark it as a known miss so we
+		// don't re-scan on every subsequent hover of the same non-segment block.
+		if (!this._blockSegmentCache.has(block)) {
+			this._blockSegmentCache.set(block, null);
+		}
+		return this._blockSegmentCache.get(block) ?? null;
+	}
+
+	/**
+	 * Walk the segment list once and add any newly resolvable blocks to the
+	 * cache. Each leaf block is mapped to its paragraph's first segment, so
+	 * the jump button still works when a paragraph spans multiple sub-blocks.
+	 */
+	private _populateBlockSegmentCache() {
+		let segments = this.state?.segments;
 		if (!segments) return;
 
-		let map = new Map<Element, ReadAloudSegment>();
 		let currentParagraphStart: ReadAloudSegment | null = null;
-
 		for (let s of segments) {
 			if (s.anchor === 'paragraphStart') {
 				currentParagraphStart = s;
@@ -259,11 +277,9 @@ export class ReadAloud<View extends DOMView<any, any>> {
 			let el = closestElement(range.startContainer);
 			if (!el) continue;
 			let block = this._view.getReadAloudBlock(el);
-			if (block && !map.has(block)) {
-				map.set(block, currentParagraphStart);
+			if (block && !this._blockSegmentCache.has(block)) {
+				this._blockSegmentCache.set(block, currentParagraphStart);
 			}
 		}
-		// Always set a Map (even empty) so we don't re-trigger on every setState
-		this.blockSegmentMap = map;
 	}
 }
