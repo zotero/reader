@@ -306,11 +306,11 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 	}
 
 	private _initOutline() {
-		let base = new Path(this.book.packaging.navPath || this.book.packaging.ncxPath || '');
+		let base = new Path(this.book.path.resolve(this.book.packaging.navPath || this.book.packaging.ncxPath || ''));
 		let toOutlineItem: (navItem: NavItem) => OutlineItem = navItem => ({
 			title: navItem.label,
 			location: {
-				href: base.resolve(navItem.href).replace(/^\//, '')
+				href: this.book.path.relative(base.resolve(navItem.href))
 			},
 			items: navItem.subitems?.map(toOutlineItem),
 			expanded: true,
