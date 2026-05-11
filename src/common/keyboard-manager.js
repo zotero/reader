@@ -87,8 +87,8 @@ export class KeyboardManager {
 				this._reader.moveReadAloudAnnotation('next', event.shiftKey);
 				return;
 			}
-			if (code.startsWith('Digit')) {
-				let idx = parseInt(code.slice(5)) - 1;
+			if (/^\d$/.test(key)) {
+				let idx = parseInt(key) - 1;
 				if (ANNOTATION_COLORS[idx]) {
 					event.preventDefault();
 					this._reader.setReadAloudAnnotationColor(ANNOTATION_COLORS[idx][1]);
@@ -397,7 +397,7 @@ export class KeyboardManager {
 			else if (this._reader._type === 'pdf' && key === 's') {
 				this._reader.setTool({ type: 'pointer' });
 			}
-			else if (code === 'KeyR' || code === 'KeyL') {
+			else if (key === 'r' || key === 'l') {
 				event.preventDefault();
 				event.stopPropagation();
 				if (this._reader._readAloudManager.active && !this._reader.getSelectionPosition()) {
