@@ -95,9 +95,9 @@ export class KeyboardManager {
 					return;
 				}
 			}
-			if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
+			if (key === 'h' || key === 'u') {
 				event.preventDefault();
-				this._reader.setReadAloudAnnotationType(key === 'h' || key === 'H' ? 'highlight' : 'underline');
+				this._reader.setReadAloudAnnotationType(key === 'h' ? 'highlight' : 'underline');
 				return;
 			}
 		}
@@ -437,14 +437,14 @@ export class KeyboardManager {
 					this._reader._state.readAloudState.controller?.skipAhead('paragraph', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
-				else if (key === 'h' || key === 'H' || key === 'u' || key === 'U') {
+				else if (key === 'h' || key === 'u') {
 					event.preventDefault();
 					event.stopPropagation();
 					let segment = this._reader._state.readAloudState.controller?.getSegmentToAnnotate();
 					if (segment) {
 						this._reader.addAnnotationFromReadAloudSegment(
 							segment,
-							key === 'h' || key === 'H' ? 'highlight' : 'underline'
+							key === 'h' ? 'highlight' : 'underline'
 						);
 					}
 				}
