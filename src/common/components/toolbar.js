@@ -29,6 +29,7 @@ import IconLoading from '../../../res/icons/16/loading.svg';
 
 function Toolbar(props) {
 	const pageInputRef = useRef();
+	const skipNextPageNumberBlurRef = useRef(false);
 	const { platform } = useContext(ReaderContext);
 
 	const { l10n } = useLocalization();
@@ -64,11 +65,19 @@ function Toolbar(props) {
 
 	function handlePageNumberKeydown(event) {
 		if (event.key === 'Enter') {
+			event.preventDefault();
+			event.stopPropagation();
 			props.onChangePageNumber(event.target.value);
+			skipNextPageNumberBlurRef.current = true;
+			setTimeout(() => props.onFocusView?.(), 0);
 		}
 	}
 
 	function handlePageNumberBlur(event) {
+		if (skipNextPageNumberBlurRef.current) {
+			skipNextPageNumberBlurRef.current = false;
+			return;
+		}
 		if (event.target.value != (props.pageLabel ?? (props.pageIndex + 1))) {
 			props.onChangePageNumber(event.target.value);
 		}

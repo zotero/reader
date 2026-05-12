@@ -344,6 +344,7 @@ class Reader {
 						onNavigateToPreviousPage={this.navigateToPreviousPage.bind(this)}
 						onNavigateToNextPage={this.navigateToNextPage.bind(this)}
 						onChangePageNumber={(pageNumber, options) => this._lastView.navigate({ pageNumber }, options)}
+						onFocusView={() => this._lastView.focus()}
 						onChangePageIndex={(pageIndex, options) => this._lastView.navigate({ pageIndex }, options)}
 						onChangeTool={this.setTool.bind(this)}
 						onToggleAppearancePopup={this.toggleAppearancePopup.bind(this)}
