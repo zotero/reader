@@ -50,6 +50,10 @@
 	#pageNumber {
 		width: 52px;
 		text-align: right;
+
+		&:focus {
+			text-align: left;
+		}
 	}
 
 	#numPages {
