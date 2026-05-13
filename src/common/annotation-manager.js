@@ -32,6 +32,7 @@ class AnnotationManager {
 
 		this._lastChangeTime = 0;
 		this._lastSaveTime = 0;
+		this._saveTimeout = null;
 
 		this._undoStack = [];
 		this._redoStack = [];
@@ -170,7 +171,6 @@ class AnnotationManager {
 			changedAnnotations.set(annotation.id, annotation);
 		}
 		this._applyChanges(changedAnnotations);
-		this.render();
 	}
 
 	deleteAnnotations(ids) {
@@ -349,9 +349,15 @@ class AnnotationManager {
 		if ((Date.now() - this._lastChangeTime < DEBOUNCE_TIME)
 			&& (Date.now() - this._lastSaveTime < DEBOUNCE_MAX_TIME)
 			&& !this._skipAnnotationSavingDebounce) {
-			setTimeout(this._triggerSaving.bind(this), 1000);
+			clearTimeout(this._saveTimeout);
+			this._saveTimeout = setTimeout(() => {
+				this._saveTimeout = null;
+				this._triggerSaving();
+			}, DEBOUNCE_TIME);
 			return;
 		}
+		clearTimeout(this._saveTimeout);
+		this._saveTimeout = null;
 		this._lastSaveTime = Date.now();
 		this._savingInProgress = true;
 
