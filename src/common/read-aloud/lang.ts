@@ -38,6 +38,12 @@ export function normalizeLanguage(lang: string): string {
 }
 
 export function isLanguageSupported(voiceLang: string, lang: string): boolean {
+	// Wildcard for non-Zotero TTS APIs that are language-agnostic,
+	// e.g. OpenAI
+	if (voiceLang === '*' || lang === '*') {
+		return true;
+	}
+
 	let normalizedLang = normalizeLanguage(lang);
 	let baseLang = getBaseLanguage(normalizedLang);
 	let hasRegion = normalizedLang.includes('-');

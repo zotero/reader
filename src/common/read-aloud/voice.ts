@@ -70,6 +70,11 @@ export function resolveEnabledVoiceIDs(
 export function getSupportedLanguages(voices: ReadAloudVoice[]): string[] {
 	let langs = new Set<string>();
 	for (let voice of voices) {
+		// Wildcard voices match any language and shouldn't appear as
+		// a selectable language option
+		if (voice.language === '*') {
+			continue;
+		}
 		let normalized = normalizeLanguage(voice.language);
 		langs.add(normalized);
 	}
@@ -81,6 +86,9 @@ export function getVoicesForLanguage<T extends ReadAloudVoice>(voices: T[], lang
 }
 
 export function getVoiceRegion(voice: ReadAloudVoice): string | null {
+	if (voice.language === '*') {
+		return null;
+	}
 	let normalized = normalizeLanguage(voice.language);
 	let base = getBaseLanguage(normalized);
 	return normalized.includes('-') ? normalized.substring(base.length + 1) : null;
