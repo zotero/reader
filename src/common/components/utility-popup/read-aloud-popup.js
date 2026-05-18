@@ -598,7 +598,7 @@ function SpeedSlider(props) {
 				aria-label={l10n.getString('reader-read-aloud-speed')}
 				type="range"
 				min="0.5"
-				max="2.0"
+				max="3.0"
 				step="0.1"
 				value={speedWhileDragging ?? speed}
 				tabIndex="-1"
