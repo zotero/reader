@@ -14,9 +14,6 @@ import {
 	OverlayPopupParams,
 	Platform,
 	Position,
-	ReadAloudGranularity,
-	ReadAloudSegment,
-	RangeRef,
 	SelectionPopupParams,
 	Theme,
 	Tool,
@@ -374,6 +371,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			.addEventListener('change', () => this._updateColorScheme());
 
 		await this._handleViewCreated(this._options.viewState || {});
+		this.setReadAloudState(this._options.readAloudState);
 		setTimeout(() => {
 			this._handleViewUpdate();
 		});
@@ -396,9 +394,32 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract toSelector(range: Range): Selector | null;
 
-	abstract toDisplayedRange(selector: Selector): Range | null;
+	abstract toDisplayedRange(position: Position): Range | null;
+
+	getSelectionPosition(): Position | null {
+		let sel = this._iframeWindow.getSelection();
+		if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+		return this.toSelector(sel.getRangeAt(0));
+	}
+
+	clearSelection() {
+		this._iframeWindow.getSelection()?.removeAllRanges();
+	}
+
+	protected _getAnnotationDisplayedRange(annotation: Partial<WADMAnnotation> & Pick<WADMAnnotation, 'type' | 'position'>): Range | null {
+		return this.toDisplayedRange(annotation.position);
+	}
 
 	abstract navigateToSelector(selector: Selector, options?: NavigateOptions): void;
+
+	isPositionNearView(position: Position): boolean {
+		let range = this.toDisplayedRange(position);
+		// Don't discard a position we can't resolve
+		if (!range) return true;
+		let rect = range.getBoundingClientRect();
+		let viewportHeight = this._iframeWindow.innerHeight;
+		return rect.bottom > -viewportHeight * 3 && rect.top < viewportHeight * 4;
+	}
 
 	// ***
 	// Abstractions over document structure
@@ -527,7 +548,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._renderAnnotations();
 
 				if (annotation?.text) {
-					this._options.onAddAnnotation(annotation);
+					this._options.onAddAnnotation(this._finalizeAnnotation(annotation));
 					return true;
 				}
 			}
@@ -681,7 +702,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				return this._displayedAnnotationCache.get(annotation)!;
 			}
 
-			let range = this.toDisplayedRange(annotation.position);
+			let range = this._getAnnotationDisplayedRange(annotation);
 			if (!range) return null;
 			let displayedAnnotation = {
 				id: annotation.id,
@@ -716,7 +737,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 		if (this._previewAnnotation) {
-			let range = this.toDisplayedRange(this._previewAnnotation.position);
+			let range = this._getAnnotationDisplayedRange(this._previewAnnotation);
 			if (range) {
 				displayedAnnotations.push({
 					sourceID: this._draggingNoteAnnotation?.id,
@@ -953,15 +974,20 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (!this._draggingNoteAnnotation || !this._previewAnnotation) {
 			return;
 		}
+		let finalized = this._finalizeAnnotation(this._previewAnnotation);
 		let newAnnotation: WADMAnnotation = {
 			...this._draggingNoteAnnotation,
-			position: this._previewAnnotation.position,
-			pageLabel: this._previewAnnotation.pageLabel,
-			sortIndex: this._previewAnnotation.sortIndex,
-			text: this._previewAnnotation.text,
+			position: finalized.position,
+			pageLabel: finalized.pageLabel,
+			sortIndex: finalized.sortIndex,
+			text: finalized.text,
 		};
 		this._previewAnnotation = null;
 		this._options.onUpdateAnnotations([newAnnotation]);
+	}
+
+	protected _finalizeAnnotation(annotation: NewAnnotation<WADMAnnotation>): NewAnnotation<WADMAnnotation> {
+		return annotation;
 	}
 
 	protected _getNoteTargetRange(event: PointerEvent | DragEvent): Range | null {
@@ -1251,7 +1277,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				}
 			}
 			if (annotation) {
-				this._options.onAddAnnotation(annotation, true);
+				this._options.onAddAnnotation(this._finalizeAnnotation(annotation), true);
 				this.navigateToSelector(annotation.position, {
 					block: 'center',
 					behavior: 'smooth',
@@ -1587,7 +1613,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
 		if ((event.buttons & 1) === 1 && this._tool.type == 'note' && this._previewAnnotation) {
-			this._options.onAddAnnotation(this._previewAnnotation!, true);
+			this._options.onAddAnnotation(this._finalizeAnnotation(this._previewAnnotation!), true);
 			this._previewAnnotation = null;
 			this._renderAnnotations(true);
 			this._openAnnotationPopup();
@@ -1677,12 +1703,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
+	/**
+	 * Find the containing block for Read Aloud jump button positioning.
+	 */
+	getReadAloudBlock(element: Element): Element | null {
+		return getContainingBlock(element);
+	}
+
 	protected _handlePointerMoveForReadAloud = throttle((event: MouseEvent) => {
 		if (!this._readAloud.state?.popupOpen || event.buttons !== 0) {
 			return;
 		}
-		let iconTargetRect = this._readAloudJumpButton.iconTargetRect;
-		if (iconTargetRect && rectContainsPoint(iconTargetRect, event.clientX, event.clientY)) {
+		if (this._readAloudJumpButton.iconContainsPoint(event.clientX, event.clientY)) {
 			return;
 		}
 
@@ -1696,18 +1728,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		let element = closestElement(target);
 		if (!element) return;
 
-		let block = getContainingBlock(element);
+		let block = this.getReadAloudBlock(element);
 		if (!block || block === this._readAloudJumpButtonBlock) {
 			return;
 		}
 
 		// Only show for blocks that are the direct containing block of a segment,
 		// not ancestor blocks (e.g. a wrapper <div> containing <p>s in snapshots)
-		let segments = this._readAloud.state!.segments;
-		if (!segments
-				|| !segments.some(s => getContainingBlock(
-					closestElement((s.position as RangeRef).range.startContainer)!
-				) === block)) {
+		if (!this._readAloud.getSegmentForBlock(block)) {
 			return;
 		}
 
@@ -1736,19 +1764,31 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _handleReadAloudJumpButtonClick() {
 		if (!this._readAloudJumpButtonBlock || !this._readAloud.state) return;
 
-		let blockRange = this._iframeDocument.createRange();
-		blockRange.selectNodeContents(this._readAloudJumpButtonBlock);
+		let segment = this._readAloud.getSegmentForBlock(this._readAloudJumpButtonBlock);
+		if (!segment) return;
 
-		// Immediately move the highlight to the target block
-		let blockSelector = this.toSelector(blockRange);
-		if (blockSelector) {
-			this.setSpotlight(SpotlightKey.ReadAloudActiveSegment, blockSelector, null);
+		// Match the immediate spotlight to the user's highlight granularity,
+		// so we don't show a wrong-granularity flash before the manager overrides
+		// with a new highlight.
+		let state = this._readAloud.state;
+		let useSegmentSpotlight = state.segmentGranularity === 'sentence'
+			&& state.highlightGranularity !== 'paragraph'
+			&& isSelector(segment.sourcePosition);
+		let immediateSelector: Selector | null;
+		if (useSegmentSpotlight) {
+			immediateSelector = segment.sourcePosition as Selector;
+		}
+		else {
+			let blockRange = this._iframeDocument.createRange();
+			blockRange.selectNodeContents(this._readAloudJumpButtonBlock);
+			immediateSelector = this.toSelector(blockRange);
+		}
+		if (immediateSelector) {
+			this.setSpotlight(SpotlightKey.ReadAloudActiveSegment, immediateSelector, null);
 		}
 
-		blockRange.collapse(true);
-
 		this._options.onSetReadAloudState({
-			targetPosition: { range: new PersistentRange(blockRange) },
+			targetPosition: segment.position,
 		});
 	}
 
@@ -1874,26 +1914,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	lockPositionToReadAloud(): void {
 		this._readAloud.setPositionLocked(true);
-	}
-
-	getSerializableReadAloudPosition(position: Position): Selector | null {
-		if ('range' in position) {
-			return this.toSelector(position.range.toRange());
-		}
-		if (!isSelector(position)) {
-			return null;
-		}
-		return position;
-	}
-
-	isReadAloudPositionTooFar(savedPosition: Position, _viewState: Record<string, unknown>): boolean {
-		let range = this.toDisplayedRange(savedPosition as Selector);
-		if (!range) {
-			// Can't resolve the selector - not in a displayed root
-			return true;
-		}
-		let rect = getBoundingPageRect(range);
-		return !isPageRectVisible(rect, this._iframeWindow, this._iframeWindow.innerHeight * 3);
 	}
 
 	protected _handleScrollCapture(event: Event) {
@@ -2165,27 +2185,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return this._readAloud.hasTarget;
 	}
 
-	addAnnotationFromReadAloudSegments(segments: ReadAloudSegment[], init: NewAnnotation<WADMAnnotation>): Annotation | null {
-		let annotation = this._readAloud.getAnnotationFromSegments(segments, init);
-		if (annotation) {
-			return this._options.onAddAnnotation(annotation);
-		}
-		return null;
-	}
-
-	computeReadAloudRepositionIndex(position: Position, segments: ReadAloudSegment[]): number | null {
-		return this._readAloud.computeRepositionIndex(position, segments);
-	}
-
-	getReadAloudRanges(granularity: ReadAloudGranularity): Range[] {
-		let rootRanges = this._getRoots(true).map((root) => {
-			let range = this._iframeDocument.createRange();
-			range.selectNodeContents(root);
-			return range;
-		});
-		return rootRanges.flatMap(rootRange => this._readAloud.getRanges(rootRange, granularity));
-	}
-
 	// ***
 	// Public methods to control the view from the outside
 	// ***
@@ -2315,6 +2314,7 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	penConnected?: boolean;
 	penActive?: boolean;
 	penExclusive?: boolean;
+	readAloudState: ReadAloudStateSnapshot;
 	readAloudVoices: Map<string, string>,
 	onSetOutline: (outline: OutlineItem[]) => void;
 	onChangeViewState: (state: State, primary?: boolean) => void;
@@ -2343,7 +2343,6 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	onKeyDown: (event: KeyboardEvent) => void;
 	onEPUBEncrypted: () => void;
 	onFocusAnnotation: (annotation: WADMAnnotation) => void;
-	onSetHiddenAnnotations: (ids: string[]) => void;
 	onBackdropTap?: (event: PointerEvent) => void;
 	getLocalizedString?: (name: string) => string;
 	data: Data & {

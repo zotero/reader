@@ -18,9 +18,9 @@ import IconSplitVertical from '../../../../res/icons/16/split-vertical.svg';
 import IconSpreadEven from '../../../../res/icons/16/spread-even.svg';
 import IconSpreadNone from '../../../../res/icons/16/spread-none.svg';
 import IconSpreadOdd from '../../../../res/icons/16/spread-odd.svg';
-import IconX from '../../../../res/icons/16/x-8.svg';
 import IconOptions from '../../../../res/icons/16/options.svg';
 import IconPlus from '../../../../res/icons/20/plus.svg';
+import IconLoading from '../../../../res/icons/16/loading.svg';
 import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
@@ -260,7 +260,82 @@ function AppearancePopup(props) {
 	return (
 		<div ref={overlayRef} className="toolbar-popup-overlay overlay" onPointerDown={handlePointerDown}>
 			<div className={cx('modal-popup appearance-popup')}>
-				{type === 'pdf' && (
+				{type === 'epub' && (
+					<div className="group">
+						<div className="option">
+							<label>{l10n.getString('reader-flow-mode')}</label>
+							<div className="split-toggle" data-tabstop={1}>
+								<button
+									tabIndex={-1}
+									className={cx({ active: props.viewStats.flowMode === 'paginated' })}
+									title={l10n.getString('reader-paginated')}
+									onClick={() => props.onChangeFlowMode('paginated')}
+								><IconFlowPaginated/></button>
+								<button
+									tabIndex={-1}
+									className={cx({ active: props.viewStats.flowMode === 'scrolled' })}
+									title={l10n.getString('reader-scrolled')}
+									onClick={() => props.onChangeFlowMode('scrolled')}
+								><IconFlowScrolled/></button>
+							</div>
+						</div>
+						{!props.viewStats.fixedLayout && (
+							<div className="option">
+								<label>{l10n.getString('reader-columns')}</label>
+								<div className="split-toggle" data-tabstop={1}>
+									<button
+										tabIndex={-1}
+										className={cx({ active: props.viewStats.spreadMode === 0 })}
+										title={l10n.getString('reader-single')}
+										onClick={() => props.onChangeSpreadMode(0)}
+										disabled={props.viewStats.flowMode === 'scrolled'}
+									><IconColumnSingle/></button>
+									<button
+										tabIndex={-1}
+										className={cx({ active: props.viewStats.spreadMode === 1 })}
+										title={l10n.getString('reader-double')}
+										onClick={() => props.onChangeSpreadMode(1)}
+										disabled={props.viewStats.flowMode === 'scrolled'}
+									><IconColumnDouble/></button>
+								</div>
+							</div>
+						)}
+					</div>
+				)}
+				{!(type === 'epub' && props.viewStats.fixedLayout) && (
+					<div className="group">
+						{(type === 'snapshot' || type === 'pdf') && (
+							<div className="option">
+								<label htmlFor="reading-mode-enabled">{l10n.getString('reader-reading-mode')}</label>
+								<div className="reading-mode-control">
+									{props.readingModeLoading && (
+										<IconLoading className="loading-spinner" aria-busy={true}/>
+									)}
+									<input
+										data-tabstop={1}
+										tabIndex={-1}
+										className="switch"
+										type="checkbox"
+										id="reading-mode-enabled"
+										checked={props.readingModeEnabled || props.readingModeLoading}
+										disabled={props.readingModeLoading}
+										onChange={e => props.onChangeReadingModeEnabled(e.target.checked)}
+									/>
+								</div>
+							</div>
+						)}
+						{(type === 'epub' || props.readingModeEnabled) && (
+							<ReflowableAppearanceSection
+								params={props.viewStats.appearance}
+								enablePageWidth={type !== 'epub'
+									|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
+								onChange={props.onChangeAppearance}
+								indent={type === 'snapshot' || type === 'pdf'}
+							/>
+						)}
+					</div>
+				)}
+				{type === 'pdf' && !props.viewStats.readingModeEnabled && (
 					<div className="group">
 						<div className="option">
 							<label>{l10n.getString('reader-scroll-mode')}</label>
@@ -308,75 +383,6 @@ function AppearancePopup(props) {
 								><IconSpreadEven/></button>
 							</div>
 						</div>
-					</div>
-				)}
-				{type === 'epub' && (
-					<div className="group">
-						<div className="option">
-							<label>{l10n.getString('reader-flow-mode')}</label>
-							<div className="split-toggle" data-tabstop={1}>
-								<button
-									tabIndex={-1}
-									className={cx({ active: props.viewStats.flowMode === 'paginated' })}
-									title={l10n.getString('reader-paginated')}
-									onClick={() => props.onChangeFlowMode('paginated')}
-								><IconFlowPaginated/></button>
-								<button
-									tabIndex={-1}
-									className={cx({ active: props.viewStats.flowMode === 'scrolled' })}
-									title={l10n.getString('reader-scrolled')}
-									onClick={() => props.onChangeFlowMode('scrolled')}
-								><IconFlowScrolled/></button>
-							</div>
-						</div>
-						{!props.viewStats.fixedLayout && (
-							<div className="option">
-								<label>{l10n.getString('reader-columns')}</label>
-								<div className="split-toggle" data-tabstop={1}>
-									<button
-										tabIndex={-1}
-										className={cx({ active: props.viewStats.spreadMode === 0 })}
-										title={l10n.getString('reader-single')}
-										onClick={() => props.onChangeSpreadMode(0)}
-										disabled={props.viewStats.flowMode === 'scrolled'}
-									><IconColumnSingle/></button>
-									<button
-										tabIndex={-1}
-										className={cx({ active: props.viewStats.spreadMode === 1 })}
-										title={l10n.getString('reader-double')}
-										onClick={() => props.onChangeSpreadMode(1)}
-										disabled={props.viewStats.flowMode === 'scrolled'}
-									><IconColumnDouble/></button>
-								</div>
-							</div>
-						)}
-					</div>
-				)}
-				{(type === 'epub' || type === 'snapshot') && !(type === 'epub' && props.viewStats.fixedLayout) && (
-					<div className="group">
-						{type === 'snapshot' && (
-							<div className="option">
-								<label htmlFor="reading-mode-enabled">{l10n.getString('reader-reading-mode')}</label>
-								<input
-									data-tabstop={1}
-									tabIndex={-1}
-									className="switch"
-									type="checkbox"
-									id="reading-mode-enabled"
-									checked={props.viewStats.readingModeEnabled}
-									onChange={e => props.onChangeReadingModeEnabled(e.target.checked)}
-								/>
-							</div>
-						)}
-						{(type === 'epub' || props.viewStats.readingModeEnabled) && (
-							<ReflowableAppearanceSection
-								params={props.viewStats.appearance}
-								enablePageWidth={type === 'snapshot'
-									|| props.viewStats.flowMode !== 'paginated' || props.viewStats.spreadMode === 0}
-								onChange={props.onChangeAppearance}
-								indent={type === 'snapshot'}
-							/>
-						)}
 					</div>
 				)}
 				<div className="group">

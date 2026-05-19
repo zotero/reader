@@ -1,4 +1,5 @@
 import Reader from './common/reader';
+import { generateSDT, streamSDT } from './worker-client.dev';
 import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
@@ -9,6 +10,47 @@ import brandFTL from '../locales/en-US/brand.ftl';
 // Injected by Webpack in dev builds
 // eslint-disable-next-line no-process-env
 const ZOTERO_API_KEY = process.env.ZOTERO_API_KEY;
+
+const READ_ALOUD_CACHE = 'zotero-read-aloud';
+
+function readAloudCacheURL(voiceId, text) {
+	return 'https://read-aloud.zotero.invalid/audio?'
+		+ new URLSearchParams({ voice: voiceId, text });
+}
+
+async function loadCachedReadAloudAudio(voiceId, text) {
+	try {
+		let cache = await caches.open(READ_ALOUD_CACHE);
+		let baseURL = readAloudCacheURL(voiceId, text);
+		let [audioResponse, timestampsResponse] = await Promise.all([
+			cache.match(baseURL),
+			cache.match(baseURL + '&meta=timestamps'),
+		]);
+		// Both entries must be present. A lone audio entry means an older
+		// format -- treat it as a miss so we re-fetch and rewrite paired.
+		if (!audioResponse || !timestampsResponse) return null;
+		let timestamps = await timestampsResponse.json();
+		return { audio: await audioResponse.blob(), timestamps: timestamps ?? undefined };
+	}
+	catch (e) {
+		console.error(e);
+		return null;
+	}
+}
+
+async function storeCachedReadAloudAudio(voiceId, text, audio, timestamps) {
+	try {
+		let cache = await caches.open(READ_ALOUD_CACHE);
+		let baseURL = readAloudCacheURL(voiceId, text);
+		await Promise.all([
+			cache.put(baseURL, new Response(audio)),
+			cache.put(baseURL + '&meta=timestamps', Response.json(timestamps ?? null)),
+		]);
+	}
+	catch (e) {
+		console.error(e);
+	}
+}
 
 window.dev = true;
 
@@ -29,19 +71,37 @@ async function createReader() {
 	else if (type === 'snapshot') {
 		demo = snapshot;
 	}
+
+	// Set ?lastReadAloudPosition=base64(JSON) to simulate a persisted Read Aloud position
+	let savedPositionParam = urlParams.get('lastReadAloudPosition');
+	let savedPosition = null;
+	if (savedPositionParam) {
+		try {
+			savedPosition = JSON.parse(atob(savedPositionParam));
+		}
+		catch (e) {
+			console.warn('Failed to parse lastReadAloudPosition param', e);
+		}
+	}
+	let primaryViewState = savedPosition
+		? { ...demo.state, lastReadAloudPosition: savedPosition }
+		: demo.state;
 	let readAloudVoices = {};
 	let res = await fetch(demo.fileName);
+
 	let reader = new Reader({
 		type,
 		ftl: [zoteroFTL, readerFTL, brandFTL],
 		readOnly: false,
+		getSDT: password => generateSDT(type, demo.fileName, password),
+		getSDTStream: (password, onChunk, onStart) => streamSDT(type, demo.fileName, password, onChunk, onStart),
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 			url: new URL('/', window.location).toString()
 		},
 		// rtl: true,
 		annotations: demo.annotations,
-		primaryViewState: demo.state,
+		primaryViewState,
 		sidebarWidth: 240,
 		sidebarView: 'annotations', //thumbnails, outline
 		bottomPlaceholderHeight: null,
@@ -66,6 +126,11 @@ async function createReader() {
 		},
 		onChangeViewState: function (state, primary) {
 			console.log('Set state', state, primary);
+			// Stash the latest persisted Read Aloud position so we can
+			// inspect/reuse it from the test harness.
+			if (primary) {
+				window._lastPersistedReadAloudPosition = state.lastReadAloudPosition ?? null;
+			}
 		},
 		onOpenTagsPopup(annotationID, left, top) {
 			alert(`Opening Zotero tagbox popup for id: ${annotationID}, left: ${left}, top: ${top}`);
@@ -227,25 +292,15 @@ async function createReader() {
 			},
 
 			async getAudio(segment, voice) {
-				let cacheURL = 'https://read-aloud.zotero.invalid/audio?'
-					+ new URLSearchParams({ voice: voice.id, text: segment.text });
-				let cache;
-				try {
-					cache = await caches.open('zotero-read-aloud');
-					let cached = await cache.match(cacheURL);
-					if (cached) {
-						return { audio: await cached.blob() };
-					}
-				}
-				catch (e) {
-					console.error(e);
-				}
+				let cached = await loadCachedReadAloudAudio(voice.id, segment.text);
+				if (cached) return cached;
 
 				let url;
 				let fetchOptions;
 				if (segment === 'sample') {
 					let params = new URLSearchParams();
 					params.set('voice', voice.id);
+					params.set('timestamps', '1');
 					url = 'https://api.zotero.org/tts/sample?' + params;
 					fetchOptions = {
 						headers: {
@@ -264,6 +319,7 @@ async function createReader() {
 						body: JSON.stringify({
 							voice: voice.id,
 							text: segment.text,
+							timestamps: 1,
 						}),
 					};
 				}
@@ -292,14 +348,30 @@ async function createReader() {
 					};
 				}
 
-				let audio = await response.blob();
-				try {
-					await cache?.put(cacheURL, new Response(audio));
+				// Either we got a redirect-followed audio response, or a JSON envelope with
+				// `audioURL` and `timestamps` for word-level highlighting.
+				let audio;
+				let timestamps;
+				if (response.headers.get('Content-Type')?.includes('application/json')) {
+					let json = await response.json();
+					timestamps = json.timestamps;
+					try {
+						let audioResponse = await fetch(json.audioURL);
+						if (!audioResponse.ok) {
+							return { audio: null, error: 'unknown' };
+						}
+						audio = await audioResponse.blob();
+					}
+					catch {
+						return { audio: null, error: 'network' };
+					}
 				}
-				catch (e) {
-					console.error(e);
+				else {
+					audio = await response.blob();
 				}
-				return { audio };
+
+				await storeCachedReadAloudAudio(voice.id, segment.text, audio, timestamps);
+				return { audio, timestamps };
 			},
 		},
 		onLogIn() {

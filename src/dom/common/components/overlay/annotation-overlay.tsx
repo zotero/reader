@@ -551,11 +551,16 @@ type NotePreviewProps = {
 
 const StaggeredNotes: React.FC<StaggeredNotesProps> = (props) => {
 	let { annotations, selectedAnnotationIDs, onPointerDown, onPointerUp, onContextMenu, onDragStart } = props;
-	let staggerMap = new Map<string | undefined, number>();
+	let staggerMap = new Map<string, number>();
 	return <>
 		{annotations.map((annotation) => {
-			let stagger = staggerMap.has(annotation.sortIndex) ? staggerMap.get(annotation.sortIndex)! : 0;
-			staggerMap.set(annotation.sortIndex, stagger + 1);
+			let rect = annotation.range.getBoundingClientRect();
+			// Stagger notes that share a sort index or visual position
+			let posKey = `pos:${Math.round(rect.x / 5)},${Math.round(rect.y / 5)}`;
+			let sortKey = `sort:${annotation.sortIndex}`;
+			let stagger = Math.max(staggerMap.get(posKey) ?? 0, staggerMap.get(sortKey) ?? 0);
+			staggerMap.set(posKey, stagger + 1);
+			staggerMap.set(sortKey, stagger + 1);
 			if (annotation.id) {
 				return (
 					<Note
