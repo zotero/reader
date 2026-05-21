@@ -29,7 +29,9 @@ async function createReader() {
 	else if (type === 'snapshot') {
 		demo = snapshot;
 	}
-	let readAloudVoices = {};
+
+	// Default to Standard without showing first-run
+	let readAloudVoices = { en: { tierVoices: { standard: {} } } };
 	let res = await fetch(demo.fileName);
 	let reader = new Reader({
 		type,
