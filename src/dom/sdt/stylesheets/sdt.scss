@@ -31,6 +31,7 @@
 body {
 	margin-inline: auto;
 	padding: 3rem;
+	overflow-wrap: break-word;
 
 	:root[data-page-width="narrow"] & {
 		max-inline-size: 650px;
