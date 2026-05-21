@@ -11,16 +11,6 @@ import { detectLang } from '../lib/detect-lang';
 import { getBaseLanguage } from './lang';
 import { PositionIndex } from '../../dom/sdt/lib/position-index';
 
-export interface PartialSDTChunk {
-	kind: 'partial';
-	pages: unknown[];
-	content: ContentBlockNode[];
-	pageIndexOffset: number;
-	contentIndexOffset: number;
-	pageIndexRange: [number, number];
-	totalPageCount: number;
-}
-
 /**
  * One leaf block's concatenated text with its text-node mappings. The
  * mappings let us convert offsets in the concatenated text back to
@@ -64,7 +54,7 @@ export function getSDTLang(sdt: StructuredDocumentText): string {
 	return detectLangFromContent(sdt.content);
 }
 
-export function detectLangFromContent(content: ContentBlockNode[]): string {
+function detectLangFromContent(content: ContentBlockNode[]): string {
 	let sampleText = '';
 	let count = 0;
 	for (let block of content) {
@@ -104,17 +94,6 @@ function buildSegmentsFromBlockTexts(
 		segments.push(...blockSegments);
 	}
 	return segments;
-}
-
-export function buildSDTReadAloudSegmentsFromChunk(
-	chunk: PartialSDTChunk,
-	granularity: ReadAloudGranularity,
-	lang: string,
-): ReadAloudSegment[] {
-	let localIndex = new PositionIndex(null);
-	localIndex.appendContent(chunk.content, chunk.contentIndexOffset);
-	let blockTexts = buildBlockTexts(localIndex);
-	return buildSegmentsFromBlockTexts(blockTexts, granularity, lang);
 }
 
 /**

@@ -15,7 +15,7 @@ const DOCUMENT_WORKER_BASE = 'document-worker/';
 let documentWorker = null;
 let documentWorkerFailed = false;
 let lastWorkerPromiseID = 0;
-// id -> { resolve, reject, onPartial? }. onPartial is set for streaming queries.
+// id -> { resolve, reject }.
 let workerPromises = {};
 
 function failAllPending(error) {
@@ -41,17 +41,6 @@ function initDocumentWorker() {
 		if (message.responseID) {
 			let pending = workerPromises[message.responseID];
 			if (!pending) return;
-			if (message.isPartial) {
-				if (pending.onPartial) {
-					try {
-						pending.onPartial(message.data);
-					}
-					catch (e) {
-						console.warn('onPartial handler threw:', e);
-					}
-				}
-				return;
-			}
 			delete workerPromises[message.responseID];
 			if ('error' in message) {
 				pending.reject(new Error(JSON.stringify(message.error)));
@@ -102,29 +91,6 @@ function queryDocumentWorker(action, data, transfer) {
 	});
 }
 
-function streamingQueryDocumentWorker(action, data, transfer, onPartial) {
-	let worker = initDocumentWorker();
-	if (!worker) {
-		return {
-			id: null,
-			promise: Promise.reject(new Error('Document worker unavailable')),
-			abort: () => {},
-		};
-	}
-	lastWorkerPromiseID++;
-	let id = lastWorkerPromiseID;
-	let promise = new Promise((resolve, reject) => {
-		workerPromises[id] = { resolve, reject, onPartial };
-		worker.postMessage({ id, action, data }, transfer || []);
-	});
-	let abort = () => {
-		if (workerPromises[id]) {
-			worker.postMessage({ action: 'abort', id });
-		}
-	};
-	return { id, promise, abort };
-}
-
 export async function generateSDT(type, fileName, password) {
 	let contentType = CONTENT_TYPES[type];
 	if (!contentType) return null;
@@ -143,31 +109,3 @@ export async function generateSDT(type, fileName, password) {
 	}
 }
 
-export async function streamSDT(type, fileName, password, onChunk, onStart) {
-	let contentType = CONTENT_TYPES[type];
-	if (!contentType) return;
-	let res = await fetch(fileName);
-	let buf = await res.arrayBuffer();
-	let { promise, abort } = streamingQueryDocumentWorker(
-		'getStructuredDocumentTextJSON',
-		{ buf, contentType, password, sourceHash: DEV_SOURCE_HASH, streaming: true },
-		[buf],
-		(chunk) => {
-			try {
-				onChunk(chunk);
-			}
-			catch (e) {
-				console.warn('getSDTStream onChunk threw:', e);
-			}
-		},
-	);
-	if (onStart) {
-		try {
-			onStart(abort);
-		}
-		catch (e) {
-			console.warn('getSDTStream onStart threw:', e);
-		}
-	}
-	await promise;
-}

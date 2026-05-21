@@ -1,5 +1,5 @@
 import Reader from './common/reader';
-import { generateSDT, streamSDT } from './worker-client.dev';
+import { generateSDT } from './worker-client.dev';
 import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
@@ -96,7 +96,6 @@ async function createReader() {
 		ftl: [zoteroFTL, readerFTL, brandFTL],
 		readOnly: false,
 		getSDT: password => generateSDT(type, demo.fileName, password),
-		getSDTStream: (password, onChunk, onStart) => streamSDT(type, demo.fileName, password, onChunk, onStart),
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 			url: new URL('/', window.location).toString()
