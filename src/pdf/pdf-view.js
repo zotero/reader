@@ -669,7 +669,8 @@ class PDFView {
 	getVisibleBlockIndex(sdtData) {
 		let pdfViewer = this._iframeWindow?.PDFViewerApplication?.pdfViewer;
 		let viewerContainer = this._iframeWindow?.document?.getElementById('viewerContainer');
-		if (!pdfViewer || !viewerContainer || !sdtData?.pages || !sdtData?.content) {
+		let pages = sdtData?.catalog?.pages;
+		if (!pdfViewer || !viewerContainer || !pages || !sdtData?.content) {
 			return null;
 		}
 		let visibleRect = [
@@ -690,11 +691,11 @@ class PDFView {
 		}
 
 		for (let pageIdx of pageIndices) {
-			let ranges = sdtData.pages[pageIdx]?.contentRanges;
+			let ranges = pages[pageIdx]?.contentRanges;
 			if (!ranges?.length) continue;
 			for (let range of ranges) {
-				let start = range.start?.ref?.[0];
-				let end = range.end?.ref?.[0] ?? start;
+				let start = range[0]?.[0];
+				let end = range[1]?.[0] ?? start;
 				if (start === undefined) continue;
 				for (let i = start; i <= end; i++) {
 					let block = sdtData.content[i];
@@ -756,12 +757,13 @@ class PDFView {
 	}
 
 	navigateToSDTBlock(sdtData, blockIndex) {
-		if (!sdtData.pages) return;
-		for (let [pageIdx, page] of sdtData.pages.entries()) {
+		let pages = sdtData?.catalog?.pages;
+		if (!pages) return;
+		for (let [pageIdx, page] of pages.entries()) {
 			if (!page.contentRanges) continue;
 			for (let range of page.contentRanges) {
-				let startBlock = range.start.ref[0];
-				let endBlock = range.end.ref[0];
+				let startBlock = range[0][0];
+				let endBlock = range[1][0];
 				if (blockIndex >= startBlock && blockIndex <= endBlock) {
 					this.navigate({ pageIndex: pageIdx }, { skipHistory: true, behavior: 'instant' });
 					return;

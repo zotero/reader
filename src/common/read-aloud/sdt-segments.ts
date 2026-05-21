@@ -56,9 +56,8 @@ export type ReadAloudBlockIndex = ReadonlyMap<string, BlockText>;
  * Extract language from SDT metadata, falling back to content detection.
  */
 export function getSDTLang(sdt: StructuredDocumentText): string {
-	let lang = sdt.metadata?.language
-		|| sdt.metadata?.Language
-		|| sdt.metadata?.['dc:language'];
+	let props = sdt.metadata?.source?.properties;
+	let lang = props?.language || props?.Language || props?.['dc:language'];
 	if (typeof lang === 'string' && lang) {
 		return getBaseLanguage(lang);
 	}

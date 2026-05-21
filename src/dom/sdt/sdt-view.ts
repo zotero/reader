@@ -64,9 +64,8 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	override get lang(): string {
-		let lang = this._sdt.metadata?.language
-			|| this._sdt.metadata?.Language
-			|| this._sdt.metadata?.['dc:language'];
+		let props = this._sdt.metadata?.source?.properties as Record<string, unknown> | undefined;
+		let lang = props?.language || props?.Language || props?.['dc:language'];
 		if (typeof lang === 'string' && lang) {
 			return lang.split('-')[0];
 		}
@@ -123,12 +122,12 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	private _initOutline() {
-		if (!this._sdt.outline?.length) return;
-		let outline = this._convertOutline(this._sdt.outline);
+		if (!this._sdt.catalog?.outline?.length) return;
+		let outline = this._convertOutline(this._sdt.catalog.outline);
 		this._options.onSetOutline(outline);
 	}
 
-	private _convertOutline(items: StructuredDocumentText['outline']): OutlineItem[] {
+	private _convertOutline(items: StructuredDocumentText['catalog']['outline']): OutlineItem[] {
 		if (!items) return [];
 		return items.map((item) => {
 			let location: NavLocation = {};

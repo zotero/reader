@@ -4,6 +4,9 @@ const CONTENT_TYPES = {
 	snapshot: 'text/html',
 };
 
+// Dummy hash
+const DEV_SOURCE_HASH = '0'.repeat(32);
+
 // Served by webpack-dev-server from ../document-worker/build/ (see devServer.static
 // in webpack.config.js). If document-worker hasn't been built, the worker fails
 // to load and getSDT() resolves to null.
@@ -130,7 +133,7 @@ export async function generateSDT(type, fileName, password) {
 		let buf = await res.arrayBuffer();
 		return await queryDocumentWorker(
 			'getStructuredDocumentText',
-			{ buf, contentType, password },
+			{ buf, contentType, password, sourceHash: DEV_SOURCE_HASH },
 			[buf]
 		);
 	}
@@ -146,8 +149,8 @@ export async function streamSDT(type, fileName, password, onChunk, onStart) {
 	let res = await fetch(fileName);
 	let buf = await res.arrayBuffer();
 	let { promise, abort } = streamingQueryDocumentWorker(
-		'getStructuredDocumentText',
-		{ buf, contentType, password, streaming: true },
+		'getStructuredDocumentTextJSON',
+		{ buf, contentType, password, sourceHash: DEV_SOURCE_HASH, streaming: true },
 		[buf],
 		(chunk) => {
 			try {

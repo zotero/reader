@@ -8,7 +8,7 @@ export type ProcessorType = 'pdf' | 'epub' | 'snapshot';
 
 export function createPositionMapper(sdt: StructuredDocumentText): PositionMapper {
 	let index = new PositionIndex(sdt);
-	return createPositionMapperForType(sdt.processor.type as ProcessorType, index);
+	return createPositionMapperForType(sdt.metadata.processor.type as ProcessorType, index);
 }
 
 export function createEmptyPositionMapper(type: ProcessorType): PositionMapper {

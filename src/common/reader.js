@@ -33,6 +33,7 @@ import { getVoicePreferencesURL } from './lib/read-aloud-links';
 import { resolveLanguage } from './read-aloud/lang';
 import { ReadAloudManager } from './read-aloud/manager';
 import { createPositionMapper, createEmptyPositionMapper } from '../dom/sdt/lib/create-position-mapper';
+import { openStructuredDocumentTextPack } from '../../structured-document-text/src/pack/reader';
 import {
 	buildSDTReadAloudSegments,
 	buildSDTReadAloudSegmentsFromChunk,
@@ -1121,13 +1122,14 @@ class Reader {
 		}
 		if (!this._sdtLoadPromise) {
 			this._sdtLoadPromise = (async () => {
-				let data;
+				let result;
 				try {
-					data = await this._getSDT(this._password);
+					result = await this._getSDT(this._password);
 				}
 				catch (e) {
 					console.warn('Failed to load SDT data:', e);
 				}
+				let data = await materializeSDT(result);
 				if (!data) {
 					return;
 				}
@@ -1284,7 +1286,11 @@ class Reader {
 			lang: null,
 			rawChunks: [],
 			cachedSegments: [],
-			partialSDT: { processor: { type: this._type }, pages: [], content: [], metadata: {} },
+			partialSDT: {
+				metadata: { processor: { type: this._type } },
+				catalog: { pages: [] },
+				content: [],
+			},
 			pendingStart: granularity ? this._captureReadAloudStart() : null,
 			pendingResolution: !!granularity,
 			abort: null,
@@ -1337,7 +1343,7 @@ class Reader {
 		if (chunk.kind !== 'partial') return;
 
 		state.rawChunks.push(chunk);
-		if (chunk.pages) state.partialSDT.pages.push(...chunk.pages);
+		if (chunk.pages) state.partialSDT.catalog.pages.push(...chunk.pages);
 		if (chunk.content) state.partialSDT.content.push(...chunk.content);
 		this._sdtPositionMapper.index.appendContent(chunk.content, chunk.contentIndexOffset);
 		this._sdtPositionMapper.refresh();
@@ -3026,6 +3032,12 @@ class Reader {
 		this._ensureType('epub');
 		this._lastView.setFlowMode(value);
 	}
+}
+
+async function materializeSDT(result) {
+	if (!result?.buf) return null;
+	let pack = await openStructuredDocumentTextPack(new Uint8Array(result.buf));
+	return pack.materialize();
 }
 
 export default Reader;
