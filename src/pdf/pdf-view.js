@@ -1562,6 +1562,38 @@ class PDFView {
 				}
 			}
 		}
+
+		// Collapse consecutive entries that share a visual line into one hit
+		// target.
+		// A heading like "1. Introduction" becomes two sentence-level segments
+		// ("1." and "Introduction"), and the x-clustering above then splits
+		// them into two index entries with a gap between them.
+		// We restrict the merge to single-line-tall segments to avoid
+		// collapsing the per-column entries that a multi-line paragraph
+		// produces when it spans two columns of a single page.
+		const SINGLE_LINE_MAX_HEIGHT = 40;
+		for (let i = this._readAloudParagraphIndex.length - 1; i > 0; i--) {
+			let curr = this._readAloudParagraphIndex[i];
+			let prev = this._readAloudParagraphIndex[i - 1];
+			if (curr.pageIndex !== prev.pageIndex) continue;
+
+			let currHeight = curr.rect[3] - curr.rect[1];
+			let prevHeight = prev.rect[3] - prev.rect[1];
+			if (currHeight > SINGLE_LINE_MAX_HEIGHT
+					|| prevHeight > SINGLE_LINE_MAX_HEIGHT) continue;
+
+			let yOverlap = Math.min(curr.rect[3], prev.rect[3])
+				- Math.max(curr.rect[1], prev.rect[1]);
+			if (yOverlap < Math.max(currHeight, prevHeight) * 0.5) continue;
+
+			prev.rect = [
+				Math.min(prev.rect[0], curr.rect[0]),
+				Math.min(prev.rect[1], curr.rect[1]),
+				Math.max(prev.rect[2], curr.rect[2]),
+				Math.max(prev.rect[3], curr.rect[3]),
+			];
+			this._readAloudParagraphIndex.splice(i, 1);
+		}
 	}
 
 	_updateReadAloudJumpButton(position, event) {
