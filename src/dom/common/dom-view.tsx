@@ -1885,6 +1885,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (this._iframeDocument) {
 			this._iframeDocument.documentElement.style.width = width + 'px';
 			this._iframeDocument.documentElement.style.height = height + 'px';
+			// Immediately reposition annotations
+			this._handleViewUpdate();
 		}
 	}
 
