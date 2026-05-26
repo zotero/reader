@@ -185,6 +185,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	private _resizeObserver: ResizeObserver;
 
+	private _lastResizeObserverWidth: number | null = null;
+
+	private _lastResizeObserverHeight: number | null = null;
+
 	protected _a11yVirtualCursorTarget: Node | null;
 
 	protected _a11yShouldFocusVirtualCursorTarget: boolean;
@@ -240,6 +244,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this.initializedPromise.then(() => this.initialized = true);
 		this._resizeIframeImmediate();
 		this._resizeObserver = new ResizeObserver(() => {
+			let dpr = window.devicePixelRatio || 1;
+			let width = Math.floor(this._container.clientWidth * dpr) / dpr;
+			let height = Math.floor(this._container.clientHeight * dpr) / dpr;
+			if (width === this._lastResizeObserverWidth && height === this._lastResizeObserverHeight) {
+				return;
+			}
+			this._lastResizeObserverWidth = width;
+			this._lastResizeObserverHeight = height;
 			this._resizeIframeLeading();
 			this._resizeIframeTrailing();
 		});
