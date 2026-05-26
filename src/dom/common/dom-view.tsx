@@ -147,6 +147,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _gotPointerUp = false;
 
+	protected _hadSelectionOnPointerDown = false;
+
 	protected _handledPointerIDs = new Set<number>();
 
 	protected _lastScrollTime: number | null = null;
@@ -1578,6 +1580,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._gotPointerUp = false;
 			this._pointerMovementWhileDown = 0;
 			this._lastPointerPosition = { x: event.clientX, y: event.clientY };
+			let selection = this._iframeWindow.getSelection();
+			this._hadSelectionOnPointerDown = !!selection && !selection.isCollapsed;
 
 			let touchCaretPosition = this._getTouchAnnotationStartPosition(event);
 			if (touchCaretPosition) {
@@ -1645,6 +1649,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (!wasToolUsed
 					&& this._pointerMovementWhileDown <= 5
 					&& !this._handledPointerIDs.has(event.pointerId)
+					&& !this._hadSelectionOnPointerDown
 					&& !(event.target as Element).closest('a')) {
 				this._options.onBackdropTap?.(event);
 			}
