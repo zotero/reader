@@ -9,6 +9,8 @@
 	html {
 		margin: 0 !important;
 		padding: 0 !important;
+		// Suppress pan-x action that conflicts with page turning on Android
+		touch-action: pan-y;
 	}
 
 	body {

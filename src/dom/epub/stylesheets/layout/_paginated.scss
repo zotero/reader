@@ -1,6 +1,8 @@
 & {
 	overflow: hidden;
 	overscroll-behavior: none;
+	// Suppress pan-x action that conflicts with page turning on Android
+	touch-action: pan-y;
 }
 
 &:not(.fixed-layout) {
