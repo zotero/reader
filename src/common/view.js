@@ -280,6 +280,14 @@ class View {
 	}
 
 	/**
+	 * @param {import('../dom/epub/epub-view').SpreadMode} mode
+	 */
+	setSpreadMode(mode) {
+		this._ensureType('pdf', 'epub');
+		this._view.setSpreadMode(mode);
+	}
+
+	/**
 	 * @returns {string} Theme ID
 	 */
 	getTheme() {
