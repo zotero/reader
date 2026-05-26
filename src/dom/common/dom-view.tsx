@@ -523,7 +523,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._updateViewStats();
 
 		if (this._tool.type == 'pointer') {
-			if (this._gotPointerUp) {
+			if (this._gotPointerUp || this._options.mobile) {
 				let selection = this._iframeWindow.getSelection();
 				if (selection && !selection.isCollapsed) {
 					this._openSelectionPopup(selection);
