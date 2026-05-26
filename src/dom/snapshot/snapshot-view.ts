@@ -225,7 +225,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		let bodyFontSize = parseFloat(getComputedStyle(this._iframeDocument.body).fontSize);
 		let flatOutline: (OutlineItem & { level: number })[] = [];
 		// Create a flat outline array from the headings on the page
-		for (let heading of this._iframeDocument.body.querySelectorAll('h1, h2, h3, h4, h5, h6') as NodeListOf<HTMLElement>) {
+		for (let heading of this._iframeDocument.body.querySelectorAll('h1, h2, h3, h4, h5, h6, [role="heading"][aria-level]') as NodeListOf<HTMLElement>) {
 			// If the site uses semantic HTML, we can try to skip probably-irrelevant headings
 			if (heading.closest('aside, nav, footer, template, [hidden]')) {
 				continue;
@@ -244,7 +244,12 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			if (!selector) {
 				continue;
 			}
-			let level = parseInt(heading.tagName[1]);
+			let level = /^H\d$/.test(heading.tagName)
+				? parseInt(heading.tagName[1])
+				: parseInt(heading.getAttribute('aria-level')!);
+			if (Number.isNaN(level)) {
+				continue;
+			}
 			flatOutline.push({
 				title: heading.innerText.trim(),
 				location: { position: selector },
