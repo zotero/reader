@@ -163,18 +163,18 @@ replaced-body {
 			orphans: 2;
 			hyphens: auto;
 		}
+
+		:link {
+			color: var(--link-color) !important;
+		}
+
+		:visited {
+			color: var(--visited-link-color) !important;
+		}
 	}
 
 	a {
 		text-decoration: none;
-	}
-
-	:link {
-		color: var(--link-color) !important;
-	}
-
-	:visited {
-		color: var(--visited-link-color) !important;
 	}
 
 	.sup-like, .sub-like {
