@@ -902,7 +902,8 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 
 		let target = event.target as Element;
-		if (target.tagName === 'IMG'
+		if (!this._isFixedLayout
+				&& target.tagName === 'IMG'
 				&& target.classList.contains('clickable-image')
 				&& (target as HTMLImageElement).naturalWidth
 				&& (target as HTMLImageElement).naturalHeight) {
