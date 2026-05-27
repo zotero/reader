@@ -102,7 +102,11 @@ class View {
 			onOpenAnnotationContextMenu: nop,
 			onOpenViewContextMenu: nop,
 			onSetOverlayPopup: nop,
-			onSetOutline: this._options.onSetOutline,
+			onSetOutline: (outline) => {
+				this._options.onSetOutline(outline);
+				// Propagate back to view, as in Reader
+				this._view.setOutline(outline);
+			},
 			onTabOut: nop,
 			onKeyDown: nop,
 			onKeyUp: nop,
