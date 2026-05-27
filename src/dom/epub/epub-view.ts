@@ -570,6 +570,13 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		);
 	}
 
+	protected override _updateColorScheme() {
+		if (this._isFixedLayout) {
+			return;
+		}
+		super._updateColorScheme();
+	}
+
 	private _upsertAnnotation(annotation: NewAnnotation<WADMAnnotation>) {
 		let existingAnnotation = this._annotations.find(
 			existingAnnotation => existingAnnotation.text === annotation!.text

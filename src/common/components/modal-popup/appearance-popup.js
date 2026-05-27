@@ -404,35 +404,37 @@ function AppearancePopup(props) {
 						</div>
 					</div>
 				</div>
-				<div className="group">
-					<div className="option themes">
-						<label>{l10n.getString('reader-themes')}</label>
-						<div className="themes" data-tabstop={1}>
-							<button
-								tabIndex={-1}
-								className={cx('theme original', { active: !currentTheme })}
-								style={{ backgroundColor: '#ffffff', color: '#000000' }}
-								title={l10n.getString('reader-theme-original')}
-								onClick={() => props.onChangeTheme()}
-							>{l10n.getString('reader-theme-original')}</button>
-							{themes.map((theme, i) => (
-								<Theme
-									key={i}
-									theme={theme}
-									active={currentTheme && theme.id === currentTheme.id}
-									onSet={props.onChangeTheme}
-									onOpenContextMenu={props.onOpenThemeContextMenu}
-								/>
-							))}
-							<button
-								tabIndex={-1}
-								className="theme add"
-								onClick={props.onAddTheme}
-								title={l10n.getString('reader-add-theme')}
-							><IconPlus/></button>
-							</div>
+				{!(type === 'epub' && props.viewStats.fixedLayout) && (
+					<div className="group">
+						<div className="option themes">
+							<label>{l10n.getString('reader-themes')}</label>
+							<div className="themes" data-tabstop={1}>
+								<button
+									tabIndex={-1}
+									className={cx('theme original', { active: !currentTheme })}
+									style={{ backgroundColor: '#ffffff', color: '#000000' }}
+									title={l10n.getString('reader-theme-original')}
+									onClick={() => props.onChangeTheme()}
+								>{l10n.getString('reader-theme-original')}</button>
+								{themes.map((theme, i) => (
+									<Theme
+										key={i}
+										theme={theme}
+										active={currentTheme && theme.id === currentTheme.id}
+										onSet={props.onChangeTheme}
+										onOpenContextMenu={props.onOpenThemeContextMenu}
+									/>
+								))}
+								<button
+									tabIndex={-1}
+									className="theme add"
+									onClick={props.onAddTheme}
+									title={l10n.getString('reader-add-theme')}
+								><IconPlus/></button>
+								</div>
+						</div>
 					</div>
-				</div>
+				)}
 			</div>
 		</div>
 	);
