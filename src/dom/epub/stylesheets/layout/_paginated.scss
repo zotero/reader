@@ -6,7 +6,15 @@
 }
 
 &:not(.fixed-layout) {
-	margin: 40px !important;
+	--block-margin: 40px;
+
+	// Reduce on phone-size screens
+	@media (max-width: 800px) {
+		--block-margin: 20px;
+	}
+
+	margin-block: var(--block-margin) !important;
+	margin-inline: 40px !important;
 }
 
 .swipe-indicators {
@@ -50,8 +58,8 @@
 	overflow: visible;
 	position: relative;
 	max-width: calc(100vw - 80px);
-	min-height: calc(100vh - 80px);
-	max-height: calc(100vh - 80px);
+	min-height: calc(100vh - var(--block-margin) * 2);
+	max-height: calc(100vh - var(--block-margin) * 2);
 	margin-inline: auto;
 	column-fill: auto;
 	-webkit-column-fill: auto;
@@ -118,7 +126,7 @@
 
 	img, svg, audio, video {
 		max-width: calc(min(0.98 * var(--media-max-width), 100%)) !important;
-		max-height: calc(0.98 * (100vh - 80px)) !important;
+		max-height: calc(0.98 * (100vh - var(--block-margin) * 2)) !important;
 		object-fit: contain;
 		position: static !important;
 		width: auto;
@@ -133,8 +141,8 @@
 		table, mtable {
 			display: block;
 			overflow: auto;
-			max-block-size: calc(100vh - 80px);
-			max-block-size: calc(100vb - 80px);
+			max-block-size: calc(100vh - var(--block-margin) * 2);
+			max-block-size: calc(100vb - var(--block-margin) * 2);
 			border: none !important;
 		}
 
