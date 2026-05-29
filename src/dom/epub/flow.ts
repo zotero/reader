@@ -63,6 +63,10 @@ abstract class AbstractFlow implements Flow {
 
 	protected _cachedStartCFIOffset: number | null = null;
 
+	protected _suppressAnchorRefreshUntil = 0;
+
+	protected static readonly ANCHOR_REFRESH_SUPPRESSION_MS = 200;
+
 	protected _iframe: HTMLIFrameElement;
 
 	protected _iframeWindow: Window & typeof globalThis;
@@ -295,6 +299,9 @@ abstract class AbstractFlow implements Flow {
 	}
 
 	protected _refreshUserAnchorAfterScroll = debounce(() => {
+		if (Date.now() < this._suppressAnchorRefreshUntil) {
+			return;
+		}
 		this._refreshUserAnchor();
 	}, 100);
 
@@ -422,9 +429,8 @@ export class ScrolledFlow extends AbstractFlow {
 	}
 
 	private _settleAnchorAfterProgrammaticScroll(options?: NavigateOptions) {
-		// scroll should have fired before this, so cancel
-		// the debounced refresh that triggered
 		this._refreshUserAnchorAfterScroll.cancel();
+		this._suppressAnchorRefreshUntil = Date.now() + AbstractFlow.ANCHOR_REFRESH_SUPPRESSION_MS;
 		if (!options?.keepAnchor) {
 			this._refreshUserAnchor();
 		}
