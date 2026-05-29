@@ -180,7 +180,8 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 			this._iframeWindow.scrollTo({
 				top: viewState.scrollYPercent
 					/ 100
-					* (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight)
+					* (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight),
+				behavior: 'instant',
 			});
 		}
 
