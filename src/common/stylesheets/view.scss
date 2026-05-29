@@ -11,7 +11,11 @@ html, body {
 
 #view {
 	position: absolute;
-	inset: 0;
+	inset:
+		var(--safe-area-inset-top, 0px)
+		var(--safe-area-inset-right, 0px)
+		var(--safe-area-inset-bottom, 0px)
+		var(--safe-area-inset-left, 0px);
 	overflow: hidden;
 
 	> iframe {

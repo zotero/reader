@@ -108,6 +108,15 @@ window.createView = (encodedOptions) => {
 	});
 };
 
+window.setContainerInsets = (options) => {
+	log("Set container insets: " + JSON.stringify(options));
+	const style = document.documentElement.style;
+	style.setProperty('--safe-area-inset-top', (options.top || 0) + 'px');
+	style.setProperty('--safe-area-inset-right', (options.right || 0) + 'px');
+	style.setProperty('--safe-area-inset-bottom', (options.bottom || 0) + 'px');
+	style.setProperty('--safe-area-inset-left', (options.left || 0) + 'px');
+};
+
 window.setTool = (options) => {
 	log("Set tool: " + options.type + "; color: " + options.color);
 	window._view.setTool(options);
