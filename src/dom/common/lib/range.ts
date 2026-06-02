@@ -426,12 +426,22 @@ export function makeRangeSpanning(ranges: Range[], sorted = false, doc = documen
  * Collapse the range to its start, leaving a single character if possible. This prevents the range's bounding box from
  * moving to the previous line if its start is on the soft-wrap point between two lines.
  */
-export function collapseToOneCharacterAtStart(range: Range) {
-	if (range.startContainer.nodeValue && range.startContainer.nodeValue?.length > range.startOffset) {
-		range.setEnd(range.startContainer, range.startOffset + 1);
+export function collapseToOneCharacter(range: Range, toEnd = false) {
+	if (toEnd) {
+		if (range.endOffset > 0 && range.endContainer.nodeValue != null) {
+			range.setStart(range.endContainer, range.endOffset - 1);
+		}
+		else {
+			range.collapse(false);
+		}
 	}
 	else {
-		range.collapse(true);
+		if (range.startContainer.nodeValue && range.startContainer.nodeValue?.length > range.startOffset) {
+			range.setEnd(range.startContainer, range.startOffset + 1);
+		}
+		else {
+			range.collapse(true);
+		}
 	}
 }
 

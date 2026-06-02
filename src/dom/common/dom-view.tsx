@@ -33,8 +33,9 @@ import React from "react";
 import { isSelector, Selector } from "./lib/selector";
 import {
 	caretPositionFromPoint,
+	collapseToOneCharacter,
 	getBoundingPageRect,
-	getColumnSeparatedPageRects,
+	getPageRects,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
@@ -65,6 +66,7 @@ import { debounce } from "../../common/lib/debounce";
 import {
 	expandRect,
 	getBoundingRect,
+	isErrorRect,
 	isPageRectVisible,
 	pageRectToClientRect,
 	rectContainsPoint
@@ -786,26 +788,58 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._iframeDocument,
 			)
 		);
-		// Split the selection into its column-separated parts and get the
-		// bounding rect encompassing the visible ones. This gives us a more
-		// accurate anchor for the popup.
-		let columnSeparatedPageRects = getColumnSeparatedPageRects(range);
-		// If no column rects were visible, just use the bounding rect. This
-		// essentially serves as a placeholder until the selection comes back
-		// into view.
-		if (!columnSeparatedPageRects.length) {
-			columnSeparatedPageRects = [getBoundingPageRect(range)];
+		let selectionIsForward = selection.direction !== 'backward';
+
+		// Anchor the popup to the point where the user stopped dragging: the end
+		// of the selection when it's forward, the beginning when it's backward.
+		// Collapse a copy of the range to that caret to get a precise anchor
+		// rather than the whole first/last line.
+		let caretRange = range.cloneRange();
+		collapseToOneCharacter(caretRange, selectionIsForward);
+		let anchorPageRect = getBoundingPageRect(caretRange);
+		if (isErrorRect(anchorPageRect) || !isPageRectVisible(anchorPageRect, this._iframeWindow, 0)) {
+			// The caret is offscreen because the selection runs past the
+			// viewport (e.g. a long selection in a snapshot or one that
+			// continues into an offscreen column in EPUB). Anchor to the
+			// nearest visible part of the selection instead, so the popup
+			// isn't anchored to an offscreen segment. The rects are in reading
+			// order and each lies within a single column, so column separation
+			// is preserved.
+			let visiblePageRects = Array.from(getPageRects(range))
+				.filter(rect => !isErrorRect(rect) && isPageRectVisible(rect, this._iframeWindow, 0));
+			if (visiblePageRects.length) {
+				anchorPageRect = selectionIsForward
+					? visiblePageRects[visiblePageRects.length - 1]
+					: visiblePageRects[0];
+			}
+			else {
+				// Nothing is visible; use the bounding rect as a placeholder
+				// until the selection scrolls into view.
+				anchorPageRect = getBoundingPageRect(range);
+			}
 		}
 		let domRect = this._clientRectToViewportRect(
 			pageRectToClientRect(
-				getBoundingRect(columnSeparatedPageRects),
+				anchorPageRect,
 				this._iframeWindow
 			)
 		);
 		let annotation = this.getAnnotationFromRange(range, 'highlight');
 		if (annotation) {
 			let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-			this._options.onSetSelectionPopup({ rect, annotation });
+			// Anchor the popup outward from the caret: above the anchor for a
+			// backward selection (caret at the top), below for a forward one
+			// (caret at the bottom). If the selection is too tall to fit the
+			// popup above or below, fall back to the side nearest the caret --
+			// the start side when backward, the end side when forward --
+			// flipping left/right for RTL text.
+			let rtl = isRTL(range.commonAncestorContainer);
+			this._options.onSetSelectionPopup({
+				rect,
+				annotation,
+				preferLeft: selectionIsForward ? rtl : !rtl,
+				preferTop: !selectionIsForward,
+			});
 		}
 		else {
 			this._options.onSetSelectionPopup(null);

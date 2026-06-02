@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import cx from 'classnames';
 
 // TODO: Resizing window doesn't properly reposition annotation popup on x axis, in EPUB view
-function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender }) {
+function ViewPopup({ id, rect, className, uniqueRef, padding, preferTop, preferLeft, children, onRender }) {
 	const [popupPosition, setPopupPosition] = useState(null);
 	const containerRef = useRef();
 	const xrect = useRef();
@@ -21,7 +21,8 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 			pos.current.top += dy;
 
 			setPopupPosition({}); // Trigger re-render
-		} else {
+		}
+		else {
 			xrect.current = rect;
 		}
 	}, [rect]);
@@ -50,6 +51,17 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 		let viewRect = parent.getBoundingClientRect();
 		viewRect = [0, 0, viewRect.width, viewRect.height];
 
+		function calculateTop() {
+			let top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
+			if (top < 0) {
+				top = rect[1];
+			}
+			else if (top + height > viewRect[3]) {
+				top = (rect[1] + (rect[3] - rect[1])) - height;
+			}
+			return top;
+		}
+
 		let annotationCenterLeft = rect[0] + (rect[2] - rect[0]) / 2;
 		let left = annotationCenterLeft - width / 2;
 
@@ -58,56 +70,55 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, children, onRender
 		if (left < 0) {
 			side = 'right';
 			left = rect[2] + padding;
-			top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
-			if (top < 0) {
-				top = rect[1];
-			} else if (top + height > viewRect[3]) {
-				top = (rect[1] + (rect[3] - rect[1])) - height;
-			}
-		} else if (left + width > viewRect[2]) {
+			top = calculateTop();
+		}
+		else if (left + width > viewRect[2]) {
 			side = 'left';
 			left = rect[0] - width - padding;
-			top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
-			if (top < 0) {
-				top = rect[1];
-			} else if (top + height > viewRect[3]) {
-				top = (rect[1] + (rect[3] - rect[1])) - height;
-			}
-		} else if (rect[3] + height + padding < viewRect[3]) {
-			top = rect[3] + padding;
-			side = 'bottom';
-		} else if (rect[1] - padding - height > 0) {
-			top = rect[1] - padding - height;
-			side = 'top';
-		} else {
-			top = rect[3] + padding;
-			side = 'top';
-
-			if (rect[0] < (viewRect[2] - viewRect[0]) / 2) {
-				side = 'right';
-				left = rect[2] + padding;
-				top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
-				if (top < 0) {
-					top = rect[1];
-				} else if (top + height > viewRect[3]) {
-					top = (rect[1] + (rect[3] - rect[1])) - height;
+			top = calculateTop();
+		}
+		else {
+			// Try to place the popup on the preferred vertical side (bottom
+			// by default, top if `preferTop`).
+			// Fall back to the other side if the preferred one doesn't fit.
+			let fitsAbove = rect[1] - padding - height > 0;
+			let fitsBelow = rect[3] + height + padding < viewRect[3];
+			if (preferTop ? fitsAbove : fitsBelow) {
+				if (preferTop) {
+					top = rect[1] - padding - height;
+					side = 'top';
 				}
-			} else {
-				side = 'left';
-				left = rect[0] - width - padding;
-				top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
-				if (top < 0) {
-					top = rect[1];
-				} else if (top + height > viewRect[3]) {
-					top = (rect[1] + (rect[3] - rect[1])) - height;
+				else {
+					top = rect[3] + padding;
+					side = 'bottom';
 				}
 			}
-
-			if (left < padding) {
-				left = padding;
+			else if (preferTop ? fitsBelow : fitsAbove) {
+				if (preferTop) {
+					top = rect[3] + padding;
+					side = 'bottom';
+				}
+				else {
+					top = rect[1] - padding - height;
+					side = 'top';
+				}
 			}
-			else if (left + width > viewRect[2] - padding) {
-				left = viewRect[2] - width - padding;
+			else {
+				// Neither above nor below fits, so place the popup next to the
+				// rect. If `preferLeft` is passed (not undefined), place on the
+				// preferred side. Otherwise, place on the side with more room.
+				let placeLeft = preferLeft === undefined
+					? rect[0] >= (viewRect[2] - viewRect[0]) / 2
+					: preferLeft;
+				if (placeLeft) {
+					side = 'left';
+					left = rect[0] - width - padding;
+				}
+				else {
+					side = 'right';
+					left = rect[2] + padding;
+				}
+				top = calculateTop();
 			}
 		}
 

@@ -130,6 +130,8 @@ export type AnnotationPopupParams<A extends Annotation = Annotation> = {
 export type SelectionPopupParams<A extends Annotation = Annotation> = {
 	rect: ArrayRect;
 	annotation?: NewAnnotation<A> | null;
+	preferTop?: boolean;
+	preferLeft?: boolean;
 }
 
 type FootnotePopupParams = {

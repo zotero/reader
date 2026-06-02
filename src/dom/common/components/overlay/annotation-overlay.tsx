@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import {
 	caretPositionFromPoint,
-	collapseToOneCharacterAtStart,
+	collapseToOneCharacter,
 	getBoundingPageRect,
 	getColumnSeparatedPageRects,
 	getPageRects,
@@ -320,7 +320,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		let commentIconPosition;
 		if (annotation.comment) {
 			let commentIconRange = ranges[0].cloneRange();
-			collapseToOneCharacterAtStart(commentIconRange);
+			collapseToOneCharacter(commentIconRange);
 			let rect = getBoundingPageRect(commentIconRange);
 			commentIconPosition = { x: rect.x, y: rect.y };
 		}
