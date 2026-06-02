@@ -1431,6 +1431,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _handleAnnotationPointerDown = (id: string, event: React.PointerEvent) => {
 		event.stopPropagation();
 
+		// Clean up in case this pointer was left behind in _handledPointerIDs,
+		// since we know this is a new interaction
+		this._handledPointerIDs.delete(event.pointerId);
+
 		// On mobile, pointerup handles all annotation selection
 		if (this._options.mobile) {
 			return;
@@ -1485,6 +1489,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
+		if (event.type === 'pointercancel') {
+			return;
+		}
 		if (event.button !== 0
 				|| this._options.mobile && this._pointerMovementWhileDown > 5) {
 			return;
@@ -1576,6 +1583,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
+		// Clean up in case this pointer was left behind in _handledPointerIDs,
+		// since we know this is a new interaction
+		this._handledPointerIDs.delete(event.pointerId);
+
 		if ((event.buttons & 1) === 1 && event.isPrimary) {
 			this._gotPointerUp = false;
 			this._pointerMovementWhileDown = 0;

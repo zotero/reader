@@ -376,6 +376,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					className="needs-pointer-events annotation-div"
 					onPointerDown={handlePointerDown}
 					onPointerUp={handlePointerUp}
+					onPointerCancel={handlePointerUp}
 					onContextMenu={handleContextMenu}
 					data-annotation-id={annotation.id}
 					key={i + '-rect'}
@@ -402,6 +403,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 					draggable={true}
 					onPointerDown={handlePointerDown}
 					onPointerUp={handlePointerUp}
+					onPointerCancel={handlePointerUp}
 					onContextMenu={handleContextMenu}
 					onDragStart={handleDragStart}
 					data-annotation-id={annotation.id}
@@ -863,6 +865,7 @@ let CommentIcon = React.forwardRef<SVGSVGElement, CommentIconProps>((props, ref)
 				draggable={true}
 				onPointerDown={props.onPointerDown}
 				onPointerUp={props.onPointerUp}
+				onPointerCancel={props.onPointerUp}
 				onContextMenu={props.onContextMenu}
 				onDragStart={props.onDragStart}
 				onDragEnd={props.onDragEnd}
