@@ -227,6 +227,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 	let groupRef = useRef<SVGGElement>(null);
 	let pathRef = useRef<SVGPathElement>(null);
 	let dragImageRef = isSafari ? groupRef : pathRef;
+	let isCoarsePointer = useMemo(() => window.matchMedia('(pointer: coarse').matches, []);
 
 	let handlePointerDown = useCallback((event: React.PointerEvent) => {
 		onPointerDown?.(annotation, event);
@@ -268,7 +269,12 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 		setResizedRange(range);
 	}, []);
 
-	let allowResize = selected && singleSelection && !annotation.readOnly && supportsCaretPositionFromPoint();
+	let allowResize = selected
+		&& singleSelection
+		&& !annotation.readOnly
+		// Disable on mobile/touch displays - too finicky, and not supported for PDFs
+		&& !isCoarsePointer
+		&& supportsCaretPositionFromPoint();
 
 	let isSpotlight = annotation.key === SpotlightKey.ReadAloudActiveSegment
 		|| annotation.key === SpotlightKey.ReadAloudActiveSentence;
@@ -355,8 +361,6 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 			return [];
 		}
 
-		let isCoarsePointer = window.matchMedia('(pointer: coarse').matches;
-
 		let clickTargetRects = isCoarsePointer
 			? rects.map(rect => expandRect(rect, 10))
 			: rects;
@@ -410,7 +414,7 @@ let HighlightOrUnderline: React.FC<HighlightOrUnderlineProps> = (props) => {
 				/>
 			</foreignObject>
 		));
-	}, [annotation, handleContextMenu, handleDragStart, handlePointerDown, handlePointerUp, interactiveRects, isResizing, rects]);
+	}, [annotation.id, handleContextMenu, handleDragStart, handlePointerDown, handlePointerUp, interactiveRects, isCoarsePointer, isResizing, rects]);
 
 	let resizer = useMemo(() => {
 		return allowResize && (
