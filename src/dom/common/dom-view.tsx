@@ -1721,14 +1721,23 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				&& this._canPointerEventDoTouchAnnotation(event)) {
 			let endPos = caretPositionFromPoint(this._iframeDocument, event.clientX, event.clientY);
 			if (endPos) {
-				let range = this._iframeDocument.createRange();
+				let range: Range | null = this._iframeDocument.createRange();
 				range.setStart(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
 				range.setEnd(endPos.offsetNode, endPos.offset);
 				if (range.collapsed) {
-					range.setStart(endPos.offsetNode, endPos.offset);
-					range.setEnd(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
+					// Range is reversed - end is before start in the tree
+					// Make sure this isn't WebKit freaking out and putting it
+					// way up at the top of the page
+					let endPosY = endPos.getClientRect()?.y ?? event.clientY;
+					if (isSafari && endPos.offset === 0 && event.clientY - endPosY > 50) {
+						range = null;
+					}
+					else {
+						range.setStart(endPos.offsetNode, endPos.offset);
+						range.setEnd(this._touchAnnotationStartPosition.offsetNode, this._touchAnnotationStartPosition.offset);
+					}
 				}
-				let annotation = this.getAnnotationFromRange(range, this._tool.type, this._tool.color);
+				let annotation = range && this.getAnnotationFromRange(range, this._tool.type, this._tool.color);
 				if (annotation) {
 					this._previewAnnotation = annotation;
 					this._renderAnnotations();
