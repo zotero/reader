@@ -1626,7 +1626,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._pointerMovementWhileDown = 0;
 			this._lastPointerPosition = { x: event.clientX, y: event.clientY };
 			let selection = this._iframeWindow.getSelection();
-			this._hadSelectionOnPointerDown = !!selection && !selection.isCollapsed;
+			this._hadSelectionOnPointerDown = (!!selection && !selection.isCollapsed) || !!this._selectedAnnotationIDs.length;
 
 			let touchCaretPosition = this._getTouchAnnotationStartPosition(event);
 			if (touchCaretPosition) {
