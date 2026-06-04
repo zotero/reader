@@ -986,6 +986,9 @@ export class PaginatedFlow extends AbstractFlow {
 	}, 100, { leading: true, trailing: false, maxWait: 400 });
 
 	private _handleSelectionChange = () => {
+		if (this._iframeDocument.getSelection()!.isCollapsed) {
+			return;
+		}
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
 		this._touchDown = false;
 	};
