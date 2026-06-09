@@ -72,7 +72,7 @@
 	}
 
 	&.spread-mode-none {
-		column-gap: 100vw; // Just a big number, doesn't need to adjust for writing-mode
+		column-gap: 9999px; // Just a big number
 		--media-max-width: calc(100vw - 80px);
 	}
 

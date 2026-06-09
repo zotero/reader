@@ -783,6 +783,19 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		this._iframe.classList.remove('mask-resizing');
 	}, 250);
 
+	protected override _tryResizeWidthInPlace(width: number): boolean {
+		if (!this.flow || this._isFixedLayout || !this.flow.canResizeWidthInPlace(width)) {
+			return false;
+		}
+		// The content stays put, so cancel any masked resize queued by an earlier tick of this gesture,
+		// drop the masking styles, and apply the real size immediately.
+		this._resizeIframeTrailing.cancel();
+		this._iframe.style.transform = '';
+		this._iframe.classList.remove('mask-resizing');
+		super._resizeIframeImmediate();
+		return true;
+	}
+
 	protected override _handleResize() {
 		if (!this.flow || document.hidden
 				|| (this._iframeWindow.innerWidth === this._lastIframeWindowWidth

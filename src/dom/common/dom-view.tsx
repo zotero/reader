@@ -254,8 +254,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			if (width === this._lastResizeObserverWidth && height === this._lastResizeObserverHeight) {
 				return;
 			}
+			let heightChanged = this._lastResizeObserverHeight !== null
+				&& height !== this._lastResizeObserverHeight;
 			this._lastResizeObserverWidth = width;
 			this._lastResizeObserverHeight = height;
+			// A width-only resize that the view can absorb purely by adjusting its horizontal margins
+			// (e.g. a reflowable EPUB that isn't filling the available width) doesn't move the content,
+			// so skip the resize masking and position save/restoration and just apply the new size instantly.
+			if (!heightChanged && this._tryResizeWidthInPlace(width)) {
+				return;
+			}
 			this._resizeIframeLeading();
 			this._resizeIframeTrailing();
 		});
@@ -1921,6 +1929,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _resizeIframeLeading() {
 		// No-op besides EPUB
+	}
+
+	/**
+	 * Attempt to apply a width-only resize without masking the transition or saving and restoring the
+	 * reading position, for views that can absorb the change with their margins alone. Returns true if
+	 * the resize was handled, or false to fall back to the masked resize path.
+	 */
+	protected _tryResizeWidthInPlace(_width: number): boolean {
+		return false;
 	}
 
 	protected _resizeIframeTrailing() {

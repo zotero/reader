@@ -49,6 +49,13 @@ export interface Flow {
 
 	setSpreadMode(spreadMode: SpreadMode): void;
 
+	/**
+	 * Whether resizing the iframe to the given width would only change the horizontal margins around
+	 * the content, leaving the content layout (and so the reading position) unchanged. When true, the
+	 * view can skip the resize masking and position restoration.
+	 */
+	canResizeWidthInPlace(newWidth: number): boolean;
+
 	destroy(): void;
 }
 
@@ -321,6 +328,10 @@ abstract class AbstractFlow implements Flow {
 	}
 
 	abstract setSpreadMode(spreadMode: SpreadMode): void;
+
+	canResizeWidthInPlace(_newWidth: number): boolean {
+		return false;
+	}
 }
 
 interface Options {
@@ -558,11 +569,33 @@ export class ScrolledFlow extends AbstractFlow {
 	setSpreadMode() {
 		// No-op
 	}
+
+	override canResizeWidthInPlace(newWidth: number): boolean {
+		// In vertical writing mode a horizontal resize changes the block-flow axis, so the content reflows.
+		if (this._isVertical) {
+			return false;
+		}
+		// Section containers are capped at the page width and centered with auto margins. If the content
+		// isn't filling the available width, the resize is absorbed by those margins - the text doesn't
+		// rewrap and the scroll position holds - as long as it doesn't shrink past the content.
+		let sectionsContainer = this._iframeDocument.body.querySelector(':scope > .sections') as HTMLElement | null;
+		let contentEl = sectionsContainer?.querySelector(
+			':scope > .section-container:not(.hidden)'
+		) as HTMLElement | null;
+		if (!sectionsContainer || !contentEl) {
+			return false;
+		}
+		let slack = sectionsContainer.clientWidth - contentEl.offsetWidth;
+		let delta = newWidth - this._iframe.clientWidth;
+		return slack > EPSILON_PX && slack + delta >= 0;
+	}
 }
 
 const PAGE_TURN_SWIPE_LENGTH_PX = 100;
 const PAGE_TURN_TAP_MARGIN_FRACTION = 0.2;
 const EPSILON_PX = 10;
+// Viewport width at/below which _paginated.scss reduces --block-margin
+const BLOCK_MARGIN_BREAKPOINT_PX = 800;
 
 export class PaginatedFlow extends AbstractFlow {
 	private _sectionsContainer: HTMLElement;
@@ -1032,5 +1065,25 @@ export class PaginatedFlow extends AbstractFlow {
 	setSpreadMode(spreadMode: SpreadMode) {
 		this._sectionsContainer.classList.toggle('spread-mode-none', spreadMode === SpreadMode.None);
 		this._sectionsContainer.classList.toggle('spread-mode-odd', spreadMode === SpreadMode.Odd);
+	}
+
+	override canResizeWidthInPlace(newWidth: number): boolean {
+		// In vertical writing mode a horizontal resize changes the page (block-flow) axis, so it reflows.
+		if (this._isVertical) {
+			return false;
+		}
+		// Crossing the 800px viewport breakpoint (see _paginated.scss) halves --block-margin from 40px to
+		// 20px, which changes the column height and reflows the content, so it can't be done in place.
+		if ((this._iframe.clientWidth <= BLOCK_MARGIN_BREAKPOINT_PX) !== (newWidth <= BLOCK_MARGIN_BREAKPOINT_PX)) {
+			return false;
+		}
+		// .sections is capped by its column/page width and centered in the body with auto margins. If it
+		// isn't filling the body, a horizontal resize only grows or shrinks those margins - the columns
+		// keep their width and the current page stays put - as long as the margins don't run out. When
+		// the content fills the body (full page width, two-page spreads), the columns reflow and the
+		// number of columns can change, so we can't resize in place.
+		let slack = this._iframeDocument.body.clientWidth - this._sectionsContainer.offsetWidth;
+		let delta = newWidth - this._iframe.clientWidth;
+		return slack > EPSILON_PX && slack + delta >= 0;
 	}
 }
