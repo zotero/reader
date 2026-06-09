@@ -1072,6 +1072,11 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this._isVertical) {
 			return false;
 		}
+		// At the start of a section the offset is zero, so the section start stays pinned to the top-left
+		// however the columns reflow - the position is preserved even when the content fills the width.
+		if (this.atStartOfSection()) {
+			return true;
+		}
 		// Crossing the 800px viewport breakpoint (see _paginated.scss) halves --block-margin from 40px to
 		// 20px, which changes the column height and reflows the content, so it can't be done in place.
 		if ((this._iframe.clientWidth <= BLOCK_MARGIN_BREAKPOINT_PX) !== (newWidth <= BLOCK_MARGIN_BREAKPOINT_PX)) {
