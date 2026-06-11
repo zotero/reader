@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import React, { createContext } from 'react';
+import pako from 'pako';
 import ReaderUI from './components/reader-ui';
 import PDFView from '../pdf/pdf-view';
 import EPUBView from '../dom/epub/epub-view';
@@ -31,6 +32,11 @@ import { addFTL, getLocalizedString } from '../fluent';
 import { getVoicePreferencesURL } from './lib/read-aloud-links';
 import { resolveLanguage } from './read-aloud/lang';
 import { ReadAloudManager } from './read-aloud/manager';
+import {
+	openStructuredDocumentTextPack,
+	SDT_PACK_VERSION,
+	SDT_SCHEMA_VERSION,
+} from '../../structured-document-text/src/read.js';
 
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
@@ -158,6 +164,11 @@ class Reader {
 
 		this._enableReadAloud = options.enableReadAloud || false;
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
+		this._getSDTPack = typeof options.getSDTPack === 'function' ? options.getSDTPack : null;
+		this._sdtReaderPromise = null;
+		// Start pulling (and generating, if needed) the pack right away, so
+		// it's ready by the time a feature awaits getSDTReader()
+		this.getSDTReader();
 
 		this._readAloudManager = new ReadAloudManager({
 			remoteInterface: this._readAloudRemoteInterface,
@@ -1159,6 +1170,52 @@ class Reader {
 		this._updateState({ readAloudVoices: new Map(Object.entries(readAloudVoices)) });
 	}
 
+	// Pulls the SDT pack from the host on first use and parses it once per
+	// session. The pack arrives by value and is never replaced mid-session,
+	// so it always matches the displayed document
+	async getSDTReader() {
+		if (!this._getSDTPack) {
+			return null;
+		}
+		if (!this._sdtReaderPromise) {
+			this._sdtReaderPromise = (async () => {
+				let result = await this._getSDTPack();
+				if (!result?.ok) {
+					// Only a parsed pack is cached -- any failure means the
+					// next invocation re-pulls, which is cheap for terminal
+					// reasons (the host memoizes those) and lets transient
+					// failures self-heal
+					console.warn('SDT pack unavailable:', result?.reason);
+					this._sdtReaderPromise = null;
+					return null;
+				}
+				if (result.packVersion !== SDT_PACK_VERSION
+						|| result.schemaMajorVersion !== Number(SDT_SCHEMA_VERSION.split('.')[0])) {
+					console.warn('Unsupported SDT pack version', result.packVersion, result.schemaMajorVersion);
+					this._sdtReaderPromise = null;
+					return null;
+				}
+				let bytes = new Uint8Array(result.bytes);
+				let source = {
+					byteLength: bytes.byteLength,
+					read: async (offset, length) => bytes.buffer.slice(
+						bytes.byteOffset + offset,
+						bytes.byteOffset + offset + length
+					),
+				};
+				return openStructuredDocumentTextPack(source, {
+					inflate: b => pako.inflateRaw(b),
+				});
+			})().catch((e) => {
+				// Don't cache transport errors, so the next invocation retries
+				this._sdtReaderPromise = null;
+				console.warn('Failed to load SDT pack', e);
+				return null;
+			});
+		}
+		return this._sdtReaderPromise;
+	}
+
 	addAnnotationFromReadAloudSegment(segment, type) {
 		let { annotationPopup: popup, segmentAnnotations } = this._state.readAloudState;
 		let segments = this._readAloudManager.segments;
@@ -1672,6 +1729,7 @@ class Reader {
 				...common,
 				password: this._password,
 				pageLabels: this._state.pageLabels,
+				getSDTReader: () => this.getSDTReader(),
 				onRequestPassword,
 				onSetThumbnails,
 				onSetPageLabels,

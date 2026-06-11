@@ -1,5 +1,9 @@
 import { detectLang } from '../common/lib/detect-lang';
 import { splitTextToChunks } from '../common/read-aloud/segment-split';
+import { getSentencePageRects } from '../../structured-document-text/src/pdf/content.js';
+import { getPartBoundarySeparator, getPartChain } from '../../structured-document-text/src/parts.js';
+import { refKey } from '../../structured-document-text/src/range.js';
+import { getNestedBlockPlainText } from '../../structured-document-text/src/text.js';
 import { getRangeRects } from './lib/utilities';
 import { getTextFromChars } from './selection';
 
@@ -345,6 +349,229 @@ export function buildReadAloudSegments(chars, pageIndex) {
 	}
 	let paragraphRanges = paragraphsFromChars(chars);
 	return buildReadAloudSegmentsFromRanges(chars, pageIndex, paragraphRanges);
+}
+
+// `structure` is the materialized pack object -- the module helpers used
+// below need its catalog, not just the content blocks
+export function buildReadAloudSegmentsFromStructuredDocumentText(structure) {
+	let blocks = Array.isArray(structure?.content) ? structure.content : [];
+	if (!blocks.length) {
+		return { paragraphs: [], sentences: [] };
+	}
+
+	let leafBlocks = [];
+	collectStructuredTextLeafBlocks(blocks, [], leafBlocks);
+
+	let paragraphs = [];
+	let sentences = [];
+	let emittedRefs = new Set();
+
+	for (let { block, ref } of leafBlocks) {
+		let chain = getPartChain(structure, ref, { include: includeReadAloudPart });
+		if (!chain.length) {
+			chain = [{ block, ref }];
+		}
+		if (chain.some(part => emittedRefs.has(refKey(part.ref)))) {
+			continue;
+		}
+
+		let { text: rawText, pieces } = buildPartChainText(chain);
+		if (!normalizeReadAloudText(rawText)) {
+			continue;
+		}
+
+		let paragraphPosition = getPositionFromPageRects(getPartChainPageRects(chain));
+		if (!paragraphPosition) {
+			continue;
+		}
+
+		let paragraphIndex = paragraphs.length;
+		let rawSentences = getSentences(rawText);
+		let paragraphText = '';
+		let isFirstSentenceInParagraph = true;
+
+		for (let sentenceIndex = 0; sentenceIndex < rawSentences.length; sentenceIndex++) {
+			let sentenceText = normalizeReadAloudText(rawSentences[sentenceIndex].segment);
+			if (!sentenceText) {
+				continue;
+			}
+
+			let sentencePosition = getPartChainSentencePosition(structure, chain, pieces, rawSentences[sentenceIndex], sentenceIndex)
+				|| paragraphPosition;
+
+			for (let [chunkStart, chunkEnd] of splitTextToChunks(sentenceText)) {
+				let text = normalizeReadAloudText(sentenceText.slice(chunkStart, chunkEnd));
+				if (!text) {
+					continue;
+				}
+
+				let sentence = {
+					text,
+					position: sentencePosition,
+					paragraphIndex,
+					granularity: 'sentence',
+					anchor: isFirstSentenceInParagraph ? 'paragraphStart' : null,
+				};
+				isFirstSentenceInParagraph = false;
+				sentences.push(sentence);
+				paragraphText = joinWithSpace(paragraphText, text);
+			}
+		}
+
+		if (paragraphText) {
+			paragraphs.push({
+				anchor: 'paragraphStart',
+				text: paragraphText,
+				position: paragraphPosition,
+				granularity: 'paragraph',
+			});
+			for (let part of chain) {
+				emittedRefs.add(refKey(part.ref));
+			}
+		}
+	}
+
+	return { paragraphs, sentences };
+}
+
+function includeReadAloudPart(ref, block) {
+	return block?.flowClass !== 'excluded';
+}
+
+function buildPartChainText(chain) {
+	let text = '';
+	let pieces = [];
+	for (let i = 0; i < chain.length; i++) {
+		let { block, ref } = chain[i];
+		if (i > 0) {
+			text += getPartBoundarySeparator(chain[i - 1].block, block);
+		}
+
+		let start = text.length;
+		let blockText = getNestedBlockPlainText(block);
+		text += blockText;
+		pieces.push({
+			block,
+			ref,
+			start,
+			end: text.length
+		});
+	}
+	return { text, pieces };
+}
+
+function getPartChainPageRects(chain) {
+	let pageRects = [];
+	for (let { block } of chain) {
+		if (Array.isArray(block?.anchor?.pageRects)) {
+			pageRects.push(...block.anchor.pageRects);
+		}
+	}
+	return pageRects;
+}
+
+function getPartChainSentencePosition(structure, chain, pieces, sentence, sentenceIndex) {
+	if (chain.length === 1) {
+		return getPositionFromPageRects(
+			getSentencePageRects(structure, chain[0].ref, sentenceIndex)
+		);
+	}
+
+	let start = Number.isInteger(sentence?.index) ? sentence.index : 0;
+	let end = start + (typeof sentence?.segment === 'string' ? sentence.segment.length : 0);
+	return getPositionFromPageRects(getPageRectsForTextSpan(pieces, start, end));
+}
+
+function getPageRectsForTextSpan(pieces, start, end) {
+	let pageRects = [];
+	for (let piece of pieces) {
+		if (piece.end <= start || piece.start >= end) {
+			continue;
+		}
+		if (Array.isArray(piece.block?.anchor?.pageRects)) {
+			pageRects.push(...piece.block.anchor.pageRects);
+		}
+	}
+	return pageRects;
+}
+
+function collectStructuredTextLeafBlocks(blocks, parentRef, out) {
+	for (let i = 0; i < blocks.length; i++) {
+		collectStructuredTextLeafBlock(blocks[i], [...parentRef, i], out);
+	}
+}
+
+function collectStructuredTextLeafBlock(block, ref, out) {
+	if (!block || typeof block !== 'object' || block.flowClass === 'excluded') {
+		return;
+	}
+
+	let content = Array.isArray(block.content) ? block.content : [];
+	let childBlockIndexes = [];
+	for (let i = 0; i < content.length; i++) {
+		let child = content[i];
+		if (child && typeof child === 'object' && typeof child.text !== 'string') {
+			childBlockIndexes.push(i);
+		}
+	}
+
+	if (!childBlockIndexes.length) {
+		out.push({ block, ref });
+		return;
+	}
+
+	for (let index of childBlockIndexes) {
+		collectStructuredTextLeafBlock(content[index], [...ref, index], out);
+	}
+}
+
+function getSentences(text) {
+	if (!('Segmenter' in Intl)) {
+		return [{ segment: text, index: 0 }];
+	}
+	let lang = detectLang(text) || undefined;
+	let segmenter = new Intl.Segmenter(lang, { granularity: 'sentence' });
+	return [...segmenter.segment(text)];
+}
+
+function normalizeReadAloudText(text) {
+	return typeof text === 'string' ? text.replace(/\s+/g, ' ').trim() : '';
+}
+
+function getPositionFromPageRects(pageRects) {
+	if (!Array.isArray(pageRects) || !pageRects.length) {
+		return null;
+	}
+
+	let validPageRects = pageRects.filter(pageRect =>
+		Array.isArray(pageRect)
+		&& pageRect.length >= 5
+		&& Number.isFinite(pageRect[0])
+		&& Number.isFinite(pageRect[1])
+		&& Number.isFinite(pageRect[2])
+		&& Number.isFinite(pageRect[3])
+		&& Number.isFinite(pageRect[4])
+	);
+	if (!validPageRects.length) {
+		return null;
+	}
+
+	let pageIndex = validPageRects[0][0];
+	let getRectsForPage = (targetPageIndex) => validPageRects
+		.filter(pageRect => pageRect[0] === targetPageIndex)
+		.map(pageRect => pageRect.slice(1, 5));
+
+	let rects = getRectsForPage(pageIndex);
+	if (!rects.length) {
+		return null;
+	}
+
+	let nextPageRects = getRectsForPage(pageIndex + 1);
+	return {
+		pageIndex,
+		rects,
+		...(nextPageRects.length ? { nextPageRects } : {})
+	};
 }
 
 export function getReadAloudSelectionBounds(selectionRanges) {

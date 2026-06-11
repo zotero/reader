@@ -256,10 +256,15 @@ function generateViewConfig(build) {
 }
 
 function generateRules(build) {
+	const jsSourcePaths = [
+		path.resolve(__dirname, './src'),
+		path.resolve(__dirname, './structured-document-text/src'),
+	];
+
 	return [
 		{
 			test: /\.(ts|js)x?$/,
-			include: path.resolve(__dirname, './src'),
+			include: jsSourcePaths,
 			use: {
 				loader: 'babel-loader',
 				options: {

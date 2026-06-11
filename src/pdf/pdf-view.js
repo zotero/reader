@@ -71,6 +71,7 @@ import { FindState, PDFFindController } from './pdf-find-controller';
 import {
 	buildReadAloudSegments,
 	buildReadAloudSegmentsFromRanges,
+	buildReadAloudSegmentsFromStructuredDocumentText,
 	getReadAloudSelectionBounds,
 	splitReadAloudSegmentsBySelection
 } from './read-aloud-segments';
@@ -114,6 +115,7 @@ class PDFView {
 		this._onKeyUp = options.onKeyUp;
 		this._onKeyDown = options.onKeyDown;
 		this._onFocusAnnotation = options.onFocusAnnotation;
+		this._getSDTReader = options.getSDTReader;
 
 		this._onTabOut = options.onTabOut;
 
@@ -465,6 +467,13 @@ class PDFView {
 		}
 		let resolvePromise;
 		this._readAloudSegmentsPromise = new Promise(r => (resolvePromise = r));
+		let sdtSegments = await this._initStructuredDocumentTextReadAloudSegments();
+		if (sdtSegments) {
+			this._readAloudSegments = sdtSegments;
+			resolvePromise();
+			return sdtSegments.paragraphs;
+		}
+
 		let allParagraphs = [];
 		let allSentences = [];
 		let { pagesCount } = this._iframeWindow.PDFViewerApplication.pdfViewer;
@@ -488,6 +497,24 @@ class PDFView {
 		};
 		resolvePromise();
 		return allParagraphs;
+	}
+
+	async _initStructuredDocumentTextReadAloudSegments() {
+		if (typeof this._getSDTReader !== 'function') {
+			return null;
+		}
+		try {
+			let reader = await this._getSDTReader();
+			if (!reader) {
+				return null;
+			}
+			let { paragraphs, sentences } = buildReadAloudSegmentsFromStructuredDocumentText(await reader.materialize());
+			return paragraphs.length ? { paragraphs, sentences } : null;
+		}
+		catch (e) {
+			console.warn('SDT Read Aloud unavailable', e);
+			return null;
+		}
 	}
 
 	async _setState(state, skipScroll) {
