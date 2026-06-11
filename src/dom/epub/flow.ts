@@ -910,9 +910,9 @@ export class PaginatedFlow extends AbstractFlow {
 				|| (event.composedPath()[0] as Element).closest('.annotation-container')) {
 			return;
 		}
-		// Safari: Ignore touches near a selection, because Safari still sends pointer events
-		// for selection handle drags
-		if (isSafari) {
+		// Mobile: Ignore touches near a selection, because Safari and Android
+		// WebView still send pointer events for selection handle drags
+		if (window.matchMedia('(pointer: coarse)').matches) {
 			let selectionRect = getSelectionRanges(this._iframeWindow.getSelection()!)[0]
 				?.getBoundingClientRect();
 			if (selectionRect && selectionRect.width && selectionRect.height) {
