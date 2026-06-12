@@ -329,7 +329,9 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (!sdtData?.content?.length) return null;
 		for (let i = 0; i < sdtData.content.length; i++) {
 			let block = sdtData.content[i];
-			if (block.flowClass === 'excluded' || !block.anchor || !('selectorMap' in block.anchor)) continue;
+			if (block.flowClass === 'excluded' || !block.anchor
+					|| !('selectorMap' in block.anchor)
+					|| typeof block.anchor.selectorMap !== 'string') continue;
 			try {
 				let el = this._iframeDocument.body.querySelector(block.anchor.selectorMap);
 				if (el && el.getBoundingClientRect().bottom > 0) {
@@ -343,7 +345,11 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	navigateToSDTBlock(sdtData: StructuredDocumentText, blockIndex: number) {
 		let block = sdtData.content[blockIndex];
-		if (!block.anchor || !('selectorMap' in block.anchor)) return;
+		if (!block.anchor
+				|| !('selectorMap' in block.anchor)
+				|| typeof block.anchor.selectorMap !== 'string') {
+			return;
+		}
 		let el = this._iframeDocument.body.querySelector(block.anchor.selectorMap);
 		if (el) {
 			el.scrollIntoView({ behavior: 'instant', block: 'start' });
