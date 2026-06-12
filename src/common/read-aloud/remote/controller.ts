@@ -5,6 +5,7 @@ import { RemoteReadAloudVoice } from './voice';
 import { debounce } from '../../lib/debounce';
 import { stretchAudioBuffer } from './lib/time-stretch';
 import { findWordOnset } from './lib/word-onset';
+import type { ReadAloudTimestamp } from './index';
 
 const AUDIO_BUFFER_CACHE_CAPACITY = 32;
 const EST_PLAYBACK_CHARS_PER_SECOND = 16;
@@ -35,6 +36,14 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 	// original-buffer time. The actual AudioBufferSourceNode always plays at 1x
 	// because stretchAudioBuffer handles the speed change.
 	private _playbackRate = 1;
+
+	// Word-level timestamps for the buffer currently being played, retained so
+	// rescheduling on speed/device change can reuse them without a re-fetch.
+	private _currentTimestamps: ReadAloudTimestamp[] | null = null;
+
+	// Active setTimeout handles for the word-onset events being scheduled
+	// against the currently-playing buffer.
+	private _wordTimeouts: ReturnType<typeof setTimeout>[] = [];
 
 	constructor(voice: RemoteReadAloudVoice, segments: ReadAloudSegment[], backwardStopIndex: number | null, forwardStopIndex: number | null) {
 		super(voice, segments, backwardStopIndex, forwardStopIndex);
@@ -104,12 +113,13 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 			let buffer = this._currentBuffer;
 			let offset = this._currentPlaybackTime;
 			let rate = this._playbackRate;
+			let timestamps = this._currentTimestamps ?? undefined;
 
 			this._stopSource();
 			sampledContext.close();
 			this._initAudioContext();
 
-			this._playAudioBuffer(buffer, offset, rate);
+			this._playAudioBuffer(buffer, offset, rate, timestamps);
 		}, STALL_PROBE_DELAY_MS);
 	};
 
@@ -142,12 +152,18 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 		return this._audioContext.decodeAudioData(arrayBuffer);
 	}
 
-	protected _playAudioBuffer(buffer: AudioBuffer, offset: number, rate: number): void {
+	protected _playAudioBuffer(
+		buffer: AudioBuffer,
+		offset: number,
+		rate: number,
+		timestamps?: ReadAloudTimestamp[],
+	): void {
 		this._stopSource();
 
 		this._currentBuffer = buffer;
 		this._playbackOffset = offset;
 		this._playbackRate = rate;
+		this._currentTimestamps = timestamps ?? null;
 
 		// Time-stretch the buffer to change speed without affecting pitch.
 		// AudioBufferSourceNode.playbackRate shifts pitch like a turntable,
@@ -167,18 +183,24 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 		source.onended = () => {
 			if (this._sourceNode !== source) return;
 			this._isPlaying = false;
+			this._clearWordSchedule();
 			let segment = this._currentSegment;
 			if (segment) {
 				this._handleSegmentEnd(segment, this._position);
 			}
 		};
+
+		if (timestamps?.length) {
+			this._scheduleWordEvents(timestamps, offset, rate);
+		}
 	}
 
 	protected override _onSpeedChange(): void {
 		if (this._isPlaying && this._currentBuffer) {
 			let offset = this._currentPlaybackTime;
+			let timestamps = this._currentTimestamps ?? undefined;
 			this._stopSource();
-			this._playAudioBuffer(this._currentBuffer, offset, this._speed);
+			this._playAudioBuffer(this._currentBuffer, offset, this._speed, timestamps);
 		}
 	}
 
@@ -202,6 +224,48 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 			this._sourceNode = null;
 		}
 		this._isPlaying = false;
+		this._clearWordSchedule();
+	}
+
+	/**
+	 * Schedule a setTimeout for each timestamp boundary remaining after the
+	 * given offset. setTimeout() fires in wall-clock time, which matches audio
+	 * playback time at the AudioContext's 1x rate (we time-stretch the buffer
+	 * up front, so the source plays at 1x even when the user has set a higher
+	 * speed). Cleared by _clearWordSchedule() on any teardown of the source.
+	 */
+	private _scheduleWordEvents(
+		timestamps: ReadAloudTimestamp[],
+		offset: number,
+		rate: number,
+	): void {
+		for (let i = 0; i < timestamps.length; i++) {
+			let timestamp = timestamps[i];
+			if (timestamp.end <= offset) {
+				continue;
+			}
+			let delayMs = Math.max(0, (timestamp.start - offset) / rate * 1000);
+			let timeoutHandle = setTimeout(() => {
+				if (this._destroyed) {
+					return;
+				}
+				this.activeTimestampIndex = i;
+				this.dispatchEvent(new ReadAloudEvent('ActiveWordChange', this._currentSegment));
+			}, delayMs);
+			this._wordTimeouts.push(timeoutHandle);
+		}
+	}
+
+	/**
+	 * Cancel any pending word events. Leaves `activeTimestampIndex` alone --
+	 * the manager resets it on segment change, so on pause the highlight stays
+	 * on the word the user paused on.
+	 */
+	private _clearWordSchedule(): void {
+		for (let timeoutHandle of this._wordTimeouts) {
+			clearTimeout(timeoutHandle);
+		}
+		this._wordTimeouts.length = 0;
 	}
 
 	override destroy(): void {
@@ -218,6 +282,8 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	private _indexAtPause: number | null = null;
 
 	private _audioBuffers = new LRUCacheMap<number, AudioBuffer>(AUDIO_BUFFER_CACHE_CAPACITY);
+
+	private _segmentTimestamps = new LRUCacheMap<number, ReadAloudTimestamp[]>(AUDIO_BUFFER_CACHE_CAPACITY);
 
 	private _fetching = new Map<number, Promise<AudioBuffer>>();
 
@@ -302,7 +368,8 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 				else {
 					offset = 0;
 				}
-				this._playAudioBuffer(audioBuffer, offset, this._speed);
+				let timestamps = this._segmentTimestamps.get(index);
+				this._playAudioBuffer(audioBuffer, offset, this._speed, timestamps);
 
 				this._prefetchFrom(index + 1);
 			})
@@ -433,10 +500,13 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 
 		let segment = this._segments[index];
 		let fetchAndDecode = async () => {
-			let blob = await this._fetchAudioBlob(segment);
+			let { audio, timestamps } = await this._fetchAudio(segment);
 
-			let audioBuffer = await this._decodeAudioData(blob);
+			let audioBuffer = await this._decodeAudioData(audio);
 			this._audioBuffers.set(index, audioBuffer);
+			if (timestamps) {
+				this._segmentTimestamps.set(index, timestamps);
+			}
 			return audioBuffer;
 		};
 
@@ -445,10 +515,10 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		return inflight;
 	}
 
-	private async _fetchAudioBlob(segment: ReadAloudSegment): Promise<Blob> {
+	private async _fetchAudio(segment: ReadAloudSegment): Promise<{ audio: Blob; timestamps?: ReadAloudTimestamp[] }> {
 		let startTime = performance.now();
 
-		let { audio, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
+		let { audio, timestamps, error } = await this.voice.provider.remote.getAudio(segment, this.voice.impl);
 
 		if (!audio) {
 			if (error) {
@@ -471,7 +541,13 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 			}
 		}
 
-		return audio;
+		return { audio, timestamps };
+	}
+
+	getTimestampsForSegment(segment: ReadAloudSegment): ReadAloudTimestamp[] | null {
+		let index = this._segments.indexOf(segment);
+		if (index < 0) return null;
+		return this._segmentTimestamps.get(index) ?? null;
 	}
 
 	private _estimatePlaybackTime(segment: ReadAloudSegment): number {
@@ -490,6 +566,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	override destroy(): void {
 		super.destroy();
 		this._audioBuffers.clear();
+		this._segmentTimestamps.clear();
 		this._fetching.clear();
 	}
 }

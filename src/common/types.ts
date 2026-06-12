@@ -1,6 +1,5 @@
 import { Selector } from "../dom/common/lib/selector";
 import { ReflowableAppearance } from "../dom/common/lib/appearance";
-import { PersistentRange } from '../dom/common/lib/range';
 
 export type ToolType =
 	| 'highlight'
@@ -60,19 +59,44 @@ export type NavLocation = {
 	position?: Position;
 	href?: string;
 	scrollCoords?: [number, number];
+	scrollYPercent?: number;
 };
 
-export type Position = PDFPosition | Selector | RangeRef;
+export type Position = PDFPosition | Selector | SDTPosition;
+
+/**
+ * A position in the source document's own coordinate system, as stored in
+ * annotations and view states: PDFPosition for PDFs, a WADM Selector for
+ * EPUBs and snapshots.
+ */
+export type SourcePosition = Exclude<Position, SDTPosition>;
 
 export type PDFPosition = {
 	pageIndex: number;
 	rects?: number[][];
 	paths?: number[][];
+	nextPageRects?: number[][];
 };
 
-export type RangeRef = {
-	range: PersistentRange;
+/**
+ * A range in a Structured Document Text content tree. Each endpoint is a
+ * content point per the SDT schema: a path of child indices leading to a
+ * text node, followed by a character offset within that node's text.
+ * Endpoints can be compared with compareRefs() and split into
+ * { ref, offset } with splitContentPoint() from the
+ * structured-document-text module.
+ */
+export type SDTPosition = {
+	start: number[];
+	end: number[];
 };
+
+export function isSDTPosition(position: unknown): position is SDTPosition {
+	return !!position
+		&& typeof position === 'object'
+		&& Array.isArray((position as SDTPosition).start)
+		&& Array.isArray((position as SDTPosition).end);
+}
 
 type NewAnnotationOptionalFields =
 	'id'
@@ -119,7 +143,6 @@ export type ViewStats = {
 	appearance?: Partial<ReflowableAppearance>;
 	fixedLayout?: boolean;
 	outlinePath?: number[];
-	readingModeEnabled?: boolean;
 };
 
 export type AnnotationPopupParams<A extends Annotation = Annotation> = {
@@ -198,6 +221,7 @@ export type ReadAloudState = {
 	annotationPopup: ReadAloudAnnotationPopup | null;
 	segmentAnnotations: Map<number, string>;
 	savedPosition?: Position | null;
+	highlightGranularity: ReadAloudGranularity;
 };
 
 /**
@@ -209,13 +233,12 @@ export type ReadAloudStateSnapshot = {
 	active: boolean;
 	paused: boolean;
 	segmentGranularity: ReadAloudGranularity | null;
+	highlightGranularity: ReadAloudGranularity;
 	segments: ReadAloudSegment[] | null;
 	activeSegment: ReadAloudSegment | null;
-	backwardStopIndex: number | null;
-	forwardStopIndex: number | null;
-	targetPosition?: Position;
+	activeWordSourcePosition: SourcePosition | null;
 	lang: string | null;
-	lastSkipGranularity: 'sentence' | 'paragraph' | null;
+	lastSkipGranularity: ReadAloudGranularity | null;
 	annotationPopup: ReadAloudAnnotationPopup | null;
 };
 
@@ -224,21 +247,38 @@ export type ReadAloudStateSnapshot = {
  * using onSetReadAloudState().
  */
 export type ReadAloudStateDelta = {
-	segments?: ReadAloudSegment[] | null;
-	backwardStopIndex?: number | null;
-	forwardStopIndex?: number | null;
 	targetPosition?: Position;
 	lang?: string | null;
 };
 
 export type ReadAloudSegment = {
-	position: Position;
+	position: SDTPosition;
+
+	/**
+	 * The segment's position in the source document's coordinate system,
+	 * materialized by the reader when segments are built so views only
+	 * have to display it.
+	 */
+	sourcePosition?: SourcePosition | null;
+
+	/**
+	 * Like sourcePosition, but spanning the whole logical paragraph the
+	 * segment belongs to.
+	 */
+	paragraphSourcePosition?: SourcePosition | null;
 	text: string;
 	granularity: ReadAloudGranularity;
 	anchor: 'paragraphStart' | null;
 };
 
-export type ReadAloudGranularity = 'paragraph' | 'sentence';
+export type ReadAloudGranularity = 'paragraph' | 'sentence' | 'word';
+
+export type ReadAloudTimestamp = {
+	start: number;
+	end: number;
+	charStart: number;
+	charEnd: number;
+};
 
 export type MaybePromise<T> = Promise<T> | T;
 

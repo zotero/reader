@@ -1,9 +1,11 @@
 import { createRoot } from 'react-dom/client';
 import React, { createContext } from 'react';
+import pako from 'pako';
 import ReaderUI from './components/reader-ui';
 import PDFView from '../pdf/pdf-view';
 import EPUBView from '../dom/epub/epub-view';
 import SnapshotView from '../dom/snapshot/snapshot-view';
+import SDTView from '../dom/sdt/sdt-view';
 import AnnotationManager from './annotation-manager';
 import {
 	createAnnotationContextMenu,
@@ -31,6 +33,18 @@ import { addFTL, getLocalizedString } from '../fluent';
 import { getVoicePreferencesURL } from './lib/read-aloud-links';
 import { resolveLanguage } from './read-aloud/lang';
 import { ReadAloudManager } from './read-aloud/manager';
+import {
+	buildSDTReadAloudSegments,
+	findSegmentIndexForSDTPosition,
+	getSDTLang,
+} from './read-aloud/sdt-segments';
+import { createPositionMapper } from './sdt/create-position-mapper';
+import { isSDTPosition } from './types';
+import {
+	openStructuredDocumentTextPack,
+	SDT_PACK_VERSION,
+	SDT_SCHEMA_VERSION,
+} from '../../structured-document-text/src/read.js';
 
 // Compute style values for usage in views (CSS variables aren't sufficient for that)
 // Font family is necessary for text annotations
@@ -39,6 +53,16 @@ window.computedColorFocusBorder = window.getComputedStyle(document.body).getProp
 window.computedWidthFocusBorder = window.getComputedStyle(document.body).getPropertyValue('--width-focus-border');
 
 export const ReaderContext = createContext({});
+
+// View stats that the base view keeps providing while the SDT (Reading Mode)
+// overlay is active
+const BASE_VIEW_STATS_KEYS = new Set([
+	'pageIndex',
+	'pageLabel',
+	'pagesCount',
+	'usePhysicalPageNumbers',
+	'percentage',
+]);
 
 class Reader {
 	constructor(options) {
@@ -50,6 +74,12 @@ class Reader {
 		this._data = options.data;
 		this._password = options.password;
 		this._preview = options.preview;
+
+		this._getSDTPack = typeof options.getSDTPack === 'function' ? options.getSDTPack : null;
+		this._sdtReaderPromise = null;
+		this._sdtPromise = null;
+		this._sdt = null;
+		this._readAloudSegments = null;
 
 		this._readerContext = { type: this._type, platform: this._platform };
 
@@ -92,6 +122,8 @@ class Reader {
 		this._readerRef = React.createRef();
 		this._primaryView = null;
 		this._secondaryView = null;
+		this._primarySDTView = null;
+		this._secondarySDTView = null;
 		this._lastViewPrimary = true;
 
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
@@ -159,19 +191,18 @@ class Reader {
 		this._enableReadAloud = options.enableReadAloud || false;
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
+		// Start pulling (and generating, if needed) the SDT pack right away,
+		// so it's ready by the time a feature awaits getSDTReader()
+		this.getSDTReader();
+
 		this._readAloudManager = new ReadAloudManager({
 			remoteInterface: this._readAloudRemoteInterface,
 			onStateChange: () => this._onReadAloudEngineStateChanged(),
-			onRequestSegments: () => {
-				// Push composed view state to views. The view will see
-				// segments == null along with segmentGranularity, compute segments,
-				// and feed them back via onSetReadAloudState(), which calls setSegments().
-				this._pushReadAloudToViews();
-			},
+			onRequestSegments: () => this._requestReadAloudSegments(),
 			onComputeRepositionIndex: (position) => {
 				let segments = this._readAloudManager.segments;
-				if (!segments || !this._primaryView) return null;
-				return this._primaryView.computeReadAloudRepositionIndex(position, segments);
+				if (!segments) return null;
+				return this._findReadAloudStartIndex(segments, position);
 			},
 			onSetVoice: data => this._setReadAloudVoice(data),
 		});
@@ -230,9 +261,15 @@ class Reader {
 				annotationPopup: null,
 				segmentAnnotations: new Map(),
 				savedPosition: options.primaryViewState?.lastReadAloudPosition ?? null,
+				highlightGranularity: ['paragraph', 'sentence', 'word'].includes(options.readAloudHighlightGranularity)
+					? options.readAloudHighlightGranularity
+					: 'sentence',
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
+			primaryReadingModeEnabled: false,
+			secondaryReadingModeEnabled: false,
+			readingModeLoading: false,
 			primaryViewState: options.primaryViewState,
 			primaryViewStats: {},
 			primaryViewAnnotationPopup: null,
@@ -500,7 +537,34 @@ class Reader {
 	}
 
 	get _lastView() {
-		return this._lastViewPrimary ? this._primaryView : this._secondaryView;
+		return this._lastViewPrimary ? this._activePrimaryView : this._activeSecondaryView;
+	}
+
+	/**
+	 * The view that currently handles user interaction for a split: the SDT
+	 * (Reading Mode) overlay when one is active, the base view otherwise.
+	 */
+	_getActiveView(primary) {
+		if (primary) {
+			return this._primarySDTView || this._primaryView;
+		}
+		return this._secondarySDTView || this._secondaryView;
+	}
+
+	get _activePrimaryView() {
+		return this._getActiveView(true);
+	}
+
+	get _activeSecondaryView() {
+		return this._getActiveView(false);
+	}
+
+	/**
+	 * All instantiated views, including base views hidden behind SDT overlays.
+	 */
+	get _views() {
+		return [this._primaryView, this._secondaryView, this._primarySDTView, this._secondarySDTView]
+			.filter(Boolean);
 	}
 
 	_updateState(state, init) {
@@ -511,41 +575,48 @@ class Reader {
 
 		if (this._state.annotations !== previousState.annotations) {
 			let annotations = this._state.annotations.filter(x => !x._hidden);
-			this._primaryView?.setAnnotations(annotations);
-			this._secondaryView?.setAnnotations(annotations);
+			for (let view of this._views) {
+				view.setAnnotations(annotations);
+			}
 		}
 
 		if (this._state.selectedAnnotationIDs !== previousState.selectedAnnotationIDs) {
-			this._primaryView?.setSelectedAnnotationIDs(this._state.selectedAnnotationIDs);
-			this._secondaryView?.setSelectedAnnotationIDs(this._state.selectedAnnotationIDs);
+			for (let view of this._views) {
+				view.setSelectedAnnotationIDs(this._state.selectedAnnotationIDs);
+			}
 		}
 
 		if (this._state.tool !== previousState.tool) {
-			this._primaryView?.setTool(this._state.tool);
-			this._secondaryView?.setTool(this._state.tool);
+			for (let view of this._views) {
+				view.setTool(this._state.tool);
+			}
 		}
 
 		if (this._state.showAnnotations !== previousState.showAnnotations) {
-			this._primaryView?.setShowAnnotations(this._state.showAnnotations);
-			this._secondaryView?.setShowAnnotations(this._state.showAnnotations);
+			for (let view of this._views) {
+				view.setShowAnnotations(this._state.showAnnotations);
+			}
 		}
 
 		if (this._state.outline !== previousState.outline) {
-			this._primaryView?.setOutline(this._state.outline);
-			this._secondaryView?.setOutline(this._state.outline);
+			for (let view of this._views) {
+				view.setOutline(this._state.outline);
+			}
 		}
 
 		if (init || this._state.lightTheme !== previousState.lightTheme) {
 			if (!init) {
-				this._primaryView?.setLightTheme(this._state.lightTheme);
-				this._secondaryView?.setLightTheme(this._state.lightTheme);
+				for (let view of this._views) {
+					view.setLightTheme(this._state.lightTheme);
+				}
 			}
 		}
 
 		if (init || this._state.darkTheme !== previousState.darkTheme) {
 			if (!init) {
-				this._primaryView?.setDarkTheme(this._state.darkTheme);
-				this._secondaryView?.setDarkTheme(this._state.darkTheme);
+				for (let view of this._views) {
+					view.setDarkTheme(this._state.darkTheme);
+				}
 			}
 		}
 
@@ -557,8 +628,9 @@ class Reader {
 				delete document.documentElement.dataset.colorScheme;
 			}
 			if (!init) {
-				this._primaryView?.setColorScheme(this._state.colorScheme);
-				this._secondaryView?.setColorScheme(this._state.colorScheme);
+				for (let view of this._views) {
+					view.setColorScheme(this._state.colorScheme);
+				}
 			}
 		}
 
@@ -581,64 +653,67 @@ class Reader {
 
 		if (this._state.readOnly !== previousState.readOnly) {
 			this._annotationManager.setReadOnly(this._state.readOnly);
-			this._primaryView?.setReadOnly?.(this._state.readOnly);
-			this._secondaryView?.setReadOnly?.(this._state.readOnly);
+			for (let view of this._views) {
+				view.setReadOnly?.(this._state.readOnly);
+			}
 		}
 
 		if (this._state.pageLabels !== previousState.pageLabels) {
-			this._primaryView?.setPageLabels(this._state.pageLabels);
-			this._secondaryView?.setPageLabels(this._state.pageLabels);
+			for (let view of this._views) {
+				view.setPageLabels?.(this._state.pageLabels);
+			}
 		}
 
 		if (this._state.primaryViewAnnotationPopup !== previousState.primaryViewAnnotationPopup) {
-			this._primaryView?.setAnnotationPopup(this._state.primaryViewAnnotationPopup);
+			this._activePrimaryView?.setAnnotationPopup(this._state.primaryViewAnnotationPopup);
 		}
 		if (this._state.secondaryViewAnnotationPopup !== previousState.secondaryViewAnnotationPopup) {
-			this._secondaryView?.setAnnotationPopup(this._state.secondaryViewAnnotationPopup);
+			this._activeSecondaryView?.setAnnotationPopup(this._state.secondaryViewAnnotationPopup);
 		}
 
 		if (this._state.primaryViewSelectionPopup !== previousState.primaryViewSelectionPopup) {
-			this._primaryView?.setSelectionPopup(this._state.primaryViewSelectionPopup);
+			this._activePrimaryView?.setSelectionPopup(this._state.primaryViewSelectionPopup);
 		}
 		if (this._state.secondaryViewSelectionPopup !== previousState.secondaryViewSelectionPopup) {
-			this._secondaryView?.setSelectionPopup(this._state.secondaryViewSelectionPopup);
+			this._activeSecondaryView?.setSelectionPopup(this._state.secondaryViewSelectionPopup);
 		}
 
 		if (this._state.primaryViewOverlayPopup !== previousState.primaryViewOverlayPopup) {
-			this._primaryView?.setOverlayPopup(this._state.primaryViewOverlayPopup);
+			this._activePrimaryView?.setOverlayPopup(this._state.primaryViewOverlayPopup);
 		}
 		if (this._state.secondaryViewOverlayPopup !== previousState.secondaryViewOverlayPopup) {
-			this._secondaryView?.setOverlayPopup(this._state.secondaryViewOverlayPopup);
+			this._activeSecondaryView?.setOverlayPopup(this._state.secondaryViewOverlayPopup);
 		}
 
 		if (this._state.primaryViewFindState !== previousState.primaryViewFindState) {
-			this._primaryView?.setFindState(this._state.primaryViewFindState);
+			this._activePrimaryView?.setFindState(this._state.primaryViewFindState);
 		}
 		if (this._state.secondaryViewFindState !== previousState.secondaryViewFindState) {
-			this._secondaryView?.setFindState(this._state.secondaryViewFindState);
+			this._activeSecondaryView?.setFindState(this._state.secondaryViewFindState);
 		}
 
-		if (this._type === 'epub' || this._type === 'snapshot') {
-			if (this._state.fontFamily !== previousState.fontFamily) {
-				this._primaryView?.setFontFamily(this._state.fontFamily);
-				this._secondaryView?.setFontFamily(this._state.fontFamily);
+		if (this._state.fontFamily !== previousState.fontFamily) {
+			for (let view of this._views) {
+				view.setFontFamily?.(this._state.fontFamily);
 			}
+		}
 
-			if (this._state.hyphenate !== previousState.hyphenate) {
-				this._primaryView?.setHyphenate(this._state.hyphenate);
-				this._secondaryView?.setHyphenate(this._state.hyphenate);
+		if (this._state.hyphenate !== previousState.hyphenate) {
+			for (let view of this._views) {
+				view.setHyphenate?.(this._state.hyphenate);
 			}
 		}
 
 		if (init || this._state.sidebarView !== previousState.sidebarView) {
-			this._primaryView?.setSidebarView?.(this._state.sidebarView);
-			this._secondaryView?.setSidebarView?.(this._state.sidebarView);
+			for (let view of this._views) {
+				view.setSidebarView?.(this._state.sidebarView);
+			}
 		}
 
 		if (init || this._state.sidebarOpen !== previousState.sidebarOpen) {
 			document.body.classList.toggle('sidebar-open', this._state.sidebarOpen);
-			this._primaryView?.setSidebarOpen(this._state.sidebarOpen);
-			this._secondaryView?.setSidebarOpen(this._state.sidebarOpen);
+			this._activePrimaryView?.setSidebarOpen(this._state.sidebarOpen);
+			this._activeSecondaryView?.setSidebarOpen(this._state.sidebarOpen);
 		}
 
 		if (init || this._state.splitType !== previousState.splitType) {
@@ -656,6 +731,18 @@ class Reader {
 			}
 			// Unsplit
 			else if ((previousState.splitType || init) && !this._state.splitType) {
+				if (this._secondarySDTView) {
+					this._secondarySDTView.destroy();
+					this._secondarySDTView = null;
+					this._updateState({ secondaryReadingModeEnabled: false });
+					if (!this._primarySDTView) {
+						this._annotationManager.setFilter({ enabledTypes: null });
+						if (this._baseViewOutline !== undefined) {
+							this._updateState({ outline: this._baseViewOutline });
+							this._baseViewOutline = undefined;
+						}
+					}
+				}
 				this._secondaryView?.destroy();
 				this._secondaryView = null;
 				this._secondaryViewContainer.replaceChildren();
@@ -847,16 +934,15 @@ class Reader {
 	}
 
 	_handleAppearanceChange(params) {
-		this._ensureType('epub', 'snapshot');
-		this._primaryView?.setAppearance(params);
-		this._secondaryView?.setAppearance(params);
+		for (let view of this._views) {
+			view.setAppearance?.(params);
+		}
 	}
 
-	_handleReadingModeEnabledChange(enabled) {
-		this._ensureType('snapshot');
+	async _handleReadingModeEnabledChange(enabled) {
 		try {
-			this._primaryView?.setReadingModeEnabled(enabled);
-			this._secondaryView?.setReadingModeEnabled(enabled);
+			// The toggle controls whichever split the user last interacted with
+			await this._setReadingMode(this._lastViewPrimary || !this._secondaryView, enabled);
 		}
 		catch (e) {
 			console.error(e);
@@ -865,6 +951,81 @@ class Reader {
 				this.setErrorMessage(null);
 			}, 5000);
 		}
+	}
+
+	// Serialize Reading Mode transitions so rapid toggles don't race (two
+	// concurrent calls could otherwise both pass the !this[sdtViewKey] check
+	// and create two overlay views)
+	_setReadingMode(primary, enabled) {
+		let apply = async () => {
+			let sdtViewKey = primary ? '_primarySDTView' : '_secondarySDTView';
+			let enabledStateKey = primary ? 'primaryReadingModeEnabled' : 'secondaryReadingModeEnabled';
+			let baseView = primary ? this._primaryView : this._secondaryView;
+
+			if (enabled && !this[sdtViewKey]) {
+				this._updateState({ readingModeLoading: true });
+				let sdt;
+				try {
+					sdt = await this._loadSDT();
+				}
+				finally {
+					this._updateState({ readingModeLoading: false });
+				}
+				if (!sdt) {
+					throw new Error('SDT unavailable');
+				}
+				let location = baseView?.getSDTLocation?.(sdt.structure) ?? null;
+
+				if (baseView?._iframe) {
+					baseView._iframe.style.visibility = 'hidden';
+					baseView._iframe.style.position = 'absolute';
+				}
+				// The overlay replaces the outline with the SDT one -- keep
+				// the base view's to restore once Reading Mode is off everywhere
+				if (this._baseViewOutline === undefined) {
+					this._baseViewOutline = this._state.outline;
+				}
+				this[sdtViewKey] = this._createView(primary, location, { sdt: true });
+				this._updateState({ [enabledStateKey]: true });
+
+				// Only text annotation tools work on the SDT overlay
+				let enabledTypes = ['highlight', 'underline', 'note'];
+				this._annotationManager.setFilter({ enabledTypes });
+				if (!enabledTypes.concat('pointer').includes(this._state.tool.type)) {
+					this.setTool({ type: 'pointer' });
+				}
+			}
+			else if (!enabled && this[sdtViewKey]) {
+				this[sdtViewKey]._iframe?.remove();
+				this[sdtViewKey].destroy();
+				this[sdtViewKey] = null;
+
+				if (baseView?._iframe) {
+					baseView._iframe.style.visibility = '';
+					baseView._iframe.style.position = '';
+				}
+				this._updateState({ [enabledStateKey]: false });
+				if (!this._primarySDTView && !this._secondarySDTView) {
+					this._annotationManager.setFilter({ enabledTypes: null });
+					if (this._baseViewOutline !== undefined) {
+						this._updateState({ outline: this._baseViewOutline });
+						this._baseViewOutline = undefined;
+					}
+				}
+			}
+		};
+
+		let next = Promise.resolve(this._readingModeQueue).then(apply);
+		this._readingModeQueue = next.catch(() => {});
+		return next;
+	}
+
+	/**
+	 * Compute sortIndex and pageLabel for a source-format position.
+	 * Used by the SDT overlay, which creates annotations in source format.
+	 */
+	_getSourceAnnotationMeta(position) {
+		return this._primaryView?.getAnnotationMeta?.(position) ?? null;
 	}
 
 	_handleFindStateChange(primary, params) {
@@ -903,14 +1064,14 @@ class Reader {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
 		}
-		(primary ? this._primaryView : this._secondaryView).findNext();
+		this._getActiveView(primary)?.findNext();
 	}
 
 	findPrevious(primary) {
 		if (primary === undefined) {
 			primary = this._lastViewPrimary;
 		}
-		(primary ? this._primaryView : this._secondaryView).findPrevious();
+		this._getActiveView(primary)?.findPrevious();
 	}
 
 	toggleAppearancePopup(open) {
@@ -954,22 +1115,20 @@ class Reader {
 			return;
 		}
 
-		// If the view has a selection target and we're unpausing, reset segments
-		// so they'll be recomputed from the selection
+		// If the view has a selection target and we're unpausing, restart from
+		// the selection
 		if (!manager.paused && this._lastReadAloudPaused
-				&& this._primaryView?.hasReadAloudTarget) {
+				&& this._activePrimaryView?.hasReadAloudTarget) {
 			manager.clearSegments();
+			this._requestReadAloudSegments();
 		}
 		this._lastReadAloudPaused = manager.paused;
 
 		// Update savedPosition when the active segment changes
 		let activeSegment = manager.activeSegment;
-		if (activeSegment && activeSegment !== this._lastReadAloudActiveSegment) {
-			let savedPosition = activeSegment.position;
-			if (this._primaryView) {
-				savedPosition = this._primaryView.getSerializableReadAloudPosition(savedPosition);
-			}
-			this._state.readAloudState.savedPosition = savedPosition;
+		if (activeSegment && activeSegment !== this._lastReadAloudActiveSegment
+				&& activeSegment.sourcePosition) {
+			this._state.readAloudState.savedPosition = activeSegment.sourcePosition;
 		}
 		this._lastReadAloudActiveSegment = activeSegment;
 
@@ -992,8 +1151,9 @@ class Reader {
 	 */
 	_pushReadAloudToViews() {
 		let stateSnapshot = this._composeReadAloudStateSnapshot();
-		this._primaryView?.setReadAloudState(stateSnapshot);
-		this._secondaryView?.setReadAloudState(stateSnapshot);
+		for (let view of this._views) {
+			view.setReadAloudState(stateSnapshot);
+		}
 	}
 
 	_composeReadAloudStateSnapshot() {
@@ -1003,15 +1163,239 @@ class Reader {
 			active: manager.active,
 			paused: manager.paused,
 			segmentGranularity: manager.segmentGranularity,
+			highlightGranularity: this._state.readAloudState.highlightGranularity,
 			segments: manager.segments,
 			activeSegment: manager.activeSegment,
-			backwardStopIndex: null,
-			forwardStopIndex: null,
-			targetPosition: manager.consumeTargetPosition(),
+			activeWordSourcePosition: this._computeActiveWordSourcePosition(manager),
 			lastSkipGranularity: manager.lastSkipGranularity,
 			annotationPopup: this._state.readAloudState.annotationPopup,
 			lang: manager.lang || this._state.readAloudState.lang,
 		};
+	}
+
+	_computeActiveWordSourcePosition(manager) {
+		let segment = manager.activeSegment;
+		let timestamp = manager.activeTimestamp;
+		if (!segment || !timestamp || !this._readAloudSegments || !this._sdt) {
+			return null;
+		}
+		let sdtPosition = this._readAloudSegments.getWordPosition(segment, timestamp.charStart, timestamp.charEnd);
+		return sdtPosition && this._sdt.mapper.sdtToSourcePosition(sdtPosition);
+	}
+
+	setReadAloudHighlightGranularity(granularity) {
+		if (!['paragraph', 'sentence', 'word'].includes(granularity)
+				|| this._state.readAloudState.highlightGranularity === granularity) {
+			return;
+		}
+		this._updateState({
+			readAloudState: { ...this._state.readAloudState, highlightGranularity: granularity },
+		});
+	}
+
+	// Pulls the SDT pack from the host on first use and parses it once per
+	// session. The pack arrives by value and is never replaced mid-session,
+	// so it always matches the displayed document
+	async getSDTReader() {
+		if (!this._getSDTPack) {
+			return null;
+		}
+		if (!this._sdtReaderPromise) {
+			this._sdtReaderPromise = (async () => {
+				let result = await this._getSDTPack();
+				if (!result?.ok) {
+					// Only a parsed pack is cached -- any failure means the
+					// next invocation re-pulls, which is cheap for terminal
+					// reasons (the host memoizes those) and lets transient
+					// failures self-heal
+					console.warn('SDT pack unavailable:', result?.reason);
+					this._sdtReaderPromise = null;
+					return null;
+				}
+				if (result.packVersion !== SDT_PACK_VERSION
+						|| result.schemaMajorVersion !== Number(SDT_SCHEMA_VERSION.split('.')[0])) {
+					console.warn('Unsupported SDT pack version', result.packVersion, result.schemaMajorVersion);
+					this._sdtReaderPromise = null;
+					return null;
+				}
+				let bytes = new Uint8Array(result.bytes);
+				let source = {
+					byteLength: bytes.byteLength,
+					read: async (offset, length) => bytes.buffer.slice(
+						bytes.byteOffset + offset,
+						bytes.byteOffset + offset + length
+					),
+				};
+				return openStructuredDocumentTextPack(source, {
+					inflate: b => pako.inflateRaw(b),
+				});
+			})().catch((e) => {
+				// Don't cache transport errors, so the next invocation retries
+				this._sdtReaderPromise = null;
+				console.warn('Failed to load SDT pack', e);
+				return null;
+			});
+		}
+		return this._sdtReaderPromise;
+	}
+
+	// Materialize the full SDT structure and build the position mapper.
+	// Used by Read Aloud and Reading Mode; resolves to null when SDT is
+	// unavailable
+	async _loadSDT() {
+		if (this._sdt) {
+			return this._sdt;
+		}
+		if (!this._sdtPromise) {
+			this._sdtPromise = (async () => {
+				let reader = await this.getSDTReader();
+				if (!reader) {
+					return null;
+				}
+				let structure = await reader.materialize();
+				this._sdt = {
+					structure,
+					mapper: createPositionMapper(structure),
+				};
+				return this._sdt;
+			})().catch((e) => {
+				this._sdtPromise = null;
+				console.warn('Failed to load SDT', e);
+				return null;
+			});
+		}
+		return this._sdtPromise;
+	}
+
+	async _requestReadAloudSegments() {
+		let manager = this._readAloudManager;
+		let granularity = manager.segmentGranularity;
+		if (!granularity) {
+			return;
+		}
+
+		let sdt = await this._loadSDT();
+		if (!sdt || !manager.active || manager.segmentGranularity !== granularity) {
+			return;
+		}
+
+		if (!manager.lang) {
+			manager.setLanguage(getSDTLang(sdt.structure));
+		}
+		this._readAloudSegments = buildSDTReadAloudSegments(sdt.structure, granularity, manager.lang);
+		let segments = this._readAloudSegments.segments;
+		if (!segments.length) {
+			manager.clearSegments();
+			return;
+		}
+		this._materializeSourcePositions(segments);
+
+		let position = this._captureReadAloudStart();
+		let backwardStopIndex = position
+			? this._findReadAloudStartIndex(segments, position)
+			: this._findFirstVisibleSegmentIndex(segments);
+		manager.setSegments(segments, backwardStopIndex, null);
+	}
+
+	// Selection > explicit target > persisted savedPosition. Selection and
+	// target are consumed as side effects; savedPosition is left in place so
+	// it remains the fallback, but only applies while it's still near the
+	// view -- once the user has scrolled elsewhere, the visible-block lookup
+	// takes over so Read Aloud picks up from where they're looking
+	_captureReadAloudStart() {
+		let view = this._lastView;
+		let selectionPosition = view?.getSelectionPosition?.();
+		if (selectionPosition) {
+			view.clearSelection?.();
+			return selectionPosition;
+		}
+		let target = this._readAloudManager.consumeTargetPosition();
+		if (target) {
+			return target;
+		}
+		let saved = this._state.readAloudState.savedPosition;
+		if (saved && this._activePrimaryView?.isPositionNearView?.(saved)) {
+			return saved;
+		}
+		return null;
+	}
+
+	// Materialize sourcePosition and paragraphSourcePosition on each segment,
+	// so views only have to display them
+	_materializeSourcePositions(segments) {
+		let mapper = this._sdt.mapper;
+		let paragraphStartIndex = 0;
+		for (let i = 0; i < segments.length; i++) {
+			let segment = segments[i];
+			segment.sourcePosition = mapper.sdtToSourcePosition(segment.position);
+			if (segment.anchor === 'paragraphStart') {
+				paragraphStartIndex = i;
+			}
+			if (i + 1 >= segments.length || segments[i + 1].anchor === 'paragraphStart') {
+				let paragraphSourcePosition = mapper.sdtToSourcePosition({
+					start: segments[paragraphStartIndex].position.start,
+					end: segment.position.end,
+				});
+				for (let j = paragraphStartIndex; j <= i; j++) {
+					segments[j].paragraphSourcePosition = paragraphSourcePosition;
+				}
+			}
+		}
+	}
+
+	_findReadAloudStartIndex(segments, targetPosition) {
+		let sdtPosition;
+		if (isSDTPosition(targetPosition)) {
+			sdtPosition = targetPosition;
+		}
+		else {
+			sdtPosition = this._sdt?.mapper.sourceToSDTPosition(targetPosition);
+		}
+		if (!sdtPosition) {
+			return null;
+		}
+		return findSegmentIndexForSDTPosition(segments, sdtPosition);
+	}
+
+	// Find the first segment within the top-level block the user is looking at
+	_findFirstVisibleSegmentIndex(segments) {
+		let view = this._activePrimaryView;
+		let blockIndex = view?.getVisibleBlockIndex?.(this._sdt.structure);
+		if (Number.isInteger(blockIndex)) {
+			let index = findSegmentIndexForSDTPosition(segments, { start: [blockIndex], end: [blockIndex] });
+			if (index !== null) {
+				return index;
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * Create an annotation spanning the given Read Aloud segments, in the
+	 * source document's coordinate system.
+	 */
+	_addAnnotationFromReadAloudSegments(segments, init) {
+		if (!segments.length || !this._sdt) {
+			return null;
+		}
+		let sourcePosition = this._sdt.mapper.sdtToSourcePosition({
+			start: segments[0].position.start,
+			end: segments[segments.length - 1].position.end,
+		});
+		if (!sourcePosition) {
+			return null;
+		}
+		let meta = this._getSourceAnnotationMeta(sourcePosition);
+		if (!meta) {
+			return null;
+		}
+		return this._annotationManager.addAnnotation({
+			...init,
+			position: sourcePosition,
+			text: segments.map(s => s.text).join(' '),
+			sortIndex: meta.sortIndex,
+			pageLabel: meta.pageLabel,
+		});
 	}
 
 	_syncPersistedVoicesToManager() {
@@ -1055,8 +1439,7 @@ class Reader {
 			this._updateReadAloudUIState({
 				popupOpen: true,
 			});
-			this._readAloudManager.loadVoices(this._state.loggedIn);
-			this._syncPersistedVoicesToManager();
+			this._prepareReadAloud();
 		}
 		else {
 			this._readAloudManager.deactivate();
@@ -1117,9 +1500,23 @@ class Reader {
 			}
 			this._resetReadAloudSegmentState();
 			this._updateReadAloudUIState({ popupOpen: true });
-			this._readAloudManager.loadVoices(this._state.loggedIn);
-			this._syncPersistedVoicesToManager();
+			this._prepareReadAloud();
 		}
+	}
+
+	// Load voices and, once the SDT is ready, set the document language from
+	// its metadata/content so voice resolution can proceed
+	_prepareReadAloud() {
+		this._readAloudManager.loadVoices(this._state.loggedIn);
+		this._syncPersistedVoicesToManager();
+		this._loadSDT().then((sdt) => {
+			if (sdt && !this._readAloudManager.lang) {
+				let lang = getSDTLang(sdt.structure);
+				this._readAloudManager.setLanguage(lang);
+				this._updateReadAloudUIState({ lang });
+				this._syncPersistedVoicesToManager();
+			}
+		});
 	}
 
 	_setReadAloudVoice({ lang, region, voice, speed, tier }) {
@@ -1207,7 +1604,7 @@ class Reader {
 			}
 		}
 
-		let annotation = this._lastView.addAnnotationFromReadAloudSegments(
+		let annotation = this._addAnnotationFromReadAloudSegments(
 			[segment],
 			{
 				type: type || this._tools[this._state.textSelectionAnnotationMode].type,
@@ -1252,7 +1649,7 @@ class Reader {
 		this._annotationManager.deleteAnnotations([annotation.id]);
 		// And create a new one across the new range
 		let segmentsInRange = segments.slice(newStartIndex, newEndIndex + 1);
-		let newAnnotation = this._lastView.addAnnotationFromReadAloudSegments(
+		let newAnnotation = this._addAnnotationFromReadAloudSegments(
 			segmentsInRange,
 			{
 				type: annotation.type,
@@ -1418,7 +1815,7 @@ class Reader {
 		return getLocalizedString(name, args);
 	}
 
-	_createView(primary, location) {
+	_createView(primary, location, { sdt = false } = {}) {
 		let view;
 
 		let container = primary ? this._primaryViewContainer : this._secondaryViewContainer;
@@ -1447,19 +1844,31 @@ class Reader {
 			if (primary) {
 				let { savedPosition } = this._state.readAloudState;
 				let lastReadAloudPosition = savedPosition ?? null;
-				if (lastReadAloudPosition) {
-					let tooFar = this._primaryView?.isReadAloudPositionTooFar(lastReadAloudPosition, state);
-					if (tooFar) {
-						lastReadAloudPosition = null;
-					}
+				if (lastReadAloudPosition
+						&& !this._activePrimaryView?.isPositionNearView?.(lastReadAloudPosition)) {
+					lastReadAloudPosition = null;
 				}
 				state = { ...state, lastReadAloudPosition };
 			}
 			this._onChangeViewState(state, primary);
 		}, DEBOUNCE_STATE_CHANGE);
 
-		let onChangeViewStats = debounce((state) => {
-			this._updateState({ [primary ? 'primaryViewStats' : 'secondaryViewStats']: state });
+		let onChangeViewStats = debounce((stats) => {
+			let stateKey = primary ? 'primaryViewStats' : 'secondaryViewStats';
+			// While the SDT overlay is active, page numbers and progress keep
+			// coming from the base view (which the overlay scroll-syncs), and
+			// everything else from the overlay
+			let sdtViewActive = !!(primary ? this._primarySDTView : this._secondarySDTView);
+			if (sdtViewActive) {
+				let merged = { ...this._state[stateKey] };
+				for (let key in stats) {
+					if (BASE_VIEW_STATS_KEYS.has(key) === !sdt) {
+						merged[key] = stats[key];
+					}
+				}
+				stats = merged;
+			}
+			this._updateState({ [stateKey]: stats });
 		}, DEBOUNCE_STATS_CHANGE);
 
 		let onAddAnnotation = (annotation, select) => {
@@ -1544,19 +1953,6 @@ class Reader {
 			if (params.targetPosition && this._readAloudManager.active && this._readAloudManager.segments) {
 				this._readAloudManager.jumpTo(params.targetPosition);
 			}
-			// segments: manager (new segments or segment clear)
-			if ('segments' in params) {
-				if (params.segments && params.segments !== this._readAloudManager.segments) {
-					this._readAloudManager.setSegments(
-						params.segments,
-						params.backwardStopIndex,
-						params.forwardStopIndex,
-					);
-				}
-				else if (params.segments === null) {
-					this._readAloudManager.clearSegments();
-				}
-			}
 			// lang: manager and readAloudState (for rendering gate)
 			if (params.lang && !this._readAloudManager.lang) {
 				this._readAloudManager.setLanguage(params.lang);
@@ -1605,10 +2001,6 @@ class Reader {
 			let annotationType = this._getString(`reader-${annotation.type}-annotation`);
 			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
 			this.setA11yMessage(annotationContent);
-		};
-
-		let onSetHiddenAnnotations = (ids) => {
-			this._annotationManager.setFilter({ hiddenIDs: ids });
 		};
 
 		let data;
@@ -1663,11 +2055,25 @@ class Reader {
 			onKeyDown,
 			onKeyUp,
 			onFocusAnnotation,
-			onSetHiddenAnnotations,
 			getLocalizedString
 		};
 
-		if (this._type === 'pdf') {
+		if (sdt) {
+			view = new SDTView({
+				...common,
+				viewState: {},
+				data: {
+					structure: this._sdt.structure,
+					mapper: this._sdt.mapper,
+					getSourceAnnotationMeta: position => this._getSourceAnnotationMeta(position),
+					syncBaseView: (blockIndex) => {
+						let baseView = primary ? this._primaryView : this._secondaryView;
+						baseView?.navigateToSDTBlock?.(this._sdt.structure, blockIndex);
+					},
+				},
+			});
+		}
+		else if (this._type === 'pdf') {
 			view = new PDFView({
 				...common,
 				password: this._password,
@@ -2136,7 +2542,7 @@ class Reader {
 	focusView(primary = true) {
 		primary = primary || !this._secondaryView;
 		this._lastViewPrimary = primary;
-		let view = primary ? this._primaryView : this._secondaryView;
+		let view = this._getActiveView(primary);
 		view.focus();
 		this._updateState({ primary });
 		if (primary) {
@@ -2193,6 +2599,21 @@ class Reader {
 
 	reload(data) {
 		this._data = data;
+		this._sdtReaderPromise = null;
+		this._sdtPromise = null;
+		this._sdt = null;
+		this._readAloudSegments = null;
+		if (this._primarySDTView || this._secondarySDTView) {
+			this._primarySDTView?.destroy();
+			this._primarySDTView = null;
+			this._secondarySDTView?.destroy();
+			this._secondarySDTView = null;
+			this._annotationManager.setFilter({ enabledTypes: null });
+			this._updateState({
+				primaryReadingModeEnabled: false,
+				secondaryReadingModeEnabled: false,
+			});
+		}
 		this._primaryViewContainer.replaceChildren();
 		this._primaryView = this._createView(true);
 		if (this._state.splitType) {

@@ -110,6 +110,13 @@ export abstract class ReadAloudController extends EventTarget {
 
 	protected abstract get _segmentProgressSeconds(): number;
 
+	/**
+	 * Index into the active segment's timestamp array for the word currently
+	 * being spoken, or null if no word-level data is available. Updated by the
+	 * controller as audio plays.
+	 */
+	activeTimestampIndex: number | null = null;
+
 	protected get _currentSegment() {
 		return this._segments[this._position];
 	}
@@ -135,6 +142,13 @@ export abstract class ReadAloudController extends EventTarget {
 		this._forwardStopIndex = forwardStopIndex;
 
 		this._segments = segments;
+	}
+
+	private _scheduleSpeak(delay: number) {
+		this._delayTimeout = setTimeout(() => {
+			this._delayTimeout = null;
+			this._speak();
+		}, delay);
 	}
 
 	override dispatchEvent(event: Event): boolean {
@@ -254,10 +268,7 @@ export abstract class ReadAloudController extends EventTarget {
 				if (this._currentSegment?.anchor === 'paragraphStart') {
 					delay += DELAY_PARAGRAPH;
 				}
-				this._delayTimeout = setTimeout(() => {
-					this._delayTimeout = null;
-					this._speak();
-				}, delay);
+				this._scheduleSpeak(delay);
 			}
 		}
 	}

@@ -122,7 +122,7 @@ function generateReaderConfig(build) {
 				patterns: [
 					{ from: 'demo/epub/demo.epub', to: './' },
 					{ from: 'demo/pdf/demo.pdf', to: './' },
-					{ from: 'demo/snapshot/demo.html', to: './' }
+					{ from: 'demo/snapshot/demo.html', to: './' },
 				],
 				options: {
 
@@ -133,10 +133,16 @@ function generateReaderConfig(build) {
 			}),
 		);
 		config.devServer = {
-			static: {
-				directory: path.resolve(__dirname, 'build/'),
-				watch: true,
-			},
+			static: [
+				{
+					directory: path.resolve(__dirname, 'build/'),
+					watch: true,
+				},
+				{
+					directory: path.resolve(__dirname, '../document-worker/build/'),
+					publicPath: '/dev/document-worker',
+				},
+			],
 			devMiddleware: {
 				writeToDisk: true,
 			},
@@ -247,10 +253,15 @@ function generateViewConfig(build) {
 }
 
 function generateRules(build) {
+	const jsSourcePaths = [
+		path.resolve(__dirname, './src'),
+		path.resolve(__dirname, './structured-document-text/src'),
+	];
+
 	return [
 		{
 			test: /\.(ts|js)x?$/,
-			include: path.resolve(__dirname, './src'),
+			include: jsSourcePaths,
 			use: {
 				loader: 'babel-loader',
 				options: {

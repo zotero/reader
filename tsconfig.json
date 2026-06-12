@@ -8,7 +8,8 @@
 		"moduleResolution": "bundler",
 		"module": "esnext",
 		"allowSyntheticDefaultImports": true,
-		"noImplicitOverride": true
+		"noImplicitOverride": true,
+		"skipLibCheck": true
 	},
 	"include": [
 		"./src",
