@@ -1,18 +1,19 @@
 import type {
 	ContentBlockNode,
 	DomAnchor,
+	RefPath,
 	StructuredDocumentText,
 	TextNode,
 } from '../../../structured-document-text/schema';
 import {
-	expandBlockAnchor,
-	expandSelectorMap,
-	parseSelectorMap,
-	parseSelectorMapEntries,
-	resolveSelectorMap,
-} from '../../../structured-document-text/src/dom/snapshot/decode';
+	buildDomMapIndex,
+	findDomMapContaining,
+	generateDomMapSelector,
+	matchDomMapSelector,
+	type DomMapIndex,
+} from '../../../structured-document-text/src/dom/snapshot/dommap';
 import { nfcToOriginalLocal } from '../../../structured-document-text/src/dom/deltamap';
-import { refKey, walkContentRangeLeafBlocks } from '../../../structured-document-text/src/range';
+import { compareRefs, refKey, walkContentRangeLeafBlocks } from '../../../structured-document-text/src/range';
 import type {
 	AnnotationType,
 	SDTPosition,
@@ -21,177 +22,82 @@ import type {
 import {
 	getTextNodeSpans,
 	SDTPositionMapper,
-	spansCoverWholeBlock,
-	TextNodeSpan,
 } from './position-mapper';
 import { localOriginalToNFC } from './deltamap-invert';
 
-type CssSelectorPosition = {
-	type: 'CssSelector';
-	value: string;
-	refinedBy?: { type: 'TextPositionSelector', start: number, end: number };
-};
-
 /**
- * One DOM text node covered by an SDT text node. Multi-entry selectorMaps
- * (merged adjacent DOM text nodes) produce one entry per sub-entry.
- *
- * TextPositionSelector offsets count original DOM characters; SDT positions
- * count NFC characters within the SDT text node. `deltaMap` translates
- * between the two.
+ * One SDT text node located in the snapshot's body text stream. `stream` and
+ * `rawLength` are in raw original characters -- the space browser-created
+ * WADM TextPositionSelectors are measured in -- while the node's text is
+ * whitespace-collapsed and NFC-normalized; `deltaMap` translates between the
+ * two.
  */
-interface SnapshotEntry {
+interface StreamEntry {
 	ref: number[];
 
-	/** NFC offset of this entry's characters within the SDT text node. */
-	nodeCharStart: number;
+	/** Body-stream offset of the node's first character. */
+	stream: number;
 
-	/** NFC length of this entry. */
-	length: number;
+	/** Raw character length of the node's source text. */
+	rawLength: number;
+
+	/** Length of the node's (collapsed, NFC) text. */
+	nfcLength: number;
 
 	deltaMap?: string;
-
-	/** CSS selector of the containing element. */
-	selector: string;
-
-	/** Original-space offset within the containing element's text. */
-	elementOffset: number;
-
-	/**
-	 * Original-space offset within the block element's text. Exact for
-	 * entries directly under the block (the extraction stores those);
-	 * estimated across runs inside child elements.
-	 */
-	blockOffset: number;
-
-	/** Original-space length (approximate when whitespace was collapsed). */
-	origLength: number;
-}
-
-interface BlockEntry {
-	ref: number[];
-	selector: string;
-	entries: SnapshotEntry[];
 }
 
 export class SnapshotPositionMapper implements SDTPositionMapper {
 	private _structure: StructuredDocumentText;
 
-	private _entriesBySelector = new Map<string, SnapshotEntry[]>();
+	/** All anchored text nodes, ordered by stream offset. */
+	private _entries: StreamEntry[] = [];
 
-	private _blocksBySelector = new Map<string, BlockEntry>();
+	private _entriesByRef = new Map<string, StreamEntry>();
 
-	private _entriesByNode = new Map<string, SnapshotEntry[]>();
-
-	private _blocksByRef = new Map<string, BlockEntry>();
+	private _domMapIndex: DomMapIndex | null;
 
 	constructor(structure: StructuredDocumentText) {
 		this._structure = structure;
+		this._domMapIndex = buildDomMapIndex(structure.catalog.domMap);
 		this._buildIndex();
 	}
 
 	sdtToSourcePosition(pos: SDTPosition): SourcePosition | null {
 		let spans = getTextNodeSpans(this._structure, pos);
-		if (!spans.length) {
+		let start: number | null = null;
+		let end: number | null = null;
+		for (let span of spans) {
+			let entry = this._entriesByRef.get(refKey(span.ref as RefPath));
+			if (!entry) {
+				// Synthetic node (<br> newline, image alt text) with no
+				// source text of its own
+				continue;
+			}
+			if (start === null) {
+				start = entry.stream + nfcToOriginalLocal(entry.deltaMap, 0, span.start);
+			}
+			end = entry.stream + nfcToOriginalLocal(entry.deltaMap, 0, span.end);
+		}
+		if (start === null || end === null || end <= start) {
 			return null;
 		}
-
-		// A whole block maps cleanly to its own selector
-		if (spansCoverWholeBlock(spans)) {
-			let blockAnchor = spans[0].block.anchor as DomAnchor | undefined;
-			if (blockAnchor?.selectorMap) {
-				return expandBlockAnchor(blockAnchor.selectorMap) as SourcePosition;
-			}
-		}
-
-		let first = spans[0];
-		let last = spans[spans.length - 1];
-		if (first === last) {
-			return this._resolveSpan(first) as SourcePosition;
-		}
-
-		// Multiple text nodes: when both endpoints resolve within the same
-		// element, TextPositionSelector offsets are element-relative and the
-		// range can span freely
-		let start = this._resolvePoint(first, first.start, false);
-		let end = this._resolvePoint(last, last.end, true);
-		if (start && end) {
-			if (start.entry.selector === end.entry.selector) {
-				return {
-					type: 'CssSelector',
-					value: start.entry.selector,
-					refinedBy: {
-						type: 'TextPositionSelector',
-						start: start.entry.elementOffset + start.localOrig,
-						end: end.entry.elementOffset + end.localOrig,
-					},
-				} as SourcePosition;
-			}
-			// Otherwise resolve both endpoints against the block element --
-			// they can live in different child elements, and offsets relative
-			// to the block span across them
-			let block = this._getBlock(start.entry.ref);
-			if (block && block === this._getBlock(end.entry.ref)) {
-				return {
-					type: 'CssSelector',
-					value: block.selector,
-					refinedBy: {
-						type: 'TextPositionSelector',
-						start: start.entry.blockOffset + start.localOrig,
-						end: end.entry.blockOffset + end.localOrig,
-					},
-				} as SourcePosition;
-			}
-		}
-
-		// Cross-block range (the DOM extractors don't produce part chains,
-		// so this is rare): fall back to spanning the first block whole
-		let blockAnchor = first.block.anchor as DomAnchor | undefined;
-		if (blockAnchor?.selectorMap) {
-			return expandBlockAnchor(blockAnchor.selectorMap) as SourcePosition;
-		}
-		return this._resolveSpan(first) as SourcePosition;
+		return this._streamRangeToSelector(start, end);
 	}
 
 	sourceToSDTPosition(position: SourcePosition): SDTPosition | null {
-		if (!position || (position as { type?: string }).type !== 'CssSelector') {
+		let range = this._selectorToStreamRange(position);
+		if (!range) {
 			return null;
 		}
-		let selector = position as CssSelectorPosition;
-		let block = this._blocksBySelector.get(selector.value);
-		let elementEntries = this._entriesBySelector.get(selector.value);
-
-		let startOffset = selector.refinedBy?.start ?? null;
-		let endOffset = selector.refinedBy?.end ?? null;
-		if (startOffset === null || endOffset === null) {
-			let entries = block?.entries ?? elementEntries;
-			if (!entries?.length) {
-				return null;
-			}
-			let first = entries[0];
-			let last = entries[entries.length - 1];
-			return {
-				start: [...first.ref, first.nodeCharStart],
-				end: [...last.ref, last.nodeCharStart + last.length],
-			};
+		let start = this._streamPointToContentPoint(range.start, false);
+		let end = range.end === range.start
+			? start
+			: this._streamPointToContentPoint(range.end, true);
+		if (!start || !end || compareRefs(start as RefPath, end as RefPath) > 0) {
+			return null;
 		}
-
-		// Selectors created against a block element use block-relative
-		// offsets; ones created against the text's own element use
-		// element-relative offsets. Try whichever the selector names
-		for (let useBlock of [true, false]) {
-			let entries = useBlock ? block?.entries : elementEntries;
-			if (!entries?.length) {
-				continue;
-			}
-			let start = findPointInEntries(entries, startOffset, false, useBlock);
-			let end = findPointInEntries(entries, endOffset, true, useBlock);
-			if (start && end) {
-				return { start, end };
-			}
-		}
-
-		return null;
+		return { start, end };
 	}
 
 	transformAnnotationPosition(position: SourcePosition, _type: AnnotationType): SourcePosition {
@@ -199,63 +105,120 @@ export class SnapshotPositionMapper implements SDTPositionMapper {
 	}
 
 	/**
-	 * Resolve a single span with the decode module (handles multi-entry
-	 * selectorMaps and deltaMaps).
+	 * Build the optimal selector for a body-stream range: the deepest element
+	 * containing the whole range, refined by element-relative text positions
+	 * unless the range covers the element's text exactly.
 	 */
-	private _resolveSpan(span: TextNodeSpan): CssSelectorPosition | null {
-		let blockAnchor = span.block.anchor as DomAnchor | undefined;
-		let textAnchor = span.node.anchor as DomAnchor | undefined;
-		if (!blockAnchor?.selectorMap || !textAnchor) {
-			return null;
+	private _streamRangeToSelector(start: number, end: number): SourcePosition {
+		let containing = this._domMapIndex
+			? findDomMapContaining(this._domMapIndex, start, end)
+			: null;
+		if (!containing) {
+			// Only <body> contains the range; stream offsets are body-relative
+			// text positions already
+			return { type: 'TextPositionSelector', start, end };
 		}
-		let expanded = expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);
-		return resolveSelectorMap(expanded, span.start, span.end, textAnchor.deltaMap) as CssSelectorPosition;
-	}
-
-	/**
-	 * Resolve one endpoint of a span to its index entry and a local
-	 * original-space offset within it.
-	 */
-	private _resolvePoint(span: TextNodeSpan, nodeNFCOffset: number, isEnd: boolean): {
-		entry: SnapshotEntry;
-		localOrig: number;
-	} | null {
-		let entries = this._entriesByNode.get(refKey(span.ref));
-		if (!entries?.length) {
-			return null;
+		let value = generateDomMapSelector(containing);
+		if (start === containing.node.textStart
+				&& end === containing.node.textStart + containing.node.textLength) {
+			return { type: 'CssSelector', value };
 		}
-		let entry = entries.find(e => (isEnd
-			? nodeNFCOffset > e.nodeCharStart && nodeNFCOffset <= e.nodeCharStart + e.length
-			: nodeNFCOffset >= e.nodeCharStart && nodeNFCOffset < e.nodeCharStart + e.length))
-			?? entries[isEnd ? entries.length - 1 : 0];
-		let localNFC = Math.max(0, Math.min(nodeNFCOffset - entry.nodeCharStart, entry.length));
 		return {
-			entry,
-			localOrig: nfcToOriginalLocal(entry.deltaMap, entry.nodeCharStart, localNFC),
+			type: 'CssSelector',
+			value,
+			refinedBy: {
+				type: 'TextPositionSelector',
+				start: start - containing.node.textStart,
+				end: end - containing.node.textStart,
+			},
 		};
 	}
 
-	private _getBlock(nodeRef: number[]): BlockEntry | null {
-		return this._blocksByRef.get(refKey(nodeRef.slice(0, -1))) ?? null;
+	/**
+	 * Convert an incoming position to a body-stream range. Handles
+	 * CssSelectors rooted at any element in the domMap and bare
+	 * (body-relative) TextPositionSelectors.
+	 */
+	private _selectorToStreamRange(position: SourcePosition): { start: number, end: number } | null {
+		if (!('type' in position)) {
+			return null;
+		}
+		if (position.type === 'TextPositionSelector') {
+			return { start: position.start, end: position.end };
+		}
+		if (position.type !== 'CssSelector' || !this._domMapIndex) {
+			return null;
+		}
+		let matched = matchDomMapSelector(this._domMapIndex, position.value);
+		if (!matched) {
+			return null;
+		}
+		let refinedBy = position.refinedBy;
+		if (refinedBy?.type === 'TextPositionSelector') {
+			return {
+				start: matched.node.textStart + refinedBy.start,
+				end: matched.node.textStart + refinedBy.end,
+			};
+		}
+		return {
+			start: matched.node.textStart,
+			end: matched.node.textStart + matched.node.textLength,
+		};
+	}
+
+	/**
+	 * Map a body-stream offset to an SDT content point, clamping into the
+	 * nearest text node when the offset falls in a gap (whitespace between
+	 * blocks, or text the extraction didn't keep).
+	 */
+	private _streamPointToContentPoint(streamPos: number, isEnd: boolean): number[] | null {
+		let entry = isEnd
+			? this._lastEntryStartingBefore(streamPos)
+			: this._firstEntryEndingAfter(streamPos);
+		if (!entry) {
+			return null;
+		}
+		let localRaw = Math.max(0, Math.min(streamPos - entry.stream, entry.rawLength));
+		let localNFC = localOriginalToNFC(entry.deltaMap, 0, localRaw, entry.nfcLength);
+		return [...entry.ref, localNFC];
+	}
+
+	private _firstEntryEndingAfter(streamPos: number): StreamEntry | null {
+		let entries = this._entries;
+		let lo = 0;
+		let hi = entries.length;
+		while (lo < hi) {
+			let mid = (lo + hi) >> 1;
+			if (entries[mid].stream + entries[mid].rawLength <= streamPos) {
+				lo = mid + 1;
+			}
+			else {
+				hi = mid;
+			}
+		}
+		return lo < entries.length ? entries[lo] : null;
+	}
+
+	private _lastEntryStartingBefore(streamPos: number): StreamEntry | null {
+		let entries = this._entries;
+		let lo = 0;
+		let hi = entries.length;
+		while (lo < hi) {
+			let mid = (lo + hi) >> 1;
+			if (entries[mid].stream < streamPos) {
+				lo = mid + 1;
+			}
+			else {
+				hi = mid;
+			}
+		}
+		return lo > 0 ? entries[lo - 1] : null;
 	}
 
 	private _buildIndex() {
 		let content = this._structure.content;
 		walkContentRangeLeafBlocks(content, [[0], [content.length]], ({ block, ref }) => {
-			let leaf = block as ContentBlockNode;
-			let blockAnchor = leaf.anchor as DomAnchor | undefined;
-			if (!blockAnchor?.selectorMap) {
-				return;
-			}
-			let blockEntry: BlockEntry = {
-				ref: ref as number[],
-				selector: blockAnchor.selectorMap,
-				entries: [],
-			};
-			this._blocksBySelector.set(blockEntry.selector, blockEntry);
-			this._blocksByRef.set(refKey(ref), blockEntry);
-
-			let nodes = leaf.content as TextNode[] | undefined;
+			let nodes = (block as ContentBlockNode).content as TextNode[] | undefined;
 			if (!nodes) {
 				return;
 			}
@@ -264,121 +227,21 @@ export class SnapshotPositionMapper implements SDTPositionMapper {
 				if (typeof node?.text !== 'string') {
 					continue;
 				}
-				let textAnchor = node.anchor as DomAnchor | undefined;
-				if (!textAnchor) {
+				let anchor = node.anchor as DomAnchor | undefined;
+				if (typeof anchor?.stream !== 'number') {
 					continue;
 				}
-				let expanded = expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);
-				let nodeRef = [...(ref as number[]), i];
-				let nodeEntries: SnapshotEntry[] = [];
-				let subEntries = parseSelectorMapEntries(expanded);
-				if (subEntries) {
-					let cumulative = 0;
-					for (let subEntry of subEntries) {
-						nodeEntries.push(this._makeEntry(
-							nodeRef, subEntry.selectorMap, cumulative, subEntry.length, textAnchor.deltaMap
-						));
-						cumulative += subEntry.length;
-					}
-				}
-				else {
-					nodeEntries.push(this._makeEntry(nodeRef, expanded, 0, node.text.length, textAnchor.deltaMap));
-				}
-				this._entriesByNode.set(refKey(nodeRef), nodeEntries);
-				blockEntry.entries.push(...nodeEntries);
+				let entry: StreamEntry = {
+					ref: [...(ref as number[]), i],
+					stream: anchor.stream,
+					rawLength: nfcToOriginalLocal(anchor.deltaMap, 0, node.text.length),
+					nfcLength: node.text.length,
+					deltaMap: anchor.deltaMap,
+				};
+				this._entries.push(entry);
+				this._entriesByRef.set(refKey(entry.ref as RefPath), entry);
 			}
-
-			computeBlockOffsets(blockEntry);
 		});
+		this._entries.sort((a, b) => a.stream - b.stream);
 	}
-
-	private _makeEntry(
-		ref: number[],
-		selectorMap: string,
-		nodeCharStart: number,
-		length: number,
-		deltaMap: string | undefined,
-	): SnapshotEntry {
-		let { selector, offset } = parseSelectorMap(selectorMap);
-		let entry: SnapshotEntry = {
-			ref,
-			nodeCharStart,
-			length,
-			deltaMap,
-			selector,
-			elementOffset: offset,
-			// Filled in by computeBlockOffsets()
-			blockOffset: 0,
-			origLength: nfcToOriginalLocal(deltaMap, nodeCharStart, length),
-		};
-		let list = this._entriesBySelector.get(selector);
-		if (!list) {
-			list = [];
-			this._entriesBySelector.set(selector, list);
-		}
-		list.push(entry);
-		return entry;
-	}
-}
-
-/**
- * Compute each entry's original-space offset within the block element.
- * Entries directly under the block carry exact stored offsets; entries in
- * child elements are anchored to a running estimate at the element start,
- * which re-synchronizes at every directly-stored offset.
- */
-function computeBlockOffsets(block: BlockEntry) {
-	let estimate = 0;
-	let childSelector: string | null = null;
-	let childBase = 0;
-	for (let entry of block.entries) {
-		if (entry.selector === block.selector) {
-			// Exact: the stored offset is relative to the block element
-			// itself (and 0 when unstored, which means sole child)
-			entry.blockOffset = entry.elementOffset;
-			childSelector = null;
-		}
-		else {
-			if (entry.selector !== childSelector) {
-				childSelector = entry.selector;
-				childBase = estimate;
-			}
-			entry.blockOffset = childBase + entry.elementOffset;
-		}
-		estimate = Math.max(estimate, entry.blockOffset + entry.origLength);
-	}
-}
-
-/**
- * Find the SDT content point for an original-space character offset,
- * measured relative to the element (useBlock = false) or the block
- * (useBlock = true).
- */
-function findPointInEntries(
-	entries: SnapshotEntry[],
-	offset: number,
-	isEnd: boolean,
-	useBlock: boolean,
-): number[] | null {
-	let best: SnapshotEntry | null = null;
-	for (let entry of entries) {
-		let entryStart = useBlock ? entry.blockOffset : entry.elementOffset;
-		let entryEnd = entryStart + entry.origLength;
-		if (isEnd ? (offset > entryStart && offset <= entryEnd) : (offset >= entryStart && offset < entryEnd)) {
-			best = entry;
-			break;
-		}
-		// Track the closest preceding entry in case the offset falls in a
-		// gap (text not captured by extraction)
-		if (!best || entryStart <= offset) {
-			best = entry;
-		}
-	}
-	if (!best) {
-		return null;
-	}
-	let bestStart = useBlock ? best.blockOffset : best.elementOffset;
-	let localOrig = Math.max(0, Math.min(offset - bestStart, best.origLength));
-	let localNFC = localOriginalToNFC(best.deltaMap, best.nodeCharStart, localOrig, best.length);
-	return [...best.ref, best.nodeCharStart + localNFC];
 }

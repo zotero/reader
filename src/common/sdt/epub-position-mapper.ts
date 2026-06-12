@@ -132,7 +132,7 @@ export class EPUBPositionMapper implements SDTPositionMapper {
 	private _getExpandedSelectorMap(span: TextNodeSpan): string | null {
 		let blockAnchor = span.block.anchor as DomAnchor | undefined;
 		let textAnchor = span.node.anchor as DomAnchor | undefined;
-		if (!blockAnchor?.selectorMap || !textAnchor) {
+		if (!blockAnchor?.selectorMap || typeof textAnchor?.selectorMap !== 'string') {
 			return null;
 		}
 		return expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);
@@ -162,7 +162,7 @@ export class EPUBPositionMapper implements SDTPositionMapper {
 					continue;
 				}
 				let textAnchor = node.anchor as DomAnchor | undefined;
-				if (!textAnchor) {
+				if (typeof textAnchor?.selectorMap !== 'string') {
 					continue;
 				}
 				let expanded = expandSelectorMap(blockAnchor.selectorMap, textAnchor.selectorMap);

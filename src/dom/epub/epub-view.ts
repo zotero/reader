@@ -1464,7 +1464,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		// CFI is contained in the current page CFI range.
 		for (let i = sdtData.content.length - 1; i >= 0; i--) {
 			let block = sdtData.content[i];
-			if (block.flowClass === 'excluded' || !block.anchor || !('selectorMap' in block.anchor)) {
+			if (block.flowClass === 'excluded' || !block.anchor
+					|| !('selectorMap' in block.anchor)
+					|| typeof block.anchor.selectorMap !== 'string') {
 				continue;
 			}
 			if (cfiStartsWithSelectorMap(cfi, block.anchor.selectorMap)) {
