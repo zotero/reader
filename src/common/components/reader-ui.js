@@ -220,7 +220,10 @@ const ReaderUI = React.forwardRef((props, ref) => {
 				</div>
 				<div className="split-view">
 					<View {...props} primary={true} state={state}/>
-					<SplitViewResizer onResize={props.onResizeSplitView}/>
+					<SplitViewResizer
+						onResize={props.onResizeSplitView}
+						onDoubleClick={() => props.onResizeSplitView('50%')}
+					/>
 					{state.splitType && <View {...props} primary={false} state={state} />}
 				</div>
 				{state.contextMenu && <ContextMenu params={state.contextMenu} onClose={props.onCloseContextMenu}/>}
