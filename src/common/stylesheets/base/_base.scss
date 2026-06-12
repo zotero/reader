@@ -145,6 +145,9 @@ input[type="range"] {
 		border: 0.5px var(--fill-senary);
 		box-shadow: 0 1px    0.75px 0 rgba(0, 0, 0, 0.05),
 					0 0.25px 0.25px 0 rgba(0, 0, 0, 0.15);
+		@media (resolution: 1dppx) {
+			border-width: 1px;
+		}
 	}
 
 	&:active:not(:disabled) {
