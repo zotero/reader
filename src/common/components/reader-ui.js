@@ -135,7 +135,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						enableNavigateBack={viewStats.canNavigateBack}
 						enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 						enableNavigateToNextPage={viewStats.canNavigateToNextPage}
-						readingModeEnabled={viewStats.readingModeEnabled}
+						readingModeEnabled={state.primaryReadingModeEnabled || state.secondaryReadingModeEnabled}
 						appearancePopup={state.appearancePopup}
 						readAloudState={state.readAloudState}
 						findPopupOpen={findState.popupOpen}
@@ -235,6 +235,10 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						colorScheme={state.colorScheme}
 						lightTheme={state.lightTheme}
 						darkTheme={state.darkTheme}
+						readingModeEnabled={state.primary || !state.splitType
+							? state.primaryReadingModeEnabled
+							: state.secondaryReadingModeEnabled}
+						readingModeLoading={state.readingModeLoading}
 						splitType={state.splitType}
 						viewStats={viewStats}
 						onChangeSplitType={props.onChangeSplitType}

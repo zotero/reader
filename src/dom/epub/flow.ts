@@ -723,7 +723,12 @@ export class PaginatedFlow extends AbstractFlow {
 			return;
 		}
 
-		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
+		let domTarget = target instanceof PersistentRange ? target.toRange() : target;
+		if (!('nodeType' in domTarget) && !domTarget.getClientRects().length) {
+			// A range in unrendered content has no position to scroll to
+			return;
+		}
+		let rect = domTarget.getBoundingClientRect();
 		let containerRect = this._sectionsContainer.getBoundingClientRect();
 		let internalX = rect.x - containerRect.x;
 		let internalY = rect.y - containerRect.y;
