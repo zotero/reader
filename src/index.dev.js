@@ -26,8 +26,6 @@ async function loadCachedReadAloudAudio(voiceId, text, cacheVersion) {
 			cache.match(baseURL),
 			cache.match(baseURL + '&meta=timestamps'),
 		]);
-		// Both entries must be present. A lone audio entry means an older
-		// format -- treat it as a miss so we re-fetch and rewrite paired.
 		if (!audioResponse || !timestampsResponse) return null;
 		let timestamps = await timestampsResponse.json();
 		return { audio: await audioResponse.blob(), timestamps: timestamps ?? undefined };

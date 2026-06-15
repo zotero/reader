@@ -1193,9 +1193,10 @@ class Reader {
 		});
 	}
 
-	// Pulls the SDT pack from the host on first use and parses it once per
-	// session. The pack arrives by value and is never replaced mid-session,
-	// so it always matches the displayed document
+	/**
+	 * Get a reader for the document's SDT pack. Caches after success.
+	 * @returns {Promise<StructuredDocumentTextPackReader | null>}
+	 */
 	async getSDTReader() {
 		if (!this._getSDTPack) {
 			return null;
@@ -1204,10 +1205,8 @@ class Reader {
 			this._sdtReaderPromise = (async () => {
 				let result = await this._getSDTPack();
 				if (!result?.ok) {
-					// Only a parsed pack is cached -- any failure means the
-					// next invocation re-pulls, which is cheap for terminal
-					// reasons (the host memoizes those) and lets transient
-					// failures self-heal
+					// Could be a transient failure
+					// Clear the promise so another call to getSDTReader() retries
 					console.warn('SDT pack unavailable:', result?.reason);
 					this._sdtReaderPromise = null;
 					return null;
@@ -1298,10 +1297,8 @@ class Reader {
 	}
 
 	// Selection > explicit target > persisted savedPosition. Selection and
-	// target are consumed as side effects; savedPosition is left in place so
-	// it remains the fallback, but only applies while it's still near the
-	// view -- once the user has scrolled elsewhere, the visible-block lookup
-	// takes over so Read Aloud picks up from where they're looking
+	// target are consumed as side effects. savedPosition only applies if
+	// the user hasn't scrolled too far away.
 	_captureReadAloudStart() {
 		let view = this._lastView;
 		let selectionPosition = view?.getSelectionPosition?.();
