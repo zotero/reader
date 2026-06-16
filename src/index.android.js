@@ -13,6 +13,8 @@ function sendToPort(handlerName, message) {
 onmessage = function (e) {
 	if (e.data == 'initPort') {
 		port = e.ports[0];
+		// Notify when iframe and port are loaded
+        postMessage('onInitialized');
 	}
 };
 
@@ -177,6 +179,3 @@ window.enterPassword = (options) => {
 	log("Enter password");
 	window._view.enterPassword(password);
 };
-
-// Notify when iframe is loaded
-postMessage('onInitialized');
