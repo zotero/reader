@@ -295,7 +295,7 @@ class View {
 	 * @returns {string} Theme ID
 	 */
 	getTheme() {
-		let theme = getCurrentColorScheme(null) === 'dark'
+		let theme = getCurrentColorScheme(this._colorScheme) === 'dark'
 			? this._darkTheme
 			: this._lightTheme;
 		return theme?.id ?? 'light';
