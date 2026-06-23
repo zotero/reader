@@ -10,7 +10,7 @@ export type RemoteVoiceConfig = {
 	creditsPerMinute: number;
 	segmentGranularity: ReadAloudGranularity;
 	sentenceDelay?: number;
-	cacheVersion?: number;
+	cacheVersion: number;
 };
 
 export type TierCredits = {
@@ -29,7 +29,7 @@ type VoicesResponseTier = {
 	creditsPerMinute: number;
 	segmentGranularity: ReadAloudGranularity;
 	sentenceDelay?: number;
-	cacheVersion?: number;
+	cacheVersion: number;
 	voices: Record<string, { label: string }>;
 	locales: Record<string, VoicesResponseLocaleConfig | string[]>;
 };

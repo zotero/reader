@@ -229,10 +229,7 @@ async function createReader() {
 			},
 
 			async getAudio(segment, voice) {
-				let cacheParams = { voice: voice.id, text: segment.text };
-				if (voice.cacheVersion !== undefined && voice.cacheVersion !== null) {
-					cacheParams.cacheVersion = voice.cacheVersion;
-				}
+				let cacheParams = { voice: voice.id, text: segment.text, cacheVersion: voice.cacheVersion };
 				let cacheURL = 'https://read-aloud.zotero.invalid/audio?'
 					+ new URLSearchParams(cacheParams);
 				let cache;
