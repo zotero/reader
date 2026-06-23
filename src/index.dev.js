@@ -12,38 +12,6 @@ const ZOTERO_API_KEY = process.env.ZOTERO_API_KEY;
 
 window.dev = true;
 
-// Whether the Read Aloud audio cache has been pruned of stale versions this session
-let readAloudCachePruned = false;
-
-// Delete cached audio whose cacheVersion is no longer offered by the server
-async function pruneReadAloudCache(voices) {
-	readAloudCachePruned = true;
-	try {
-		let validVersions = new Set();
-		for (let configs of Object.values(voices)) {
-			if (!Array.isArray(configs)) continue;
-			for (let config of configs) {
-				if (config.cacheVersion !== undefined && config.cacheVersion !== null) {
-					validVersions.add(String(config.cacheVersion));
-				}
-			}
-		}
-		if (!validVersions.size) {
-			return;
-		}
-		let cache = await caches.open('zotero-read-aloud');
-		for (let request of await cache.keys()) {
-			let version = new URL(request.url).searchParams.get('cacheVersion');
-			if (!validVersions.has(version)) {
-				await cache.delete(request);
-			}
-		}
-	}
-	catch (e) {
-		console.error(e);
-	}
-}
-
 async function createReader() {
 	if (window._reader) {
 		throw new Error('Reader is already initialized');
@@ -199,12 +167,8 @@ async function createReader() {
 					? parseInt(response.headers.get('Zotero-TTS-Premium-Credits-Remaining'))
 					: null;
 				let devMode = response.headers.get('Zotero-TTS-Dev') === '1';
-				let voices = await response.json();
-				if (!readAloudCachePruned) {
-					pruneReadAloudCache(voices);
-				}
 				return {
-					voices,
+					voices: await response.json(),
 					standardCreditsRemaining,
 					premiumCreditsRemaining,
 					devMode,
