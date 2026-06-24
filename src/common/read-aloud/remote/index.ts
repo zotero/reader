@@ -10,6 +10,7 @@ export type RemoteVoiceConfig = {
 	creditsPerMinute: number;
 	segmentGranularity: ReadAloudGranularity;
 	sentenceDelay?: number;
+	cacheVersion: number;
 };
 
 export type TierCredits = {
@@ -28,6 +29,7 @@ type VoicesResponseTier = {
 	creditsPerMinute: number;
 	segmentGranularity: ReadAloudGranularity;
 	sentenceDelay?: number;
+	cacheVersion: number;
 	voices: Record<string, { label: string }>;
 	locales: Record<string, VoicesResponseLocaleConfig | string[]>;
 };
@@ -44,6 +46,7 @@ export type RemoteInterface = {
 	getAudio(segment: ReadAloudSegment | 'sample', voice: RemoteVoiceConfig): Promise<{
 		audio: Blob | null;
 		error?: ErrorState;
+		noStore?: boolean;
 	}>;
 
 	resetCredits(): Promise<TierCredits>;

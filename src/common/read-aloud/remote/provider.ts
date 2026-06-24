@@ -75,6 +75,7 @@ function parseVoicesResponse(response: VoicesResponse): RemoteVoiceConfig[] {
 						creditsPerMinute: config.creditsPerMinute,
 						segmentGranularity: config.segmentGranularity,
 						sentenceDelay: config.sentenceDelay,
+						cacheVersion: config.cacheVersion,
 					});
 				}
 			}
