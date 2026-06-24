@@ -114,6 +114,7 @@ class PDFView {
 		this._onKeyUp = options.onKeyUp;
 		this._onKeyDown = options.onKeyDown;
 		this._onFocusAnnotation = options.onFocusAnnotation;
+		this._onBackdropTap = options.onBackdropTap;
 
 		this._onTabOut = options.onTabOut;
 
@@ -167,6 +168,7 @@ class PDFView {
 		this._highlightedPosition = null;
 		this._readAloudHighlightedPosition = null;
 		this._readAloudSentenceHighlightedPosition = null;
+		this._pointerDownTap = null;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.style.width = '100%';
@@ -326,6 +328,7 @@ class PDFView {
 		this._iframeWindow.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
+		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
@@ -2423,6 +2426,13 @@ class PDFView {
 			return;
 		}
 		this._pointerDownTriggered = true;
+		this._pointerDownTap = {
+			x: event.clientX,
+			y: event.clientY,
+			button: event.button,
+			inViewerContainer: !!event.target.closest('#viewerContainer'),
+			hadSelection: !this._isSelectionCollapsed() || !!this._selectedAnnotationIDs.length
+		};
 		this._highlightedPosition = null;
 
 		// Clear textLayer selection
@@ -3001,6 +3011,48 @@ class PDFView {
 		this._render();
 	}, () => ['ink', 'eraser'].includes(this._tool.type) ? 0 : 50);
 
+	_shouldHandleBackdropTap(event, position) {
+		let pointerDownTap = this._pointerDownTap;
+		if (!this._onBackdropTap
+				|| event.isPrimary === false
+				|| !pointerDownTap
+				|| pointerDownTap.button !== 0
+				|| !pointerDownTap.inViewerContainer
+				|| !event.target.closest('#viewerContainer')
+				|| pointerDownTap.hadSelection
+				|| this._scrolling) {
+			return false;
+		}
+
+		let movement = Math.abs(event.clientX - pointerDownTap.x)
+			+ Math.abs(event.clientY - pointerDownTap.y);
+		if (movement > 5) {
+			return false;
+		}
+
+		if (!this.pointerDownPosition) {
+			return !position;
+		}
+
+		if (!position || !this.action || this.action.triggered) {
+			return false;
+		}
+
+		let overlay = this._getSelectableOverlay(position);
+		let pointerDownOverlay = this._getSelectableOverlay(this.pointerDownPosition);
+		if (overlay || pointerDownOverlay) {
+			return false;
+		}
+
+		let selectableAnnotations = this.getSelectableAnnotations(position);
+		if (selectableAnnotations?.length) {
+			return false;
+		}
+
+		return this.action.type === 'none'
+			|| (this.action.type === 'selectText' && this._isSelectionCollapsed());
+	}
+
 	_getAnnotationFromSelectionRanges(selectionRanges, type, color) {
 		if (selectionRanges[0].collapsed) {
 			return null;
@@ -3028,6 +3080,7 @@ class PDFView {
 	_handlePointerUp(event) {
 		this._pointerDownTriggered = false;
 		if (!this.action && event.target.classList?.contains('textAnnotation')) {
+			this._pointerDownTap = null;
 			return;
 		}
 
@@ -3037,6 +3090,7 @@ class PDFView {
 		});
 
 		let position = this.pointerEventToPosition(event);
+		let handleBackdropTap = this._shouldHandleBackdropTap(event, position);
 
 		if (this.pointerDownPosition) {
 			// let position = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
@@ -3207,6 +3261,10 @@ class PDFView {
 			this.action = null;
 			this.pointerDownPosition = null;
 		}
+		if (handleBackdropTap) {
+			this._onBackdropTap(event);
+		}
+		this._pointerDownTap = null;
 		// Update cursor after finishing the current action
 		if (position) {
 			let { action } = this.getActionAtPosition(position, event);
@@ -3219,10 +3277,20 @@ class PDFView {
 		this._updateViewStats();
 	}
 
+	_handlePointerCancel() {
+		this.action = null;
+		this.pointerDownPosition = null;
+		this._pointerDownTriggered = false;
+		this._pointerDownTap = null;
+		this._render();
+	}
+
 	cancel() {
 		this.setSelection();
 		this._hover = null;
 		this.action = null;
+		this.pointerDownPosition = null;
+		this._pointerDownTap = null;
 		this.updateCursor();
 		this._render();
 	}
@@ -3296,6 +3364,7 @@ class PDFView {
 			// Clear pointer down because the pointer up event won't be received in this iframe
 			// when opening a native context menu
 			this._pointerDownTriggered = false;
+			this._pointerDownTap = null;
 			let br = this._iframe.getBoundingClientRect();
 			let selectableAnnotation;
 			if (position) {
@@ -3839,6 +3908,7 @@ class PDFView {
 				event.preventDefault();
 				this.action = null;
 				this.pointerDownPosition = null;
+				this._pointerDownTap = null;
 				this._setSelectionRanges();
 				this._render();
 				return;
@@ -4036,6 +4106,7 @@ class PDFView {
 		this.action = null;
 		this.pointerDownPosition = null;
 		this._pointerDownTriggered = false;
+		this._pointerDownTap = null;
 		this._render();
 	}
 
