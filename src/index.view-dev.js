@@ -9,6 +9,9 @@ window.createView = (options) => {
 	let view = new View({
 		...options,
 		container: document.getElementById('view'),
+		onInitialized: () => {
+			console.log('Initialized view');
+		},
 		onSaveAnnotations: (annotations) => {
 			// New annotation was created or existing was modified. Although, view, probably, won't need
 			// to modify existing annotations for now

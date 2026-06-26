@@ -50,6 +50,9 @@ window.createView = (encodedOptions) => {
 		container: document.getElementById('view'),
 		penActive: false,
 		data: { url },
+		onInitialized: () => {
+			postMessage('onInitialized');
+		},
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
 

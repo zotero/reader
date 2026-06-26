@@ -115,8 +115,9 @@ class View {
 			onBackdropTap: this._options.onBackdropTap,
 		};
 
+		let view;
 		if (this._type === 'pdf') {
-			return new PDFView({
+			view = new PDFView({
 				...common,
 				password: this._options.password,
 				pageLabels: this._options.pageLabels || [],
@@ -128,16 +129,22 @@ class View {
 				// PDF can delete annotations inside the view, for example by completely erasing ink.
 				onDeleteAnnotations: this._options.onDeleteAnnotations || nop
 			});
-		} else if (this._type === 'epub') {
-			return new EPUBView({
-				...common
-			});
-		} else if (this._type === 'snapshot') {
-			return new SnapshotView({
+		}
+		else if (this._type === 'epub') {
+			view = new EPUBView({
 				...common
 			});
 		}
-		throw new Error('Invalid view type');
+		else if (this._type === 'snapshot') {
+			view = new SnapshotView({
+				...common
+			});
+		}
+		else {
+			throw new Error('Invalid view type');
+		}
+		view.initializedPromise.then(() => this._options.onInitialized());
+		return view;
 	}
 
 	/**
