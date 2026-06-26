@@ -35,7 +35,7 @@ window.createView = options => {
 		penActive: false,
 		data: { url },
 		onInitialized: () => {
-			postMessage('onInitialized');
+			postMessage('onViewContentInitialized');
 		},
 		onSaveAnnotations: annotations => {
 			postMessage('onSaveAnnotations', {annotations});
