@@ -1,5 +1,4 @@
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
@@ -116,14 +115,6 @@ function generateReaderConfig(build) {
 			// No support for importing EPUB annotations on the web, so no need for luaparse there
 			luaparse: 'luaparse',
 		};
-		// Mimic upstream pdf.js production build by defining PDFJSDev so that
-		// dev-only validation code is eliminated as dead code by terser
-		config.plugins.push(
-			new webpack.DefinePlugin({
-				'typeof PDFJSDev': JSON.stringify('object'),
-				PDFJSDev: '({ test: () => false })',
-			})
-		);
 	}
 	else if (build === 'dev') {
 		config.plugins.push(
