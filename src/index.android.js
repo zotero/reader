@@ -40,26 +40,16 @@ function decodeBase64(base64) {
 window.createView = (encodedOptions) => {
 	const options = JSON.parse(decodeBase64(encodedOptions));
 	log("Create " + options.type + " view");
-	const annotations = options.annotations;
-	log("Loaded " + annotations.length + " annotations");
+	log("Loaded " + options.annotations.length + " annotations");
+
+	let url = new URL(options.url).toString();
+	delete options.url;
 	window._view = new View({
+		...options,
 		platform: 'android',
-		type: options.type,
-		annotations: annotations,
-		viewState: options.viewState,
-		location: options.location,
-		password: options.password,
-		pageLabels: options.pageLabels,
-		colorScheme: options.colorScheme,
-		lightTheme: options.lightTheme,
-		darkTheme: options.darkTheme,
 		container: document.getElementById('view'),
-		penConnected: options.penConnected,
 		penActive: false,
-		penExclusive: options.penExclusive,
-		data: {
-			url: new URL(options.url).toString()
-		},
+		data: { url },
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
 

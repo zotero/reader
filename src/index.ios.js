@@ -23,22 +23,17 @@ window.createView = options => {
     log("Create " + options.type + " view");
 	const annotations = JSON.parse(decodeBase64(options.annotations));
     log("Loaded " + annotations.length + " annotations");
-    window._view = new View({
+
+	let url = new URL(options.url).toString();
+	delete options.annotations;
+	delete options.url;
+	window._view = new View({
+		...options,
 		platform: 'ios',
-		type: options.type,
 		annotations: annotations,
-		viewState: options.viewState,
-		location: options.location,
-		colorScheme: options.colorScheme,
-		lightTheme: options.lightTheme,
-		darkTheme: options.darkTheme,
 		container: document.getElementById('view'),
-		penConnected: options.penConnected,
 		penActive: false,
-		penExclusive: options.penExclusive,
-		data: {
-			url: new URL(options.url)
-		},
+		data: { url },
 		onSaveAnnotations: annotations => {
 			postMessage('onSaveAnnotations', {annotations});
 
