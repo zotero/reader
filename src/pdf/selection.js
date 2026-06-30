@@ -811,20 +811,25 @@ export function getSelectionRangesByPosition(pdfPages, position) {
 
 export function getReversedSelectionRanges(selectionRanges) {
 	selectionRanges = JSON.parse(JSON.stringify(selectionRanges));
-	if (selectionRanges.length === 2) {
-		delete selectionRanges[0].anchor;
-		delete selectionRanges[1].head;
-		selectionRanges[0].head = true;
-		selectionRanges[1].anchor = true;
-	}
+	for (let selectionRange of selectionRanges) {
+		let anchor = selectionRange.anchor;
+		let head = selectionRange.head;
+		if (head) {
+			selectionRange.anchor = true;
+		}
+		else {
+			delete selectionRange.anchor;
+		}
+		if (anchor) {
+			selectionRange.head = true;
+		}
+		else {
+			delete selectionRange.head;
+		}
 
-	let tmp = selectionRanges[0].anchorOffset;
-	selectionRanges[0].anchorOffset = selectionRanges[0].headOffset;
-	selectionRanges[0].headOffset = tmp;
-	if (selectionRanges.length === 2) {
-		let tmp = selectionRanges[1].anchorOffset;
-		selectionRanges[1].anchorOffset = selectionRanges[1].headOffset;
-		selectionRanges[1].headOffset = tmp;
+		let tmp = selectionRange.anchorOffset;
+		selectionRange.anchorOffset = selectionRange.headOffset;
+		selectionRange.headOffset = tmp;
 	}
 	return selectionRanges;
 }

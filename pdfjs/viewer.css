@@ -302,6 +302,12 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	z-index: 2;
 }
 
+:root[data-mobile-reader] .textLayer {
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+}
+
 .textLayer :is(span, br) {
 	color: transparent;
 	position: absolute;
@@ -398,6 +404,65 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 
 .a11y-cursor-target {
 	outline: none;
+}
+
+.mobileTextSelectionHandles {
+	position: absolute;
+	left: 0;
+	top: 0;
+	z-index: 5;
+	pointer-events: none;
+}
+
+.mobileTextSelectionHandle {
+	position: absolute;
+	width: 44px;
+	height: 44px;
+	margin-left: -22px;
+	margin-top: -22px;
+	touch-action: none;
+	pointer-events: auto;
+}
+
+.mobileTextSelectionHandleGlyph {
+	position: absolute;
+	left: 6px;
+	top: 0;
+	width: 32px;
+	height: 44px;
+	transform: rotate(var(--selection-handle-rotation, 0deg));
+	transform-origin: 50% 50%;
+}
+
+.mobileTextSelectionHandleGlyph::before {
+	content: '';
+	position: absolute;
+	left: 15px;
+	top: 8px;
+	width: 2px;
+	height: 28px;
+	border-radius: 1px;
+	background: #4078f2;
+}
+
+.mobileTextSelectionHandleGlyph::after {
+	content: '';
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #4078f2;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.mobileTextSelectionHandle[data-side="start"] .mobileTextSelectionHandleGlyph::after {
+	left: 4px;
+	top: 3px;
+}
+
+.mobileTextSelectionHandle[data-side="end"] .mobileTextSelectionHandleGlyph::after {
+	right: 4px;
+	bottom: 3px;
 }
 
 body, #viewerContainer {
