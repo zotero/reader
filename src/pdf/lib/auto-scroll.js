@@ -34,10 +34,8 @@ export class AutoScroll {
 		};
 		container.ownerDocument.defaultView.requestAnimationFrame(scroll);
 
-
 		container.ownerDocument.defaultView.addEventListener('mousemove', this._handleMouseMove.bind(this));
-		container.ownerDocument.defaultView.addEventListener('mouseup', () => this.disable.bind(this));
-
+		container.ownerDocument.defaultView.addEventListener('mouseup', () => this.disable());
 	}
 
 	_handleMouseMove(event) {
@@ -45,6 +43,13 @@ export class AutoScroll {
 			this.disable();
 			return;
 		}
+		if (!this._enabled) {
+			return;
+		}
+		this.update(event.clientX, event.clientY);
+	}
+
+	update(clientX, clientY) {
 		if (!this._enabled) {
 			return;
 		}
@@ -57,7 +62,7 @@ export class AutoScroll {
 			rect[3] - MARGIN
 		];
 
-		let p = [event.clientX, event.clientY];
+		let p = [clientX, clientY];
 
 		// Get absolute distance to rect
 		var dx = Math.max(rect[0] - p[0], 0, p[0] - rect[2]);
@@ -92,5 +97,9 @@ export class AutoScroll {
 	disable() {
 		this._enabled = false;
 		this._scrollVector = [0, 0];
+	}
+
+	stop() {
+		this.disable();
 	}
 }
