@@ -20,6 +20,7 @@ import type {
 	ReadAloudSegment,
 	SDTPosition,
 } from '../types';
+import type { TextNodeSpan } from '../sdt/position-mapper';
 import { splitTextToChunks } from './segment-split';
 import { detectLang } from '../lib/detect-lang';
 import { getBaseLanguage } from './lang';
@@ -30,14 +31,13 @@ import { getBaseLanguage } from './lang';
  */
 interface ChainText {
 	text: string;
-	mappings: {
-
-		/** Ref path of the text node. */
-		ref: number[];
-		absStart: number;
-		absEnd: number;
-	}[];
+	mappings: ChainTextMapping[];
 }
+
+type ChainTextMapping = TextNodeSpan & {
+	absStart: number;
+	absEnd: number;
+};
 
 interface SegmentSource {
 	chain: ChainText;
@@ -69,43 +69,48 @@ export class SDTReadAloudSegments {
 		if (!source) {
 			return null;
 		}
-		let { chain, rawStart, rawEnd } = source;
-		let rawSlice = chain.text.slice(rawStart, rawEnd);
-		let normalized = segment.text;
-		let clampedStart = Math.max(0, Math.min(charStart, normalized.length));
-		let clampedEnd = Math.max(clampedStart, Math.min(charEnd, normalized.length));
-
-		let rawOffsetAtStart = -1;
-		let rawOffsetAtEnd = -1;
-		let rawOffset = 0;
-		while (rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
-			rawOffset++;
-		}
-		for (let i = 0; i <= normalized.length; i++) {
-			if (i === clampedStart) {
-				rawOffsetAtStart = rawOffset;
-			}
-			if (i === clampedEnd) {
-				rawOffsetAtEnd = rawOffset;
-				break;
-			}
-			if (i === normalized.length) {
-				break;
-			}
-			if (normalized[i] === ' ' && rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
-				while (rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
-					rawOffset++;
-				}
-			}
-			else {
-				rawOffset++;
-			}
-		}
-		if (rawOffsetAtStart < 0 || rawOffsetAtEnd < 0) {
+		let rawOffsets = normalizedOffsetsToRawOffsets(segment, source, charStart, charEnd);
+		if (!rawOffsets) {
 			return null;
 		}
 
-		return makePosition(chain, rawStart + rawOffsetAtStart, rawStart + rawOffsetAtEnd);
+		return makePosition(source.chain, rawOffsets.rawStart, rawOffsets.rawEnd);
+	}
+
+	getSegmentTextSpans(segment: ReadAloudSegment): TextNodeSpan[] {
+		let source = this._sources.get(segment);
+		if (!source) {
+			return [];
+		}
+		return getTextSpans(source.chain, source.rawStart, source.rawEnd);
+	}
+
+	getParagraphTextSpans(segment: ReadAloudSegment): TextNodeSpan[] {
+		let source = this._sources.get(segment);
+		if (!source) {
+			return [];
+		}
+		return getTextSpans(source.chain, 0, source.chain.text.length);
+	}
+
+	getWordTextSpans(segment: ReadAloudSegment, charStart: number, charEnd: number): TextNodeSpan[] {
+		let source = this._sources.get(segment);
+		if (!source) {
+			return [];
+		}
+		let rawOffsets = normalizedOffsetsToRawOffsets(segment, source, charStart, charEnd);
+		if (!rawOffsets) {
+			return [];
+		}
+		return getTextSpans(source.chain, rawOffsets.rawStart, rawOffsets.rawEnd);
+	}
+
+	getSegmentsTextSpans(segments: ReadAloudSegment[]): TextNodeSpan[] {
+		let spans: TextNodeSpan[] = [];
+		for (let segment of segments) {
+			spans.push(...this.getSegmentTextSpans(segment));
+		}
+		return spans;
 	}
 
 	addSegment(
@@ -269,7 +274,12 @@ function buildChainText(chain: { ref: number[], block: ContentBlockNode }[]): Ch
 			// and never anchor to unrendered whitespace
 			if (/\S/.test(node.text)) {
 				mappings.push({
+					block,
+					blockRef: [...ref],
+					node,
 					ref: [...ref, j],
+					start: 0,
+					end: node.text.length,
 					absStart: text.length,
 					absEnd: text.length + node.text.length,
 				});
@@ -352,6 +362,73 @@ function offsetToPoint(chain: ChainText, offset: number, isEnd: boolean): number
 	}
 	let last = mappings[mappings.length - 1];
 	return [...last.ref, last.absEnd - last.absStart];
+}
+
+function getTextSpans(chain: ChainText, rawStart: number, rawEnd: number): TextNodeSpan[] {
+	let spans: TextNodeSpan[] = [];
+	for (let mapping of chain.mappings) {
+		let start = Math.max(rawStart, mapping.absStart);
+		let end = Math.min(rawEnd, mapping.absEnd);
+		if (end <= start) {
+			continue;
+		}
+		spans.push({
+			block: mapping.block,
+			blockRef: [...mapping.blockRef],
+			node: mapping.node,
+			ref: [...mapping.ref],
+			start: mapping.start + start - mapping.absStart,
+			end: mapping.start + end - mapping.absStart,
+		});
+	}
+	return spans;
+}
+
+function normalizedOffsetsToRawOffsets(
+	segment: ReadAloudSegment,
+	source: SegmentSource,
+	charStart: number,
+	charEnd: number,
+): { rawStart: number, rawEnd: number } | null {
+	let { chain, rawStart, rawEnd } = source;
+	let rawSlice = chain.text.slice(rawStart, rawEnd);
+	let normalized = segment.text;
+	let clampedStart = Math.max(0, Math.min(charStart, normalized.length));
+	let clampedEnd = Math.max(clampedStart, Math.min(charEnd, normalized.length));
+
+	let rawOffsetAtStart = -1;
+	let rawOffsetAtEnd = -1;
+	let rawOffset = 0;
+	while (rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
+		rawOffset++;
+	}
+	for (let i = 0; i <= normalized.length; i++) {
+		if (i === clampedStart) {
+			rawOffsetAtStart = rawOffset;
+		}
+		if (i === clampedEnd) {
+			rawOffsetAtEnd = rawOffset;
+			break;
+		}
+		if (i === normalized.length) {
+			break;
+		}
+		if (normalized[i] === ' ' && rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
+			while (rawOffset < rawSlice.length && /\s/.test(rawSlice[rawOffset])) {
+				rawOffset++;
+			}
+		}
+		else {
+			rawOffset++;
+		}
+	}
+	if (rawOffsetAtStart < 0 || rawOffsetAtEnd < 0) {
+		return null;
+	}
+	return {
+		rawStart: rawStart + rawOffsetAtStart,
+		rawEnd: rawStart + rawOffsetAtEnd,
+	};
 }
 
 function normalizeText(text: string): string {

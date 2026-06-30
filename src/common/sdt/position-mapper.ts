@@ -23,6 +23,8 @@ import type {
 export interface SDTPositionMapper {
 	sdtToSourcePosition(pos: SDTPosition): SourcePosition | null;
 
+	textNodeSpansToSourcePosition(spans: TextNodeSpan[]): SourcePosition | null;
+
 	sourceToSDTPosition(position: SourcePosition): SDTPosition | null;
 
 	/**
@@ -54,7 +56,8 @@ export function getTextNodeSpans(structure: StructuredDocumentText, pos: SDTPosi
 		structure.content,
 		[pos.start, pos.end] as PageContentRange,
 		({ block, ref, startPoint, endPoint }) => {
-			let content = (block as ContentBlockNode).content as TextNode[] | undefined;
+			let contentBlock = block as ContentBlockNode;
+			let content = contentBlock.content as TextNode[] | undefined;
 			if (!content) {
 				return;
 			}
@@ -120,4 +123,3 @@ export function spansCoverWholeBlock(spans: TextNodeSpan[]): boolean {
 		&& spans[0].start === 0
 		&& spans[spans.length - 1].end === spans[spans.length - 1].node.text.length;
 }
-

@@ -1179,8 +1179,8 @@ class Reader {
 		if (!segment || !timestamp || !this._readAloudSegments || !this._sdt) {
 			return null;
 		}
-		let sdtPosition = this._readAloudSegments.getWordPosition(segment, timestamp.charStart, timestamp.charEnd);
-		return sdtPosition && this._sdt.mapper.sdtToSourcePosition(sdtPosition);
+		let spans = this._readAloudSegments.getWordTextSpans(segment, timestamp.charStart, timestamp.charEnd);
+		return this._sdt.mapper.textNodeSpansToSourcePosition(spans);
 	}
 
 	setReadAloudHighlightGranularity(granularity) {
@@ -1321,18 +1321,23 @@ class Reader {
 	// so views only have to display them
 	_materializeSourcePositions(segments) {
 		let mapper = this._sdt.mapper;
+		let readAloudSegments = this._readAloudSegments;
+		if (!readAloudSegments) {
+			return;
+		}
 		let paragraphStartIndex = 0;
 		for (let i = 0; i < segments.length; i++) {
 			let segment = segments[i];
-			segment.sourcePosition = mapper.sdtToSourcePosition(segment.position);
+			segment.sourcePosition = mapper.textNodeSpansToSourcePosition(
+				readAloudSegments.getSegmentTextSpans(segment)
+			);
 			if (segment.anchor === 'paragraphStart') {
 				paragraphStartIndex = i;
 			}
 			if (i + 1 >= segments.length || segments[i + 1].anchor === 'paragraphStart') {
-				let paragraphSourcePosition = mapper.sdtToSourcePosition({
-					start: segments[paragraphStartIndex].position.start,
-					end: segment.position.end,
-				});
+				let paragraphSourcePosition = mapper.textNodeSpansToSourcePosition(
+					readAloudSegments.getParagraphTextSpans(segments[paragraphStartIndex])
+				);
 				for (let j = paragraphStartIndex; j <= i; j++) {
 					segments[j].paragraphSourcePosition = paragraphSourcePosition;
 				}
@@ -1372,13 +1377,12 @@ class Reader {
 	 * source document's coordinate system.
 	 */
 	_addAnnotationFromReadAloudSegments(segments, init) {
-		if (!segments.length || !this._sdt) {
+		if (!segments.length || !this._sdt || !this._readAloudSegments) {
 			return null;
 		}
-		let sourcePosition = this._sdt.mapper.sdtToSourcePosition({
-			start: segments[0].position.start,
-			end: segments[segments.length - 1].position.end,
-		});
+		let sourcePosition = this._sdt.mapper.textNodeSpansToSourcePosition(
+			this._readAloudSegments.getSegmentsTextSpans(segments)
+		);
 		if (!sourcePosition) {
 			return null;
 		}
