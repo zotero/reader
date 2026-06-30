@@ -22,6 +22,7 @@ import type {
 import {
 	getTextNodeSpans,
 	SDTPositionMapper,
+	TextNodeSpan,
 } from './position-mapper';
 import { localOriginalToNFC } from './deltamap-invert';
 
@@ -65,6 +66,10 @@ export class SnapshotPositionMapper implements SDTPositionMapper {
 
 	sdtToSourcePosition(pos: SDTPosition): SourcePosition | null {
 		let spans = getTextNodeSpans(this._structure, pos);
+		return this.textNodeSpansToSourcePosition(spans);
+	}
+
+	textNodeSpansToSourcePosition(spans: TextNodeSpan[]): SourcePosition | null {
 		let start: number | null = null;
 		let end: number | null = null;
 		for (let span of spans) {

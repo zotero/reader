@@ -59,6 +59,10 @@ export class EPUBPositionMapper implements SDTPositionMapper {
 
 	sdtToSourcePosition(pos: SDTPosition): SourcePosition | null {
 		let spans = getTextNodeSpans(this._structure, pos);
+		return this.textNodeSpansToSourcePosition(spans);
+	}
+
+	textNodeSpansToSourcePosition(spans: TextNodeSpan[]): SourcePosition | null {
 		if (!spans.length) {
 			return null;
 		}

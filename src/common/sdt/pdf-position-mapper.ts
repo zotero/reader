@@ -41,6 +41,10 @@ export class PDFPositionMapper implements SDTPositionMapper {
 
 	sdtToSourcePosition(pos: SDTPosition): SourcePosition | null {
 		let spans = getTextNodeSpans(this._structure, pos);
+		return this.textNodeSpansToSourcePosition(spans);
+	}
+
+	textNodeSpansToSourcePosition(spans: TextNodeSpan[]): SourcePosition | null {
 		let rectsByPage = new Map<number, number[][]>();
 		let addRect = (pageIndex: number, rect: number[]) => {
 			let rects = rectsByPage.get(pageIndex);
