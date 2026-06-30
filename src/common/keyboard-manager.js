@@ -17,6 +17,9 @@ export class KeyboardManager {
 		// TODO: Possibly the current file should be renamed to input-manager if also watching pointer state
 		window.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		window.addEventListener('pointerup', this._handlePointerUp.bind(this), true);
+		// Mouse "back"/"forward" side buttons trigger native browser navigation by default
+		// (on 'mouseup', not 'mousedown'/'pointerdown'), so it needs to be intercepted separately
+		window.addEventListener('mouseup', this._handleMouseUp.bind(this), true);
 	}
 
 	_handleKeyUp(event, view) {
@@ -468,6 +471,18 @@ export class KeyboardManager {
 		let cmd = event.metaKey && isMac();
 		this.mod = ctrl || cmd;
 		this.shift = event.shiftKey;
+	}
+
+	_handleMouseUp(event) {
+		// Dedicated mouse "back"/"forward" side buttons
+		if (event.button === 3) {
+			event.preventDefault();
+			this._reader.navigateBack();
+		}
+		else if (event.button === 4) {
+			event.preventDefault();
+			this._reader.navigateForward();
+		}
 	}
 
 	handleViewKeyDown(event) {
