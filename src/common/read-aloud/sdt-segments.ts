@@ -34,10 +34,25 @@ interface ChainText {
 	mappings: ChainTextMapping[];
 }
 
+// `[absStart, absEnd)` in the chain text always corresponds to
+// `[start, end)` in the node text, so `absEnd - absStart === end - start`
 type ChainTextMapping = TextNodeSpan & {
 	absStart: number;
 	absEnd: number;
+	hasRefs?: boolean;
 };
+
+type TextRange = {
+	start: number;
+	end: number;
+};
+
+// Drop a bracket/parenthesis group when at least this fraction of its
+// non-whitespace content is linked text. Heuristic tuned so citation and
+// note marker groups and parenthesized figure/table pointers drop --
+// including author-year citations where only the year is linked (~0.27) --
+// while prose asides that merely contain a link (~0.21 and below) survive
+const LINK_GROUP_COVERAGE_THRESHOLD = 0.25;
 
 interface SegmentSource {
 	chain: ChainText;
@@ -202,9 +217,9 @@ export function findSegmentIndexForSDTPosition(
 
 /**
  * Collect the text of every logical paragraph: walk leaf blocks, join part
- * chains (paragraphs split across pages/columns), and concatenate each
- * chain's text nodes. Reference markers (citations, footnote markers) are
- * left out of the spoken text.
+ * chains (paragraphs split across pages/columns), concatenate each chain's
+ * text nodes, and omit linked bracket groups and superscript markers from
+ * the spoken text.
  */
 function collectChainTexts(structure: StructuredDocumentText): ChainText[] {
 	let chains: ChainText[] = [];
@@ -249,6 +264,7 @@ function buildChainText(chain: { ref: number[], block: ContentBlockNode }[]): Ch
 				let last = mappings[mappings.length - 1];
 				if (last) {
 					last.absEnd--;
+					last.end--;
 					if (last.absEnd <= last.absStart) {
 						mappings.pop();
 					}
@@ -266,9 +282,6 @@ function buildChainText(chain: { ref: number[], block: ContentBlockNode }[]): Ch
 			if (typeof node?.text !== 'string' || !node.text) {
 				continue;
 			}
-			if (node.refs || node.backRefs) {
-				continue;
-			}
 			// Whitespace-only nodes keep their text (word separation) but get
 			// no mapping, so positions snap inward to nodes with visible text
 			// and never anchor to unrendered whitespace
@@ -282,13 +295,131 @@ function buildChainText(chain: { ref: number[], block: ContentBlockNode }[]): Ch
 					end: node.text.length,
 					absStart: text.length,
 					absEnd: text.length + node.text.length,
+					hasRefs: !!node.refs?.length,
 				});
 			}
 			text += node.text;
 		}
 	}
 
-	return { text, mappings };
+	return compactChainText(text, mappings, getElidedRanges(text, mappings));
+}
+
+/**
+ * Ranges of the chain text that Read Aloud skips: bracket/parenthesis
+ * groups that are mostly linked text, and superscript link markers.
+ */
+function getElidedRanges(text: string, mappings: ChainTextMapping[]): TextRange[] {
+	let ranges: TextRange[] = [];
+	for (let [open, close] of [['[', ']'], ['(', ')']] as const) {
+		let stack: number[] = [];
+		for (let i = 0; i < text.length; i++) {
+			if (text[i] === open) {
+				stack.push(i);
+			}
+			else if (text[i] === close && stack.length) {
+				let start = stack.pop()!;
+				if (isLinkGroup(text, mappings, start, i + 1)) {
+					ranges.push({ start, end: i + 1 });
+				}
+			}
+		}
+	}
+	for (let mapping of mappings) {
+		if (mapping.hasRefs && mapping.node.style?.sup) {
+			ranges.push({ start: mapping.absStart, end: mapping.absEnd });
+		}
+	}
+	return mergeRanges(ranges);
+}
+
+function isLinkGroup(text: string, mappings: ChainTextMapping[], start: number, end: number): boolean {
+	let linkedChars = 0;
+	for (let mapping of mappings) {
+		if (!mapping.hasRefs) {
+			continue;
+		}
+		let from = Math.max(start, mapping.absStart);
+		let to = Math.min(end, mapping.absEnd);
+		for (let i = from; i < to; i++) {
+			if (/\S/.test(text[i])) {
+				linkedChars++;
+			}
+		}
+	}
+	if (!linkedChars) {
+		return false;
+	}
+	let contentChars = 0;
+	for (let i = start + 1; i < end - 1; i++) {
+		if (/\S/.test(text[i])) {
+			contentChars++;
+		}
+	}
+	return contentChars > 0 && linkedChars / contentChars >= LINK_GROUP_COVERAGE_THRESHOLD;
+}
+
+function mergeRanges(ranges: TextRange[]): TextRange[] {
+	let sorted = ranges
+		.filter(range => range.end > range.start)
+		.sort((a, b) => a.start - b.start || a.end - b.end);
+	let merged: TextRange[] = [];
+	for (let range of sorted) {
+		let last = merged[merged.length - 1];
+		if (last && range.start <= last.end) {
+			last.end = Math.max(last.end, range.end);
+		}
+		else {
+			merged.push({ ...range });
+		}
+	}
+	return merged;
+}
+
+/**
+ * Remove the given ranges from the chain text and re-split the mappings
+ * around them.
+ */
+function compactChainText(text: string, mappings: ChainTextMapping[], ranges: TextRange[]): ChainText {
+	if (!ranges.length) {
+		return { text, mappings };
+	}
+
+	// Complement of the elided ranges: each kept slice of the raw text,
+	// annotated with where it lands in the compacted text
+	let kept: { start: number, end: number, compactedStart: number }[] = [];
+	let cursor = 0;
+	let compactedLength = 0;
+	for (let range of [...ranges, { start: text.length, end: text.length }]) {
+		if (range.start > cursor) {
+			kept.push({ start: cursor, end: range.start, compactedStart: compactedLength });
+			compactedLength += range.start - cursor;
+		}
+		cursor = Math.max(cursor, range.end);
+	}
+
+	let compactedMappings: ChainTextMapping[] = [];
+	for (let mapping of mappings) {
+		for (let slice of kept) {
+			let start = Math.max(mapping.absStart, slice.start);
+			let end = Math.min(mapping.absEnd, slice.end);
+			if (end <= start || !/\S/.test(text.slice(start, end))) {
+				continue;
+			}
+			compactedMappings.push({
+				...mapping,
+				start: mapping.start + start - mapping.absStart,
+				end: mapping.start + end - mapping.absStart,
+				absStart: slice.compactedStart + start - slice.start,
+				absEnd: slice.compactedStart + end - slice.start,
+			});
+		}
+	}
+
+	return {
+		text: kept.map(slice => text.slice(slice.start, slice.end)).join(''),
+		mappings: compactedMappings,
+	};
 }
 
 function segmentChain(
