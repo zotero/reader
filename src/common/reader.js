@@ -2167,6 +2167,14 @@ class Reader {
 		this._updateState({ freeze: false });
 	}
 
+	// Release rendered pages and pause rendering while the reader is in a
+	// hidden (background) tab, and restore them when the tab is shown again.
+	// Currently only has an effect for the PDF view
+	setSuspended(suspended) {
+		this._primaryView?.setSuspended?.(suspended);
+		this._secondaryView?.setSuspended?.(suspended);
+	}
+
 	print() {
 		if (this._type === 'pdf') {
 			if (this._state.annotations.length) {
