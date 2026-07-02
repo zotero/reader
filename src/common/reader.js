@@ -191,10 +191,6 @@ class Reader {
 		this._enableReadAloud = options.enableReadAloud || false;
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
-		// Start pulling (and generating, if needed) the SDT pack right away,
-		// so it's ready by the time a feature awaits getSDTReader()
-		this.getSDTReader();
-
 		this._readAloudManager = new ReadAloudManager({
 			remoteInterface: this._readAloudRemoteInterface,
 			onStateChange: () => this._onReadAloudEngineStateChanged(),
@@ -267,6 +263,7 @@ class Reader {
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
+			sdtProgress: null,
 			primaryReadingModeEnabled: false,
 			secondaryReadingModeEnabled: false,
 			readingModeLoading: false,
@@ -310,6 +307,10 @@ class Reader {
 			delete state.splitSize;
 			this._state.secondaryViewState = state;
 		}
+
+		// Start pulling (and generating, if needed) the SDT pack right away,
+		// so it's ready by the time a feature awaits getSDTReader()
+		this.getSDTReader();
 
 		this._focusManager = new FocusManager({
 			reader: this,
@@ -1203,7 +1204,21 @@ class Reader {
 		}
 		if (!this._sdtReaderPromise) {
 			this._sdtReaderPromise = (async () => {
-				let result = await this._getSDTPack();
+				let reportedProgress = false;
+				let result;
+				try {
+					result = await this._getSDTPack({
+						onProgress: (progress) => {
+							reportedProgress = true;
+							this._updateState({ sdtProgress: progress });
+						},
+					});
+				}
+				finally {
+					if (reportedProgress) {
+						this._updateState({ sdtProgress: null });
+					}
+				}
 				if (!result?.ok) {
 					// Could be a transient failure
 					// Clear the promise so another call to getSDTReader() retries
