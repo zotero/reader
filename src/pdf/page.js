@@ -57,6 +57,11 @@ export default class Page {
 		this._pageRenderer.render();
 	}
 
+	destroy() {
+		this._pageRenderer.destroy();
+		this._detailRenderer.destroy();
+	}
+
 	renderAnnotationOnCanvas(annotation, canvas) {
 		return this._pageRenderer.renderAnnotationOnCanvas(annotation, canvas);
 	}
@@ -93,6 +98,16 @@ class Renderer {
 		return this._isDetailView
 			? this._originalPage.detailView?.canvas
 			: this._originalPage.canvas;
+	}
+
+	// Zero the snapshot canvas to release its backing store immediately,
+	// rather than waiting for GC
+	destroy() {
+		this._snapshotCanvas.width = 0;
+		this._snapshotCanvas.height = 0;
+		this._lastSourceCanvas = null;
+		this._lastSourceSize = { w: 0, h: 0 };
+		this._context = null;
 	}
 
 	_initContext() {

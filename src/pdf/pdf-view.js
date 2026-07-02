@@ -682,6 +682,11 @@ class PDFView {
 
 	_handlePageDestroy(originalPage) {
 		let pageIndex = originalPage.id - 1;
+		for (let page of this._pages) {
+			if (page.originalPage === originalPage) {
+				page.destroy();
+			}
+		}
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
 		delete this._pdfPages[pageIndex];
 	}
@@ -839,6 +844,36 @@ class PDFView {
 
 	destroy() {
 		this._overlayPopupDelayer.destroy();
+	}
+
+	// Discard rendered pages while the view is hidden (i.e. in a background tab)
+	// to release page canvases, page snapshot canvases and worker-side page
+	// resources, which otherwise are retained for up to 10 pages per view.
+	// Page views stay in place and visible pages re-render on resume
+	setSuspended(suspended) {
+		suspended = !!suspended;
+		if (this._suspended === suspended) {
+			return;
+		}
+		this._suspended = suspended;
+		let app = this._iframeWindow?.PDFViewerApplication;
+		if (!app?.pdfViewer) {
+			return;
+		}
+		if (suspended) {
+			// Prevent new rendering from starting while hidden, otherwise a resize
+			// or scale change would immediately re-render the discarded pages
+			app.pdfRenderingQueue.paused = true;
+			for (let pageView of app.pdfViewer._pages) {
+				pageView.destroy();
+			}
+			// Release worker-side resources (fonts, images) until re-rendering
+			app.pdfDocument?.cleanup().catch(() => {});
+		}
+		else {
+			app.pdfRenderingQueue.paused = false;
+			app.pdfViewer.update();
+		}
 	}
 
 	focus() {
