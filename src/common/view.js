@@ -28,6 +28,7 @@ class View {
 			highlightAll: true,
 			caseSensitive: false,
 			entireWord: false,
+			useRegex: false,
 			index: null,
 			result: null,
 			// View can be created with an active search
@@ -171,6 +172,7 @@ class View {
 	 * @param {String} [params.highlightAll]
 	 * @param {String} [params.caseSensitive]
 	 * @param {String} [params.entireWord]
+	 * @param {String} [params.useRegex]
 	 * @param {String} [params.index] Focus specific result
 	 */
 	find(params) {
@@ -188,6 +190,7 @@ class View {
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
+				useRegex: false,
 				index: null,
 				result: null,
 				...(params || {})

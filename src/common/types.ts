@@ -189,6 +189,7 @@ export type FindState = {
 	highlightAll: boolean;
 	caseSensitive: boolean;
 	entireWord: boolean;
+	useRegex: boolean;
 	// For mobile app to focus specific result
 	index: number | null,
 	result: {

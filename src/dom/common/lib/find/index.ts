@@ -59,7 +59,8 @@ class DefaultFindProcessor implements FindProcessor {
 			this.findState.query,
 			{
 				caseSensitive: this.findState.caseSensitive,
-				entireWord: this.findState.entireWord
+				entireWord: this.findState.entireWord,
+				useRegex: this.findState.useRegex
 			}
 		);
 		for (let internalOutputRange of ranges) {
@@ -231,6 +232,7 @@ class DefaultFindProcessor implements FindProcessor {
 		options: {
 			caseSensitive: boolean,
 			entireWord: boolean,
+			useRegex?: boolean,
 		}
 	): Promise<InternalOutputRange[]> {
 		if (this._worker) {
