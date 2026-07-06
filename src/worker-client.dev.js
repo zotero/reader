@@ -43,6 +43,11 @@ function initDocumentWorker() {
 	});
 	documentWorker.addEventListener('message', async (event) => {
 		let message = event.data;
+		if (message.progressID) {
+			let pending = workerPromises[message.progressID];
+			pending?.onProgress?.(message.data.progress);
+			return;
+		}
 		if (message.responseID) {
 			let pending = workerPromises[message.responseID];
 			if (!pending) return;
@@ -84,14 +89,14 @@ function initDocumentWorker() {
 	return documentWorker;
 }
 
-function queryDocumentWorker(action, data, transfer) {
+function queryDocumentWorker(action, data, transfer, onProgress) {
 	let worker = initDocumentWorker();
 	if (!worker) {
 		return Promise.reject(new Error('Document worker unavailable'));
 	}
 	return new Promise((resolve, reject) => {
 		lastWorkerPromiseID++;
-		workerPromises[lastWorkerPromiseID] = { resolve, reject };
+		workerPromises[lastWorkerPromiseID] = { resolve, reject, onProgress };
 		worker.postMessage({ id: lastWorkerPromiseID, action, data }, transfer || []);
 	});
 }
@@ -99,8 +104,15 @@ function queryDocumentWorker(action, data, transfer) {
 /**
  * Generate an SDT pack with the document worker and return it in the shape
  * the reader's getSDTPack option expects (matching Zotero.SDT.getPack()).
+ *
+ * @param {string} type
+ * @param {string} fileName
+ * @param {Object} [options]
+ * @param {function(number)} [options.onProgress] - Called with a 0-100 completion
+ *   percentage as the document worker extracts the document, matching the real
+ *   host (Zotero.SDT.getPack())
  */
-export async function getSDTPack(type, fileName, password) {
+export async function getSDTPack(type, fileName, { onProgress } = {}) {
 	let contentType = CONTENT_TYPES[type];
 	if (!contentType) {
 		return { ok: false, reason: 'unavailable' };
@@ -110,8 +122,10 @@ export async function getSDTPack(type, fileName, password) {
 		let buf = await res.arrayBuffer();
 		let result = await queryDocumentWorker(
 			'getStructuredDocumentText',
-			{ buf, contentType, password, sourceHash: DEV_SOURCE_HASH },
-			[buf]
+			// reportProgress opts into the worker's progress messages
+			{ buf, contentType, sourceHash: DEV_SOURCE_HASH, reportProgress: !!onProgress },
+			[buf],
+			onProgress
 		);
 		if (!result?.buf) {
 			return { ok: false, reason: 'failed' };

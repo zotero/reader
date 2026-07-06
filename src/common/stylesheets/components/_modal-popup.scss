@@ -101,10 +101,9 @@
 			align-items: center;
 			gap: 6px;
 
-			.loading-spinner {
+			.progress-ring {
 				width: 16px;
 				height: 16px;
-				@include loading-spinner;
 			}
 		}
 

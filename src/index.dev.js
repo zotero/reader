@@ -93,7 +93,7 @@ async function createReader() {
 		type,
 		ftl: [zoteroFTL, readerFTL, brandFTL],
 		readOnly: false,
-		getSDTPack: () => getSDTPack(type, demo.fileName),
+		getSDTPack: options => getSDTPack(type, demo.fileName, options),
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 			url: new URL('/', window.location).toString()

@@ -25,7 +25,7 @@ import IconFind from '../../../res/icons/20/magnifier.svg';
 import IconReadAloud from '../../../res/icons/20/read-aloud.svg';
 import IconChevronDown8 from '../../../res/icons/8/chevron-8.svg';
 import IconGoBack from '../../../res/icons/20/go-back.svg';
-import IconLoading from '../../../res/icons/16/loading.svg';
+import ProgressRing from './common/progress-ring';
 
 function Toolbar(props) {
 	const pageInputRef = useRef();
@@ -125,8 +125,10 @@ function Toolbar(props) {
 						onClick={() => props.onToggleReadAloud()}
 					>
 						{props.readAloudState.popupOpen && !props.readAloudState.lang
-							// Can't show popup because the view hasn't given us data yet
-							? <IconLoading className="loading-spinner" />
+							// Can't show the popup because the view hasn't given us
+							// data yet. Show SDT generation progress -- an empty
+							// ring until the host starts reporting.
+							? <ProgressRing progress={props.sdtProgress}/>
 							: <IconReadAloud/>}
 					</button>
 				)}

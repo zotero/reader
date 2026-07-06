@@ -232,6 +232,18 @@ body.freeze {
 	}
 }
 
+.progress-ring {
+	.progress-ring-track {
+		stroke: var(--fill-quinary);
+	}
+
+	.progress-ring-value {
+		stroke: var(--fill-secondary);
+		// Ease between the worker's stepwise progress updates
+		transition: stroke-dashoffset 0.3s ease-out;
+	}
+}
+
 @keyframes rotating {
 	from {
 		transform: rotate(0deg);

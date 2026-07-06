@@ -147,11 +147,10 @@
 		pointer-events: none;
 	}
 
-	.loading-spinner {
+	.progress-ring {
 		width: 28px;
 		height: 28px;
 		padding: 6px;
-		@include loading-spinner;
 	}
 }
 

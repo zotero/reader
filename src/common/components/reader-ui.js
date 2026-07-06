@@ -138,6 +138,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						readingModeEnabled={state.primaryReadingModeEnabled || state.secondaryReadingModeEnabled}
 						appearancePopup={state.appearancePopup}
 						readAloudState={state.readAloudState}
+						sdtProgress={state.sdtProgress}
 						findPopupOpen={findState.popupOpen}
 						themes={state.themes}
 						onChangeTheme={props.onChangeTheme}
@@ -239,6 +240,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							? state.primaryReadingModeEnabled
 							: state.secondaryReadingModeEnabled}
 						readingModeLoading={state.readingModeLoading}
+						sdtProgress={state.sdtProgress}
 						splitType={state.splitType}
 						viewStats={viewStats}
 						onChangeSplitType={props.onChangeSplitType}

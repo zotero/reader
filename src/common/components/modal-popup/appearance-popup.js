@@ -20,7 +20,7 @@ import IconSpreadNone from '../../../../res/icons/16/spread-none.svg';
 import IconSpreadOdd from '../../../../res/icons/16/spread-odd.svg';
 import IconOptions from '../../../../res/icons/16/options.svg';
 import IconPlus from '../../../../res/icons/20/plus.svg';
-import IconLoading from '../../../../res/icons/16/loading.svg';
+import ProgressRing from '../common/progress-ring';
 import { getCurrentColorScheme, getPopupCoordinatesFromClickEvent } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 import { DEFAULT_THEMES } from '../../defines';
@@ -309,7 +309,9 @@ function AppearancePopup(props) {
 								<label htmlFor="reading-mode-enabled">{l10n.getString('reader-reading-mode')}</label>
 								<div className="reading-mode-control">
 									{props.readingModeLoading && (
-										<IconLoading className="loading-spinner" aria-busy={true}/>
+										// SDT generation progress -- an empty ring
+										// until the host starts reporting
+										<ProgressRing progress={props.sdtProgress}/>
 									)}
 									<input
 										data-tabstop={1}
