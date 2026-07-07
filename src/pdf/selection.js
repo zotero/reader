@@ -767,6 +767,9 @@ export function getSelectionRangesByPosition(pdfPages, position) {
 	selectionRanges = [selectionRange];
 
 	if (position.nextPageRects) {
+		if (!pdfPages[position.pageIndex + 1]) {
+			return [];
+		}
 		let { chars } = pdfPages[position.pageIndex + 1];
 		selectionRange = extractRangeByRects({
 			chars,

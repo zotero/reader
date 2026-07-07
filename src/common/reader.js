@@ -2589,6 +2589,20 @@ class Reader {
 		this._updateState({ freeze: false });
 	}
 
+	// Release rendered pages while the reader is hidden, and restore them when
+	// it's shown again. Currently only has an effect for the PDF view
+	setSuspended(suspended) {
+		this._primaryView?.setSuspended?.(suspended);
+		this._secondaryView?.setSuspended?.(suspended);
+	}
+
+	// Release as much memory as possible without a visible effect (e.g. on a
+	// memory-pressure notification). Safe to call on a visible reader
+	trimMemory() {
+		this._primaryView?.trimMemory?.();
+		this._secondaryView?.trimMemory?.();
+	}
+
 	print() {
 		if (this._type === 'pdf') {
 			if (this._state.annotations.length) {

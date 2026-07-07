@@ -70,6 +70,13 @@ import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
 
+// How many recently used off-screen pages to keep rendered, in addition to the
+// visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
+// rendered pages (~50 MB each on a Retina display at fit-width), sized for
+// 2012-era 1x displays; re-rendering a trimmed page takes ~30-70 ms, the same
+// cost as scrolling to any unbuffered page
+const PAGE_BUFFER_KEEP_RECENT = 2;
+
 class PDFView {
 	constructor(options) {
 		this._options = options;
@@ -124,6 +131,8 @@ class PDFView {
 
 		this._pages = [];
 		this._pdfPages = {};
+		this._processedPageOverlays = {};
+		this._processedPageIsolatedCharIndexes = {};
 
 		this._focusedObject = null;
 		this._lastFocusedObject = null;
@@ -579,17 +588,55 @@ class PDFView {
 		this._updateViewStats();
 		let { pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
 		for (let key in pages) {
-			this._pdfPages[key] = pages[key];
+			this._processedPageOverlays[key] = pages[key].overlays;
+			let isolatedCharIndexes = [];
+			for (let index = 0; index < pages[key].chars?.length; index++) {
+				if (pages[key].chars[index].isolated) {
+					isolatedCharIndexes.push(index);
+				}
+			}
+			if (isolatedCharIndexes.length) {
+				this._processedPageIsolatedCharIndexes[key] = isolatedCharIndexes;
+			}
+			else {
+				delete this._processedPageIsolatedCharIndexes[key];
+			}
+			if (this._pdfPages[key]) {
+				this._pdfPages[key] = this._mergeProcessedPageData(key, this._pdfPages[key]);
+			}
 		}
 		this._render();
 		this._updateViewStats();
+	}
+
+	_mergeProcessedPageData(pageIndex, pageData) {
+		if (!pageData) {
+			return pageData;
+		}
+		let overlays = this._processedPageOverlays[pageIndex];
+		let isolatedCharIndexes = this._processedPageIsolatedCharIndexes[pageIndex];
+		if (!overlays && !isolatedCharIndexes) {
+			return pageData;
+		}
+		pageData = overlays ? { ...pageData, overlays } : { ...pageData };
+		if (isolatedCharIndexes && pageData.chars) {
+			let next = 0;
+			pageData.chars = pageData.chars.map((char, index) => {
+				if (index !== isolatedCharIndexes[next]) {
+					return char;
+				}
+				next++;
+				return { ...char, isolated: true };
+			});
+		}
+		return pageData;
 	}
 
 	async _ensureBasicPageData(pageIndex) {
 		if (!this._pdfPages[pageIndex]) {
 			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
 			if (!this._pdfPages[pageIndex]) {
-				this._pdfPages[pageIndex] = pageData;
+				this._pdfPages[pageIndex] = this._mergeProcessedPageData(pageIndex, pageData);
 			}
 		}
 	}
@@ -603,6 +650,15 @@ class PDFView {
 	}
 
 	async _handlePageRendered(event) {
+		if (this._suspended) {
+			// Suspended before the viewer had anything to release — release the
+			// just-rendered pages and block the queue now
+			this._applySuspended();
+		}
+		else {
+			// The buffer just grew — trim it back to the pages worth keeping
+			this._trimPageBuffer(PAGE_BUFFER_KEEP_RECENT);
+		}
 		let pageIndex = event.pageNumber - 1;
 		let originalPage = event.source;
 		let page = this._pages.find(x => x.pageIndex === pageIndex);
@@ -638,7 +694,7 @@ class PDFView {
 			if (!this._pdfPages[pageIndex]) {
 				let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
 				if (!this._pdfPages[pageIndex]) {
-					this._pdfPages[pageIndex] = pageData;
+					this._pdfPages[pageIndex] = this._mergeProcessedPageData(pageIndex, pageData);
 					this._render();
 				}
 			}
@@ -918,6 +974,97 @@ class PDFView {
 
 	destroy() {
 		this._overlayPopupDelayer.destroy();
+	}
+
+	// Log once and disable a memory feature if the pdf.js fork stops exposing
+	// a method it depends on, instead of silently leaking or throwing on every use
+	_checkViewerAPI(object, methods, feature) {
+		if (methods.every(x => typeof object?.[x] === 'function')) {
+			return true;
+		}
+		if (!this._missingViewerAPIWarned) {
+			this._missingViewerAPIWarned = true;
+			console.error(`pdf.js viewer API required for ${feature} is missing`);
+		}
+		return false;
+	}
+
+	// Release rendered pages and block rendering while the view is in a hidden
+	// (background) tab, and restore them when the tab is shown again.
+	// Destroying page views releases their canvases and extracted page data,
+	// and pdfDocument.cleanup() releases worker-side fonts and images. The
+	// reader instance, worker, parsed document and all UI state stay alive, so
+	// resuming only needs to re-render the visible pages (~60 ms)
+	setSuspended(suspended) {
+		suspended = !!suspended;
+		if (this._suspended === suspended) {
+			return;
+		}
+		this._suspended = suspended;
+		this._applySuspended();
+	}
+
+	// Applied separately from setSuspended, because a view suspended before the
+	// viewer has initialized (e.g. a background tab whose document is still
+	// loading when the suspension timeout fires) has to be re-suspended when
+	// its pages start rendering
+	_applySuspended() {
+		let app = this._iframeWindow?.PDFViewerApplication;
+		let queue = app?.pdfRenderingQueue;
+		if (!app?.pdfViewer || !this._checkViewerAPI(queue, ['renderHighestPriority'], 'tab suspension')) {
+			return;
+		}
+		if (this._suspended) {
+			// Shadow the queue's only rendering entry point, so that destroyed
+			// pages aren't immediately re-rendered while the tab is hidden (e.g.
+			// on a window resize). Restored by deleting the own property below
+			queue.renderHighestPriority = () => {};
+			for (let pageView of app.pdfViewer._pages) {
+				pageView.destroy();
+			}
+			// Rejects if a render is still in flight; the pages are destroyed, so
+			// the cleanup will happen on the next idle timeout instead
+			app.pdfDocument?.cleanup().catch(() => {});
+		}
+		else {
+			delete queue.renderHighestPriority;
+			app.pdfViewer.update();
+		}
+	}
+
+	// Destroy rendered pages that are outside the visible range, keeping the
+	// visible pages, their immediate neighbors (which the rendering queue would
+	// immediately re-render anyway — its pre-render lookahead is one page), and
+	// the `keep` most recently used pages beyond that. pdf.js's own buffer only
+	// evicts beyond 10 pages and its size isn't reachable from outside
+	_trimPageBuffer(keep) {
+		let pdfViewer = this._iframeWindow?.PDFViewerApplication?.pdfViewer;
+		if (!pdfViewer
+			|| !this._checkViewerAPI(pdfViewer, ['getCachedPageViews', '_getVisiblePages'], 'page buffer trimming')) {
+			return;
+		}
+		let visiblePages = pdfViewer._getVisiblePages();
+		if (!visiblePages.ids.size) {
+			return;
+		}
+		let keepIds = new Set();
+		for (let id of visiblePages.ids) {
+			keepIds.add(id - 1).add(id).add(id + 1);
+		}
+		// Cached views iterate oldest first
+		let trimmable = [...pdfViewer.getCachedPageViews()].filter(x => !keepIds.has(x.id));
+		for (let pageView of trimmable.slice(0, Math.max(0, trimmable.length - keep))) {
+			pageView.destroy();
+		}
+	}
+
+	// Release as much memory as possible without a visible effect and without
+	// blocking rendering: keep only the on-screen pages and drop worker-side
+	// decoded resources. Safe to call on the currently selected tab (e.g. on a
+	// memory-pressure notification) — trimmed pages re-render when scrolled to
+	trimMemory() {
+		this._trimPageBuffer(0);
+		this._iframeWindow?.PDFViewerApplication?.pdfDocument?.cleanup().catch(() => {});
 	}
 
 	focus() {
@@ -1360,7 +1507,12 @@ class PDFView {
 	a11yWillPlaceVirtCursorOnSearchResult = debounce(async () => {
 		if (!this._findState.result?.annotation) return;
 		let { position } = this._findState.result.annotation;
+		await this._ensureBasicPageData(position.pageIndex);
+		if (position.nextPageRects) {
+			await this._ensureBasicPageData(position.pageIndex + 1);
+		}
 		let range = getSelectionRangesByPosition(this._pdfPages, position);
+		if (!range.length) return;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(position.pageIndex);
 		// The page may have been unloaded, in which case we need to wait for it to be rendered
 		let waitCounter = 0;
@@ -1375,7 +1527,7 @@ class PDFView {
 		// pick node corresponding to the range that actually contains the query
 		let node = endNode.textContent.includes(this._findState.query) ? endNode : startNode;
 		this._a11yVirtualCursorTarget = node.parentNode;
-	  }, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
+	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	// Record the current page that the virtual cursor enter when focus enters the content.
 	// Debounce to not run this on every view stats update.
@@ -3535,12 +3687,21 @@ class PDFView {
 			let { id, type, position } = annotation;
 			const STEP = 5; // pt
 			const PADDING = 5;
-			let viewBox = this._pdfPages[position.pageIndex].viewBox;
+			let pageData = this._pdfPages[position.pageIndex];
+			let consumeSelectedAnnotationKey = () => {
+				event.stopPropagation();
+				event.preventDefault();
+			};
 
 			if (
 				['note', 'text', 'image', 'ink'].includes(type)
 				&& ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)
 			) {
+				if (!pageData) {
+					consumeSelectedAnnotationKey();
+					return;
+				}
+				let { viewBox } = pageData;
 				let rect;
 				if (annotation.type === 'ink') {
 					rect = getPositionBoundingRect(position);
@@ -3580,12 +3741,15 @@ class PDFView {
 					this._render();
 					this._onSetAnnotationPopup();
 				}
-				event.stopPropagation();
-				event.preventDefault();
+				consumeSelectedAnnotationKey();
 			}
 			else if (['highlight', 'underline'].includes(type)
 				&& ['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key)) {
 				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+				if (!selectionRanges.length) {
+					consumeSelectedAnnotationKey();
+					return;
+				}
 				if (key === 'Shift-ArrowLeft') {
 					selectionRanges = getModifiedSelectionRanges(this._pdfPages, selectionRanges, 'left');
 				}
@@ -3607,8 +3771,7 @@ class PDFView {
 					this._onSetAnnotationPopup();
 					this._scrollSelectionHeadIntoView(selectionRanges);
 				}
-				event.stopPropagation();
-				event.preventDefault();
+				consumeSelectedAnnotationKey();
 			}
 			else if (['highlight', 'underline'].includes(type)
 				&& (
@@ -3616,6 +3779,10 @@ class PDFView {
 					|| (isWin() || isLinux()) && ['Alt-Shift-ArrowLeft', 'Alt-Shift-ArrowRight', 'Alt-Shift-ArrowUp', 'Alt-Shift-ArrowDown'].includes(key)
 				)) {
 				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+				if (!selectionRanges.length) {
+					consumeSelectedAnnotationKey();
+					return;
+				}
 				selectionRanges = getReversedSelectionRanges(selectionRanges);
 				if (
 					isMac() && key === 'Cmd-Shift-ArrowLeft'
@@ -3649,8 +3816,7 @@ class PDFView {
 					this._onSetAnnotationPopup();
 					this._scrollSelectionHeadIntoView(selectionRanges);
 				}
-				event.stopPropagation();
-				event.preventDefault();
+				consumeSelectedAnnotationKey();
 			}
 			else if (
 				['text', 'image', 'ink'].includes(type)
@@ -3694,6 +3860,11 @@ class PDFView {
 					}
 				}
 				else if (type === 'image') {
+					if (!pageData) {
+						consumeSelectedAnnotationKey();
+						return;
+					}
+					let { viewBox } = pageData;
 					let rect = position.rects[0].slice();
 
 					let [, y, x] = rect;
@@ -3798,8 +3969,7 @@ class PDFView {
 					this._render();
 					this._onSetAnnotationPopup();
 				}
-				event.stopPropagation();
-				event.preventDefault();
+				consumeSelectedAnnotationKey();
 			}
 		}
 		else if (
