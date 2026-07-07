@@ -350,7 +350,7 @@ export class KeyboardManager {
 			}
 		}
 
-		if (!isTextBox(event.target)) {
+		if (!isTextBox(event.target) && !this._reader._state.contextMenu) {
 			if (code === 'Alt-Digit1') {
 				this._reader.toggleTool('highlight');
 			}
