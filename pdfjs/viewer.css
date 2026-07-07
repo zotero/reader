@@ -372,6 +372,29 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	z-index: 3;
 }
 
+/* Annotation overlay rendered in the DOM over the pristine page canvas.
+   display: contents makes the rects and vector layers paint as direct children
+   of the page div, so their mix-blend-mode blends against the page canvas
+   (a wrapper box would form a stacking context that isolates the blending).
+   z-index: 1 paints above the page canvas and below the text layer (2),
+   matching the order overlay content used to be painted into the canvas. */
+.annotationOverlay {
+	display: contents;
+}
+
+.annotationOverlay .overlayRect {
+	position: absolute;
+	z-index: 1;
+	pointer-events: none;
+}
+
+.annotationOverlay .overlayVector {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+}
+
 .textAnnotation {
 	position: absolute;
 }
