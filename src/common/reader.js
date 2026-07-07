@@ -17,7 +17,7 @@ import {
 	createViewContextMenu
 } from './context-menu';
 import { initPDFPrintService } from '../pdf/pdf-print-service';
-import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES } from './defines';
+import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES, SUSPEND_WHEN_HIDDEN_AFTER } from './defines';
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
@@ -125,6 +125,8 @@ class Reader {
 		this._primarySDTView = null;
 		this._secondarySDTView = null;
 		this._lastViewPrimary = true;
+		this._suspended = false;
+		this._suspendTimeout = null;
 
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 
@@ -528,6 +530,33 @@ class Reader {
 					event.preventDefault();
 				}
 			});
+		}
+
+		// Release memory while the reader isn't visible (a hidden tab, a
+		// backgrounded app, a minimized window). The embedder is responsible for
+		// keeping document visibility correct (e.g. Zotero deactivates the
+		// docShells of hidden tabs), and read-aloud is automatically exempt,
+		// because tabs playing audio are kept visible.
+		// The document can already be hidden on startup (a tab opened in the
+		// background), which fires no visibilitychange event
+		document.addEventListener('visibilitychange', () => this._handleVisibilityChange());
+		if (document.hidden) {
+			this._handleVisibilityChange();
+		}
+	}
+
+	_handleVisibilityChange() {
+		clearTimeout(this._suspendTimeout);
+		this._suspendTimeout = null;
+		if (document.hidden) {
+			// Trim right away — the visible pages stay rendered, so switching
+			// back to the tab remains instant — and release everything if the
+			// reader stays hidden
+			this.trimMemory();
+			this._suspendTimeout = setTimeout(() => this.setSuspended(true), SUSPEND_WHEN_HIDDEN_AFTER);
+		}
+		else {
+			this.setSuspended(false);
 		}
 	}
 
@@ -2129,6 +2158,13 @@ class Reader {
 			view.initializedPromise.then(() => view.focus());
 		}
 
+		// The reader can already be suspended when a view is created (e.g. a
+		// large document that finishes loading in a hidden tab only after the
+		// suspension timeout)
+		if (this._suspended) {
+			view.setSuspended?.(true);
+		}
+
 		return view;
 	}
 
@@ -2592,15 +2628,18 @@ class Reader {
 	// Release rendered pages while the reader is hidden, and restore them when
 	// it's shown again. Currently only has an effect for the PDF view
 	setSuspended(suspended) {
-		this._primaryView?.setSuspended?.(suspended);
-		this._secondaryView?.setSuspended?.(suspended);
+		this._suspended = suspended;
+		for (let view of this._views) {
+			view.setSuspended?.(suspended);
+		}
 	}
 
 	// Release as much memory as possible without a visible effect (e.g. on a
 	// memory-pressure notification). Safe to call on a visible reader
 	trimMemory() {
-		this._primaryView?.trimMemory?.();
-		this._secondaryView?.trimMemory?.();
+		for (let view of this._views) {
+			view.trimMemory?.();
+		}
 	}
 
 	print() {

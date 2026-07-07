@@ -32,6 +32,11 @@ export const DEBOUNCE_STATE_CHANGE = 300; // ms
 export const DEBOUNCE_STATS_CHANGE = 100; // ms
 export const DEBOUNCE_FIND_POPUP_INPUT = 500; // ms
 
+// How long the reader has to stay hidden before all its rendered pages are
+// released. Long enough to keep switching between tabs instant, while resuming
+// after that only costs a ~60 ms re-render of the visible pages
+export const SUSPEND_WHEN_HIDDEN_AFTER = 60000; // ms
+
 export const FIND_RESULT_COLOR_ALL_LIGHT = 'rgba(180,0,170,0.3)';
 export const FIND_RESULT_COLOR_CURRENT_LIGHT = 'rgba(0,100,0,0.3)';
 export const FIND_RESULT_COLOR_ALL_DARK = 'rgba(180,0,170,0.6)';
