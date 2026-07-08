@@ -323,6 +323,13 @@ export function scaleShape(cornerPoints, points, padding) {
 	let length1 = Math.sqrt(dir1[0] ** 2 + dir1[1] ** 2);
 	let length2 = Math.sqrt(dir2[0] ** 2 + dir2[1] ** 2);
 
+	// A degenerate shape (a dot or a perfectly straight line) has no
+	// direction to scale along, and dividing by the zero length would turn
+	// all points into NaN
+	if (!length1 || !length2) {
+		return points;
+	}
+
 	// Normalize the direction vectors
 	let dir1Normalized = [dir1[0] / length1, dir1[1] / length1];
 	let dir2Normalized = [dir2[0] / length2, dir2[1] / length2];
