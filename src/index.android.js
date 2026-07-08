@@ -14,7 +14,7 @@ onmessage = function (e) {
 	if (e.data == 'initPort') {
 		port = e.ports[0];
 		// Notify when iframe and port are loaded
-        postMessage('onInitialized');
+		postMessage('onInitialized');
 	}
 };
 
