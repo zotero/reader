@@ -92,7 +92,6 @@ class View {
 			lightTheme: this._lightTheme,
 			darkTheme: this._darkTheme,
 			colorScheme: this._colorScheme,
-			penConnected: this._options.penConnected ?? false,
 			penActive: this._options.penActive ?? false,
 			penExclusive: this._options.penExclusive ?? false,
 			fontFamily: this._options.fontFamily,
@@ -344,10 +343,6 @@ class View {
 	setColorScheme(scheme) {
 		this._colorScheme = scheme;
 		this._view.setColorScheme(scheme);
-	}
-
-	setPenConnected(penConnected) {
-		this._view.setPenConnected(penConnected);
 	}
 
 	setPenActive(penActive) {

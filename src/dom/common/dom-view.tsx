@@ -73,6 +73,8 @@ import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE, PageWidth, type ReflowableAppearance } from "./lib/appearance";
 import { ReadAloud } from "./lib/read-aloud";
 
+const PEN_ACTIVE_TIMEOUT = 5 * 60 * 1000;
+
 abstract class DOMView<State extends DOMViewState, Data> {
 	readonly MIN_SCALE = 0.6;
 
@@ -178,9 +180,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _lastKeyboardFocusedAnnotationID: string | null = null;
 
-	protected _penConnected: boolean;
-
 	protected _penActive: boolean;
+
+	protected _penActiveTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	protected _penExclusive: boolean;
 
@@ -212,7 +214,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._selectionPopup = options.selectionPopup;
 		this._overlayPopup = options.overlayPopup;
 		this._findState = options.findState;
-		this._penConnected = options.penConnected ?? false;
 		this._penActive = options.penActive ?? false;
 		this._penExclusive = options.penExclusive ?? false;
 		this._overlayPopupDelayer = new PopupDelayer({ open: !!this._overlayPopup });
@@ -1779,7 +1780,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					this._renderAnnotations();
 				}
 			}
-			this._penActive ||= event.pointerType === 'pen';
+			if (event.pointerType === 'pen') {
+				this._markPenActive();
+			}
 			event.stopPropagation();
 		}
 	}
@@ -1881,10 +1884,36 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
 			return false;
 		}
-		if (this._penConnected && (this._penActive || this._penExclusive) && event.pointerType !== 'pen') {
+		// While a pen is in use (recently active, or exclusive mode is on), finger
+		// touches navigate/select instead of annotating.
+		if ((this._penActive || this._penExclusive) && event.pointerType !== 'pen') {
 			return false;
 		}
 		return event.target !== this._annotationShadowRoot.host;
+	}
+
+	/**
+	 * Mark the pen as recently active and (re)start the idle timeout. Because we
+	 * can't detect whether a stylus is physically connected, we treat it as in
+	 * use for PEN_ACTIVE_TIMEOUT after the last pen interaction.
+	 */
+	protected _markPenActive() {
+		this._penActive = true;
+		if (this._penActiveTimeout !== null) {
+			clearTimeout(this._penActiveTimeout);
+		}
+		this._penActiveTimeout = setTimeout(() => {
+			this._penActive = false;
+			this._penActiveTimeout = null;
+		}, PEN_ACTIVE_TIMEOUT);
+	}
+
+	protected _clearPenActive() {
+		this._penActive = false;
+		if (this._penActiveTimeout !== null) {
+			clearTimeout(this._penActiveTimeout);
+			this._penActiveTimeout = null;
+		}
 	}
 
 	protected _getTouchAnnotationStartPosition(event: PointerEvent): CaretPosition | null {
@@ -2120,6 +2149,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	destroy() {
+		this._clearPenActive();
 		this._overlayPopupDelayer.destroy();
 		this._annotationRenderRoot.unmount();
 		this._resizeObserver.disconnect();
@@ -2149,7 +2179,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations();
 
 		if (tool.type === 'pointer') {
-			this._penActive = false;
+			this._clearPenActive();
 		}
 	}
 
@@ -2251,12 +2281,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		this._renderAnnotations(true);
 	}
 
-	setPenConnected(penConnected: boolean) {
-		this._penConnected = penConnected;
-	}
-
 	setPenActive(penActive: boolean) {
-		this._penActive = penActive;
+		if (penActive) {
+			this._markPenActive();
+		}
+		else {
+			this._clearPenActive();
+		}
 	}
 
 	setPenExclusive(penExclusive: boolean) {
@@ -2403,7 +2434,6 @@ export type DOMViewOptions<State extends DOMViewState, Data> = {
 	viewState?: State;
 	fontFamily?: string;
 	hyphenate?: boolean;
-	penConnected?: boolean;
 	penActive?: boolean;
 	penExclusive?: boolean;
 	readAloudState: ReadAloudStateSnapshot;
