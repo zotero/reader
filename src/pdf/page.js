@@ -25,7 +25,8 @@ import { getRectRotationOnText } from './selection';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
-// Note icon geometry in a 24 x 24 box, shared by the SVG and canvas renderers
+// Note icon geometry, shared by the SVG and canvas renderers
+const NOTE_ICON_SIZE = 24;
 const NOTE_ICON_BASE = [0.5, 0.5, 23.5, 0.5, 23.5, 23.5, 11.5, 23.5, 0.5, 12.5];
 const NOTE_ICON_FOLD = [0.5, 12.5, 11.5, 12.5, 11.5, 23.5];
 const NOTE_ICON_OUTLINE = 'M0,0V12.707L11.293,24H24V0ZM11,22.293,1.707,13H11ZM23,23H12V12H1V1H23Z';
@@ -233,7 +234,8 @@ export default class Page {
 			kind: 'noteIcon',
 			x: round(viewRect[0]),
 			y: round(viewRect[1]),
-			scale: round(this._scale),
+			// Fit the icon into the annotation rect (22 pt)
+			scale: round((viewRect[2] - viewRect[0]) / NOTE_ICON_SIZE),
 			color: annotation.color
 		});
 	}
@@ -334,7 +336,7 @@ export default class Page {
 		}
 
 		for (let note of notes) {
-			let scale = Math.abs(this._getViewPoint([1 / (24 / width), 0])[0] - this._getViewPoint([0, 0])[0]);
+			let scale = width / NOTE_ICON_SIZE * this._scale;
 			let rect = this._getViewRect(note.rect);
 			items.push({
 				kind: 'noteIcon',
@@ -1062,7 +1064,7 @@ export default class Page {
 		else if (annotation.type === 'note') {
 			let rect = annotation.position.rects[0];
 			let w = rect[2] - rect[0];
-			let scale2 = scale * (w / 24);
+			let scale2 = scale * (w / NOTE_ICON_SIZE);
 			ctx.transform(scale2, 0, 0, scale2, 0, 0);
 			this._drawNoteIconOnCanvas(ctx, annotation.color);
 		}
