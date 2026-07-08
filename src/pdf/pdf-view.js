@@ -142,6 +142,7 @@ class PDFView {
 		this._findState = options.findState;
 
 		this._scrolling = false;
+		this._dragging = false;
 		this._readAloudPositionLocked = true;
 		this._readAloudScrolling = false;
 
@@ -3455,6 +3456,11 @@ class PDFView {
 	}
 
 	_handlePointerCancel() {
+		// Chrome cancels the pointer stream when a native drag operation
+		// starts, but the drag events keep driving the current action
+		if (this._dragging) {
+			return;
+		}
 		this.action = null;
 		this.pointerDownPosition = null;
 		this._pointerDownTriggered = false;
@@ -4245,6 +4251,7 @@ class PDFView {
 			event.preventDefault();
 			return;
 		}
+		this._dragging = true;
 		if (!this.action.multiple) {
 			let annotation = this.action.annotation;
 			let canvas = this._dragCanvas;
@@ -4295,6 +4302,7 @@ class PDFView {
 	}
 
 	_handleDragEnd(event) {
+		this._dragging = false;
 		if (event.dataTransfer.dropEffect === 'none') {
 			this.action = null;
 		}
