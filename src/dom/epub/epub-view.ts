@@ -546,17 +546,10 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		let pageLabel = this.pageMapping.isPhysical && this.pageMapping.getPageLabel(range) || '';
 
-		// Use the number of characters between the start of the section and the start of the selection range
-		// to disambiguate the sortIndex
-		let sectionContainer = closestElement(range.startContainer)?.closest('[data-section-index]');
-		if (!sectionContainer) {
+		let sortIndex = this._getSortIndex(range);
+		if (sortIndex === null) {
 			return null;
 		}
-		let sectionIndex = parseInt(sectionContainer.getAttribute('data-section-index')!);
-		let offsetRange = this._iframeDocument.createRange();
-		offsetRange.setStart(sectionContainer, 0);
-		offsetRange.setEnd(range.startContainer, range.startOffset);
-		let sortIndex = String(sectionIndex).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
 		return {
 			type,
 			color,
@@ -565,6 +558,33 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			position: selector,
 			text
 		};
+	}
+
+	private _getSortIndex(range: Range): string | null {
+		// Use the number of characters between the start of the section and the
+		// start of the range to disambiguate the sortIndex
+		let sectionContainer = closestElement(range.startContainer)?.closest('[data-section-index]');
+		if (!sectionContainer) {
+			return null;
+		}
+		let sectionIndex = parseInt(sectionContainer.getAttribute('data-section-index')!);
+		let offsetRange = this._iframeDocument.createRange();
+		offsetRange.setStart(sectionContainer, 0);
+		offsetRange.setEnd(range.startContainer, range.startOffset);
+		return String(sectionIndex).padStart(5, '0') + '|' + String(offsetRange.toString().length).padStart(8, '0');
+	}
+
+	getAnnotationMeta(position: Selector): { sortIndex: string; pageLabel: string } | null {
+		let range = this.toDisplayedRange(position);
+		if (!range) {
+			return null;
+		}
+		let sortIndex = this._getSortIndex(range);
+		if (sortIndex === null) {
+			return null;
+		}
+		let pageLabel = this.pageMapping.isPhysical && this.pageMapping.getPageLabel(range) || '';
+		return { sortIndex, pageLabel };
 	}
 
 	protected override _getRoots(includeUnmounted = false): HTMLElement[] {

@@ -26,15 +26,19 @@ function log(data) {
 	sendToPort("logHandler", data);
 }
 
-function decodeBase64(base64) {
+function base64ToBytes(base64) {
 	const text = atob(base64);
 	const length = text.length;
 	const bytes = new Uint8Array(length);
 	for (let i = 0; i < length; i++) {
 		bytes[i] = text.charCodeAt(i);
 	}
+	return bytes;
+}
+
+function decodeBase64(base64) {
 	const decoder = new TextDecoder();
-	return decoder.decode(bytes);
+	return decoder.decode(base64ToBytes(base64));
 }
 
 window.createView = (encodedOptions) => {
@@ -157,6 +161,28 @@ window.navigate = (options) => {
 	const decodedLocation = JSON.parse(decodeBase64(options.location));
 	log("Show location: " + JSON.stringify(decodedLocation));
 	window._view.navigate(decodedLocation);
+};
+
+window.setSDTPack = (options) => {
+	log("Set SDT pack: v" + options.packVersion + " schema " + options.schemaMajorVersion);
+	window._view.setSDTPack({
+		bytes: base64ToBytes(options.bytes),
+		packVersion: options.packVersion,
+		schemaMajorVersion: options.schemaMajorVersion,
+	});
+};
+
+window.sdtAnchorToPosition = async (options) => {
+	const anchor = JSON.parse(decodeBase64(options.anchor));
+	const position = await window._view.sdtAnchorToPosition(anchor);
+	postMessage('onSDTPosition', { requestID: options.requestID, position });
+};
+
+window.createAnnotationFromSDT = async (options) => {
+	const params = JSON.parse(decodeBase64(options.params));
+	log("Create annotation from SDT: " + params.type);
+	const annotation = await window._view.createAnnotationFromSDT(params);
+	postMessage('onCreateAnnotationFromSDT', { requestID: options.requestID, annotation });
 };
 
 window.setPageLabels = (options) => {
