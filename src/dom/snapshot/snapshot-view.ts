@@ -38,7 +38,7 @@ import { isPageRectVisible } from "../common/lib/rect";
 import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
-import { detectLang } from '../../common/lib/detect-lang';
+import { detectLang, sampleMiddle } from '../../common/lib/detect-lang';
 import type { StructuredDocumentText } from '../../../structured-document-text/schema';
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
@@ -110,7 +110,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	get lang(): string {
 		let lang = this._iframeDocument.body.lang || this._iframeDocument.documentElement.lang;
 		if (!lang) {
-			lang = detectLang(this._iframeDocument.body.innerText) || 'en';
+			lang = detectLang(sampleMiddle(this._iframeDocument.body.innerText, 2500)) || 'en';
 			this._iframeDocument.documentElement.lang = lang;
 		}
 		return lang;

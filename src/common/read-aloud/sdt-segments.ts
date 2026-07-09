@@ -182,12 +182,24 @@ export function getSDTLang(structure: StructuredDocumentText): string {
 	if (typeof lang === 'string' && lang) {
 		return getBaseLanguage(lang);
 	}
+	// Sample from the middle of the document rather than the start,
+	// for more accurate detection (skipping abstracts, names, etc.,
+	// that could confuse the detector)
+	let chains = collectChainTexts(structure);
+	let sampleTarget = 2500;
+	let totalLength = chains.reduce((sum, chain) => sum + chain.text.length + 1, 0);
+	let sampleStart = Math.max(0, (totalLength - sampleTarget) / 2);
 	let sample = '';
-	for (let chain of collectChainTexts(structure)) {
-		sample += chain.text + '\n';
-		if (sample.length > 2500) {
-			break;
+	let pos = 0;
+	for (let chain of chains) {
+		let chainEnd = pos + chain.text.length + 1;
+		if (chainEnd > sampleStart) {
+			sample += chain.text + '\n';
+			if (sample.length >= sampleTarget) {
+				break;
+			}
 		}
+		pos = chainEnd;
 	}
 	return detectLang(sample) || 'en';
 }
