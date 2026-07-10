@@ -416,25 +416,25 @@ export class KeyboardManager {
 				else if (key === `Alt-${arrowPrev}` || key === `Alt-Shift-${arrowPrev}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._readAloudManager.skipBack('sentence', event.shiftKey);
+					this._reader._readAloudManager.skipBack('paragraph', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === `Alt-${arrowNext}` || key === `Alt-Shift-${arrowNext}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._readAloudManager.skipAhead('sentence', event.shiftKey);
+					this._reader._readAloudManager.skipAhead('paragraph', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === arrowPrev || key === `Shift-${arrowPrev}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._readAloudManager.skipBack('paragraph', event.shiftKey);
+					this._reader._readAloudManager.skipBack('sentence', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === arrowNext || key === `Shift-${arrowNext}`) {
 					event.preventDefault();
 					event.stopPropagation();
-					this._reader._readAloudManager.skipAhead('paragraph', event.shiftKey);
+					this._reader._readAloudManager.skipAhead('sentence', event.shiftKey);
 					this._reader._lockPositionToReadAloud();
 				}
 				else if (key === 'h' || key === 'u') {
