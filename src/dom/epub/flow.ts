@@ -608,6 +608,10 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _touchStartY = 0;
 
+	private _touchLastX = 0;
+
+	private _touchLastY = 0;
+
 	private _currentSectionIndex!: number;
 
 	private _offsetLeft = 0;
@@ -623,7 +627,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.documentElement.addEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.documentElement.addEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.documentElement.addEventListener('pointerup', this._handlePointerUp);
-		this._iframeDocument.documentElement.addEventListener('pointerout', this._handlePointerCancel);
+		this._iframeDocument.documentElement.addEventListener('pointerout', this._handlePointerOut);
 		this._iframeDocument.documentElement.addEventListener('pointercancel', this._handlePointerCancel);
 		this._iframeDocument.documentElement.addEventListener('wheel', this._handleWheel, { passive: false });
 		this._iframeDocument.documentElement.addEventListener('selectionchange', this._handleSelectionChange);
@@ -637,7 +641,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._iframeDocument.documentElement.removeEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.documentElement.removeEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.documentElement.removeEventListener('pointerup', this._handlePointerUp);
-		this._iframeDocument.documentElement.removeEventListener('pointerout', this._handlePointerCancel);
+		this._iframeDocument.documentElement.removeEventListener('pointerout', this._handlePointerOut);
 		this._iframeDocument.documentElement.removeEventListener('pointercancel', this._handlePointerCancel);
 		this._iframeDocument.documentElement.removeEventListener('wheel', this._handleWheel);
 		this._iframeDocument.documentElement.removeEventListener('selectionchange', this._handleSelectionChange);
@@ -935,6 +939,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._touchDown = true;
 		this._touchStartX = event.clientX;
 		this._touchStartY = event.clientY;
+		this._touchLastX = event.clientX;
+		this._touchLastY = event.clientY;
 	};
 
 	private _handlePointerMove = (event: PointerEvent) => {
@@ -944,6 +950,11 @@ export class PaginatedFlow extends AbstractFlow {
 				|| !this._iframeDocument.getSelection()!.isCollapsed) {
 			return;
 		}
+		// Track the latest position so we can complete the swipe even if the
+		// gesture ends via pointercancel/pointerout (which can have unreliable
+		// coordinates when pen is used) instead of pointerup
+		this._touchLastX = event.clientX;
+		this._touchLastY = event.clientY;
 		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
 		// If on the first/last page, clamp the CSS variable so the indicator doesn't expand all the way
 		if (swipeAmount < 0 && !this.canNavigateRight()) {
@@ -962,37 +973,8 @@ export class PaginatedFlow extends AbstractFlow {
 				|| !this._iframeDocument.getSelection()!.isCollapsed) {
 			return;
 		}
-		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
-		this._touchDown = false;
-
-		// Switch pages after swiping
-		let swipeAmount = (event.clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
-		if (swipeAmount <= -1) {
-			this._onManualNavigation();
-			this.navigateRight();
+		if (this._endSwipe(event.clientX, event.clientY, event.target as Element)) {
 			event.preventDefault();
-		}
-		else if (swipeAmount >= 1) {
-			this._onManualNavigation();
-			this.navigateLeft();
-			event.preventDefault();
-		}
-		// If there's no selection, allow single-tap page turns
-		else if (this._iframeWindow.getSelection()!.isCollapsed
-				&& !this._view.selectedAnnotationIDs.length
-				&& Math.abs(event.clientX - this._touchStartX) < EPSILON_PX
-				&& Math.abs(event.clientY - this._touchStartY) < EPSILON_PX
-				&& !(event.target as Element).closest('a, .clickable-image')) {
-			if (event.clientX >= this._iframeWindow.innerWidth * (1 - PAGE_TURN_TAP_MARGIN_FRACTION)) {
-				this._onManualNavigation();
-				this.navigateRight();
-				event.preventDefault();
-			}
-			else if (event.clientX <= this._iframeWindow.innerWidth * PAGE_TURN_TAP_MARGIN_FRACTION) {
-				this._onManualNavigation();
-				this.navigateLeft();
-				event.preventDefault();
-			}
 		}
 	};
 
@@ -1002,9 +984,61 @@ export class PaginatedFlow extends AbstractFlow {
 			// No event.buttons check - "buttons" have now been released
 			return;
 		}
-		this._touchDown = false;
-		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
+		// WebKit dispatches pointercancel instead of pointerup at the end of
+		// some pen swipes (#213), so complete the swipe here too. The event's
+		// own coordinates are unreliable on cancel, so use the last position
+		// reported during the move.
+		this._endSwipe(this._touchLastX, this._touchLastY, null);
 	};
+
+	private _handlePointerOut = (event: PointerEvent) => {
+		// pointerout bubbles as the pointer crosses element boundaries mid-drag,
+		// so only treat it as the end of the gesture when the pointer leaves the
+		// document entirely
+		if (!this._touchDown
+				|| !event.isPrimary
+				|| event.relatedTarget) {
+			return;
+		}
+		this._endSwipe(this._touchLastX, this._touchLastY, null);
+	};
+
+	private _endSwipe(clientX: number, clientY: number, target: Element | null): boolean {
+		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
+		this._touchDown = false;
+
+		// Switch pages after swiping
+		let swipeAmount = (clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
+		if (swipeAmount <= -1) {
+			this._onManualNavigation();
+			this.navigateRight();
+			return true;
+		}
+		else if (swipeAmount >= 1) {
+			this._onManualNavigation();
+			this.navigateLeft();
+			return true;
+		}
+		// If there's no selection, allow single-tap page turns
+		else if (target
+				&& this._iframeWindow.getSelection()!.isCollapsed
+				&& !this._view.selectedAnnotationIDs.length
+				&& Math.abs(clientX - this._touchStartX) < EPSILON_PX
+				&& Math.abs(clientY - this._touchStartY) < EPSILON_PX
+				&& !target.closest('a, .clickable-image')) {
+			if (clientX >= this._iframeWindow.innerWidth * (1 - PAGE_TURN_TAP_MARGIN_FRACTION)) {
+				this._onManualNavigation();
+				this.navigateRight();
+				return true;
+			}
+			else if (clientX <= this._iframeWindow.innerWidth * PAGE_TURN_TAP_MARGIN_FRACTION) {
+				this._onManualNavigation();
+				this.navigateLeft();
+				return true;
+			}
+		}
+		return false;
+	}
 
 	private _handleWheel = debounce((event: WheelEvent) => {
 		for (let tableParent of closestAll(event.target as Element, 'table, .table-like')) {
