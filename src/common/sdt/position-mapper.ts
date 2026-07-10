@@ -34,6 +34,23 @@ export interface SDTPositionMapper {
 	transformAnnotationPosition(position: SourcePosition, type: AnnotationType): SourcePosition;
 }
 
+export function getBlockNodeByRef(
+	content: StructuredDocumentText['content'],
+	ref: number[]
+): ContentBlockNode | null {
+	if (!ref.length) {
+		return null;
+	}
+	let node: { content?: unknown } | undefined = content[ref[0]];
+	for (let i = 1; i < ref.length; i++) {
+		if (!node || !Array.isArray(node.content)) {
+			return null;
+		}
+		node = node.content[ref[i]];
+	}
+	return (node as ContentBlockNode) ?? null;
+}
+
 /**
  * One text node's intersection with an SDT position: the characters
  * [start, end) of `node` are covered.

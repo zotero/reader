@@ -46,6 +46,13 @@ interface StreamEntry {
 	nfcLength: number;
 
 	deltaMap?: string;
+
+	/**
+	 * True for a text-less leaf block (e.g. an image) anchored in the stream by
+	 * its block selector rather than by a text node. Resolves to a block-level
+	 * content point.
+	 */
+	isBlock?: boolean;
 }
 
 export class SnapshotPositionMapper implements SDTPositionMapper {
@@ -183,6 +190,9 @@ export class SnapshotPositionMapper implements SDTPositionMapper {
 		if (!entry) {
 			return null;
 		}
+		if (entry.isBlock) {
+			return [...entry.ref];
+		}
 		let localRaw = Math.max(0, Math.min(streamPos - entry.stream, entry.rawLength));
 		let localNFC = localOriginalToNFC(entry.deltaMap, 0, localRaw, entry.nfcLength);
 		return [...entry.ref, localNFC];
@@ -223,30 +233,61 @@ export class SnapshotPositionMapper implements SDTPositionMapper {
 	private _buildIndex() {
 		let content = this._structure.content;
 		walkContentRangeLeafBlocks(content, [[0], [content.length]], ({ block, ref }) => {
+			let addedTextEntry = false;
 			let nodes = (block as ContentBlockNode).content as TextNode[] | undefined;
-			if (!nodes) {
-				return;
+			if (nodes) {
+				for (let i = 0; i < nodes.length; i++) {
+					let node = nodes[i];
+					if (typeof node?.text !== 'string') {
+						continue;
+					}
+					let anchor = node.anchor as DomAnchor | undefined;
+					if (typeof anchor?.stream !== 'number') {
+						continue;
+					}
+					let entry: StreamEntry = {
+						ref: [...(ref as number[]), i],
+						stream: anchor.stream,
+						rawLength: nfcToOriginalLocal(anchor.deltaMap, 0, node.text.length),
+						nfcLength: node.text.length,
+						deltaMap: anchor.deltaMap,
+					};
+					this._entries.push(entry);
+					this._entriesByRef.set(refKey(entry.ref as RefPath), entry);
+					addedTextEntry = true;
+				}
 			}
-			for (let i = 0; i < nodes.length; i++) {
-				let node = nodes[i];
-				if (typeof node?.text !== 'string') {
-					continue;
-				}
-				let anchor = node.anchor as DomAnchor | undefined;
-				if (typeof anchor?.stream !== 'number') {
-					continue;
-				}
-				let entry: StreamEntry = {
-					ref: [...(ref as number[]), i],
-					stream: anchor.stream,
-					rawLength: nfcToOriginalLocal(anchor.deltaMap, 0, node.text.length),
-					nfcLength: node.text.length,
-					deltaMap: anchor.deltaMap,
-				};
-				this._entries.push(entry);
-				this._entriesByRef.set(refKey(entry.ref as RefPath), entry);
+			if (!addedTextEntry) {
+				this._indexTextlessBlock(block as ContentBlockNode, ref as number[]);
 			}
 		});
 		this._entries.sort((a, b) => a.stream - b.stream);
+	}
+
+	/**
+	 * Anchor a leaf block that contributes no text of its own -- an image is the
+	 * common case -- in the body stream via its block selector, which the domMap
+	 * can locate. This lets a source position covering the block resolve to it,
+	 * so e.g. a note saved on a standalone image still lands on the image in
+	 * Reading Mode instead of being dropped.
+	 */
+	private _indexTextlessBlock(block: ContentBlockNode, ref: number[]) {
+		let anchor = block.anchor as DomAnchor | undefined;
+		if (!anchor?.selectorMap || !this._domMapIndex) {
+			return;
+		}
+		let matched = matchDomMapSelector(this._domMapIndex, anchor.selectorMap);
+		if (!matched) {
+			return;
+		}
+		let entry: StreamEntry = {
+			ref,
+			stream: matched.node.textStart,
+			rawLength: matched.node.textLength,
+			nfcLength: 0,
+			isBlock: true,
+		};
+		this._entries.push(entry);
+		this._entriesByRef.set(refKey(ref as RefPath), entry);
 	}
 }

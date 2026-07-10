@@ -42,6 +42,7 @@ export interface SDTViewData {
 	mapper: SDTPositionMapper;
 	getSourceAnnotationMeta: (position: SourcePosition) => { sortIndex: string, pageLabel: string } | null;
 	syncBaseView: (blockIndex: number) => void;
+	getImageForBlock: (blockRef: number[]) => Promise<string | null>;
 }
 
 /**
@@ -86,6 +87,7 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 
 		this._setScale(viewState.scale ?? 1);
 		this._initOutline();
+		this._hydrateImages();
 
 		if (this._options.location) {
 			this.navigate(this._options.location, { behavior: 'instant' });
@@ -110,6 +112,36 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		}
 		if (!bestRefPath) return null;
 		return parseInt(bestRefPath.split('.')[0]);
+	}
+
+	/**
+	 * Images render as empty <figure><img></figure> placeholders. Fill in each
+	 * <img>'s src by asking the base view to resolve the block's anchor back to
+	 * the source image. The base view returns a data URL that works in this
+	 * separate iframe.
+	 */
+	private async _hydrateImages() {
+		let figures = this._iframeDocument.querySelectorAll<HTMLElement>('figure.sdt-image[data-ref-path]');
+		await Promise.all([...figures].map(async (figure) => {
+			let img = figure.querySelector('img');
+			if (!img) {
+				return;
+			}
+			let ref = figure.dataset.refPath!.split('.').map(Number);
+			let src: string | null = null;
+			try {
+				src = await this._options.data.getImageForBlock(ref);
+			}
+			catch (e) {
+				console.warn('Failed to load SDT image', ref, e);
+			}
+			if (src) {
+				img.src = src;
+			}
+			else {
+				figure.classList.add('sdt-image-unavailable');
+			}
+		}));
 	}
 
 	private _initOutline() {

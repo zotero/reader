@@ -69,6 +69,7 @@ import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
+import { getBlockNodeByRef } from '../common/sdt/position-mapper';
 
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
@@ -723,6 +724,37 @@ class PDFView {
 	getSDTLocation(sdtData) {
 		let blockIndex = this.getVisibleBlockIndex(sdtData);
 		return blockIndex === null ? null : { href: '#sdt-' + blockIndex };
+	}
+
+	// Render an SDT image block back out of the source PDF as a data URL for the
+	// Reading Mode overlay. The block's anchor gives the page rect(s) to crop.
+	async getSDTBlockImage(sdtData, blockRef) {
+		let block = getBlockNodeByRef(sdtData.content, blockRef);
+		let pageRects = block?.anchor?.pageRects;
+		if (!pageRects?.length) {
+			return null;
+		}
+		// pageRects entries are [pageIndex, x1, y1, x2, y2]; an image lives on a
+		// single page, so union the rects sharing the first entry's page
+		let pageIndex = pageRects[0][0];
+		let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+		for (let r of pageRects) {
+			if (r[0] !== pageIndex) {
+				continue;
+			}
+			x1 = Math.min(x1, r[1]);
+			y1 = Math.min(y1, r[2]);
+			x2 = Math.max(x2, r[3]);
+			y2 = Math.max(y2, r[4]);
+		}
+		try {
+			let image = await this._pdfRenderer.renderRegionImage(pageIndex, [x1, y1, x2, y2]);
+			return image || null;
+		}
+		catch (e) {
+			console.warn('Failed to render SDT image', blockRef, e);
+			return null;
+		}
 	}
 
 	// Top-level SDT block index for the first non-excluded block whose

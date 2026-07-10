@@ -40,6 +40,8 @@ import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { SORT_INDEX_LENGTH, SORT_INDEX_LENGTH_OLD } from "./defines";
 import { detectLang, sampleMiddle } from '../../common/lib/detect-lang';
 import type { StructuredDocumentText } from '../../../structured-document-text/schema';
+import { getBlockNodeByRef } from "../../common/sdt/position-mapper";
+import { imageElementToDataURL } from "../common/lib/sdt-image";
 
 class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 	protected _find: DefaultFindProcessor | null = null;
@@ -354,6 +356,25 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		if (el) {
 			el.scrollIntoView({ behavior: 'instant', block: 'start' });
 		}
+	}
+
+	// Resolve an SDT image block back to the source <img> and return its pixels
+	// as a data URL for the Reading Mode overlay to display
+	async getSDTBlockImage(sdtData: StructuredDocumentText, blockRef: number[]): Promise<string | null> {
+		let block = getBlockNodeByRef(sdtData.content, blockRef);
+		if (!block?.anchor
+				|| !('selectorMap' in block.anchor)
+				|| typeof block.anchor.selectorMap !== 'string') {
+			return null;
+		}
+		let el: Element | null;
+		try {
+			el = this._iframeDocument.body.querySelector(block.anchor.selectorMap);
+		}
+		catch {
+			return null;
+		}
+		return el ? imageElementToDataURL(el) : null;
 	}
 
 	private _getScrollYPercent(): number {

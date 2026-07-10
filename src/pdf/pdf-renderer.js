@@ -56,60 +56,62 @@ class PDFRenderer {
 		this._processing = false;
 	}
 
+	/**
+	 * Render a page-coordinate rect of `page` onto a fresh canvas, at a
+	 * resolution capped by the viewer's max canvas size. Returns the canvas, its
+	 * 2d context, and the offset viewport used. Callers are responsible for
+	 * zeroing the canvas. Returns null for an empty rect.
+	 */
+	async _renderPageRegion(page, pageRect) {
+		let width = pageRect[2] - pageRect[0];
+		let height = pageRect[3] - pageRect[1];
+		if (!(width > 0) || !(height > 0)) {
+			return null;
+		}
+
+		let maxScale = Math.sqrt(
+			this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.maxCanvasPixels
+			/ (width * height)
+		);
+		let scale = Math.min(SCALE, maxScale);
+
+		// Convert the rect to viewport coordinates to initialize the canvas, then
+		// offset a second viewport so the region renders at the canvas origin
+		let vRect = p2v({ pageIndex: page.pageNumber - 1, rects: [pageRect] }, page.getViewport({ scale })).rects[0];
+		let viewport = page.getViewport({ scale, offsetX: -vRect[0], offsetY: -vRect[1] });
+
+		let canvas = this._pdfView._iframeWindow.document.createElement('canvas');
+		let ctx = canvas.getContext('2d', { alpha: false });
+		canvas.width = vRect[2] - vRect[0];
+		canvas.height = vRect[3] - vRect[1];
+		canvas.style.width = canvas.width + 'px';
+		canvas.style.height = canvas.height + 'px';
+
+		ctx.skipBlender = true;
+		await page.render({ canvasContext: ctx, viewport }).promise;
+
+		return { canvas, ctx, viewport };
+	}
+
 	async _renderAnnotationImage(annotation) {
 		let { position, color } = annotation;
 
 		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(position.pageIndex + 1);
 
-		// Create a new position that just contains single rect that is a bounding
-		// box of image or ink annotations
-		let expandedPosition = { pageIndex: position.pageIndex };
-		if (position.rects) {
+		// A single rect bounding the image or ink annotation
+		let pageRect = position.rects
 			// Image annotations have only one rect
-			expandedPosition.rects = position.rects;
-		}
-		// paths
-		else {
-			let rect = calculateInkImageRect(position);
-			expandedPosition.rects = [fitRectIntoRect(rect, page.view)];
-		}
+			? position.rects[0]
+			: fitRectIntoRect(calculateInkImageRect(position), page.view);
 
-		let rect = expandedPosition.rects[0];
-		let maxScale = Math.sqrt(
-			this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.maxCanvasPixels
-			/ ((rect[2] - rect[0]) * (rect[3] - rect[1]))
-		);
-		let scale = Math.min(SCALE, maxScale);
-
-		expandedPosition = p2v(expandedPosition, page.getViewport({ scale }));
-		rect = expandedPosition.rects[0];
-
-		let viewport = page.getViewport({ scale, offsetX: -rect[0], offsetY: -rect[1] });
-		position = p2v(position, viewport);
-
-		let canvasWidth = (rect[2] - rect[0]);
-		let canvasHeight = (rect[3] - rect[1]);
-
-		let canvas = this._pdfView._iframeWindow.document.createElement('canvas');
-		let ctx = canvas.getContext('2d', { alpha: false });
-
-		if (!canvasWidth || !canvasHeight) {
+		let rendered = await this._renderPageRegion(page, pageRect);
+		if (!rendered) {
 			return '';
 		}
+		let { canvas, ctx, viewport } = rendered;
 
-		canvas.width = canvasWidth;
-		canvas.height = canvasHeight;
-		canvas.style.width = canvasWidth + 'px';
-		canvas.style.height = canvasHeight + 'px';
-
-		ctx.skipBlender = true;
-		let renderContext = {
-			canvasContext: ctx,
-			viewport: viewport
-		};
-
-		await page.render(renderContext).promise;
-
+		// Stroke ink paths on top, in the region's viewport coordinates
+		position = p2v(position, viewport);
 		if (position.paths) {
 			ctx.lineCap = 'round';
 			ctx.lineJoin = 'round';
@@ -134,6 +136,29 @@ class PDFRenderer {
 
 		// Zeroing the width and height causes Firefox to release graphics
 		// resources immediately, which can greatly reduce memory consumption. (PDF.js)
+		canvas.width = 0;
+		canvas.height = 0;
+
+		return image;
+	}
+
+	/**
+	 * Render an arbitrary region of a page to a PNG data URL. `rect` is
+	 * [x1, y1, x2, y2] in PDF page coordinates. Used by Reading Mode to pull an
+	 * image block's pixels out of the source PDF.
+	 */
+	async renderRegionImage(pageIndex, rect) {
+		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(pageIndex + 1);
+
+		let rendered = await this._renderPageRegion(page, rect);
+		if (!rendered) {
+			return '';
+		}
+		let { canvas } = rendered;
+
+		let image = canvas.toDataURL('image/png', 1);
+
+		// See _renderAnnotationImage() for rationale
 		canvas.width = 0;
 		canvas.height = 0;
 

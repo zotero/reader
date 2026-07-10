@@ -123,13 +123,19 @@ function renderBlock(doc: Document, block: ContentBlockNode, refPath: string): H
 			el.className = 'sdt-math';
 			el.append(renderTextNodes(doc, block.content));
 			break;
-		case 'image':
+		case 'image': {
 			el = doc.createElement('figure');
 			el.className = 'sdt-image';
-			if (block.content.length) {
-				el.append(renderTextNodes(doc, block.content));
+			// SDTView fills in the <img>'s src later by resolving the block's
+			// anchor back into the base document - see _hydrateImages()
+			let img = doc.createElement('img');
+			let altText = block.content.map(node => node.text).join('').trim();
+			if (altText) {
+				img.alt = altText;
 			}
+			el.append(img);
 			break;
+		}
 		case 'caption':
 			el = doc.createElement('figcaption');
 			el.append(renderTextNodes(doc, block.content));

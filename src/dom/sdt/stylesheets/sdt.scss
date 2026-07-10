@@ -116,9 +116,17 @@ table {
 
 .sdt-image {
 	text-align: center;
-	color: #666;
-	font-style: italic;
 	margin-block: 1em;
+
+	img {
+		max-width: 100%;
+		height: auto;
+	}
+
+	&.sdt-image-unavailable img {
+		color: #666;
+		font-style: italic;
+	}
 }
 
 .sdt-note {

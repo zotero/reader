@@ -2115,6 +2115,11 @@ class Reader {
 						let baseView = primary ? this._primaryView : this._secondaryView;
 						baseView?.navigateToSDTBlock?.(this._sdt.structure, blockIndex);
 					},
+					getImageForBlock: (blockRef) => {
+						let baseView = primary ? this._primaryView : this._secondaryView;
+						return baseView?.getSDTBlockImage?.(this._sdt.structure, blockRef)
+							?? Promise.resolve(null);
+					},
 				},
 			});
 		}
