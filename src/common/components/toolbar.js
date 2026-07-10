@@ -13,7 +13,7 @@ import IconAutoWidth from '../../../res/icons/20/auto-width.svg';
 import IconChevronUp from '../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../res/icons/20/chevron-down.svg';
 import IconFormatText from '../../../res/icons/20/format-text.svg';
-import IconFormatTextReadingMode from '../../../res/icons/20/format-text-reading-mode.svg';
+import IconReadingMode from '../../../res/icons/20/reading-mode.svg';
 import IconHighlight from '../../../res/icons/20/annotate-highlight.svg';
 import IconUnderline from '../../../res/icons/20/annotate-underline.svg';
 import IconNote from '../../../res/icons/20/annotate-note.svg';
@@ -109,13 +109,22 @@ function Toolbar(props) {
 					disabled={!props.enableZoomReset}
 					onClick={props.onZoomReset}
 				><IconAutoWidth/></button>
-				<button
-					id="appearance"
-					className={cx('toolbar-button', { active: props.appearancePopup })}
-					title={l10n.getString('reader-appearance')}
-					tabIndex={-1}
-					onClick={() => props.onToggleAppearancePopup()}
-				>{props.readingModeEnabled ? <IconFormatTextReadingMode/> : <IconFormatText/>}</button>
+				{['pdf', 'snapshot'].includes(props.type) && (
+					<button
+						id="readingMode"
+						className={cx('toolbar-button', { active: props.readingModeEnabled })}
+						title={l10n.getString('reader-reading-mode')}
+						tabIndex={-1}
+						disabled={props.readingModeLoading}
+						onClick={() => props.onChangeReadingModeEnabled(!props.readingModeEnabled)}
+					>
+						{props.readingModeLoading
+							// SDT generation progress -- an empty ring until
+							// the host starts reporting
+							? <ProgressRing progress={props.sdtProgress}/>
+							: <IconReadingMode/>}
+					</button>
+				)}
 				{props.showReadAloudToggle && (
 					<button
 						id="read-aloud"
@@ -261,6 +270,13 @@ function Toolbar(props) {
 			</div>
 			<div className="end">
 				<CustomSections type="Toolbar"/>
+				<button
+					id="appearance"
+					className={cx('toolbar-button', { active: props.appearancePopup })}
+					title={l10n.getString('reader-appearance')}
+					tabIndex={-1}
+					onClick={() => props.onToggleAppearancePopup()}
+				><IconFormatText/></button>
 				<button
 					className={cx('toolbar-button find', { active: props.findPopupOpen })}
 					title={l10n.getString('reader-find-in-document')}

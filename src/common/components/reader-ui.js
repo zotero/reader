@@ -136,6 +136,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						enableNavigateToPreviousPage={viewStats.canNavigateToPreviousPage}
 						enableNavigateToNextPage={viewStats.canNavigateToNextPage}
 						readingModeEnabled={state.primaryReadingModeEnabled || state.secondaryReadingModeEnabled}
+						readingModeLoading={state.readingModeLoading}
 						appearancePopup={state.appearancePopup}
 						readAloudState={state.readAloudState}
 						sdtProgress={state.sdtProgress}
@@ -159,6 +160,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeTool={props.onChangeTool}
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
 						onToggleAppearancePopup={props.onToggleAppearancePopup}
+						onChangeReadingModeEnabled={props.onChangeReadingModeEnabled}
 						onToggleReadAloud={props.onToggleReadAloud}
 						onToggleFind={props.onToggleFind}
 						onToggleContextPane={props.onToggleContextPane}
