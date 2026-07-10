@@ -12,7 +12,7 @@
 .read-aloud-popup {
 	top: $height-toolbar + 10px;
 	inset-inline-start: calc(var(--sidebar-width) + 10px);
-	width: 250px;
+	width: 300px;
 	user-select: none;
 
 	.row {
@@ -27,6 +27,10 @@
 				width: 40px;
 				height: 40px;
 				border-radius: 0;
+
+				&.skip {
+					width: 32px;
+				}
 			}
 
 			.group {

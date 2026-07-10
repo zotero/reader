@@ -4,8 +4,10 @@ import cx from 'classnames';
 import UtilityPopup from './common/utility-popup';
 import IconAdvancedOptions from '../../../../res/icons/20/advanced-options.svg';
 import IconSkipBack from '../../../../res/icons/20/skip-back.svg';
+import IconSkipBackSentence from '../../../../res/icons/20/skip-back-sentence.svg';
 import IconPlay from '../../../../res/icons/20/play.svg';
 import IconPause from '../../../../res/icons/20/pause.svg';
+import IconSkipAheadSentence from '../../../../res/icons/20/skip-ahead-sentence.svg';
 import IconSkipAhead from '../../../../res/icons/20/skip-ahead.svg';
 import IconAnnotate from '../../../../res/icons/20/read-aloud-annotate.svg';
 import IconLoading from '../../../../res/icons/16/loading.svg';
@@ -207,13 +209,21 @@ function PlaybackControls(props) {
 			</div>
 			<div className="group">
 				<button
-					className="toolbar-button"
+					className="toolbar-button skip"
 					title={l10n.getString('reader-read-aloud-skip-back')}
 					tabIndex="-1"
 					onClick={(event) => {
-						onSkipBack(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
+						onSkipBack('paragraph', event.shiftKey);
 					}}
 				><IconSkipBack/></button>
+				<button
+					className="toolbar-button skip"
+					title={l10n.getString('reader-read-aloud-skip-back-sentence')}
+					tabIndex="-1"
+					onClick={(event) => {
+						onSkipBack('sentence', event.shiftKey);
+					}}
+				><IconSkipBackSentence/></button>
 				{showSpinner
 					? <IconLoading
 						className="loading-spinner"
@@ -232,11 +242,19 @@ function PlaybackControls(props) {
 					>{paused ? <IconPlay/> : <IconPause/>}</button>
 				}
 				<button
-					className="toolbar-button"
+					className="toolbar-button skip"
+					title={l10n.getString('reader-read-aloud-skip-ahead-sentence')}
+					tabIndex="-1"
+					onClick={(event) => {
+						onSkipAhead('sentence', event.shiftKey);
+					}}
+				><IconSkipAheadSentence/></button>
+				<button
+					className="toolbar-button skip"
 					title={l10n.getString('reader-read-aloud-skip-ahead')}
 					tabIndex="-1"
 					onClick={(event) => {
-						onSkipAhead(event.altKey ? 'sentence' : 'paragraph', event.shiftKey);
+						onSkipAhead('paragraph', event.shiftKey);
 					}}
 				><IconSkipAhead/></button>
 			</div>
