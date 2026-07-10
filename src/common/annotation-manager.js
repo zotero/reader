@@ -55,7 +55,7 @@ class AnnotationManager {
 			this._annotations.push(annotation);
 		}
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
-		this._clearInterferingHistory(annotations.map(x => x.id));
+		this.clearInterferingHistory(annotations.map(x => x.id));
 		this.render();
 	}
 
@@ -566,12 +566,6 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
-				let newID = this._generateObjectKey();
-				mapping.set(annotation.id, newID);
-				annotation.id = newID;
-			}
 			allAnnotations.set(id, annotation);
 			this._unsavedAnnotations.set(id, annotation);
 		}
@@ -599,12 +593,6 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
-				let newID = this._generateObjectKey();
-				mapping.set(annotation.id, newID);
-				annotation.id = newID;
-			}
 			allAnnotations.set(id, annotation);
 			this._unsavedAnnotations.set(id, annotation);
 		}
@@ -617,7 +605,7 @@ class AnnotationManager {
 		return true;
 	}
 
-	_clearInterferingHistory(affectedAnnotationIDs) {
+	clearInterferingHistory(affectedAnnotationIDs) {
 		for (let i = this._undoStack.length - 1; i >= 0; i--) {
 			if (affectedAnnotationIDs.some(id => this._undoStack[i].has(id))) {
 				this._undoStack = this._undoStack.slice(i + 1);
