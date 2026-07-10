@@ -56,6 +56,10 @@ body {
 	}
 }
 
+body > :not(#annotation-overlay) {
+	zoom: var(--scale, 1);
+}
+
 ::selection {
 	background-color: var(--selection-color);
 }
