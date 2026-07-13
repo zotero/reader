@@ -58,6 +58,7 @@ import {
 	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH,
 	MIN_IMAGE_ANNOTATION_SIZE,
 	MIN_TEXT_ANNOTATION_WIDTH,
+	ORIGINAL_THEME,
 	PDF_NOTE_DIMENSIONS
 } from '../common/defines';
 import { ReadAloudJumpButton } from '../common/read-aloud/jump-button';
@@ -560,16 +561,22 @@ class PDFView {
 			if (this._colorScheme === 'light' && this._lightTheme) {
 				this._iframeWindow.theme = this._lightTheme;
 				root.style.setProperty('--background-color', this._lightTheme.background);
+				root.style.setProperty('--link-color', this._lightTheme.linkColor || this._lightTheme.foreground);
+				root.style.setProperty('--visited-link-color', this._lightTheme.visitedLinkColor || this._lightTheme.linkColor || this._lightTheme.foreground);
 				this._themeColorScheme = getModeBasedOnColors(this._lightTheme.background, this._lightTheme.foreground);
 			}
 			else if (this._colorScheme === 'dark' && this._darkTheme) {
 				this._iframeWindow.theme = this._darkTheme;
 				root.style.setProperty('--background-color', this._darkTheme.background);
+				root.style.setProperty('--link-color', this._darkTheme.linkColor || this._darkTheme.foreground);
+				root.style.setProperty('--visited-link-color', this._darkTheme.visitedLinkColor || this._darkTheme.linkColor || this._darkTheme.foreground);
 				this._themeColorScheme = getModeBasedOnColors(this._darkTheme.background, this._darkTheme.foreground);
 			}
 			else {
 				this._iframeWindow.theme = null;
-				root.style.setProperty('--background-color', '#FFFFFF');
+				root.style.setProperty('--background-color', ORIGINAL_THEME.background);
+				root.style.setProperty('--link-color', ORIGINAL_THEME.linkColor);
+				root.style.setProperty('--visited-link-color', ORIGINAL_THEME.visitedLinkColor);
 				this._themeColorScheme = 'light';
 			}
 

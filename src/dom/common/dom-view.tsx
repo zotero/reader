@@ -41,6 +41,7 @@ import {
 import { getSelectionRanges, makeDragImageForTextSelection } from "./lib/selection";
 import { FindProcessor } from "./lib/find";
 import {
+	ORIGINAL_THEME,
 	READ_ALOUD_ACTIVE_SEGMENT_COLOR,
 	READ_ALOUD_ACTIVE_SENTENCE_COLOR,
 	SELECTION_COLOR
@@ -945,12 +946,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			theme = this._darkTheme;
 		}
 		else {
-			theme = {
-				id: 'light',
-				label: '',
-				background: '#ffffff',
-				foreground: '#121212'
-			};
+			theme = { ...ORIGINAL_THEME };
 		}
 		let themeColorScheme = getModeBasedOnColors(theme.background, theme.foreground);
 
@@ -961,6 +957,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			root.style.colorScheme = themeColorScheme;
 			root.style.setProperty('--background-color', theme.background);
 			root.style.setProperty('--text-color', theme.foreground);
+			root.style.setProperty('--link-color', theme.linkColor || theme.foreground);
+			root.style.setProperty('--visited-link-color', theme.visitedLinkColor || theme.linkColor || theme.foreground);
 		}
 
 		this._theme = theme;
