@@ -2104,6 +2104,11 @@ class Reader {
 		};
 
 		if (sdt) {
+			let getBlockCrops;
+			if (this._type === 'pdf') {
+				let baseView = primary ? this._primaryView : this._secondaryView;
+				getBlockCrops = baseView?.createSDTBlockCropProvider?.(this._sdt.structure);
+			}
 			view = new SDTView({
 				...common,
 				viewState: {},
@@ -2120,6 +2125,7 @@ class Reader {
 						return baseView?.getSDTBlockImage?.(this._sdt.structure, blockRef)
 							?? Promise.resolve(null);
 					},
+					getBlockCrops,
 				},
 			});
 		}

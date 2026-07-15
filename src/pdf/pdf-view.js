@@ -19,6 +19,7 @@ import {
 	applyTransform,
 	calculateScale,
 	distanceBetweenRects,
+	fitRectIntoRect,
 	getAxialAlignedBoundingBox,
 	getBoundingBox,
 	getClosestObject,
@@ -58,7 +59,8 @@ import {
 	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH,
 	MIN_IMAGE_ANNOTATION_SIZE,
 	MIN_TEXT_ANNOTATION_WIDTH,
-	PDF_NOTE_DIMENSIONS
+	PDF_NOTE_DIMENSIONS,
+	PDF_READING_MODE_CROP_DISPLAY_SCALE
 } from '../common/defines';
 import { ReadAloudJumpButton } from '../common/read-aloud/jump-button';
 import PDFRenderer from './pdf-renderer';
@@ -77,6 +79,7 @@ import { getBlockNodeByRef } from '../common/sdt/position-mapper';
 // 2012-era 1x displays; re-rendering a trimmed page takes ~30-70 ms, the same
 // cost as scrolling to any unbuffered page
 const PAGE_BUFFER_KEEP_RECENT = 2;
+const CSS_UNITS = 96 / 72;
 
 class PDFView {
 	constructor(options) {
@@ -726,35 +729,84 @@ class PDFView {
 		return blockIndex === null ? null : { href: '#sdt-' + blockIndex };
 	}
 
-	// Render an SDT image block back out of the source PDF as a data URL for the
-	// Reading Mode overlay. The block's anchor gives the page rect(s) to crop.
-	async getSDTBlockImage(sdtData, blockRef) {
-		let block = getBlockNodeByRef(sdtData.content, blockRef);
-		let pageRects = block?.anchor?.pageRects;
-		if (!pageRects?.length) {
-			return null;
-		}
-		// pageRects entries are [pageIndex, x1, y1, x2, y2]; an image lives on a
-		// single page, so union the rects sharing the first entry's page
-		let pageIndex = pageRects[0][0];
-		let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
-		for (let r of pageRects) {
-			if (r[0] !== pageIndex) {
-				continue;
+	// Build a per-view crop provider. All crop geometry is registered
+	// synchronously before SDTView starts rendering, so crops on the same PDF
+	// page can share one lazy render promise.
+	createSDTBlockCropProvider(sdtData) {
+		let batches = new Map();
+		return blockRef => this._getSDTBlockCropGeometry(sdtData, blockRef).map((crop) => {
+			let batch = batches.get(crop.pageIndex);
+			if (!batch) {
+				batch = { rects: [], promise: null };
+				batches.set(crop.pageIndex, batch);
 			}
-			x1 = Math.min(x1, r[1]);
-			y1 = Math.min(y1, r[2]);
-			x2 = Math.max(x2, r[3]);
-			y2 = Math.max(y2, r[4]);
+			let index = batch.rects.push(crop.rect) - 1;
+			return {
+				displayWidth: crop.displayWidth,
+				displayHeight: crop.displayHeight,
+				render: () => {
+					batch.promise ??= this._pdfRenderer.renderRegionCrops(
+						crop.pageIndex,
+						batch.rects.slice()
+					);
+					return batch.promise.then(images => images[index]);
+				},
+			};
+		});
+	}
+
+	// Describe an SDT block's page crops without loading PDF pages.
+	_getSDTBlockCropGeometry(sdtData, blockRef) {
+		let block = getBlockNodeByRef(sdtData.content, blockRef);
+		let byPage = new Map();
+		for (let rect of block?.anchor?.pageRects ?? []) {
+			if (!Array.isArray(rect) || rect.length !== 5 || !rect.every(Number.isFinite)) {
+				return [];
+			}
+			let [pageIndex, x1, y1, x2, y2] = rect;
+			let region = byPage.get(pageIndex);
+			if (region) {
+				region[0] = Math.min(region[0], x1);
+				region[1] = Math.min(region[1], y1);
+				region[2] = Math.max(region[2], x2);
+				region[3] = Math.max(region[3], y2);
+			}
+			else {
+				byPage.set(pageIndex, [x1, y1, x2, y2]);
+			}
 		}
-		try {
-			let image = await this._pdfRenderer.renderRegionImage(pageIndex, [x1, y1, x2, y2]);
-			return image || null;
+
+		let crops = [];
+		for (let [pageIndex, sourceRect] of [...byPage].sort((a, b) => a[0] - b[0])) {
+			let page = sdtData.catalog.pages[pageIndex];
+			let viewRect = page?.viewRect;
+			if (!Array.isArray(viewRect)
+					|| viewRect.length !== 4
+					|| !viewRect.every(Number.isFinite)) {
+				return [];
+			}
+			let rect = fitRectIntoRect(sourceRect, viewRect);
+			let width = rect[2] - rect[0];
+			let height = rect[3] - rect[1];
+			let rotation = page.rotation ?? 0;
+			let userUnit = page.userUnit ?? 1;
+			if (!(width > 0) || !(height > 0)
+					|| ![0, 90, 180, 270].includes(rotation)
+					|| !Number.isFinite(userUnit) || !(userUnit > 0)) {
+				return [];
+			}
+			if (rotation === 90 || rotation === 270) {
+				[width, height] = [height, width];
+			}
+			let displayScale = CSS_UNITS * PDF_READING_MODE_CROP_DISPLAY_SCALE * userUnit;
+			crops.push({
+				pageIndex,
+				rect,
+				displayWidth: width * displayScale,
+				displayHeight: height * displayScale,
+			});
 		}
-		catch (e) {
-			console.warn('Failed to render SDT image', blockRef, e);
-			return null;
-		}
+		return crops;
 	}
 
 	// Top-level SDT block index for the first non-excluded block whose

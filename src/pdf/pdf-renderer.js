@@ -6,6 +6,13 @@ const SCALE = 4;
 const PATH_BOX_PADDING = 10; // pt
 const MIN_PATH_BOX_SIZE = 30; // pt
 
+// Zeroing both dimensions makes Firefox release canvas graphics resources
+// immediately. (PDF.js)
+function releaseCanvas(canvas) {
+	canvas.width = 0;
+	canvas.height = 0;
+}
+
 export function calculateInkImageRect(position) {
 	let rect = getPositionBoundingRect(position);
 	rect = [
@@ -57,40 +64,65 @@ class PDFRenderer {
 	}
 
 	/**
-	 * Render a page-coordinate rect of `page` onto a fresh canvas, at a
-	 * resolution capped by the viewer's max canvas size. Returns the canvas, its
-	 * 2d context, and the offset viewport used. Callers are responsible for
-	 * zeroing the canvas. Returns null for an empty rect.
+	 * Prepare the viewport and canvas dimensions for a page-coordinate rect, at
+	 * a resolution capped by the viewer's max canvas size. Returns null for an
+	 * empty rect.
 	 */
-	async _renderPageRegion(page, pageRect) {
+	_preparePageRegion(page, pageRect) {
 		let width = pageRect[2] - pageRect[0];
 		let height = pageRect[3] - pageRect[1];
 		if (!(width > 0) || !(height > 0)) {
 			return null;
 		}
 
-		let maxScale = Math.sqrt(
-			this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.maxCanvasPixels
-			/ (width * height)
-		);
-		let scale = Math.min(SCALE, maxScale);
-
-		// Convert the rect to viewport coordinates to initialize the canvas, then
-		// offset a second viewport so the region renders at the canvas origin
+		// Measure the transformed rect so the canvas cap includes page rotation
+		// and UserUnit scaling.
+		let scale = SCALE;
 		let vRect = p2v({ pageIndex: page.pageNumber - 1, rects: [pageRect] }, page.getViewport({ scale })).rects[0];
+		let canvasPixels = (vRect[2] - vRect[0]) * (vRect[3] - vRect[1]);
+		let maxCanvasPixels = this._pdfView._iframeWindow.PDFViewerApplication.pdfViewer.maxCanvasPixels;
+		if (maxCanvasPixels > 0 && canvasPixels > maxCanvasPixels) {
+			scale *= Math.sqrt(maxCanvasPixels / canvasPixels);
+			vRect = p2v({ pageIndex: page.pageNumber - 1, rects: [pageRect] }, page.getViewport({ scale })).rects[0];
+		}
+
+		// Offset the viewport so the region renders at the canvas origin.
 		let viewport = page.getViewport({ scale, offsetX: -vRect[0], offsetY: -vRect[1] });
 
+		return {
+			canvasWidth: vRect[2] - vRect[0],
+			canvasHeight: vRect[3] - vRect[1],
+			viewport,
+		};
+	}
+
+	_createPageRegionCanvas({ canvasWidth, canvasHeight }) {
 		let canvas = this._pdfView._iframeWindow.document.createElement('canvas');
 		let ctx = canvas.getContext('2d', { alpha: false });
-		canvas.width = vRect[2] - vRect[0];
-		canvas.height = vRect[3] - vRect[1];
-		canvas.style.width = canvas.width + 'px';
-		canvas.style.height = canvas.height + 'px';
+		canvas.width = canvasWidth;
+		canvas.height = canvasHeight;
 
 		ctx.skipBlender = true;
-		await page.render({ canvasContext: ctx, viewport }).promise;
 
-		return { canvas, ctx, viewport };
+		return { canvas, ctx };
+	}
+
+	async _renderPageRegion(page, pageRect) {
+		let prepared = this._preparePageRegion(page, pageRect);
+		if (!prepared) {
+			return null;
+		}
+		let { viewport } = prepared;
+		let rendered = this._createPageRegionCanvas(prepared);
+		try {
+			await page.render({ canvasContext: rendered.ctx, viewport }).promise;
+		}
+		catch (e) {
+			releaseCanvas(rendered.canvas);
+			throw e;
+		}
+
+		return { ...rendered, viewport };
 	}
 
 	async _renderAnnotationImage(annotation) {
@@ -134,35 +166,62 @@ class PDFRenderer {
 
 		let image = canvas.toDataURL('image/png', 1);
 
-		// Zeroing the width and height causes Firefox to release graphics
-		// resources immediately, which can greatly reduce memory consumption. (PDF.js)
-		canvas.width = 0;
-		canvas.height = 0;
+		releaseCanvas(canvas);
 
 		return image;
 	}
 
-	/**
-	 * Render an arbitrary region of a page to a PNG data URL. `rect` is
-	 * [x1, y1, x2, y2] in PDF page coordinates. Used by Reading Mode to pull an
-	 * image block's pixels out of the source PDF.
-	 */
-	async renderRegionImage(pageIndex, rect) {
-		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(pageIndex + 1);
-
-		let rendered = await this._renderPageRegion(page, rect);
-		if (!rendered) {
-			return '';
+	// Render Reading Mode crops from one PDF page in a single pass, then slice
+	// the rendered union into individual images.
+	async renderRegionCrops(pageIndex, rects) {
+		if (!rects.length) {
+			return [];
 		}
-		let { canvas } = rendered;
+		let page = await this._pdfView._iframeWindow.PDFViewerApplication.pdfDocument.getPage(pageIndex + 1);
+		rects = rects.map(rect => fitRectIntoRect(rect, page.view));
+		if (rects.some(rect => !(rect[2] > rect[0]) || !(rect[3] > rect[1]))) {
+			return rects.map(() => '');
+		}
+		let unionRect = getPositionBoundingRect({ rects });
 
-		let image = canvas.toDataURL('image/png', 1);
+		let rendered = await this._renderPageRegion(page, unionRect);
+		if (!rendered) {
+			return rects.map(() => '');
+		}
+		let { canvas, viewport } = rendered;
+		try {
+			if (rects.length === 1) {
+				return [canvas.toDataURL('image/png', 1)];
+			}
 
-		// See _renderAnnotationImage() for rationale
-		canvas.width = 0;
-		canvas.height = 0;
-
-		return image;
+			let images = [];
+			for (let rect of rects) {
+				let vRect = p2v({ pageIndex, rects: [rect] }, viewport).rects[0];
+				vRect = fitRectIntoRect(vRect, [0, 0, canvas.width, canvas.height]);
+				let width = vRect[2] - vRect[0];
+				let height = vRect[3] - vRect[1];
+				if (!(width > 0) || !(height > 0)) {
+					images.push('');
+					continue;
+				}
+				let crop = this._createPageRegionCanvas({ canvasWidth: width, canvasHeight: height });
+				try {
+					crop.ctx.drawImage(
+						canvas,
+						vRect[0], vRect[1], width, height,
+						0, 0, crop.canvas.width, crop.canvas.height
+					);
+					images.push(crop.canvas.toDataURL('image/png', 1));
+				}
+				finally {
+					releaseCanvas(crop.canvas);
+				}
+			}
+			return images;
+		}
+		finally {
+			releaseCanvas(canvas);
+		}
 	}
 
 

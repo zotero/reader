@@ -1,3 +1,4 @@
+import queue from 'queue';
 import {
 	AnnotationType,
 	WADMAnnotation,
@@ -37,12 +38,34 @@ import { isSafari } from "../../common/lib/utilities";
 import { renderSDT } from "./lib/renderer";
 import sdtSCSS from './stylesheets/sdt.scss';
 
+type SDTBlockCrop = {
+	displayWidth: number;
+	displayHeight: number;
+	render: () => Promise<string>;
+};
+
+type SDTBlockCropProvider = (blockRef: number[]) => SDTBlockCrop[];
+
 export interface SDTViewData {
 	structure: StructuredDocumentText;
 	mapper: SDTPositionMapper;
 	getSourceAnnotationMeta: (position: SourcePosition) => { sortIndex: string, pageLabel: string } | null;
 	syncBaseView: (blockIndex: number) => void;
 	getImageForBlock: (blockRef: number[]) => Promise<string | null>;
+	getBlockCrops?: SDTBlockCropProvider;
+}
+
+function waitForImage(img: HTMLImageElement): Promise<boolean> {
+	if (typeof img.decode === 'function') {
+		return img.decode().then(() => true, () => false);
+	}
+	if (img.complete) {
+		return Promise.resolve(!!img.naturalWidth);
+	}
+	return new Promise((resolve) => {
+		img.addEventListener('load', () => resolve(true), { once: true });
+		img.addEventListener('error', () => resolve(false), { once: true });
+	});
 }
 
 /**
@@ -57,6 +80,14 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	private _structure = this._options.data.structure;
 
 	private _mapper = this._options.data.mapper;
+
+	private _sourceCropObserver: IntersectionObserver | null = null;
+
+	private _sourceCrops = new WeakMap<HTMLElement, SDTBlockCrop[]>();
+
+	private _sourceCropRenderQueue: ReturnType<typeof queue> | null = null;
+
+	private _destroyed = false;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -77,7 +108,10 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	protected override async _handleViewCreated(viewState: Partial<DOMViewState>) {
-		this._iframeDocument.body.append(renderSDT(this._structure, this._iframeDocument));
+		let getBlockCrops = this._options.data.getBlockCrops;
+		this._iframeDocument.body.append(renderSDT(this._structure, this._iframeDocument, {
+			renderSourceCrops: !!getBlockCrops,
+		}));
 
 		let style = this._iframeDocument.createElement('style');
 		style.textContent = sdtSCSS;
@@ -87,7 +121,13 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 
 		this._setScale(viewState.scale ?? 1);
 		this._initOutline();
-		this._hydrateImages();
+		if (getBlockCrops) {
+			this._prepareSourceCrops(getBlockCrops);
+			this._observeSourceCrops();
+		}
+		else {
+			this._hydrateImages();
+		}
 
 		if (this._options.location) {
 			this.navigate(this._options.location, { behavior: 'instant' });
@@ -115,10 +155,8 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	/**
-	 * Images render as empty <figure><img></figure> placeholders. Fill in each
-	 * <img>'s src by asking the base view to resolve the block's anchor back to
-	 * the source image. The base view returns a data URL that works in this
-	 * separate iframe.
+	 * Preserve the source-native image path used by snapshot Reading Mode.
+	 * PDF crops use the separate prepare/load path below.
 	 */
 	private async _hydrateImages() {
 		let figures = this._iframeDocument.querySelectorAll<HTMLElement>('figure.sdt-image[data-ref-path]');
@@ -135,6 +173,9 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 			catch (e) {
 				console.warn('Failed to load SDT image', ref, e);
 			}
+			if (this._destroyed || !figure.isConnected) {
+				return;
+			}
 			if (src) {
 				img.src = src;
 			}
@@ -142,6 +183,147 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 				figure.classList.add('sdt-image-unavailable');
 			}
 		}));
+	}
+
+	private _prepareSourceCrops(getBlockCrops: SDTBlockCropProvider) {
+		let figures = [...this._iframeDocument.querySelectorAll<HTMLElement>(
+			'figure.sdt-source-crop[data-ref-path]'
+		)];
+		for (let figure of figures) {
+			this._prepareSourceCrop(figure, getBlockCrops);
+		}
+	}
+
+	private _prepareSourceCrop(figure: HTMLElement, getBlockCrops: SDTBlockCropProvider) {
+		let ref = figure.dataset.refPath!.split('.').map(Number);
+		let crops: SDTBlockCrop[] = [];
+		try {
+			crops = getBlockCrops(ref);
+		}
+		catch (e) {
+			console.warn('Failed to prepare SDT block', ref, e);
+		}
+		if (this._destroyed || !figure.isConnected) {
+			return;
+		}
+		if (!crops.length) {
+			figure.dataset.sourceCropState = 'unavailable';
+			return;
+		}
+
+		let pages = figure.querySelector<HTMLElement>('.sdt-source-crop-pages');
+		if (!pages) {
+			figure.dataset.sourceCropState = 'unavailable';
+			return;
+		}
+		let pageElements = crops.map(({ displayWidth, displayHeight }) => {
+			let page = this._iframeDocument.createElement('div');
+			page.className = 'sdt-source-crop-page';
+			page.style.width = displayWidth + 'px';
+			page.style.aspectRatio = `${displayWidth} / ${displayHeight}`;
+			let img = this._iframeDocument.createElement('img');
+			img.alt = '';
+			page.append(img);
+			return page;
+		});
+		figure.classList.add('sdt-source-crop-reserved');
+		pages.replaceChildren(...pageElements);
+		this._sourceCrops.set(figure, crops);
+		figure.dataset.sourceCropState = 'ready';
+	}
+
+	private _observeSourceCrops() {
+		if (this._destroyed) {
+			return;
+		}
+		let renderQueue = this._sourceCropRenderQueue = queue({ concurrency: 1, autostart: true });
+		let figures = this._iframeDocument.querySelectorAll<HTMLElement>(
+			'figure.sdt-source-crop[data-source-crop-state="ready"]'
+		);
+		let IntersectionObserver = this._iframeWindow.IntersectionObserver;
+		if (!IntersectionObserver) {
+			for (let figure of figures) {
+				renderQueue.push(() => this._loadSourceCrop(figure));
+			}
+			return;
+		}
+		this._sourceCropObserver = new IntersectionObserver((entries) => {
+			if (this._destroyed) {
+				return;
+			}
+			for (let entry of entries) {
+				if (!entry.isIntersecting) {
+					continue;
+				}
+				this._sourceCropObserver!.unobserve(entry.target);
+				let figure = entry.target as HTMLElement;
+				renderQueue.push(() => this._loadSourceCrop(figure));
+			}
+		}, { rootMargin: '1000px 0px' });
+		for (let figure of figures) {
+			this._sourceCropObserver.observe(figure);
+		}
+	}
+
+	private async _loadSourceCrop(figure: HTMLElement) {
+		if (this._destroyed || figure.dataset.sourceCropState !== 'ready') {
+			return;
+		}
+		figure.dataset.sourceCropState = 'loading';
+		let ref = figure.dataset.refPath!.split('.').map(Number);
+		let crops = this._sourceCrops.get(figure);
+		this._sourceCrops.delete(figure);
+		if (!crops) {
+			figure.dataset.sourceCropState = 'unavailable';
+			return;
+		}
+		let pages = figure.querySelector<HTMLElement>('.sdt-source-crop-pages');
+		if (!pages) {
+			figure.dataset.sourceCropState = 'unavailable';
+			return;
+		}
+		let imageElements = [...pages.querySelectorAll('img')];
+		let srcs: string[] = [];
+		try {
+			for (let { render } of crops) {
+				if (this._destroyed || !figure.isConnected) {
+					return;
+				}
+				srcs.push(await render());
+			}
+		}
+		catch (e) {
+			console.warn('Failed to render SDT block', ref, e);
+			if (!this._destroyed && figure.isConnected) {
+				figure.dataset.sourceCropState = 'unavailable';
+			}
+			return;
+		}
+		if (this._destroyed || !figure.isConnected) {
+			return;
+		}
+		for (let [index, img] of imageElements.entries()) {
+			img.src = srcs[index];
+		}
+		let loaded = await Promise.all(imageElements.map(waitForImage));
+		if (this._destroyed || !figure.isConnected) {
+			return;
+		}
+		if (loaded.some(success => !success)) {
+			for (let img of imageElements) {
+				img.removeAttribute('src');
+			}
+			figure.dataset.sourceCropState = 'unavailable';
+			return;
+		}
+		figure.dataset.sourceCropState = 'loaded';
+	}
+
+	override destroy() {
+		this._destroyed = true;
+		this._sourceCropObserver?.disconnect();
+		this._sourceCropRenderQueue?.end();
+		super.destroy();
 	}
 
 	private _initOutline() {
@@ -416,6 +598,13 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	protected override _handleScroll(event: Event) {
 		super._handleScroll(event);
 		this._updateViewState();
+	}
+
+	protected override _handleViewUpdate(synchronous = true) {
+		if (this._destroyed) {
+			return;
+		}
+		super._handleViewUpdate(synchronous);
 	}
 
 	protected override _updateViewState() {

@@ -29,7 +29,11 @@ import { isTextNodeArray } from './utilities';
  * are merged into a single element, with each part's text wrapped in a
  * span carrying its own ref path.
  */
-export function renderSDT(structure: StructuredDocumentText, doc: Document): HTMLElement {
+export function renderSDT(
+	structure: StructuredDocumentText,
+	doc: Document,
+	{ renderSourceCrops = false }: { renderSourceCrops?: boolean } = {},
+): HTMLElement {
 	let container = doc.createElement('article');
 	container.id = 'sdt-content';
 	let renderedAsPart = new Set<string>();
@@ -37,11 +41,11 @@ export function renderSDT(structure: StructuredDocumentText, doc: Document): HTM
 		if (block.flowClass === 'excluded' || renderedAsPart.has(refKey([i]))) {
 			continue;
 		}
-		let el = renderBlock(doc, block, String(i));
+		let el = renderBlock(doc, block, String(i), renderSourceCrops);
 		if (!el) {
 			continue;
 		}
-		let chain = getMergeableChain(structure, i);
+		let chain = getMergeableChain(structure, i, renderSourceCrops);
 		if (chain) {
 			for (let j = 1; j < chain.length; j++) {
 				appendChainPart(doc, el, chain[j - 1].block, chain[j].block, chain[j].ref);
@@ -58,7 +62,11 @@ export function renderSDT(structure: StructuredDocumentText, doc: Document): HTM
  * rendered as one element: more than one part, all parts top-level blocks
  * with inline-only content, starting at this block.
  */
-function getMergeableChain(structure: StructuredDocumentText, index: number) {
+function getMergeableChain(
+	structure: StructuredDocumentText,
+	index: number,
+	renderSourceCrops: boolean,
+) {
 	let block = structure.content[index];
 	if (!block.previousPart && !block.nextPart) {
 		return null;
@@ -68,10 +76,18 @@ function getMergeableChain(structure: StructuredDocumentText, index: number) {
 	}) as { ref: number[], block: ContentBlockNode }[];
 	if (chain.length < 2
 			|| chain[0].ref[0] !== index
-			|| !chain.every(part => isTextNodeArray(part.block.content as unknown[]))) {
+			|| !chain.every(part => !shouldRenderSourceCrop(part.block, renderSourceCrops)
+				&& isTextNodeArray(part.block.content as unknown[]))) {
 		return null;
 	}
 	return chain;
+}
+
+function shouldRenderSourceCrop(block: ContentBlockNode, renderSourceCrops: boolean): boolean {
+	return renderSourceCrops
+		&& (block.type === 'image'
+			|| block.type === 'math'
+			|| (block.type === 'table' && isTextNodeArray(block.content)));
 }
 
 function appendChainPart(
@@ -107,7 +123,12 @@ function dropTrailingHyphen(el: HTMLElement) {
 	}
 }
 
-function renderBlock(doc: Document, block: ContentBlockNode, refPath: string): HTMLElement | null {
+function renderBlock(
+	doc: Document,
+	block: ContentBlockNode,
+	refPath: string,
+	renderSourceCrops: boolean,
+): HTMLElement | null {
 	let el: HTMLElement;
 	switch (block.type) {
 		case 'paragraph':
@@ -119,21 +140,30 @@ function renderBlock(doc: Document, block: ContentBlockNode, refPath: string): H
 			el.append(renderTextNodes(doc, block.content));
 			break;
 		case 'math':
-			el = doc.createElement('div');
-			el.className = 'sdt-math';
-			el.append(renderTextNodes(doc, block.content));
+			if (renderSourceCrops) {
+				el = renderSourceCrop(doc, block.content);
+				el.classList.add('sdt-math');
+			}
+			else {
+				el = doc.createElement('div');
+				el.className = 'sdt-math';
+				el.append(renderTextNodes(doc, block.content));
+			}
 			break;
 		case 'image': {
-			el = doc.createElement('figure');
-			el.className = 'sdt-image';
-			// SDTView fills in the <img>'s src later by resolving the block's
-			// anchor back into the base document - see _hydrateImages()
-			let img = doc.createElement('img');
-			let altText = block.content.map(node => node.text).join('').trim();
-			if (altText) {
-				img.alt = altText;
+			if (renderSourceCrops) {
+				el = renderSourceCrop(doc, block.content);
 			}
-			el.append(img);
+			else {
+				el = doc.createElement('figure');
+				el.className = 'sdt-image';
+				let img = doc.createElement('img');
+				let altText = block.content.map(node => node.text).join('').trim();
+				if (altText) {
+					img.alt = altText;
+				}
+				el.append(img);
+			}
 			break;
 		}
 		case 'caption':
@@ -150,13 +180,15 @@ function renderBlock(doc: Document, block: ContentBlockNode, refPath: string): H
 			el.append(renderTextNodes(doc, block.content));
 			break;
 		case 'blockquote':
-			el = renderBlockquote(doc, block, refPath);
+			el = renderBlockquote(doc, block, refPath, renderSourceCrops);
 			break;
 		case 'list':
-			el = renderList(doc, block, refPath);
+			el = renderList(doc, block, refPath, renderSourceCrops);
 			break;
 		case 'table':
-			el = renderTable(doc, block, refPath);
+			el = shouldRenderSourceCrop(block, renderSourceCrops)
+				? renderSourceCrop(doc, block.content as TextNode[])
+				: renderTable(doc, block, refPath, renderSourceCrops);
 			break;
 		default:
 			return null;
@@ -172,10 +204,38 @@ function renderBlock(doc: Document, block: ContentBlockNode, refPath: string): H
 	return el;
 }
 
-function renderBlockquote(doc: Document, block: BlockquoteNode, refPath: string): HTMLElement {
+function renderSourceCrop(doc: Document, content: TextNode[]): HTMLElement {
+	let figure = doc.createElement('figure');
+	figure.className = 'sdt-source-crop';
+
+	let pages = doc.createElement('div');
+	pages.className = 'sdt-source-crop-pages';
+	figure.append(pages);
+
+	// Retain SDT text nodes for position mapping without exposing the raw representation.
+	let text = doc.createElement('div');
+	text.hidden = true;
+	text.append(renderTextNodes(doc, content));
+	figure.append(text);
+
+	let label = text.textContent?.trim();
+	if (label) {
+		figure.setAttribute('role', 'img');
+		figure.setAttribute('aria-label', label);
+	}
+
+	return figure;
+}
+
+function renderBlockquote(
+	doc: Document,
+	block: BlockquoteNode,
+	refPath: string,
+	renderSourceCrops: boolean,
+): HTMLElement {
 	let el = doc.createElement('blockquote');
 	for (let [i, child] of block.content.entries()) {
-		let childEl = renderBlock(doc, child, `${refPath}.${i}`);
+		let childEl = renderBlock(doc, child, `${refPath}.${i}`, renderSourceCrops);
 		if (childEl) {
 			el.append(childEl);
 		}
@@ -183,18 +243,28 @@ function renderBlockquote(doc: Document, block: BlockquoteNode, refPath: string)
 	return el;
 }
 
-function renderList(doc: Document, block: ListNode, refPath: string): HTMLElement {
+function renderList(
+	doc: Document,
+	block: ListNode,
+	refPath: string,
+	renderSourceCrops: boolean,
+): HTMLElement {
 	let el = doc.createElement(block.ordered ? 'ol' : 'ul');
 	if (block.ordered && block.startIndex && block.startIndex !== 1) {
 		(el as HTMLOListElement).start = block.startIndex;
 	}
 	for (let [i, item] of block.content.entries()) {
-		el.append(renderListItem(doc, item, `${refPath}.${i}`));
+		el.append(renderListItem(doc, item, `${refPath}.${i}`, renderSourceCrops));
 	}
 	return el;
 }
 
-function renderListItem(doc: Document, item: ListItemNode, refPath: string): HTMLElement {
+function renderListItem(
+	doc: Document,
+	item: ListItemNode,
+	refPath: string,
+	renderSourceCrops: boolean,
+): HTMLElement {
 	let li = doc.createElement('li');
 	li.dataset.refPath = refPath;
 	li.id = 'sdt-' + refPath;
@@ -213,7 +283,7 @@ function renderListItem(doc: Document, item: ListItemNode, refPath: string): HTM
 	}
 	else {
 		for (let [i, child] of (content as ContentBlockNode[]).entries()) {
-			let childEl = renderBlock(doc, child, `${refPath}.${i}`);
+			let childEl = renderBlock(doc, child, `${refPath}.${i}`, renderSourceCrops);
 			if (childEl) {
 				li.append(childEl);
 			}
@@ -222,7 +292,12 @@ function renderListItem(doc: Document, item: ListItemNode, refPath: string): HTM
 	return li;
 }
 
-function renderTable(doc: Document, block: TableNode, refPath: string): HTMLElement {
+function renderTable(
+	doc: Document,
+	block: TableNode,
+	refPath: string,
+	renderSourceCrops: boolean,
+): HTMLElement {
 	let table = doc.createElement('table');
 	let content = block.content;
 	if (!content.length) {
@@ -246,7 +321,12 @@ function renderTable(doc: Document, block: TableNode, refPath: string): HTMLElem
 				if (cell.colspan && cell.colspan > 1) td.colSpan = cell.colspan;
 				if (cell.rowspan && cell.rowspan > 1) td.rowSpan = cell.rowspan;
 				for (let [k, child] of cell.content.entries()) {
-					let childEl = renderBlock(doc, child, `${refPath}.${i}.${j}.${k}`);
+					let childEl = renderBlock(
+						doc,
+						child,
+						`${refPath}.${i}.${j}.${k}`,
+						renderSourceCrops,
+					);
 					if (childEl) {
 						td.append(childEl);
 					}
