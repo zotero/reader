@@ -36,6 +36,9 @@ export function renderSDT(
 ): HTMLElement {
 	let container = doc.createElement('article');
 	container.id = 'sdt-content';
+	if (structure.metadata.processor.type === 'pdf') {
+		container.classList.add('sdt-pdf');
+	}
 	let renderedAsPart = new Set<string>();
 	for (let [i, block] of structure.content.entries()) {
 		if (block.flowClass === 'excluded' || renderedAsPart.has(refKey([i]))) {

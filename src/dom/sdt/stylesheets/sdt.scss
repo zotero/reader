@@ -108,6 +108,20 @@ table {
 }
 
 // Block types
+// Lists in PDFs are broader than HTML lists: references and related paragraphs may be
+// grouped as a list, and numbers or bullets are often already part of the text.
+.sdt-pdf {
+	ol,
+	ul {
+		list-style: none;
+		padding-inline-start: 0;
+	}
+
+	li + li {
+		margin-block-start: 0.35em;
+	}
+}
+
 .sdt-image {
 	text-align: center;
 	margin-block: 1em;
