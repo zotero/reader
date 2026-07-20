@@ -70,7 +70,7 @@ export class FocusManager {
 
 	_handleFocus(event) {
 		if ('closest' in event.target) {
-			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .label-popup, .appearance-popup, .context-menu, iframe')) {
+			if (!event.target.closest('.annotation, .annotation-popup, .selection-popup, .label-popup, .appearance-popup, .context-menu, iframe, [contenteditable="true"]')) {
 				this._onDeselectAnnotations();
 			}
 			// Close find popup on blur if search query is empty
