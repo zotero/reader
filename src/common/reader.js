@@ -1221,6 +1221,9 @@ class Reader {
 		this._updateState({
 			readAloudState: { ...this._state.readAloudState, highlightGranularity: granularity },
 		});
+		if (granularity === 'word') {
+			this._readAloudManager.syncActiveWordToPlayback();
+		}
 	}
 
 	/**

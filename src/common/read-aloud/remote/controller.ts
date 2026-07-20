@@ -268,6 +268,28 @@ abstract class RemoteReadAloudControllerBase extends ReadAloudController {
 		this._wordTimeouts.length = 0;
 	}
 
+	/**
+	 * Point activeTimestampIndex at the word playing at the current offset, so a
+	 * switch to word-level highlighting takes effect immediately instead of
+	 * waiting for the next scheduled word boundary.
+	 */
+	override syncActiveWordToPlayback(): void {
+		let timestamps = this._currentTimestamps;
+		if (!timestamps?.length || !this._isPlaying) {
+			return;
+		}
+		let offset = this._segmentProgressSeconds;
+		let index = timestamps.findIndex(timestamp => offset < timestamp.end);
+		if (index < 0) {
+			index = timestamps.length - 1;
+		}
+		if (this.activeTimestampIndex === index) {
+			return;
+		}
+		this.activeTimestampIndex = index;
+		this.dispatchEvent(new ReadAloudEvent('ActiveWordChange', this._currentSegment));
+	}
+
 	override destroy(): void {
 		super.destroy();
 		navigator.mediaDevices?.removeEventListener('devicechange', this._handleDeviceChange);

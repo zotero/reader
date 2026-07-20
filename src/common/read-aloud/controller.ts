@@ -102,6 +102,10 @@ export abstract class ReadAloudController extends EventTarget {
 		// No-op for non-remote controllers
 	}
 
+	syncActiveWordToPlayback(): void {
+		// No-op for non-remote controllers (no word-level timestamps)
+	}
+
 	get error() {
 		return this._error;
 	}

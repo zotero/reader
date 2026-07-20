@@ -529,6 +529,10 @@ export class ReadAloudManager {
 		this._controller?.skipAhead(granularity, accelerate);
 	}
 
+	syncActiveWordToPlayback(): void {
+		this._controller?.syncActiveWordToPlayback();
+	}
+
 	getSegmentToAnnotate(): ReadAloudSegment | null {
 		return this._controller?.getSegmentToAnnotate() ?? null;
 	}
