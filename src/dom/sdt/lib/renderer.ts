@@ -16,6 +16,29 @@ import {
 import { refKey } from '../../../../structured-document-text/src/range';
 import { isTextNodeArray } from './utilities';
 
+type RenderContext = {
+	renderSourceCrops: boolean;
+	headingLevels: Map<string, number>;
+};
+
+function buildHeadingLevels(
+	items: StructuredDocumentText['catalog']['outline'],
+	level = 2,
+	headingLevels = new Map<string, number>(),
+): Map<string, number> {
+	for (let item of items) {
+		if (item.ref) {
+			let key = refPathToString(item.ref);
+			let existingLevel = headingLevels.get(key);
+			if (existingLevel === undefined || level < existingLevel) {
+				headingLevels.set(key, level);
+			}
+		}
+		buildHeadingLevels(item.children ?? [], Math.min(level + 1, 6), headingLevels);
+	}
+	return headingLevels;
+}
+
 /**
  * Render an SDT document to semantic HTML.
  *
@@ -39,12 +62,16 @@ export function renderSDT(
 	if (structure.metadata.processor.type === 'pdf') {
 		container.classList.add('sdt-pdf');
 	}
+	let context: RenderContext = {
+		renderSourceCrops,
+		headingLevels: buildHeadingLevels(structure.catalog.outline),
+	};
 	let renderedAsPart = new Set<string>();
 	for (let [i, block] of structure.content.entries()) {
 		if (block.flowClass === 'excluded' || renderedAsPart.has(refKey([i]))) {
 			continue;
 		}
-		let el = renderBlock(doc, block, String(i), renderSourceCrops);
+		let el = renderBlock(doc, block, String(i), context);
 		if (!el) {
 			continue;
 		}
@@ -130,7 +157,7 @@ function renderBlock(
 	doc: Document,
 	block: ContentBlockNode,
 	refPath: string,
-	renderSourceCrops: boolean,
+	context: RenderContext,
 ): HTMLElement | null {
 	let el: HTMLElement;
 	switch (block.type) {
@@ -138,12 +165,14 @@ function renderBlock(
 			el = doc.createElement('p');
 			el.append(renderTextNodes(doc, block.content));
 			break;
-		case 'heading':
-			el = doc.createElement('h2');
+		case 'heading': {
+			let level = context.headingLevels.get(refPath) ?? 2;
+			el = doc.createElement(`h${level}`);
 			el.append(renderTextNodes(doc, block.content));
 			break;
+		}
 		case 'math':
-			if (renderSourceCrops) {
+			if (context.renderSourceCrops) {
 				el = renderSourceCrop(doc, block.content);
 				el.classList.add('sdt-math');
 			}
@@ -154,7 +183,7 @@ function renderBlock(
 			}
 			break;
 		case 'image': {
-			if (renderSourceCrops) {
+			if (context.renderSourceCrops) {
 				el = renderSourceCrop(doc, block.content);
 			}
 			else {
@@ -183,15 +212,15 @@ function renderBlock(
 			el.append(renderTextNodes(doc, block.content));
 			break;
 		case 'blockquote':
-			el = renderBlockquote(doc, block, refPath, renderSourceCrops);
+			el = renderBlockquote(doc, block, refPath, context);
 			break;
 		case 'list':
-			el = renderList(doc, block, refPath, renderSourceCrops);
+			el = renderList(doc, block, refPath, context);
 			break;
 		case 'table':
-			el = shouldRenderSourceCrop(block, renderSourceCrops)
+			el = shouldRenderSourceCrop(block, context.renderSourceCrops)
 				? renderSourceCrop(doc, block.content as TextNode[])
-				: renderTable(doc, block, refPath, renderSourceCrops);
+				: renderTable(doc, block, refPath, context);
 			break;
 		default:
 			return null;
@@ -234,11 +263,11 @@ function renderBlockquote(
 	doc: Document,
 	block: BlockquoteNode,
 	refPath: string,
-	renderSourceCrops: boolean,
+	context: RenderContext,
 ): HTMLElement {
 	let el = doc.createElement('blockquote');
 	for (let [i, child] of block.content.entries()) {
-		let childEl = renderBlock(doc, child, `${refPath}.${i}`, renderSourceCrops);
+		let childEl = renderBlock(doc, child, `${refPath}.${i}`, context);
 		if (childEl) {
 			el.append(childEl);
 		}
@@ -250,14 +279,14 @@ function renderList(
 	doc: Document,
 	block: ListNode,
 	refPath: string,
-	renderSourceCrops: boolean,
+	context: RenderContext,
 ): HTMLElement {
 	let el = doc.createElement(block.ordered ? 'ol' : 'ul');
 	if (block.ordered && block.startIndex && block.startIndex !== 1) {
 		(el as HTMLOListElement).start = block.startIndex;
 	}
 	for (let [i, item] of block.content.entries()) {
-		el.append(renderListItem(doc, item, `${refPath}.${i}`, renderSourceCrops));
+		el.append(renderListItem(doc, item, `${refPath}.${i}`, context));
 	}
 	return el;
 }
@@ -266,7 +295,7 @@ function renderListItem(
 	doc: Document,
 	item: ListItemNode,
 	refPath: string,
-	renderSourceCrops: boolean,
+	context: RenderContext,
 ): HTMLElement {
 	let li = doc.createElement('li');
 	li.dataset.refPath = refPath;
@@ -286,7 +315,7 @@ function renderListItem(
 	}
 	else {
 		for (let [i, child] of (content as ContentBlockNode[]).entries()) {
-			let childEl = renderBlock(doc, child, `${refPath}.${i}`, renderSourceCrops);
+			let childEl = renderBlock(doc, child, `${refPath}.${i}`, context);
 			if (childEl) {
 				li.append(childEl);
 			}
@@ -299,7 +328,7 @@ function renderTable(
 	doc: Document,
 	block: TableNode,
 	refPath: string,
-	renderSourceCrops: boolean,
+	context: RenderContext,
 ): HTMLElement {
 	let table = doc.createElement('table');
 	let content = block.content;
@@ -328,7 +357,7 @@ function renderTable(
 						doc,
 						child,
 						`${refPath}.${i}.${j}.${k}`,
-						renderSourceCrops,
+						context,
 					);
 					if (childEl) {
 						td.append(childEl);
