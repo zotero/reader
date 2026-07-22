@@ -381,6 +381,12 @@ async function createReader() {
 				reader.setLoggedIn(true);
 			}, 200);
 		},
+		onCopyLinkToAnnotation(annotation) {
+			console.log('Copy link to annotation', annotation);
+		},
+		onCopyLinkToPage(pageIndex) {
+			console.log('Copy link to page', pageIndex);
+		},
 	});
 	reader.enableAddToNote(true);
 	window._reader = reader;
