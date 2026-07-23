@@ -431,7 +431,8 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	width: 32px;
 	height: 44px;
 	transform: rotate(var(--selection-handle-rotation, 0deg));
-	transform-origin: 50% 50%;
+	transform-origin: var(--selection-handle-transform-origin, 50% 50%);
+	--selection-handle-color: #4078f2;
 }
 
 .mobileTextSelectionHandleGlyph::before {
@@ -442,7 +443,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	width: 2px;
 	height: 28px;
 	border-radius: 1px;
-	background: #4078f2;
+	background: var(--selection-handle-color);
 }
 
 .mobileTextSelectionHandleGlyph::after {
@@ -451,7 +452,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	width: 12px;
 	height: 12px;
 	border-radius: 50%;
-	background: #4078f2;
+	background: var(--selection-handle-color);
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 
@@ -463,6 +464,37 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 .mobileTextSelectionHandle[data-side="end"] .mobileTextSelectionHandleGlyph::after {
 	right: 4px;
 	bottom: 3px;
+}
+
+:root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::before,
+:root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::after {
+	top: 0;
+	bottom: auto;
+	--selection-handle-color: #0b57d0;
+	background: var(--selection-handle-color);
+	box-shadow: none;
+}
+
+:root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::before {
+	width: 11px;
+	height: 22px;
+	border-radius: 0;
+}
+
+:root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::after {
+	left: 11px;
+	right: auto;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+}
+
+:root[data-reader-platform="android"] .mobileTextSelectionHandle[data-side="start"] .mobileTextSelectionHandleGlyph::before {
+	left: 22px;
+}
+
+:root[data-reader-platform="android"] .mobileTextSelectionHandle[data-side="end"] .mobileTextSelectionHandleGlyph::before {
+	left: 11px;
 }
 
 body, #viewerContainer {

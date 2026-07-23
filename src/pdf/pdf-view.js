@@ -212,7 +212,14 @@ class PDFView {
 
 		this._iframe.addEventListener('load', () => {
 			this._updateColorScheme();
-			this._iframeWindow.document.documentElement.toggleAttribute('data-mobile-reader', !!this._mobile);
+			let root = this._iframeWindow.document.documentElement;
+			root.toggleAttribute('data-mobile-reader', !!this._mobile);
+			if (this._options.platform) {
+				root.dataset.readerPlatform = this._options.platform;
+			}
+			else {
+				delete root.dataset.readerPlatform;
+			}
 			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
 				let handlePasswordRequest = (updateCallback) => {
@@ -330,6 +337,7 @@ class PDFView {
 		// Touch events are passive by default
 		this._iframeWindow.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
+		this._iframeWindow.addEventListener('touchcancel', this._handleTouchCancel.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
@@ -2665,6 +2673,12 @@ class PDFView {
 	}
 
 	_handleTouchMove(event) {
+		if (event.touches?.length !== 1 && this._mobileTextSelection?.handleTouchCancel()) {
+			if (event.cancelable) {
+				event.preventDefault();
+			}
+			return;
+		}
 		if (event.touches?.length === 1 && this._mobileTextSelection?.handleTouchMove(event.touches[0])) {
 			if (event.cancelable) {
 				event.preventDefault();
@@ -2687,6 +2701,13 @@ class PDFView {
 			event.preventDefault();
 		}
 		this._mobileTextSelection?.handleTouchEnd();
+		this._pointerDownTriggered = false;
+	}
+
+	_handleTouchCancel(event) {
+		if (this._mobileTextSelection?.handleTouchCancel() && event.cancelable) {
+			event.preventDefault();
+		}
 		this._pointerDownTriggered = false;
 	}
 
