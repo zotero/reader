@@ -8,6 +8,7 @@ import { getCurrentColorScheme } from './lib/utilities';
 import pako from 'pako';
 import { createPositionMapper } from './sdt/create-position-mapper';
 import { getTextNodeSpans } from './sdt/position-mapper';
+import { buildSDTReadAloudSegments, getSDTLang } from './read-aloud/sdt-segments';
 import {
 	openStructuredDocumentTextPack,
 	SDT_PACK_VERSION,
@@ -435,6 +436,92 @@ class View {
 		if (!sdt) {
 			return null;
 		}
+		let built = this._buildAnnotationFromSDT(sdt, sdtAnchor, type);
+		if (!built) {
+			return null;
+		}
+		return this._annotationManager.addAnnotation({
+			type,
+			color,
+			comment,
+			tags,
+			position: built.position,
+			text: built.text,
+			sortIndex: built.sortIndex,
+			pageLabel: built.pageLabel,
+		});
+	}
+
+	/**
+	 * @param {ReadAloudGranularity} granularity
+	 * @returns {Promise<ReadAloudSegment[] | null>}
+	 */
+	async getReadAloudSegments(granularity) {
+		let sdt = await this._loadSDT();
+		if (!sdt) {
+			return null;
+		}
+		let lang = getSDTLang(sdt.structure);
+		let { segments } = buildSDTReadAloudSegments(sdt.structure, granularity, lang);
+		return segments;
+	}
+
+	/**
+	 * @param {string} [id] If set, resize an existing annotation
+	 * @param {SDTPosition} startPosition
+	 * @param {SDTPosition} [endPosition] Defaults to startPosition
+	 * @param {AnnotationType} type
+	 * @param {string} color
+	 * @param {string} [comment]
+	 * @param {string[]} [tags]
+	 * @returns {Promise<import('./types').Annotation | null>}
+	 */
+	async setReadAloudAnnotation({ id, startPosition, endPosition, type, color, comment, tags }) {
+		let sdt = await this._loadSDT();
+		if (!sdt) {
+			return null;
+		}
+		let sdtAnchor = {
+			start: startPosition.start,
+			end: (endPosition || startPosition).end,
+		};
+		let built = this._buildAnnotationFromSDT(sdt, sdtAnchor, type);
+		if (!built) {
+			return null;
+		}
+		if (id && this._annotationManager._getAnnotationByID(id)) {
+			let update = {
+				id,
+				position: built.position,
+				sortIndex: built.sortIndex,
+				pageLabel: built.pageLabel,
+				text: built.text,
+			};
+			// Only overwrite type/color when explicitly provided, so a resize
+			// preserves them
+			if (type) {
+				update.type = type;
+			}
+			if (color) {
+				update.color = color;
+			}
+			this._annotationManager.updateAnnotations([update]);
+			return this._annotationManager._getAnnotationByID(id);
+		}
+		return this._annotationManager.addAnnotation({
+			type,
+			color,
+			comment,
+			tags,
+			position: built.position,
+			text: built.text,
+			sortIndex: built.sortIndex,
+			pageLabel: built.pageLabel,
+		});
+	}
+
+	// Map an SDT range to a source position, sortIndex/pageLabel, and text.
+	_buildAnnotationFromSDT(sdt, sdtAnchor, type) {
 		let spans = getTextNodeSpans(sdt.structure, sdtAnchor);
 		let position = sdt.mapper.textNodeSpansToSourcePosition(spans);
 		if (!position) {
@@ -448,16 +535,7 @@ class View {
 			return null;
 		}
 		let text = spans.map(s => s.node.text.slice(s.start, s.end)).join('');
-		return this._annotationManager.addAnnotation({
-			type,
-			color,
-			comment,
-			tags,
-			position,
-			text,
-			sortIndex: meta.sortIndex,
-			pageLabel: meta.pageLabel,
-		});
+		return { position, text, sortIndex: meta.sortIndex, pageLabel: meta.pageLabel };
 	}
 }
 

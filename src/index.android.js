@@ -185,6 +185,19 @@ window.createAnnotationFromSDT = async (options) => {
 	postMessage('onCreateAnnotationFromSDT', { requestID: options.requestID, annotation });
 };
 
+window.getReadAloudSegments = async (options) => {
+	log("Get Read Aloud segments: " + options.granularity);
+	const segments = await window._view.getReadAloudSegments(options.granularity);
+	postMessage('onReadAloudSegments', { requestID: options.requestID, segments });
+};
+
+window.setReadAloudAnnotation = async (options) => {
+	const params = JSON.parse(decodeBase64(options.params));
+	log("Set Read Aloud annotation: " + params.type);
+	const annotation = await window._view.setReadAloudAnnotation(params);
+	postMessage('onReadAloudAnnotation', { requestID: options.requestID, annotation });
+};
+
 window.setPageLabels = (options) => {
 	const pageLabels = JSON.parse(decodeBase64(options.pageLabels));
 	log("Set page labels: " + JSON.stringify(pageLabels));
