@@ -2681,7 +2681,7 @@ class PDFView {
 			this._creationTimeout = null;
 		}
 
-		if (event.pointerType === 'mouse') {
+		if (event.pointerType === 'mouse' && !this._mobile) {
 			return;
 		}
 		if (this._pointerDownTriggered) {
