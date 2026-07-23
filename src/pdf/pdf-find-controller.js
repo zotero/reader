@@ -26,6 +26,8 @@ Promise.withResolvers || (Promise.withResolvers = function withResolvers() {
 });
 
 import { getRangeRects } from './lib/utilities';
+import { FIND_MAX_TOTAL_MATCHES } from '../common/defines';
+import { compileFindRegExp } from '../common/lib/find-pattern';
 
 // pdf_find_utils.js [
 const CharacterType = {
@@ -536,8 +538,14 @@ function getSnippet(text, phraseStart, phraseEnd, numWordsAround) {
 
 	let phrase = text.substring(phraseStart, phraseEnd);
 
-	let leftText = text.substring(0, phraseStart).trim();
-	let rightText = text.substring(phraseEnd).trim();
+	// Only tokenize a bounded window around the phrase -- splitting the whole
+	// page text for every match freezes the UI on high-match-count searches
+	const windowSize = numWordsAround * 20;
+	let windowStart = Math.max(0, phraseStart - windowSize);
+	let windowEnd = Math.min(text.length, phraseEnd + windowSize);
+
+	let leftText = text.substring(windowStart, phraseStart).trim();
+	let rightText = text.substring(phraseEnd, windowEnd).trim();
 
 	let leftWords = leftText ? leftText.split(/\s+/) : [];
 	let rightWords = rightText ? rightText.split(/\s+/) : [];
@@ -549,8 +557,8 @@ function getSnippet(text, phraseStart, phraseEnd, numWordsAround) {
 	let rightSnippet = rightSnippetWords.join(' ');
 
 	// Optionally add ellipses if there are more words that we didn't include.
-	let prefix = leftWords.length > numWordsAround ? '…' : '';
-	let suffix = rightWords.length > numWordsAround ? '…' : '';
+	let prefix = leftWords.length > numWordsAround || windowStart > 0 ? '…' : '';
+	let suffix = rightWords.length > numWordsAround || windowEnd < text.length ? '…' : '';
 
 	// Determine if the phrase starts or ends mid-word.
 	// If phraseStart is in the middle of a word (i.e. the character immediately before is not whitespace)
@@ -904,9 +912,19 @@ class PDFFindController {
 			// been stripped out.
 			return;
 		}
+		const maxMatches = FIND_MAX_TOTAL_MATCHES - this._matchesCountTotal;
+		if (maxMatches <= 0) {
+			return;
+		}
 		const diffs = this._pageDiffs[pageIndex];
 		let match;
 		while ((match = query.exec(pageContent)) !== null) {
+			if (match[0].length === 0) {
+				// A pattern like 'a*' can match an empty string, which would
+				// otherwise loop forever
+				query.lastIndex++;
+				continue;
+			}
 			if (
 				entireWord &&
 				!this._isEntireWord(pageContent, match.index, match[0].length)
@@ -923,6 +941,9 @@ class PDFFindController {
 			if (matchLen) {
 				matches.push(matchPos);
 				matchesLength.push(matchLen);
+				if (matches.length >= maxMatches) {
+					break;
+				}
 			}
 		}
 	}
@@ -1002,29 +1023,38 @@ class PDFFindController {
 		if (query.length === 0) {
 			return; // Do nothing: the matches should be wiped out already.
 		}
-		const { caseSensitive, entireWord } = this._state;
+		const { caseSensitive, entireWord, useRegex } = this._state;
 		const pageContent = this._pageContents[pageIndex];
 		const hasDiacritics = this._hasDiacritics[pageIndex];
 
 		let isUnicode = false;
-		if (typeof query === "string") {
-			[isUnicode, query] = this._convertToRegExpString(query, hasDiacritics);
+		if (useRegex) {
+			if (Array.isArray(query)) {
+				query = query.map(q => `(?:${q})`).join("|");
+			}
+			// Use the pattern as-is; null if invalid
+			query = compileFindRegExp(query, `g${caseSensitive ? "" : "i"}`);
 		}
 		else {
-			// Words are sorted in reverse order to be sure that "foobar" is matched
-			// before "foo" in case the query is "foobar foo".
-			query = query.sort().reverse().map(q => {
-				const [isUnicodePart, queryPart] = this._convertToRegExpString(
-					q,
-					hasDiacritics
-				);
-				isUnicode ||= isUnicodePart;
-				return `(${queryPart})`;
-			}).join("|");
-		}
+			if (typeof query === "string") {
+				[isUnicode, query] = this._convertToRegExpString(query, hasDiacritics);
+			}
+			else {
+				// Words are sorted in reverse order to be sure that "foobar" is matched
+				// before "foo" in case the query is "foobar foo".
+				query = query.sort().reverse().map(q => {
+					const [isUnicodePart, queryPart] = this._convertToRegExpString(
+						q,
+						hasDiacritics
+					);
+					isUnicode ||= isUnicodePart;
+					return `(${queryPart})`;
+				}).join("|");
+			}
 
-		const flags = `g${isUnicode ? "u" : ""}${caseSensitive ? "" : "i"}`;
-		query = query ? new RegExp(query, flags) : null;
+			const flags = `g${isUnicode ? "u" : ""}${caseSensitive ? "" : "i"}`;
+			query = query ? new RegExp(query, flags) : null;
+		}
 
 		this._calculateRegExpMatch(query, entireWord, pageIndex, pageContent);
 

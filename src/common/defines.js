@@ -42,6 +42,9 @@ export const FIND_RESULT_COLOR_ALL_LIGHT = 'rgba(180,0,170,0.3)';
 export const FIND_RESULT_COLOR_CURRENT_LIGHT = 'rgba(0,100,0,0.3)';
 export const FIND_RESULT_COLOR_ALL_DARK = 'rgba(180,0,170,0.6)';
 export const FIND_RESULT_COLOR_CURRENT_DARK = 'rgba(0,100,0,0.6)';
+// Stop collecting find matches beyond this total -- highlighting and snippet
+// generation for unbounded match counts (e.g. a regex like '.') freezes the UI
+export const FIND_MAX_TOTAL_MATCHES = 5000;
 
 export const ANNOTATION_POSITION_MAX_SIZE = 65000;
 
