@@ -371,7 +371,7 @@ class View {
 		this._ensureType('epub', 'snapshot');
 		this._view.setSpotlight('ReadAloudActiveSegment', selector, null);
 		if (selector) {
-			this._view.navigate(selector, {
+			this._view.navigate({ position: selector }, {
 				ifNeeded: true,
 				block: 'center',
 				behavior: 'smooth'
