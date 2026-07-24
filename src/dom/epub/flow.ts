@@ -3,7 +3,7 @@ import { debounce } from "../../common/lib/debounce";
 import { NavigateOptions } from "../common/dom-view";
 import { closestAll, closestElement, isRTL, isVertical, iterateWalker } from "../common/lib/nodes";
 import EPUBView, { SpreadMode } from "./epub-view";
-import { getBoundingPageRect, PersistentRange } from "../common/lib/range";
+import { getBoundingPageRect, getVisibleRect, PersistentRange } from "../common/lib/range";
 import { isSafari } from "../../common/lib/utilities";
 import { getSelectionRanges } from "../common/lib/selection";
 import { isPageRectVisible, rectContainsPoint } from "../common/lib/rect";
@@ -173,12 +173,18 @@ abstract class AbstractFlow implements Flow {
 	}
 
 	/**
-	 * Return a range before or at the top of the viewport.
+	 * Return a range at or before the top of the viewport.
 	 *
 	 * @param renderer
-	 * @param textNodesOnly Return only text nodes, for constructing CFIs
+	 * @param textNodesOnly Return only text nodes, skipping images
+	 * @param requireStartInView Only accept a node whose start is within the viewport,
+	 *   never one that starts earlier and flows in
 	 */
-	protected _getFirstVisibleRange(renderer: SectionRenderer, textNodesOnly: boolean): Range | null {
+	protected _getFirstVisibleRange(
+		renderer: SectionRenderer,
+		textNodesOnly: boolean,
+		requireStartInView = false
+	): Range | null {
 		if (!renderer.mounted) {
 			return null;
 		}
@@ -217,13 +223,16 @@ abstract class AbstractFlow implements Flow {
 				crossAxisRectEnd = this._iframe.clientHeight - crossAxisRectEnd;
 			}
 			// If the range starts past the end of the viewport, we've gone too far -- return our previous best guess
+			// (or nothing, if the caller only wants a node that starts in view)
 			if (mainAxisRectStart > mainAxisViewportEnd || crossAxisRectStart > crossAxisViewportEnd) {
-				return bestRange;
+				return requireStartInView ? null : bestRange;
 			}
-			// If it starts in the viewport, return it immediately
+			// If it starts in the viewport, return it immediately.
+			// Unless requireStartInView is set, a node that starts just before
+			// the viewport but flows into it counts too.
 			if (
-				(mainAxisRectStart >= 0 || mainAxisRectStart < 0 && mainAxisRectEnd > 0)
-				&& (crossAxisRectStart >= 0 || crossAxisRectStart < 0 && crossAxisRectEnd > 0)
+				(mainAxisRectStart >= 0 || !requireStartInView && mainAxisRectStart < 0 && mainAxisRectEnd > 0)
+				&& (crossAxisRectStart >= 0 || !requireStartInView && crossAxisRectStart < 0 && crossAxisRectEnd > 0)
 			) {
 				return range;
 			}
@@ -381,7 +390,8 @@ export class ScrolledFlow extends AbstractFlow {
 	}
 
 	scrollIntoView(target: Range | PersistentRange | HTMLElement, options?: NavigateOptions): void {
-		let rect = (target instanceof PersistentRange ? target.toRange() : target).getBoundingClientRect();
+		let targetRange = target instanceof PersistentRange ? target.toRange() : target;
+		let rect = 'nodeType' in targetRange ? targetRange.getBoundingClientRect() : getVisibleRect(targetRange);
 
 		if (options?.ifNeeded && isPageRectVisible(
 			getBoundingPageRect(target),
@@ -553,14 +563,17 @@ export class ScrolledFlow extends AbstractFlow {
 
 	protected _updateUserAnchor(): void {
 		for (let renderer of this._visibleRenderers()) {
-			let startCFIRange = this._getFirstVisibleRange(renderer, true);
+			let startCFIRange = this._getFirstVisibleRange(renderer, false);
 			if (!startCFIRange) continue;
-			// CFIs should be calculated based on the start of the range, so collapse to the
-			// start. The offset is the Y coord of that point in the viewport, which we use
-			// to restore scroll position precisely after a resize.
-			startCFIRange.collapse(true);
+			// Collapse a text range to its start, but keep an image range
+			// whole so the CFI captures the element's box
+			if (startCFIRange.startContainer.nodeType === Node.TEXT_NODE) {
+				startCFIRange.collapse(true);
+			}
 			this._cachedStartCFI = new EpubCFI(startCFIRange, renderer.section.cfiBase);
-			let rect = startCFIRange.getBoundingClientRect();
+			// Store the top of that anchor's distance from the viewport edge,
+			// so we can restore scroll position precisely later
+			let rect = getVisibleRect(startCFIRange);
 			this._cachedStartCFIOffset = isVertical(renderer.body) ? rect.left : rect.top;
 			break;
 		}
@@ -728,11 +741,11 @@ export class PaginatedFlow extends AbstractFlow {
 		}
 
 		let domTarget = target instanceof PersistentRange ? target.toRange() : target;
-		if (!('nodeType' in domTarget) && !domTarget.getClientRects().length) {
+		let rect = 'nodeType' in domTarget ? domTarget.getBoundingClientRect() : getVisibleRect(domTarget);
+		if (!('nodeType' in domTarget) && !(rect.width || rect.height)) {
 			// A range in unrendered content has no position to scroll to
 			return;
 		}
-		let rect = domTarget.getBoundingClientRect();
 		let containerRect = this._sectionsContainer.getBoundingClientRect();
 		let internalX = rect.x - containerRect.x;
 		let internalY = rect.y - containerRect.y;
@@ -1092,13 +1105,57 @@ export class PaginatedFlow extends AbstractFlow {
 
 	protected _updateUserAnchor(): void {
 		for (let renderer of this._visibleRenderers()) {
-			let range = this._getFirstVisibleRange(renderer, true);
+			let range = this._getFirstVisibleRange(renderer, false, true)
+				// Nothing begins on this page, meaning it's filled by the middle of one long block
+				?? this._getMidBlockPageStart(renderer);
 			if (!range) continue;
-			range.collapse(true);
+			// Collapse a text range to its start, but keep an image range
+			// whole so the CFI captures the element's box
+			if (range.startContainer.nodeType === Node.TEXT_NODE) {
+				range.collapse(true);
+			}
 			this._cachedStartCFI = new EpubCFI(range, renderer.section.cfiBase);
 			this._cachedStartCFIOffset = 0;
 			break;
 		}
+	}
+
+	private _getMidBlockPageStart(renderer: SectionRenderer): Range | null {
+		let straddling = this._getFirstVisibleRange(renderer, false);
+		if (!straddling || straddling.startContainer.nodeType !== Node.TEXT_NODE) {
+			return null;
+		}
+		let node = straddling.startContainer;
+		let length = node.nodeValue?.length ?? 0;
+		let containerRect = this._sectionsContainer.getBoundingClientRect();
+		let spread = this._isVertical ? this._spreadHeight : this._spreadWidth;
+		let currentPage = Math.round((this._isVertical ? this._offsetTop : this._offsetLeft) / spread);
+		let columnOf = (offset: number) => {
+			let charRange = this._iframeDocument.createRange();
+			charRange.setStart(node, offset);
+			charRange.setEnd(node, Math.min(offset + 1, length));
+			let rect = charRange.getBoundingClientRect();
+			let internal = this._isVertical ? rect.top - containerRect.top : rect.left - containerRect.left;
+			return Math.floor(internal / spread);
+		};
+		let lo = 0;
+		let hi = length;
+		while (lo < hi) {
+			let mid = (lo + hi) >> 1;
+			if (columnOf(mid) < currentPage) {
+				lo = mid + 1;
+			}
+			else {
+				hi = mid;
+			}
+		}
+		if (lo >= length || columnOf(lo) !== currentPage) {
+			return null;
+		}
+		let range = this._iframeDocument.createRange();
+		range.setStart(node, lo);
+		range.collapse(true);
+		return range;
 	}
 
 	setSpreadMode(spreadMode: SpreadMode) {

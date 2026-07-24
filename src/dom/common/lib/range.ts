@@ -1,6 +1,6 @@
 import { isFirefox, isWin } from "../../../common/lib/utilities";
 import { closestElement } from "./nodes";
-import { getBoundingRect, isPageRectVisible, rectsIntersect } from "./rect";
+import { getBoundingRect, isErrorRect, isPageRectVisible, rectsIntersect } from "./rect";
 
 /**
  * Wraps the properties of a Range object in a static structure so that they don't change when the DOM changes.
@@ -223,6 +223,29 @@ export function collapseToOneCharacter(range: Range, toEnd = false) {
 			range.collapse(true);
 		}
 	}
+}
+
+/**
+ * Get a bounding rect ({@link Range#getBoundingClientRect()}) for the range,
+ * measuring an adjacent character if a collapsed range returns a zero rect.
+ */
+export function getVisibleRect(range: Range): DOMRect {
+	let rect = range.getBoundingClientRect();
+	if (!isErrorRect(rect)) {
+		return rect;
+	}
+	// Try one character after the start, then one before the end
+	for (let toEnd of [false, true]) {
+		let probe = range.cloneRange();
+		collapseToOneCharacter(probe, toEnd);
+		if (!probe.collapsed) {
+			let probeRect = probe.getBoundingClientRect();
+			if (!isErrorRect(probeRect)) {
+				return probeRect;
+			}
+		}
+	}
+	return rect;
 }
 
 export function supportsCaretPositionFromPoint(): boolean {
