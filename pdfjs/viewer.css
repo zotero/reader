@@ -468,33 +468,34 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 
 :root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::before,
 :root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::after {
-	top: 0;
 	bottom: auto;
-	--selection-handle-color: #0b57d0;
+	--selection-handle-color: #1a73e8;
 	background: var(--selection-handle-color);
 	box-shadow: none;
 }
 
 :root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::before {
+	top: 0;
 	width: 11px;
 	height: 22px;
 	border-radius: 0;
 }
 
 :root[data-reader-platform="android"] .mobileTextSelectionHandleGlyph::after {
-	left: 11px;
+	left: 0;
 	right: auto;
+	top: 0;
 	width: 22px;
 	height: 22px;
 	border-radius: 50%;
 }
 
 :root[data-reader-platform="android"] .mobileTextSelectionHandle[data-side="start"] .mobileTextSelectionHandleGlyph::before {
-	left: 22px;
+	left: 11px;
 }
 
 :root[data-reader-platform="android"] .mobileTextSelectionHandle[data-side="end"] .mobileTextSelectionHandleGlyph::before {
-	left: 11px;
+	left: 0;
 }
 
 body, #viewerContainer {

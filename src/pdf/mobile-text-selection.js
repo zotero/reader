@@ -14,11 +14,11 @@ const CONTEXT_MENU_SUPPRESSION_TOLERANCE = 40;
 const HANDLE_TOUCH_SIZE = 44;
 const HANDLE_GLYPH_LEFT = 6;
 const HANDLE_GLYPH_TOP = 0;
-const ANDROID_HANDLE_WIDTH = 44;
+const ANDROID_HANDLE_WIDTH = 22;
 const ANDROID_HANDLE_HEIGHT = 22;
 const ANDROID_HANDLE_HOTSPOTS = {
-	start: { x: 33, y: 0 },
-	end: { x: 11, y: 0 }
+	start: { x: 22, y: 0 },
+	end: { x: 0, y: 0 }
 };
 
 function pointsEqual(a, b) {
