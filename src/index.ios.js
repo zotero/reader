@@ -28,9 +28,6 @@ function decodeBase64(base64) {
 let readAloudPreviewAnnotation = null;
 const readAloudPreviewIds = new Set();
 
-// Serialize preview create/resize/confirm/cancel. Each is async (awaits the reader), so without a queue a rapid second
-// call would read a stale `readAloudPreviewAnnotation` (still null / the previous one) and create a duplicate preview
-// annotation — leaving an orphan and making the highlight jump or disappear as the session moves it.
 let readAloudPreviewQueue = Promise.resolve();
 function enqueueReadAloudPreview(task) {
 	readAloudPreviewQueue = readAloudPreviewQueue.then(task).catch((error) => {
@@ -181,14 +178,9 @@ window.getReadAloudSegments = async (options) => {
 };
 
 window.getReadAloudStartBlockIndex = async (options) => {
-	// The structured-document-text block index currently in view, so playback can start where the reader is. Read at
-	// play time (not load) so it reflects the current scroll position.
 	let blockIndex = null;
 	try {
-		const sdt = await window._view._loadSDT();
-		if (sdt) {
-			blockIndex = window._view._view.getVisibleBlockIndex?.(sdt.structure) ?? null;
-		}
+		blockIndex = await window._view.getVisibleBlockIndex();
 	}
 	catch (error) {
 		log("Read Aloud start block index unavailable: " + error);
@@ -197,9 +189,6 @@ window.getReadAloudStartBlockIndex = async (options) => {
 };
 
 window.setReadAloudAnnotation = (options) => {
-	// Creates or resizes the highlight-session PREVIEW annotation. It renders in the reader but is withheld from the
-	// app (see readAloudPreviewIds) until `confirmReadAloudAnnotation`. Resizes the current preview if one exists.
-	// Queued so concurrent move/extend calls resize the single preview instead of racing to create duplicates.
 	enqueueReadAloudPreview(async () => {
 		const params = JSON.parse(decodeBase64(options.params));
 		if (readAloudPreviewAnnotation) {
@@ -230,8 +219,6 @@ window.confirmReadAloudAnnotation = () => {
 };
 
 window.cancelReadAloudAnnotation = () => {
-	// Discard the session: remove the preview annotation from the reader. onDelete is a no-op on iOS, so nothing is
-	// persisted (it was never saved). Safe no-op if already confirmed.
 	enqueueReadAloudPreview(async () => {
 		if (!readAloudPreviewAnnotation) {
 			return;
@@ -245,29 +232,10 @@ window.cancelReadAloudAnnotation = () => {
 };
 
 window.setReadAloudSpotlight = async (options) => {
-	// Spotlight the currently-read segment. `anchor` is an SDT position ({ start, end }); omit it (or pass null) to clear.
 	const anchor = options.anchor ? JSON.parse(decodeBase64(options.anchor)) : null;
 	log("Set Read Aloud spotlight: " + (anchor ? JSON.stringify(anchor) : "clear"));
 	const position = anchor ? await window._view.sdtAnchorToPosition(anchor) : null;
-	try {
-		window._view.setReadAloudSpotlight(position);
-	}
-	catch (error) {
-		log("Read Aloud spotlight failed: " + error);
-	}
-	// Follow the reading position: scroll/turn to the current segment. `navigateToSelector` moves the view to a raw
-	// selector; the reader's own read-aloud follow (read-aloud.ts) uses it the same way. (The built-in spotlight
-	// navigate instead passes the selector to `navigate`, which only acts on `{ position }` / `{ annotationID }`
-	// locations and is therefore a no-op — that's why the view never moved.) Options mirror desktop: `ifNeeded` skips
-	// the move when already visible, `block: 'center'` keeps the read text centered.
-	if (position) {
-		try {
-			window._view._view.navigateToSelector(position, { ifNeeded: true, block: 'center', behavior: 'smooth' });
-		}
-		catch (error) {
-			log("Read Aloud follow navigate failed: " + error);
-		}
-	}
+	window._view.setReadAloudSpotlight(position);
 };
 
 // Notify when iframe is loaded

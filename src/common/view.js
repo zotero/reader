@@ -431,6 +431,16 @@ class View {
 		return sdt ? sdt.mapper.sdtToSourcePosition(sdtAnchor) : null;
 	}
 
+	/**
+	 * Top-level structured-document-text block index currently in view, or null. Used to start Read Aloud playback
+	 * where the reader is.
+	 * @returns {Promise<number | null>}
+	 */
+	async getVisibleBlockIndex() {
+		let sdt = await this._loadSDT();
+		return sdt ? (this._view.getVisibleBlockIndex?.(sdt.structure) ?? null) : null;
+	}
+
 	async createAnnotationFromSDT({ sdtAnchor, type, color, comment, tags }) {
 		let sdt = await this._loadSDT();
 		if (!sdt) {
