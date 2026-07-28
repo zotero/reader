@@ -12,6 +12,18 @@ PDFJS_LEGACY_BUILD=./pdfjs/pdf.js/build/generic-legacy
 PDFJS_MINIFIED_LEGACY_BUILD=./pdfjs/pdf.js/build/minified-legacy
 BUILD_BASE=./build
 
+add_generic_compatibility() {
+	local file
+	for file in \
+		"$BUILD_DIR/build/pdf.mjs" \
+		"$BUILD_DIR/build/pdf.worker.mjs" \
+		"$BUILD_DIR/web/viewer.mjs"
+	do
+		cat pdfjs/compatibility.js "$file" > "$file.compat"
+		mv "$file.compat" "$file"
+	done
+}
+
 # Move into the PDF.js directory, install dependencies, and build
 pushd pdfjs/pdf.js
 npm ci
@@ -42,6 +54,7 @@ if [[ $PDFJS_CONFIG = "dev" || $PDFJS_CONFIG = "all" ]]; then
 	cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
 	cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
 	cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
+	add_generic_compatibility
 fi
 
 if [[ $PDFJS_CONFIG = "mobile" || $PDFJS_CONFIG = "all" ]]; then
@@ -62,6 +75,7 @@ if [[ $PDFJS_CONFIG = "mobile" || $PDFJS_CONFIG = "all" ]]; then
 	cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
 	cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
 	cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
+	add_generic_compatibility
 fi
 
 if [[ $PDFJS_CONFIG = "web" || $PDFJS_CONFIG = "all" ]]; then
@@ -102,4 +116,5 @@ if [[ $PDFJS_CONFIG = "zotero" || $PDFJS_CONFIG = "all" ]]; then
 	cp -r "$PDFJS_BUILD/web/viewer.mjs" "$BUILD_DIR/web/"
 	cp -r "$PDFJS_BUILD/web/images/loading-icon.gif" "$BUILD_DIR/web/images/"
 	cp -r "pdfjs/viewer.css" "$BUILD_DIR/web/"
+	add_generic_compatibility
 fi

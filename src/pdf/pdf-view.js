@@ -4,6 +4,7 @@ import {
 	getLineSelectionRanges,
 	getModifiedSelectionRanges,
 	getNodeOffset,
+	getRectRotationOnText,
 	getReversedSelectionRanges,
 	getSelectionRanges,
 	getSelectionRangesByPosition,
@@ -52,7 +53,6 @@ import {
 } from '../common/lib/utilities';
 import { debounce } from '../common/lib/debounce';
 import { AutoScroll } from './lib/auto-scroll';
-import { getTextRangeHandle } from './lib/text-range-handles';
 import { PDFThumbnails } from './pdf-thumbnails';
 import {
 	A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH,
@@ -75,7 +75,7 @@ import {
 	splitReadAloudSegmentsBySelection
 } from './read-aloud-segments';
 import { detectLang } from '../common/lib/detect-lang';
-import { PDFMobileTextSelection } from './mobile-text-selection';
+import { PDFNativeTextSelection } from './native-text-selection';
 
 class PDFView {
 	constructor(options) {
@@ -170,7 +170,7 @@ class PDFView {
 		this._readAloudHighlightedPosition = null;
 		this._readAloudSentenceHighlightedPosition = null;
 		this._pointerDownTap = null;
-		this._mobileTextSelection = null;
+		this._nativeTextSelection = null;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.style.width = '100%';
@@ -214,12 +214,6 @@ class PDFView {
 			this._updateColorScheme();
 			let root = this._iframeWindow.document.documentElement;
 			root.toggleAttribute('data-mobile-reader', !!this._mobile);
-			if (this._options.platform) {
-				root.dataset.readerPlatform = this._options.platform;
-			}
-			else {
-				delete root.dataset.readerPlatform;
-			}
 			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
 				let handlePasswordRequest = (updateCallback) => {
@@ -263,7 +257,6 @@ class PDFView {
 
 				this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
 					this._scrolling = true;
-					this._mobileTextSelection?.handleScroll();
 					clearTimeout(this._scrollTimeout);
 					this._scrollTimeout = setTimeout(() => {
 						this._scrolling = false;
@@ -337,7 +330,6 @@ class PDFView {
 		// Touch events are passive by default
 		this._iframeWindow.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
-		this._iframeWindow.addEventListener('touchcancel', this._handleTouchCancel.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
@@ -367,7 +359,7 @@ class PDFView {
 			container: this._iframeWindow.document.getElementById('viewerContainer')
 		});
 		if (this._mobile) {
-			this._mobileTextSelection = new PDFMobileTextSelection(this);
+			this._nativeTextSelection = new PDFNativeTextSelection(this);
 		}
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
@@ -648,9 +640,9 @@ class PDFView {
 		let originalPage = event.source;
 		let textLayer = originalPage.div.querySelector('.textLayer');
 		if (textLayer) {
-			textLayer.draggable = true;
+			textLayer.draggable = !this._nativeTextSelection;
+			this._nativeTextSelection?.handleTextLayerRendered(textLayer);
 		}
-		this._refreshMobileTextSelection();
 	}
 
 	async _handlePageRendered(event) {
@@ -660,7 +652,6 @@ class PDFView {
 		let { isDetailView } = event;
 		if (page) {
 			page.refresh(isDetailView);
-			this._refreshMobileTextSelection();
 		}
 		else {
 			this._init2 && this._init2();
@@ -852,16 +843,11 @@ class PDFView {
 				page.render();
 			}
 		}
-		this._refreshMobileTextSelection();
-	}
-
-	_refreshMobileTextSelection() {
-		this._mobileTextSelection?.onSelectionChange(this._selectionRanges);
 	}
 
 	destroy() {
 		this._overlayPopupDelayer.destroy();
-		this._mobileTextSelection?.destroy();
+		this._nativeTextSelection?.destroy();
 	}
 
 	focus() {
@@ -1007,7 +993,7 @@ class PDFView {
 			this._iframeWindow.document.getElementById('viewerContainer').style.touchAction = tool.type !== 'pointer' ? 'none' : 'auto';
 		}
 		this._tool = tool;
-		this._mobileTextSelection?.onSelectionChange(this._selectionRanges);
+		this._nativeTextSelection?.updateEnabledState();
 		this.updateCursor();
 	}
 
@@ -1524,7 +1510,6 @@ class PDFView {
 
 	_setSelectionRanges(selectionRanges, { updatePopup = true } = {}) {
 		this._selectionRanges = selectionRanges || [];
-		this._mobileTextSelection?.onSelectionChange(this._selectionRanges);
 		if (updatePopup) {
 			this._updateSelectionPopup();
 		}
@@ -1545,6 +1530,7 @@ class PDFView {
 	_clearPointerAction() {
 		this.action = null;
 		this.pointerDownPosition = null;
+		this._pointerDownTriggered = false;
 		this._pointerDownTap = null;
 		this._autoScroll?.stop();
 	}
@@ -1899,32 +1885,6 @@ class PDFView {
 		];
 	}
 
-	getScrollRect(rect, pageIndex) {
-		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
-		let [x1, y2] = page.viewport.convertToViewportPoint(...rect);
-		let [x2, y1] = page.viewport.convertToViewportPoint(...rect.slice(2, 4));
-
-		let r = [
-			Math.min(x1, x2),
-			Math.min(y1, y2),
-			Math.max(x1, x2),
-			Math.max(y1, y2)
-		];
-
-		let container = this._iframeWindow.document.getElementById('viewerContainer');
-		let containerRect = container.getBoundingClientRect();
-		let pageRect = page.div.getBoundingClientRect();
-		let x = pageRect.x - containerRect.x + container.scrollLeft;
-		let y = pageRect.y - containerRect.y + container.scrollTop;
-
-		return [
-			x + r[0],
-			y + r[1],
-			x + r[2],
-			y + r[3]
-		];
-	}
-
 	getSelectedAnnotationAction(annotation, position) {
 		// Prevent selected single-point ink annotation breaking all other actions in the page
 		if (annotation.type === 'ink') {
@@ -1965,28 +1925,70 @@ class PDFView {
 			// Calculate text resizing handle rectangles taking into account text rotation
 			if (this._pdfPages[annotation.position.pageIndex]
 				&& (!annotation.position.nextPageRects || this._pdfPages[annotation.position.pageIndex + 1])) {
-				let getHandle = (pageIndex, rect, side) => getTextRangeHandle({
-					chars: this._pdfPages[pageIndex].chars,
-					pageIndex,
-					rect,
-					side,
-					getRect: this.getViewRect.bind(this),
-					getViewportRotation: this.getViewportRotation.bind(this),
-					padding: 3
-				});
+				let { chars } = this._pdfPages[annotation.position.pageIndex];
 				let startHandle;
 				let endHandle;
+				let padding = 3;
 				if (annotation.position.nextPageRects) {
 					if (annotation.position.pageIndex + 1 === position.pageIndex) {
-						endHandle = getHandle(annotation.position.pageIndex + 1, annotation.position.nextPageRects.at(-1), 'end');
+						let { chars } = this._pdfPages[annotation.position.pageIndex + 1];
+						let rotation = getRectRotationOnText(chars, annotation.position.nextPageRects.at(-1));
+						// Add page rotation to text rotation
+						rotation += this.getViewportRotation(annotation.position.pageIndex + 1);
+						rotation = normalizeDegrees(rotation);
+						let rect = this.getViewRect(annotation.position.nextPageRects.at(-1), annotation.position.pageIndex + 1);
+						let [x1, y1, x2, y2] = rect;
+						rect = (
+							rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
+							|| rotation === 90 && [x1, y1 - padding, x2, y1 + padding]
+							|| rotation === 180 && [x1 - padding, y1, x1 + padding, y2]
+							|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
+						);
+						endHandle = { rect, vertical: [90, 270].includes(rotation) };
 					}
 					else {
-						startHandle = getHandle(annotation.position.pageIndex, annotation.position.rects[0], 'start');
+						let rotation = getRectRotationOnText(chars, annotation.position.rects[0]);
+						// Add page rotation to text rotation
+						rotation += this.getViewportRotation(annotation.position.pageIndex);
+						rotation = normalizeDegrees(rotation);
+						let rect = this.getViewRect(annotation.position.rects[0], annotation.position.pageIndex);
+						let [x1, y1, x2, y2] = rect;
+						rect = (
+							rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
+							|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
+							|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
+							|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
+						);
+						startHandle = { rect, vertical: [90, 270].includes(rotation) };
 					}
 				}
 				else {
-					startHandle = getHandle(annotation.position.pageIndex, annotation.position.rects[0], 'start');
-					endHandle = getHandle(annotation.position.pageIndex, annotation.position.rects.at(-1), 'end');
+					let rotation = getRectRotationOnText(chars, annotation.position.rects[0]);
+					// Add page rotation to text rotation
+					rotation += this.getViewportRotation(annotation.position.pageIndex);
+					rotation = normalizeDegrees(rotation);
+					let rect = this.getViewRect(annotation.position.rects[0], annotation.position.pageIndex);
+					let [x1, y1, x2, y2] = rect;
+					rect = (
+						rotation === 0 && [x1 - padding, y1, x1 + padding, y2]
+						|| rotation === 90 && [x1, y2 - padding, x2, y2 + padding]
+						|| rotation === 180 && [x2 - padding, y1, x2 + padding, y2]
+						|| rotation === 270 && [x1, y1 - padding, x2, y1 + padding]
+					);
+					startHandle = { rect, vertical: [90, 270].includes(rotation) };
+					rotation = getRectRotationOnText(chars, annotation.position.rects.at(-1));
+					// Add page rotation to text rotation
+					rotation += this.getViewportRotation(annotation.position.pageIndex);
+					rotation = normalizeDegrees(rotation);
+					rect = this.getViewRect(annotation.position.rects.at(-1), annotation.position.pageIndex);
+					[x1, y1, x2, y2] = rect;
+					rect = (
+						rotation === 0 && [x2 - padding, y1, x2 + padding, y2]
+						|| rotation === 90 && [x1, y1 - padding, x2, y1 + padding]
+						|| rotation === 180 && [x1 - padding, y1, x1 + padding, y2]
+						|| rotation === 270 && [x1, y2 - padding, x2, y2 + padding]
+					);
+					endHandle = { rect, vertical: [90, 270].includes(rotation) };
 				}
 				if (startHandle) {
 					let { rect, vertical } = startHandle;
@@ -2434,30 +2436,15 @@ class PDFView {
 
 	}
 
-	_canStartMobileTextSelection(event, position, action, selectAnnotations) {
-		return this._mobile
-			&& event.pointerType === 'touch'
-			&& event.isPrimary !== false
-			&& event.button === 0
-			&& this._tool.type === 'pointer'
-			&& !event.altKey
-			&& !event.shiftKey
-			&& position
-			&& action.type === 'none'
-			&& !selectAnnotations?.length
-			&& !event.target.closest('.textAnnotation')
-			&& !this._getSelectableOverlay(position);
-	}
-
 	_handlePointerDown(event) {
+		if (this._nativeTextSelection?.handlePointerDown(event)) {
+			return;
+		}
+
 		// Prevent double-click word highlight on triple-click
 		if (this._creationTimeout) {
 			clearTimeout(this._creationTimeout);
 			this._creationTimeout = null;
-		}
-
-		if (this._mobileTextSelection?.handlePointerDown(event)) {
-			return;
 		}
 
 		if (event.pointerType === 'mouse') {
@@ -2508,10 +2495,6 @@ class PDFView {
 		}
 		let page = this.getPageByIndex(position.pageIndex);
 		let { action, selectAnnotations } = this.getActionAtPosition(position, event);
-		this._mobileTextSelection?.handlePointerDown(event, {
-			position,
-			canStart: this._canStartMobileTextSelection(event, position, action, selectAnnotations)
-		});
 
 		// if (action.type === 'overlay') {
 		// 	// TODO: Only link overlay should block text selection, while citation and reference shouldn't
@@ -2619,26 +2602,22 @@ class PDFView {
 		}
 
 		if (action.type === 'selectText') {
-			let selectionRanges;
 			if (event.detail === 1 || !event.detail) {
 				if (shift && this._selectionRanges.length) {
-					selectionRanges = getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, position);
+					this._selectionRanges = getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, position);
 				}
 				else {
-					selectionRanges = getSelectionRanges(this._pdfPages, position, position);
+					this._selectionRanges = getSelectionRanges(this._pdfPages, position, position);
 				}
 				this.action.mode = 'chars';
 			}
 			else if (event.detail === 2) {
-				selectionRanges = getWordSelectionRanges(this._pdfPages, position, position);
+				this._selectionRanges = getWordSelectionRanges(this._pdfPages, position, position);
 				this.action.mode = 'words';
 			}
 			else if (event.detail === 3) {
-				selectionRanges = getLineSelectionRanges(this._pdfPages, position, position);
+				this._selectionRanges = getLineSelectionRanges(this._pdfPages, position, position);
 				this.action.mode = 'lines';
-			}
-			if (selectionRanges) {
-				this._setSelectionRanges(selectionRanges, { updatePopup: false });
 			}
 			if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
 				action.triggered = true;
@@ -2665,7 +2644,7 @@ class PDFView {
 		// }
 
 
-		if (action.type !== 'none') {
+		if (!this._nativeTextSelection || action.type !== 'none') {
 			this._autoScroll.enable();
 		}
 
@@ -2673,16 +2652,7 @@ class PDFView {
 	}
 
 	_handleTouchMove(event) {
-		if (event.touches?.length !== 1 && this._mobileTextSelection?.handleTouchCancel()) {
-			if (event.cancelable) {
-				event.preventDefault();
-			}
-			return;
-		}
-		if (event.touches?.length === 1 && this._mobileTextSelection?.handleTouchMove(event.touches[0])) {
-			if (event.cancelable) {
-				event.preventDefault();
-			}
+		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
 			return;
 		}
 		if (
@@ -2696,31 +2666,29 @@ class PDFView {
 	}
 
 	_handleTouchEnd(event) {
+		this._nativeTextSelection?.handlePointerUp();
+		if (this._nativeTextSelection?.shouldAllowNativeTouch(event)) {
+			this._clearPointerAction();
+			return;
+		}
+
 		// Prevent emulated mouse event firing (i.e. mousedown, which messes up things).
 		if (event.cancelable) {
-			event.preventDefault();
-		}
-		this._mobileTextSelection?.handleTouchEnd();
-		this._pointerDownTriggered = false;
-	}
-
-	_handleTouchCancel(event) {
-		if (this._mobileTextSelection?.handleTouchCancel() && event.cancelable) {
 			event.preventDefault();
 		}
 		this._pointerDownTriggered = false;
 	}
 
 	_handlePointerMove = throttle((event) => {
+		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
+			return;
+		}
+
 		// Don't cancel a highlight/underline annotation just created in word selection mode
 		// when the highlight/underline tool is enabled
 		this._creationTimeout = null;
 
-		if (this._mobileTextSelection?.handlePointerMove(event)) {
-			return;
-		}
 		if (this._scrolling) {
-			this._mobileTextSelection?.handleScroll();
 			return;
 		}
 
@@ -2984,18 +2952,14 @@ class PDFView {
 			action.triggered = true;
 		}
 		else if (action.type === 'selectText') {
-			let selectionRanges;
 			if (action.mode === 'chars') {
-				selectionRanges = getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, position);
+				this._selectionRanges = getModifiedSelectionRanges(this._pdfPages, this._selectionRanges, position);
 			}
 			else if (action.mode === 'words') {
-				selectionRanges = getWordSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
+				this._selectionRanges = getWordSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
 			else if (action.mode === 'lines') {
-				selectionRanges = getLineSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
-			}
-			if (selectionRanges) {
-				this._setSelectionRanges(selectionRanges, { updatePopup: false });
+				this._selectionRanges = getLineSelectionRanges(this._pdfPages, this.pointerDownPosition, position);
 			}
 			if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
 				action.triggered = true;
@@ -3156,6 +3120,12 @@ class PDFView {
 	}
 
 	_handlePointerUp(event) {
+		this._nativeTextSelection?.handlePointerUp();
+		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
+			this._clearPointerAction();
+			return;
+		}
+
 		this._pointerDownTriggered = false;
 		if (!this.action && event.target.classList?.contains('textAnnotation')) {
 			this._pointerDownTap = null;
@@ -3166,21 +3136,6 @@ class PDFView {
 			this._selectedOverlay = null;
 			this._onSetOverlayPopup(null);
 		});
-
-		if (this._mobileTextSelection?.handlePointerUp(event)) {
-			this._pointerDownTap = null;
-			if (!this.pointerDownPosition) {
-				let position = this.pointerEventToPosition(event);
-				if (position) {
-					let { action } = this.getActionAtPosition(position, event);
-					this.updateCursor(action);
-				}
-				else {
-					this.updateCursor();
-				}
-			}
-			return;
-		}
 
 		let position = this.pointerEventToPosition(event);
 		let handleBackdropTap = this._shouldHandleBackdropTap(event, position);
@@ -3371,11 +3326,11 @@ class PDFView {
 	}
 
 	_handlePointerCancel() {
+		this._nativeTextSelection?.handlePointerUp();
 		this.action = null;
 		this.pointerDownPosition = null;
 		this._pointerDownTriggered = false;
 		this._pointerDownTap = null;
-		this._mobileTextSelection?.handlePointerCancel();
 		this._render();
 	}
 
@@ -3453,9 +3408,7 @@ class PDFView {
 			return;
 		}
 
-		if (this._mobileTextSelection?.shouldSuppressContextMenu(event)) {
-			event.preventDefault();
-			event.stopPropagation();
+		if (this._nativeTextSelection?.handleContextMenu(event)) {
 			return;
 		}
 
@@ -4216,6 +4169,10 @@ class PDFView {
 
 	_handleCopy(event) {
 		if (this._textAnnotationFocused()) {
+			return;
+		}
+		if (this._nativeTextSelection?.hasSelection()
+				&& !this._nativeTextSelection.syncNow()) {
 			return;
 		}
 		event.preventDefault();
