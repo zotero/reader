@@ -1489,7 +1489,12 @@ class PDFView {
 
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
-		this._setSelectionRanges();
+		if (this._nativeTextSelection) {
+			this._nativeTextSelection.clear();
+		}
+		else {
+			this._setSelectionRanges();
+		}
 		// this._clearFocus();
 
 		this._render();

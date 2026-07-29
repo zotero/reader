@@ -599,7 +599,7 @@ export class PDFNativeTextSelection {
 	_setReaderSelection(selectionRanges) {
 		let hadSelection = this._view._selectionRanges.some(range => !range.collapsed);
 		let hasSelection = selectionRanges?.some(range => !range.collapsed) || false;
-		this._view._setSelectionRanges(selectionRanges, { updatePopup: false });
+		this._view._setSelectionRanges(selectionRanges);
 		this._view._render();
 		if (hadSelection !== hasSelection) {
 			this._view._updateViewStats();
