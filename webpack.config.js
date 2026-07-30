@@ -260,7 +260,7 @@ function generateRules(build) {
 
 	return [
 		{
-			test: /\.(ts|js)x?$/,
+			test: /\.(m?js|ts)x?$/,
 			include: jsSourcePaths,
 			use: {
 				loader: 'babel-loader',

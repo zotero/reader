@@ -72,6 +72,7 @@ import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
 import { getBlockNodeByRef } from '../common/sdt/position-mapper';
+import { PDFNativeTextSelection } from './native-text-selection';
 
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
@@ -177,6 +178,7 @@ class PDFView {
 		this._readAloudHighlightedPosition = null;
 		this._readAloudSentenceHighlightedPosition = null;
 		this._pointerDownTap = null;
+		this._nativeTextSelection = null;
 
 		this._iframe = document.createElement('iframe');
 		this._iframe.style.width = '100%';
@@ -218,6 +220,8 @@ class PDFView {
 
 		this._iframe.addEventListener('load', () => {
 			this._updateColorScheme();
+			let root = this._iframeWindow.document.documentElement;
+			root.toggleAttribute('data-mobile-reader', !!this._mobile);
 			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
 				let handlePasswordRequest = (updateCallback) => {
@@ -364,6 +368,9 @@ class PDFView {
 		this._autoScroll = new AutoScroll({
 			container: this._iframeWindow.document.getElementById('viewerContainer')
 		});
+		if (this._mobile) {
+			this._nativeTextSelection = new PDFNativeTextSelection(this);
+		}
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));
@@ -650,7 +657,12 @@ class PDFView {
 		let originalPage = event.source;
 		let textLayer = originalPage.div.querySelector('.textLayer');
 		if (textLayer) {
-			textLayer.draggable = true;
+			if (this._nativeTextSelection) {
+				this._nativeTextSelection.handleTextLayerRendered(textLayer);
+			}
+			else {
+				textLayer.draggable = true;
+			}
 		}
 	}
 
@@ -891,7 +903,12 @@ class PDFView {
 	}
 
 	clearSelection() {
-		this._setSelectionRanges();
+		if (this._nativeTextSelection) {
+			this._nativeTextSelection.clear();
+		}
+		else {
+			this._setSelectionRanges();
+		}
 		this._iframeWindow.getSelection()?.removeAllRanges();
 	}
 
@@ -1059,6 +1076,7 @@ class PDFView {
 
 	destroy() {
 		this._overlayPopupDelayer.destroy();
+		this._nativeTextSelection?.destroy();
 	}
 
 	// Log once and disable a memory feature if the pdf.js fork stops exposing
@@ -1295,6 +1313,7 @@ class PDFView {
 			this._iframeWindow.document.getElementById('viewerContainer').style.touchAction = tool.type !== 'pointer' ? 'none' : 'auto';
 		}
 		this._tool = tool;
+		this._nativeTextSelection?.updateEnabledState();
 		this.updateCursor();
 	}
 
@@ -1633,7 +1652,12 @@ class PDFView {
 
 	setSelectedAnnotationIDs(ids) {
 		this._selectedAnnotationIDs = ids;
-		this._setSelectionRanges();
+		if (this._nativeTextSelection) {
+			this._nativeTextSelection.clear();
+		}
+		else {
+			this._setSelectionRanges();
+		}
 		// this._clearFocus();
 
 		this._render();
@@ -1663,6 +1687,14 @@ class PDFView {
 		else {
 			this._onSetSelectionPopup();
 		}
+	}
+
+	_clearPointerAction() {
+		this.action = null;
+		this.pointerDownPosition = null;
+		this._pointerDownTriggered = false;
+		this._pointerDownTap = null;
+		this._autoScroll?.disable();
 	}
 
 	_scrollSelectionHeadIntoView(selectionRanges) {
@@ -2675,6 +2707,10 @@ class PDFView {
 	}
 
 	_handlePointerDown(event) {
+		if (this._nativeTextSelection?.handlePointerDown(event)) {
+			return;
+		}
+
 		// Prevent double-click word highlight on triple-click
 		if (this._creationTimeout) {
 			clearTimeout(this._creationTimeout);
@@ -2878,12 +2914,17 @@ class PDFView {
 		// }
 
 
-		this._autoScroll.enable();
+		if (!this._nativeTextSelection?.enabled || action.type !== 'none') {
+			this._autoScroll.enable();
+		}
 
 		this._render();
 	}
 
 	_handleTouchMove(event) {
+		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
+			return;
+		}
 		if (
 			// Prevent default touch action (which is scroll) if any tool is enabled
 			this._tool.type !== 'pointer' && event.target.id !== 'viewer'
@@ -2895,15 +2936,24 @@ class PDFView {
 	}
 
 	_handleTouchEnd(event) {
+		this._nativeTextSelection?.handlePointerUp();
+		if (this._nativeTextSelection?.shouldAllowNativeTouch(event)) {
+			this._clearPointerAction();
+			return;
+		}
+
 		// Prevent emulated mouse event firing (i.e. mousedown, which messes up things).
-		// Although on chrome we get an error when trying to scroll:
-		// "[Intervention] Ignored attempt to cancel a touchend event with cancelable=false,
-		// for example because scrolling is in progress and cannot be interrupted"
-		event.preventDefault();
+		if (event.cancelable) {
+			event.preventDefault();
+		}
 		this._pointerDownTriggered = false;
 	}
 
 	_handlePointerMove = throttle((event) => {
+		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
+			return;
+		}
+
 		// Don't cancel a highlight/underline annotation just created in word selection mode
 		// when the highlight/underline tool is enabled
 		this._creationTimeout = null;
@@ -3340,6 +3390,12 @@ class PDFView {
 	}
 
 	_handlePointerUp(event) {
+		this._nativeTextSelection?.handlePointerUp();
+		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
+			this._clearPointerAction();
+			return;
+		}
+
 		this._pointerDownTriggered = false;
 		if (!this.action && event.target.classList?.contains('textAnnotation')) {
 			this._pointerDownTap = null;
@@ -3540,6 +3596,7 @@ class PDFView {
 	}
 
 	_handlePointerCancel() {
+		this._nativeTextSelection?.handlePointerUp();
 		// Chrome cancels the pointer stream when a native drag operation
 		// starts, but the drag events keep driving the current action
 		if (this._dragging) {
@@ -3626,6 +3683,10 @@ class PDFView {
 			return;
 		}
 
+		if (this._nativeTextSelection?.handleContextMenu(event)) {
+			return;
+		}
+
 		let position = this.pointerEventToPosition(event);
 		if (this._options.platform !== 'web' && event.button === 2) {
 			// Clear pointer down because the pointer up event won't be received in this iframe
@@ -3703,6 +3764,12 @@ class PDFView {
 
 		let key = getKeyCombination(event);
 		let code = getCodeCombination(event);
+		let selectionArrowKey = [
+			'Shift-ArrowLeft',
+			'Shift-ArrowRight',
+			'Shift-ArrowUp',
+			'Shift-ArrowDown'
+		].includes(key);
 
 		if (event.target.classList.contains('textAnnotation')) {
 			return;
@@ -3710,7 +3777,7 @@ class PDFView {
 		// Set text layer selection again, because previous press of Option-Escape
 		// clear the selection and focuses body (that happens in every text in inside
 		// Zotero client, but not on actual Firefox)
-		if (alt) {
+		if (alt && !this._nativeTextSelection?.enabled) {
 			if (this._selectionRanges.length) {
 				setTextLayerSelection(this._iframeWindow, this._selectionRanges);
 			}
@@ -3744,7 +3811,10 @@ class PDFView {
 			event.stopPropagation();
 			event.preventDefault();
 		}
-		else if (['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key) && this._selectionRanges.length) {
+		else if (selectionArrowKey && this._nativeTextSelection?.enabled) {
+			// The browser owns both the native handles and their keyboard movement.
+		}
+		else if (selectionArrowKey && this._selectionRanges.length) {
 			// Prevent browser doing its own text selection
 			event.stopPropagation();
 			event.preventDefault();
@@ -4073,7 +4143,7 @@ class PDFView {
 			annotation.color = this._tools['highlight'].color;
 			this._onAddAnnotation(annotation, true);
 			this.navigateToPosition(annotation.position);
-			this._setSelectionRanges();
+			this.clearSelection();
 		}
 		else if (
 			code === 'Ctrl-Alt-Digit2'
@@ -4086,7 +4156,7 @@ class PDFView {
 			annotation.color = this._tools['underline'].color;
 			this._onAddAnnotation(annotation, true);
 			this.navigateToPosition(annotation.position);
-			this._setSelectionRanges();
+			this.clearSelection();
 		}
 		else if (code === 'Ctrl-Alt-Digit3' && !this._readOnly) {
 
@@ -4189,12 +4259,15 @@ class PDFView {
 		}
 
 		if (key === 'Escape') {
-			if (this.action || this.pointerDownPosition || this._selectionRanges.length) {
+			if (this.action
+					|| this.pointerDownPosition
+					|| this._selectionRanges.length
+					|| this._nativeTextSelection?.hasSelection()) {
 				event.preventDefault();
 				this.action = null;
 				this.pointerDownPosition = null;
 				this._pointerDownTap = null;
-				this._setSelectionRanges();
+				this.clearSelection();
 				this._render();
 				return;
 			}
@@ -4403,6 +4476,10 @@ class PDFView {
 
 	_handleCopy(event) {
 		if (this._textAnnotationFocused()) {
+			return;
+		}
+		if (this._nativeTextSelection?.hasSelection()
+				&& !this._nativeTextSelection.syncNow()) {
 			return;
 		}
 		event.preventDefault();

@@ -96,6 +96,7 @@ async function main() {
 	let queryString = window.location.search;
 	let urlParams = new URLSearchParams(queryString);
 	let type = urlParams.get('type') || 'snapshot';
+	let platform = urlParams.get('platform') || (/Android/.test(navigator.userAgent) ? 'android' : undefined);
 	let demo;
 	if (type === 'pdf') {
 		demo = pdf;
@@ -109,6 +110,7 @@ async function main() {
 	let res = await fetch(demo.fileName);
 	window.createView({
 		type,
+		platform,
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 		},
