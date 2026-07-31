@@ -386,7 +386,7 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	background: transparent;
 }
 
-.customAnnotationLayer ::selection {
+.customAnnotationLayer .textAnnotation:focus::selection {
 	background-color: #71ADFD;
 }
 
