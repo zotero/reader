@@ -315,6 +315,10 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	-webkit-touch-callout: none;
 }
 
+:root[data-android-annotation-tool] .textLayer {
+	touch-action: none;
+}
+
 :root[data-native-text-selection] .textLayer {
 	overflow: clip;
 	user-select: text;
