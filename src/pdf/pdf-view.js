@@ -2786,7 +2786,13 @@ class PDFView {
 		this.updateCursor(action);
 		// Select text, and/or object, otherwise unselect
 
-		if (selectAnnotations && !(selectAnnotations.length === 0 && this._selectedAnnotationIDs.length === 0)) {
+		// Let WebView distinguish an annotation tap from a scroll gesture.
+		let deferTouchAnnotationSelection = this._options.platform === 'android'
+			&& event.pointerType === 'touch'
+			&& !!selectAnnotations?.length;
+		if (!deferTouchAnnotationSelection
+				&& selectAnnotations
+				&& !(selectAnnotations.length === 0 && this._selectedAnnotationIDs.length === 0)) {
 			this._onSelectAnnotations(selectAnnotations.map(x => x.id), event);
 			if (selectAnnotations.length) {
 				action.alreadySelectedAnnotations = true;
