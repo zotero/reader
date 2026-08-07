@@ -282,6 +282,21 @@ export function createAnnotationContextMenu(reader, params) {
 		y: params.y,
 		itemGroups: createItemGroup([
 			[
+				{
+					label: reader._getString('general-copy'),
+					onCommand: () => {
+						let dataTransfer = new DataTransfer();
+						reader._handleSetDataTransferAnnotations(dataTransfer, annotations[0]);
+						navigator.clipboard.writeText(dataTransfer.getData('text/plain'));
+					}
+				},
+				(reader._platform === 'zotero' || window.dev) && {
+					label: reader._getString('reader-copy-link-to-annotation'),
+					disabled: annotations.length !== 1,
+					onCommand: () => reader._onCopyLinkToAnnotation(annotations[0])
+				}
+			],
+			[
 				(reader._platform === 'zotero' || window.dev) && {
 					label: reader._getString('reader-add-to-note'),
 					disabled: !reader._state.enableAddToNote,
@@ -420,6 +435,13 @@ export function createThumbnailContextMenu(reader, params) {
 		x: params.x,
 		y: params.y,
 		itemGroups: createItemGroup([
+			[
+				(reader._platform === 'zotero' || window.dev) && {
+					disabled: params.pageIndexes.length !== 1,
+					label: reader._getString('reader-copy-link-to-page'),
+					onCommand: () => reader._onCopyLinkToPage(params.pageIndexes[0])
+				}
+			],
 			[
 				{
 					label: reader._getString('reader-rotate-left'),

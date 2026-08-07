@@ -114,6 +114,8 @@ class Reader {
 		this._onPurchaseReadAloudCredits = options.onPurchaseReadAloudCredits;
 		this._onLogIn = options.onLogIn;
 		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
+		this._onCopyLinkToAnnotation = options.onCopyLinkToAnnotation;
+		this._onCopyLinkToPage = options.onCopyLinkToPage;
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
