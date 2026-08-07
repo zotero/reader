@@ -54,10 +54,14 @@
 				opacity: 0.5;
 			}
 
-			&:hover, &:focus {
+			&:hover, &:focus:not(:focus-visible) {
 				outline: none;
 				box-shadow: none;
 				background: var(--fill-quinary);
+			}
+
+			&:active {
+				background: var(--fill-quarternary);
 			}
 
 			.icon {
