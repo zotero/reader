@@ -275,6 +275,16 @@ export class KeyboardManager {
 			event.stopPropagation();
 			this._reader.print();
 		}
+		else if (key === `${pm}-Shift-r` || key === `${pm}-Shift-l`) {
+			event.preventDefault();
+			event.stopPropagation();
+			if (readAloudActive && !this._reader.getSelectionPosition()) {
+				this._reader.toggleReadAloudPopup(false);
+			}
+			else {
+				this._reader.startReadAloudAtPosition();
+			}
+		}
 		else if (key === `${pm}-=` || key === `${pm}-+` || code === `${pm}-NumpadAdd`) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -391,21 +401,11 @@ export class KeyboardManager {
 					this._reader.setTool({ color: ANNOTATION_COLORS[idx][1] });
 				}
 			}
-			else if (this._reader._type === 'pdf' && key === 'h' && !this._reader._readAloudManager.active) {
+			else if (this._reader._type === 'pdf' && key === 'h' && !readAloudActive) {
 				this._reader.toggleHandTool();
 			}
 			else if (this._reader._type === 'pdf' && key === 's') {
 				this._reader.setTool({ type: 'pointer' });
-			}
-			else if (key === 'r' || key === 'l') {
-				event.preventDefault();
-				event.stopPropagation();
-				if (this._reader._readAloudManager.active && !this._reader.getSelectionPosition()) {
-					this._reader.toggleReadAloudPopup(false);
-				}
-				else {
-					this._reader.startReadAloudAtPosition();
-				}
 			}
 			else if (readAloudActive && !event.target.matches('button, select')) {
 				if (key === 'Space') {
