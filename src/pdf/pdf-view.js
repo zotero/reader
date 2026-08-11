@@ -73,6 +73,7 @@ import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
 import { getBlockNodeByRef } from '../common/sdt/position-mapper';
 import { PDFNativeTextSelection } from './native-text-selection';
+import { getScrollTarget } from './scroll-target.mjs';
 import {
 	createTouchAnnotationTransform,
 	shouldStartInlineTextAnnotationEditing,
@@ -1203,12 +1204,11 @@ class PDFView {
 		let rect = this.getPositionBoundingViewRect(position);
 
 		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
-		let verticalPadding = 5;
-
 		let scrollTop = element.scrollTop;
 		let scrollLeft = element.scrollLeft;
 
-		if (options.ifNeeded) {
+		let inlineNearest = options.inline === 'nearest';
+		if (options.ifNeeded && !inlineNearest) {
 			let margin = options.visibilityMargin || 0;
 			let visibleRect = [
 				scrollLeft - margin,
@@ -1227,44 +1227,19 @@ class PDFView {
 			}
 		}
 
-		let x = rect[0];
-		let y = rect[1];
-
-		// Determine desired scroll positions
-		let left;
-		let top;
-
-		if (options.block === 'start') {
-			// Vertical: align to start
-			top = y;
-			// Horizontal: center by default
-			left = x - (clientWidth / 2);
-		}
-		else if (options.block === 'nearest') {
-			const MARGIN = 10;
-
-			// Vertical "nearest" behavior
-			if (y < scrollTop + MARGIN) {
-				top = y - MARGIN;
-			}
-			else if (y > scrollTop + clientHeight - MARGIN) {
-				top = y - clientHeight + MARGIN;
-			}
-			// else leave 'top' undefined so we don't change vertical scroll
-
-			// Horizontal "nearest" behavior
-			if (x < scrollLeft + MARGIN) {
-				left = x - MARGIN;
-			}
-			else if (x > scrollLeft + clientWidth - MARGIN) {
-				left = x - clientWidth + MARGIN;
-			}
-			// else leave 'left' undefined so we don't change horizontal scroll
-		}
-		else {
-			// Default: center both axes
-			left = x - (clientWidth / 2);
-			top = y - (clientHeight / 2) - verticalPadding;
+		let { left, top } = getScrollTarget({
+			rect,
+			scrollLeft,
+			scrollTop,
+			clientWidth,
+			clientHeight,
+			block: options.block,
+			inline: options.inline,
+			ifNeeded: options.ifNeeded,
+			visibilityMargin: options.visibilityMargin || 0,
+		});
+		if (inlineNearest && typeof left !== 'number' && typeof top !== 'number') {
+			return;
 		}
 
 		// Clamp within bounds only if defined
@@ -1474,6 +1449,7 @@ class PDFView {
 						ifNeeded: true,
 						visibilityMargin: -this._iframeWindow.innerHeight / 4,
 						block: 'center',
+						inline: 'nearest',
 						behavior: 'smooth'
 					});
 
