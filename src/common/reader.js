@@ -81,7 +81,20 @@ class Reader {
 		this._sdt = null;
 		this._readAloudSegments = null;
 
-		this._readerContext = { type: this._type, platform: this._platform };
+		// Persisted popup positions
+		// Currently only set/read by UtilityPopups, which are draggable
+		this._popupPositions = {};
+		this.setPopupPositions(options.popupPositions);
+
+		this._readerContext = {
+			type: this._type,
+			platform: this._platform,
+			getPopupPosition: id => this._popupPositions[id] || null,
+			setPopupPosition: (id, position) => {
+				this._popupPositions[id] = position;
+				this._onSetPopupPosition?.(id, position);
+			},
+		};
 
 		this._onSaveAnnotations = options.onSaveAnnotations;
 		this._onDeleteAnnotations = options.onDeleteAnnotations;
@@ -114,6 +127,7 @@ class Reader {
 		this._onPurchaseReadAloudCredits = options.onPurchaseReadAloudCredits;
 		this._onLogIn = options.onLogIn;
 		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
+		this._onSetPopupPosition = options.onSetPopupPosition;
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
@@ -2531,6 +2545,14 @@ class Reader {
 
 	setSidebarView(view) {
 		this._updateState({ sidebarView: view });
+	}
+
+	setPopupPositions(popupPositions) {
+		for (let [id, position] of Object.entries(popupPositions || {})) {
+			if (typeof position?.x === 'number' && typeof position?.y === 'number') {
+				this._popupPositions[id] = { x: position.x, y: position.y };
+			}
+		}
 	}
 
 	setCustomThemes(customThemes) {

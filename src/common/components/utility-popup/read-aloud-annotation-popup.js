@@ -1,12 +1,13 @@
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
-import { isMac } from '../../../lib/utilities';
-import IconHighlight from '../../../../../res/icons/20/annotate-highlight.svg';
-import IconUnderline from '../../../../../res/icons/20/annotate-underline.svg';
-import IconChevronDown8 from '../../../../../res/icons/8/chevron-8.svg';
-import IconArrowLeft from '../../../../../res/icons/20/arrow-left.svg';
-import IconArrowRight from '../../../../../res/icons/20/arrow-right.svg';
+import { isMac } from '../../lib/utilities';
+import UtilityPopup from './common/utility-popup';
+import IconHighlight from '../../../../res/icons/20/annotate-highlight.svg';
+import IconUnderline from '../../../../res/icons/20/annotate-underline.svg';
+import IconChevronDown8 from '../../../../res/icons/8/chevron-8.svg';
+import IconArrowLeft from '../../../../res/icons/20/arrow-left.svg';
+import IconArrowRight from '../../../../res/icons/20/arrow-right.svg';
 
 const AUTO_DISMISS_MS = 5000;
 const FADE_START_MS = AUTO_DISMISS_MS - 1000;
@@ -17,7 +18,7 @@ function ReadAloudAnnotationPopup(props) {
 	let accelKey = isMac() ? '⌘ ' : 'Ctrl+';
 
 	let [fading, setFading] = useState(false);
-	let [top, setTop] = useState(undefined);
+	let [dragging, setDragging] = useState(false);
 	let ref = useRef();
 	let fadeTimerRef = useRef(null);
 	let dismissTimerRef = useRef(null);
@@ -46,14 +47,15 @@ function ReadAloudAnnotationPopup(props) {
 	}, [clearTimers, onDismiss]);
 
 	useEffect(() => {
+		// Don't fade out or dismiss while the popup is being dragged
+		if (dragging) {
+			clearTimers();
+			setFading(false);
+			return undefined;
+		}
 		startTimers();
 		return clearTimers;
-	}, [startTimers, clearTimers, params.annotation]);
-
-	useLayoutEffect(() => {
-		let rect = ref.current.getBoundingClientRect();
-		setTop(rect.top - rect.height / 2);
-	}, []);
+	}, [startTimers, clearTimers, params.annotation, dragging]);
 
 	useEffect(() => {
 		let handleBlur = () => {
@@ -110,10 +112,13 @@ function ReadAloudAnnotationPopup(props) {
 	let { type, color, text } = annotation;
 
 	return (
-		<div
+		<UtilityPopup
 			ref={ref}
 			className={cx('read-aloud-annotation-popup', { fading })}
-			style={{ top }}
+			persistID="read-aloud-annotation"
+			// Center vertically (already centered horizontally by the stylesheet)
+			getDefaultPosition={rect => ({ x: rect.left, y: rect.top - rect.height / 2 })}
+			onDraggingChange={setDragging}
 			onPointerMove={handlePointerMove}
 		>
 			<div className="buttons">
@@ -145,7 +150,7 @@ function ReadAloudAnnotationPopup(props) {
 				<span className="key">⏎</span>
 				<span>{l10n.getString('reader-read-aloud-annotation-popup-done')}</span>
 			</div>
-		</div>
+		</UtilityPopup>
 	);
 }
 

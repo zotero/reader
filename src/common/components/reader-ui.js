@@ -18,7 +18,7 @@ import PrintPopup from './modal-popup/print-popup';
 import AppearancePopup from "./modal-popup/appearance-popup";
 import ThemePopup from './modal-popup/theme-popup';
 import ReadAloudPopup from "./utility-popup/read-aloud-popup";
-import ReadAloudAnnotationPopup from "./view-popup/overlay-popup/read-aloud-annotation-popup";
+import ReadAloudAnnotationPopup from "./utility-popup/read-aloud-annotation-popup";
 import ReadAloudFirstRunPopup from './modal-popup/read-aloud-first-run-popup';
 import { bundle } from '../../fluent';
 
