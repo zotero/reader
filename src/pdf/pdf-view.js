@@ -1556,6 +1556,7 @@ class PDFView {
 				|| this._findState.highlightAll !== state.highlightAll
 				|| this._findState.caseSensitive !== state.caseSensitive
 				|| this._findState.entireWord !== state.entireWord
+				|| this._findState.useRegex !== state.useRegex
 				|| this._findState.active !== state.active) {
 				// Immediately update find state because pdf.js find will trigger _updateFindMatchesCount
 				// and _updateFindControlState that update the current find state
@@ -1567,6 +1568,7 @@ class PDFView {
 					phraseSearch: true,
 					caseSensitive: state.caseSensitive,
 					entireWord: state.entireWord,
+					useRegex: state.useRegex,
 					highlightAll: state.highlightAll,
 					findPrevious: false
 				});
@@ -1588,6 +1590,7 @@ class PDFView {
 				phraseSearch: true,
 				caseSensitive: this._findState.caseSensitive,
 				entireWord: this._findState.entireWord,
+				useRegex: this._findState.useRegex,
 				highlightAll: this._findState.highlightAll,
 				findPrevious: false
 			});
@@ -1603,6 +1606,7 @@ class PDFView {
 				phraseSearch: true,
 				caseSensitive: this._findState.caseSensitive,
 				entireWord: this._findState.entireWord,
+				useRegex: this._findState.useRegex,
 				highlightAll: this._findState.highlightAll,
 				findPrevious: true
 			});
