@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import cx from 'classnames';
 
 // TODO: Resizing window doesn't properly reposition annotation popup on x axis, in EPUB view
-function ViewPopup({ id, rect, className, uniqueRef, padding, preferTop, preferLeft, children, onRender }) {
+function ViewPopup({ id, rect, anchorPoint, className, uniqueRef, padding, preferTop, preferLeft, children, onRender }) {
 	const [popupPosition, setPopupPosition] = useState(null);
 	const containerRef = useRef();
 	const xrect = useRef();
@@ -37,7 +37,7 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, preferTop, preferL
 		updatePopupPosition();
 		// Editor needs more time to get its final dimensions
 		setTimeout(updatePopupPosition, 0);
-	}, [uniqueRef, rect]);
+	}, [uniqueRef, rect, anchorPoint]);
 
 	function updatePopupPosition() {
 		if (!containerRef.current) {
@@ -51,30 +51,49 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, preferTop, preferL
 		let viewRect = parent.getBoundingClientRect();
 		viewRect = [0, 0, viewRect.width, viewRect.height];
 
+		// `rect` is the rect that the popup is placed along.
+		// `anchorPoint` is the point within it that the popup points at.
+		// When placed above or below, the popup is centered on the
+		// anchor's x; when placed beside, it's centered on its y.
+		// Defaults to the center of the rect.
+		let anchorX = anchorPoint ? anchorPoint[0] : rect[0] + (rect[2] - rect[0]) / 2;
+		let anchorY = anchorPoint ? anchorPoint[1] : rect[1] + (rect[3] - rect[1]) / 2;
+
 		function calculateTop() {
-			let top = rect[1] + ((rect[3] - rect[1]) - height) / 2;
-			if (top < 0) {
-				top = rect[1];
-			}
-			else if (top + height > viewRect[3]) {
-				top = (rect[1] + (rect[3] - rect[1])) - height;
+			let top = anchorY - height / 2;
+			// If the rect is taller than the popup, keep the popup within it
+			if (rect[3] - rect[1] > height) {
+				top = Math.min(Math.max(top, rect[1]), rect[3] - height);
 			}
 			return top;
 		}
 
-		let annotationCenterLeft = rect[0] + (rect[2] - rect[0]) / 2;
-		let left = annotationCenterLeft - width / 2;
+		// Place the popup beside the rect, pointing at the rect's near edge. If
+		// the rect is too wide for the popup to fit beside it, point at the
+		// anchor instead, so the popup stays close to what it's pointing at.
+		function calculateLeftForSide(placeLeft) {
+			if (placeLeft) {
+				let left = rect[0] - width - padding;
+				return left < padding ? anchorX - width - padding : left;
+			}
+			else {
+				let left = rect[2] + padding;
+				return left + width > viewRect[2] - padding ? anchorX + padding : left;
+			}
+		}
+
+		let left = anchorX - width / 2;
 
 		let side;
 		let top;
 		if (left < 0) {
 			side = 'right';
-			left = rect[2] + padding;
+			left = calculateLeftForSide(false);
 			top = calculateTop();
 		}
 		else if (left + width > viewRect[2]) {
 			side = 'left';
-			left = rect[0] - width - padding;
+			left = calculateLeftForSide(true);
 			top = calculateTop();
 		}
 		else {
@@ -110,14 +129,8 @@ function ViewPopup({ id, rect, className, uniqueRef, padding, preferTop, preferL
 				let placeLeft = preferLeft === undefined
 					? rect[0] >= (viewRect[2] - viewRect[0]) / 2
 					: preferLeft;
-				if (placeLeft) {
-					side = 'left';
-					left = rect[0] - width - padding;
-				}
-				else {
-					side = 'right';
-					left = rect[2] + padding;
-				}
+				side = placeLeft ? 'left' : 'right';
+				left = calculateLeftForSide(placeLeft);
 				top = calculateTop();
 			}
 		}

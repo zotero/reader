@@ -4,6 +4,7 @@ import {
 	Annotation,
 	AnnotationPopupParams,
 	AnnotationType,
+	ArrayPoint,
 	ArrayRect,
 	ColorScheme,
 	FindState,
@@ -32,7 +33,7 @@ import {
 	caretPositionFromPoint,
 	collapseToOneCharacter,
 	getBoundingPageRect,
-	getPageRects,
+	getColumnSeparatedPageRects,
 	makeRangeSpanning,
 	moveRangeEndsIntoTextNodes,
 	PersistentRange,
@@ -66,7 +67,8 @@ import {
 	isErrorRect,
 	isPageRectVisible,
 	pageRectToClientRect,
-	rectContainsPoint
+	rectContainsPoint,
+	rectsIntersect
 } from "./lib/rect";
 import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
@@ -149,6 +151,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _gotPointerUp = false;
 
 	protected _hadSelectionOnPointerDown = false;
+
+	protected _selectionChangedWhilePointerDown = false;
+
+	protected _selectionClickCaret: PersistentRange | null = null;
 
 	protected _handledPointerIDs = new Set<number>();
 
@@ -500,6 +506,29 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		));
 	}
 
+	/**
+	 * Get a one-character range at the caret position nearest to a point in the
+	 * iframe, for use as a popup anchor. Returns null if the point isn't over
+	 * text.
+	 */
+	protected _getCaretRangeAtPoint(clientX: number, clientY: number): PersistentRange | null {
+		if (!supportsCaretPositionFromPoint()) {
+			return null;
+		}
+		let caretPosition = caretPositionFromPoint(this._iframeDocument, clientX, clientY);
+		if (!caretPosition) {
+			return null;
+		}
+		let range = this._iframeDocument.createRange();
+		range.setStart(caretPosition.offsetNode, caretPosition.offset);
+		range.collapse(true);
+		collapseToOneCharacter(range);
+		if (range.collapsed) {
+			return null;
+		}
+		return new PersistentRange(range);
+	}
+
 	protected _getBoundingPageRectCached(range: Range): DOMRectReadOnly {
 		if (this._boundingPageRectCache.has(range)) {
 			return this._boundingPageRectCache.get(range)!;
@@ -820,62 +849,88 @@ abstract class DOMView<State extends DOMViewState, Data> {
 				this._iframeDocument,
 			)
 		);
+		let annotation = this.getAnnotationFromRange(range, 'highlight');
+		if (!annotation) {
+			this._options.onSetSelectionPopup(null);
+			return;
+		}
 		let selectionIsForward = selection.direction !== 'backward';
 
-		// Anchor the popup to the point where the user stopped dragging: the end
-		// of the selection when it's forward, the beginning when it's backward.
-		// Collapse a copy of the range to that caret to get a precise anchor
-		// rather than the whole first/last line.
-		let caretRange = range.cloneRange();
-		collapseToOneCharacter(caretRange, selectionIsForward);
-		let anchorPageRect = getBoundingPageRect(caretRange);
-		if (isErrorRect(anchorPageRect) || !isPageRectVisible(anchorPageRect, this._iframeWindow, 0)) {
-			// The caret is offscreen because the selection runs past the
+		// Point the popup at the place where the user finished making the
+		// selection: the position that was clicked if the selection was made by
+		// clicking (double-click, triple-click, Shift-click), otherwise the end
+		// of the selection when it's forward and the beginning when it's
+		// backward. Collapse a copy of the range to that caret to get a precise
+		// anchor rather than the whole first/last line.
+		let anchorRange: Range | null = null;
+		if (this._selectionClickCaret) {
+			let clickCaretRange = this._selectionClickCaret.toRange();
+			// Only use the clicked position if it's within the selection --
+			// it might not be if the DOM has changed since the click
+			if (range.isPointInRange(clickCaretRange.startContainer, clickCaretRange.startOffset)) {
+				anchorRange = clickCaretRange;
+			}
+		}
+		if (!anchorRange) {
+			anchorRange = range.cloneRange();
+			collapseToOneCharacter(anchorRange, selectionIsForward);
+		}
+		let anchorPageRect = getBoundingPageRect(anchorRange);
+		let anchorIsVisible = !isErrorRect(anchorPageRect)
+			&& isPageRectVisible(anchorPageRect, this._iframeWindow, 0);
+
+		// Position the popup relative to the part of the selection within the
+		// anchor's column, so that it can be placed adjacent to the entire
+		// selection without being positioned relative to offscreen content in
+		// another column.
+		let columnPageRects = getColumnSeparatedPageRects(range);
+		let selectionPageRect = anchorIsVisible
+			? columnPageRects.find(rect => rectsIntersect(rect, anchorPageRect))
+			: undefined;
+		if (!selectionPageRect) {
+			// The anchor is offscreen because the selection runs past the
 			// viewport (e.g. a long selection in a snapshot or one that
-			// continues into an offscreen column in EPUB). Anchor to the
-			// nearest visible part of the selection instead, so the popup
-			// isn't anchored to an offscreen segment. The rects are in reading
-			// order and each lies within a single column, so column separation
-			// is preserved.
-			let visiblePageRects = Array.from(getPageRects(range))
-				.filter(rect => !isErrorRect(rect) && isPageRectVisible(rect, this._iframeWindow, 0));
-			if (visiblePageRects.length) {
-				anchorPageRect = selectionIsForward
-					? visiblePageRects[visiblePageRects.length - 1]
-					: visiblePageRects[0];
-			}
-			else {
-				// Nothing is visible; use the bounding rect as a placeholder
-				// until the selection scrolls into view.
-				anchorPageRect = getBoundingPageRect(range);
-			}
+			// continues into an offscreen column in EPUB), so we can't point
+			// the popup at it. Fall back to the visible column nearest the
+			// anchor, or, if nothing is visible, to the bounding rect as a
+			// placeholder until the selection scrolls into view.
+			anchorIsVisible = false;
+			selectionPageRect = (selectionIsForward
+				? columnPageRects[columnPageRects.length - 1]
+				: columnPageRects[0]) ?? getBoundingPageRect(range);
 		}
-		let domRect = this._clientRectToViewportRect(
-			pageRectToClientRect(
-				anchorPageRect,
-				this._iframeWindow
-			)
+
+		let selectionDOMRect = this._clientRectToViewportRect(
+			pageRectToClientRect(selectionPageRect, this._iframeWindow)
 		);
-		let annotation = this.getAnnotationFromRange(range, 'highlight');
-		if (annotation) {
-			let rect: ArrayRect = [domRect.left, domRect.top, domRect.right, domRect.bottom];
-			// Anchor the popup outward from the caret: above the anchor for a
-			// backward selection (caret at the top), below for a forward one
-			// (caret at the bottom). If the selection is too tall to fit the
-			// popup above or below, fall back to the side nearest the caret --
-			// the start side when backward, the end side when forward --
-			// flipping left/right for RTL text.
-			let rtl = isRTL(range.commonAncestorContainer);
-			this._options.onSetSelectionPopup({
-				rect,
-				annotation,
-				preferLeft: selectionIsForward ? rtl : !rtl,
-				preferTop: !selectionIsForward,
-			});
+		let anchorPoint: ArrayPoint | undefined;
+		if (anchorIsVisible) {
+			let anchorDOMRect = this._clientRectToViewportRect(
+				pageRectToClientRect(anchorPageRect, this._iframeWindow)
+			);
+			anchorPoint = [
+				anchorDOMRect.left + anchorDOMRect.width / 2,
+				anchorDOMRect.top + anchorDOMRect.height / 2,
+			];
 		}
-		else {
-			this._options.onSetSelectionPopup(null);
-		}
+		// Place the popup outward from the anchor: above the selection for a
+		// backward selection (anchor at the top), below it for a forward one
+		// (anchor at the bottom). If the selection is too tall to fit the popup
+		// above or below, fall back to the side nearest the anchor, flipping
+		// left/right for RTL text.
+		let rtl = isRTL(range.commonAncestorContainer);
+		this._options.onSetSelectionPopup({
+			rect: [
+				selectionDOMRect.left,
+				selectionDOMRect.top,
+				selectionDOMRect.right,
+				selectionDOMRect.bottom,
+			],
+			anchorPoint,
+			annotation,
+			preferLeft: selectionIsForward ? rtl : !rtl,
+			preferTop: !selectionIsForward,
+		});
 	}
 
 	protected _openAnnotationPopup(annotation?: WADMAnnotation) {
@@ -1485,6 +1540,16 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			return;
 		}
 
+		if (this._gotPointerUp) {
+			// The selection changed outside of a pointer interaction (with the
+			// keyboard, or programmatically), so a remembered clicked position
+			// no longer applies
+			this._selectionClickCaret = null;
+		}
+		else {
+			this._selectionChangedWhilePointerDown = true;
+		}
+
 		if (!selection || selection.isCollapsed) {
 			this._options.onSetSelectionPopup(null);
 		}
@@ -1661,6 +1726,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if ((event.buttons & 1) === 1 && event.isPrimary) {
 			this._gotPointerUp = false;
 			this._pointerMovementWhileDown = 0;
+			this._selectionChangedWhilePointerDown = false;
 			this._lastPointerPosition = { x: event.clientX, y: event.clientY };
 			let selection = this._iframeWindow.getSelection();
 			this._hadSelectionOnPointerDown = (!!selection && !selection.isCollapsed) || !!this._selectedAnnotationIDs.length;
@@ -1716,6 +1782,15 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 
 		this._gotPointerUp = true;
+		if (event.type !== 'pointercancel' && this._selectionChangedWhilePointerDown) {
+			// If this pointer changed the selection without dragging, it was a
+			// double-click, triple-click, or Shift-click. Remember the clicked
+			// position so that the selection popup can point at it instead of at
+			// the far end of the selection.
+			this._selectionClickCaret = this._pointerMovementWhileDown <= 5
+				? this._getCaretRangeAtPoint(event.clientX, event.clientY)
+				: null;
+		}
 		if (event.type === 'pointercancel') {
 			this._previewAnnotation = null;
 			this._renderAnnotations();
@@ -1737,6 +1812,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 		this._touchAnnotationStartPosition = null;
+		this._selectionChangedWhilePointerDown = false;
 		this._renderAnnotations();
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}

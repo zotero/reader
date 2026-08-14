@@ -26,6 +26,7 @@ function SelectionPopup(props) {
 		<ViewPopup
 			className="selection-popup"
 			rect={props.params.rect}
+			anchorPoint={props.params.anchorPoint}
 			uniqueRef={{}}
 			padding={20}
 			preferTop={props.params.preferTop}

@@ -152,6 +152,7 @@ export type AnnotationPopupParams<A extends Annotation = Annotation> = {
 
 export type SelectionPopupParams<A extends Annotation = Annotation> = {
 	rect: ArrayRect;
+	anchorPoint?: ArrayPoint;
 	annotation?: NewAnnotation<A> | null;
 	preferTop?: boolean;
 	preferLeft?: boolean;
@@ -181,6 +182,8 @@ type ImagePopupParams = {
 export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams;
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
+
+export type ArrayPoint = [x: number, y: number];
 
 export type FindState = {
 	popupOpen?: boolean;
