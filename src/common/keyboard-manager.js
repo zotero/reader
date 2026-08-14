@@ -240,15 +240,17 @@ export class KeyboardManager {
 				}
 			}
 		}
-		else if ((view || sidebarAnnotationFocused) && key === `${pm}-z`) {
+		// Only handle undo/redo shortcuts internally if the embedding
+		// Zotero instance isn't tracking undo history itself
+		else if ((view || sidebarAnnotationFocused) && key === `${pm}-z`
+				&& !this._reader._externalUndoHistory) {
 			event.preventDefault();
-			this._reader._annotationManager.undo();
-			this._reader.setSelectedAnnotations([]);
+			this._reader.undo();
 		}
-		else if ((view || sidebarAnnotationFocused) && key === `${pm}-Shift-z`) {
+		else if ((view || sidebarAnnotationFocused) && key === `${pm}-Shift-z`
+				&& !this._reader._externalUndoHistory) {
 			event.preventDefault();
-			this._reader._annotationManager.redo();
-			this._reader.setSelectedAnnotations([]);
+			this._reader.redo();
 		}
 		else if (key === `${pm}-f`) {
 			event.preventDefault();

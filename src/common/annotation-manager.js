@@ -22,6 +22,7 @@ class AnnotationManager {
 		this._onChangeFilter = options.onChangeFilter;
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
+		this._onChangeHistory = options.onChangeHistory;
 		this._adjustTextAnnotationPosition = options.adjustTextAnnotationPosition;
 		this.render = () => {
 			options.onRender([...this._annotations]);
@@ -36,6 +37,7 @@ class AnnotationManager {
 
 		this._undoStack = [];
 		this._redoStack = [];
+		this._lastHistoryPointID = 0;
 
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 
@@ -61,7 +63,14 @@ class AnnotationManager {
 
 	// Called when deletions come from the client side
 	unsetAnnotations(ids) {
+		// Deletions we haven't applied yet are outside changes that our history
+		// can no longer be replayed over. Ones we have applied are our own
+		// deletions coming back to us, and undoing them is still valid.
+		let externalIDs = ids.filter(id => this._annotations.some(x => x.id === id));
 		this._annotations = this._annotations.filter(x => !ids.includes(x.id));
+		if (externalIDs.length) {
+			this._clearInterferingHistory(externalIDs);
+		}
 		this.render();
 	}
 
@@ -95,7 +104,7 @@ class AnnotationManager {
 		annotation.position = roundPositionValues(annotation.position);
 
 		let changedAnnotations = new Map([[annotation.id, annotation]]);
-		this._applyChanges(changedAnnotations);
+		this._applyChanges(changedAnnotations, 'add-annotations', 1);
 		return annotation;
 	}
 
@@ -170,7 +179,7 @@ class AnnotationManager {
 			annotation.position = roundPositionValues(annotation.position);
 			changedAnnotations.set(annotation.id, annotation);
 		}
-		this._applyChanges(changedAnnotations);
+		this._applyChanges(changedAnnotations, 'update-annotations', changedAnnotations.size);
 	}
 
 	deleteAnnotations(ids) {
@@ -182,7 +191,7 @@ class AnnotationManager {
 			return 0;
 		}
 		let changedAnnotations = new Map(ids.map(id => [id, null]));
-		this._applyChanges(changedAnnotations);
+		this._applyChanges(changedAnnotations, 'delete-annotations', changedAnnotations.size);
 		return changedAnnotations.size;
 	}
 
@@ -209,7 +218,7 @@ class AnnotationManager {
 			annotation = { ...annotation, type, dateModified, id: this._generateObjectKey() };
 			changedAnnotations.set(annotation.id, annotation);
 		}
-		this._applyChanges(changedAnnotations);
+		this._applyChanges(changedAnnotations, 'convert-annotations', annotations.length);
 	}
 
 	mergeAnnotations(ids) {
@@ -289,7 +298,7 @@ class AnnotationManager {
 
 		let changedAnnotations = new Map(annotations.map(x => [x.id, null]));
 		changedAnnotations.set(annotation.id, annotation);
-		this._applyChanges(changedAnnotations);
+		this._applyChanges(changedAnnotations, 'merge-annotations', annotations.length);
 
 		return annotation;
 	}
@@ -307,7 +316,12 @@ class AnnotationManager {
 		return randomstring;
 	}
 
-	_applyChanges(changedAnnotations) {
+	/**
+	 * @param {Map | null} changedAnnotations Annotation ID -> new annotation, or null to delete
+	 * @param {string} action Action that produced the changes, for the history point
+	 * @param {number} count Number of annotations the action was performed on
+	 */
+	_applyChanges(changedAnnotations, action, count) {
 		if (!changedAnnotations.size) {
 			return;
 		}
@@ -320,7 +334,7 @@ class AnnotationManager {
 			}
 			this._unsavedAnnotations.set(id, changedAnnotation);
 		}
-		this._historySave(changedAnnotations);
+		this._historySave(changedAnnotations, action, count);
 		annotations = new Map([...annotations, ...changedAnnotations]);
 		this._annotations = [...annotations.values()].filter(x => x);
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
@@ -458,7 +472,7 @@ class AnnotationManager {
 		this.render();
 	}
 
-	_historySave(changedAnnotations) {
+	_historySave(changedAnnotations, action, count) {
 		if (!changedAnnotations.size) {
 			return;
 		}
@@ -478,10 +492,10 @@ class AnnotationManager {
 		let disableTextualJoin = true;
 		if (
 			prevPoint && point
-			&& prevPoint.size === 1 && point.size === 1 && oldAnnotations.size === 1
+			&& prevPoint.annotations.size === 1 && point.annotations.size === 1 && oldAnnotations.size === 1
 		) {
-			let [id1, annotation1] = [...prevPoint][0];
-			let [id2, annotation2] = [...point][0];
+			let [id1, annotation1] = [...prevPoint.annotations][0];
+			let [id2, annotation2] = [...point.annotations][0];
 			let [id3, annotation3] = [...oldAnnotations][0];
 			if (id1 === id2 && id2 === id3) {
 				disableJoin = false;
@@ -502,45 +516,66 @@ class AnnotationManager {
 		}
 
 		if (!point || disableJoin || Date.now() - this._lastChange > 500 && disableTextualJoin) {
-			point = new Map();
+			point = {
+				id: ++this._lastHistoryPointID,
+				// Bumped whenever an additional change is joined into the point,
+				// so an external history can tell that it moved to the top
+				revision: 0,
+				action,
+				count,
+				annotations: new Map()
+			};
 			this._undoStack.push(point);
+		}
+		else {
+			// The point keeps the action it was created with and now covers this
+			// change as well
+			point.revision++;
 		}
 		for (let [id, annotation] of oldAnnotations) {
 			if (annotation) {
 				annotation = JSON.parse(JSON.stringify(annotation));
 				delete annotation.image;
 			}
-			point.set(id, annotation);
+			point.annotations.set(id, annotation);
 		}
 
 		this._lastChange = Date.now();
 		this._redoStack = [];
+		this._notifyChangeHistory();
 	}
 
 	remapHistory(mapping) {
 		for (let [oldID, newID] of mapping) {
-			for (let point of this._undoStack) {
-				if (point.has(oldID)) {
-					let annotation = point.get(oldID);
+			for (let { annotations } of [...this._undoStack, ...this._redoStack]) {
+				if (annotations.has(oldID)) {
+					let annotation = annotations.get(oldID);
 					if (annotation) {
 						annotation.id = newID;
 					}
-					point.delete(oldID);
-					point.set(newID, annotation);
-				}
-			}
-
-			for (let point of this._redoStack) {
-				if (point.has(oldID)) {
-					let annotation = point.get(oldID);
-					if (annotation) {
-						annotation.id = newID;
-					}
-					point.delete(oldID);
-					point.set(newID, annotation);
+					annotations.delete(oldID);
+					annotations.set(newID, annotation);
 				}
 			}
 		}
+	}
+
+	/**
+	 * Report the current history to the client, which can then present the
+	 * reader's actions as part of the application-wide undo history, and
+	 * step through them with undo() and redo()
+	 */
+	_notifyChangeHistory() {
+		if (!this._onChangeHistory) {
+			return;
+		}
+		let describe = stack => stack.map(
+			({ id, revision, action, count }) => ({ id, revision, action, count })
+		);
+		this._onChangeHistory({
+			undoSteps: describe(this._undoStack),
+			redoSteps: describe(this._redoStack)
+		});
 	}
 
 	get canUndo() {
@@ -557,12 +592,12 @@ class AnnotationManager {
 			return false;
 		}
 		let mapping = new Map();
-		let redoPoint = new Map();
+		let redoPoint = { ...undoPoint, annotations: new Map() };
 		let allAnnotations = new Map(this._annotations.map(x => [x.id, x]));
-		for (let [id, annotation] of undoPoint) {
+		for (let [id, annotation] of undoPoint.annotations) {
 			annotation = annotation && { ...annotation };
 			let prevAnnotation = allAnnotations.get(id);
-			redoPoint.set(id, prevAnnotation);
+			redoPoint.annotations.set(id, prevAnnotation);
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
@@ -581,6 +616,7 @@ class AnnotationManager {
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 		this._triggerSaving();
 		this.render();
+		this._notifyChangeHistory();
 		return true;
 	}
 
@@ -590,12 +626,12 @@ class AnnotationManager {
 			return false;
 		}
 		let mapping = new Map();
-		let undoPoint = new Map();
+		let undoPoint = { ...redoPoint, annotations: new Map() };
 		let allAnnotations = new Map(this._annotations.map(x => [x.id, x]));
-		for (let [id, annotation] of redoPoint) {
+		for (let [id, annotation] of redoPoint.annotations) {
 			annotation = annotation && { ...annotation };
 			let prevAnnotation = allAnnotations.get(id);
-			undoPoint.set(id, prevAnnotation);
+			undoPoint.annotations.set(id, prevAnnotation);
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
@@ -614,22 +650,24 @@ class AnnotationManager {
 		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
 		this._triggerSaving();
 		this.render();
+		this._notifyChangeHistory();
 		return true;
 	}
 
 	_clearInterferingHistory(affectedAnnotationIDs) {
 		for (let i = this._undoStack.length - 1; i >= 0; i--) {
-			if (affectedAnnotationIDs.some(id => this._undoStack[i].has(id))) {
+			if (affectedAnnotationIDs.some(id => this._undoStack[i].annotations.has(id))) {
 				this._undoStack = this._undoStack.slice(i + 1);
 				break;
 			}
 		}
 		for (let i = 0; i < this._redoStack.length; i++) {
-			if (affectedAnnotationIDs.some(id => this._redoStack[i].has(id))) {
+			if (affectedAnnotationIDs.some(id => this._redoStack[i].annotations.has(id))) {
 				this._redoStack = this._redoStack.slice(0, Math.max(0, i - 1));
 				break;
 			}
 		}
+		this._notifyChangeHistory();
 	}
 }
 

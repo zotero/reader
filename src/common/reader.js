@@ -128,6 +128,8 @@ class Reader {
 		this._onLogIn = options.onLogIn;
 		this._onOpenReadAloudFirstRunPopup = options.onOpenReadAloudFirstRunPopup;
 		this._onSetPopupPosition = options.onSetPopupPosition;
+		this._onChangeUndoHistory = options.onChangeUndoHistory;
+		this._externalUndoHistory = !!options.onChangeUndoHistory;
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
@@ -358,6 +360,7 @@ class Reader {
 			onChangeFilter: (filter) => {
 				this._updateState({ filter });
 			},
+			onChangeHistory: this._onChangeUndoHistory,
 			adjustTextAnnotationPosition: (annotation, option) => {
 				return this._primaryView.adjustTextAnnotationPosition(annotation, option);
 			}
@@ -2236,6 +2239,36 @@ class Reader {
 
 	mergeAnnotations(ids) {
 		return this._annotationManager.mergeAnnotations(ids);
+	}
+
+	get canUndo() {
+		return this._annotationManager.canUndo;
+	}
+
+	get canRedo() {
+		return this._annotationManager.canRedo;
+	}
+
+	/**
+	 * @returns {boolean} Whether a change was reverted
+	 */
+	undo() {
+		if (!this._annotationManager.undo()) {
+			return false;
+		}
+		this.setSelectedAnnotations([]);
+		return true;
+	}
+
+	/**
+	 * @returns {boolean} Whether a change was reapplied
+	 */
+	redo() {
+		if (!this._annotationManager.redo()) {
+			return false;
+		}
+		this.setSelectedAnnotations([]);
+		return true;
 	}
 
 	/**
