@@ -48,7 +48,7 @@ class View {
 			authorName: options.authorName,
 			annotations: options.annotations,
 			onSave: options.onSaveAnnotations,
-			onDelete: nop,
+			onDelete: options.onDeleteAnnotations || nop,
 			adjustTextAnnotationPosition: (annotation, adjustOptions) => this._view.adjustTextAnnotationPosition(annotation, adjustOptions),
 			onRender: (annotations) => {
 				this._view.setAnnotations(annotations);
@@ -64,8 +64,15 @@ class View {
 	}
 
 	_createView() {
-		let onAddAnnotation = async (annotation) => {
-			await this._annotationManager.addAnnotation(annotation);
+		let onAddAnnotation = (annotation, select) => {
+			annotation = this._annotationManager.addAnnotation(annotation);
+			// Select like reader.js does, otherwise e.g. an empty text annotation created
+			// with a non-touch pointer would be left unselected and deleted by the
+			// empty-annotation cleanup on the next selection change
+			if (annotation && select) {
+				this.selectAnnotations([annotation.id]);
+			}
+			return annotation;
 		};
 
 		let onUpdateAnnotations = (annotations) => {
@@ -226,20 +233,42 @@ class View {
 
 	undo() {
 		this._annotationManager.undo();
-		this.selectAnnotations([]);
+		this._deselectAnnotations();
 	}
 
 	redo() {
 		this._annotationManager.redo();
-		this.selectAnnotations([]);
+		this._deselectAnnotations();
+	}
+
+	// Deselect without the empty-text-annotation cleanup, so that undo/redo
+	// can restore an annotation to its empty state
+	_deselectAnnotations() {
+		this._options.selectedAnnotationIDs = [];
+		this._view.setSelectedAnnotationIDs([]);
 	}
 
 	/**
 	 * @param {Array} ids Array of annotation ids (item keys)
 	 */
 	selectAnnotations(ids) {
+		if (this._options.onDeleteAnnotations) {
+			this._annotationManager.deleteEmptyTextAnnotationsExcept(ids);
+		}
 		this._options.selectedAnnotationIDs = ids;
 		this._view.setSelectedAnnotationIDs(ids);
+	}
+
+	getSelectedAnnotationIDs() {
+		return (this._options.selectedAnnotationIDs || []).slice();
+	}
+
+	getFocusedTextAnnotationID() {
+		return this._view.getFocusedTextAnnotationID?.() || null;
+	}
+
+	finishTextAnnotationEditing() {
+		return this._view.finishTextAnnotationEditing?.() || false;
 	}
 
 	zoomIn() {

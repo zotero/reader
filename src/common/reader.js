@@ -1938,6 +1938,10 @@ class Reader {
 
 		let onAddAnnotation = (annotation, select) => {
 			annotation = this._annotationManager.addAnnotation(annotation);
+			// Can be null when the file is read-only
+			if (!annotation) {
+				return null;
+			}
 			// Tell screen readers the annotation was added after focus is settled
 			setTimeout(() => {
 				let annotationType = getLocalizedString(`reader-${annotation.type}-annotation`);
@@ -2404,13 +2408,7 @@ class Reader {
 			this._updateState({ selectedAnnotationIDs: [] });
 		}
 
-		let deleteIDs = [];
-		for (let annotation of this._state.annotations) {
-			if (annotation.type === 'text' && !annotation.comment && !ids.includes(annotation.id)) {
-				deleteIDs.push(annotation.id);
-			}
-		}
-		this._annotationManager.deleteAnnotations(deleteIDs)
+		this._annotationManager.deleteEmptyTextAnnotationsExcept(ids);
 
 		// Prevent accidental annotation deselection if modifier is pressed
 		let shift = triggeringEvent ? triggeringEvent.shiftKey : this._keyboardManager.shift;

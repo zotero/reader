@@ -1,4 +1,5 @@
 import View from './common/view';
+import { createAnnotationSelectionHandler } from './common/annotation-selection-handler.mjs';
 
 var port;
 
@@ -45,6 +46,14 @@ window.createView = (encodedOptions) => {
 	const options = JSON.parse(decodeBase64(encodedOptions));
 	log("Create " + options.type + " view");
 	log("Loaded " + options.annotations.length + " annotations");
+	let handleAnnotationSelection = createAnnotationSelectionHandler({
+		select: ids => window._view.selectAnnotations(ids),
+		notify: (ids, selectionOptions) => {
+			postMessage('onSelectAnnotations', { ids, ...selectionOptions });
+		},
+		defer: callback => requestAnimationFrame(callback),
+		getSelectedIDs: () => window._view.getSelectedAnnotationIDs(),
+	});
 
 	let url = new URL(options.url).toString();
 	delete options.url;
@@ -60,7 +69,7 @@ window.createView = (encodedOptions) => {
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
 
-			if (annotations[0].type == "note") {
+			if (annotations[0]?.type === "note") {
 				window._view.selectAnnotations([annotations[0].id]);
 			}
 		},
@@ -80,11 +89,12 @@ window.createView = (encodedOptions) => {
 			postMessage('onSetPageLabels', { pageLabels });
 		},
 		onDeleteAnnotations: (ids) => {
-			postMessage('onDeleteAnnotations', { ids });
+			if (ids.length) {
+				postMessage('onDeleteAnnotations', { ids });
+			}
 		},
-		onSelectAnnotations: (ids) => {
-			postMessage('onSelectAnnotations', { ids });
-			window._view.selectAnnotations(ids);
+		onSelectAnnotations: (ids, _event, options = {}) => {
+			handleAnnotationSelection(ids, options);
 		},
 		onSetSelectionPopup: (params) => {
 			postMessage('onSetSelectionPopup', params);
@@ -127,6 +137,10 @@ window.setTool = (options) => {
 window.clearTool = () => {
 	log("Clear tool");
 	window._view.setTool();
+};
+
+window.finishTextAnnotationEditing = () => {
+	return window._view?.finishTextAnnotationEditing() || false;
 };
 
 window.updateAnnotations = (options) => {

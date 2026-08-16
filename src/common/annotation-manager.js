@@ -3,6 +3,7 @@ import { ANNOTATION_POSITION_MAX_SIZE } from './defines';
 import { basicDeepEqual, sortTags } from './lib/utilities';
 import { isSelector } from "../dom/common/lib/selector";
 import { roundPositionValues } from '../pdf/lib/utilities';
+import { getEmptyTextAnnotationIDs } from './annotation-cleanup.mjs';
 
 const DEBOUNCE_TIME = 1000; // 1s
 const DEBOUNCE_MAX_TIME = 10000; // 10s
@@ -183,16 +184,23 @@ class AnnotationManager {
 	}
 
 	deleteAnnotations(ids) {
+		if (!ids.length || this._readOnly) {
+			return 0;
+		}
 		let someExternal = this._annotations.some(
 			annotation => ids.includes(annotation.id) && annotation.isExternal
 		);
 		// Don't delete anything if the PDF file is read-only, or at least one provided annotation is external
-		if (!ids.length || this._readOnly || someExternal) {
+		if (someExternal) {
 			return 0;
 		}
 		let changedAnnotations = new Map(ids.map(id => [id, null]));
 		this._applyChanges(changedAnnotations, 'delete-annotations', changedAnnotations.size);
 		return changedAnnotations.size;
+	}
+
+	deleteEmptyTextAnnotationsExcept(ids) {
+		return this.deleteAnnotations(getEmptyTextAnnotationIDs(this._annotations, ids));
 	}
 
 	convertAnnotations(ids, type) {

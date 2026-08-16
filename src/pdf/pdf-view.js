@@ -73,6 +73,11 @@ import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
 import { getBlockNodeByRef } from '../common/sdt/position-mapper';
 import { PDFNativeTextSelection } from './native-text-selection';
+import {
+	createTouchAnnotationTransform,
+	shouldStartInlineTextAnnotationEditing,
+	touchAnnotationTransformMoved,
+} from './touch-annotation-transform.mjs';
 
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
@@ -148,6 +153,7 @@ class PDFView {
 
 		this._scrolling = false;
 		this._dragging = false;
+		this._touchTransform = null;
 		this._readAloudPositionLocked = true;
 		this._readAloudScrolling = false;
 
@@ -341,6 +347,8 @@ class PDFView {
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
+		this._iframeWindow.addEventListener('lostpointercapture', this._handleTouchTransformInterrupted.bind(this));
+		this._iframeWindow.addEventListener('resize', this._handleTouchTransformInterrupted.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
@@ -1302,6 +1310,11 @@ class PDFView {
 	}
 
 	setTool(tool) {
+		if (this._options.platform === 'android'
+			&& tool.type !== this._tool.type
+			&& this._textAnnotationFocused()) {
+			this.finishTextAnnotationEditing();
+		}
 		if (tool.type === 'hand') {
 			this._iframeWindow.PDFViewerApplication.pdfCursorTools.switchTool(1);
 		}
@@ -1694,6 +1707,7 @@ class PDFView {
 	}
 
 	_clearPointerAction() {
+		this._releaseTouchTransform();
 		this.action = null;
 		this.pointerDownPosition = null;
 		this._pointerDownTriggered = false;
@@ -2727,6 +2741,11 @@ class PDFView {
 		if (this._pointerDownTriggered) {
 			return;
 		}
+		// Ignore other pointers while a touch annotation transform is in progress,
+		// otherwise they would overwrite the action and leak the pointer capture
+		if (this._touchTransform && event.pointerId !== this._touchTransform.pointerID) {
+			return;
+		}
 		this._pointerDownTriggered = true;
 		this._pointerDownTap = {
 			x: event.clientX,
@@ -2783,6 +2802,11 @@ class PDFView {
 
 		this.action = action;
 		this.pointerDownPosition = position;
+		this._touchTransform = createTouchAnnotationTransform(event, action, selectAnnotations === null, this._options.platform);
+		if (this._touchTransform) {
+			event.target.setPointerCapture(event.pointerId);
+			event.preventDefault();
+		}
 		this.updateCursor(action);
 		// Select text, and/or object, otherwise unselect
 
@@ -2801,7 +2825,7 @@ class PDFView {
 		}
 
 		// Deselect annotations, but only if shift isn't pressed which means doing text selection
-		if (selectAnnotations && !selectAnnotations.length && !shift) {
+		if (selectAnnotations && !selectAnnotations.length && !shift && action.type !== 'text') {
 			this._onSelectAnnotations([], event);
 		}
 
@@ -2838,13 +2862,20 @@ class PDFView {
 					rect[3] + fontSize / 2
 				]]
 			};
-			this._onAddAnnotation({
+			let inlineTextEditing = shouldStartInlineTextAnnotationEditing(event, this._options.platform);
+			let annotation = this._onAddAnnotation({
 				type: 'text',
 				color: this._tool.color,
 				pageLabel: this._getPageLabel(this.pointerDownPosition.pageIndex, true),
 				sortIndex: getSortIndex(this._pdfPages, newPosition),
 				position: newPosition
-			}, true);
+			}, !inlineTextEditing);
+			if (annotation && inlineTextEditing) {
+				action.alreadySelectedAnnotations = true;
+				this._onSelectAnnotations([annotation.id], event, { inlineTextEditing: true });
+				this._focusTextAnnotation(annotation.id);
+				event.preventDefault();
+			}
 		}
 		else if (action.type === 'ink') {
 			let point = position.rects[0].slice(0, 2);
@@ -2940,6 +2971,8 @@ class PDFView {
 			this._tool.type !== 'pointer' && event.target.id !== 'viewer'
 			// Or a text selection action is triggered using a pen in the page (not the gray area)
 			|| this.action?.type === 'selectText'
+			// Or a selected annotation is being transformed by touch
+			|| this._touchTransform
 		) {
 			event.preventDefault();
 		}
@@ -2947,7 +2980,8 @@ class PDFView {
 
 	_handleTouchEnd(event) {
 		this._nativeTextSelection?.handlePointerUp();
-		if (this._nativeTextSelection?.shouldAllowNativeTouch(event)) {
+		// Don't let another finger's native-touch handoff abort a transform in progress
+		if (!this._touchTransform && this._nativeTextSelection?.shouldAllowNativeTouch(event)) {
 			this._clearPointerAction();
 			return;
 		}
@@ -3055,6 +3089,14 @@ class PDFView {
 		let action = this.action;
 		if (!action) {
 			return;
+		}
+		if (this._touchTransform) {
+			if (event.pointerId !== this._touchTransform.pointerID) {
+				return;
+			}
+			if (!action.triggered && !touchAnnotationTransformMoved(this._touchTransform, event)) {
+				return;
+			}
 		}
 		let originalPagePosition = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
 		let position = this.pointerEventToPosition(event);
@@ -3245,8 +3287,7 @@ class PDFView {
 				action.triggered = true;
 			}
 		}
-		// Only note and image annotations are supported
-		else if (action.type === 'moveAndDrag' && dragging) {
+		else if (action.type === 'moveAndDrag' && (dragging || this._touchTransform)) {
 			let rect = getPositionBoundingRect(action.annotation.position);
 			let x = originalPagePosition.rects[0][0];
 			let y = originalPagePosition.rects[0][1];
@@ -3331,7 +3372,7 @@ class PDFView {
 			this._onSetSelectionPopup();
 		}
 		this._render();
-	}, () => ['ink', 'eraser'].includes(this._tool.type) ? 0 : 50);
+	}, () => ['ink', 'eraser'].includes(this._tool.type) || this._touchTransform ? 0 : 50);
 
 	_shouldHandleBackdropTap(event, position) {
 		let pointerDownTap = this._pointerDownTap;
@@ -3405,6 +3446,10 @@ class PDFView {
 			this._clearPointerAction();
 			return;
 		}
+		if (this._touchTransform && event.pointerId !== this._touchTransform.pointerID) {
+			return;
+		}
+		this._releaseTouchTransform();
 
 		this._pointerDownTriggered = false;
 		if (!this.action && event.target.classList?.contains('textAnnotation')) {
@@ -3498,8 +3543,9 @@ class PDFView {
 						}
 						else {
 							action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
-							let { id } = this._onAddAnnotation(action.annotation);
-							this._lastAddedInkAnnotationID = id;
+							// Can return null when the file is read-only
+							let addedAnnotation = this._onAddAnnotation(action.annotation);
+							this._lastAddedInkAnnotationID = addedAnnotation?.id;
 						}
 					}
 					else if (action.type === 'erase' && action.triggered) {
@@ -3519,12 +3565,14 @@ class PDFView {
 					let lastSelectedAnnotationID = this._selectedAnnotationIDs.slice(-1)[0];
 					let annotation = selectableAnnotations.find(annotation => annotation.id === lastSelectedAnnotationID);
 					if (annotation?.type === 'text') {
-						let node = this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`);
-						if (!node.classList.contains('focusable')) {
-							node.classList.add('focusable');
-							// node.contentEditable = true;
-							// setCaretPosition(event);
-							node.focus();
+						// Compare against the tapped annotation, so editing can move from one
+						// text annotation to another, but a tap into the already-focused
+						// textarea keeps native caret placement
+						if (this.getFocusedTextAnnotationID() !== annotation.id) {
+							// Blur a previously edited annotation without clearing the selection —
+							// the selection change below sweeps it if it was left empty
+							this._getFocusedTextAnnotationNode()?.blur();
+							this._focusTextAnnotation(annotation.id);
 							event.preventDefault();
 							event.stopPropagation();
 						}
@@ -3612,6 +3660,7 @@ class PDFView {
 		if (this._dragging) {
 			return;
 		}
+		this._releaseTouchTransform();
 		this.action = null;
 		this.pointerDownPosition = null;
 		this._pointerDownTriggered = false;
@@ -3619,7 +3668,16 @@ class PDFView {
 		this._render();
 	}
 
+	_handleTouchTransformInterrupted(event) {
+		if (!this._touchTransform
+			|| event.pointerId !== undefined && event.pointerId !== this._touchTransform.pointerID) {
+			return;
+		}
+		this._handlePointerCancel();
+	}
+
 	cancel() {
+		this._releaseTouchTransform();
 		this.setSelection();
 		this._hover = null;
 		this.action = null;
@@ -4236,7 +4294,7 @@ class PDFView {
 				this.navigateToPosition(position);
 				this.setSelectedAnnotationIDs([annotation.id]);
 				setTimeout(() => {
-					this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`)?.focus();
+					this._focusTextAnnotation(annotation.id);
 				}, 100);
 			}
 		}
@@ -4397,7 +4455,7 @@ class PDFView {
 				}
 				if (annotation.type === 'text') {
 					setTimeout(() => {
-						this._iframeWindow.document.querySelector(`[data-id="${annotation.id}"]`)?.focus();
+						this._focusTextAnnotation(annotation.id);
 					}, 100);
 				}
 			}
@@ -4470,6 +4528,7 @@ class PDFView {
 
 	_handleDragEnd(event) {
 		this._dragging = false;
+		this._releaseTouchTransform();
 		if (event.dataTransfer.dropEffect === 'none') {
 			this.action = null;
 		}
@@ -4605,7 +4664,51 @@ class PDFView {
 	}
 
 	_textAnnotationFocused() {
-		return this._iframeWindow.document.activeElement.classList.contains('textAnnotation');
+		return !!this._getFocusedTextAnnotationNode();
+	}
+
+	_getFocusedTextAnnotationNode() {
+		let node = this._iframeWindow?.document.activeElement;
+		return node?.classList.contains('textAnnotation') ? node : null;
+	}
+
+	getFocusedTextAnnotationID() {
+		return this._getFocusedTextAnnotationNode()?.getAttribute('data-id') ?? null;
+	}
+
+	_releaseTouchTransform() {
+		let transform = this._touchTransform;
+		this._touchTransform = null;
+		if (transform?.target.hasPointerCapture(transform.pointerID)) {
+			transform.target.releasePointerCapture(transform.pointerID);
+		}
+	}
+
+	finishTextAnnotationEditing() {
+		let node = this._getFocusedTextAnnotationNode();
+		if (!node) {
+			return false;
+		}
+		let empty = !node.value;
+		node.blur();
+		if (empty) {
+			this._onSelectAnnotations([]);
+			return true;
+		}
+		this._render();
+		return true;
+	}
+
+	_focusTextAnnotation(id) {
+		let node = this._iframeWindow.document.querySelector(`.textAnnotation[data-id="${id}"]`);
+		if (!node || node.disabled) {
+			return false;
+		}
+		node.classList.add('focusable');
+		node.focus({ preventScroll: true });
+		let offset = node.value.length;
+		node.setSelectionRange(offset, offset);
+		return this._iframeWindow.document.activeElement === node;
 	}
 
 	setScrollMode(mode) {
