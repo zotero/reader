@@ -605,9 +605,10 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts. Clients that
-			// trash annotations keep the deleted one around, so undeleting restores
-			// it in place and the id has to stay the same for the client to find it.
+			// Assign a new ID when undeleting to reduce sync conflicts,
+			// except if the client trashes instead of permanently deleting -
+			// in that case, keep the old ID so the client can match the
+			// trashed annotation and untrash it.
 			if (!prevAnnotation && !this._trashesAnnotations) {
 				let newID = this._generateObjectKey();
 				mapping.set(annotation.id, newID);
