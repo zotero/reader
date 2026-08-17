@@ -23,6 +23,7 @@ class AnnotationManager {
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
 		this._onChangeHistory = options.onChangeHistory;
+		this._trashesAnnotations = options.trashesAnnotations;
 		this._adjustTextAnnotationPosition = options.adjustTextAnnotationPosition;
 		this.render = () => {
 			options.onRender([...this._annotations]);
@@ -601,8 +602,10 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
+			// Assign new id when undeleting to reduce sync conflicts. Clients that
+			// trash annotations keep the deleted one around, so undeleting restores
+			// it in place and the id has to stay the same for the client to find it.
+			if (!prevAnnotation && !this._trashesAnnotations) {
 				let newID = this._generateObjectKey();
 				mapping.set(annotation.id, newID);
 				annotation.id = newID;
@@ -635,8 +638,10 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
+			// Assign new id when undeleting to reduce sync conflicts. Clients that
+			// trash annotations keep the deleted one around, so undeleting restores
+			// it in place and the id has to stay the same for the client to find it.
+			if (!prevAnnotation && !this._trashesAnnotations) {
 				let newID = this._generateObjectKey();
 				mapping.set(annotation.id, newID);
 				annotation.id = newID;
@@ -652,6 +657,12 @@ class AnnotationManager {
 		this.render();
 		this._notifyChangeHistory();
 		return true;
+	}
+
+	// Drops history points for annotations that have left the reader so
+	// that erased annotations cannot be brought back.
+	clearHistoryForAnnotations(ids) {
+		this._clearInterferingHistory(ids);
 	}
 
 	_clearInterferingHistory(affectedAnnotationIDs) {
