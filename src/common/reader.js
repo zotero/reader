@@ -949,15 +949,8 @@ class Reader {
 		this._annotationManager.setAnnotations(annotations);
 	}
 
-	unsetAnnotations(ids) {
-		this._annotationManager.unsetAnnotations(ids);
-	}
-
-	// Called when the client permanently deletes annotations that are no longer
-	// in the view (e.g. erased from the trash), so history points referencing
-	// them can't be replayed and recreate them
-	clearAnnotationsHistory(ids) {
-		this._annotationManager.clearHistoryForAnnotations(ids);
+	unsetAnnotations(ids, permanentlyDeleted) {
+		this._annotationManager.unsetAnnotations(ids, permanentlyDeleted);
 	}
 
 	openContextMenu(params) {

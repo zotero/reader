@@ -63,14 +63,17 @@ class AnnotationManager {
 	}
 
 	// Called when deletions come from the client side
-	unsetAnnotations(ids) {
+	unsetAnnotations(ids, permanentlyDeleted) {
 		// Deletions we haven't applied yet are outside changes that our history
 		// can no longer be replayed over. Ones we have applied are our own
-		// deletions coming back to us, and undoing them is still valid.
-		let externalIDs = ids.filter(id => this._annotations.some(x => x.id === id));
+		// deletions coming back to us, and undoing them is still valid, unless
+		// the annotations were permanently deleted.
+		let clearIDs = permanentlyDeleted
+			? ids
+			: ids.filter(id => this._annotations.some(x => x.id === id));
 		this._annotations = this._annotations.filter(x => !ids.includes(x.id));
-		if (externalIDs.length) {
-			this._clearInterferingHistory(externalIDs);
+		if (clearIDs.length) {
+			this._clearInterferingHistory(clearIDs);
 		}
 		this.render();
 	}
@@ -657,12 +660,6 @@ class AnnotationManager {
 		this.render();
 		this._notifyChangeHistory();
 		return true;
-	}
-
-	// Drops history points for annotations that have left the reader so
-	// that erased annotations cannot be brought back.
-	clearHistoryForAnnotations(ids) {
-		this._clearInterferingHistory(ids);
 	}
 
 	_clearInterferingHistory(affectedAnnotationIDs) {
