@@ -69,8 +69,13 @@ window.createView = (encodedOptions) => {
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
 
-			if (annotations[0]?.type === "note") {
-				window._view.selectAnnotations([annotations[0].id]);
+			// Select a just-created note annotation. Match by dateCreated to avoid
+			// re-selecting an existing note whose pending edit landed in the same batch.
+			// Skip while a text annotation is being inline-edited — stealing the selection
+			// here would delete the still-empty annotation under the focused editor
+			let newNote = annotations.find(x => x.type === 'note' && x.dateCreated === x.dateModified);
+			if (newNote && !window._view.getFocusedTextAnnotationID()) {
+				window._view.selectAnnotations([newNote.id]);
 			}
 		},
 		onSetOutline: (outline) => {

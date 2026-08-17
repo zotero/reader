@@ -47,6 +47,10 @@ class View {
 			readOnly: options.readOnly,
 			authorName: options.authorName,
 			annotations: options.annotations,
+			// Mobile apps receive annotation data only via onSaveAnnotations, while other
+			// events (e.g. onSelectAnnotations) can reference annotation IDs, so a new
+			// annotation must always be delivered before anything can refer to it
+			saveNewAnnotationsImmediately: true,
 			onSave: options.onSaveAnnotations,
 			onDelete: options.onDeleteAnnotations || nop,
 			adjustTextAnnotationPosition: (annotation, adjustOptions) => this._view.adjustTextAnnotationPosition(annotation, adjustOptions),

@@ -31,6 +31,12 @@ class AnnotationManager {
 
 		this._unsavedAnnotations = new Map();
 		this._highVolatilityAnnotationIDs = new Set();
+		// When the client depends on onSave to learn about new annotations before
+		// other events (e.g. selection) reference their IDs, track which IDs the
+		// client already has, and never debounce the first save of a new annotation
+		if (options.saveNewAnnotationsImmediately) {
+			this._clientKnownAnnotationIDs = new Set(this._annotations.map(x => x.id));
+		}
 
 		this._lastChangeTime = 0;
 		this._lastSaveTime = 0;
@@ -54,6 +60,7 @@ class AnnotationManager {
 	// Called when changes come from the client side
 	async setAnnotations(annotations) {
 		for (let annotation of annotations) {
+			this._clientKnownAnnotationIDs?.add(annotation.id);
 			this._annotations = this._annotations.filter(x => x.id !== annotation.id);
 			this._annotations.push(annotation);
 		}
@@ -364,13 +371,29 @@ class AnnotationManager {
 		this.render();
 	}
 
+	// True if an unsaved annotation was never delivered to the client via onSave.
+	// Until it's delivered, other events (e.g. selection) can reference an ID the
+	// client has no data for, therefore its save must not be debounced
+	_hasAnnotationsUnknownToClient() {
+		if (!this._clientKnownAnnotationIDs) {
+			return false;
+		}
+		for (let [id, annotation] of this._unsavedAnnotations) {
+			if (annotation && !this._clientKnownAnnotationIDs.has(id)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	async _triggerSaving() {
 		if (!this._unsavedAnnotations.size || this._savingInProgress) {
 			return;
 		}
 		if ((Date.now() - this._lastChangeTime < DEBOUNCE_TIME)
 			&& (Date.now() - this._lastSaveTime < DEBOUNCE_MAX_TIME)
-			&& !this._skipAnnotationSavingDebounce) {
+			&& !this._skipAnnotationSavingDebounce
+			&& !this._hasAnnotationsUnknownToClient()) {
 			clearTimeout(this._saveTimeout);
 			this._saveTimeout = setTimeout(() => {
 				this._saveTimeout = null;
@@ -388,6 +411,7 @@ class AnnotationManager {
 		for (let [id, annotation] of this._unsavedAnnotations) {
 			if (annotation) {
 				saveAnnotations.push(annotation);
+				this._clientKnownAnnotationIDs?.add(id);
 			}
 			else {
 				deleteAnnotationIDs.push(id);

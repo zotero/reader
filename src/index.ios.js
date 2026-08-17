@@ -61,8 +61,11 @@ window.createView = (options) => {
 			}
 			postMessage('onSaveAnnotations', { annotations: saved });
 
-			if (saved[0].type == "note") {
-				window._view.selectAnnotations([saved[0].id]);
+			// Select a just-created note annotation. Match by dateCreated to avoid
+			// re-selecting an existing note whose pending edit landed in the same batch
+			let newNote = saved.find(x => x.type === 'note' && x.dateCreated === x.dateModified);
+			if (newNote) {
+				window._view.selectAnnotations([newNote.id]);
 			}
 		},
 		onSetOutline: (outline) => {
