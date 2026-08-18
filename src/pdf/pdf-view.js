@@ -106,6 +106,7 @@ class PDFView {
 		this._onInitThumbnails = options.onInitThumbnails;
 		this._onSetThumbnails = options.onSetThumbnails;
 		this._onRenderThumbnail = options.onRenderThumbnail;
+		this._onRenderAnnotationImage = options.onRenderAnnotationImage;
 		this._onSetOutline = options.onSetOutline;
 		this._onSetPageLabels = options.onSetPageLabels;
 		this._onChangeViewState = options.onChangeViewState;
@@ -450,6 +451,11 @@ class PDFView {
 
 	async _init2() {
 		this._pdfRenderer = new PDFRenderer({ pdfView: this });
+
+		if (this._pendingAnnotationImageIDs) {
+			this._pdfRenderer.renderAnnotationImages(this._pendingAnnotationImageIDs);
+			this._pendingAnnotationImageIDs = null;
+		}
 
 		if (this._primary && !this._preview) {
 			// let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
@@ -1303,6 +1309,17 @@ class PDFView {
 
 	renderThumbnails(pageIndexes) {
 		this._pdfThumbnails?.render(pageIndexes);
+	}
+
+	renderAnnotationImages(ids) {
+		if (this._pdfRenderer) {
+			this._pdfRenderer.renderAnnotationImages(ids);
+		}
+		else {
+			// The renderer is created after the first page is rendered,
+			// so buffer requests arriving before that
+			(this._pendingAnnotationImageIDs ??= []).push(...ids);
+		}
 	}
 
 	setReadOnly(readOnly) {

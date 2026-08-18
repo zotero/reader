@@ -143,6 +143,7 @@ class View {
 				onInitThumbnails: this._options.onInitThumbnails,
 				onSetThumbnails: this._options.onSetThumbnails || nop,
 				onRenderThumbnail: this._options.onRenderThumbnail,
+				onRenderAnnotationImage: this._options.onRenderAnnotationImage,
 				onSetPageLabels: this._options.onSetPageLabels || nop,
 				// PDF can delete annotations inside the view, for example by completely erasing ink.
 				onDeleteAnnotations: this._options.onDeleteAnnotations || nop
@@ -398,6 +399,20 @@ class View {
 	renderThumbnails(pageIndexes) {
 		this._ensureType('pdf');
 		this._view.renderThumbnails?.(pageIndexes);
+	}
+
+	/**
+	 * Request images for ink/image annotations. Each is rendered once and
+	 * delivered via onRenderAnnotationImage; request again to refresh an image
+	 * after the annotation changes. An unknown id, or one of an annotation
+	 * that has no image, is answered with an empty string.
+	 * Providing onRenderAnnotationImage also stops annotation images from
+	 * being rendered at load and included in onSaveAnnotations
+	 * @param {Array} ids Array of annotation ids (item keys)
+	 */
+	renderAnnotationImages(ids) {
+		this._ensureType('pdf');
+		this._view.renderAnnotationImages?.(ids);
 	}
 
 	setReadAloudSpotlight(selector) {

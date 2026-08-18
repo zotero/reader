@@ -90,6 +90,9 @@ window.createView = (encodedOptions) => {
 		onRenderThumbnail: (thumbnail) => {
 			postMessage('onRenderThumbnail', { thumbnail });
 		},
+		onRenderAnnotationImage: ({ id, image }) => {
+			postMessage('onRenderAnnotationImage', { id, image });
+		},
 		onSetPageLabels: (pageLabels) => {
 			postMessage('onSetPageLabels', { pageLabels });
 		},
@@ -226,6 +229,11 @@ window.setPageLabels = (options) => {
 window.renderThumbnails = (pageIndexes) => {
 	log("Render thumbnails: " + JSON.stringify(pageIndexes));
 	window._view.renderThumbnails(pageIndexes);
+};
+
+window.renderAnnotationImages = (ids) => {
+	log("Render annotation images: " + JSON.stringify(ids));
+	window._view.renderAnnotationImages(ids);
 };
 
 window.enterPassword = (options) => {

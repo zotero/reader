@@ -3,6 +3,7 @@ import { p2v } from './lib/coordinates';
 import { DARKEN_INK_AND_TEXT_COLOR } from '../common/defines';
 
 const SCALE = 4;
+const IMAGE_ANNOTATION_TYPES = ['image', 'ink'];
 const PATH_BOX_PADDING = 10; // pt
 const MIN_PATH_BOX_SIZE = 30; // pt
 
@@ -41,6 +42,34 @@ class PDFRenderer {
 		this._pdfView = options.pdfView;
 		this._processing = false;
 		this._lastRendered = new Map();
+		// On-demand mode (onRenderAnnotationImage): ids waiting to be rendered
+		// once and delivered through the callback
+		this._pendingImageIDs = new Set();
+	}
+
+	// When the client provides onRenderAnnotationImage, images are only rendered
+	// for explicitly requested annotations and delivered via the callback,
+	// instead of rendering everything at load and saving images through
+	// onUpdateAnnotations. Keeping images up to date is then up to the client,
+	// which re-requests them when an annotation changes
+	get _onRenderAnnotationImage() {
+		return this._pdfView._onRenderAnnotationImage;
+	}
+
+	// On-demand mode: take the next requested annotation that can produce an
+	// image, answering the ids that can't, so a client is never left waiting
+	_takeRequestedAnnotation() {
+		for (let id of this._pendingImageIDs) {
+			this._pendingImageIDs.delete(id);
+			let annotation = this._pdfView._annotations.find(
+				x => x.id === id && IMAGE_ANNOTATION_TYPES.includes(x.type)
+			);
+			if (annotation) {
+				return annotation;
+			}
+			this._onRenderAnnotationImage({ id, image: '' });
+		}
+		return null;
 	}
 
 	async _renderNext() {
@@ -48,19 +77,43 @@ class PDFRenderer {
 			return;
 		}
 		this._processing = true;
-		let annotation = this._pdfView._annotations.find(x => ['image', 'ink'].includes(x.type) && !x.image);
+		let annotation = this._onRenderAnnotationImage
+			? this._takeRequestedAnnotation()
+			: this._pdfView._annotations.find(x => IMAGE_ANNOTATION_TYPES.includes(x.type)
+				&& !x.image
+				&& this._lastRendered.get(x.id) !== x.dateModified);
 		if (annotation) {
-			let lastRendered = this._lastRendered.get(annotation.id);
-			if (!lastRendered || lastRendered < annotation.dateModified) {
+			if (!this._onRenderAnnotationImage) {
+				// Mark before rendering, so an annotation that produces no image
+				// isn't picked again on the next pass
 				this._lastRendered.set(annotation.id, annotation.dateModified);
-				let image = await this._renderAnnotationImage(annotation);
-				if (image) {
-					this._pdfView._onUpdateAnnotations([{ id: annotation.id, image }]);
-				}
-				setTimeout(() => this._renderNext());
 			}
+			let image = '';
+			try {
+				image = await this._renderAnnotationImage(annotation);
+			}
+			catch (e) {
+				// Continue with the remaining annotations instead of leaving
+				// the renderer stuck in the processing state
+				console.log(e);
+			}
+			if (this._onRenderAnnotationImage) {
+				// Deliver even an empty image, so every request gets a response
+				this._onRenderAnnotationImage({ id: annotation.id, image });
+			}
+			else if (image) {
+				this._pdfView._onUpdateAnnotations([{ id: annotation.id, image }]);
+			}
+			setTimeout(() => this._renderNext());
 		}
 		this._processing = false;
+	}
+
+	renderAnnotationImages(ids) {
+		for (let id of ids) {
+			this._pendingImageIDs.add(id);
+		}
+		this._renderNext();
 	}
 
 	/**

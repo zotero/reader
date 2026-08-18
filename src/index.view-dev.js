@@ -111,6 +111,11 @@ async function main() {
 	window.createView({
 		type,
 		platform,
+		// Test on-demand annotation image delivery by appending '&onDemandImages',
+		// then calling window._view.renderAnnotationImages([id, …]) in the console
+		onRenderAnnotationImage: urlParams.has('onDemandImages')
+			? ({ id, image }) => console.log('Render annotation image', id, image)
+			: undefined,
 		data: {
 			buf: new Uint8Array(await res.arrayBuffer()),
 		},
