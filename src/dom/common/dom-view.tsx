@@ -2099,6 +2099,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handleScroll(event: Event) {
 		this._lastScrollTime = event.timeStamp;
+		if (this._readAloud.state?.active && !this._readAloud.scrolling) {
+			this._onManualNavigation();
+		}
 		requestAnimationFrame(() => {
 			this._renderAnnotations();
 			this._repositionPopups();
