@@ -130,6 +130,7 @@ class Reader {
 		this._onSetPopupPosition = options.onSetPopupPosition;
 		this._onChangeUndoHistory = options.onChangeUndoHistory;
 		this._externalUndoHistory = !!options.onChangeUndoHistory;
+		this._trashesAnnotations = !!options.trashesAnnotations;
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
@@ -361,6 +362,7 @@ class Reader {
 				this._updateState({ filter });
 			},
 			onChangeHistory: this._onChangeUndoHistory,
+			trashesAnnotations: this._trashesAnnotations,
 			adjustTextAnnotationPosition: (annotation, option) => {
 				return this._primaryView.adjustTextAnnotationPosition(annotation, option);
 			}
@@ -947,8 +949,8 @@ class Reader {
 		this._annotationManager.setAnnotations(annotations);
 	}
 
-	unsetAnnotations(ids) {
-		this._annotationManager.unsetAnnotations(ids);
+	unsetAnnotations(ids, permanentlyDeleted) {
+		this._annotationManager.unsetAnnotations(ids, permanentlyDeleted);
 	}
 
 	openContextMenu(params) {
