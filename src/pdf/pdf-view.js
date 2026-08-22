@@ -4855,7 +4855,11 @@ class PDFView {
 		let { pageIndex } = annotation.position;
 		let originalPage = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[pageIndex];
 		let { viewBox } = originalPage.viewport;
-		return adjustTextAnnotationPosition(annotation, viewBox, options);
+		return adjustTextAnnotationPosition(annotation, viewBox, {
+			...options,
+			document: this._iframeWindow.document,
+			scale: originalPage.viewport.scale,
+		});
 	}
 }
 

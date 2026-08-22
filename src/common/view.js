@@ -19,6 +19,12 @@ let nop = () => undefined;
 
 class View {
 	constructor(options) {
+		// Direct mobile View entry points don't initialize these in Reader.
+		let computedStyle = window.getComputedStyle(document.body);
+		window.computedFontFamily = computedStyle.getPropertyValue('font-family');
+		window.computedColorFocusBorder = computedStyle.getPropertyValue('--color-focus-border');
+		window.computedWidthFocusBorder = computedStyle.getPropertyValue('--width-focus-border');
+
 		this._type = options.type;
 		this._options = options;
 

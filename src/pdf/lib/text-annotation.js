@@ -6,13 +6,14 @@ import {
 	getScaleTransform
 } from './utilities';
 
-function measureHeight(comment, width, fontSize) {
-	let customAnnotation = document.createElement('textarea');
+function measureHeight(comment, width, fontSize, options) {
+	let { document: doc = document, scale = 1 } = options;
+	let customAnnotation = doc.createElement('textarea');
 	comment = comment || 'A';
 	customAnnotation.value = comment;
 	// $font-family-sans-serif
 	customAnnotation.style.fontFamily = window.computedFontFamily;
-	customAnnotation.style.fontSize = fontSize + 'px';
+	customAnnotation.style.fontSize = fontSize * scale + 'px';
 	customAnnotation.style.wordBreak = 'break-word';
 	customAnnotation.style.pointerEvents = 'none';
 	customAnnotation.style.position = 'absolute';
@@ -20,26 +21,27 @@ function measureHeight(comment, width, fontSize) {
 	customAnnotation.style.left = '0';
 	customAnnotation.style.overflow = 'hidden';
 	customAnnotation.style.visibility = 'hidden';
-	customAnnotation.style.height = fontSize + 'px';
-	customAnnotation.style.width = width + 'px';
+	customAnnotation.style.height = fontSize * scale + 'px';
+	customAnnotation.style.width = width * scale + 'px';
 	customAnnotation.style.padding = 0;
 	customAnnotation.style.margin = 0;
 	customAnnotation.style.outline = 'none';
 	customAnnotation.style.border = 'none';
-	document.body.append(customAnnotation);
+	doc.body.append(customAnnotation);
 	customAnnotation.offsetWidth;
-	let height = customAnnotation.scrollHeight;
+	let height = customAnnotation.scrollHeight / scale;
 	customAnnotation.remove();
 	return height;
 }
 
-function measureWidth(comment, fontSize) {
-	let customAnnotation = document.createElement('textarea');
+function measureWidth(comment, fontSize, options) {
+	let { document: doc = document, scale = 1 } = options;
+	let customAnnotation = doc.createElement('textarea');
 	comment = comment || 'A';
 	customAnnotation.value = comment;
 	// $font-family-sans-serif
 	customAnnotation.style.fontFamily = window.computedFontFamily;
-	customAnnotation.style.fontSize = fontSize + 'px';
+	customAnnotation.style.fontSize = fontSize * scale + 'px';
 	customAnnotation.style.wordBreak = 'break-word';
 	customAnnotation.style.pointerEvents = 'none';
 	customAnnotation.style.position = 'absolute';
@@ -54,9 +56,9 @@ function measureWidth(comment, fontSize) {
 	customAnnotation.style.outline = 'none';
 	customAnnotation.style.border = 'none';
 	customAnnotation.style.whiteSpace = 'nowrap';
-	document.body.append(customAnnotation);
+	doc.body.append(customAnnotation);
 	customAnnotation.offsetWidth;
-	let width = customAnnotation.scrollWidth;
+	let width = customAnnotation.scrollWidth / scale;
 	customAnnotation.remove();
 	return width + 1;
 }
@@ -126,15 +128,15 @@ export function adjustTextAnnotationPosition(annotation, pageRect, options = {})
 		width = position.rects[0][2] - position.rects[0][0];
 	}
 	else {
-		width = measureWidth(annotation.comment, position.fontSize);
+		width = measureWidth(annotation.comment, position.fontSize, options);
 	}
-	let height = measureHeight(annotation.comment, width, position.fontSize);
+	let height = measureHeight(annotation.comment, width, position.fontSize, options);
 	if (height < 2 * position.fontSize && !enforceWidth) {
-		width = measureWidth(annotation.comment, position.fontSize);
+		width = measureWidth(annotation.comment, position.fontSize, options);
 		width += 5;
 		if (width > DEFAULT_MAX_WIDTH && options.enableSingleLineMaxWidth) {
 			width = DEFAULT_MAX_WIDTH;
-			height = measureHeight(annotation.comment, DEFAULT_MAX_WIDTH, position.fontSize);
+			height = measureHeight(annotation.comment, DEFAULT_MAX_WIDTH, position.fontSize, options);
 		}
 	}
 
@@ -183,7 +185,7 @@ export function adjustTextAnnotationPosition(annotation, pageRect, options = {})
 	}
 	else {
 		width += dp[0];
-		let height = measureHeight(annotation.comment, width, position.fontSize);
+		let height = measureHeight(annotation.comment, width, position.fontSize, options);
 		let p = updatePosition(position, width, height);
 		return p;
 	}

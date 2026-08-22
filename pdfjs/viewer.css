@@ -452,7 +452,9 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	background-color: transparent;
 	border: none;
 	box-sizing: border-box;
+	margin: 0;
 	outline: none;
+	padding: 0;
 	pointer-events: none;
 	word-break: break-word;
 	cursor: text;
