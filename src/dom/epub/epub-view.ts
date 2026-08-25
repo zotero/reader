@@ -609,6 +609,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		if (existingAnnotation) {
 			this._options.onUpdateAnnotations([{
 				...existingAnnotation,
+				color: annotation.color,
 				comment: annotation.comment,
 			}]);
 		}
