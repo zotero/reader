@@ -4,6 +4,8 @@ import { registerHooks } from 'node:module';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
+import { createSDTSearchData } from '../../src/pdf/sdt-search.mjs';
+
 const PROJECT_ROOT = new URL('../../', import.meta.url).href;
 const moduleHooks = registerHooks({
 	resolve(specifier, context, nextResolve) {
@@ -122,6 +124,48 @@ test('does not use block geometry for unanchored whitespace', () => {
 		end: [0, 0, 3],
 	});
 	assert.equal(new PDFPositionMapper(structure).textNodeSpansToSourcePosition(spans), null);
+});
+
+test('maps detached search spans without retaining SDT content', async () => {
+	let structure = {
+		schemaVersion: '1.0.0',
+		metadata: { processor: { type: 'pdf' } },
+		catalog: {
+			pages: [
+				{ viewRect: [0, 0, 100, 100], contentRange: [[0], [1]] },
+				{ viewRect: [0, 0, 100, 100], contentRange: [[1], [2]] },
+			],
+		},
+		content: [
+			{
+				type: 'paragraph',
+				nextPart: [1],
+				content: [{
+					text: 'inter-',
+					anchor: { pageRects: [[0, 0, 0, 50, 10]] },
+				}],
+			},
+			{
+				type: 'paragraph',
+				previousPart: [0],
+				content: [{
+					text: 'national',
+					anchor: { pageRects: [[1, 0, 0, 60, 10]] },
+				}],
+			},
+		],
+	};
+	let data = createSDTSearchData(structure, { yieldControl: async () => {} });
+	let [result] = await data.searchIndex.search('international');
+	let mapper = new PDFPositionMapper(data.structure);
+
+	assert.deepEqual(data.structure.content, []);
+	assert.equal(data.searchIndex._structure, null);
+	assert.deepEqual(mapper.textNodeSpansToSourcePosition(result.spans), {
+		pageIndex: 0,
+		rects: [[0, 0, 50, 10]],
+		nextPageRects: [[0, 0, 60, 10]],
+	});
 });
 
 test('bounds and clears expanded PDF run-data caches', () => {
