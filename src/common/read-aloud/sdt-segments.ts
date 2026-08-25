@@ -54,6 +54,14 @@ type TextRange = {
 // while prose asides that merely contain a link (~0.21 and below) survive
 const LINK_GROUP_COVERAGE_THRESHOLD = 0.25;
 
+// Characters allowed in a citation/footnote superscript
+// (digits, common footnote symbols, and Unicode superscript digits)
+const MARKER_CHAR_RE = /[0-9*\u2020\u2021\u00A7\u00B6\u00B9\u00B2\u00B3\u2070\u2074-\u2079]/;
+// Characters that may separate markers ("1,2", "3-5")
+const MARKER_SEPARATOR_RE = /[\s,;\-\u2010-\u2015]/;
+// Characters that are superscript on their own, without a superscript style
+const SUPERSCRIPT_CHAR_RE = /[\u00B9\u00B2\u00B3\u2070\u2074-\u2079]/;
+
 interface SegmentSource {
 	chain: ChainText;
 	rawStart: number;
@@ -434,14 +442,72 @@ function compactChainText(text: string, mappings: ChainTextMapping[], ranges: Te
 	};
 }
 
+/**
+ * Return the chain text with superscript citation and footnote markers
+ * replaced by spaces, for sentence splitting only.
+ *
+ * A marker that follows sentence-ending punctuation ("First sentence.1
+ * Second sentence.") makes the sentencex interpret the period as a
+ * decimal point instead of a sentence break. Masking hides the marker
+ * from sentencex without requiring offsets to be adjusted.
+ */
+function maskSuperscriptMarkers(chain: ChainText): string {
+	let { text } = chain;
+	let superscript: boolean[] = new Array(text.length).fill(false);
+	for (let mapping of chain.mappings) {
+		if (mapping.node.style?.sup) {
+			superscript.fill(true, mapping.absStart, mapping.absEnd);
+		}
+	}
+	for (let i = 0; i < text.length; i++) {
+		if (SUPERSCRIPT_CHAR_RE.test(text[i])) {
+			superscript[i] = true;
+		}
+	}
+
+	let masked: string[] | null = null;
+	let i = 0;
+	while (i < text.length) {
+		if (!superscript[i]) {
+			i++;
+			continue;
+		}
+		let start = i;
+		// A run may include separators, but only between superscript characters
+		while (i < text.length
+				&& (superscript[i] || (MARKER_SEPARATOR_RE.test(text[i]) && superscript[i + 1]))) {
+			i++;
+		}
+		if (isMarkerRun(text.slice(start, i))) {
+			masked ??= text.split('');
+			masked.fill(' ', start, i);
+		}
+	}
+	return masked ? masked.join('') : text;
+}
+
+function isMarkerRun(run: string): boolean {
+	let hasMarker = false;
+	for (let char of run) {
+		if (MARKER_CHAR_RE.test(char)) {
+			hasMarker = true;
+		}
+		else if (!MARKER_SEPARATOR_RE.test(char)) {
+			return false;
+		}
+	}
+	return hasMarker;
+}
+
 function segmentChain(
 	result: SDTReadAloudSegments,
 	chain: ChainText,
 	granularity: ReadAloudGranularity,
 	lang: string,
 ) {
-	let sentences = getSentenceBoundaries(lang || 'en', chain.text)
-		.filter(boundary => /\S/.test(boundary.text))
+	let splitText = maskSuperscriptMarkers(chain);
+	let sentences = getSentenceBoundaries(lang || 'en', splitText)
+		.filter(boundary => /\S/.test(chain.text.slice(boundary.startIndex, boundary.endIndex)))
 		.map(boundary => [boundary.startIndex, boundary.endIndex] as [number, number]);
 
 	if (!sentences.length) {
