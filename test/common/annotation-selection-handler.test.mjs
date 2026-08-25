@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { createAnnotationSelectionHandler } from '../../src/common/annotation-selection-handler.mjs';
+import {
+	createAnnotationSelectionHandler,
+	selectAnnotationWhenViewReady,
+} from '../../src/common/annotation-selection-handler.mjs';
 
 function setup() {
 	let calls = [];
@@ -73,4 +76,30 @@ test('drops a deferred inline-editing notification superseded by a same-id selec
 		['notify', ['A'], {}],
 		['select', ['A']],
 	]);
+});
+
+test('selects an initial annotation after a replacement view is ready', async () => {
+	let resolveInitial;
+	let resolveReplacement;
+	let initialView = {
+		initializedPromise: new Promise(resolve => resolveInitial = resolve),
+	};
+	let replacementView = {
+		initializedPromise: new Promise(resolve => resolveReplacement = resolve),
+	};
+	let currentView = initialView;
+	let selected = [];
+
+	let pending = selectAnnotationWhenViewReady('A', {
+		getView: () => currentView,
+		select: id => selected.push(id),
+	});
+	currentView = replacementView;
+	resolveInitial(false);
+	await Promise.resolve();
+	assert.deepEqual(selected, []);
+
+	resolveReplacement(true);
+	await pending;
+	assert.deepEqual(selected, ['A']);
 });

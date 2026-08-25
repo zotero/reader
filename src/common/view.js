@@ -166,7 +166,12 @@ class View {
 		else {
 			throw new Error('Invalid view type');
 		}
-		view.initializedPromise.then(() => this._options.onInitialized());
+		view.initializedPromise.then((initialized) => {
+			if (this._type !== 'pdf'
+					|| (initialized !== false && this._view === view)) {
+				this._options.onInitialized();
+			}
+		});
 		return view;
 	}
 
@@ -319,6 +324,9 @@ class View {
 		this._options.password = password;
 		if (this._view.enterPassword?.(password)) {
 			return;
+		}
+		if (this._type === 'pdf') {
+			this._view.destroy?.();
 		}
 		this._options.container.replaceChildren();
 		this._view = this._createView();

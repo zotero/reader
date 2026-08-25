@@ -552,6 +552,13 @@ function hasKnownPageTransformDefaults(schemaVersion) {
 	);
 }
 
+export class SDTValidationError extends Error {
+	constructor(message) {
+		super(message);
+		this.name = 'SDTValidationError';
+	}
+}
+
 function validateDocumentPages(pages, validation, schemaVersion) {
 	if (!Array.isArray(validation?.pages)) {
 		return;
@@ -573,19 +580,19 @@ function validateDocumentPages(pages, validation, schemaVersion) {
 				))
 				|| !rotationMatches
 				|| !userUnitMatches) {
-			throw new Error('SDT page geometry does not match PDF');
+			throw new SDTValidationError('SDT page geometry does not match PDF');
 		}
 	}
 }
 
 export function validatePDFSDTDocument(structure, expectedDocument) {
 	if (structure?.metadata?.processor?.type !== 'pdf') {
-		throw new Error('Expected PDF SDT');
+		throw new SDTValidationError('Expected PDF SDT');
 	}
 	if (!Array.isArray(structure.content)
 			|| !Array.isArray(structure.catalog?.pages)
 			|| structure.catalog.pages.length !== expectedDocument?.pageCount) {
-		throw new Error('SDT page count does not match PDF');
+		throw new SDTValidationError('SDT page count does not match PDF');
 	}
 	validateDocumentPages(
 		structure.catalog.pages,
@@ -1069,11 +1076,11 @@ export class LazyPDFSDTDocument {
 		control.throwIfAborted();
 		let pages = catalog?.pages;
 		if (metadata?.processor?.type !== 'pdf') {
-			throw new Error('Expected PDF SDT');
+			throw new SDTValidationError('Expected PDF SDT');
 		}
 		if (!Array.isArray(pages)
 				|| pages.length !== expectedDocument?.pageCount) {
-			throw new Error('SDT page count does not match PDF');
+			throw new SDTValidationError('SDT page count does not match PDF');
 		}
 		validateDocumentPages(
 			pages,
@@ -1275,6 +1282,15 @@ export class LazyPDFSDTDocument {
 		return {
 			pageIndex,
 			...page,
+		};
+	}
+
+	composePage(pageData, semanticPage, semanticFlowRevision) {
+		return {
+			...pageData,
+			chars: applyTextFlowClasses(pageData.chars, semanticPage.textFlowRects),
+			overlays: composePDFPageOverlays(pageData.overlays, semanticPage.overlays),
+			semanticFlowRevision,
 		};
 	}
 }

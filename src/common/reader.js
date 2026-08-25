@@ -7,6 +7,7 @@ import EPUBView from '../dom/epub/epub-view';
 import SnapshotView from '../dom/snapshot/snapshot-view';
 import SDTView from '../dom/sdt/sdt-view';
 import AnnotationManager from './annotation-manager';
+import { selectAnnotationWhenViewReady } from './annotation-selection-handler.mjs';
 import {
 	createAnnotationContextMenu,
 	createColorContextMenu,
@@ -39,6 +40,8 @@ import {
 	getSDTLang,
 } from './read-aloud/sdt-segments';
 import { createPositionMapper } from './sdt/create-position-mapper';
+import { SDTDocumentSession } from './sdt/document-session.mjs';
+import { PDFSDTIntegration } from '../pdf/sdt-integration.mjs';
 import { isSDTPosition } from './types';
 import {
 	openStructuredDocumentTextPack,
@@ -80,6 +83,14 @@ class Reader {
 		this._sdtPromise = null;
 		this._sdt = null;
 		this._readAloudSegments = null;
+		this._sdtDocumentSession = null;
+		if (this._type === 'pdf' && this._getSDTPack) {
+			this._sdtDocumentSession = new SDTDocumentSession({
+				getPack: this._getSDTPack,
+				documentType: 'pdf',
+				onProgress: progress => this._updateState({ sdtProgress: progress }),
+			});
+		}
 
 		// Persisted popup positions
 		// Currently only set/read by UtilityPopups, which are draggable
@@ -379,10 +390,10 @@ class Reader {
 		this._primaryView = this._createView(true, options.location);
 
 		if (selectAnnotationID) {
-			(async () => {
-				await this._primaryView.initializedPromise;
-				this.setSelectedAnnotations([selectAnnotationID]);
-			})();
+			selectAnnotationWhenViewReady(selectAnnotationID, {
+				getView: () => this._primaryView,
+				select: id => this.setSelectedAnnotations([id]),
+			});
 		}
 
 		if (!this._preview) {
@@ -1248,6 +1259,9 @@ class Reader {
 	 * @returns {Promise<StructuredDocumentTextPackReader | null>}
 	 */
 	async getSDTReader() {
+		if (this._sdtDocumentSession) {
+			return this._sdtDocumentSession.getReader();
+		}
 		if (!this._getSDTPack) {
 			return null;
 		}
@@ -1302,12 +1316,20 @@ class Reader {
 		return this._sdtReaderPromise;
 	}
 
-	// Materialize the full SDT structure and build the position mapper.
-	// Used by Read Aloud and Reading Mode; resolves to null when SDT is
-	// unavailable
+	// Materialize the full SDT only for existing full-document consumers such
+	// as Reading Mode and Read Aloud. Basic PDF semantics remain page-lazy.
 	async _loadSDT() {
 		if (this._sdt) {
 			return this._sdt;
+		}
+		if (this._sdtDocumentSession) {
+			let sdt = await this._sdtDocumentSession.getDocument();
+			if (sdt && this._sdt !== sdt) {
+				this._sdt = sdt;
+				this._primaryView?.startSDT();
+				this._secondaryView?.startSDT();
+			}
+			return sdt;
 		}
 		if (!this._sdtPromise) {
 			this._sdtPromise = (async () => {
@@ -2158,6 +2180,13 @@ class Reader {
 				...common,
 				password: this._password,
 				pageLabels: this._state.pageLabels,
+				createSDTIntegration: this._sdtDocumentSession
+					? ({ documentData, search }) => new PDFSDTIntegration({
+						session: this._sdtDocumentSession,
+						documentData,
+						search,
+					})
+					: null,
 				onRequestPassword,
 				onSetThumbnails,
 				onSetPageLabels,
@@ -2190,7 +2219,11 @@ class Reader {
 		}
 
 		if (primary) {
-			view.initializedPromise.then(() => view.focus());
+			view.initializedPromise.then((initialized) => {
+				if (initialized !== false && this._getActiveView(true) === view) {
+					view.focus();
+				}
+			});
 		}
 
 		// The reader can already be suspended when a view is created (e.g. a
@@ -2350,7 +2383,18 @@ class Reader {
 	}
 
 	async navigate(location, options) {
-		await this._lastView.initializedPromise;
+		let view;
+		let initialized;
+		do {
+			view = this._lastView;
+			if (!view) {
+				return;
+			}
+			initialized = await view.initializedPromise;
+		} while (this._lastView !== view);
+		if (initialized === false) {
+			return;
+		}
 		// Select the annotation instead of just navigating when navigation is triggered externally
 		if (
 			location.annotationID
@@ -2359,7 +2403,7 @@ class Reader {
 			this.setSelectedAnnotations([location.annotationID]);
 		}
 		else {
-			this._lastView.navigate(location, options);
+			view.navigate(location, options);
 		}
 	}
 
@@ -2707,6 +2751,7 @@ class Reader {
 		for (let view of this._views) {
 			view.trimMemory?.();
 		}
+		this._sdt?.mapper.clearCache?.();
 	}
 
 	print() {
@@ -2739,6 +2784,13 @@ class Reader {
 		this._sdtPromise = null;
 		this._sdt = null;
 		this._readAloudSegments = null;
+		this._sdtDocumentSession?.reset();
+		if (this._type === 'pdf') {
+			this._primaryView?.destroy();
+			this._secondaryView?.destroy();
+			this._primaryView = null;
+			this._secondaryView = null;
+		}
 		if (this._primarySDTView || this._secondarySDTView) {
 			this._primarySDTView?.destroy();
 			this._primarySDTView = null;
@@ -2750,17 +2802,41 @@ class Reader {
 				secondaryReadingModeEnabled: false,
 			});
 		}
+		if (this._type === 'pdf') {
+			this._updateState({
+				outline: null,
+				pageLabels: [],
+				sdtProgress: null,
+				readingModeLoading: false,
+				primaryViewOverlayPopup: null,
+				secondaryViewOverlayPopup: null,
+			});
+		}
 		this._primaryViewContainer.replaceChildren();
 		this._primaryView = this._createView(true);
+		if (this._type === 'pdf') {
+			this._primaryView.setSidebarView?.(this._state.sidebarView);
+			this._primaryView.setSidebarOpen?.(this._state.sidebarOpen);
+		}
 		if (this._state.splitType) {
 			this._secondaryViewContainer.replaceChildren();
 			this._secondaryView = this._createView(false);
+			if (this._type === 'pdf') {
+				this._secondaryView.setSidebarView?.(this._state.sidebarView);
+				this._secondaryView.setSidebarOpen?.(this._state.sidebarOpen);
+			}
 		}
 	}
 
 	enterPassword(password) {
 		this._updateState({ passwordPopup: null });
 		this._password = password;
+		let views = [this._primaryView, this._secondaryView].filter(Boolean);
+		if (this._type === 'pdf'
+				&& views.length
+				&& views.every(view => view.enterPassword?.(password))) {
+			return;
+		}
 		this.reload(this._data);
 	}
 

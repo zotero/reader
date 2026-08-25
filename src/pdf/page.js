@@ -382,36 +382,20 @@ export default class Page {
 	}
 
 	_pushFindResults(items) {
-		let findController = this._layer._findController;
-		if (!findController
-			|| !findController.highlightMatches
-			|| !findController._matchesCountTotal
-			|| !this._layer._pdfPages[this._pageIndex]
-		) {
-			return;
-		}
-		let { selected } = findController;
-		let positions = findController.getMatchPositions(
-			this._pageIndex,
-			this._layer._pdfPages[this._pageIndex]
-		);
-		if (!positions || !positions.length) {
+		let results = this._layer.getFindResultsForPage(this._pageIndex);
+		if (!results.length) {
 			return;
 		}
 
 		let dark = this._layer._themeColorScheme === 'dark';
 		// The canvas radius was 5 device pixels
 		let radius = round(5 / devicePixelRatio);
-		for (let i = 0; i < positions.length; i++) {
-			let current = selected.pageIdx === this._pageIndex && i === selected.matchIdx;
-			if (!current && !findController.state.highlightAll) {
-				continue;
-			}
+		for (let { position, current } of results) {
 			let color = current
 				? (dark ? FIND_RESULT_COLOR_CURRENT_DARK : FIND_RESULT_COLOR_CURRENT_LIGHT)
 				: (dark ? FIND_RESULT_COLOR_ALL_DARK : FIND_RESULT_COLOR_ALL_LIGHT);
-			let position = this._p2v(positions[i]);
-			for (let rect of position.rects) {
+			let viewPosition = this._p2v(position);
+			for (let rect of viewPosition.rects) {
 				this._pushRect(items, rect, { color, radius });
 			}
 		}

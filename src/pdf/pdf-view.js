@@ -69,10 +69,11 @@ import PopupDelayer from '../common/lib/popup-delayer';
 import { adjustTextAnnotationPosition } from './lib/text-annotation';
 import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
 import { History } from '../common/lib/history';
-import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
 import { getBlockNodeByRef } from '../common/sdt/position-mapper';
 import { PDFNativeTextSelection } from './native-text-selection';
+import { PDFDocumentData } from './pdf-document-data.mjs';
+import { PDFSearchController } from './pdf-search-controller.mjs';
 import { getScrollTarget } from './scroll-target.mjs';
 import {
 	createTouchAnnotationTransform,
@@ -85,6 +86,7 @@ import {
 	getTextBlockRect,
 	isDoubleTap,
 } from './double-tap-zoom.mjs';
+
 
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
@@ -152,16 +154,15 @@ class PDFView {
 		this._annotations = options.annotations;
 
 		this._pages = [];
-		this._pdfPages = {};
-		this._processedPageOverlays = {};
-		this._processedPageIsolatedCharIndexes = {};
+		this._sidebarView = null;
+		this._sidebarOpen = false;
+		this._overlayRevision = 0;
+		this._destroyed = false;
 
 		this._focusedObject = null;
 		this._lastFocusedObject = null;
 
 		this._lastNavigationTime = 0;
-
-		this._findState = options.findState;
 
 		this._scrolling = false;
 		this._dragging = false;
@@ -207,9 +208,44 @@ class PDFView {
 		this._iframe.src = 'pdf/web/viewer.html';
 
 		this._iframeWindow = null;
+		this._documentData = new PDFDocumentData({
+			preview: this._preview,
+			resolveDestination: dest => this._getPositionFromDestination(dest),
+			isInteractionActive: () => this._hasActiveInteraction(),
+			onPageData: (pageIndex, _pageData, details) => {
+				this._handleDocumentPageData(pageIndex, details);
+			},
+			onMetadata: metadata => this._handleDocumentMetadata(metadata),
+		});
+		this._pdfPages = this._documentData.pages;
+		this._searchController = new PDFSearchController({
+			initialState: options.findState,
+			pages: this._pdfPages,
+			ensurePage: pageIndex => this._documentData.ensurePage(pageIndex),
+			getPageLabel: (pageIndex, usePhysical) => this._getPageLabel(pageIndex, usePhysical),
+			getCurrentPageIndex: () => (
+				(this._iframeWindow?.PDFViewerApplication?.pdfViewer?.currentPageNumber || 1) - 1
+			),
+			onState: state => this._onSetFindState(state),
+			onNavigate: position => this.navigateToPosition(position),
+			onChange: () => {
+				this.a11yWillPlaceVirtCursorOnSearchResult();
+				this._render();
+			},
+			onPrepareSDT: () => this._sdtIntegration?.prepareSearch(),
+			getSource: () => this._iframeWindow,
+		});
+		this._sdtIntegration = options.createSDTIntegration?.({
+			documentData: this._documentData,
+			search: this._searchController,
+		}) ?? null;
+		this.startSDT();
 
 		this.initializedPromise = new Promise(resolve => this._resolveInitializedPromise = resolve);
 		this._pageLabelsPromise = new Promise(resolve => this._resolvePageLabelsPromise = resolve);
+		if (Array.isArray(this._pageLabels) && this._pageLabels.length) {
+			this._resolvePageLabels();
+		}
 
 		this._a11yVirtualCursorTarget = null;
 		this._a11yShouldFocusVirtualCursorTarget = false;
@@ -233,18 +269,31 @@ class PDFView {
 			this._iframeWindow.PDFViewerApplicationOptions.set('annotationEditorMode', -1);
 		};
 
-		window.addEventListener('webviewerloaded', () => {
+		this._handleWebViewerLoaded = () => {
+			if (this._destroyed) {
+				return;
+			}
 			this._iframeWindow = this._iframe.contentWindow;
 			setOptions();
-		});
+		};
+		window.addEventListener('webviewerloaded', this._handleWebViewerLoaded);
 
 		this._iframe.addEventListener('load', () => {
+			if (this._destroyed) {
+				return;
+			}
 			this._updateColorScheme();
 			let root = this._iframeWindow.document.documentElement;
 			root.toggleAttribute('data-mobile-reader', !!this._mobile);
 			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
+				if (this._destroyed) {
+					return;
+				}
 				let handlePasswordRequest = (updateCallback) => {
+					if (this._destroyed) {
+						return;
+					}
 					this._passwordUpdateCallback = updateCallback;
 					this._onRequestPassword();
 				};
@@ -266,7 +315,12 @@ class PDFView {
 				if (this._preview) {
 					// Necessary for view stats update
 					this._iframeWindow.PDFViewerApplication.eventBus.on('pagerendered', this._handlePageRendered.bind(this));
-					setTimeout(this._resolveInitializedPromise);
+					setTimeout(() => {
+						if (!this._destroyed) {
+							this._resolveInitializedPromise?.(true);
+							this._resolveInitializedPromise = null;
+						}
+					});
 				}
 				else {
 					this._init();
@@ -284,6 +338,9 @@ class PDFView {
 				window.if = this._iframeWindow;
 
 				this._iframeWindow.document.getElementById('viewerContainer').addEventListener('scroll', (event) => {
+					if (this._destroyed) {
+						return;
+					}
 					this._scrolling = true;
 					clearTimeout(this._scrollTimeout);
 					this._scrollTimeout = setTimeout(() => {
@@ -325,6 +382,9 @@ class PDFView {
 				});
 
 				this._iframeWindow.addEventListener('focus', (event) => {
+					if (this._destroyed) {
+						return;
+					}
 					options.onFocus();
 					// Help screen readers understand where to place virtual cursor
 					placeA11yVirtualCursor(this._a11yVirtualCursorTarget);
@@ -395,71 +455,16 @@ class PDFView {
 		}
 
 		await this._iframeWindow.PDFViewerApplication.initializedPromise;
+		if (this._destroyed) {
+			return;
+		}
 		this._iframeWindow.PDFViewerApplication.eventBus.on('documentinit', this._handleDocumentInit.bind(this));
 		this._iframeWindow.PDFViewerApplication.eventBus.on('pagerendered', this._handlePageRendered.bind(this));
 		this._iframeWindow.PDFViewerApplication.eventBus.on('textlayerrendered', this._handleTextLayerRendered.bind(this));
 
-		this._findController = new PDFFindController({
-			linkService: this._iframeWindow.PDFViewerApplication.pdfViewer.linkService,
-			onNavigate: async (pageIndex, matchIndex) => {
-				let matchPositions = await this._findController.getMatchPositionsAsync(pageIndex);
-				this.navigateToPosition(matchPositions[matchIndex]);
-			},
-			onUpdateMatches: ({ matchesCount }) => {
-				let result = {
-					total: matchesCount.total,
-					index: matchesCount.current - 1,
-					pageIndex: matchesCount.currentPageIndex,
-					snippets: matchesCount.snippets,
-				};
-				if (this._pdfjsFindState === FindState.PENDING) {
-					result = null;
-				}
-				else if (matchesCount.current) {
-					// Note: This modifies result.annotation after the result has already been emitted by an event,
-					// which isn't a good practice
-					(async () => {
-						await this._ensureBasicPageData(matchesCount.currentPageIndex);
-						let selectionRanges = getSelectionRanges(
-							this._pdfPages,
-							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
-							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
-						);
-						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
-						// For a11y announcement in a11yAnnounceSearchMessage
-						result.currentPageLabel = result.annotation.pageLabel;
-						result.currentSnippet = result.snippets[matchesCount.current - 1];
-					})();
-				}
-				this._onSetFindState({ ...this._findState, result });
-				this._render();
-			},
-			onUpdateState: ({ matchesCount, state, rawQuery }) => {
-				this._pdfjsFindState = state;
-				let result = { total: matchesCount.total, index: matchesCount.current - 1, snippets: matchesCount.snippets };
-				if (this._pdfjsFindState === FindState.PENDING || !rawQuery.length) {
-					result = null;
-				}
-				else if (matchesCount.current) {
-					// Note: This modifies result.annotation after the result has already been emitted by an event,
-					// which isn't a good practice
-					(async () => {
-						await this._ensureBasicPageData(matchesCount.currentPageIndex);
-						let selectionRanges = getSelectionRanges(
-							this._pdfPages,
-							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetStart },
-							{ pageIndex: matchesCount.currentPageIndex, offset: matchesCount.currentOffsetEnd + 1 }
-						);
-						result.annotation = this._getAnnotationFromSelectionRanges(selectionRanges, 'highlight');
-						// For a11y announcement in a11yAnnounceSearchMessage
-						result.currentPageLabel = result.annotation.pageLabel;
-						result.currentSnippet = result.snippets[matchesCount.current - 1];
-					})();
-				}
-				this._onSetFindState({ ...this._findState, result });
-				this._render();
-			}
-		});
+		this._searchController.initializePDF(
+			this._iframeWindow.PDFViewerApplication.pdfViewer.linkService
+		);
 	}
 
 	async _init2() {
@@ -471,8 +476,6 @@ class PDFView {
 		}
 
 		if (this._primary && !this._preview) {
-			// let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2({});
-			// this._onSetOutline(outline);
 			this._pdfRenderer?.start();
 		}
 
@@ -483,7 +486,19 @@ class PDFView {
 	}
 
 	async _handleDocumentInit() {
+		if (this._destroyed) {
+			return;
+		}
 		this.setTool(this._tool);
+		let pdfDocument = this._iframeWindow.PDFViewerApplication.pdfDocument;
+		this._documentData.setDocument(pdfDocument, {
+			loadPageLabels: !this._preview,
+		});
+		this._searchController.setDocument(pdfDocument);
+		if (this._mobile && this._primary) {
+			this._documentData.setOutlineActive(true);
+		}
+
 		if (this._viewState) {
 			await this._setState(this._viewState, !!this._location);
 		}
@@ -491,22 +506,22 @@ class PDFView {
 		else {
 			this._iframeWindow.PDFViewerApplication.pdfViewer.currentScaleValue = 'page-width';
 		}
+		if (this._destroyed) {
+			return;
+		}
 
 		if (this._location) {
 			this.navigate(this._location);
 		}
 
-		this._resolveInitializedPromise();
-
-		if (this._mobile && this._primary) {
-			this._initNativeOutline();
-		}
-
-		await this._initProcessedData();
-		this._findController.setDocument(this._iframeWindow.PDFViewerApplication.pdfDocument);
+		this._resolveInitializedPromise?.(true);
+		this._resolveInitializedPromise = null;
 	}
 
 	async _setState(state, skipScroll) {
+		if (this._destroyed) {
+			return;
+		}
 		if (Number.isInteger(state.scrollMode)) {
 			this._iframeWindow.PDFViewerApplication.pdfViewer.scrollMode = state.scrollMode;
 		}
@@ -547,7 +562,7 @@ class PDFView {
 			}),
 		]);
 
-		if (!skipScroll) {
+		if (!this._destroyed && !skipScroll) {
 			let dest = [null,
 				{ name: 'XYZ' },
 				// top/left must be null to be ignored
@@ -614,70 +629,96 @@ class PDFView {
 				page.originalPage.reset();
 			}
 			await this._iframeWindow.PDFViewerApplication.initializedPromise;
-			this._iframeWindow.PDFViewerApplication.pdfViewer.update();
-			this._pdfThumbnails?.clear();
+			if (!this._destroyed) {
+				this._iframeWindow.PDFViewerApplication.pdfViewer.update();
+				this._pdfThumbnails?.clear();
+			}
 		}
 	}
 
-	async _initProcessedData() {
-		let pageLabels = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageLabels2();
-		this._onSetPageLabels(pageLabels);
-		this._resolvePageLabelsPromise();
-		this._render();
-		this._updateViewStats();
-		let { pages } = await this._iframeWindow.PDFViewerApplication.pdfDocument.getProcessedData();
-		for (let key in pages) {
-			this._processedPageOverlays[key] = pages[key].overlays;
-			let isolatedCharIndexes = [];
-			for (let index = 0; index < pages[key].chars?.length; index++) {
-				if (pages[key].chars[index].isolated) {
-					isolatedCharIndexes.push(index);
-				}
-			}
-			if (isolatedCharIndexes.length) {
-				this._processedPageIsolatedCharIndexes[key] = isolatedCharIndexes;
-			}
-			else {
-				delete this._processedPageIsolatedCharIndexes[key];
-			}
-			if (this._pdfPages[key]) {
-				this._pdfPages[key] = this._mergeProcessedPageData(key, this._pdfPages[key]);
-			}
-		}
-		this._render();
-		this._updateViewStats();
+	_resolvePageLabels() {
+		this._resolvePageLabelsPromise?.();
+		this._resolvePageLabelsPromise = null;
 	}
 
-	_mergeProcessedPageData(pageIndex, pageData) {
-		if (!pageData) {
-			return pageData;
+	_handleDocumentPageData(pageIndex, { semanticChanged = false } = {}) {
+		if (this._destroyed) {
+			return;
 		}
-		let overlays = this._processedPageOverlays[pageIndex];
-		let isolatedCharIndexes = this._processedPageIsolatedCharIndexes[pageIndex];
-		if (!overlays && !isolatedCharIndexes) {
-			return pageData;
+		if (semanticChanged) {
+			this._resetSemanticOverlayState(pageIndex);
 		}
-		pageData = overlays ? { ...pageData, overlays } : { ...pageData };
-		if (isolatedCharIndexes && pageData.chars) {
-			let next = 0;
-			pageData.chars = pageData.chars.map((char, index) => {
-				if (index !== isolatedCharIndexes[next]) {
-					return char;
-				}
-				next++;
-				return { ...char, isolated: true };
-			});
-		}
-		return pageData;
+		this._render([pageIndex]);
 	}
 
-	async _ensureBasicPageData(pageIndex) {
-		if (!this._pdfPages[pageIndex]) {
-			let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
-			if (!this._pdfPages[pageIndex]) {
-				this._pdfPages[pageIndex] = this._mergeProcessedPageData(pageIndex, pageData);
+	_handleDocumentMetadata({ pageLabels, outline } = {}) {
+		if (this._destroyed) {
+			return;
+		}
+		let changed = false;
+		if (pageLabels !== undefined) {
+			this.setPageLabels(pageLabels);
+			if (this._primary) {
+				this._onSetPageLabels(pageLabels);
+			}
+			changed = true;
+		}
+		if (outline !== undefined) {
+			this.setOutline(outline);
+			if (this._primary) {
+				this._onSetOutline(outline || []);
+			}
+			changed = true;
+		}
+		if (changed) {
+			this._render();
+			if (this._iframeWindow?.PDFViewerApplication?.pdfDocument) {
+				this._updateViewStats();
 			}
 		}
+	}
+
+	_ensureBasicPageData(pageIndex, pdfPage) {
+		return this._documentData.ensurePage(pageIndex, pdfPage);
+	}
+
+	_resetSemanticOverlayState(pageIndex = null) {
+		let onPage = value => pageIndex === null
+			|| value?.position?.pageIndex === pageIndex
+			|| value?.pageIndex === pageIndex;
+		let hadOverlayState = !!(
+			onPage(this._hover) && this._hover
+			|| onPage(this._selectedOverlay) && this._selectedOverlay
+			|| this._focusedObject?.type === 'overlay' && onPage(this._focusedObject)
+			|| this._lastFocusedObject?.type === 'overlay' && onPage(this._lastFocusedObject)
+		);
+		if (hadOverlayState) {
+			this._overlayRevision++;
+		}
+		if (onPage(this._hover)) {
+			this._hover = null;
+		}
+		if (onPage(this._selectedOverlay)) {
+			this._selectedOverlay = null;
+		}
+		if (this._focusedObject?.type === 'overlay' && onPage(this._focusedObject)) {
+			this._focusedObject = null;
+		}
+		if (this._lastFocusedObject?.type === 'overlay' && onPage(this._lastFocusedObject)) {
+			this._lastFocusedObject = null;
+		}
+		if (hadOverlayState) {
+			this._onSetOverlayPopup(null);
+		}
+		for (let page of this._iframeWindow?.PDFViewerApplication?.pdfViewer?._pages || []) {
+			if (pageIndex === null || page.id - 1 === pageIndex) {
+				page.div.title = '';
+			}
+		}
+	}
+
+	_hasActiveInteraction() {
+		return !!(this.pointerDownPosition || this._dragging);
 	}
 
 	_handleTextLayerRendered(event) {
@@ -694,6 +735,9 @@ class PDFView {
 	}
 
 	async _handlePageRendered(event) {
+		if (this._destroyed) {
+			return;
+		}
 		if (this._suspended) {
 			// Suspended before the viewer had anything to release — release the
 			// just-rendered pages and block the queue now
@@ -734,21 +778,22 @@ class PDFView {
 
 			this._pages.push(page);
 			this._render();
+		}
 
-			if (!this._pdfPages[pageIndex]) {
-				let pageData = await this._iframeWindow.PDFViewerApplication.pdfDocument.getPageData({ pageIndex });
-				if (!this._pdfPages[pageIndex]) {
-					this._pdfPages[pageIndex] = this._mergeProcessedPageData(pageIndex, pageData);
-					this._render();
-				}
-			}
+		if (this._preview) {
+			return;
+		}
+		this._documentData.registerPage(pageIndex, originalPage.pdfPage);
+		let pageData = await this._ensureBasicPageData(pageIndex, originalPage.pdfPage);
+		if (pageData && !this._destroyed) {
+			this._render();
 		}
 	}
 
 	_handlePageDestroy(originalPage) {
 		let pageIndex = originalPage.id - 1;
 		this._pages = this._pages.filter(x => x.originalPage !== originalPage);
-		delete this._pdfPages[pageIndex];
+		this._documentData.releasePage(pageIndex);
 	}
 
 	/**
@@ -1102,6 +1147,18 @@ class PDFView {
 	}
 
 	destroy() {
+		if (this._destroyed) {
+			return;
+		}
+		this._destroyed = true;
+		window.removeEventListener('webviewerloaded', this._handleWebViewerLoaded);
+		this._sdtIntegration?.destroy();
+		this._searchController.destroy();
+		this._documentData.destroy();
+		this._overlayRevision++;
+		this._resolveInitializedPromise?.(false);
+		this._resolveInitializedPromise = null;
+		this._resolvePageLabels();
 		this._overlayPopupDelayer.destroy();
 		this._nativeTextSelection?.destroy();
 		this._clearPendingBackdropTap();
@@ -1195,10 +1252,18 @@ class PDFView {
 	// memory-pressure notification) — trimmed pages re-render when scrolled to
 	trimMemory() {
 		this._trimPageBuffer(0);
+		this._sdtIntegration?.trimMemory();
 		this._iframeWindow?.PDFViewerApplication?.pdfDocument?.cleanup().catch(() => {});
 	}
 
+	startSDT() {
+		return this._sdtIntegration?.start();
+	}
+
 	focus() {
+		if (this._destroyed) {
+			return;
+		}
 		this._iframe.focus();
 		// this._iframeWindow.focus();
 	}
@@ -1282,9 +1347,11 @@ class PDFView {
 
 	setPageLabels(pageLabels) {
 		this._pageLabels = pageLabels;
+		this._resolvePageLabels();
 
-		for (let i = 0; i < this._iframeWindow.PDFViewerApplication.pdfViewer._pages.length; i++) {
-			let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[i];
+		let pages = this._iframeWindow?.PDFViewerApplication?.pdfViewer?._pages || [];
+		for (let i = 0; i < pages.length; i++) {
+			let page = pages[i];
 			let label = pageLabels[i];
 			if (label != i + 1) {
 				page.div.setAttribute('aria-label', `Page: ${label}. Index: ${i + 1}`);
@@ -1566,101 +1633,69 @@ class PDFView {
 	}
 
 	setFindState(state) {
-		if (!state.active && this._findState.active !== state.active) {
-			this._findController.onClose();
-		}
-
-		if (state.active) {
-			if (this._findState.query !== state.query
-				|| this._findState.highlightAll !== state.highlightAll
-				|| this._findState.caseSensitive !== state.caseSensitive
-				|| this._findState.entireWord !== state.entireWord
-				|| this._findState.active !== state.active) {
-				// Immediately update find state because pdf.js find will trigger _updateFindMatchesCount
-				// and _updateFindControlState that update the current find state
-				this._findState = state;
-
-				this._findController.find({
-					type: 'find',
-					query: state.query,
-					phraseSearch: true,
-					caseSensitive: state.caseSensitive,
-					entireWord: state.entireWord,
-					highlightAll: state.highlightAll,
-					findPrevious: false
-				});
-			}
-			// Make sure the state is updated regardless to have last _findState.result value
-			this._findState = state;
-			this.a11yWillPlaceVirtCursorOnSearchResult();
-		}
-		else {
-			this._findState = state;
-		}
+		this._searchController.setState(state);
 	}
 
 	findNext() {
-		if (this._findState.active) {
-			this._findController.find({
-				type: 'again',
-				query: this._findState.query,
-				phraseSearch: true,
-				caseSensitive: this._findState.caseSensitive,
-				entireWord: this._findState.entireWord,
-				highlightAll: this._findState.highlightAll,
-				findPrevious: false
-			});
-		}
+		this._searchController.next();
 	}
 
 	findPrevious() {
-		if (this._findState.active) {
-			this._findController.find({
-				source: this._iframeWindow,
-				type: 'again',
-				query: this._findState.query,
-				phraseSearch: true,
-				caseSensitive: this._findState.caseSensitive,
-				entireWord: this._findState.entireWord,
-				highlightAll: this._findState.highlightAll,
-				findPrevious: true
-			});
-		}
+		this._searchController.previous();
 	}
 
+	getFindResultsForPage(pageIndex) {
+		return this._searchController.getResultsForPage(pageIndex);
+	}
 
 	// After the search result is switched to, record which node the
 	// search result is in to place screen readers' virtual cursor on it.
 	a11yWillPlaceVirtCursorOnSearchResult = debounce(async () => {
-		if (!this._findState.result?.annotation) return;
-		let { position } = this._findState.result.annotation;
+		let revision = this._searchController.revision;
+		let findState = this._searchController.state;
+		if (!findState.result?.annotation) return;
+		let { position } = findState.result.annotation;
 		await this._ensureBasicPageData(position.pageIndex);
 		if (position.nextPageRects) {
 			await this._ensureBasicPageData(position.pageIndex + 1);
 		}
-		let range = getSelectionRangesByPosition(this._pdfPages, position);
+		if (!this._searchController.isRevisionCurrent(revision)) {
+			return;
+		}
+		let range = getSelectionRangesByPosition(
+			this._pdfPages,
+			position
+		);
 		if (!range.length) return;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(position.pageIndex);
 		// The page may have been unloaded, in which case we need to wait for it to be rendered
 		let waitCounter = 0;
 		while (!page.div.querySelector('.textLayer') && waitCounter < 5) {
 			await new Promise(resolve => setTimeout(resolve, 250));
+			if (!this._searchController.isRevisionCurrent(revision)) {
+				return;
+			}
 			waitCounter += 1;
 		}
 		let container = page.div.querySelector('.textLayer');
 		if (!container) return;
 		let startNode = getNodeOffset(container, range[0].anchorOffset)?.node;
-		let endNode = getNodeOffset(container, range[0].to)?.node;
+		let endNode = getNodeOffset(
+			container,
+			Math.max(range[0].anchorOffset, range[0].headOffset)
+		)?.node;
 		// pick node corresponding to the range that actually contains the query
-		let node = endNode.textContent.includes(this._findState.query) ? endNode : startNode;
-		this._a11yVirtualCursorTarget = node.parentNode;
+		let node = endNode?.textContent?.includes(findState.query) ? endNode : startNode ?? endNode;
+		if (node) {
+			this._a11yVirtualCursorTarget = node.parentNode;
+		}
 	}, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH);
 
 	// Record the current page that the virtual cursor enter when focus enters the content.
 	// Debounce to not run this on every view stats update.
 	a11yRecordCurrentPage = debounce(() => {
 		// Do not interfere with marking search results as virtual cursor targets
-		if (this._findState?.active) return;
+		if (this._searchController.state?.active) return;
 		let { currentPageNumber } = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(currentPageNumber - 1);
 		// Mark the current page. Note: page.div is never removed but its content can be.
@@ -1697,6 +1732,28 @@ class PDFView {
 			let rect = this.getClientRectForPopup(annotation.position, node.scrollLeft, node.scrollTop);
 			this._onSetAnnotationPopup({ rect, annotation });
 		}
+	}
+
+	async _openOverlayPopup(overlay, revision = this._overlayRevision) {
+		if (revision !== this._overlayRevision) {
+			return;
+		}
+		this._selectedOverlay = overlay;
+		let rect = this.getClientRect(
+			overlay.position.rects[0],
+			overlay.position.pageIndex
+		);
+		let popup = { ...overlay, rect };
+		if (overlay.type === 'internal-link') {
+			let preview = await this._pdfRenderer?.renderPreviewPage(
+				overlay.destinationPosition
+			);
+			if (!preview || revision !== this._overlayRevision) {
+				return;
+			}
+			Object.assign(popup, preview);
+		}
+		this._onSetOverlayPopup(popup);
 	}
 
 	_setSelectionRanges(selectionRanges) {
@@ -2100,6 +2157,9 @@ class PDFView {
 	}
 
 	async navigate(location, options = {}) {
+		if (this._destroyed) {
+			return;
+		}
 		options.block ||= 'center';
 		if (!options.skipHistory) {
 			this._onManualNavigation();
@@ -2123,6 +2183,9 @@ class PDFView {
 		}
 		else if (location.pageLabel) {
 			await this._pageLabelsPromise;
+			if (this._destroyed) {
+				return;
+			}
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageLabel);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
@@ -2130,6 +2193,9 @@ class PDFView {
 		}
 		else if (location.pageNumber) {
 			await this._pageLabelsPromise;
+			if (this._destroyed) {
+				return;
+			}
 			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
@@ -2184,8 +2250,9 @@ class PDFView {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('rotatecw');
 	}
 
-	setSidebarOpen(_sidebarOpen) {
-		// Ignore
+	setSidebarOpen(sidebarOpen) {
+		this._sidebarOpen = sidebarOpen;
+		this._updateOutlineData();
 	}
 
 	getViewPoint(point, pageIndex, tm = [1, 0, 0, 1, 0, 0]) {
@@ -2433,7 +2500,10 @@ class PDFView {
 				if (startHandle) {
 					let { rect, vertical } = startHandle;
 					if (quickIntersectRect(rect, p)) {
-						let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+						let selectionRanges = getSelectionRangesByPosition(
+							this._pdfPages,
+							annotation.position
+						);
 						selectionRanges = getReversedSelectionRanges(selectionRanges);
 						return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
 					}
@@ -2441,7 +2511,10 @@ class PDFView {
 				if (endHandle) {
 					let { rect, vertical } = endHandle;
 					if (quickIntersectRect(rect, p)) {
-						let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+						let selectionRanges = getSelectionRangesByPosition(
+							this._pdfPages,
+							annotation.position
+						);
 						return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
 					}
 				}
@@ -3215,23 +3288,11 @@ class PDFView {
 
 				if (overlayWithPopup) {
 					if (this._selectedOverlay !== overlay) {
-						this._overlayPopupDelayer.open(overlay, async () => {
-							this._selectedOverlay = overlay;
-							let rect = this.getClientRect(overlay.position.rects[0], overlay.position.pageIndex);
-							let overlayPopup = { ...overlay, rect };
-							if (overlayPopup.type === 'internal-link') {
-								let { image, width, height, x, y } = await this._pdfRenderer?.renderPreviewPage(overlay.destinationPosition);
-								overlayPopup.image = image;
-								overlayPopup.width = width;
-								overlayPopup.height = height;
-								overlayPopup.x = x;
-								overlayPopup.y = y;
-								this._onSetOverlayPopup(overlayPopup);
-							}
-							else if (['citation', 'reference'].includes(overlay.type)) {
-								this._onSetOverlayPopup(overlayPopup);
-							}
-						});
+						let overlayRevision = this._overlayRevision;
+						this._overlayPopupDelayer.open(
+							overlay,
+							() => this._openOverlayPopup(overlay, overlayRevision)
+						);
 					}
 				}
 				else /*if (this._selectedOverlay)*/ {
@@ -4173,7 +4234,10 @@ class PDFView {
 			}
 			else if (['highlight', 'underline'].includes(type)
 				&& ['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key)) {
-				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+				let selectionRanges = getSelectionRangesByPosition(
+					this._pdfPages,
+					annotation.position
+				);
 				if (!selectionRanges.length) {
 					consumeSelectedAnnotationKey();
 					return;
@@ -4206,7 +4270,10 @@ class PDFView {
 					isMac() && ['Cmd-Shift-ArrowLeft', 'Cmd-Shift-ArrowRight', 'Cmd-Shift-ArrowUp', 'Cmd-Shift-ArrowDown'].includes(key)
 					|| (isWin() || isLinux()) && ['Alt-Shift-ArrowLeft', 'Alt-Shift-ArrowRight', 'Alt-Shift-ArrowUp', 'Alt-Shift-ArrowDown'].includes(key)
 				)) {
-				let selectionRanges = getSelectionRangesByPosition(this._pdfPages, annotation.position);
+				let selectionRanges = getSelectionRangesByPosition(
+					this._pdfPages,
+					annotation.position
+				);
 				if (!selectionRanges.length) {
 					consumeSelectedAnnotationKey();
 					return;
@@ -4612,28 +4679,8 @@ class PDFView {
 					}
 					else if (this._focusedObject.type === 'overlay') {
 						let overlay = this._focusedObject.object;
-						this._selectedOverlay = overlay;
-						let rect = this.getClientRect(overlay.position.rects[0], overlay.position.pageIndex);
-						let overlayPopup = { ...overlay, rect };
-						if (overlayPopup.type === 'internal-link') {
-							(async () => {
-								let {
-									image,
-									width,
-									height,
-									x,
-									y
-								} = await this._pdfRenderer?.renderPreviewPage(overlay.destinationPosition);
-								overlayPopup.image = image;
-								overlayPopup.width = width;
-								overlayPopup.height = height;
-								overlayPopup.x = x;
-								overlayPopup.y = y;
-								this._onSetOverlayPopup(overlayPopup);
-							})();
-						}
-						else if (['citation', 'reference'].includes(overlay.type)) {
-							this._onSetOverlayPopup(overlayPopup);
+						if (['internal-link', 'citation', 'reference'].includes(overlay.type)) {
+							this._openOverlayPopup(overlay);
 						}
 						else if (overlay.type === 'external-link') {
 							this._onOpenLink(overlay.url);
@@ -4919,57 +4966,18 @@ class PDFView {
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchspreadmode', { mode });
 	}
 
-	async setSidebarView(sidebarView) {
-		// Don't process outline in the secondary view. It will get outline using state over setOutline
-		if (!this._primary) {
-			return;
-		}
-		if (sidebarView === 'outline' && !this._outline) {
-			await this.initializedPromise;
-			await this._iframeWindow.PDFViewerApplication.initializedPromise;
-			let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline2();
-			this._onSetOutline(outline);
-		}
+	setSidebarView(sidebarView) {
+		this._sidebarView = sidebarView;
+		this._updateOutlineData();
 	}
 
-	async _initNativeOutline() {
-		let outline = await this._iframeWindow.PDFViewerApplication.pdfDocument.getOutline();
-		outline = await this._transformNativeOutline(outline || []);
-		this._onSetOutline(outline);
-	}
-
-	async _transformNativeOutline(items) {
-		let outline = [];
-		for (let item of items) {
-			let newItem = {
-				title: item.title,
-				items: await this._transformNativeOutline(item.items || []),
-			};
-			if (item.dest) {
-				try {
-					let position = await this._getPositionFromDestination(item.dest);
-					if (position) {
-						newItem.location = {
-							position: {
-								pageIndex: position.pageIndex,
-								rects: [[position.x, position.y, position.x, position.y]]
-							}
-						};
-					}
-				}
-				catch (e) {
-					console.log(e);
-				}
-			}
-			else if (item.unsafeUrl) {
-				newItem.url = item.unsafeUrl;
-			}
-			outline.push(newItem);
-		}
-		if (outline.length === 1 && outline[0].items.length > 1) {
-			outline = outline[0].items;
-		}
-		return outline;
+	_updateOutlineData() {
+		this._documentData.setOutlineActive(
+			this._primary && (
+				this._mobile
+				|| this._sidebarOpen && this._sidebarView === 'outline'
+			)
+		);
 	}
 
 	setOutline(outline) {
@@ -5053,8 +5061,7 @@ class PDFView {
 
 		return {
 			pageIndex: pageNumber - 1,
-			x,
-			y,
+			rects: [[x, y, x, y]],
 		};
 	}
 

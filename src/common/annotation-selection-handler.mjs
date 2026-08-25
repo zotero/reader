@@ -22,3 +22,21 @@ export function createAnnotationSelectionHandler({ select, notify, defer, getSel
 		});
 	};
 }
+
+export async function selectAnnotationWhenViewReady(id, { getView, select }) {
+	while (true) {
+		let view = getView();
+		if (!view) {
+			return;
+		}
+		let initialized = await view.initializedPromise;
+		if (view !== getView()) {
+			continue;
+		}
+		if (initialized === false) {
+			return;
+		}
+		select(id);
+		return;
+	}
+}

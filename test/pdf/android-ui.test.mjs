@@ -547,7 +547,7 @@ test('destroying a mobile PDF view releases native selection', () => {
 	let view = {
 		_destroyed: false,
 		_handleWebViewerLoaded() {},
-		_sdtLifecycle: { destroy: () => calls.push(['sdt']) },
+		_sdtIntegration: { destroy: () => calls.push(['sdt']) },
 		_searchController: { destroy: () => calls.push(['search']) },
 		_documentData: { destroy: () => calls.push(['document']) },
 		_resolveInitializedPromise: value => calls.push(['initialized', value]),

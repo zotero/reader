@@ -143,7 +143,7 @@ test('mobile View wires Android PDF callbacks and immediate annotation saving', 
 	assert.equal(pdfView.options.primary, true);
 	assert.equal(pdfView.options.platform, 'android');
 	assert.equal(pdfView.options.colorScheme, 'dark');
-	assert.equal(pdfView.options.createSDTLifecycle, undefined);
+	assert.equal(pdfView.options.createSDTIntegration, undefined);
 	assert.equal(sdtDocumentSession.options.documentType, 'pdf');
 	assert.equal(sdtDocumentSession.options.retainReader, false);
 	assert.equal(annotationManager.options.saveNewAnnotationsImmediately, true);
