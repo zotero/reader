@@ -87,7 +87,6 @@ import {
 	isDoubleTap,
 } from './double-tap-zoom.mjs';
 
-
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
 // rendered pages (~50 MB each on a Retina display at fit-width), sized for
@@ -647,6 +646,7 @@ class PDFView {
 		}
 		if (semanticChanged) {
 			this._resetSemanticOverlayState(pageIndex);
+			this._syncSelectionAfterSemanticChange();
 		}
 		this._render([pageIndex]);
 	}
@@ -714,6 +714,36 @@ class PDFView {
 			if (pageIndex === null || page.id - 1 === pageIndex) {
 				page.div.title = '';
 			}
+		}
+	}
+
+	_syncSelectionAfterSemanticChange() {
+		let nativeSelection = false;
+		if (this._selectionRanges.length && !this._selectionRanges[0].collapsed) {
+			nativeSelection = this._nativeTextSelection?.hasSelection() || false;
+			if (!nativeSelection) {
+				let anchorRange = this._selectionRanges.find(range => range.anchor);
+				let headRange = this._selectionRanges.find(range => range.head);
+				if (anchorRange && headRange) {
+					this._setSelectionRanges(getSelectionRanges(
+						this._pdfPages,
+						{
+							pageIndex: anchorRange.position.pageIndex,
+							offset: anchorRange.anchorOffset,
+						},
+						{
+							pageIndex: headRange.position.pageIndex,
+							offset: headRange.headOffset,
+						}
+					));
+				}
+			}
+		}
+		if (nativeSelection) {
+			this._nativeTextSelection.syncNow();
+		}
+		if (this._iframeWindow?.PDFViewerApplication?.pdfDocument) {
+			this._updateViewStats();
 		}
 	}
 
@@ -1664,7 +1694,8 @@ class PDFView {
 		}
 		let range = getSelectionRangesByPosition(
 			this._pdfPages,
-			position
+			position,
+			{ applyFlow: false }
 		);
 		if (!range.length) return;
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer.getPageView(position.pageIndex);
@@ -2502,7 +2533,8 @@ class PDFView {
 					if (quickIntersectRect(rect, p)) {
 						let selectionRanges = getSelectionRangesByPosition(
 							this._pdfPages,
-							annotation.position
+							annotation.position,
+							{ applyFlow: false },
 						);
 						selectionRanges = getReversedSelectionRanges(selectionRanges);
 						return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
@@ -2513,7 +2545,8 @@ class PDFView {
 					if (quickIntersectRect(rect, p)) {
 						let selectionRanges = getSelectionRangesByPosition(
 							this._pdfPages,
-							annotation.position
+							annotation.position,
+							{ applyFlow: false },
 						);
 						return { type: 'updateAnnotationRange', selectionRanges, annotation, vertical };
 					}
@@ -4236,7 +4269,8 @@ class PDFView {
 				&& ['Shift-ArrowLeft', 'Shift-ArrowRight', 'Shift-ArrowUp', 'Shift-ArrowDown'].includes(key)) {
 				let selectionRanges = getSelectionRangesByPosition(
 					this._pdfPages,
-					annotation.position
+					annotation.position,
+					{ applyFlow: false },
 				);
 				if (!selectionRanges.length) {
 					consumeSelectedAnnotationKey();
@@ -4272,7 +4306,8 @@ class PDFView {
 				)) {
 				let selectionRanges = getSelectionRangesByPosition(
 					this._pdfPages,
-					annotation.position
+					annotation.position,
+					{ applyFlow: false },
 				);
 				if (!selectionRanges.length) {
 					consumeSelectedAnnotationKey();

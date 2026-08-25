@@ -502,7 +502,8 @@ export class PDFNativeTextSelection {
 		for (let pageIndex of pageIndexes) {
 			let [selectionRange] = getSelectionRangesByPosition(
 				this._view._pdfPages,
-				positions.get(pageIndex)
+				positions.get(pageIndex),
+				{ applyFlow: false }
 			);
 			if (!selectionRange || selectionRange.collapsed) {
 				continue;

@@ -1,4 +1,8 @@
 import { getPositionBoundingRect } from './lib/utilities';
+import {
+	isolateCharsToAnchorFlow,
+	splitContinuousCharRuns,
+} from './selection-flow.mjs';
 
 function rectsDist([ax1, ay1, ax2, ay2], [bx1, by1, bx2, by2]) {
 	let left = bx2 < ax1;
@@ -587,16 +591,23 @@ export function getCharsFromSelectionRanges(pdfPages, selectionRanges) {
 	return charsArray;
 }
 
-function applySelectionRangeIsolation(pdfPages, selectionRanges) {
+function applySelectionRangeFlow(pdfPages, selectionRanges) {
 	if (!selectionRanges.length) {
 		return [];
 	}
 	if (selectionRanges[0].collapsed === true) {
 		return selectionRanges;
 	}
+	let semanticRevisions = selectionRanges.map(
+		range => pdfPages[range.position.pageIndex]?.semanticFlowRevision
+	);
+	let semanticRevision = semanticRevisions.find(Number.isInteger);
+	if (semanticRevision === undefined
+			|| semanticRevisions.some(revision => revision !== semanticRevision)) {
+		return selectionRanges;
+	}
 
 	let chars = getCharsFromSelectionRanges(pdfPages, selectionRanges);
-	let isolated;
 
 	let start;
 	if (selectionRanges[0].anchor) {
@@ -611,20 +622,11 @@ function applySelectionRangeIsolation(pdfPages, selectionRanges) {
 		start = selectionRanges.at(-1).anchorOffset < selectionRanges.at(-1).headOffset;
 	}
 
-	if (start) {
-		isolated = !!chars[0].isolated;
+	let flowChars = isolateCharsToAnchorFlow(chars, start);
+	if (!flowChars) {
+		return selectionRanges;
 	}
-	else {
-		isolated = !!chars.at(-1).isolated;
-	}
-
-	if (isolated) {
-		chars = chars.filter(x => x.isolated);
-	}
-	else {
-		chars = chars.filter(x => !x.isolated);
-
-	}
+	chars = flowChars;
 
 	if (chars.length === 0) return [];
 
@@ -634,7 +636,8 @@ function applySelectionRangeIsolation(pdfPages, selectionRanges) {
 	let currentRange = {
 		pageIndex: chars[0].pageIndex,
 		anchorOffset: chars[0].offset,
-		headOffset: chars[0].offset
+		headOffset: chars[0].offset,
+		selectedChars: [],
 	};
 
 	for (let i = 0; i < chars.length; i++) {
@@ -648,11 +651,14 @@ function applySelectionRangeIsolation(pdfPages, selectionRanges) {
 			currentRange = {
 				pageIndex: char.pageIndex,
 				anchorOffset: char.offset,
-				headOffset: char.offset + 1
+				headOffset: char.offset + 1,
+				selectedChars: [char],
 			};
-		} else {
+		}
+		else {
 			// Extend the current range
 			currentRange.headOffset = char.offset + 1;
+			currentRange.selectedChars.push(char);
 		}
 	}
 
@@ -671,28 +677,25 @@ function applySelectionRangeIsolation(pdfPages, selectionRanges) {
 		selectionRanges[0].anchor = true;
 		selectionRanges[0].head = true;
 	}
+	else if (start) {
+		selectionRanges[0].anchor = true;
+		selectionRanges.at(-1).head = true;
+	}
 	else {
-		if (start) {
-			selectionRanges[0].anchor = true;
-			selectionRanges.at(-1).head = true;
-		}
-		else {
-			selectionRanges.at(-1).anchor = true;
-			selectionRanges[0].head = true;
-		}
+		selectionRanges.at(-1).anchor = true;
+		selectionRanges[0].head = true;
 	}
 
 	for (let selectionRange of selectionRanges) {
-		let { chars } = pdfPages[selectionRange.pageIndex];
-		let from = Math.min(selectionRange.anchorOffset, selectionRange.headOffset);
-		let to = Math.max(selectionRange.anchorOffset, selectionRange.headOffset);
-		let rects = getRectsFromChars(chars.slice(from, to));
+		let runs = splitContinuousCharRuns(selectionRange.selectedChars);
+		let rects = runs.flatMap(run => getRectsFromChars(run));
 		selectionRange.position = {
 			pageIndex: selectionRange.pageIndex,
 			rects
 		};
 		selectionRange.sortIndex = getSortIndex(pdfPages, selectionRange.position);
-		selectionRange.text = getTextFromChars(chars.slice(from, to));
+		selectionRange.text = getTextFromChars(selectionRange.selectedChars);
+		delete selectionRange.selectedChars;
 		if (selectionRange.anchorOffset === selectionRange.headOffset) {
 			selectionRange.collapsed = true;
 		}
@@ -701,7 +704,7 @@ function applySelectionRangeIsolation(pdfPages, selectionRanges) {
 	return selectionRanges;
 }
 
-export function getSelectionRanges(pdfPages, anchor, head) {
+export function getSelectionRanges(pdfPages, anchor, head, { applyFlow = true } = {}) {
 	let selectionRanges = [];
 	let fromPageIndex = Math.min(anchor.pageIndex, head.pageIndex);
 	let toPageIndex = Math.max(anchor.pageIndex, head.pageIndex);
@@ -746,10 +749,12 @@ export function getSelectionRanges(pdfPages, anchor, head) {
 
 		selectionRanges.push(selectionRange);
 	}
-	return applySelectionRangeIsolation(pdfPages, selectionRanges);
+	return applyFlow
+		? applySelectionRangeFlow(pdfPages, selectionRanges)
+		: selectionRanges;
 }
 
-export function getSelectionRangesByPosition(pdfPages, position) {
+export function getSelectionRangesByPosition(pdfPages, position, { applyFlow = true } = {}) {
 	if (!pdfPages[position.pageIndex]) {
 		return [];
 	}
@@ -809,7 +814,9 @@ export function getSelectionRangesByPosition(pdfPages, position) {
 	// 	].join('|');
 	// }
 
-	return selectionRanges;
+	return applyFlow
+		? applySelectionRangeFlow(pdfPages, selectionRanges)
+		: selectionRanges;
 }
 
 export function getReversedSelectionRanges(selectionRanges) {
