@@ -79,6 +79,12 @@ import {
 	shouldStartInlineTextAnnotationEditing,
 	touchAnnotationTransformMoved,
 } from './touch-annotation-transform.mjs';
+import {
+	DOUBLE_TAP_DELAY,
+	getDoubleTapTargetScale,
+	getTextBlockRect,
+	isDoubleTap,
+} from './double-tap-zoom.mjs';
 
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
@@ -186,6 +192,8 @@ class PDFView {
 		this._readAloudHighlightedPosition = null;
 		this._readAloudSentenceHighlightedPosition = null;
 		this._pointerDownTap = null;
+		this._pendingBackdropTap = null;
+		this._suppressCompatibilityMouseUntil = 0;
 		this._nativeTextSelection = null;
 
 		this._iframe = document.createElement('iframe');
@@ -1092,6 +1100,7 @@ class PDFView {
 	destroy() {
 		this._overlayPopupDelayer.destroy();
 		this._nativeTextSelection?.destroy();
+		this._clearPendingBackdropTap();
 	}
 
 	// Log once and disable a memory feature if the pdf.js fork stops exposing
@@ -1750,6 +1759,111 @@ class PDFView {
 
 	zoomAuto() {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.currentScaleValue = 'auto';
+	}
+
+	_clearPendingBackdropTap(call = false) {
+		let tap = this._pendingBackdropTap;
+		if (!tap) {
+			return;
+		}
+		this._iframeWindow.clearTimeout(tap.timeout);
+		this._pendingBackdropTap = null;
+		if (call && !this._destroyed) {
+			tap.callback();
+		}
+	}
+
+	_isDoubleTapCandidate(event) {
+		return this._options.platform === 'android'
+			&& event.pointerType === 'touch'
+			&& isDoubleTap(this._pendingBackdropTap, {
+				x: event.clientX,
+				y: event.clientY,
+				time: Date.now(),
+			});
+	}
+
+	_scheduleBackdropTap(event) {
+		this._clearPendingBackdropTap(true);
+		let tap = {
+			x: event.clientX,
+			y: event.clientY,
+			time: Date.now(),
+			callback: () => this._onBackdropTap(event),
+		};
+		tap.timeout = this._iframeWindow.setTimeout(() => {
+			if (this._pendingBackdropTap === tap) {
+				this._pendingBackdropTap = null;
+				tap.callback();
+			}
+		}, DOUBLE_TAP_DELAY);
+		this._pendingBackdropTap = tap;
+	}
+
+	_adjustDoubleTapZoom(position, event, blockRect = null) {
+		let win = this._iframeWindow;
+		let container = win.document.getElementById('viewerContainer');
+		let pageIndex = position.pageIndex;
+		let anchorX = event.clientX;
+		let anchorY = event.clientY;
+		win.requestAnimationFrame(() => win.requestAnimationFrame(() => {
+			if (this._destroyed) {
+				return;
+			}
+			let point = position.rects[0];
+			let pointRect = this.getClientRect([point[0], point[1], point[0], point[1]], pageIndex);
+			container.scrollTop += pointRect[1] - anchorY;
+			if (blockRect) {
+				let clientRect = this.getClientRect(blockRect, pageIndex);
+				let containerRect = container.getBoundingClientRect();
+				let blockCenter = (clientRect[0] + clientRect[2]) / 2;
+				let containerCenter = containerRect.left + container.clientWidth / 2;
+				container.scrollLeft += blockCenter - containerCenter;
+			}
+			else {
+				container.scrollLeft += pointRect[0] - anchorX;
+			}
+		}));
+	}
+
+	_handleDoubleTapZoom(event, position) {
+		if (!position) {
+			return false;
+		}
+		let win = this._iframeWindow;
+		let pdfViewer = win.PDFViewerApplication.pdfViewer;
+		let container = win.document.getElementById('viewerContainer');
+		let page = pdfViewer._pages[position.pageIndex];
+		if (!page) {
+			return false;
+		}
+
+		if (page.div.getBoundingClientRect().width > container.clientWidth * 1.05) {
+			pdfViewer.currentScaleValue = 'page-width';
+			this._adjustDoubleTapZoom(position, event);
+			return true;
+		}
+
+		let point = position.rects[0];
+		let blockRect = getTextBlockRect(this._pdfPages[position.pageIndex]?.chars, point.slice(0, 2));
+		let blockWidth = 0;
+		if (blockRect) {
+			let viewRect = p2v({ pageIndex: position.pageIndex, rects: [blockRect] }, page.viewport).rects[0];
+			blockWidth = viewRect[2] - viewRect[0];
+		}
+		let targetScale = getDoubleTapTargetScale(
+			pdfViewer.currentScale,
+			blockWidth,
+			container.clientWidth
+		);
+		if (!targetScale) {
+			return false;
+		}
+
+		pdfViewer.currentScaleValue = targetScale;
+		this._adjustDoubleTapZoom(position, event, blockRect);
+		win.getSelection()?.removeAllRanges();
+		return true;
 	}
 
 	async _pushHistoryPoint() {
@@ -2718,8 +2832,21 @@ class PDFView {
 	}
 
 	_handlePointerDown(event) {
+		// Android WebView dispatches a compatibility mousedown after touchend. Suppress
+		// the one following a handled double tap so it cannot start native selection.
+		if (this._options.platform === 'android'
+				&& event.type === 'mousedown'
+				&& event.sourceCapabilities?.firesTouchEvents
+				&& Date.now() <= this._suppressCompatibilityMouseUntil) {
+			event.preventDefault();
+			return;
+		}
+		let doubleTap = this._isDoubleTapCandidate(event);
 		if (this._nativeTextSelection?.handlePointerDown(event)) {
 			return;
+		}
+		if (doubleTap) {
+			this._iframeWindow.clearTimeout(this._pendingBackdropTap.timeout);
 		}
 
 		// Prevent double-click word highlight on triple-click
@@ -2745,7 +2872,8 @@ class PDFView {
 			y: event.clientY,
 			button: event.button,
 			inViewerContainer: !!event.target.closest('#viewerContainer'),
-			hadSelection: !this._isSelectionCollapsed() || !!this._selectedAnnotationIDs.length
+			hadSelection: !this._isSelectionCollapsed() || !!this._selectedAnnotationIDs.length,
+			doubleTap,
 		};
 		this._highlightedPosition = null;
 
@@ -3434,8 +3562,12 @@ class PDFView {
 	}
 
 	_handlePointerUp(event) {
+		let doubleTap = !!this._pointerDownTap?.doubleTap;
 		this._nativeTextSelection?.handlePointerUp();
 		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
+			if (doubleTap) {
+				this._clearPendingBackdropTap();
+			}
 			this._clearPointerAction();
 			return;
 		}
@@ -3446,6 +3578,9 @@ class PDFView {
 
 		this._pointerDownTriggered = false;
 		if (!this.action && event.target.classList?.contains('textAnnotation')) {
+			if (doubleTap) {
+				this._clearPendingBackdropTap(true);
+			}
 			this._pointerDownTap = null;
 			return;
 		}
@@ -3630,8 +3765,23 @@ class PDFView {
 			this.action = null;
 			this.pointerDownPosition = null;
 		}
-		if (handleBackdropTap) {
-			this._onBackdropTap(event);
+		if (doubleTap) {
+			if (handleBackdropTap && this._handleDoubleTapZoom(event, position)) {
+				this._clearPendingBackdropTap();
+				this._suppressCompatibilityMouseUntil = Date.now() + DOUBLE_TAP_DELAY;
+				event.preventDefault();
+			}
+			else {
+				this._clearPendingBackdropTap(true);
+			}
+		}
+		else if (handleBackdropTap) {
+			if (this._options.platform === 'android' && event.pointerType === 'touch') {
+				this._scheduleBackdropTap(event);
+			}
+			else {
+				this._onBackdropTap(event);
+			}
 		}
 		this._pointerDownTap = null;
 		// Update cursor after finishing the current action
@@ -3652,6 +3802,9 @@ class PDFView {
 		// starts, but the drag events keep driving the current action
 		if (this._dragging) {
 			return;
+		}
+		if (this._pointerDownTap?.doubleTap) {
+			this._clearPendingBackdropTap();
 		}
 		this._releaseTouchTransform();
 		this.action = null;
