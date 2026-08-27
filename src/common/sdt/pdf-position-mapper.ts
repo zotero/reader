@@ -20,8 +20,8 @@ import type {
 import { PDF_NOTE_DIMENSIONS } from '../defines';
 import {
 	getTextNodeSpans,
-	SDTPositionMapper,
-	TextNodeSpan,
+	type SDTPositionMapper,
+	type TextNodeSpan,
 } from './position-mapper';
 
 interface RunDatum {
@@ -30,13 +30,28 @@ interface RunDatum {
 	vertical: boolean;
 }
 
+interface CachedRunData {
+	data: RunDatum[] | null;
+	weight: number;
+}
+
+const DEFAULT_RUN_DATA_CACHE_WEIGHT = 100_000;
+
 export class PDFPositionMapper implements SDTPositionMapper {
 	private _structure: StructuredDocumentText;
 
-	private _runDataCache = new Map<string, RunDatum[] | null>();
+	private _runDataCache = new Map<string, CachedRunData>();
 
-	constructor(structure: StructuredDocumentText) {
+	private _runDataCacheWeight = 0;
+
+	private _maxRunDataCacheWeight: number;
+
+	constructor(
+		structure: StructuredDocumentText,
+		{ maxRunDataCacheWeight = DEFAULT_RUN_DATA_CACHE_WEIGHT }: { maxRunDataCacheWeight?: number } = {},
+	) {
 		this._structure = structure;
+		this._maxRunDataCacheWeight = Math.max(0, maxRunDataCacheWeight);
 	}
 
 	sdtToSourcePosition(pos: SDTPosition): SourcePosition | null {
@@ -45,17 +60,32 @@ export class PDFPositionMapper implements SDTPositionMapper {
 	}
 
 	textNodeSpansToSourcePosition(spans: TextNodeSpan[]): SourcePosition | null {
-		let rectsByPage = new Map<number, number[][]>();
-		let addRect = (pageIndex: number, rect: number[]) => {
-			let rects = rectsByPage.get(pageIndex);
+		// Keep geometry on either side of an omitted block separate. Semantic
+		// projections can provide non-contiguous spans, and merging every rect on
+		// a line would paint one large rect over the omitted content.
+		let rectGroupsByPage = new Map<number, Map<number, number[][]>>();
+		let addRect = (pageIndex: number, groupIndex: number, rect: number[]) => {
+			let groups = rectGroupsByPage.get(pageIndex);
+			if (!groups) {
+				groups = new Map();
+				rectGroupsByPage.set(pageIndex, groups);
+			}
+			let rects = groups.get(groupIndex);
 			if (!rects) {
 				rects = [];
-				rectsByPage.set(pageIndex, rects);
+				groups.set(groupIndex, rects);
 			}
 			rects.push(rect);
 		};
 
+		let groupIndex = 0;
+		let previousBlockIndex: number | null = null;
 		for (let span of spans) {
+			let blockIndex = span.blockRef[0];
+			if (previousBlockIndex !== null && blockIndex > previousBlockIndex + 1) {
+				groupIndex++;
+			}
+			previousBlockIndex = blockIndex;
 			let runData = this._getRunData(span.node, span.ref);
 			if (runData) {
 				// Run entries correspond to the node's non-whitespace characters
@@ -66,28 +96,36 @@ export class PDFPositionMapper implements SDTPositionMapper {
 					}
 					let run = runData[runIndex++];
 					if (ci >= span.start && ci < span.end) {
-						addRect(run.pageIndex, run.rect);
+						addRect(run.pageIndex, groupIndex, run.rect);
 					}
 				}
 			}
 			else {
 				for (let pageRect of this._getFallbackPageRects(span)) {
-					addRect(pageRect[0], pageRect.slice(1, 5));
+					addRect(pageRect[0], groupIndex, pageRect.slice(1, 5));
 				}
 			}
 		}
 
-		if (!rectsByPage.size) {
+		if (!rectGroupsByPage.size) {
 			return null;
 		}
 
-		let pages = [...rectsByPage.keys()].sort((a, b) => a - b);
+		let pages = [...rectGroupsByPage.keys()].sort((a, b) => a - b);
+		// Reader PDF positions can describe only one page or two adjacent
+		// pages. Returning a partial position would silently move or truncate
+		// an annotation, so reject ranges the source model cannot represent.
+		if (pages.length > 2 || (pages.length === 2 && pages[1] !== pages[0] + 1)) {
+			return null;
+		}
+		let getPageRects = (pageIndex: number) => [...rectGroupsByPage.get(pageIndex)!.values()]
+			.flatMap(rects => mergeLineRects(rects));
 		let position: PDFPosition = {
 			pageIndex: pages[0],
-			rects: mergeLineRects(rectsByPage.get(pages[0])!),
+			rects: getPageRects(pages[0]),
 		};
 		if (pages.length > 1) {
-			position.nextPageRects = mergeLineRects(rectsByPage.get(pages[1])!);
+			position.nextPageRects = getPageRects(pages[1]);
 		}
 		return position;
 	}
@@ -177,17 +215,39 @@ export class PDFPositionMapper implements SDTPositionMapper {
 		};
 	}
 
+	clearCache(): void {
+		this._runDataCache.clear();
+		this._runDataCacheWeight = 0;
+	}
+
 	private _getRunData(node: TextNode, ref: number[]): RunDatum[] | null {
 		let key = refKey(ref);
-		if (this._runDataCache.has(key)) {
-			return this._runDataCache.get(key)!;
+		let cached = this._runDataCache.get(key);
+		if (cached) {
+			// Refresh insertion order so bounded caches evict the least
+			// recently used node.
+			this._runDataCache.delete(key);
+			this._runDataCache.set(key, cached);
+			return cached.data;
 		}
 		let textMap = (node.anchor as PdfAnchor | undefined)?.textMap;
 		let runData = textMap ? buildRunData(parseTextMap(textMap)) as RunDatum[] : null;
 		if (runData && !runData.length) {
 			runData = null;
 		}
-		this._runDataCache.set(key, runData);
+		let weight = Math.max(1, runData?.length ?? 0);
+		if (weight <= this._maxRunDataCacheWeight) {
+			while (this._runDataCacheWeight + weight > this._maxRunDataCacheWeight) {
+				let oldest = this._runDataCache.entries().next().value;
+				if (!oldest) {
+					break;
+				}
+				this._runDataCache.delete(oldest[0]);
+				this._runDataCacheWeight -= oldest[1].weight;
+			}
+			this._runDataCache.set(key, { data: runData, weight });
+			this._runDataCacheWeight += weight;
+		}
 		return runData;
 	}
 
@@ -196,7 +256,9 @@ export class PDFPositionMapper implements SDTPositionMapper {
 		if (nodeRects?.length) {
 			return nodeRects;
 		}
-		return (span.block.anchor as PdfAnchor | undefined)?.pageRects ?? [];
+		return span.node.text.trim()
+			? (span.block.anchor as PdfAnchor | undefined)?.pageRects ?? []
+			: [];
 	}
 }
 
