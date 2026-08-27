@@ -5,15 +5,9 @@ import { debounce } from './lib/debounce';
 import AnnotationManager from './annotation-manager';
 import { DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES } from './defines';
 import { getCurrentColorScheme } from './lib/utilities';
-import pako from 'pako';
-import { createPositionMapper } from './sdt/create-position-mapper';
+import { SDTDocumentSession } from './sdt/document-session.mjs';
 import { getTextNodeSpans } from './sdt/position-mapper';
 import { buildSDTReadAloudSegments, getSDTLang } from './read-aloud/sdt-segments';
-import {
-	openStructuredDocumentTextPack,
-	SDT_PACK_VERSION,
-	SDT_SCHEMA_VERSION,
-} from '../../structured-document-text/src/read.js';
 
 let nop = () => undefined;
 
@@ -27,6 +21,10 @@ class View {
 
 		this._type = options.type;
 		this._options = options;
+		this._sdtDocumentSession = new SDTDocumentSession({
+			documentType: this._type,
+			retainReader: false,
+		});
 
 		// This is quite hacky, but this way we enable search functionality over the existing findState
 		this._findState = {
@@ -435,49 +433,11 @@ class View {
 
 	// Store an SDT pack for later operations.
 	setSDTPack(pack) {
-		this._sdtPack = pack;
-		this._sdt = null;
-		this._sdtPromise = null;
+		this._sdtDocumentSession.setPack(pack);
 	}
 
-	// Materialize the stored pack and build the position mapper. Resolves
-	// to null when SDT is unavailable or the pack version doesn't match.
 	async _loadSDT() {
-		if (this._sdt) {
-			return this._sdt;
-		}
-		if (!this._sdtPromise) {
-			this._sdtPromise = (async () => {
-				let pack = this._sdtPack;
-				if (!pack) {
-					return null;
-				}
-				if (pack.packVersion !== SDT_PACK_VERSION
-						|| pack.schemaMajorVersion !== Number(SDT_SCHEMA_VERSION.split('.')[0])) {
-					console.warn('Unsupported SDT pack version', pack.packVersion, pack.schemaMajorVersion);
-					return null;
-				}
-				let bytes = new Uint8Array(pack.bytes);
-				let source = {
-					byteLength: bytes.byteLength,
-					read: async (offset, length) => bytes.buffer.slice(
-						bytes.byteOffset + offset,
-						bytes.byteOffset + offset + length
-					),
-				};
-				let reader = await openStructuredDocumentTextPack(source, {
-					inflate: b => pako.inflateRaw(b),
-				});
-				let structure = await reader.materialize();
-				this._sdt = { structure, mapper: createPositionMapper(structure) };
-				return this._sdt;
-			})().catch((e) => {
-				this._sdtPromise = null;
-				console.warn('Failed to load SDT', e);
-				return null;
-			});
-		}
-		return this._sdtPromise;
+		return this._sdtDocumentSession.getDocument();
 	}
 
 	async sdtAnchorToPosition(sdtAnchor) {

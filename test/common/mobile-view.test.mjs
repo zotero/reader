@@ -33,6 +33,18 @@ export default class FakeAnnotationManager {
 }
 `;
 
+let sdtDocumentSessionSource = `
+export class SDTDocumentSession {
+	constructor(options) {
+		this.options = options;
+		this.pack = null;
+		globalThis.__mobileSDTDocumentSession = this;
+	}
+	setPack(pack) { this.pack = pack; }
+	getDocument() { return Promise.resolve(globalThis.__mobileSDTDocument ?? null); }
+}
+`;
+
 function dataModule(source) {
 	return 'data:text/javascript,' + encodeURIComponent(source);
 }
@@ -45,11 +57,12 @@ registerHooks({
 		if (specifier.endsWith('common/annotation-manager') || specifier.endsWith('./annotation-manager')) {
 			return nextResolve(dataModule(annotationManagerSource), context);
 		}
+		if (specifier.endsWith('common/sdt/document-session.mjs')
+				|| specifier.endsWith('./sdt/document-session.mjs')) {
+			return nextResolve(dataModule(sdtDocumentSessionSource), context);
+		}
 		if (specifier.endsWith('dom/epub/epub-view') || specifier.endsWith('dom/snapshot/snapshot-view')) {
 			return nextResolve('data:text/javascript,export default class {};', context);
-		}
-		if (specifier.endsWith('common/sdt/create-position-mapper') || specifier.endsWith('./sdt/create-position-mapper')) {
-			return nextResolve('data:text/javascript,export let createPositionMapper = () => null;', context);
 		}
 		if (specifier.endsWith('common/sdt/position-mapper') || specifier.endsWith('./sdt/position-mapper')) {
 			return nextResolve('data:text/javascript,export let getTextNodeSpans = () => [];', context);
@@ -112,6 +125,7 @@ function createMobileView(overrides = {}) {
 	return {
 		annotationManager: globalThis.__mobileAnnotationManager,
 		pdfView: globalThis.__mobilePDFView,
+		sdtDocumentSession: globalThis.__mobileSDTDocumentSession,
 		view,
 	};
 }
@@ -119,7 +133,7 @@ function createMobileView(overrides = {}) {
 test('mobile View wires Android PDF callbacks and immediate annotation saving', () => {
 	let onDeleteAnnotations = () => {};
 	let outlines = [];
-	let { annotationManager, pdfView } = createMobileView({
+	let { annotationManager, pdfView, sdtDocumentSession } = createMobileView({
 		onDeleteAnnotations,
 		onSetOutline: outline => outlines.push(outline),
 		colorScheme: 'dark',
@@ -129,6 +143,9 @@ test('mobile View wires Android PDF callbacks and immediate annotation saving', 
 	assert.equal(pdfView.options.primary, true);
 	assert.equal(pdfView.options.platform, 'android');
 	assert.equal(pdfView.options.colorScheme, 'dark');
+	assert.equal(pdfView.options.createSDTLifecycle, undefined);
+	assert.equal(sdtDocumentSession.options.documentType, 'pdf');
+	assert.equal(sdtDocumentSession.options.retainReader, false);
 	assert.equal(annotationManager.options.saveNewAnnotationsImmediately, true);
 	assert.equal(annotationManager.options.onDelete, onDeleteAnnotations);
 	assert.equal(window.computedFontFamily, 'Mobile Sans');
@@ -137,6 +154,16 @@ test('mobile View wires Android PDF callbacks and immediate annotation saving', 
 	pdfView.options.onSetOutline([{ title: 'Section' }]);
 	assert.deepEqual(outlines, [[{ title: 'Section' }]]);
 	assert.deepEqual(pdfView.calls, [['setOutline', [{ title: 'Section' }]]]);
+});
+
+test('mobile View stores SDT packs in its shared document session', async () => {
+	let { sdtDocumentSession, view } = createMobileView();
+	let pack = { bytes: new Uint8Array([1]), packVersion: 1, schemaMajorVersion: 1 };
+	let document = { structure: {}, mapper: {} };
+	globalThis.__mobileSDTDocument = document;
+	view.setSDTPack(pack);
+	assert.equal(sdtDocumentSession.pack, pack);
+	assert.equal(await view._loadSDT(), document);
 });
 
 test('mobile View recreates a password-protected PDF when no active request can resume', () => {
