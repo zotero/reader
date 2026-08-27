@@ -278,6 +278,7 @@ class Reader {
 				highlightGranularity: ['paragraph', 'sentence', 'word'].includes(options.readAloudHighlightGranularity)
 					? options.readAloudHighlightGranularity
 					: 'sentence',
+				verticalControls: !!options.readAloudVerticalControls,
 			},
 			readAloudVoices: new Map(Object.entries(options.readAloudVoices || {})),
 			readAloudFirstRunPopup: false,
@@ -1241,6 +1242,16 @@ class Reader {
 		if (granularity === 'word') {
 			this._readAloudManager.syncActiveWordToPlayback();
 		}
+	}
+
+	setReadAloudVerticalControls(verticalControls) {
+		verticalControls = !!verticalControls;
+		if (this._state.readAloudState.verticalControls === verticalControls) {
+			return;
+		}
+		this._updateState({
+			readAloudState: { ...this._state.readAloudState, verticalControls },
+		});
 	}
 
 	/**
