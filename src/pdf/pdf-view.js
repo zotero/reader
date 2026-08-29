@@ -93,6 +93,10 @@ import {
 // cost as scrolling to any unbuffered page
 const PAGE_BUFFER_KEEP_RECENT = 2;
 const CSS_UNITS = 96 / 72;
+const PAGE_TURN_TAP_MARGIN_FRACTION = 0.2;
+const PAGE_TURN_TAP_MAX_MARGIN_PX = 96;
+const PAGE_TURN_TAP_AXIS_TOLERANCE_PX = 10;
+const HORIZONTAL_SCROLL_MODE = 1;
 
 class PDFView {
 	constructor(options) {
@@ -1783,13 +1787,54 @@ class PDFView {
 			});
 	}
 
-	_scheduleBackdropTap(event) {
+	_getEdgePageTurnDirection(event, clientX) {
+		if (this._options.platform !== 'android'
+				|| !['touch', 'pen'].includes(event.pointerType)) {
+			return null;
+		}
+
+		let pdfViewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		if (pdfViewer.scrollMode !== HORIZONTAL_SCROLL_MODE) {
+			return null;
+		}
+
+		let width = this._iframeWindow.innerWidth;
+		if (!(width > 0)) {
+			return null;
+		}
+
+		let margin = Math.min(
+			width * PAGE_TURN_TAP_MARGIN_FRACTION,
+			PAGE_TURN_TAP_MAX_MARGIN_PX
+		);
+		if (clientX <= margin) {
+			return 'previous';
+		}
+		if (clientX >= width - margin) {
+			return 'next';
+		}
+		return null;
+	}
+
+	_resolveBackdropTap(event, pageTurnDirection) {
+		if (pageTurnDirection === 'previous') {
+			this.navigateToPreviousPage();
+		}
+		else if (pageTurnDirection === 'next') {
+			this.navigateToNextPage();
+		}
+		else {
+			this._onBackdropTap(event);
+		}
+	}
+
+	_scheduleBackdropTap(event, pageTurnDirection) {
 		this._clearPendingBackdropTap(true);
 		let tap = {
 			x: event.clientX,
 			y: event.clientY,
 			time: Date.now(),
-			callback: () => this._onBackdropTap(event),
+			callback: () => this._resolveBackdropTap(event, pageTurnDirection),
 		};
 		tap.timeout = this._iframeWindow.setTimeout(() => {
 			if (this._pendingBackdropTap === tap) {
@@ -3495,7 +3540,7 @@ class PDFView {
 		this._render();
 	}, () => ['ink', 'eraser'].includes(this._tool.type) || this._touchTransform ? 0 : 50);
 
-	_shouldHandleBackdropTap(event, position) {
+	_shouldHandleBackdropTap(event, position, axisMovementTolerancePx) {
 		let pointerDownTap = this._pointerDownTap;
 		if (!this._onBackdropTap
 				|| event.isPrimary === false
@@ -3508,9 +3553,13 @@ class PDFView {
 			return false;
 		}
 
-		let movement = Math.abs(event.clientX - pointerDownTap.x)
-			+ Math.abs(event.clientY - pointerDownTap.y);
-		if (movement > 5) {
+		let deltaX = Math.abs(event.clientX - pointerDownTap.x);
+		let deltaY = Math.abs(event.clientY - pointerDownTap.y);
+		// Preserve the stricter existing backdrop threshold; edge turns use EPUB-style axis slop.
+		let movedTooFar = axisMovementTolerancePx === undefined
+			? deltaX + deltaY > 5
+			: deltaX > axisMovementTolerancePx || deltaY > axisMovementTolerancePx;
+		if (movedTooFar) {
 			return false;
 		}
 
@@ -3591,7 +3640,12 @@ class PDFView {
 		});
 
 		let position = this.pointerEventToPosition(event);
-		let handleBackdropTap = this._shouldHandleBackdropTap(event, position);
+		let pageTurnDirection = this._getEdgePageTurnDirection(event, this._pointerDownTap?.x);
+		let handleBackdropTap = this._shouldHandleBackdropTap(
+			event,
+			position,
+			pageTurnDirection ? PAGE_TURN_TAP_AXIS_TOLERANCE_PX : undefined
+		);
 
 		if (this.pointerDownPosition) {
 			// let position = this.pointerEventToAltPosition(event, this.pointerDownPosition.pageIndex);
@@ -3777,10 +3831,10 @@ class PDFView {
 		}
 		else if (handleBackdropTap) {
 			if (this._options.platform === 'android' && event.pointerType === 'touch') {
-				this._scheduleBackdropTap(event);
+				this._scheduleBackdropTap(event, pageTurnDirection);
 			}
 			else {
-				this._onBackdropTap(event);
+				this._resolveBackdropTap(event, pageTurnDirection);
 			}
 		}
 		this._pointerDownTap = null;
