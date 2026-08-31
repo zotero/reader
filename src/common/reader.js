@@ -297,6 +297,7 @@ class Reader {
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
+				useRegex: false,
 				index: null,
 				result: null,
 			},
@@ -312,6 +313,7 @@ class Reader {
 				highlightAll: true,
 				caseSensitive: false,
 				entireWord: false,
+				useRegex: false,
 				index: null,
 				result: null
 			},

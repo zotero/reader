@@ -1,4 +1,6 @@
 import type { InternalCharDataRange, InternalOutputRange, InternalSearchContext } from "./internal-types";
+import { FIND_MAX_TOTAL_MATCHES } from "../../../../common/defines";
+import { compileFindRegExp } from "../../../../common/lib/find-pattern";
 
 onmessage = async (event) => {
 	let { context, term, options } = event.data;
@@ -11,6 +13,7 @@ export function executeSearch(
 	options: {
 		caseSensitive: boolean,
 		entireWord: boolean,
+		useRegex?: boolean,
 	}
 ): InternalOutputRange[] {
 	if (!term) {
@@ -21,14 +24,32 @@ export function executeSearch(
 	let ranges: InternalOutputRange[] = [];
 
 	// https://stackoverflow.com/a/6969486
-	let termRe = normalize(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	let termRe = options.useRegex
+		? normalize(term)
+		: normalize(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	if (options.entireWord) {
-		termRe = '\\b' + termRe + '\\b';
+		termRe = '\\b(?:' + termRe + ')\\b';
 	}
-	let re = new RegExp(termRe, 'g' + (options.caseSensitive ? '' : 'i'));
+	let flags = 'g' + (options.caseSensitive ? '' : 'i');
+	let re;
+	if (options.useRegex) {
+		re = compileFindRegExp(termRe, flags);
+		if (!re) {
+			return [];
+		}
+	}
+	else {
+		re = new RegExp(termRe, flags);
+	}
 	let matches;
 	while ((matches = re.exec(text))) {
 		let [match] = matches;
+		if (!match.length) {
+			// A pattern like 'a*' can match an empty string, which would
+			// otherwise loop forever
+			re.lastIndex++;
+			continue;
+		}
 		let { charDataID: startCharDataID, start: startOffset } = binarySearch(internalCharDataRanges, matches.index)!;
 		let { charDataID: endCharDataID, start: endOffset } = binarySearch(internalCharDataRanges, matches.index + match.length)!;
 		ranges.push({
@@ -37,6 +58,9 @@ export function executeSearch(
 			endCharDataID,
 			endIndex: matches.index + match.length - endOffset,
 		});
+		if (ranges.length >= FIND_MAX_TOTAL_MATCHES) {
+			break;
+		}
 	}
 
 	return ranges;

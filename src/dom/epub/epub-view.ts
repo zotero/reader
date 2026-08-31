@@ -1247,6 +1247,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 					|| previousState.query !== state.query
 					|| previousState.caseSensitive !== state.caseSensitive
 					|| previousState.entireWord !== state.entireWord
+					|| previousState.useRegex !== state.useRegex
 					|| previousState.active !== state.active) {
 				console.log('Initiating new search', state);
 				this._find?.cancel();

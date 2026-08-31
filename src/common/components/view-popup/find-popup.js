@@ -8,6 +8,7 @@ import IconChevronUp from '../../../../res/icons/20/chevron-up.svg';
 import IconChevronDown from '../../../../res/icons/20/chevron-down.svg';
 import IconClose from '../../../../res/icons/20/x.svg';
 import { getCodeCombination, getKeyCombination } from '../../lib/utilities';
+import { compileFindRegExp } from '../../lib/find-pattern';
 
 function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotation, tools }) {
 	const { l10n } = useLocalization();
@@ -18,15 +19,23 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 
 	currentParamsRef.current = params;
 
+	let invalid = !!(params.useRegex && query && !compileFindRegExp(query));
+
 	const debounceInputChange = useCallback(debounce(value => {
 		if (!inputRef.current) {
 			return;
 		}
 		let query = inputRef.current.value;
 		if (query !== currentParamsRef.current.query && !(query.length === 1 && RegExp(/^\p{Script=Latin}/, 'u').test(query))) {
+			if (currentParamsRef.current.useRegex && !compileFindRegExp(query)) {
+				// Record the query but don't search until the pattern is a valid regular expression
+				onChange({ ...currentParamsRef.current, query, active: false, result: null });
+				return;
+			}
 			onChange({ ...currentParamsRef.current, query, active: true, result: null });
 		}
-	}, DEBOUNCE_FIND_POPUP_INPUT), [onChange]);
+	// Wait longer in regex mode -- half-typed patterns can be very broad
+	}, params.useRegex ? DEBOUNCE_FIND_POPUP_INPUT * 3 : DEBOUNCE_FIND_POPUP_INPUT), [onChange, params.useRegex]);
 
 	useLayoutEffect(() => {
 		if (params.popupOpen) {
@@ -56,6 +65,9 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 		let key = getKeyCombination(event);
 		let code = getCodeCombination(event);
 		if (key === 'Enter') {
+			if (invalid) {
+				return;
+			}
 			if (params.active) {
 				onFindNext();
 			}
@@ -64,6 +76,9 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 			}
 		}
 		else if (key === 'Shift-Enter') {
+			if (invalid) {
+				return;
+			}
 			if (params.active) {
 				onFindPrevious();
 			}
@@ -110,6 +125,18 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 		onChange({ ...params, entireWord: event.currentTarget.checked, result: null });
 	}
 
+	function handleUseRegexChange(event) {
+		let useRegex = event.currentTarget.checked;
+		if (useRegex && query && !compileFindRegExp(query)) {
+			// Deactivate the search until the pattern is a valid regular expression
+			onChange({ ...params, useRegex, active: false, result: null });
+			return;
+		}
+		// Reactivate the search if it was deactivated because of an invalid pattern
+		let wasInvalid = params.useRegex && !!params.query && !compileFindRegExp(params.query);
+		onChange({ ...params, useRegex, active: params.active || wasInvalid, result: null });
+	}
+
 	return (
 		<div className="find-popup" role="application">
 			<div className="row input">
@@ -118,7 +145,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						<input
 							ref={inputRef}
 							type="text"
-							className="toolbar-text-input"
+							className={cx('toolbar-text-input', { invalid })}
 							value={query !== null ? query : params.query}
 							tabIndex="-1"
 							data-tabstop={1}
@@ -184,6 +211,16 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 						onChange={handleWholeWordsChange}
 					/>
 					<label htmlFor="entire-word">{l10n.getString('reader-whole-words')}</label>
+				</div>
+				<div className="option">
+					<input
+						id="use-regex"
+						type="checkbox"
+						tabIndex="-1"
+						checked={params.useRegex}
+						onChange={handleUseRegexChange}
+					/>
+					<label htmlFor="use-regex">{l10n.getString('reader-use-regex')}</label>
 				</div>
 			</div>
 			{params.result &&
