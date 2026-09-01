@@ -4,9 +4,10 @@ export function formatTimeRemaining(minutes: number | null): string | null {
 		return null;
 	}
 
+	minutes = Math.ceil(minutes);
 	let days = Math.floor(minutes / (60 * 24));
 	let hours = Math.floor((minutes % (60 * 24)) / 60);
-	minutes = Math.ceil(minutes % 60);
+	minutes %= 60;
 
 	if ('DurationFormat' in Intl) {
 		return new (Intl as any).DurationFormat(undefined, {
