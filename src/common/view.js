@@ -344,6 +344,14 @@ class View {
 	}
 
 	/**
+	 * @param {number} mode 0 - vertical, 1 - horizontal, 2 - wrapped
+	 */
+	setScrollMode(mode) {
+		this._ensureType('pdf');
+		this._view.setScrollMode(mode);
+	}
+
+	/**
 	 * @param {import('../dom/epub/epub-view').SpreadMode} mode
 	 */
 	setSpreadMode(mode) {

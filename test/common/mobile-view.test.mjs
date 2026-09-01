@@ -15,6 +15,7 @@ export default class FakePDFView {
 	setAnnotations(value) { this.calls.push(['setAnnotations', value]); }
 	setSelectedAnnotationIDs(value) { this.calls.push(['setSelectedAnnotationIDs', value]); }
 	setOutline(value) { this.calls.push(['setOutline', value]); }
+	setScrollMode(value) { this.calls.push(['setScrollMode', value]); }
 	enterPassword(value) {
 		this.calls.push(['enterPassword', value]);
 		return globalThis.__mobilePasswordAccepted !== false;
@@ -130,10 +131,10 @@ function createMobileView(overrides = {}) {
 	};
 }
 
-test('mobile View wires Android PDF callbacks and immediate annotation saving', () => {
+test('mobile View wires Android PDF integration and immediate annotation saving', () => {
 	let onDeleteAnnotations = () => {};
 	let outlines = [];
-	let { annotationManager, pdfView, sdtDocumentSession } = createMobileView({
+	let { annotationManager, pdfView, sdtDocumentSession, view } = createMobileView({
 		onDeleteAnnotations,
 		onSetOutline: outline => outlines.push(outline),
 		colorScheme: 'dark',
@@ -152,8 +153,12 @@ test('mobile View wires Android PDF callbacks and immediate annotation saving', 
 	assert.equal(window.computedColorFocusBorder, '#00f');
 	assert.equal(window.computedWidthFocusBorder, '2px');
 	pdfView.options.onSetOutline([{ title: 'Section' }]);
+	view.setScrollMode(2);
 	assert.deepEqual(outlines, [[{ title: 'Section' }]]);
-	assert.deepEqual(pdfView.calls, [['setOutline', [{ title: 'Section' }]]]);
+	assert.deepEqual(pdfView.calls, [
+		['setOutline', [{ title: 'Section' }]],
+		['setScrollMode', 2],
+	]);
 });
 
 test('mobile View stores SDT packs in its shared document session', async () => {
