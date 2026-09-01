@@ -243,6 +243,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							: state.secondaryReadingModeEnabled}
 						readingModeLoading={state.readingModeLoading}
 						sdtProgress={state.sdtProgress}
+						citationAndLinkPreviewsEnabled={state.citationAndLinkPreviewsEnabled}
 						splitType={state.splitType}
 						viewStats={viewStats}
 						onChangeSplitType={props.onChangeSplitType}
@@ -251,6 +252,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onChangeFlowMode={props.onChangeFlowMode}
 						onChangeAppearance={props.onChangeAppearance}
 						onChangeReadingModeEnabled={props.onChangeReadingModeEnabled}
+						onChangeCitationAndLinkPreviewsEnabled={props.onChangeCitationAndLinkPreviewsEnabled}
 						onAddTheme={props.onAddTheme}
 						onChangeTheme={props.onChangeTheme}
 						onOpenThemeContextMenu={props.onOpenThemeContextMenu}

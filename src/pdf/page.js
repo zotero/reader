@@ -384,6 +384,9 @@ export default class Page {
 	}
 
 	_pushOverlays(items) {
+		if (this._layer._citationAndLinkPreviewsEnabled === false) {
+			return;
+		}
 		let pageData = this._layer._pdfPages[this._pageIndex];
 		if (!pageData) {
 			return;
@@ -409,7 +412,7 @@ export default class Page {
 	}
 
 	_pushHover(items) {
-		if (!this._layer._hover) {
+		if (this._layer._citationAndLinkPreviewsEnabled === false || !this._layer._hover) {
 			return;
 		}
 		let dark = this._layer._themeColorScheme === 'dark';

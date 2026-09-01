@@ -131,6 +131,7 @@ class PDFView {
 		this._onSetSelectionPopup = options.onSetSelectionPopup;
 		this._onSetAnnotationPopup = options.onSetAnnotationPopup;
 		this._onSetOverlayPopup = options.onSetOverlayPopup;
+		this._citationAndLinkPreviewsEnabled = options.citationAndLinkPreviews !== false;
 		this._onSetFindState = options.onSetFindState;
 		this._onOpenViewContextMenu = options.onOpenViewContextMenu;
 		this._onOpenAnnotationContextMenu = options.onOpenAnnotationContextMenu;
@@ -767,7 +768,7 @@ class PDFView {
 	}
 
 	_getPageTextColorRegions(originalPage) {
-		if (this._destroyed || this._preview) {
+		if (this._destroyed || this._preview || this._citationAndLinkPreviewsEnabled === false) {
 			return [];
 		}
 		let pageIndex = originalPage.id - 1;
@@ -1052,7 +1053,9 @@ class PDFView {
 			let pdfPage = this._pdfPages[pageIndex];
 			let overlays = [];
 			if (pdfPage) {
-				overlays = pdfPage.overlays.filter(x => x.type !== 'reference');
+				overlays = pdfPage.overlays.filter(
+					overlay => overlay.type !== 'reference' && this._isOverlayInteractionEnabled(overlay)
+				);
 			}
 
 			for (let annotation of this._annotations) {
@@ -1459,6 +1462,29 @@ class PDFView {
 		this._overlayPopupDelayer.setOpen(!!popup);
 	}
 
+	setCitationAndLinkPreviewsEnabled(enabled) {
+		enabled = !!enabled;
+		if (enabled === this._citationAndLinkPreviewsEnabled) {
+			return;
+		}
+		this._citationAndLinkPreviewsEnabled = enabled;
+		this._overlayRevision++;
+		if (!enabled) {
+			this._hover = null;
+			this._selectedOverlay = null;
+			this._overlayPopup = null;
+			this._overlayPopupDelayer.close(() => {});
+			for (let key of ['_focusedObject', '_lastFocusedObject']) {
+				let focusedObject = this[key];
+				if (focusedObject?.type === 'overlay'
+						&& !this._isOverlayInteractionEnabled(focusedObject.object)) {
+					this[key] = null;
+				}
+			}
+		}
+		this._render();
+	}
+
 	async setReadAloudState(state) {
 		let previousState = this._readAloudState;
 		this._readAloudState = state;
@@ -1730,7 +1756,7 @@ class PDFView {
 	}
 
 	async _openOverlayPopup(overlay, revision = this._overlayRevision) {
-		if (revision !== this._overlayRevision) {
+		if (!this._citationAndLinkPreviewsEnabled || revision !== this._overlayRevision) {
 			return;
 		}
 		this._selectedOverlay = overlay;
@@ -2886,6 +2912,13 @@ class PDFView {
 		return { type: 'move', annotation, x: r[0] - br[0], y: r[1] - br[1] };
 	}
 
+	_isOverlayInteractionEnabled(overlay) {
+		return this._citationAndLinkPreviewsEnabled || (
+			overlay.source === 'annotation'
+			&& ['internal-link', 'external-link'].includes(overlay.type)
+		);
+	}
+
 	_getSelectableOverlay(position) {
 		if (!position) {
 			return;
@@ -2896,7 +2929,7 @@ class PDFView {
 		}
 		let selectableOverlays = [];
 		for (let overlay of pdfPage.overlays) {
-			if (overlay.type === 'reference') {
+			if (overlay.type === 'reference' || !this._isOverlayInteractionEnabled(overlay)) {
 				continue;
 			}
 			if (intersectAnnotationWithPoint(overlay.position, position)) {
@@ -3501,7 +3534,7 @@ class PDFView {
 						let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[overlay.position.pageIndex];
 						page.div.title = overlay.url;
 					}
-					this._hover = overlay.position;
+					this._hover = this._citationAndLinkPreviewsEnabled ? overlay.position : null;
 				}
 				else {
 					for (let page of this._iframeWindow.PDFViewerApplication.pdfViewer._pages) {
@@ -3518,7 +3551,7 @@ class PDFView {
 					this.updateCursor(action);
 				}
 
-				if (overlayWithPopup) {
+				if (overlayWithPopup && this._citationAndLinkPreviewsEnabled) {
 					if (this._selectedOverlay !== overlay) {
 						let overlayRevision = this._overlayRevision;
 						this._overlayPopupDelayer.open(
@@ -4913,7 +4946,10 @@ class PDFView {
 					}
 					else if (this._focusedObject.type === 'overlay') {
 						let overlay = this._focusedObject.object;
-						if (['internal-link', 'citation', 'reference'].includes(overlay.type)) {
+						if (!this._citationAndLinkPreviewsEnabled && overlay.type === 'internal-link') {
+							this.navigate({ position: overlay.destinationPosition });
+						}
+						else if (['internal-link', 'citation', 'reference'].includes(overlay.type)) {
 							this._openOverlayPopup(overlay);
 						}
 						else if (overlay.type === 'external-link') {

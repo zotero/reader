@@ -121,6 +121,7 @@ class Reader {
 		this._onSaveCustomThemes = options.onSaveCustomThemes;
 		this._onSetLightTheme = options.onSetLightTheme;
 		this._onSetDarkTheme = options.onSetDarkTheme;
+		this._onSetCitationAndLinkPreviews = options.onSetCitationAndLinkPreviews;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
@@ -270,6 +271,7 @@ class Reader {
 			passwordPopup: null,
 			printPopup: null,
 			appearancePopup: null,
+			citationAndLinkPreviewsEnabled: options.citationAndLinkPreviews !== false,
 			themePopup: null,
 			contextMenu: null,
 			readAloudState: {
@@ -489,6 +491,10 @@ class Reader {
 						onOpenLink={this._onOpenLink}
 						onChangeAppearance={this._handleAppearanceChange.bind(this)}
 						onChangeReadingModeEnabled={this._handleReadingModeEnabledChange.bind(this)}
+						onChangeCitationAndLinkPreviewsEnabled={(enabled) => {
+							this.setCitationAndLinkPreviews(enabled);
+							this._onSetCitationAndLinkPreviews?.(enabled);
+						}}
 						onChangeFindState={this._handleFindStateChange.bind(this)}
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
@@ -645,6 +651,11 @@ class Reader {
 			for (let view of this._views) {
 				view.setShowAnnotations(this._state.showAnnotations);
 			}
+		}
+
+		if (this._state.citationAndLinkPreviewsEnabled !== previousState.citationAndLinkPreviewsEnabled) {
+			this._primaryView?.setCitationAndLinkPreviewsEnabled?.(this._state.citationAndLinkPreviewsEnabled);
+			this._secondaryView?.setCitationAndLinkPreviewsEnabled?.(this._state.citationAndLinkPreviewsEnabled);
 		}
 
 		if (this._state.outline !== previousState.outline) {
@@ -2170,6 +2181,7 @@ class Reader {
 		else if (this._type === 'pdf') {
 			view = new PDFView({
 				...common,
+				citationAndLinkPreviews: this._state.citationAndLinkPreviewsEnabled,
 				password: this._password,
 				pageLabels: this._state.pageLabels,
 				createSDTIntegration: this._sdtDocumentSession
@@ -2653,6 +2665,18 @@ class Reader {
 		themes = new Map(themes.map(theme => [theme.id, theme]));
 		let darkTheme = themes.get(themeName) || null;
 		this._updateState({ darkTheme });
+	}
+
+	setCitationAndLinkPreviews(enabled) {
+		enabled = !!enabled;
+		if (enabled === this._state.citationAndLinkPreviewsEnabled) {
+			return;
+		}
+		this._updateState({
+			citationAndLinkPreviewsEnabled: enabled,
+			primaryViewOverlayPopup: null,
+			secondaryViewOverlayPopup: null,
+		});
 	}
 
 	toggleSidebar(open) {

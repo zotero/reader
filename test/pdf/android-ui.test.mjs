@@ -45,9 +45,11 @@ registerHooks({
 const [
 	{ default: PDFView },
 	{ PDFNativeTextSelection },
+	{ default: Page },
 ] = await Promise.all([
 	import('../../src/pdf/pdf-view.js'),
 	import('../../src/pdf/native-text-selection.js'),
+	import('../../src/pdf/page.js'),
 ]);
 
 function createRoot() {
@@ -69,6 +71,77 @@ function createClassList(...names) {
 	let values = new Set(names);
 	return { contains: name => values.has(name) };
 }
+
+test('Citation and Link Previews disables PDF overlay previews', async () => {
+	let closeCalls = 0;
+	let renderCalls = 0;
+	let semanticOverlay = {
+		type: 'citation',
+		source: 'sdt',
+		position: { pageIndex: 0, rects: [[0, 0, 1, 1]] },
+	};
+	let authoredLink = {
+		type: 'internal-link',
+		source: 'annotation',
+		position: { pageIndex: 0, rects: [[0, 0, 1, 1]] },
+	};
+	let view = {
+		_citationAndLinkPreviewsEnabled: true,
+		_overlayRevision: 1,
+		_hover: {},
+		_selectedOverlay: {},
+		_focusedObject: { type: 'overlay', object: semanticOverlay },
+		_lastFocusedObject: { type: 'overlay', object: authoredLink },
+		_pdfPages: [{ overlays: [semanticOverlay, authoredLink] }],
+		_overlayPopupDelayer: { close: () => closeCalls++ },
+		_isOverlayInteractionEnabled: PDFView.prototype._isOverlayInteractionEnabled,
+		_render: () => renderCalls++,
+	};
+	let position = { pageIndex: 0, rects: [[0.5, 0.5, 0.5, 0.5]] };
+	assert.equal(PDFView.prototype._getSelectableOverlay.call(view, position), semanticOverlay);
+
+	PDFView.prototype.setCitationAndLinkPreviewsEnabled.call(view, false);
+	assert.equal(view._citationAndLinkPreviewsEnabled, false);
+	assert.equal(view._overlayRevision, 2);
+	assert.equal(view._hover, null);
+	assert.equal(view._selectedOverlay, null);
+	assert.equal(view._overlayPopup, null);
+	assert.equal(view._focusedObject, null);
+	assert.equal(view._lastFocusedObject.object, authoredLink);
+	assert.equal(PDFView.prototype._getSelectableOverlay.call(view, position), authoredLink);
+	assert.equal(closeCalls, 1);
+	assert.equal(renderCalls, 1);
+
+	await PDFView.prototype._openOverlayPopup.call(view, { type: 'citation' });
+	assert.equal(view._selectedOverlay, null);
+});
+
+test('Citation and Link Previews disables PDF overlay highlights', () => {
+	let layer = {
+		_citationAndLinkPreviewsEnabled: true,
+		_pdfPages: [{
+			overlays: [
+				{ type: 'citation', position: { pageIndex: 0, rects: [[0, 0, 1, 1]] } },
+				{ type: 'internal-link', source: 'matched', position: { pageIndex: 0, rects: [[1, 0, 2, 1]] } },
+			],
+		}],
+		_hover: { pageIndex: 0, rects: [[2, 0, 3, 1]] },
+		_themeColorScheme: 'light',
+	};
+	let page = new Page(layer, { id: 1, coloredTextRegions: [] });
+	page._pushPositionRects = items => items.push({});
+
+	let items = [];
+	page._pushOverlays(items);
+	page._pushHover(items);
+	assert.equal(items.length, 3);
+
+	layer._citationAndLinkPreviewsEnabled = false;
+	items = [];
+	page._pushOverlays(items);
+	page._pushHover(items);
+	assert.equal(items.length, 0);
+});
 
 function createNativeSelectionFixture() {
 	let root = createRoot();
