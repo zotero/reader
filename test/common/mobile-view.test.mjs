@@ -16,6 +16,7 @@ export default class FakePDFView {
 	setSelectedAnnotationIDs(value) { this.calls.push(['setSelectedAnnotationIDs', value]); }
 	setOutline(value) { this.calls.push(['setOutline', value]); }
 	setScrollMode(value) { this.calls.push(['setScrollMode', value]); }
+	renderThumbnails(pageIndexes, options) { this.calls.push(['renderThumbnails', pageIndexes, options]); }
 	enterPassword(value) {
 		this.calls.push(['enterPassword', value]);
 		return globalThis.__mobilePasswordAccepted !== false;
@@ -154,10 +155,12 @@ test('mobile View wires Android PDF integration and immediate annotation saving'
 	assert.equal(window.computedWidthFocusBorder, '2px');
 	pdfView.options.onSetOutline([{ title: 'Section' }]);
 	view.setScrollMode(2);
+	view.renderThumbnails([1, 2], { maxWidth: 80, maxHeight: 64 });
 	assert.deepEqual(outlines, [[{ title: 'Section' }]]);
 	assert.deepEqual(pdfView.calls, [
 		['setOutline', [{ title: 'Section' }]],
 		['setScrollMode', 2],
+		['renderThumbnails', [1, 2], { maxWidth: 80, maxHeight: 64 }],
 	]);
 });
 

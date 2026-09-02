@@ -26,15 +26,22 @@ import queue from 'queue';
 
 const DRAW_UPSCALE_FACTOR = 2; // See comment in `PDFThumbnailView.draw` below.
 const MAX_NUM_SCALING_STEPS = 3;
-const THUMBNAIL_CANVAS_BORDER_WIDTH = 1; // px
 const THUMBNAIL_WIDTH = 120; // px
 
-
-
-
-const RenderingStates = {
-	INITIAL: 0, RUNNING: 1, PAUSED: 2, FINISHED: 3,
-};
+function getThumbnailDimensions({ width, height }, { maxWidth, maxHeight } = {}) {
+	if (maxWidth === undefined && maxHeight === undefined) {
+		maxWidth = THUMBNAIL_WIDTH;
+	}
+	const scale = Math.min(
+		maxWidth === undefined ? Infinity : maxWidth / width,
+		maxHeight === undefined ? Infinity : maxHeight / height
+	);
+	return {
+		width: Math.max(1, Math.floor(width * scale)),
+		height: Math.max(1, Math.floor(height * scale)),
+		scale,
+	};
+}
 
 
 /**
@@ -106,6 +113,7 @@ class PDFThumbnails {
 		this._onRender = options.onRender;
 		this._window = options.window;
 		this._thumbnails = [];
+		this._renderOptions = [];
 		this._initialized = false;
 		this._renderQueue = queue({
 			concurrency: 1,
@@ -121,60 +129,35 @@ class PDFThumbnails {
 
 		let pagesCount = pdfDocument.numPages;
 		let defaultViewport = firstPdfPage.getViewport({ scale: 1 });
+		let { width, height } = getThumbnailDimensions(defaultViewport);
 
 		for (let pageNum = 1; pageNum <= pagesCount; ++pageNum) {
-			let pageWidth = defaultViewport.width;
-			let pageHeight = defaultViewport.height;
-			let pageRatio = pageWidth / pageHeight;
-
-			let canvasWidth = THUMBNAIL_WIDTH;
-			let canvasHeight = (canvasWidth / pageRatio) | 0;
-			let scale = canvasWidth / pageWidth;
-
 			this._thumbnails.push({
 				pageIndex: pageNum - 1,
-				width: canvasWidth,
-				height: canvasHeight
+				width,
+				height
 			});
 		}
 		this._onInit(this._thumbnails);
 	}
 
-	async _render(pageIndex) {
+	async _render(pageIndex, options) {
+		let { pdfDocument } = this._window.PDFViewerApplication;
+
+		let pdfPage = await pdfDocument.getPage(pageIndex + 1);
+		let viewport = pdfPage.getViewport({ scale: 1 });
+		let { width: canvasWidth, height: canvasHeight, scale }
+			= getThumbnailDimensions(viewport, options);
+
 		let thumbnail = this._thumbnails[pageIndex];
-		if (thumbnail?.image && !thumbnail.forceRerender) {
+		if (thumbnail?.image && !thumbnail.forceRerender
+				&& thumbnail.width === canvasWidth
+				&& thumbnail.height === canvasHeight) {
 			if (this._onRender) {
 				this._onRender(thumbnail);
 			}
 			return;
 		}
-		let { pdfDocument } = this._window.PDFViewerApplication;
-
-		let pdfPage = await pdfDocument.getPage(pageIndex + 1);
-		let viewport = pdfPage.getViewport({ scale: 1 });
-
-
-		let pageWidth = viewport.width;
-		let pageHeight = viewport.height;
-		let pageRatio = pageWidth / pageHeight;
-
-		let canvasWidth = THUMBNAIL_WIDTH;
-		let canvasHeight = (canvasWidth / pageRatio) | 0;
-		let scale = canvasWidth / pageWidth;
-
-
-		// // Keep the no-thumbnail outline visible, i.e. `data-loaded === false`,
-		// // until rendering/image conversion is complete, to avoid display issues.
-		// const canvas = document.createElement("canvas");
-		// const ctx = canvas.getContext("2d", { alpha: false });
-		// const outputScale = new OutputScale();
-		//
-		// canvas.width = (DRAW_UPSCALE_FACTOR * canvasWidth * outputScale.sx) | 0;
-		// canvas.height = (DRAW_UPSCALE_FACTOR * canvasHeight * outputScale.sy) | 0;
-		//
-		// const transform = outputScale.scaled ? [outputScale.sx, 0, 0, outputScale.sy, 0, 0] : null;
-
-
 
 		// Render the thumbnail at a larger size and downsize the canvas (similar
 		// to `setImage`), to improve consistency between thumbnails created by
@@ -198,7 +181,7 @@ class PDFThumbnails {
 		try {
 			await renderTask.promise;
 		}
-		catch(e) {
+		catch (e) {
 			console.log(e);
 		}
 		finally {
@@ -212,6 +195,7 @@ class PDFThumbnails {
 			};
 			this._thumbnails = this._thumbnails.slice();
 			this._thumbnails[pageIndex] = renderedThumbnail;
+			this._renderOptions[pageIndex] = options;
 
 			// Zeroing the width and height causes Firefox to release graphics
 			// resources immediately, which can greatly reduce memory consumption.
@@ -232,7 +216,15 @@ class PDFThumbnails {
 		}
 	}
 
-	async render(pageIndexes = [], rerenderOnly) {
+	render(pageIndexes = [], options) {
+		this._queueRender(pageIndexes, options);
+	}
+
+	rerender(pageIndexes = []) {
+		this._queueRender(pageIndexes, undefined, true);
+	}
+
+	_queueRender(pageIndexes, options, rerenderOnly = false) {
 		// If there are no thumbnails being rerendered due to annotation changes,
 		// clear the rendering queue to only render the thumbnails that were recently
 		// scrolled into view in the sidebar thumbnails view
@@ -252,13 +244,17 @@ class PDFThumbnails {
 					continue;
 				}
 			}
-			this._renderQueue.unshift(async () => this._render(pageIndex));
+			let pageOptions = rerenderOnly
+				? this._renderOptions[pageIndex]
+				: options;
+			this._renderQueue.unshift(async () => this._render(pageIndex, pageOptions));
 		}
 	}
 
 	clear() {
 		this._renderQueue.end();
 		this._thumbnails = this._thumbnails.map(x => ({ ...x, image: undefined }));
+		this._renderOptions = [];
 		this._onUpdate(this._thumbnails);
 	}
 
@@ -304,4 +300,4 @@ class PDFThumbnails {
 	}
 }
 
-export { PDFThumbnails };
+export { getThumbnailDimensions, PDFThumbnails };

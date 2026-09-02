@@ -33,7 +33,7 @@ export default class FakeView {
 	find(params) { this._record('find', params); }
 	navigate(location) { this._record('navigate', location); }
 	setPageLabels(labels) { this._record('setPageLabels', labels); }
-	renderThumbnails(pageIndexes) { this._record('renderThumbnails', pageIndexes); }
+	renderThumbnails(pageIndexes, options) { this._record('renderThumbnails', pageIndexes, options); }
 	renderAnnotationImages(ids) { this._record('renderAnnotationImages', ids); }
 	enterPassword(password) { this._record('enterPassword', password); }
 }
@@ -221,6 +221,7 @@ test('Android PDF UI commands decode their inputs and delegate to the view', () 
 	window.navigate({ location: encode({ pageIndex: 3 }) });
 	window.setPageLabels({ pageLabels: encode(['i', '1']) });
 	window.renderThumbnails([0, 2]);
+	window.renderThumbnails([1], { maxWidth: 80, maxHeight: 64 });
 	window.renderAnnotationImages(['image', 'ink']);
 	window.enterPassword({ password: encode('slaptažodis') });
 
@@ -235,7 +236,8 @@ test('Android PDF UI commands decode their inputs and delegate to the view', () 
 		['navigate', { annotationID: 'selected' }],
 		['navigate', { pageIndex: 3 }],
 		['setPageLabels', ['i', '1']],
-		['renderThumbnails', [0, 2]],
+		['renderThumbnails', [0, 2], undefined],
+		['renderThumbnails', [1], { maxWidth: 80, maxHeight: 64 }],
 		['renderAnnotationImages', ['image', 'ink']],
 		['enterPassword', 'slaptažodis'],
 	]);

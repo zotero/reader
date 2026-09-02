@@ -416,9 +416,16 @@ class View {
 		this._view.setPageLabels?.(pageLabels);
 	}
 
-	renderThumbnails(pageIndexes) {
+	/**
+	 * Render PDF page thumbnails, preserving page aspect ratio within the
+	 * optional logical-pixel bounds. With no bounds, the legacy 120px maximum
+	 * width is used.
+	 * @param {number[]} pageIndexes
+	 * @param {{ maxWidth?: number, maxHeight?: number }} [options]
+	 */
+	renderThumbnails(pageIndexes, options) {
 		this._ensureType('pdf');
-		this._view.renderThumbnails?.(pageIndexes);
+		this._view.renderThumbnails?.(pageIndexes, options);
 	}
 
 	/**

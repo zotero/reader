@@ -1392,8 +1392,8 @@ class PDFView {
 		}
 	}
 
-	renderThumbnails(pageIndexes) {
-		this._pdfThumbnails?.render(pageIndexes);
+	renderThumbnails(pageIndexes, options) {
+		this._pdfThumbnails?.render(pageIndexes, options);
 	}
 
 	renderAnnotationImages(ids) {
@@ -1462,7 +1462,7 @@ class PDFView {
 		let pageIndexes = getPageIndexesFromAnnotations(all);
 		this._render(pageIndexes);
 		if (this._primary && !this._preview) {
-			this._pdfThumbnails?.render(pageIndexes, true);
+			this._pdfThumbnails?.rerender(pageIndexes);
 			this._pdfRenderer?.start();
 		}
 	}

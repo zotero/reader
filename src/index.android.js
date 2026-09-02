@@ -228,9 +228,9 @@ window.setPageLabels = (options) => {
 	window._view.setPageLabels(pageLabels);
 };
 
-window.renderThumbnails = (pageIndexes) => {
+window.renderThumbnails = (pageIndexes, options) => {
 	log("Render thumbnails: " + JSON.stringify(pageIndexes));
-	window._view.renderThumbnails(pageIndexes);
+	window._view.renderThumbnails(pageIndexes, options);
 };
 
 window.renderAnnotationImages = (ids) => {
