@@ -478,7 +478,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	// ***
 
 	protected async _pushHistoryPoint(transient = false) {
-		if (!transient) {
+		if (transient) {
+			if (this._suspendHistorySaving) {
+				return;
+			}
+		}
+		else {
 			this._suspendHistorySaving = true;
 			await debounceUntilScrollFinishes(this._iframeDocument, 100);
 			this._suspendHistorySaving = false;
