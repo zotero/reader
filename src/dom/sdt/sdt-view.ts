@@ -13,6 +13,7 @@ import {
 	OutlineItem,
 } from "../../common/types";
 import type { StructuredDocumentText } from '../../../structured-document-text/schema';
+import { getPageBlockSpan } from '../../../structured-document-text/src/pages';
 import type { SDTPositionMapper } from '../../common/sdt/position-mapper';
 import { getSDTLang } from '../../common/read-aloud/sdt-segments';
 import {
@@ -34,6 +35,7 @@ import {
 import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import { isPageRectVisible } from "../common/lib/rect";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
+import { isRTLLang } from "../../common/lib/rtl";
 import { isSafari } from "../../common/lib/utilities";
 import { renderSDT } from "./lib/renderer";
 import sdtSCSS from './stylesheets/sdt.scss';
@@ -49,6 +51,7 @@ type SDTBlockCropProvider = (blockRef: number[]) => SDTBlockCrop[];
 export interface SDTViewData {
 	structure: StructuredDocumentText;
 	mapper: SDTPositionMapper;
+	paged: boolean;
 	getSourceAnnotationMeta: (position: SourcePosition) => { sortIndex: string, pageLabel: string } | null;
 	syncBaseView: (blockIndex: number) => void;
 	getImageForBlock: (blockRef: number[]) => Promise<string | null>;
@@ -88,6 +91,10 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	private _sourceCropRenderQueue: ReturnType<typeof queue> | null = null;
 
 	private _destroyed = false;
+
+	private _lastVisibleBlockIndex: number | null = null;
+
+	private _pageProgressionRTL: boolean | null = null;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -577,6 +584,16 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		else if (location.scrollCoords) {
 			this._iframeWindow.scrollTo(...location.scrollCoords);
 		}
+		else if (Number.isInteger(location.pageIndex)) {
+			this._scrollToPage(location.pageIndex!);
+		}
+		else if (location.pageNumber) {
+			// A page label if one matches, otherwise a page number
+			this._scrollToPage(
+				this._getPageIndexByLabel(location.pageNumber)
+					?? parseInt(location.pageNumber) - 1
+			);
+		}
 		else {
 			super.navigate(location, options);
 		}
@@ -604,6 +621,7 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	protected override _handleScroll(event: Event) {
 		super._handleScroll(event);
 		this._updateViewState();
+		this._updateViewStats();
 		this._pushHistoryPoint(true);
 	}
 
@@ -618,12 +636,14 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		// Keep the hidden base view's position in sync, so page numbers stay
 		// correct and the document reopens where the user left off
 		let blockIndex = this.getVisibleBlockIndex();
+		this._lastVisibleBlockIndex = blockIndex;
 		if (blockIndex !== null) {
 			this._options.data.syncBaseView(blockIndex);
 		}
 	}
 
 	protected override _updateViewStats() {
+		let pageIndex = this._getVisiblePageIndex();
 		let viewStats: ViewStats = {
 			canCopy: !!this._selectedAnnotationIDs.length || !(this._iframeWindow.getSelection()?.isCollapsed ?? true),
 			canZoomIn: this.scale === undefined || this.scale < this.MAX_SCALE,
@@ -631,9 +651,150 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 			canZoomReset: this.scale !== undefined && this.scale !== 1,
 			canNavigateBack: this._history.canNavigateBack,
 			canNavigateForward: this._history.canNavigateForward,
+			canNavigateToFirstPage: pageIndex !== null && pageIndex > 0,
+			canNavigateToPreviousPage: pageIndex !== null && pageIndex > 0,
+			canNavigateToLastPage: pageIndex !== null && pageIndex < this._pagesCount - 1,
+			canNavigateToNextPage: pageIndex !== null && pageIndex < this._pagesCount - 1,
 			appearance: this.appearance,
 		};
 		this._options.onChangeViewStats(viewStats);
+	}
+
+	private get _pagesCount(): number {
+		return this._structure.catalog.pages?.length ?? 0;
+	}
+
+	private _getPageIndexByLabel(label: string): number | null {
+		let index = this._structure.catalog.pages?.findIndex(page => page.label === label) ?? -1;
+		return index === -1 ? null : index;
+	}
+
+	private _getVisiblePageIndex(): number | null {
+		let blockIndex = this._lastVisibleBlockIndex ?? this.getVisibleBlockIndex();
+		if (blockIndex === null) {
+			return null;
+		}
+		for (let pageIndex = 0; pageIndex < this._pagesCount; pageIndex++) {
+			let span = getPageBlockSpan(this._structure, pageIndex);
+			if (span && blockIndex >= span.startIndex && blockIndex < span.endIndexExclusive) {
+				return pageIndex;
+			}
+		}
+		return null;
+	}
+
+	private _getPageStartElement(pageIndex: number): HTMLElement | null {
+		let span = getPageBlockSpan(this._structure, pageIndex);
+		if (!span) {
+			return null;
+		}
+		for (let i = span.startIndex; i < span.endIndexExclusive; i++) {
+			let el = this._iframeDocument.querySelector<HTMLElement>(
+				`#sdt-content > [data-ref-path="${i}"]`
+			);
+			if (el) {
+				return el;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Scroll to a source page's start, falling back to the nearest page with a
+	 * block of its own. Caller must push a history point.
+	 */
+	private _scrollToPage(pageIndex: number) {
+		if (!(pageIndex >= 0 && pageIndex < this._pagesCount)) {
+			return;
+		}
+		for (let i = pageIndex; i < this._pagesCount; i++) {
+			let el = this._getPageStartElement(i);
+			if (el) {
+				scrollIntoView(el, { behavior: 'instant', block: 'start' });
+				return;
+			}
+		}
+		for (let i = pageIndex - 1; i >= 0; i--) {
+			let el = this._getPageStartElement(i);
+			if (el) {
+				scrollIntoView(el, { behavior: 'instant', block: 'start' });
+				return;
+			}
+		}
+	}
+
+	private _navigateToAdjacentPage(direction: -1 | 1) {
+		let pageIndex = this._getVisiblePageIndex();
+		if (pageIndex === null) {
+			return;
+		}
+		for (let i = pageIndex + direction; i >= 0 && i < this._pagesCount; i += direction) {
+			let el = this._getPageStartElement(i);
+			if (!el) {
+				continue;
+			}
+			// A block broken across a page break belongs to both pages, so
+			// this page can start with the block already at the top of the
+			// view -- scrolling to it wouldn't move us anywhere
+			let top = el.getBoundingClientRect().top;
+			// Be lenient for fractional scroll positions
+			let wouldMove = direction < 0 ? top <= -1 : top >= 1;
+			if (!wouldMove) {
+				continue;
+			}
+			this.navigate({ pageIndex: i });
+			return;
+		}
+	}
+
+	navigateToFirstPage() {
+		this.navigate({ pageIndex: 0 });
+	}
+
+	navigateToLastPage() {
+		this.navigate({ pageIndex: this._pagesCount - 1 });
+	}
+
+	navigateToPreviousPage() {
+		this._navigateToAdjacentPage(-1);
+	}
+
+	navigateToNextPage() {
+		this._navigateToAdjacentPage(1);
+	}
+
+	private _navigateLeft() {
+		this._navigateToAdjacentPage(this._isPageProgressionRTL() ? 1 : -1);
+	}
+
+	private _navigateRight() {
+		this._navigateToAdjacentPage(this._isPageProgressionRTL() ? -1 : 1);
+	}
+
+	private _isPageProgressionRTL(): boolean {
+		return this._pageProgressionRTL ??= isRTLLang(this.lang);
+	}
+
+	protected override _handleKeyDown(event: KeyboardEvent) {
+		super._handleKeyDown(event);
+		if (event.defaultPrevented || event.shiftKey) {
+			return;
+		}
+
+		if (!this._options.data.paged) {
+			return;
+		}
+
+		if (event.key === 'ArrowLeft') {
+			this._onManualNavigation();
+			this._navigateLeft();
+			event.preventDefault();
+		}
+		else if (event.key === 'ArrowRight') {
+			this._onManualNavigation();
+			this._navigateRight();
+			event.preventDefault();
+		}
 	}
 
 	protected override _handleInternalLinkClick(link: HTMLAnchorElement): void {

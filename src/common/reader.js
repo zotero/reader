@@ -2161,6 +2161,7 @@ class Reader {
 				data: {
 					structure: this._sdt.structure,
 					mapper: this._sdt.mapper,
+					paged: this._type === 'pdf',
 					getSourceAnnotationMeta: position => this._getSourceAnnotationMeta(position),
 					syncBaseView: (blockIndex) => {
 						let baseView = primary ? this._primaryView : this._secondaryView;

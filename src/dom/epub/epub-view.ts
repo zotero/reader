@@ -40,7 +40,8 @@ import {
 	PaginatedFlow,
 	ScrolledFlow
 } from "./flow";
-import { RTL_SCRIPTS, A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
+import { A11Y_VIRT_CURSOR_DEBOUNCE_LENGTH } from "./defines";
+import { isRTLLang } from "../../common/lib/rtl";
 import { parseAnnotationsFromKOReaderMetadata, koReaderAnnotationToRange } from "./lib/koreader";
 import { ANNOTATION_COLORS } from "../../common/defines";
 import { calibreAnnotationToRange, parseAnnotationsFromCalibreMetadata } from "./lib/calibre";
@@ -169,15 +170,9 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 
 		this.pageProgressionRTL = this.book.packaging.metadata.direction === 'rtl';
 		if (!this.pageProgressionRTL) {
-			try {
-				let locale = new Intl.Locale(this.lang).maximize();
-				this.pageProgressionRTL = locale.script ? RTL_SCRIPTS.has(locale.script) : false;
-				if (this.pageProgressionRTL) {
-					console.log('Guessed RTL page progression from maximized locale: ' + locale);
-				}
-			}
-			catch (e) {
-				// Ignore
+			this.pageProgressionRTL = isRTLLang(this.lang);
+			if (this.pageProgressionRTL) {
+				console.log('Guessed RTL page progression from language: ' + this.lang);
 			}
 		}
 		if (!this.pageProgressionRTL) {
