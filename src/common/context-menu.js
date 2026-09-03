@@ -370,6 +370,13 @@ export function createAnnotationContextMenu(reader, params) {
 				}
 			],
 			[
+				{
+					label: reader._getString('reader-read-aloud'),
+					disabled: annotations.length !== 1 || !reader._enableReadAloud,
+					onCommand: () => reader.startReadAloudAtPosition(annotations[0].position)
+				}
+			],
+			[
 				annotations.every(x => ['highlight', 'underline'].includes(x.type))
 				&& annotations.some(x => x.type === 'underline')
 				&& {
