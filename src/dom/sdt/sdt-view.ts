@@ -551,6 +551,9 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	protected override _getHistoryLocation(): NavLocation | null {
+		if (this._destroyed) {
+			return null;
+		}
 		return { scrollCoords: [this._iframeWindow.scrollX, this._iframeWindow.scrollY] };
 	}
 
@@ -563,21 +566,24 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 					block: options.block ?? 'start',
 				});
 			}
-			return;
 		}
-		if (location.scrollYPercent !== undefined) {
+		else if (location.scrollYPercent !== undefined) {
 			this._iframeWindow.scrollTo({
 				top: location.scrollYPercent / 100
 					* (this._iframeDocument.body.scrollHeight - this._iframeDocument.documentElement.clientHeight),
 				behavior: options.behavior as ScrollBehavior ?? 'instant',
 			});
-			return;
 		}
-		if (location.scrollCoords) {
+		else if (location.scrollCoords) {
 			this._iframeWindow.scrollTo(...location.scrollCoords);
-			return;
 		}
-		super.navigate(location, options);
+		else {
+			super.navigate(location, options);
+		}
+
+		if (!options.skipHistory) {
+			this._pushHistoryPoint();
+		}
 	}
 
 	override navigateToSelector(selector: Selector, options: NavigateOptions = {}) {
@@ -598,6 +604,7 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	protected override _handleScroll(event: Event) {
 		super._handleScroll(event);
 		this._updateViewState();
+		this._pushHistoryPoint(true);
 	}
 
 	protected override _handleViewUpdate(synchronous = true) {
