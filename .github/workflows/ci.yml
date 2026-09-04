@@ -39,12 +39,20 @@ jobs:
           ruby-version: '3.3'
           bundler-cache: true
 
+      - name: Check if upload branch
+        id: check-upload
+        run: |
+          branch="${GITHUB_REF#refs/heads/}"
+          if [[ "$branch" == "master" || "$branch" =~ ^[0-9]+\.[0-9]+$ || "$branch" == *-hotfix || "$branch" == "ci-test" ]]; then
+            echo "upload=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload pre-build ZIP
         if: |
           env.ACT != 'true'
           && github.repository == 'zotero/reader'
           && github.event_name == 'push'
-          && (github.ref == 'refs/heads/master' || endsWith(github.ref, '-hotfix') || github.ref == 'refs/heads/gh-actions-ci-test')
+          && steps.check-upload.outputs.upload == 'true'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
