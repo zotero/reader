@@ -116,6 +116,7 @@ class Reader {
 		this._onChangeSidebarWidth = options.onChangeSidebarWidth;
 		this._onChangeSidebarView = options.onChangeSidebarView;
 		this._onChangeViewState = options.onChangeViewState;
+		this._onChangeActiveView = options.onChangeActiveView;
 		this._onOpenLink = options.onOpenLink;
 		this._onCopyImage = options.onCopyImage;
 		this._onSaveImageAs = options.onSaveImageAs;
@@ -2708,6 +2709,7 @@ class Reader {
 		this._lastViewPrimary = primary;
 		let view = this._getActiveView(primary);
 		view.focus();
+		let activeViewChanged = this._state.primary !== primary;
 		this._updateState({ primary });
 		if (primary) {
 			this._updateState({ secondaryViewAnnotationPopup: null });
@@ -2718,6 +2720,9 @@ class Reader {
 			this._updateState({ primaryViewAnnotationPopup: null });
 			this._updateState({ primaryViewSelectionPopup: null });
 			this._updateState({ primaryViewOverlayPopup: null });
+		}
+		if (activeViewChanged) {
+			this._onChangeActiveView?.(primary);
 		}
 	}
 
