@@ -2243,6 +2243,15 @@ class PDFView {
 		}
 	}
 
+	suspendHistoryTracking() {
+		this._suspendHistorySaving = true;
+	}
+
+	async resumeHistoryTrackingAndPush() {
+		this._suspendHistorySaving = false;
+		await this._pushHistoryPoint();
+	}
+
 	navigateBack() {
 		this._onManualNavigation();
 		this._history.navigateBack();
