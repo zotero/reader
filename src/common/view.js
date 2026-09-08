@@ -301,8 +301,16 @@ class View {
 		this._view.zoomReset();
 	}
 
-	navigate(location) {
-		this._view.navigate(location);
+	navigate(location, options) {
+		this._view.navigate(location, options);
+	}
+
+	suspendHistoryTracking() {
+		this._view.suspendHistoryTracking?.();
+	}
+
+	resumeHistoryTrackingAndPush() {
+		this._view.resumeHistoryTrackingAndPush?.();
 	}
 
 	/**
