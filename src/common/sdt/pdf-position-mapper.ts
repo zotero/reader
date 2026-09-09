@@ -196,7 +196,11 @@ export class PDFPositionMapper implements SDTPositionMapper {
 		if (nodeRects?.length) {
 			return nodeRects;
 		}
-		return (span.block.anchor as PdfAnchor | undefined)?.pageRects ?? [];
+		// Whitespace has no run data, so a whitespace-only node has no position
+		// of its own
+		return span.node.text.trim()
+			? (span.block.anchor as PdfAnchor | undefined)?.pageRects ?? []
+			: [];
 	}
 }
 
