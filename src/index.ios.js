@@ -171,6 +171,22 @@ window.getReadAloudStartBlockIndex = async (options) => {
 	postMessage('onReadAloudStartBlockIndex', { requestID: options.requestID, blockIndex });
 };
 
+// Maps a source position (the selector the app got for a text selection) to an SDT position, so Read Aloud can start at
+// the selected sentence. Requires the SDT pack, so it's called once the app has handed it over.
+window.sourceToSDTPosition = async (options) => {
+	const source = JSON.parse(decodeBase64(options.position));
+	let position = null;
+	try {
+		position = await window._view.sourceToSDTPosition(source);
+	}
+	catch (error) {
+		log("SDT position for source position unavailable: " + error);
+	}
+	postMessage('onSourceSDTPosition', { requestID: options.requestID, position });
+};
+
+
+
 // Creates the Read Aloud highlight session annotation, or resizes/restyles it when `params.id` is provided. The app
 // keeps the session state (including the annotation id) and stores the annotation only when the session ends, so the
 // resulting annotation is reported back to it.

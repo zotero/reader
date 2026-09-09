@@ -6,6 +6,7 @@ import AnnotationManager from './annotation-manager';
 import { DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES } from './defines';
 import { getCurrentColorScheme } from './lib/utilities';
 import { SDTDocumentSession } from './sdt/document-session.mjs';
+import { isSDTPosition } from './types';
 import { getTextNodeSpans } from './sdt/position-mapper';
 import { buildSDTReadAloudSegments, getSDTLang } from './read-aloud/sdt-segments';
 
@@ -466,6 +467,23 @@ class View {
 	async sdtAnchorToPosition(sdtAnchor) {
 		let sdt = await this._loadSDT();
 		return sdt ? sdt.mapper.sdtToSourcePosition(sdtAnchor) : null;
+	}
+
+	/**
+	 * Structured-document-text position for a source position (an EPUB CFI `FragmentSelector`, a snapshot `CssSelector`),
+	 * or null when it can't be mapped. Positions that are already SDT positions (Reading mode) pass through. The inverse
+	 * of `sdtAnchorToPosition`; requires `setSDTPack` to have been called.
+	 * @returns {Promise<SDTPosition | null>}
+	 */
+	async sourceToSDTPosition(position) {
+		if (!position) {
+			return null;
+		}
+		if (isSDTPosition(position)) {
+			return position;
+		}
+		let sdt = await this._loadSDT();
+		return sdt ? sdt.mapper.sourceToSDTPosition(position) : null;
 	}
 
 	/**
