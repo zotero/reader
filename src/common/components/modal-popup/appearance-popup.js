@@ -241,6 +241,8 @@ function AppearancePopup(props) {
 
 	const { type, platform } = useContext(ReaderContext);
 
+	const showReadingModeToggle = platform !== 'web' && (type === 'snapshot' || type === 'pdf');
+
 	useLayoutEffect(() => {
 		window.focus();
 	}, []);
@@ -302,9 +304,9 @@ function AppearancePopup(props) {
 						)}
 					</div>
 				)}
-				{!(type === 'epub' && props.viewStats.fixedLayout) && (
+				{(showReadingModeToggle || (type === 'epub' && !props.viewStats.fixedLayout)) && (
 					<div className="group">
-						{(type === 'snapshot' || type === 'pdf') && (
+						{showReadingModeToggle && (
 							<div className="option">
 								<label htmlFor="reading-mode-enabled">{l10n.getString('reader-reading-mode')}</label>
 								<div className="reading-mode-control">

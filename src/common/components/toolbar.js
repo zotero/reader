@@ -109,7 +109,7 @@ function Toolbar(props) {
 					disabled={!props.enableZoomReset}
 					onClick={props.onZoomReset}
 				><IconAutoWidth/></button>
-				{['pdf', 'snapshot'].includes(props.type) && (
+				{platform !== 'web' && ['pdf', 'snapshot'].includes(props.type) && (
 					<button
 						id="readingMode"
 						className={cx('toolbar-button', { active: props.readingModeEnabled })}
