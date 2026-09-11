@@ -184,7 +184,27 @@ window.select = (options) => {
 window.navigate = (options) => {
 	const decodedLocation = JSON.parse(decodeBase64(options.location));
 	log("Show location: " + JSON.stringify(decodedLocation));
-	window._view.navigate(decodedLocation);
+	window._view.navigate(decodedLocation, { skipHistory: !!options.skipHistory });
+};
+
+window.navigateBack = () => {
+	log("Navigate back");
+	window._view.navigateBack();
+};
+
+window.navigateForward = () => {
+	log("Navigate forward");
+	window._view.navigateForward();
+};
+
+window.suspendHistoryTracking = () => {
+	log("Suspend page history tracking");
+	window._view.suspendHistoryTracking();
+};
+
+window.resumeHistoryTrackingAndPush = () => {
+	log("Resume page history tracking and push");
+	window._view.resumeHistoryTrackingAndPush();
 };
 
 window.setSDTPack = (options) => {
