@@ -184,7 +184,7 @@ window.select = (options) => {
 window.navigate = (options) => {
 	const decodedLocation = JSON.parse(decodeBase64(options.location));
 	log("Show location: " + JSON.stringify(decodedLocation));
-	window._view.navigate(decodedLocation, { skipHistory: !!options.skipHistory });
+	window._view.navigate(decodedLocation);
 };
 
 window.navigateBack = () => {
@@ -197,14 +197,14 @@ window.navigateForward = () => {
 	window._view.navigateForward();
 };
 
-window.suspendHistoryTracking = () => {
-	log("Suspend page history tracking");
-	window._view.suspendHistoryTracking();
+window.beginNavigation = () => {
+	log("Begin navigation");
+	window._view.beginNavigation();
 };
 
-window.resumeHistoryTrackingAndPush = () => {
-	log("Resume page history tracking and push");
-	window._view.resumeHistoryTrackingAndPush();
+window.endNavigation = () => {
+	log("End navigation");
+	window._view.endNavigation();
 };
 
 window.setSDTPack = (options) => {

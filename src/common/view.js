@@ -301,16 +301,19 @@ class View {
 		this._view.zoomReset();
 	}
 
-	navigate(location, options) {
-		this._view.navigate(location, options);
+	navigate(location) {
+		this._view.navigate(location);
 	}
 
-	suspendHistoryTracking() {
-		this._view.suspendHistoryTracking?.();
+	// Group live PDF navigation into one Back/Forward step. End also on cancellation.
+	beginNavigation() {
+		this._ensureType('pdf');
+		this._view.beginNavigation();
 	}
 
-	resumeHistoryTrackingAndPush() {
-		this._view.resumeHistoryTrackingAndPush?.();
+	endNavigation() {
+		this._ensureType('pdf');
+		return this._view.endNavigation();
 	}
 
 	/**
