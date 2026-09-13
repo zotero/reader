@@ -72,6 +72,22 @@ export class History {
 		this._onUpdate();
 	}
 
+	/** Record an explicitly bounded navigation without the ordinary time-based grouping. */
+	saveNavigation(from: NavLocation, to: NavLocation) {
+		if (basicDeepEqual(from, to)) {
+			this._currentLocation = to;
+			return;
+		}
+		if (!basicDeepEqual(this._backStack.at(-1), from)) {
+			this._backStack.push(from);
+		}
+		this._currentLocation = to;
+		this._forwardStack = [];
+		this._lastPushIsTransient = false;
+		this._lastSaveTime = Date.now();
+		this._onUpdate();
+	}
+
 	navigateBack() {
 		if (this.canNavigateBack) {
 			if (this._currentLocation) {

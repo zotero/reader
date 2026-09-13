@@ -1999,14 +1999,86 @@ class PDFView {
 		return true;
 	}
 
-	async _pushHistoryPoint() {
-		this._suspendHistorySaving = true;
+	_getHistoryLocation() {
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		// Scrolling changes the viewport before PDF.js's next animation-frame update.
+		viewer.update();
+		if (!viewer._location) {
+			return null;
+		}
+		let { pageNumber, top, left } = viewer._location;
+		return { dest: [pageNumber - 1, { name: 'XYZ' }, left, top, null] };
+	}
+
+	_finishHistorySave() {
+		let group = this._navigationGroup;
+		let save = this._pendingHistorySave || (group?.ending && { group });
+		if (!save || this._destroyed) {
+			return;
+		}
+		let location;
+		try {
+			location = this._getHistoryLocation();
+		}
+		finally {
+			// Keep viewport updates suppressed during capture, even if it fails.
+			if (this._pendingHistorySave === save) {
+				this._pendingHistorySave = null;
+			}
+			if (save.group && this._navigationGroup === save.group) {
+				this._navigationGroup = null;
+			}
+		}
+		if (!location) {
+			return;
+		}
+		if (save.group) {
+			this._history.saveNavigation(save.group.from, location);
+		}
+		else {
+			this._history.save(location);
+		}
+	}
+
+	async _pushHistoryPoint(group = null) {
+		let save = this._pendingHistorySave = { group };
 		let container = this._iframeWindow.document.getElementById('viewerContainer');
 		await debounceUntilScrollFinishes(container, 100);
-		this._suspendHistorySaving = false;
-		let { pageNumber, top, left } = this._iframeWindow.PDFViewerApplication.pdfViewer._location;
-		let pageIndex = pageNumber - 1;
-		this._history.save({ dest: [pageIndex, { name: 'XYZ' }, left, top, null] });
+		if (!this._destroyed && this._pendingHistorySave === save) {
+			this._finishHistorySave();
+		}
+	}
+
+	beginNavigation() {
+		if (this._destroyed || (this._navigationGroup && !this._navigationGroup.ending)) {
+			return;
+		}
+		// Settle the previous operation before capturing this gesture's source.
+		this._finishHistorySave();
+		let group = this._navigationGroup = { ending: false, pending: new Set() };
+		try {
+			group.from = this._getHistoryLocation();
+		}
+		finally {
+			if (!group.from && this._navigationGroup === group) {
+				this._navigationGroup = null;
+			}
+		}
+	}
+
+	async endNavigation() {
+		let group = this._navigationGroup;
+		if (this._destroyed || !group || group.ending) {
+			return;
+		}
+		group.ending = true;
+		if (group.pending.size) {
+			await Promise.allSettled(group.pending);
+			if (this._destroyed || this._navigationGroup !== group) {
+				return;
+			}
+		}
+		await this._pushHistoryPoint(group);
 	}
 
 	_highlightPosition(position) {
@@ -2191,6 +2263,29 @@ class PDFView {
 		if (this._destroyed) {
 			return;
 		}
+		let save;
+		if (this._navigationGroup?.ending) {
+			this._finishHistorySave();
+			if (!options.skipHistory) {
+				// Transfer suppression before PDF.js can update the viewport synchronously.
+				save = this._pendingHistorySave = { group: null };
+			}
+		}
+		let group = this._navigationGroup;
+		let navigation = this._navigate(location, options, group, save);
+		group?.pending.add(navigation);
+		try {
+			await navigation;
+		}
+		finally {
+			group?.pending.delete(navigation);
+			if (save && this._pendingHistorySave === save) {
+				this._pendingHistorySave = null;
+			}
+		}
+	}
+
+	async _navigate(location, options, group, save) {
 		options.block ||= 'center';
 		if (!options.skipHistory) {
 			this._onManualNavigation();
@@ -2201,7 +2296,10 @@ class PDFView {
 			this.navigateToPosition(annotation.position, options);
 		}
 		else if (location.dest) {
-			this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
+			let navigation = this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
+			if (group) {
+				await navigation;
+			}
 		}
 		else if (location.position) {
 			this.navigateToPosition(location.position, options);
@@ -2212,52 +2310,46 @@ class PDFView {
 				pageNumber: location.pageIndex + 1
 			});
 		}
-		else if (location.pageLabel) {
+		else if (location.pageLabel || location.pageNumber) {
+			// Keep ordinary reading-position updates while page labels are loading.
+			if (save && this._pendingHistorySave === save) {
+				this._pendingHistorySave = null;
+			}
 			await this._pageLabelsPromise;
 			if (this._destroyed) {
 				return;
 			}
-			let pageIndex = this._pageLabels.findIndex(x => x === location.pageLabel);
+			if (save && !this._pendingHistorySave && !this._navigationGroup) {
+				this._pendingHistorySave = save;
+			}
+			let pageLabel = location.pageLabel || location.pageNumber;
+			let pageIndex = this._pageLabels.findIndex(x => x === pageLabel);
+			if (pageIndex === -1 && !location.pageLabel) {
+				pageIndex = parseInt(location.pageNumber) - 1;
+			}
 			if (pageIndex !== -1) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
 			}
 		}
-		else if (location.pageNumber) {
-			await this._pageLabelsPromise;
-			if (this._destroyed) {
-				return;
-			}
-			let pageIndex = this._pageLabels.findIndex(x => x === location.pageNumber);
-			if (pageIndex !== -1) {
-				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
-			}
-			else {
-				let pageIndex = parseInt(location.pageNumber) - 1;
-				if (pageIndex !== -1) {
-					this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
-				}
-			}
-		}
-		if (!options.skipHistory) {
+		if (!options.skipHistory && !group && !this._navigationGroup) {
 			this._pushHistoryPoint();
 		}
 	}
 
-	suspendHistoryTracking() {
-		this._suspendHistorySaving = true;
-	}
-
-	async resumeHistoryTrackingAndPush() {
-		this._suspendHistorySaving = false;
-		await this._pushHistoryPoint();
-	}
-
 	navigateBack() {
+		if (this._navigationGroup) {
+			this.endNavigation();
+			this._finishHistorySave();
+		}
 		this._onManualNavigation();
 		this._history.navigateBack();
 	}
 
 	navigateForward() {
+		if (this._navigationGroup) {
+			this.endNavigation();
+			this._finishHistorySave();
+		}
 		this._onManualNavigation();
 		this._history.navigateForward();
 	}
@@ -4001,7 +4093,7 @@ class PDFView {
 			scrollMode: this._iframeWindow.PDFViewerApplication.pdfViewer.scrollMode,
 			spreadMode: this._iframeWindow.PDFViewerApplication.pdfViewer.spreadMode
 		});
-		if (!this._suspendHistorySaving) {
+		if (!this._pendingHistorySave && !this._navigationGroup) {
 			this._history.save({ dest: [pageIndex, { name: 'XYZ' }, left, top, null] }, true);
 		}
 		this._updateViewStats();
