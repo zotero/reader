@@ -73,9 +73,10 @@ registerHooks({
 			return nextResolve('data:text/javascript,export let buildSDTReadAloudSegments = () => []; export let getSDTLang = () => null;', context);
 		}
 		let error;
-		for (let candidate of [specifier, specifier + '.js', specifier + '.mjs']) {
+		for (let candidate of [specifier, specifier + '.js', specifier + '.mjs', specifier + '.ts']) {
 			try {
-				return nextResolve(candidate, context);
+				let resolved = nextResolve(candidate, context);
+				return resolved.url.endsWith('.ts') ? { ...resolved, format: 'module-typescript' } : resolved;
 			}
 			catch (e) {
 				error ||= e;

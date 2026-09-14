@@ -1,5 +1,5 @@
-import { Selector } from "../dom/common/lib/selector";
-import { ReflowableAppearance } from "../dom/common/lib/appearance";
+import type { Selector } from "../dom/common/lib/selector";
+import type { ReflowableAppearance } from "../dom/common/lib/appearance";
 
 export type ToolType =
 	| 'highlight'
