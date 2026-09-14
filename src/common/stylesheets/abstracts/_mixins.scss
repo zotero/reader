@@ -403,3 +403,71 @@
 		position: absolute;
 	}
 }
+
+// Expects --row-height to be set on an ancestor
+@mixin select-options($checkmark: true) {
+	.option {
+		user-select: none;
+		cursor: default;
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+		height: var(--row-height);
+		border-radius: 5px;
+		scroll-margin: calc(var(--row-height) + 5px) 0;
+		padding-inline-start: if($checkmark, 22px, 10px);
+		padding-inline-end: 10px;
+		position: relative;
+
+		@if $checkmark {
+			&.selected::before {
+				content: '\2713';
+				position: absolute;
+				inset-inline-start: 5px;
+				height: var(--row-height);
+				display: flex;
+				align-items: center;
+			}
+		}
+
+		&.focused:not(.disabled) {
+			background: var(--fill-quinary);
+		}
+
+		&.disabled {
+			opacity: 0.5;
+		}
+
+		> .label {
+			flex: 0 1 auto;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		> .secondary-label {
+			flex: 0 0 auto;
+			margin-inline-start: 8px;
+			color: var(--fill-secondary);
+		}
+
+	}
+
+	.header {
+		user-select: none;
+		cursor: default;
+		display: flex;
+		align-items: center;
+		white-space: nowrap;
+		height: var(--row-height);
+		padding-inline-start: 7px;
+		padding-inline-end: 10px;
+		font-weight: bold;
+		color: var(--fill-secondary);
+	}
+
+	.divider {
+		height: 1px;
+		background: var(--color-panedivider);
+		margin: 5px 0;
+	}
+}
