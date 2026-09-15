@@ -726,11 +726,13 @@ function createEdgePageTurnView({
 		_options: { platform },
 		_iframeWindow: {
 			innerWidth: width,
+			document: { getElementById: () => null },
 			PDFViewerApplication: { pdfViewer },
 		},
 		_getEdgePageTurnDirection: PDFView.prototype._getEdgePageTurnDirection,
 		navigateToNextPage: PDFView.prototype.navigateToNextPage,
 		navigateToPreviousPage: PDFView.prototype.navigateToPreviousPage,
+		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
 		_onManualNavigation: () => calls.manual++,
 		_onBackdropTap: () => calls.backdrop++,
 	};
@@ -919,6 +921,7 @@ test('Android edge taps tolerate boundary drift and use the delayed pointer path
 			innerWidth: 1000,
 			setTimeout,
 			clearTimeout,
+			document: { getElementById: () => null },
 			getSelection: () => ({ removeAllRanges() {} }),
 			PDFViewerApplication: { pdfViewer },
 		},
@@ -928,6 +931,7 @@ test('Android edge taps tolerate boundary drift and use the delayed pointer path
 		_scheduleBackdropTap: PDFView.prototype._scheduleBackdropTap,
 		_clearPendingBackdropTap: PDFView.prototype._clearPendingBackdropTap,
 		navigateToPreviousPage: PDFView.prototype.navigateToPreviousPage,
+		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
 		_onManualNavigation: () => calls.manual++,
 		_onBackdropTap: () => calls.backdrop++,
 		getActionAtPosition: () => ({
