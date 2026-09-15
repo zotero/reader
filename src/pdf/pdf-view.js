@@ -2356,12 +2356,36 @@ class PDFView {
 
 	navigateToNextPage() {
 		this._onManualNavigation();
-		this._iframeWindow.PDFViewerApplication.pdfViewer.nextPage();
+		this._navigateToAdjacentPage(pdfViewer => pdfViewer.nextPage());
 	}
 
 	navigateToPreviousPage() {
 		this._onManualNavigation();
-		this._iframeWindow.PDFViewerApplication.pdfViewer.previousPage();
+		this._navigateToAdjacentPage(pdfViewer => pdfViewer.previousPage());
+	}
+
+	_navigateToAdjacentPage(advance) {
+		let pdfViewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let viewerContainer = this._iframeWindow.document.getElementById('viewerContainer');
+		let preservedOffsetX = null;
+		let preservedOffsetY = null;
+		if (viewerContainer && pdfViewer.scrollMode === HORIZONTAL_SCROLL_MODE) {
+			let currentPageView = pdfViewer._pages[pdfViewer.currentPageNumber - 1];
+			if (currentPageView) {
+				preservedOffsetX = viewerContainer.scrollLeft
+					- (currentPageView.div.offsetLeft + currentPageView.div.clientLeft);
+				preservedOffsetY = viewerContainer.scrollTop
+					- (currentPageView.div.offsetTop + currentPageView.div.clientTop);
+			}
+		}
+		let navigated = advance(pdfViewer);
+		if (navigated && preservedOffsetX !== null) {
+			let newPageView = pdfViewer._pages[pdfViewer.currentPageNumber - 1];
+			if (newPageView) {
+				viewerContainer.scrollLeft = newPageView.div.offsetLeft + newPageView.div.clientLeft + preservedOffsetX;
+				viewerContainer.scrollTop = newPageView.div.offsetTop + newPageView.div.clientTop + preservedOffsetY;
+			}
+		}
 	}
 
 	navigateToFirstPage() {
