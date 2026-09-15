@@ -709,35 +709,187 @@ function createEdgePageTurnView({
 	navigationResult = true,
 } = {}) {
 	let calls = { backdrop: 0, manual: 0, next: 0, previous: 0 };
+	let pages = Array.from({ length: 3 }, (_, i) => ({
+		id: i + 1,
+		pdfPage: {},
+		div: { offsetLeft: i * 2010, offsetTop: 18, clientLeft: 0, clientTop: 0, clientWidth: 2000, clientHeight: 2400 },
+		setPdfPage(pdfPage) {
+			this.pdfPage = pdfPage;
+			// Model the layout change when the page's dimensions arrive.
+			Object.assign(this.div, pdfPage);
+		},
+	}));
 	let pdfViewer = {
+		currentPageNumber: 2,
+		container: { scrollLeft: 2810, scrollTop: 918, clientWidth: 400, clientHeight: 600 },
+		getPageView: index => pages[index],
 		currentScaleValue: scale,
 		scrollMode,
 		spreadMode,
 		nextPage() {
 			calls.next++;
-			return navigationResult;
+			return navigationResult && this.turn(1);
 		},
 		previousPage() {
 			calls.previous++;
-			return navigationResult;
+			return navigationResult && this.turn(-1);
+		},
+		turn(direction) {
+			let page = pages[this.currentPageNumber - 1 + direction];
+			if (!page) return false;
+			this.currentPageNumber += direction;
+			this.container.scrollLeft = page.div.offsetLeft;
+			this.container.scrollTop = page.div.offsetTop;
+			return true;
 		},
 	};
 	let view = {
 		_options: { platform },
 		_iframeWindow: {
 			innerWidth: width,
-			document: { getElementById: () => null },
 			PDFViewerApplication: { pdfViewer },
 		},
 		_getEdgePageTurnDirection: PDFView.prototype._getEdgePageTurnDirection,
+		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
 		navigateToNextPage: PDFView.prototype.navigateToNextPage,
 		navigateToPreviousPage: PDFView.prototype.navigateToPreviousPage,
-		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
 		_onManualNavigation: () => calls.manual++,
 		_onBackdropTap: () => calls.backdrop++,
 	};
 	return { calls, pdfViewer, view };
 }
+
+test('Android page turns preserve pan within the destination, leaving fitted axes to PDF.js', async () => {
+	for (let [width, height, left, top, sourceLeft = 800, sourceTop = 900] of [
+		[2000, 2400, 800, 900], [500, 700, 100, 100], [300, 500, 0, 0], [2000, 2400, 0, 0, -20, -10],
+	]) {
+		let { pdfViewer, view } = createEdgePageTurnView();
+		pdfViewer.container.scrollLeft = pdfViewer.getPageView(1).div.offsetLeft + sourceLeft;
+		pdfViewer.container.scrollTop = pdfViewer.getPageView(1).div.offsetTop + sourceTop;
+		let page = pdfViewer.getPageView(2);
+		Object.assign(page.div, { clientWidth: width, clientHeight: height });
+		await view._navigateToAdjacentPage(1);
+		assert.equal(pdfViewer.currentPageNumber, 3);
+		assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, left);
+		assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, top);
+	}
+});
+
+test('Cold page turns resolve geometry before advancing, including queued turns', async () => {
+	let { calls, pdfViewer, view } = createEdgePageTurnView();
+	pdfViewer.currentPageNumber = 1;
+	pdfViewer.container.scrollLeft = 800;
+	let page = pdfViewer.getPageView(1);
+	page.pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	let navigation = view._navigateToAdjacentPage(1);
+	view._navigateToAdjacentPage(1);
+	assert.equal(pdfViewer.currentPageNumber, 1);
+	assert.equal(calls.next, 0);
+	load.resolve({ clientWidth: 500 });
+	await navigation;
+	assert.equal(pdfViewer.currentPageNumber, 3);
+	assert.equal(calls.next, 2);
+	assert.equal(pdfViewer.container.scrollLeft - pdfViewer.getPageView(2).div.offsetLeft, 100);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('Explicit navigation cancels a loading page turn even when returning to the same page', async () => {
+	for (let pageIndex of [1, 2]) {
+		let { calls, pdfViewer, view } = createEdgePageTurnView();
+		let page = pdfViewer.getPageView(2);
+		page.pdfPage = null;
+		let load = Promise.withResolvers();
+		pdfViewer.pdfDocument = { getPage: () => load.promise };
+		pdfViewer.scrollPageIntoView = ({ pageNumber }) => {
+			pdfViewer.currentPageNumber = pageNumber;
+			pdfViewer.container.scrollLeft = pdfViewer.getPageView(pageNumber - 1).div.offsetLeft;
+			pdfViewer.container.scrollTop = 18;
+		};
+		view._navigate = PDFView.prototype._navigate;
+		let navigation = view._navigateToAdjacentPage(1);
+		await PDFView.prototype.navigate.call(view, { pageIndex }, { skipHistory: true });
+		load.resolve({});
+		await navigation;
+		assert.equal(calls.next, 0);
+		assert.equal(pdfViewer.currentPageNumber, pageIndex + 1);
+		assert.equal(pdfViewer.container.scrollLeft, pdfViewer.getPageView(pageIndex).div.offsetLeft);
+		assert.equal(page.pdfPage, null);
+	}
+});
+
+test('A new page turn after panning replaces the stale request instead of being discarded with it', async () => {
+	let { calls, pdfViewer, view } = createEdgePageTurnView();
+	pdfViewer.getPageView(2).pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	let oldNavigation = view._navigateToAdjacentPage(1);
+	pdfViewer.container.scrollLeft += 50;
+	pdfViewer.container.scrollTop += 75;
+	let newNavigation = view._navigateToAdjacentPage(1);
+	load.resolve({});
+	await Promise.all([oldNavigation, newNavigation]);
+	assert.equal(calls.next, 1);
+	assert.equal(pdfViewer.currentPageNumber, 3);
+	assert.equal(pdfViewer.container.scrollLeft - pdfViewer.getPageView(2).div.offsetLeft, 850);
+	assert.equal(pdfViewer.container.scrollTop - pdfViewer.getPageView(2).div.offsetTop, 975);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('Failed page loads fall back to PDF.js navigation so a broken page can be traversed', async (t) => {
+	let { calls, pdfViewer, view } = createEdgePageTurnView();
+	pdfViewer.currentPageNumber = 1;
+	pdfViewer.container.scrollLeft = 800;
+	pdfViewer.getPageView(1).pdfPage = null;
+	let error = new Error('Broken page');
+	t.mock.method(console, 'error', () => {});
+	pdfViewer.pdfDocument = { getPage: () => Promise.reject(error) };
+	let navigation = view._navigateToAdjacentPage(1);
+	view._navigateToAdjacentPage(1);
+	await navigation;
+	assert.equal(calls.next, 2);
+	assert.equal(pdfViewer.currentPageNumber, 3);
+	assert.equal(pdfViewer.container.scrollLeft, pdfViewer.getPageView(2).div.offsetLeft);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('Viewport changes and destruction cancel pending turns without applying geometry', async () => {
+	for (let interrupt of [
+		viewer => viewer.container.scrollLeft++,
+		viewer => viewer.container.scrollTop++,
+		viewer => viewer.container.clientWidth++,
+		viewer => viewer.currentScale = 3,
+		viewer => viewer.pagesRotation = 90,
+		viewer => viewer.spreadMode = 1,
+		viewer => viewer.scrollMode = 0,
+		(viewer, view) => view._destroyed = true,
+	]) {
+		let { calls, pdfViewer, view } = createEdgePageTurnView();
+		let page = pdfViewer.getPageView(2);
+		page.pdfPage = null;
+		let load = Promise.withResolvers();
+		pdfViewer.pdfDocument = { getPage: () => load.promise };
+		let navigation = view._navigateToAdjacentPage(1);
+		interrupt(pdfViewer, view);
+		load.resolve({});
+		await navigation;
+		assert.equal(calls.next, 0);
+		assert.equal(page.pdfPage, null);
+		assert.equal(view._pendingPageTurn, null);
+	}
+});
+
+test('Desktop and non-horizontal page turns do not inspect page geometry', async () => {
+	for (let options of [{ platform: 'zotero' }, { platform: 'ios' }, { scrollMode: 0 }]) {
+		let { calls, pdfViewer, view } = createEdgePageTurnView(options);
+		pdfViewer.getPageView = () => assert.fail('Unexpected geometry access');
+		await view._navigateToAdjacentPage(1);
+		await view._navigateToAdjacentPage(-1);
+		assert.equal(calls.next, 1);
+		assert.equal(calls.previous, 1);
+	}
+});
 
 test('Android PDF edge taps turn horizontal pages and preserve zoom', () => {
 	let { calls, pdfViewer, view } = createEdgePageTurnView();
@@ -914,6 +1066,8 @@ test('Android edge taps tolerate boundary drift and use the delayed pointer path
 		scrollMode: 1,
 		spreadMode: 0,
 		previousPage: () => calls.previous++,
+		container: { scrollLeft: 0, scrollTop: 0 },
+		getPageView: () => ({ pdfPage: {}, div: {} }),
 	};
 	Object.assign(fixture.view, {
 		_scrolling: false,
@@ -921,17 +1075,16 @@ test('Android edge taps tolerate boundary drift and use the delayed pointer path
 			innerWidth: 1000,
 			setTimeout,
 			clearTimeout,
-			document: { getElementById: () => null },
 			getSelection: () => ({ removeAllRanges() {} }),
 			PDFViewerApplication: { pdfViewer },
 		},
 		_shouldHandleBackdropTap: PDFView.prototype._shouldHandleBackdropTap,
 		_getEdgePageTurnDirection: PDFView.prototype._getEdgePageTurnDirection,
 		_resolveBackdropTap: PDFView.prototype._resolveBackdropTap,
+		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
 		_scheduleBackdropTap: PDFView.prototype._scheduleBackdropTap,
 		_clearPendingBackdropTap: PDFView.prototype._clearPendingBackdropTap,
 		navigateToPreviousPage: PDFView.prototype.navigateToPreviousPage,
-		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
 		_onManualNavigation: () => calls.manual++,
 		_onBackdropTap: () => calls.backdrop++,
 		getActionAtPosition: () => ({

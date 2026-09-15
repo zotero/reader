@@ -518,6 +518,7 @@ class PDFView {
 	}
 
 	async _setState(state, skipScroll) {
+		this._pendingPageTurn = null;
 		if (this._destroyed) {
 			return;
 		}
@@ -1307,6 +1308,7 @@ class PDFView {
 	}
 
 	navigateToPosition(position, options = {}) {
+		this._pendingPageTurn = null;
 		let element = this._iframeWindow.document.getElementById('viewerContainer');
 
 		let rect = this.getPositionBoundingViewRect(position);
@@ -2260,6 +2262,7 @@ class PDFView {
 	}
 
 	async navigate(location, options = {}) {
+		this._pendingPageTurn = null;
 		if (this._destroyed) {
 			return;
 		}
@@ -2337,6 +2340,7 @@ class PDFView {
 	}
 
 	navigateBack() {
+		this._pendingPageTurn = null;
 		if (this._navigationGroup) {
 			this.endNavigation();
 			this._finishHistorySave();
@@ -2346,6 +2350,7 @@ class PDFView {
 	}
 
 	navigateForward() {
+		this._pendingPageTurn = null;
 		if (this._navigationGroup) {
 			this.endNavigation();
 			this._finishHistorySave();
@@ -2356,44 +2361,97 @@ class PDFView {
 
 	navigateToNextPage() {
 		this._onManualNavigation();
-		this._navigateToAdjacentPage(pdfViewer => pdfViewer.nextPage());
+		this._navigateToAdjacentPage(1);
 	}
 
 	navigateToPreviousPage() {
 		this._onManualNavigation();
-		this._navigateToAdjacentPage(pdfViewer => pdfViewer.previousPage());
+		this._navigateToAdjacentPage(-1);
 	}
 
-	_navigateToAdjacentPage(advance) {
-		let pdfViewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
-		let viewerContainer = this._iframeWindow.document.getElementById('viewerContainer');
-		let preservedOffsetX = null;
-		let preservedOffsetY = null;
-		if (viewerContainer && pdfViewer.scrollMode === HORIZONTAL_SCROLL_MODE) {
-			let currentPageView = pdfViewer._pages[pdfViewer.currentPageNumber - 1];
-			if (currentPageView) {
-				preservedOffsetX = viewerContainer.scrollLeft
-					- (currentPageView.div.offsetLeft + currentPageView.div.clientLeft);
-				preservedOffsetY = viewerContainer.scrollTop
-					- (currentPageView.div.offsetTop + currentPageView.div.clientTop);
+	async _navigateToAdjacentPage(direction) {
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		if (this._options.platform !== 'android' || viewer.scrollMode !== HORIZONTAL_SCROLL_MODE) {
+			this._pendingPageTurn = null;
+			viewer[direction > 0 ? 'nextPage' : 'previousPage']();
+			return;
+		}
+		if (this._pendingPageTurn?.isCurrent()) {
+			this._pendingPageTurn.directions.push(direction);
+			return;
+		}
+		let request = this._pendingPageTurn = { directions: [direction] };
+		let { container } = viewer;
+		try {
+			while (request.directions.length && !this._destroyed && this._pendingPageTurn === request) {
+				let direction = request.directions.shift();
+				let from = viewer.getPageView(viewer.currentPageNumber - 1);
+				let page = viewer.getPageView(viewer.currentPageNumber - 1 + direction);
+				if (!page) {
+					continue;
+				}
+				let { scrollLeft, scrollTop, clientWidth, clientHeight } = container;
+				let left = scrollLeft - from.div.offsetLeft - from.div.clientLeft;
+				let top = scrollTop - from.div.offsetTop - from.div.clientTop;
+				let scale = viewer.currentScale, rotation = viewer.pagesRotation, spread = viewer.spreadMode;
+				request.isCurrent = () => !this._destroyed && this._pendingPageTurn === request
+					&& viewer.getPageView(viewer.currentPageNumber - 1) === from
+					&& viewer.scrollMode === HORIZONTAL_SCROLL_MODE && viewer.spreadMode === spread
+					&& viewer.currentScale === scale && viewer.pagesRotation === rotation
+					&& container.scrollLeft === scrollLeft && container.scrollTop === scrollTop
+					&& container.clientWidth === clientWidth && container.clientHeight === clientHeight;
+				if (!page.pdfPage) {
+					// Resolve geometry before turning. A late resize of an earlier page
+					// must not shift the destination of a subsequent queued turn.
+					let pdfPage = await viewer.pdfDocument.getPage(page.id).catch((error) => {
+						if (request.isCurrent()) {
+							console.error(error);
+						}
+					});
+					if (!request.isCurrent()) {
+						return;
+					}
+					if (pdfPage && !page.pdfPage) {
+						page.setPdfPage(pdfPage);
+					}
+				}
+				// Failed loads still advance, without applying pan to placeholder geometry.
+				if (!viewer[direction > 0 ? 'nextPage' : 'previousPage']() || !page.pdfPage) {
+					continue;
+				}
+				// Keep PDF.js positioning on fitted axes; constrain pan to the page
+				// on overflowing axes, not to the entire scrollable document.
+				let { div } = page;
+				if (div.clientWidth > container.clientWidth) {
+					container.scrollLeft = div.offsetLeft + div.clientLeft
+						+ Math.max(0, Math.min(left, div.clientWidth - container.clientWidth));
+				}
+				if (div.clientHeight > container.clientHeight) {
+					container.scrollTop = div.offsetTop + div.clientTop
+						+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
+				}
 			}
 		}
-		let navigated = advance(pdfViewer);
-		if (navigated && preservedOffsetX !== null) {
-			let newPageView = pdfViewer._pages[pdfViewer.currentPageNumber - 1];
-			if (newPageView) {
-				viewerContainer.scrollLeft = newPageView.div.offsetLeft + newPageView.div.clientLeft + preservedOffsetX;
-				viewerContainer.scrollTop = newPageView.div.offsetTop + newPageView.div.clientTop + preservedOffsetY;
+		catch (error) {
+			if (!this._destroyed && this._pendingPageTurn === request) {
+				console.error(error);
+			}
+		}
+		finally {
+			if (this._pendingPageTurn === request) {
+				this._pendingPageTurn = null;
 			}
 		}
 	}
 
 	navigateToFirstPage() {
+		this._pendingPageTurn = null;
 		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('firstpage');
 	}
 
 	navigateToLastPage() {
+		this._pendingPageTurn = null;
 		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('lastpage');
 	}
