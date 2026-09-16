@@ -19,6 +19,12 @@ $space-thumb: 42px;
 
 $height-toolbar: 41px;
 
+// CustomSelect / Listbox option rows, and the padding around them
+$height-select-row: 24px;
+$padding-select-rows: 5px;
+
+$height-listbox-min: $height-select-row * 5 + $padding-select-rows * 2;
+
 
 // Typography
 // --------------------------------------------------

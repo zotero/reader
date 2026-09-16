@@ -60,9 +60,15 @@
 		}
 
 		&.voices {
-			.custom-select {
+			.listbox {
 				flex: 1;
+				// Five rows when there's no extra space to fill
+				height: $height-listbox-min;
 			}
+		}
+
+		&.more-voices {
+			padding-inline: 6px;
 		}
 
 		&.remaining-time {
@@ -103,11 +109,65 @@
 		}
 	}
 
+	.options {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+
 	&.expanded > .row.buttons {
 		border-bottom: var(--material-border-quarternary);
 	}
 
-	.remaining-time, .log-in, .error {
+	// Playback controls in a column, with the options shown beside them
+	&.vertical {
+		flex-direction: row;
+		width: auto;
+		min-width: 0;
+
+		> .row.buttons {
+			flex-direction: column;
+			justify-content: flex-start;
+
+			button.skip {
+				width: 40px;
+				height: 32px;
+			}
+
+			.group {
+				flex-direction: column;
+			}
+		}
+
+		&.expanded > .row.buttons {
+			margin-inline-end: 0;
+			border-bottom: none;
+			border-inline-end: var(--material-border-quarternary);
+		}
+
+		> .options {
+			width: 300px;
+
+			> .row.speed {
+				padding-top: 0;
+			}
+
+			> .row.voices {
+				position: relative;
+				flex: 1;
+				min-height: $height-listbox-min;
+
+				.listbox {
+					// Prevent the list from stretching the popup
+					position: absolute;
+					inset: 0;
+					height: auto;
+				}
+			}
+		}
+	}
+
+	.remaining-time, .log-in, .error, .more-voices {
 		button {
 			@include link-button;
 		}

@@ -1,0 +1,29 @@
+.listbox {
+	--row-height: #{$height-select-row};
+
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: $padding-select-rows;
+	border-radius: 5px;
+	border: var(--material-border-quarternary);
+	background: var(--material-background);
+	scrollbar-width: thin;
+	outline: none;
+
+	@include select-options($checkmark: false);
+
+	// Unlike in the dropdown, the selection stays visible when unfocused
+	.option.selected {
+		background: var(--fill-quarternary);
+	}
+
+	&:focus-visible .option.selected {
+		background: var(--color-accent);
+		color: SelectedItemText;
+
+		> .secondary-label {
+			color: inherit;
+			opacity: 0.7;
+		}
+	}
+}
