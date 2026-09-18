@@ -775,6 +775,69 @@ test('Android page turns preserve pan within the destination, leaving fitted axe
 	}
 });
 
+function createScrollModeSwitchView({ scrollMode = 1 } = {}) {
+	let dispatched = [];
+	let page = { div: { offsetLeft: 2010, offsetTop: 18, clientLeft: 0, clientTop: 0, clientWidth: 2000, clientHeight: 2400 } };
+	let pdfViewer = {
+		currentPageNumber: 2,
+		container: { scrollLeft: 2810, scrollTop: 918, clientWidth: 400, clientHeight: 600 },
+		getPageView: () => page,
+		scrollMode,
+	};
+	let view = {
+		_iframeWindow: {
+			PDFViewerApplication: {
+				pdfViewer,
+				eventBus: {
+					dispatch: (name, evt) => {
+						dispatched.push([name, evt]);
+						if (name === 'switchscrollmode') {
+							pdfViewer.scrollMode = evt.mode;
+						}
+					},
+				},
+			},
+		},
+		setScrollMode: PDFView.prototype.setScrollMode,
+	};
+	return { dispatched, page, pdfViewer, view };
+}
+
+test('Switching scroll mode preserves the pan offset within the current page', () => {
+	let { dispatched, page, pdfViewer, view } = createScrollModeSwitchView();
+	view.setScrollMode(0);
+	assert.deepEqual(dispatched, [['switchscrollmode', { mode: 0 }]]);
+	assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, 800);
+	assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, 900);
+});
+
+test('Switching scroll mode clamps a preserved pan offset to the new page bounds', () => {
+	let { page, pdfViewer, view } = createScrollModeSwitchView();
+	Object.assign(page.div, { clientWidth: 500, clientHeight: 700 });
+	view.setScrollMode(0);
+	assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, 100);
+	assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, 100);
+});
+
+test('Switching scroll mode leaves a fitted (non-overflowing) axis to PDF.js', () => {
+	let { page, pdfViewer, view } = createScrollModeSwitchView();
+	Object.assign(page.div, { clientWidth: 300, clientHeight: 500 });
+	pdfViewer.container.scrollLeft = 4242;
+	pdfViewer.container.scrollTop = 4343;
+	view.setScrollMode(0);
+	assert.equal(pdfViewer.container.scrollLeft, 4242);
+	assert.equal(pdfViewer.container.scrollTop, 4343);
+});
+
+test('Switching scroll mode is a no-op for pan when there is no current page geometry', () => {
+	let { pdfViewer, view } = createScrollModeSwitchView();
+	pdfViewer.getPageView = () => null;
+	let scrollLeft = pdfViewer.container.scrollLeft, scrollTop = pdfViewer.container.scrollTop;
+	view.setScrollMode(0);
+	assert.equal(pdfViewer.container.scrollLeft, scrollLeft);
+	assert.equal(pdfViewer.container.scrollTop, scrollTop);
+});
+
 test('Cold page turns resolve geometry before advancing, including queued turns', async () => {
 	let { calls, pdfViewer, view } = createEdgePageTurnView();
 	pdfViewer.currentPageNumber = 1;
