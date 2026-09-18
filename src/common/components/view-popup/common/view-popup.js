@@ -39,6 +39,17 @@ function ViewPopup({ id, rect, anchorPoint, className, uniqueRef, padding, prefe
 		setTimeout(updatePopupPosition, 0);
 	}, [uniqueRef, rect, anchorPoint]);
 
+	const updatePopupPositionRef = useRef();
+	updatePopupPositionRef.current = updatePopupPosition;
+
+	// Reposition when the popup resizes after mount, e.g. an embedded plugin
+	// section sizing itself once its page loads
+	useEffect(() => {
+		let observer = new ResizeObserver(() => updatePopupPositionRef.current());
+		observer.observe(containerRef.current);
+		return () => observer.disconnect();
+	}, []);
+
 	function updatePopupPosition() {
 		if (!containerRef.current) {
 			return;

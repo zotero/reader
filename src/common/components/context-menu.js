@@ -25,7 +25,10 @@ function BasicRow({ item, onClose }) {
 			disabled={item.disabled}
 		>
 			{item.color && <div className="icon"><IconColor16 color={item.color}/></div>}
-			{Icon && <div className="icon"><Icon/></div>}
+			{Icon && <div className="icon">
+				{/* Plugin items pass an icon URL (string); native items pass an SVG component */}
+				{typeof Icon === 'string' ? <img src={Icon} width={16} height={16} alt=""/> : <Icon/>}
+			</div>}
 			{item.label}
 		</button>
 	);

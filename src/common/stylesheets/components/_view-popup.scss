@@ -91,6 +91,12 @@
 	padding: 8px;
 	gap: 8px;
 
+	// Custom plugin sections may size themselves wider than the built-in rows;
+	// cap relative to the view (20px popup padding on each side)
+	&:has(.custom-sections .section) {
+		max-width: min(480px, calc(100% - 40px));
+	}
+
 	.colors {
 		gap: 4px;
 		display: flex;
@@ -149,6 +155,17 @@
 		.section {
 			padding: 5px 0;
 			border-top: 1px solid #d7dad7;
+
+			// Plugin section iframe: starts at the popup's default content
+			// width; auto-resize then applies the width the page styles on
+			// its own root, floored at the default
+			iframe {
+				display: block;
+				border: 0;
+				width: 182px;
+				min-width: 182px;
+				max-width: 100%;
+			}
 		}
 	}
 }
