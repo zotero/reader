@@ -5177,7 +5177,33 @@ class PDFView {
 	}
 
 	setScrollMode(mode) {
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let { container } = viewer;
+		let page = viewer.getPageView(viewer.currentPageNumber - 1);
+		let left = null;
+		let top = null;
+		if (page?.div) {
+			let { div } = page;
+			left = container.scrollLeft - div.offsetLeft - div.clientLeft;
+			top = container.scrollTop - div.offsetTop - div.clientTop;
+		}
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchscrollmode', { mode });
+		if (left === null) {
+			return;
+		}
+		let newPage = viewer.getPageView(viewer.currentPageNumber - 1);
+		if (!newPage?.div) {
+			return;
+		}
+		let { div } = newPage;
+		if (div.clientWidth > container.clientWidth) {
+			container.scrollLeft = div.offsetLeft + div.clientLeft
+				+ Math.max(0, Math.min(left, div.clientWidth - container.clientWidth));
+		}
+		if (div.clientHeight > container.clientHeight) {
+			container.scrollTop = div.offsetTop + div.clientTop
+				+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
+		}
 	}
 
 	setSpreadMode(mode) {
