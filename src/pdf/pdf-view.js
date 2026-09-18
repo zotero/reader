@@ -5177,25 +5177,36 @@ class PDFView {
 	}
 
 	setScrollMode(mode) {
-		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		this._setLayoutMode('scroll', mode);
+	}
+
+	setSpreadMode(mode) {
+		this._setLayoutMode('spread', mode);
+	}
+
+	_setLayoutMode(type, mode) {
+		let { pdfViewer: viewer, eventBus } = this._iframeWindow.PDFViewerApplication;
+		let previousMode = viewer[`${type}Mode`];
 		let { container } = viewer;
-		let page = viewer.getPageView(viewer.currentPageNumber - 1);
-		let left = null;
-		let top = null;
-		if (page?.div) {
+		let page = this._options.platform === 'android'
+			? viewer.getPageView(viewer.currentPageNumber - 1)
+			: null;
+		let point;
+		if (page?.pdfPage) {
 			let { div } = page;
-			left = container.scrollLeft - div.offsetLeft - div.clientLeft;
-			top = container.scrollTop - div.offsetTop - div.clientTop;
+			point = page.getPagePoint(
+				container.scrollLeft - div.offsetLeft - div.clientLeft,
+				container.scrollTop - div.offsetTop - div.clientTop
+			);
 		}
-		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchscrollmode', { mode });
-		if (left === null) {
+		eventBus.dispatch(`switch${type}mode`, { mode });
+		if (!point || viewer[`${type}Mode`] === previousMode) {
 			return;
 		}
-		let newPage = viewer.getPageView(viewer.currentPageNumber - 1);
-		if (!newPage?.div) {
-			return;
-		}
-		let { div } = newPage;
+		// Re-fitting may change the scale and current page. Keep the original
+		// page's document position, leaving fitted axes to PDF.js.
+		let [left, top] = page.viewport.convertToViewportPoint(...point);
+		let { div } = page;
 		if (div.clientWidth > container.clientWidth) {
 			container.scrollLeft = div.offsetLeft + div.clientLeft
 				+ Math.max(0, Math.min(left, div.clientWidth - container.clientWidth));
@@ -5204,10 +5215,6 @@ class PDFView {
 			container.scrollTop = div.offsetTop + div.clientTop
 				+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
 		}
-	}
-
-	setSpreadMode(mode) {
-		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('switchspreadmode', { mode });
 	}
 
 	setSidebarView(sidebarView) {
