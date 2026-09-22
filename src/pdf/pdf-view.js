@@ -139,6 +139,7 @@ class PDFView {
 		this._onKeyDown = options.onKeyDown;
 		this._onFocusAnnotation = options.onFocusAnnotation;
 		this._onBackdropTap = options.onBackdropTap;
+		this._onEdgePageTurnTap = options.onEdgePageTurnTap;
 
 		this._onTabOut = options.onTabOut;
 
@@ -1909,9 +1910,11 @@ class PDFView {
 	_resolveBackdropTap(event, pageTurnDirection) {
 		if (pageTurnDirection === 'previous') {
 			this.navigateToPreviousPage();
+			this._onEdgePageTurnTap?.();
 		}
 		else if (pageTurnDirection === 'next') {
 			this.navigateToNextPage();
+			this._onEdgePageTurnTap?.();
 		}
 		else {
 			this._onBackdropTap(event);
