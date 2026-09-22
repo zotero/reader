@@ -124,6 +124,9 @@ window.createView = (encodedOptions) => {
 		},
 		onBackdropTap: () => {
 			postMessage('onBackdropTap');
+		},
+		onEdgePageTurnTap: () => {
+			postMessage('onEdgePageTurnTap');
 		}
 	});
 };

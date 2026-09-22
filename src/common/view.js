@@ -136,6 +136,7 @@ class View {
 			onKeyUp: nop,
 			onFocusAnnotation: nop,
 			onBackdropTap: this._options.onBackdropTap,
+			onEdgePageTurnTap: this._options.onEdgePageTurnTap,
 		};
 
 		let view;
