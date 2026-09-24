@@ -97,7 +97,9 @@ const CSS_UNITS = 96 / 72;
 const PAGE_TURN_TAP_MARGIN_FRACTION = 0.2;
 const PAGE_TURN_TAP_MAX_MARGIN_PX = 96;
 const PAGE_TURN_TAP_AXIS_TOLERANCE_PX = 10;
+const VERTICAL_SCROLL_MODE = 0;
 const HORIZONTAL_SCROLL_MODE = 1;
+const WRAPPED_SCROLL_MODE = 2;
 
 class PDFView {
 	constructor(options) {
@@ -2312,9 +2314,7 @@ class PDFView {
 			this._highlightPosition(location.position);
 		}
 		else if (Number.isInteger(location.pageIndex)) {
-			this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({
-				pageNumber: location.pageIndex + 1
-			});
+			await this._navigateToPageIndex(location.pageIndex);
 		}
 		else if (location.pageLabel || location.pageNumber) {
 			// Keep ordinary reading-position updates while page labels are loading.
@@ -2334,7 +2334,7 @@ class PDFView {
 				pageIndex = parseInt(location.pageNumber) - 1;
 			}
 			if (pageIndex !== -1) {
-				this._iframeWindow.PDFViewerApplication.pdfViewer.scrollPageIntoView({ pageNumber: pageIndex + 1 });
+				await this._navigateToPageIndex(pageIndex);
 			}
 		}
 		if (!options.skipHistory && !group && !this._navigationGroup) {
@@ -2433,6 +2433,73 @@ class PDFView {
 					container.scrollTop = div.offsetTop + div.clientTop
 						+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
 				}
+			}
+		}
+		catch (error) {
+			if (!this._destroyed && this._pendingPageTurn === request) {
+				console.error(error);
+			}
+		}
+		finally {
+			if (this._pendingPageTurn === request) {
+				this._pendingPageTurn = null;
+			}
+		}
+	}
+
+	async _navigateToPageIndex(targetPageIndex) {
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let mode = viewer.scrollMode;
+		let supportsPan = mode === VERTICAL_SCROLL_MODE || mode === HORIZONTAL_SCROLL_MODE || mode === WRAPPED_SCROLL_MODE;
+		if (this._options.platform !== 'android' || !supportsPan) {
+			this._pendingPageTurn = null;
+			viewer.scrollPageIntoView({ pageNumber: targetPageIndex + 1 });
+			return;
+		}
+		let request = this._pendingPageTurn = {};
+		let { container } = viewer;
+		try {
+			let from = viewer.getPageView(viewer.currentPageNumber - 1);
+			let page = viewer.getPageView(targetPageIndex);
+			if (!from || !page || targetPageIndex === viewer.currentPageNumber - 1) {
+				viewer.scrollPageIntoView({ pageNumber: targetPageIndex + 1 });
+				return;
+			}
+			let { scrollLeft, scrollTop, clientWidth, clientHeight } = container;
+			let left = scrollLeft - from.div.offsetLeft - from.div.clientLeft;
+			let top = scrollTop - from.div.offsetTop - from.div.clientTop;
+			let scale = viewer.currentScale, rotation = viewer.pagesRotation, spread = viewer.spreadMode;
+			let isCurrent = () => !this._destroyed && this._pendingPageTurn === request
+				&& viewer.getPageView(viewer.currentPageNumber - 1) === from
+				&& viewer.scrollMode === mode && viewer.spreadMode === spread
+				&& viewer.currentScale === scale && viewer.pagesRotation === rotation
+				&& container.scrollLeft === scrollLeft && container.scrollTop === scrollTop
+				&& container.clientWidth === clientWidth && container.clientHeight === clientHeight;
+			if (!page.pdfPage) {
+				let pdfPage = await viewer.pdfDocument.getPage(page.id).catch((error) => {
+					if (isCurrent()) {
+						console.error(error);
+					}
+				});
+				if (!isCurrent()) {
+					return;
+				}
+				if (pdfPage && !page.pdfPage) {
+					page.setPdfPage(pdfPage);
+				}
+			}
+			viewer.currentPageNumber = targetPageIndex + 1;
+			if (!page.pdfPage || viewer.currentPageNumber - 1 !== targetPageIndex) {
+				return;
+			}
+			let { div } = page;
+			if (div.clientWidth > container.clientWidth) {
+				container.scrollLeft = div.offsetLeft + div.clientLeft
+					+ Math.max(0, Math.min(left, div.clientWidth - container.clientWidth));
+			}
+			if (div.clientHeight > container.clientHeight) {
+				container.scrollTop = div.offsetTop + div.clientTop
+					+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
 			}
 		}
 		catch (error) {
