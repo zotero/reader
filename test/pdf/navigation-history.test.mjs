@@ -83,6 +83,128 @@ function fixture(t, synchronous = false) {
 	} };
 }
 
+function androidFixture(t, synchronous = false) {
+	let result = fixture(t);
+	let { view, viewer } = result;
+	view._options.platform = 'android';
+	let container = view._iframeWindow.document.getElementById('viewerContainer');
+	Object.assign(container, { scrollLeft: 8 * 2010 + 12, scrollTop: 345, clientWidth: 400, clientHeight: 600 });
+	let pages = Array.from({ length: 31 }, (_, i) => ({
+		id: i + 1,
+		pdfPage: {},
+		div: { offsetLeft: i * 2010, offsetTop: 0, clientLeft: 0, clientTop: 0, clientWidth: 2000, clientHeight: 2400 },
+		getPagePoint: (x, y) => [x, y],
+		setPdfPage(pdfPage) {
+			this.pdfPage = pdfPage;
+		},
+	}));
+	Object.assign(viewer, {
+		container,
+		scrollMode: 1,
+		currentPageNumber: 9,
+		getPageView: index => pages[index],
+		update() {
+			let page = pages[this.currentPageNumber - 1];
+			this._location = { pageNumber: page.id,
+				left: Math.round(container.scrollLeft - page.div.offsetLeft), top: Math.round(container.scrollTop) };
+			view._handleViewAreaUpdate({ location: this._location });
+		},
+		scrollPageIntoView({ pageNumber }) {
+			this.currentPageNumber = pageNumber;
+			container.scrollLeft = pages[pageNumber - 1].div.offsetLeft;
+			container.scrollTop = 0;
+			if (synchronous) this.update();
+			container.dispatchEvent(new Event('scroll'));
+		},
+	});
+	view._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination = ({ 0: index, 2: left, 3: top }) => {
+		viewer.scrollPageIntoView({ pageNumber: index + 1 });
+		container.scrollLeft += left;
+		container.scrollTop = top;
+	};
+	return result;
+}
+
+test('Android scrubber history waits for its final page, not a superseded load', async (t) => {
+	let { view, viewer, source, settle } = androidFixture(t);
+	let oldLoad = Promise.withResolvers(), finalLoad = Promise.withResolvers();
+	viewer.getPageView(20).pdfPage = viewer.getPageView(30).pdfPage = null;
+	viewer.pdfDocument = { getPage: id => (id === 21 ? oldLoad.promise : finalLoad.promise) };
+	view.beginNavigation();
+	let oldNavigation = view.navigate({ pageIndex: 20 });
+	let finalNavigation = view.navigate({ pageIndex: 30 });
+	let end = view.endNavigation();
+	await settle();
+	assert.equal(view._history.canNavigateBack, false);
+	finalLoad.resolve({});
+	await finalNavigation;
+	await settle();
+	assert.equal(view._history.canNavigateBack, true);
+	await end;
+	view.navigateBack();
+	assert.deepEqual(view._getHistoryLocation(), source);
+	oldLoad.resolve({});
+	await oldNavigation;
+	await settle();
+	assert.equal(view._history.canNavigateForward, true);
+	view.navigateForward();
+	assert.equal(view._getHistoryLocation().dest[0], 30);
+});
+
+test('Android same-page jumps preserve history unless the position changes', async (t) => {
+	let { view, viewer, source, settle } = androidFixture(t);
+	let destination = { dest: [20, { name: 'XYZ' }, 12, 345, null] };
+	view._history.saveNavigation(source, destination);
+	view.navigateBack();
+	t.mock.timers.tick(2100);
+	// Fractional scroll positions have the same rounded PDF history coordinates.
+	let top = viewer.container.scrollTop + 0.2;
+	Object.defineProperty(viewer.container, 'scrollTop', {
+		get: () => top,
+		set: (value) => {
+			top = Math.round(value);
+		},
+	});
+	view._pageLabels = Array.from({ length: 31 }, (_, i) => String(i + 1));
+	for (let location of [{ pageIndex: 8 }, { pageNumber: '9' }]) {
+		await view.navigate(location);
+		await settle();
+		assert.deepEqual(view._history._backStack, []);
+		assert.deepEqual(view._history._forwardStack, [destination]);
+	}
+	viewer.getPageView(8).div.clientHeight = 500;
+	await view.navigate({ pageIndex: 8 });
+	await settle();
+	assert.equal(viewer.container.scrollTop, 0);
+	assert.equal(view._history.canNavigateBack, true);
+	assert.equal(view._history.canNavigateForward, false);
+});
+
+for (let location of [{ pageIndex: 30 }, { pageNumber: '31' }]) {
+	test(`manual scrolling during an Android ${Object.keys(location)[0]} page load remains a return point`, async (t) => {
+		let { view, viewer, source, settle } = androidFixture(t, true);
+		let load = Promise.withResolvers();
+		viewer.getPageView(30).pdfPage = null;
+		viewer.pdfDocument = { getPage: () => load.promise };
+		view._pageLabels = Array.from({ length: 31 }, (_, i) => String(i + 1));
+		view.beginNavigation();
+		await view.navigate({ pageIndex: 20 });
+		view.endNavigation();
+		let navigation = view.navigate(location);
+		await settle();
+		viewer.container.scrollTop += 200;
+		let readingPosition = view._getHistoryLocation();
+		t.mock.timers.tick(2100);
+		load.resolve({});
+		await navigation;
+		await settle();
+		assert.deepEqual(view._history._backStack, [source, readingPosition]);
+		assert.equal(view._history._currentLocation.dest[0], 30);
+		view.navigateBack();
+		assert.deepEqual(view._getHistoryLocation(), readingPosition);
+	});
+}
+
 test('live navigation records only source and final destination, including exact offsets', async (t) => {
 	let { view, viewer, settle } = fixture(t);
 	view.beginNavigation();

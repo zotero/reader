@@ -63,7 +63,9 @@ registerHooks({
 				|| specifier.endsWith('./sdt/document-session.mjs')) {
 			return nextResolve(dataModule(sdtDocumentSessionSource), context);
 		}
-		if (specifier.endsWith('dom/epub/epub-view') || specifier.endsWith('dom/snapshot/snapshot-view')) {
+		if (specifier.endsWith('dom/epub/epub-view')
+				|| specifier.endsWith('dom/snapshot/snapshot-view')
+				|| specifier.endsWith('dom/sdt/sdt-view')) {
 			return nextResolve('data:text/javascript,export default class {};', context);
 		}
 		if (specifier.endsWith('common/sdt/position-mapper') || specifier.endsWith('./sdt/position-mapper')) {
