@@ -521,7 +521,7 @@ class PDFView {
 	}
 
 	async _setState(state, skipScroll) {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		if (this._destroyed) {
 			return;
 		}
@@ -1185,6 +1185,7 @@ class PDFView {
 			return;
 		}
 		this._destroyed = true;
+		this._cancelPendingPageTurn();
 		window.removeEventListener('webviewerloaded', this._handleWebViewerLoaded);
 		this._sdtIntegration?.destroy();
 		this._searchController.destroy();
@@ -1311,7 +1312,7 @@ class PDFView {
 	}
 
 	navigateToPosition(position, options = {}) {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		let element = this._iframeWindow.document.getElementById('viewerContainer');
 
 		let rect = this.getPositionBoundingViewRect(position);
@@ -2267,7 +2268,7 @@ class PDFView {
 	}
 
 	async navigate(location, options = {}) {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		if (this._destroyed) {
 			return;
 		}
@@ -2314,7 +2315,9 @@ class PDFView {
 			this._highlightPosition(location.position);
 		}
 		else if (Number.isInteger(location.pageIndex)) {
-			await this._navigateToPageIndex(location.pageIndex);
+			if (!await this._navigateToPage({ pageIndex: location.pageIndex, save })) {
+				return;
+			}
 		}
 		else if (location.pageLabel || location.pageNumber) {
 			// Keep ordinary reading-position updates while page labels are loading.
@@ -2333,8 +2336,8 @@ class PDFView {
 			if (pageIndex === -1 && !location.pageLabel) {
 				pageIndex = parseInt(location.pageNumber) - 1;
 			}
-			if (pageIndex !== -1) {
-				await this._navigateToPageIndex(pageIndex);
+			if (pageIndex !== -1 && !await this._navigateToPage({ pageIndex, save })) {
+				return;
 			}
 		}
 		if (!options.skipHistory && !group && !this._navigationGroup) {
@@ -2343,7 +2346,7 @@ class PDFView {
 	}
 
 	navigateBack() {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		if (this._navigationGroup) {
 			this.endNavigation();
 			this._finishHistorySave();
@@ -2353,7 +2356,7 @@ class PDFView {
 	}
 
 	navigateForward() {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		if (this._navigationGroup) {
 			this.endNavigation();
 			this._finishHistorySave();
@@ -2372,54 +2375,96 @@ class PDFView {
 		this._navigateToAdjacentPage(-1);
 	}
 
-	async _navigateToAdjacentPage(direction) {
+	_navigateToAdjacentPage(direction) {
+		return this._navigateToPage({ direction });
+	}
+
+	_cancelPendingPageTurn() {
+		this._pendingPageTurn?.cancel?.();
+		this._pendingPageTurn = null;
+	}
+
+	async _navigateToPage({ pageIndex, direction, save }) {
+		if (this._destroyed) return false;
 		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
-		if (this._options.platform !== 'android' || viewer.scrollMode !== HORIZONTAL_SCROLL_MODE) {
-			this._pendingPageTurn = null;
-			viewer[direction > 0 ? 'nextPage' : 'previousPage']();
-			return;
+		let mode = viewer.scrollMode;
+		let navigate = () => (direction
+			? viewer[direction > 0 ? 'nextPage' : 'previousPage']()
+			: viewer.scrollPageIntoView({ pageNumber: pageIndex + 1 }));
+		let supportsPan = mode === HORIZONTAL_SCROLL_MODE
+			|| (!direction && (mode === VERTICAL_SCROLL_MODE || mode === WRAPPED_SCROLL_MODE));
+		if (this._options.platform !== 'android' || !supportsPan) {
+			this._cancelPendingPageTurn();
+			navigate();
+			return true;
 		}
-		if (this._pendingPageTurn?.isCurrent()) {
+		// Only consecutive edge taps queue; other navigation replaces the pending request.
+		if (direction && this._pendingPageTurn?.directions && this._pendingPageTurn.isCurrent()) {
 			this._pendingPageTurn.directions.push(direction);
-			return;
+			return true;
 		}
-		let request = this._pendingPageTurn = { directions: [direction] };
+		this._cancelPendingPageTurn();
+		let request = this._pendingPageTurn = { directions: direction ? [direction] : null };
 		let { container } = viewer;
 		try {
-			while (request.directions.length && !this._destroyed && this._pendingPageTurn === request) {
-				let direction = request.directions.shift();
+			do {
+				if (direction) {
+					direction = request.directions.shift();
+					pageIndex = viewer.currentPageNumber - 1 + direction;
+				}
 				let from = viewer.getPageView(viewer.currentPageNumber - 1);
-				let page = viewer.getPageView(viewer.currentPageNumber - 1 + direction);
-				if (!page) {
+				let page = viewer.getPageView(pageIndex);
+				if (!from || !page) {
+					if (!direction) navigate();
 					continue;
 				}
+				let preservePan = true;
 				let { scrollLeft, scrollTop, clientWidth, clientHeight } = container;
 				let left = scrollLeft - from.div.offsetLeft - from.div.clientLeft;
 				let top = scrollTop - from.div.offsetTop - from.div.clientTop;
+				let originalPoint = page === from && page.pdfPage ? page.getPagePoint(left, top) : null;
 				let scale = viewer.currentScale, rotation = viewer.pagesRotation, spread = viewer.spreadMode;
 				request.isCurrent = () => !this._destroyed && this._pendingPageTurn === request
 					&& viewer.getPageView(viewer.currentPageNumber - 1) === from
-					&& viewer.scrollMode === HORIZONTAL_SCROLL_MODE && viewer.spreadMode === spread
+					&& viewer.scrollMode === mode && viewer.spreadMode === spread
 					&& viewer.currentScale === scale && viewer.pagesRotation === rotation
 					&& container.scrollLeft === scrollLeft && container.scrollTop === scrollTop
 					&& container.clientWidth === clientWidth && container.clientHeight === clientHeight;
 				if (!page.pdfPage) {
+					// Keep manual scrolling in history while the destination is loading.
+					if (save && this._pendingHistorySave === save) {
+						this._pendingHistorySave = null;
+					}
 					// Resolve geometry before turning. A late resize of an earlier page
 					// must not shift the destination of a subsequent queued turn.
-					let pdfPage = await viewer.pdfDocument.getPage(page.id).catch((error) => {
-						if (request.isCurrent()) {
-							console.error(error);
-						}
-					});
-					if (!request.isCurrent()) {
-						return;
+					// Superseded previews must release gesture history without waiting for PDF.js.
+					let cancelled = new Promise(resolve => request.cancel = resolve);
+					let pdfPage = await Promise.race([
+						viewer.pdfDocument.getPage(page.id).catch((error) => {
+							if (request.isCurrent()) {
+								console.error(error);
+							}
+						}),
+						cancelled
+					]);
+					if (this._destroyed || this._pendingPageTurn !== request) {
+						return false;
+					}
+					if (save && !this._pendingHistorySave && !this._navigationGroup) {
+						this._pendingHistorySave = save;
+					}
+					// Viewport changes invalidate pan, not an absolute destination.
+					preservePan = request.isCurrent();
+					if (direction && !preservePan) {
+						return false;
 					}
 					if (pdfPage && !page.pdfPage) {
 						page.setPdfPage(pdfPage);
 					}
 				}
 				// Failed loads still advance, without applying pan to placeholder geometry.
-				if (!viewer[direction > 0 ? 'nextPage' : 'previousPage']() || !page.pdfPage) {
+				navigate();
+				if (!preservePan || !page.pdfPage || viewer.currentPageNumber !== page.id) {
 					continue;
 				}
 				// Keep PDF.js positioning on fitted axes; constrain pan to the page
@@ -2433,79 +2478,22 @@ class PDFView {
 					container.scrollTop = div.offsetTop + div.clientTop
 						+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
 				}
-			}
-		}
-		catch (error) {
-			if (!this._destroyed && this._pendingPageTurn === request) {
-				console.error(error);
-			}
-		}
-		finally {
-			if (this._pendingPageTurn === request) {
-				this._pendingPageTurn = null;
-			}
-		}
-	}
-
-	async _navigateToPageIndex(targetPageIndex) {
-		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
-		let mode = viewer.scrollMode;
-		let supportsPan = mode === VERTICAL_SCROLL_MODE || mode === HORIZONTAL_SCROLL_MODE || mode === WRAPPED_SCROLL_MODE;
-		if (this._options.platform !== 'android' || !supportsPan) {
-			this._pendingPageTurn = null;
-			viewer.scrollPageIntoView({ pageNumber: targetPageIndex + 1 });
-			return;
-		}
-		let request = this._pendingPageTurn = {};
-		let { container } = viewer;
-		try {
-			let from = viewer.getPageView(viewer.currentPageNumber - 1);
-			let page = viewer.getPageView(targetPageIndex);
-			if (!from || !page || targetPageIndex === viewer.currentPageNumber - 1) {
-				viewer.scrollPageIntoView({ pageNumber: targetPageIndex + 1 });
-				return;
-			}
-			let { scrollLeft, scrollTop, clientWidth, clientHeight } = container;
-			let left = scrollLeft - from.div.offsetLeft - from.div.clientLeft;
-			let top = scrollTop - from.div.offsetTop - from.div.clientTop;
-			let scale = viewer.currentScale, rotation = viewer.pagesRotation, spread = viewer.spreadMode;
-			let isCurrent = () => !this._destroyed && this._pendingPageTurn === request
-				&& viewer.getPageView(viewer.currentPageNumber - 1) === from
-				&& viewer.scrollMode === mode && viewer.spreadMode === spread
-				&& viewer.currentScale === scale && viewer.pagesRotation === rotation
-				&& container.scrollLeft === scrollLeft && container.scrollTop === scrollTop
-				&& container.clientWidth === clientWidth && container.clientHeight === clientHeight;
-			if (!page.pdfPage) {
-				let pdfPage = await viewer.pdfDocument.getPage(page.id).catch((error) => {
-					if (isCurrent()) {
-						console.error(error);
+				if (originalPoint) {
+					let point = page.getPagePoint(container.scrollLeft - div.offsetLeft - div.clientLeft,
+						container.scrollTop - div.offsetTop - div.clientTop);
+					// History stores rounded PDF coordinates, not fractional CSS pixels.
+					if (point.every((value, i) => Math.round(value) === Math.round(originalPoint[i]))) {
+						return false;
 					}
-				});
-				if (!isCurrent()) {
-					return;
 				}
-				if (pdfPage && !page.pdfPage) {
-					page.setPdfPage(pdfPage);
-				}
-			}
-			viewer.currentPageNumber = targetPageIndex + 1;
-			if (!page.pdfPage || viewer.currentPageNumber - 1 !== targetPageIndex) {
-				return;
-			}
-			let { div } = page;
-			if (div.clientWidth > container.clientWidth) {
-				container.scrollLeft = div.offsetLeft + div.clientLeft
-					+ Math.max(0, Math.min(left, div.clientWidth - container.clientWidth));
-			}
-			if (div.clientHeight > container.clientHeight) {
-				container.scrollTop = div.offsetTop + div.clientTop
-					+ Math.max(0, Math.min(top, div.clientHeight - container.clientHeight));
-			}
+			} while (request.directions?.length && !this._destroyed && this._pendingPageTurn === request);
+			return !this._destroyed && this._pendingPageTurn === request;
 		}
 		catch (error) {
 			if (!this._destroyed && this._pendingPageTurn === request) {
 				console.error(error);
 			}
+			return false;
 		}
 		finally {
 			if (this._pendingPageTurn === request) {
@@ -2515,13 +2503,13 @@ class PDFView {
 	}
 
 	navigateToFirstPage() {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('firstpage');
 	}
 
 	navigateToLastPage() {
-		this._pendingPageTurn = null;
+		this._cancelPendingPageTurn();
 		this._onManualNavigation();
 		this._iframeWindow.PDFViewerApplication.eventBus.dispatch('lastpage');
 	}
