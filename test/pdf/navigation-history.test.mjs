@@ -47,6 +47,7 @@ const viewAreaUpdate = pdfSource.statements.find(ts.isClassDeclaration).members
 function fixture(t, synchronous = false) {
 	t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 10000 });
 	let view = Object.create(PDFView.prototype);
+	view._options = { platform: 'zotero' };
 	view._handleViewAreaUpdate = compileFunction(`return ${viewAreaUpdate}`).call(view);
 	view._onChangeViewState = view._updateViewStats = () => {};
 	let container = new EventTarget();

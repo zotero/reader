@@ -752,6 +752,7 @@ function createEdgePageTurnView({
 		},
 		_getEdgePageTurnDirection: PDFView.prototype._getEdgePageTurnDirection,
 		_navigateToAdjacentPage: PDFView.prototype._navigateToAdjacentPage,
+		_navigateToPageIndex: PDFView.prototype._navigateToPageIndex,
 		navigateToNextPage: PDFView.prototype.navigateToNextPage,
 		navigateToPreviousPage: PDFView.prototype.navigateToPreviousPage,
 		_onManualNavigation: () => calls.manual++,
@@ -912,27 +913,46 @@ test('Cold page turns resolve geometry before advancing, including queued turns'
 });
 
 test('Explicit navigation cancels a loading page turn even when returning to the same page', async () => {
-	for (let pageIndex of [1, 2]) {
-		let { calls, pdfViewer, view } = createEdgePageTurnView();
-		let page = pdfViewer.getPageView(2);
-		page.pdfPage = null;
-		let load = Promise.withResolvers();
-		pdfViewer.pdfDocument = { getPage: () => load.promise };
-		pdfViewer.scrollPageIntoView = ({ pageNumber }) => {
-			pdfViewer.currentPageNumber = pageNumber;
-			pdfViewer.container.scrollLeft = pdfViewer.getPageView(pageNumber - 1).div.offsetLeft;
-			pdfViewer.container.scrollTop = 18;
-		};
-		view._navigate = PDFView.prototype._navigate;
-		let navigation = view._navigateToAdjacentPage(1);
-		await PDFView.prototype.navigate.call(view, { pageIndex }, { skipHistory: true });
-		load.resolve({});
-		await navigation;
-		assert.equal(calls.next, 0);
-		assert.equal(pdfViewer.currentPageNumber, pageIndex + 1);
-		assert.equal(pdfViewer.container.scrollLeft, pdfViewer.getPageView(pageIndex).div.offsetLeft);
-		assert.equal(page.pdfPage, null);
-	}
+	let { calls, pdfViewer, view } = createEdgePageTurnView();
+	let page = pdfViewer.getPageView(2);
+	page.pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	pdfViewer.scrollPageIntoView = ({ pageNumber }) => {
+		pdfViewer.currentPageNumber = pageNumber;
+		pdfViewer.container.scrollLeft = pdfViewer.getPageView(pageNumber - 1).div.offsetLeft;
+		pdfViewer.container.scrollTop = 18;
+	};
+	view._navigate = PDFView.prototype._navigate;
+	let navigation = view._navigateToAdjacentPage(1);
+	await PDFView.prototype.navigate.call(view, { pageIndex: 1 }, { skipHistory: true });
+	load.resolve({});
+	await navigation;
+	assert.equal(calls.next, 0);
+	assert.equal(pdfViewer.currentPageNumber, 2);
+	assert.equal(pdfViewer.container.scrollLeft, pdfViewer.getPageView(1).div.offsetLeft);
+	assert.equal(page.pdfPage, null);
+});
+
+test('Explicit navigation to the same cold page a turn was loading takes over instead of racing it', async () => {
+	let { calls, pdfViewer, view } = createEdgePageTurnView();
+	let page = pdfViewer.getPageView(2);
+	page.pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	view._navigate = PDFView.prototype._navigate;
+	let sourceLeft = pdfViewer.container.scrollLeft - pdfViewer.getPageView(1).div.offsetLeft;
+	let sourceTop = pdfViewer.container.scrollTop - pdfViewer.getPageView(1).div.offsetTop;
+	let navigation = view._navigateToAdjacentPage(1);
+	let explicitNavigation = PDFView.prototype.navigate.call(view, { pageIndex: 2 }, { skipHistory: true });
+	load.resolve({});
+	await Promise.all([navigation, explicitNavigation]);
+	assert.equal(calls.next, 0);
+	assert.equal(pdfViewer.currentPageNumber, 3);
+	assert.ok(page.pdfPage);
+	assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, sourceLeft);
+	assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, sourceTop);
+	assert.equal(view._pendingPageTurn, null);
 });
 
 test('A new page turn after panning replaces the stale request instead of being discarded with it', async () => {
@@ -1004,6 +1024,165 @@ test('Desktop and non-horizontal page turns do not inspect page geometry', async
 		await view._navigateToAdjacentPage(-1);
 		assert.equal(calls.next, 1);
 		assert.equal(calls.previous, 1);
+	}
+});
+
+function createPageJumpView({
+	platform = 'android',
+	scrollMode = 1,
+	spreadMode = 0,
+	pageCount = 5,
+} = {}) {
+	let pages = Array.from({ length: pageCount }, (_, i) => ({
+		id: i + 1,
+		pdfPage: {},
+		div: { offsetLeft: i * 2010, offsetTop: 18, clientLeft: 0, clientTop: 0, clientWidth: 2000, clientHeight: 2400 },
+		setPdfPage(pdfPage) {
+			this.pdfPage = pdfPage;
+			Object.assign(this.div, pdfPage);
+		},
+	}));
+	let pdfViewer = {
+		_currentPageNumber: 2,
+		container: { scrollLeft: 2810, scrollTop: 918, clientWidth: 400, clientHeight: 600 },
+		getPageView: index => pages[index],
+		scrollMode,
+		spreadMode,
+		calls: { scrollPageIntoView: 0, currentPageNumberSet: 0 },
+		get currentPageNumber() {
+			return this._currentPageNumber;
+		},
+		set currentPageNumber(value) {
+			this.calls.currentPageNumberSet++;
+			this._currentPageNumber = value;
+			let page = pages[value - 1];
+			if (page) {
+				this.container.scrollLeft = page.div.offsetLeft;
+				this.container.scrollTop = page.div.offsetTop;
+			}
+		},
+		scrollPageIntoView({ pageNumber }) {
+			this.calls.scrollPageIntoView++;
+			this.currentPageNumber = pageNumber;
+		},
+	};
+	let view = {
+		_options: { platform },
+		_iframeWindow: { PDFViewerApplication: { pdfViewer } },
+		_navigateToPageIndex: PDFView.prototype._navigateToPageIndex,
+	};
+	return { pages, pdfViewer, view };
+}
+
+test('Page jumps (e.g. scrubber) preserve pan within the destination page', async () => {
+	for (let [width, height, left, top, sourceLeft = 800, sourceTop = 900] of [
+		[2000, 2400, 800, 900], [500, 700, 100, 100], [300, 500, 0, 0], [2000, 2400, 0, 0, -20, -10],
+	]) {
+		let { pdfViewer, view } = createPageJumpView();
+		pdfViewer.container.scrollLeft = pdfViewer.getPageView(1).div.offsetLeft + sourceLeft;
+		pdfViewer.container.scrollTop = pdfViewer.getPageView(1).div.offsetTop + sourceTop;
+		let page = pdfViewer.getPageView(4);
+		Object.assign(page.div, { clientWidth: width, clientHeight: height });
+		await view._navigateToPageIndex(4);
+		assert.equal(pdfViewer.currentPageNumber, 5);
+		assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, left);
+		assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, top);
+	}
+});
+
+test('Cold page jumps resolve geometry before applying pan', async () => {
+	let { pdfViewer, view } = createPageJumpView();
+	pdfViewer.container.scrollLeft = pdfViewer.getPageView(1).div.offsetLeft + 800;
+	let page = pdfViewer.getPageView(4);
+	page.pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	let navigation = view._navigateToPageIndex(4);
+	assert.equal(pdfViewer.currentPageNumber, 2);
+	load.resolve({ clientWidth: 500 });
+	await navigation;
+	assert.equal(pdfViewer.currentPageNumber, 5);
+	assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, 100);
+	assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, 900);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('A newer scrubber-style jump supersedes a still-loading one instead of both applying', async () => {
+	let { pdfViewer, view } = createPageJumpView();
+	view._navigate = PDFView.prototype._navigate;
+	pdfViewer.getPageView(2).pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	let first = PDFView.prototype.navigate.call(view, { pageIndex: 2 }, { skipHistory: true });
+	let second = PDFView.prototype.navigate.call(view, { pageIndex: 4 }, { skipHistory: true });
+	load.resolve({});
+	await Promise.all([first, second]);
+	assert.equal(pdfViewer.currentPageNumber, 5);
+	assert.equal(view._pendingPageTurn, null);
+	assert.equal(pdfViewer.calls.currentPageNumberSet, 1);
+});
+
+test('Failed page loads during a jump still land on the requested page', async (t) => {
+	let { pdfViewer, view } = createPageJumpView();
+	pdfViewer.getPageView(4).pdfPage = null;
+	t.mock.method(console, 'error', () => {});
+	pdfViewer.pdfDocument = { getPage: () => Promise.reject(new Error('Broken page')) };
+	await view._navigateToPageIndex(4);
+	assert.equal(pdfViewer.currentPageNumber, 5);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('Page jumps in Vertical and Wrapped modes preserve pan on both axes, same as Horizontal', async () => {
+	for (let scrollMode of [0, 2]) {
+		let { pdfViewer, view } = createPageJumpView({ scrollMode });
+		pdfViewer.container.scrollLeft = pdfViewer.getPageView(1).div.offsetLeft + 800;
+		pdfViewer.container.scrollTop = pdfViewer.getPageView(1).div.offsetTop + 900;
+		let page = pdfViewer.getPageView(4);
+		await view._navigateToPageIndex(4);
+		assert.equal(pdfViewer.currentPageNumber, 5);
+		assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, 800);
+		assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, 900);
+	}
+});
+
+test('Vertical-mode cold page jumps still resolve geometry before applying pan', async () => {
+	let { pdfViewer, view } = createPageJumpView({ scrollMode: 0 });
+	pdfViewer.container.scrollLeft = pdfViewer.getPageView(1).div.offsetLeft + 800;
+	let page = pdfViewer.getPageView(4);
+	page.pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	let navigation = view._navigateToPageIndex(4);
+	assert.equal(pdfViewer.currentPageNumber, 2);
+	load.resolve({ clientWidth: 500 });
+	await navigation;
+	assert.equal(pdfViewer.currentPageNumber, 5);
+	assert.equal(pdfViewer.container.scrollLeft - page.div.offsetLeft, 100);
+	assert.equal(pdfViewer.container.scrollTop - page.div.offsetTop, 900);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('A scroll mode change mid-jump invalidates a Vertical-mode page jump instead of applying stale geometry', async () => {
+	let { pdfViewer, view } = createPageJumpView({ scrollMode: 0 });
+	pdfViewer.getPageView(4).pdfPage = null;
+	let load = Promise.withResolvers();
+	pdfViewer.pdfDocument = { getPage: () => load.promise };
+	let navigation = view._navigateToPageIndex(4);
+	pdfViewer.scrollMode = 1;
+	load.resolve({});
+	await navigation;
+	assert.equal(pdfViewer.currentPageNumber, 2);
+	assert.equal(pdfViewer.getPageView(4).pdfPage, null);
+	assert.equal(view._pendingPageTurn, null);
+});
+
+test('Desktop platforms and unsupported scroll modes use plain PDF.js positioning', async () => {
+	for (let options of [{ platform: 'zotero' }, { platform: 'ios' }, { scrollMode: 3 }]) {
+		let { pdfViewer, view } = createPageJumpView(options);
+		pdfViewer.getPageView = () => assert.fail('Unexpected geometry access');
+		await view._navigateToPageIndex(3);
+		assert.equal(pdfViewer.calls.scrollPageIntoView, 1);
+		assert.equal(pdfViewer.currentPageNumber, 4);
 	}
 });
 
