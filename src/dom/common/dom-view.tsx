@@ -279,18 +279,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected async _initialize(): Promise<void> {
-		let srcdoc = await this._getSrcDoc();
-		this._srcDoc = srcdoc;
-		if (window.dev && isSafari) {
-			// Dev only: Long srcdoc strings make the Safari inspector unusable,
-			// so use a blob URL instead
-			let loaded = new Promise(resolve => this._iframe.addEventListener('load', resolve, { once: true }));
-			this._iframe.src = URL.createObjectURL(new Blob([srcdoc], { type: 'text/html' }));
-			await loaded;
-		}
-		else {
-			await loadIFrameHTML(this._iframe, srcdoc, this._options.platform !== 'zotero');
-		}
+		this._srcDoc = await this._getSrcDoc();
+		await loadIFrameHTML(this._iframe, this._srcDoc);
 		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
 		this._iframeDocument = this._iframe.contentDocument!;
 		await this._handleIFrameLoaded();
