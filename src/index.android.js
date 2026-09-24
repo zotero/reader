@@ -225,6 +225,20 @@ window.sdtAnchorToPosition = async (options) => {
 	postMessage('onSDTPosition', { requestID: options.requestID, position });
 };
 
+// Enables/disables Reading Mode, which displays the document's structured text as reflowable HTML over the base view.
+// Requires the SDT pack. Responds with whether Reading Mode is actually enabled afterwards (false if the SDT is
+// unavailable). Only highlight, underline, and note tools work in Reading Mode; others fall back to the pointer tool.
+window.setReadingModeEnabled = async (options) => {
+	log("Set Reading Mode enabled: " + options.enabled);
+	try {
+		await window._view.setReadingModeEnabled(options.enabled);
+	}
+	catch (error) {
+		log("Reading Mode unavailable: " + error);
+	}
+	postMessage('onReadingModeEnabled', { requestID: options.requestID, enabled: window._view.readingModeEnabled });
+};
+
 window.createAnnotationFromSDT = async (options) => {
 	const params = JSON.parse(decodeBase64(options.params));
 	log("Create annotation from SDT: " + params.type);

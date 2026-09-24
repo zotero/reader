@@ -33,6 +33,19 @@ export const DEBOUNCE_STATE_CHANGE = 300; // ms
 export const DEBOUNCE_STATS_CHANGE = 100; // ms
 export const DEBOUNCE_FIND_POPUP_INPUT = 500; // ms
 
+// View stats that the base view keeps providing while the SDT overlay
+// is active
+export const BASE_VIEW_STATS_KEYS = new Set([
+	'pageIndex',
+	'pageLabel',
+	'pagesCount',
+	'usePhysicalPageNumbers',
+	'percentage',
+]);
+
+// Annotation types that can be created and displayed in the SDT overlay
+export const SDT_ANNOTATION_TYPES = ['highlight', 'underline', 'note'];
+
 // How long the reader has to stay hidden before all its rendered pages are
 // released. Long enough to keep switching between tabs instant, while resuming
 // after that only costs a ~60 ms re-render of the visible pages

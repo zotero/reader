@@ -18,7 +18,7 @@ import {
 	createViewContextMenu
 } from './context-menu';
 import { initPDFPrintService } from '../pdf/pdf-print-service';
-import { ANNOTATION_COLORS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES, SUSPEND_WHEN_HIDDEN_AFTER } from './defines';
+import { ANNOTATION_COLORS, BASE_VIEW_STATS_KEYS, DEBOUNCE_STATE_CHANGE, DEBOUNCE_STATS_CHANGE, DEFAULT_THEMES, SDT_ANNOTATION_TYPES, SUSPEND_WHEN_HIDDEN_AFTER } from './defines';
 import { FocusManager } from './focus-manager';
 import { KeyboardManager } from './keyboard-manager';
 import {
@@ -56,16 +56,6 @@ window.computedColorFocusBorder = window.getComputedStyle(document.body).getProp
 window.computedWidthFocusBorder = window.getComputedStyle(document.body).getPropertyValue('--width-focus-border');
 
 export const ReaderContext = createContext({});
-
-// View stats that the base view keeps providing while the SDT (Reading Mode)
-// overlay is active
-const BASE_VIEW_STATS_KEYS = new Set([
-	'pageIndex',
-	'pageLabel',
-	'pagesCount',
-	'usePhysicalPageNumbers',
-	'percentage',
-]);
 
 class Reader {
 	constructor(options) {
@@ -1048,7 +1038,7 @@ class Reader {
 				this._updateState({ [enabledStateKey]: true });
 
 				// Only text annotation tools work on the SDT overlay
-				let enabledTypes = ['highlight', 'underline', 'note'];
+				let enabledTypes = SDT_ANNOTATION_TYPES;
 				this._annotationManager.setFilter({ enabledTypes });
 				if (!enabledTypes.concat('pointer').includes(this._state.tool.type)) {
 					this.setTool({ type: 'pointer' });

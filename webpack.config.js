@@ -237,10 +237,16 @@ function generateViewConfig(build) {
 			})
 		);
 		config.devServer = {
-			static: {
-				directory: path.resolve(__dirname, 'build/'),
-				watch: true,
-			},
+			static: [
+				{
+					directory: path.resolve(__dirname, 'build/'),
+					watch: true,
+				},
+				{
+					directory: path.resolve(__dirname, '../document-worker/build/'),
+					publicPath: '/view-dev/document-worker',
+				},
+			],
 			devMiddleware: {
 				writeToDisk: true,
 			},
