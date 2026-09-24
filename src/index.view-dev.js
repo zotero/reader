@@ -1,4 +1,5 @@
 import View from './common/view';
+import { getSDTPack } from './worker-client.dev';
 import pdf from '../demo/pdf';
 import epub from '../demo/epub';
 import snapshot from '../demo/snapshot';
@@ -129,7 +130,17 @@ async function main() {
 		// },
 	});
 
-	// It seems EPUB view isn't fully functioning for 10 or more seconds. TODO: Fix
+	// Hand over the SDT pack like the mobile apps do, so Reading Mode and
+	// Read Aloud work (e.g. `await _view.setReadingModeEnabled(true)`)
+	getSDTPack(type, demo.fileName).then((pack) => {
+		if (pack.ok) {
+			window._view.setSDTPack(pack);
+			console.log('Set SDT pack');
+		}
+		else {
+			console.warn('SDT pack unavailable:', pack.reason);
+		}
+	});
 
 	// Examples:
 	// // Initiate search
