@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import cx from 'classnames';
 import ViewPopup from '../common/view-popup';
+import { ReaderContext } from '../../../reader';
+import { loadIFrameHTML } from '../../../lib/iframe';
 
 function FootnotePopup({ params, onOpenLink }) {
+	let { platform } = useContext(ReaderContext);
 	let iframeRef = React.useRef(null);
 	let [loading, setLoading] = React.useState(true);
 
 	React.useEffect(() => {
 		setLoading(true);
+		let canceled = false;
+		loadIFrameHTML(iframeRef.current, params.content, platform !== 'zotero').then(() => {
+			if (!canceled) {
+				handleLoad();
+			}
+		});
+		return () => {
+			canceled = true;
+		};
 	}, [params.content]);
 
 	let handleLoad = () => {
@@ -54,8 +66,6 @@ function FootnotePopup({ params, onOpenLink }) {
 			<iframe
 				ref={iframeRef}
 				sandbox="allow-same-origin"
-				srcDoc={params.content}
-				onLoad={handleLoad}
 			/>
 		</ViewPopup>
 	);

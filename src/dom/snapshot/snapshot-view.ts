@@ -103,7 +103,7 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 
 	getData() {
 		return {
-			srcDoc: this._iframe.srcdoc,
+			srcDoc: this._srcDoc,
 			url: this._iframeDocument.head.querySelector('base')?.href,
 			importedFromURL: this._options.data.importedFromURL,
 		};

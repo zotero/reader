@@ -74,6 +74,7 @@ import { History } from "../../common/lib/history";
 import { closestMathTeX } from "./lib/math";
 import { DEFAULT_REFLOWABLE_APPEARANCE, PageWidth, type ReflowableAppearance } from "./lib/appearance";
 import { ReadAloud } from "./lib/read-aloud";
+import { loadIFrameHTML } from "../../common/lib/iframe";
 
 const PEN_ACTIVE_TIMEOUT = 5 * 60 * 1000;
 
@@ -91,6 +92,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected readonly _container: Element;
 
 	protected readonly _iframe: HTMLIFrameElement;
+
+	protected _srcDoc!: string;
 
 	protected _iframeWindow!: Window & typeof globalThis;
 
@@ -277,23 +280,21 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected async _initialize(): Promise<void> {
 		let srcdoc = await this._getSrcDoc();
+		this._srcDoc = srcdoc;
 		if (window.dev && isSafari) {
 			// Dev only: Long srcdoc strings make the Safari inspector unusable,
 			// so use a blob URL instead
+			let loaded = new Promise(resolve => this._iframe.addEventListener('load', resolve, { once: true }));
 			this._iframe.src = URL.createObjectURL(new Blob([srcdoc], { type: 'text/html' }));
+			await loaded;
 		}
 		else {
-			this._iframe.srcdoc = srcdoc;
+			await loadIFrameHTML(this._iframe, srcdoc, this._options.platform !== 'zotero');
 		}
-		return new Promise<void>((resolve, reject) => {
-			this._iframe.addEventListener('load', () => {
-				this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
-				this._iframeDocument = this._iframe.contentDocument!;
-				Promise.resolve(this._handleIFrameLoaded())
-					.then(() => this._iframe.classList.add('loaded'))
-					.then(resolve, reject);
-			}, { once: true });
-		});
+		this._iframeWindow = this._iframe.contentWindow as Window & typeof globalThis;
+		this._iframeDocument = this._iframe.contentDocument!;
+		await this._handleIFrameLoaded();
+		this._iframe.classList.add('loaded');
 	}
 
 	protected _getCSP(): string {
