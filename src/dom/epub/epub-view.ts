@@ -1553,7 +1553,7 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 				overrideSettings: {
 					// Set title based on the book's title
 					title: this.book.packaging.metadata.title || '',
-					// Remove 'about:srcdoc' URL
+					// Remove the frame's URL
 					docURL: '',
 					// And disable printing either of those things in the margins by default
 					headerStrLeft: '',
