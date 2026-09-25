@@ -74,7 +74,7 @@ const UtilityPopup = forwardRef(function UtilityPopup(props, ref) {
 	}
 
 	let handlePointerDown = (event) => {
-		if (event.button !== 0 || event.target.closest('input, button, select, a')) {
+		if (event.button !== 0 || event.target.closest('input, button, select, a, [role="listbox"]')) {
 			return;
 		}
 		innerRef.current.setPointerCapture(event.pointerId);
