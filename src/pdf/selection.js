@@ -400,6 +400,19 @@ function getTopMostRectFromPosition(position) {
 	return position?.rects?.slice().sort((a, b) => b[2] - a[2])[0];
 }
 
+// The rect whose top edge determines an annotation's sortIndex
+export function getSortIndexRect(position) {
+	return getTopMostRectFromPosition(position) || getPositionBoundingRect(position);
+}
+
+export function formatSortIndex(pageIndex, offset, top) {
+	return [
+		pageIndex.toString().slice(0, 5).padStart(5, '0'),
+		offset.toString().slice(0, 6).padStart(6, '0'),
+		Math.floor(top).toString().slice(0, 5).padStart(5, '0')
+	].join('|');
+}
+
 export function getSortIndex(pdfPages, position) {
 	let { pageIndex } = position;
 	let offset = 0;
@@ -407,7 +420,7 @@ export function getSortIndex(pdfPages, position) {
 	if (pdfPages[position.pageIndex]) {
 		let { chars } = pdfPages[position.pageIndex];
 		let viewBox = pdfPages[position.pageIndex].viewBox;
-		let rect = getTopMostRectFromPosition(position) || getPositionBoundingRect(position);
+		let rect = getSortIndexRect(position);
 		offset = chars.length && getClosestOffset(chars, rect) || 0;
 		let pageHeight = viewBox[3] - viewBox[1];
 		top = pageHeight - rect[3];
@@ -415,11 +428,7 @@ export function getSortIndex(pdfPages, position) {
 			top = 0;
 		}
 	}
-	return [
-		pageIndex.toString().slice(0, 5).padStart(5, '0'),
-		offset.toString().slice(0, 6).padStart(6, '0'),
-		Math.floor(top).toString().slice(0, 5).padStart(5, '0')
-	].join('|');
+	return formatSortIndex(pageIndex, offset, top);
 }
 
 export function getModifiedSelectionRanges(pdfPages, selectionRanges, modifier) {

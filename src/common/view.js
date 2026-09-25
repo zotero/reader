@@ -16,6 +16,8 @@ import { SDTDocumentSession } from './sdt/document-session.mjs';
 import { isSDTPosition } from './types';
 import { getTextNodeSpans } from './sdt/position-mapper';
 import { buildSDTReadAloudSegments, getSDTLang } from './read-aloud/sdt-segments';
+import { getPageBlockSpan } from '../../structured-document-text/src/pages';
+import { createSDTBlockCropProvider, SDT_BLOCK_CROP_DISPLAY_SCALE } from '../pdf/lib/sdt-block-crops';
 
 let nop = () => undefined;
 
@@ -29,8 +31,14 @@ class View {
 
 		this._type = options.type;
 		this._options = options;
+		// Standalone Reading Mode ('sdt'): the view displays only the SDT of a
+		// source document (options.sourceType) without a base view. Annotations
+		// are still read and written in the source format.
+		if (this._type === 'sdt' && options.sourceType !== 'pdf') {
+			throw new Error(`Standalone Reading Mode is not supported for '${options.sourceType}'`);
+		}
 		this._sdtDocumentSession = new SDTDocumentSession({
-			documentType: this._type,
+			documentType: this._type === 'sdt' ? options.sourceType : this._type,
 			retainReader: false,
 		});
 
@@ -63,7 +71,12 @@ class View {
 		this._sdtViewStats = null;
 		this._emitViewStats = debounce(this._options.onChangeViewStats, DEBOUNCE_STATS_CHANGE);
 
-		this._view = this._createView();
+		// Standalone Reading Mode: the view is created once the SDT pack is set
+		this._standaloneQueue = null;
+		this._pageRegionImageRequests = new Map();
+		this._lastPageRegionImageRequestID = 0;
+
+		this._view = this._type === 'sdt' ? null : this._createView();
 		this._annotationManager = new AnnotationManager({
 			readOnly: options.readOnly,
 			authorName: options.authorName,
@@ -76,11 +89,20 @@ class View {
 			onDelete: options.onDeleteAnnotations || nop,
 			adjustTextAnnotationPosition: (annotation, adjustOptions) => this._view.adjustTextAnnotationPosition(annotation, adjustOptions),
 			onRender: (annotations) => {
-				this._view.setAnnotations(annotations);
+				if (this._type === 'sdt') {
+					this._view?.setAnnotations(this._getSDTAnnotations(annotations));
+				}
+				else {
+					this._view.setAnnotations(annotations);
+				}
 				this._sdtView?.setAnnotations(this._getSDTAnnotations(annotations));
 			},
 			onChangeFilter: nop
 		});
+
+		if (this._type === 'sdt' && options.sdtPack) {
+			this.setSDTPack(options.sdtPack);
+		}
 	}
 
 	_ensureType() {
@@ -244,12 +266,34 @@ class View {
 		}
 	}
 
-	_createSDTView(sdt) {
-		let baseView = this._view;
-		let view = new SDTView({
+	// Options shared by the Reading Mode overlay and the standalone view.
+	// `isCurrent()` returns whether the view is still the one being displayed,
+	// so we can ignore late callbacks from a destroyed view.
+	_getSDTViewOptions(sdt, isCurrent) {
+		return {
 			...this._getCommonViewOptions(),
 			tool: this._getSDTTool(this._tool),
 			annotations: this._getSDTAnnotations([...this._annotationManager._annotations]),
+			onSetOutline: (outline) => {
+				if (!isCurrent()) {
+					return;
+				}
+				this._options.onSetOutline(outline);
+				this._activeView.setOutline(outline);
+			},
+			data: {
+				structure: sdt.structure,
+				mapper: sdt.mapper,
+				paged: (this._options.sourceType ?? this._type) === 'pdf',
+			},
+		};
+	}
+
+	_createSDTView(sdt) {
+		let baseView = this._view;
+		let options = this._getSDTViewOptions(sdt, () => this._sdtView === view);
+		let view = new SDTView({
+			...options,
 			viewState: {},
 			location: baseView.getSDTLocation?.(sdt.structure) ?? null,
 			// The base view keeps providing the view state, since it's scroll-synced
@@ -262,17 +306,8 @@ class View {
 				this._sdtViewStats = stats;
 				this._handleViewStatsChange();
 			},
-			onSetOutline: (outline) => {
-				if (this._sdtView !== view) {
-					return;
-				}
-				this._options.onSetOutline(outline);
-				view.setOutline(outline);
-			},
 			data: {
-				structure: sdt.structure,
-				mapper: sdt.mapper,
-				paged: this._type === 'pdf',
+				...options.data,
 				getSourceAnnotationMeta: position => baseView.getAnnotationMeta?.(position) ?? null,
 				syncBaseView: (blockIndex) => {
 					baseView.navigateToSDTBlock?.(sdt.structure, blockIndex);
@@ -287,6 +322,145 @@ class View {
 			},
 		});
 		return view;
+	}
+
+	_createStandaloneSDTView(sdt) {
+		let options = this._getSDTViewOptions(sdt, () => this._view === view);
+		let pageStats = {};
+		let sdtStats = null;
+		let emitStats = () => {
+			if (this._view === view && sdtStats) {
+				this._emitViewStats({ ...sdtStats, ...pageStats });
+			}
+		};
+		let view = new SDTView({
+			...options,
+			viewState: this._options.viewState || {},
+			location: this._options.location || null,
+			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
+			onChangeViewStats: (stats) => {
+				sdtStats = stats;
+				emitStats();
+			},
+			data: {
+				...options.data,
+				getSourceAnnotationMeta: position => this._getSourceAnnotationMeta(sdt, position),
+				syncBaseView: (blockIndex) => {
+					let pageIndex = this._getSDTBlockPageIndex(sdt.structure, blockIndex);
+					if (pageIndex === null) {
+						return;
+					}
+					// Same page stats as PDFView
+					pageStats = {
+						pageIndex,
+						pageLabel: this._getPageLabel(sdt, pageIndex),
+						pagesCount: sdt.structure.catalog.pages.length,
+					};
+					emitStats();
+				},
+				getImageForBlock: () => Promise.resolve(null),
+				getBlockCrops: this._options.onRequestPageRegionImages
+					? createSDTBlockCropProvider(
+						sdt.structure,
+						(pageIndex, rects) => this._requestPageRegionImages(pageIndex, rects)
+					)
+					: undefined,
+			},
+		});
+		return view;
+	}
+
+	_getSDTBlockPageIndex(structure, blockIndex) {
+		let pagesCount = structure.catalog.pages?.length ?? 0;
+		for (let pageIndex = 0; pageIndex < pagesCount; pageIndex++) {
+			let span = getPageBlockSpan(structure, pageIndex);
+			if (span && blockIndex >= span.startIndex && blockIndex < span.endIndexExclusive) {
+				return pageIndex;
+			}
+		}
+		return null;
+	}
+
+	_getPageLabel(sdt, pageIndex) {
+		return this._options.pageLabels?.[pageIndex]
+			|| sdt.structure.catalog.pages[pageIndex]?.label
+			|| String(pageIndex + 1);
+	}
+
+	_getSourceAnnotationMeta(sdt, position) {
+		if (this._type !== 'sdt') {
+			return this._view.getAnnotationMeta?.(position) ?? null;
+		}
+		return {
+			sortIndex: sdt.mapper.getSortIndex(position),
+			pageLabel: this._getPageLabel(sdt, position.pageIndex),
+		};
+	}
+
+	_requestPageRegionImages(pageIndex, rects) {
+		let requestID = ++this._lastPageRegionImageRequestID;
+		return new Promise((resolve) => {
+			this._pageRegionImageRequests.set(requestID, resolve);
+			this._options.onRequestPageRegionImages({
+				requestID,
+				pageIndex,
+				// PDF page coordinates
+				rects,
+				// Suggested rendering resolution, in image pixels per PDF point
+				scale: SDT_BLOCK_CROP_DISPLAY_SCALE * (window.devicePixelRatio || 1),
+			});
+		});
+	}
+
+	/**
+	 * Deliver page region images requested via onRequestPageRegionImages
+	 * (standalone Reading Mode figure crops)
+	 * @param {number} requestID
+	 * @param {string[]} images One image URL (e.g., a data URL) per requested rect,
+	 *   in the same order, or '' for a rect that couldn't be rendered
+	 */
+	setPageRegionImages(requestID, images) {
+		this._ensureType('sdt');
+		let resolve = this._pageRegionImageRequests.get(requestID);
+		if (!resolve) {
+			return;
+		}
+		this._pageRegionImageRequests.delete(requestID);
+		resolve(images);
+	}
+
+	// (Re)create the standalone Reading Mode view for the current SDT pack
+	_initStandaloneSDTView() {
+		let apply = async () => {
+			let sdt = await this._loadSDT();
+			if (this._view) {
+				this._view._iframe?.remove();
+				this._view.destroy();
+				this._view = null;
+			}
+			for (let resolve of this._pageRegionImageRequests.values()) {
+				resolve([]);
+			}
+			this._pageRegionImageRequests.clear();
+			if (!sdt) {
+				this._options.onInitializeFailed?.();
+				return;
+			}
+			let view = this._createStandaloneSDTView(sdt);
+			this._view = view;
+			let initialized = await view.initializedPromise;
+			if (this._view !== view) {
+				return;
+			}
+			if (initialized === false) {
+				this._options.onInitializeFailed?.();
+				return;
+			}
+			this._options.onInitialized();
+		};
+		let next = Promise.resolve(this._standaloneQueue).then(apply);
+		this._standaloneQueue = next.catch(e => console.error(e));
+		return next;
 	}
 
 	_destroySDTView() {
@@ -375,13 +549,13 @@ class View {
 	find(params) {
 		let active = !!params;
 		if (active === this._findState.active) {
-			this._activeView.setFindState({
+			this._activeView?.setFindState({
 				...this._findState,
 				...(params || {})
 			});
 		}
 		else {
-			this._activeView.setFindState({
+			this._activeView?.setFindState({
 				active,
 				query: '',
 				highlightAll: true,
@@ -395,11 +569,11 @@ class View {
 	}
 
 	findNext() {
-		this._activeView.findNext();
+		this._activeView?.findNext();
 	}
 
 	findPrevious() {
-		this._activeView.findPrevious();
+		this._activeView?.findPrevious();
 	}
 
 	/**
@@ -412,7 +586,7 @@ class View {
 			tool = { type: 'pointer' };
 		}
 		this._tool = tool;
-		this._view.setTool(tool);
+		this._view?.setTool(this._type === 'sdt' ? this._getSDTTool(tool) : tool);
 		this._sdtView?.setTool(this._getSDTTool(tool));
 	}
 
@@ -438,7 +612,7 @@ class View {
 	// can restore an annotation to its empty state
 	_deselectAnnotations() {
 		this._options.selectedAnnotationIDs = [];
-		this._view.setSelectedAnnotationIDs([]);
+		this._view?.setSelectedAnnotationIDs([]);
 		this._sdtView?.setSelectedAnnotationIDs([]);
 	}
 
@@ -450,7 +624,7 @@ class View {
 			this._annotationManager.deleteEmptyTextAnnotationsExcept(ids);
 		}
 		this._options.selectedAnnotationIDs = ids;
-		this._view.setSelectedAnnotationIDs(ids);
+		this._view?.setSelectedAnnotationIDs(ids);
 		this._sdtView?.setSelectedAnnotationIDs(ids);
 	}
 
@@ -459,31 +633,31 @@ class View {
 	}
 
 	getFocusedTextAnnotationID() {
-		return this._activeView.getFocusedTextAnnotationID?.() || null;
+		return this._activeView?.getFocusedTextAnnotationID?.() || null;
 	}
 
 	finishTextAnnotationEditing() {
-		return this._activeView.finishTextAnnotationEditing?.() || false;
+		return this._activeView?.finishTextAnnotationEditing?.() || false;
 	}
 
 	zoomIn() {
-		this._activeView.zoomIn();
+		this._activeView?.zoomIn();
 	}
 
 	zoomOut() {
-		this._activeView.zoomOut();
+		this._activeView?.zoomOut();
 	}
 
 	zoomBy(delta) {
-		this._activeView.zoomBy(delta);
+		this._activeView?.zoomBy(delta);
 	}
 
 	zoomReset() {
-		this._activeView.zoomReset();
+		this._activeView?.zoomReset();
 	}
 
 	navigate(location) {
-		this._activeView.navigate(location);
+		this._activeView?.navigate(location);
 	}
 
 	// Group live PDF navigation into one Back/Forward step. End also on cancellation.
@@ -501,14 +675,14 @@ class View {
 	 * Navigate to the previous position in the document
 	 */
 	navigateBack() {
-		this._activeView.navigateBack();
+		this._activeView?.navigateBack();
 	}
 
 	/**
 	 * Navigate to the latest position in the document
 	 */
 	navigateForward() {
-		this._activeView.navigateForward();
+		this._activeView?.navigateForward();
 	}
 
 	enterPassword(password) {
@@ -572,12 +746,12 @@ class View {
 		let theme = themes.get(themeID) || null;
 		if (getCurrentColorScheme(this._colorScheme) === 'dark') {
 			this._darkTheme = theme;
-			this._view.setDarkTheme(theme);
+			this._view?.setDarkTheme(theme);
 			this._sdtView?.setDarkTheme(theme);
 		}
 		else {
 			this._lightTheme = theme;
-			this._view.setLightTheme(theme);
+			this._view?.setLightTheme(theme);
 			this._sdtView?.setLightTheme(theme);
 		}
 	}
@@ -594,27 +768,28 @@ class View {
 	 */
 	setColorScheme(scheme) {
 		this._colorScheme = scheme;
-		this._view.setColorScheme(scheme);
+		this._view?.setColorScheme(scheme);
 		this._sdtView?.setColorScheme(scheme);
 	}
 
 	setPenActive(penActive) {
-		this._view.setPenActive(penActive);
+		this._view?.setPenActive(penActive);
 		this._sdtView?.setPenActive(penActive);
 	}
 
 	setPenExclusive(penExclusive) {
-		this._view.setPenExclusive(penExclusive);
+		this._view?.setPenExclusive(penExclusive);
 		this._sdtView?.setPenExclusive(penExclusive);
 	}
 
 	setFontFamily(fontFamily) {
-		this._view.setFontFamily(fontFamily);
+		this._view?.setFontFamily(fontFamily);
 		this._sdtView?.setFontFamily(fontFamily);
 	}
 
 	setPageLabels(pageLabels) {
-		this._view.setPageLabels?.(pageLabels);
+		this._options.pageLabels = pageLabels;
+		this._view?.setPageLabels?.(pageLabels);
 	}
 
 	/**
@@ -645,12 +820,12 @@ class View {
 
 	setReadAloudSpotlight(selector) {
 		// PDF can only show the spotlight in Reading Mode
-		if (!this._sdtView) {
+		if (!this._sdtView && this._type !== 'sdt') {
 			this._ensureType('epub', 'snapshot');
 		}
-		this._activeView.setSpotlight('ReadAloudActiveSegment', selector, null);
+		this._activeView?.setSpotlight('ReadAloudActiveSegment', selector, null);
 		if (selector) {
-			this._activeView.navigate({ position: selector }, {
+			this._activeView?.navigate({ position: selector }, {
 				ifNeeded: true,
 				block: 'center',
 				behavior: 'smooth'
@@ -658,9 +833,13 @@ class View {
 		}
 	}
 
-	// Store an SDT pack for later operations.
+	// Store an SDT pack for later operations. In standalone Reading Mode, this
+	// (re)creates the view.
 	setSDTPack(pack) {
 		this._sdtDocumentSession.setPack(pack);
+		if (this._type === 'sdt') {
+			this._initStandaloneSDTView();
+		}
 	}
 
 	async _loadSDT() {
@@ -696,7 +875,7 @@ class View {
 	 */
 	async getVisibleBlockIndex() {
 		let sdt = await this._loadSDT();
-		return sdt ? (this._activeView.getVisibleBlockIndex?.(sdt.structure) ?? null) : null;
+		return sdt ? (this._activeView?.getVisibleBlockIndex?.(sdt.structure) ?? null) : null;
 	}
 
 	async createAnnotationFromSDT({ sdtAnchor, type, color, comment, tags }) {
@@ -798,7 +977,7 @@ class View {
 		// Adjust for format conventions (e.g. PDF notes -> fixed-size rect)
 		position = sdt.mapper.transformAnnotationPosition(position, type);
 		// sortIndex and pageLabel can only come from the live view
-		let meta = this._view.getAnnotationMeta?.(position);
+		let meta = this._getSourceAnnotationMeta(sdt, position);
 		if (!meta) {
 			return null;
 		}
