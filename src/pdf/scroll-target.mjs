@@ -37,7 +37,7 @@ export function getScrollTarget({
 		}
 	}
 	else {
-		top = (rect[1] + rect[3]) / 2 - (clientHeight / 2) - VERTICAL_PADDING;
+		top = y - (clientHeight / 2) - VERTICAL_PADDING;
 	}
 
 	if (inlineNearest) {
@@ -72,19 +72,21 @@ export function getScrollTarget({
 		}
 	}
 	else {
-		left = (rect[0] + rect[2]) / 2 - (clientWidth / 2);
+		left = x - (clientWidth / 2);
 	}
 
 	return { left, top };
 }
 
-export function getFitScale({ rectWidth, rectHeight, currentScale, clientWidth, clientHeight }) {
-	if (!(currentScale > 0) || !(clientWidth > 0) || !(clientHeight > 0)) {
-		return null;
+export function getPageScrollTarget({ rect, pageRect, scrollLeft, clientWidth, clientHeight, horizontal }) {
+	// Keep the beginning visible when the annotation itself cannot fit.
+	let left = rect[2] - rect[0] > clientWidth ? rect[0] : (rect[0] + rect[2] - clientWidth) / 2;
+	let top = rect[3] - rect[1] > clientHeight ? rect[1] : (rect[1] + rect[3] - clientHeight) / 2;
+	left = Math.max(pageRect[0], Math.min(left, pageRect[2] - clientWidth));
+	top = Math.max(pageRect[1], Math.min(top, pageRect[3] - clientHeight));
+	// Match PDF.js: keep fully visible pages in place outside horizontal mode.
+	if (!horizontal && pageRect[0] >= scrollLeft && pageRect[2] <= scrollLeft + clientWidth) {
+		left = undefined;
 	}
-	let factor = Math.min(
-		rectWidth > clientWidth ? clientWidth / rectWidth : 1,
-		rectHeight > clientHeight ? clientHeight / rectHeight : 1
-	);
-	return factor < 1 ? currentScale * factor : null;
+	return { left, top };
 }

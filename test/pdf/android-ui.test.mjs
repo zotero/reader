@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
 import { PageViewport } from '../../pdfjs/pdf.js/src/display/display_utils.js';
+import { getScrollTarget } from '../../src/pdf/scroll-target.mjs';
 
 globalThis.window ??= {};
 window.computedFontFamily = 'sans-serif';
@@ -1859,76 +1860,104 @@ test('PDF view buffers mobile annotation image requests until its renderer is in
 });
 
 function createPositionNavigationView({
-	currentScale = 2,
-	clientWidth = 700,
-	clientHeight = 900,
-	scrollWidth = 5000,
-	scrollHeight = 5000,
-	baseRect = [1000, 300, 1800, 500],
+	platform = 'android', loaded = true, rect = [1020, 2030, 1080, 2050],
 } = {}) {
 	let element = {
 		scrollLeft: 0,
 		scrollTop: 0,
-		clientWidth,
-		clientHeight,
-		scrollWidth,
-		scrollHeight,
+		clientWidth: 400,
+		clientHeight: 600,
+		scrollWidth: 5000,
+		scrollHeight: 5000,
 		scrollTo(options) {
 			this.lastScrollTo = options;
 		},
 	};
-	let scaleSets = [];
+	let page = {
+		pdfPage: loaded ? {} : null,
+		div: {
+			clientLeft: 1,
+			clientTop: 1,
+			clientWidth: 400,
+			clientHeight: 600,
+			getBoundingClientRect: () => ({ left: 999 - element.scrollLeft, top: 1999 - element.scrollTop }),
+		},
+	};
 	let pdfViewer = {
-		_currentScale: currentScale,
-		get currentScale() {
-			return this._currentScale;
-		},
-		set currentScaleValue(value) {
-			scaleSets.push(value);
-			this._currentScale = value;
-		},
+		currentScale: 2,
+		currentScaleValue: 'page-width',
+		scrollMode: 1,
+		getPageView: () => page,
 		_getVisiblePages: () => ({ first: { id: 1 }, last: { id: 1 } }),
 	};
 	let view = {
-		_destroyed: false,
+		_options: { platform },
 		_cancelPendingPageTurn: () => {},
-		getPositionBoundingViewRect: () => {
-			let s = pdfViewer.currentScale;
-			return [baseRect[0] * s, baseRect[1] * s, baseRect[2] * s, baseRect[3] * s];
-		},
+		getPositionBoundingViewRect: () => rect,
 		_iframeWindow: {
 			document: { getElementById: () => element },
 			PDFViewerApplication: { pdfViewer },
-			requestAnimationFrame: callback => callback(),
 		},
 	};
-	return { element, pdfViewer, scaleSets, view };
+	return { element, page, pdfViewer, rect, view };
 }
 
-test('Navigating to an annotation too large to fit at the current zoom zooms out just enough to show it', async () => {
-	let { element, pdfViewer, scaleSets, view } = createPositionNavigationView();
-	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { block: 'center' });
-	assert.deepEqual(scaleSets, [2 * (700 / 1600)]);
-	assert.equal(pdfViewer.currentScale, 0.875);
-	assert.equal(element.lastScrollTo.left, 875);
-	assert.equal(element.lastScrollTo.top, 0);
+test('Android centered position navigation is synchronous and preserves the zoom preset', () => {
+	for (let options of [{}, { block: 'center' }]) {
+		let { element, pdfViewer, view } = createPositionNavigationView();
+		assert.equal(PDFView.prototype.navigateToPosition.call(view, { pageIndex: 3 }, options), undefined);
+		assert.deepEqual(element.lastScrollTo, { left: 1000, top: 2000, behavior: 'instant' });
+		assert.equal(pdfViewer.currentScaleValue, 'page-width');
+		assert.equal(pdfViewer.currentScale, 2);
+	}
 });
 
-test('Navigating to an annotation that already fits does not change the zoom level', async () => {
-	let { element, pdfViewer, scaleSets, view } = createPositionNavigationView({
-		baseRect: [1000, 300, 1100, 350],
-	});
-	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { block: 'center' });
-	assert.deepEqual(scaleSets, []);
-	assert.equal(pdfViewer.currentScale, 2);
-	assert.equal(element.lastScrollTo.left, (1000 * 2 + 1100 * 2) / 2 - 700 / 2);
+test('Android navigation uses page bounds at nonzero scroll offsets', () => {
+	let { element, page, view } = createPositionNavigationView({ rect: [1500, 2800, 1600, 2840] });
+	Object.assign(element, { scrollLeft: 900, scrollTop: 1800 });
+	Object.assign(page.div, { clientWidth: 1200, clientHeight: 1800 });
+	PDFView.prototype.navigateToPosition.call(view, { pageIndex: 3 });
+	assert.deepEqual(element.lastScrollTo, { left: 1350, top: 2520, behavior: 'instant' });
 });
 
-test('Zoom-to-fit is skipped for nearest/ifNeeded navigation (e.g. Read Aloud follow, text selection)', async () => {
-	let { pdfViewer, scaleSets, view } = createPositionNavigationView();
-	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { block: 'nearest' });
-	assert.deepEqual(scaleSets, []);
-	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { ifNeeded: true, inline: 'nearest' });
-	assert.deepEqual(scaleSets, []);
-	assert.equal(pdfViewer.currentScale, 2);
+test('Android fitted pages keep horizontal placement in vertical and wrapped modes', () => {
+	for (let scrollMode of [0, 2]) {
+		let { element, pdfViewer, view } = createPositionNavigationView();
+		Object.assign(element, { scrollLeft: 1000, scrollTop: 1800 });
+		pdfViewer.scrollMode = scrollMode;
+		PDFView.prototype.navigateToPosition.call(view, { pageIndex: 3 });
+		assert.deepEqual(element.lastScrollTo, { top: 2000, behavior: 'instant' });
+	}
+});
+
+test('Android cross-page annotations keep legacy vertical positioning and page-aligned horizontal targets', () => {
+	for (let [scrollMode, top] of [[0, 3435], [1, 3200], [2, 3435]]) {
+		let { element, page, pdfViewer, view } = createPositionNavigationView({ rect: [1100, 3740, 1200, 3760] });
+		Object.assign(element, { scrollLeft: 900, scrollTop: 1800 });
+		Object.assign(page.div, { clientWidth: 1200, clientHeight: 1800 });
+		pdfViewer.scrollMode = scrollMode;
+		PDFView.prototype.navigateToPosition.call(view, {
+			pageIndex: 3, nextPageRects: [[100, 760, 200, 780]],
+		});
+		assert.deepEqual(element.lastScrollTo, { left: 1000, top, behavior: 'instant' });
+	}
+});
+
+test('Position navigation preserves legacy targets outside the Android centered path', () => {
+	for (let [platform, loaded, options = {}] of [
+		['zotero', true],
+		['ios', true],
+		['web', true],
+		['android', false],
+		['android', true, { block: 'nearest' }],
+		['android', true, { block: 'start' }],
+		['android', true, { inline: 'center' }],
+		['android', true, { ifNeeded: true }],
+		['android', true, { block: 'center', inline: 'nearest', ifNeeded: true, visibilityMargin: -150 }],
+	]) {
+		let { element, pdfViewer, rect, view } = createPositionNavigationView({ platform, loaded });
+		PDFView.prototype.navigateToPosition.call(view, { pageIndex: 3 }, options);
+		assert.deepEqual(element.lastScrollTo, { ...getScrollTarget({ rect, ...element, ...options }), behavior: 'instant' });
+		assert.equal(pdfViewer.currentScaleValue, 'page-width');
+	}
 });
