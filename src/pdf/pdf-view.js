@@ -74,7 +74,7 @@ import { getBlockNodeByRef } from '../common/sdt/position-mapper';
 import { PDFNativeTextSelection } from './native-text-selection';
 import { PDFDocumentData } from './pdf-document-data.mjs';
 import { PDFSearchController } from './pdf-search-controller.mjs';
-import { getScrollTarget } from './scroll-target.mjs';
+import { getFitScale, getScrollTarget } from './scroll-target.mjs';
 import {
 	createTouchAnnotationTransform,
 	shouldStartInlineTextAnnotationEditing,
@@ -1311,17 +1311,39 @@ class PDFView {
 		drawAnnotationsOnCanvas(canvas, viewport, this._annotations, pageIndex, this._pdfPages);
 	}
 
-	navigateToPosition(position, options = {}) {
+	async navigateToPosition(position, options = {}) {
 		this._cancelPendingPageTurn();
 		let element = this._iframeWindow.document.getElementById('viewerContainer');
+		let pdfViewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
 
 		let rect = this.getPositionBoundingViewRect(position);
+
+		let inlineNearest = options.inline === 'nearest';
+		let fitAnnotation = !inlineNearest && !options.ifNeeded && (options.block || 'center') === 'center';
+		if (fitAnnotation) {
+			let fitScale = getFitScale({
+				rectWidth: rect[2] - rect[0],
+				rectHeight: rect[3] - rect[1],
+				currentScale: pdfViewer.currentScale,
+				clientWidth: element.clientWidth,
+				clientHeight: element.clientHeight,
+			});
+			if (fitScale) {
+				pdfViewer.currentScaleValue = fitScale;
+				await new Promise(resolve => this._iframeWindow.requestAnimationFrame(
+					() => this._iframeWindow.requestAnimationFrame(resolve)
+				));
+				if (this._destroyed) {
+					return;
+				}
+				rect = this.getPositionBoundingViewRect(position);
+			}
+		}
 
 		let { clientWidth, clientHeight, scrollWidth, scrollHeight } = element;
 		let scrollTop = element.scrollTop;
 		let scrollLeft = element.scrollLeft;
 
-		let inlineNearest = options.inline === 'nearest';
 		if (options.ifNeeded && !inlineNearest) {
 			let margin = options.visibilityMargin || 0;
 			let visibleRect = [
@@ -2302,7 +2324,7 @@ class PDFView {
 		this._lastNavigationTime = Date.now();
 		if (location.annotationID && this._annotations.find(x => x.id === location.annotationID)) {
 			let annotation = this._annotations.find(x => x.id === location.annotationID);
-			this.navigateToPosition(annotation.position, options);
+			await this.navigateToPosition(annotation.position, options);
 		}
 		else if (location.dest) {
 			let navigation = this._iframeWindow.PDFViewerApplication.pdfLinkService.goToDestination(location.dest);
@@ -2311,7 +2333,7 @@ class PDFView {
 			}
 		}
 		else if (location.position) {
-			this.navigateToPosition(location.position, options);
+			await this.navigateToPosition(location.position, options);
 			this._highlightPosition(location.position);
 		}
 		else if (Number.isInteger(location.pageIndex)) {
