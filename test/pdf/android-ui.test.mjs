@@ -1857,3 +1857,78 @@ test('PDF view buffers mobile annotation image requests until its renderer is in
 	assert.equal(view._pendingAnnotationImageIDs, null);
 	assert.equal(eventHandlers[0][0], 'updateviewarea');
 });
+
+function createPositionNavigationView({
+	currentScale = 2,
+	clientWidth = 700,
+	clientHeight = 900,
+	scrollWidth = 5000,
+	scrollHeight = 5000,
+	baseRect = [1000, 300, 1800, 500],
+} = {}) {
+	let element = {
+		scrollLeft: 0,
+		scrollTop: 0,
+		clientWidth,
+		clientHeight,
+		scrollWidth,
+		scrollHeight,
+		scrollTo(options) {
+			this.lastScrollTo = options;
+		},
+	};
+	let scaleSets = [];
+	let pdfViewer = {
+		_currentScale: currentScale,
+		get currentScale() {
+			return this._currentScale;
+		},
+		set currentScaleValue(value) {
+			scaleSets.push(value);
+			this._currentScale = value;
+		},
+		_getVisiblePages: () => ({ first: { id: 1 }, last: { id: 1 } }),
+	};
+	let view = {
+		_destroyed: false,
+		_cancelPendingPageTurn: () => {},
+		getPositionBoundingViewRect: () => {
+			let s = pdfViewer.currentScale;
+			return [baseRect[0] * s, baseRect[1] * s, baseRect[2] * s, baseRect[3] * s];
+		},
+		_iframeWindow: {
+			document: { getElementById: () => element },
+			PDFViewerApplication: { pdfViewer },
+			requestAnimationFrame: callback => callback(),
+		},
+	};
+	return { element, pdfViewer, scaleSets, view };
+}
+
+test('Navigating to an annotation too large to fit at the current zoom zooms out just enough to show it', async () => {
+	let { element, pdfViewer, scaleSets, view } = createPositionNavigationView();
+	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { block: 'center' });
+	assert.deepEqual(scaleSets, [2 * (700 / 1600)]);
+	assert.equal(pdfViewer.currentScale, 0.875);
+	assert.equal(element.lastScrollTo.left, 875);
+	assert.equal(element.lastScrollTo.top, 0);
+});
+
+test('Navigating to an annotation that already fits does not change the zoom level', async () => {
+	let { element, pdfViewer, scaleSets, view } = createPositionNavigationView({
+		baseRect: [1000, 300, 1100, 350],
+	});
+	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { block: 'center' });
+	assert.deepEqual(scaleSets, []);
+	assert.equal(pdfViewer.currentScale, 2);
+	assert.equal(element.lastScrollTo.left, (1000 * 2 + 1100 * 2) / 2 - 700 / 2);
+});
+
+test('Zoom-to-fit is skipped for nearest/ifNeeded navigation (e.g. Read Aloud follow, text selection)', async () => {
+	let { pdfViewer, scaleSets, view } = createPositionNavigationView();
+	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { block: 'nearest' });
+	assert.deepEqual(scaleSets, []);
+	await PDFView.prototype.navigateToPosition.call(view, { pageIndex: 0 }, { ifNeeded: true, inline: 'nearest' });
+	assert.deepEqual(scaleSets, []);
+	assert.equal(pdfViewer.currentScale, 2);
+});

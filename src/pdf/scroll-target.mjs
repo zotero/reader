@@ -37,7 +37,7 @@ export function getScrollTarget({
 		}
 	}
 	else {
-		top = y - (clientHeight / 2) - VERTICAL_PADDING;
+		top = (rect[1] + rect[3]) / 2 - (clientHeight / 2) - VERTICAL_PADDING;
 	}
 
 	if (inlineNearest) {
@@ -72,8 +72,19 @@ export function getScrollTarget({
 		}
 	}
 	else {
-		left = x - (clientWidth / 2);
+		left = (rect[0] + rect[2]) / 2 - (clientWidth / 2);
 	}
 
 	return { left, top };
+}
+
+export function getFitScale({ rectWidth, rectHeight, currentScale, clientWidth, clientHeight }) {
+	if (!(currentScale > 0) || !(clientWidth > 0) || !(clientHeight > 0)) {
+		return null;
+	}
+	let factor = Math.min(
+		rectWidth > clientWidth ? clientWidth / rectWidth : 1,
+		rectHeight > clientHeight ? clientHeight / rectHeight : 1
+	);
+	return factor < 1 ? currentScale * factor : null;
 }
