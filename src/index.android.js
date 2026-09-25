@@ -55,7 +55,8 @@ window.createView = (encodedOptions) => {
 		getSelectedIDs: () => window._view.getSelectedAnnotationIDs(),
 	});
 
-	let url = new URL(options.url).toString();
+	// Standalone Reading Mode ('sdt') displays only the SDT pack and has no file URL
+	let url = options.url ? new URL(options.url).toString() : undefined;
 	delete options.url;
 	window._view = new View({
 		...options,
@@ -65,6 +66,14 @@ window.createView = (encodedOptions) => {
 		data: { url },
 		onInitialized: () => {
 			postMessage('onViewContentInitialized');
+		},
+		// Standalone Reading Mode only, when the SDT pack couldn't be displayed
+		onInitializeFailed: () => {
+			postMessage('onViewContentInitializeFailed');
+		},
+		// Standalone Reading Mode figure crops. Reply with setPageRegionImages.
+		onRequestPageRegionImages: ({ requestID, pageIndex, rects, scale }) => {
+			postMessage('onRequestPageRegionImages', { requestID, pageIndex, rects, scale });
 		},
 		onSaveAnnotations: (annotations) => {
 			postMessage('onSaveAnnotations', { annotations });
@@ -237,6 +246,13 @@ window.setReadingModeEnabled = async (options) => {
 		log("Reading Mode unavailable: " + error);
 	}
 	postMessage('onReadingModeEnabled', { requestID: options.requestID, enabled: window._view.readingModeEnabled });
+};
+
+// Standalone Reading Mode: answers onRequestPageRegionImages with one image data URL per requested rect, in the same
+// order ('' for a rect that couldn't be rendered). Rects are in PDF page coordinates; render at `scale` pixels per point.
+window.setPageRegionImages = (options) => {
+	log("Set page region images: " + options.requestID);
+	window._view.setPageRegionImages(options.requestID, options.images);
 };
 
 window.createAnnotationFromSDT = async (options) => {
