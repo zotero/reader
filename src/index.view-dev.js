@@ -13,6 +13,9 @@ window.createView = (options) => {
 		onInitialized: () => {
 			console.log('Initialized view');
 		},
+		onInitializeFailed: () => {
+			console.warn('View failed to initialize');
+		},
 		onSaveAnnotations: (annotations) => {
 			// New annotation was created or existing was modified. Although, view, probably, won't need
 			// to modify existing annotations for now
@@ -90,6 +93,44 @@ window.createView = (options) => {
 	window._view = view;
 };
 
+// Stand-in for the app's native PDF renderer in standalone Reading Mode
+// (?type=sdt): render the requested page regions with pdf.js
+let pdfDocumentPromise = null;
+async function renderPageRegionImages({ requestID, pageIndex, rects, scale }) {
+	pdfDocumentPromise ??= (async () => {
+		let pdfjsLib = await import(/* webpackIgnore: true */ new URL('pdf/build/pdf.mjs', window.location).href);
+		pdfjsLib.GlobalWorkerOptions.workerSrc = new URL('pdf/build/pdf.worker.mjs', window.location).href;
+		let res = await fetch(pdf.fileName);
+		return pdfjsLib.getDocument({ data: new Uint8Array(await res.arrayBuffer()) }).promise;
+	})();
+	let images = [];
+	try {
+		let page = await (await pdfDocumentPromise).getPage(pageIndex + 1);
+		let viewport = page.getViewport({ scale });
+		let canvas = document.createElement('canvas');
+		canvas.width = Math.ceil(viewport.width);
+		canvas.height = Math.ceil(viewport.height);
+		await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+		for (let rect of rects) {
+			let [x1, y1, x2, y2] = viewport.convertToViewportRectangle(rect);
+			let left = Math.min(x1, x2);
+			let top = Math.min(y1, y2);
+			let width = Math.abs(x2 - x1);
+			let height = Math.abs(y2 - y1);
+			let crop = document.createElement('canvas');
+			crop.width = Math.max(1, Math.round(width));
+			crop.height = Math.max(1, Math.round(height));
+			crop.getContext('2d').drawImage(canvas, left, top, width, height, 0, 0, crop.width, crop.height);
+			images.push(crop.toDataURL('image/png'));
+		}
+	}
+	catch (e) {
+		console.warn('Failed to render page region images', e);
+		images = rects.map(() => '');
+	}
+	window._view.setPageRegionImages(requestID, images);
+}
+
 async function main() {
 	if (window._view) {
 		throw new Error('View is already initialized');
@@ -98,8 +139,10 @@ async function main() {
 	let urlParams = new URLSearchParams(queryString);
 	let type = urlParams.get('type') || 'snapshot';
 	let platform = urlParams.get('platform') || (/Android/.test(navigator.userAgent) ? 'android' : undefined);
+	// Standalone Reading Mode (?type=sdt) of the PDF demo
+	let sourceType = type === 'sdt' ? 'pdf' : null;
 	let demo;
-	if (type === 'pdf') {
+	if (type === 'pdf' || type === 'sdt') {
 		demo = pdf;
 	}
 	else if (type === 'epub') {
@@ -111,7 +154,9 @@ async function main() {
 	let res = await fetch(demo.fileName);
 	window.createView({
 		type,
+		sourceType,
 		platform,
+		onRequestPageRegionImages: type === 'sdt' ? renderPageRegionImages : undefined,
 		// Test on-demand annotation image delivery by appending '&onDemandImages',
 		// then calling window._view.renderAnnotationImages([id, …]) in the console
 		onRenderAnnotationImage: urlParams.has('onDemandImages')
@@ -121,7 +166,7 @@ async function main() {
 			buf: new Uint8Array(await res.arrayBuffer()),
 		},
 		annotations: demo.annotations,
-		viewState: demo.state,
+		viewState: type === 'sdt' ? undefined : demo.state,
 		// location: {
 		// 	annotationID: 123
 		// },
@@ -131,8 +176,9 @@ async function main() {
 	});
 
 	// Hand over the SDT pack like the mobile apps do, so Reading Mode and
-	// Read Aloud work (e.g. `await _view.setReadingModeEnabled(true)`)
-	getSDTPack(type, demo.fileName).then((pack) => {
+	// Read Aloud work (e.g. `await _view.setReadingModeEnabled(true)`). In
+	// standalone Reading Mode, this displays the view.
+	getSDTPack(sourceType ?? type, demo.fileName).then((pack) => {
 		if (pack.ok) {
 			window._view.setSDTPack(pack);
 			console.log('Set SDT pack');

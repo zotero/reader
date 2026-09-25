@@ -24,6 +24,21 @@ export default class FakePDFView {
 }
 `;
 
+let sdtViewSource = `
+export default class FakeSDTView {
+	constructor(options) {
+		this.options = options;
+		this.calls = [];
+		this.initializedPromise = Promise.resolve(globalThis.__mobileSDTViewInitialized ?? true);
+		globalThis.__mobileSDTView = this;
+	}
+	setAnnotations(value) { this.calls.push(['setAnnotations', value]); }
+	setTool(value) { this.calls.push(['setTool', value]); }
+	setOutline(value) { this.calls.push(['setOutline', value]); }
+	destroy() { this.calls.push(['destroy']); }
+}
+`;
+
 let annotationManagerSource = `
 export default class FakeAnnotationManager {
 	constructor(options) {
@@ -63,13 +78,18 @@ registerHooks({
 				|| specifier.endsWith('./sdt/document-session.mjs')) {
 			return nextResolve(dataModule(sdtDocumentSessionSource), context);
 		}
+		if (specifier.endsWith('dom/sdt/sdt-view')) {
+			return nextResolve(dataModule(sdtViewSource), context);
+		}
 		if (specifier.endsWith('dom/epub/epub-view')
-				|| specifier.endsWith('dom/snapshot/snapshot-view')
-				|| specifier.endsWith('dom/sdt/sdt-view')) {
+				|| specifier.endsWith('dom/snapshot/snapshot-view')) {
 			return nextResolve('data:text/javascript,export default class {};', context);
 		}
 		if (specifier.endsWith('common/sdt/position-mapper') || specifier.endsWith('./sdt/position-mapper')) {
-			return nextResolve('data:text/javascript,export let getTextNodeSpans = () => [];', context);
+			return nextResolve(dataModule(`
+				export let getTextNodeSpans = () => [];
+				export let getBlockNodeByRef = (content, ref) => content[ref[0]] ?? null;
+			`), context);
 		}
 		if (specifier.endsWith('common/read-aloud/sdt-segments') || specifier.endsWith('./read-aloud/sdt-segments')) {
 			return nextResolve('data:text/javascript,export let buildSDTReadAloudSegments = () => []; export let getSDTLang = () => null;', context);
@@ -197,4 +217,136 @@ test('mobile View recreates a password-protected PDF when no active request can 
 		['setSelectedAnnotationIDs', ['A']],
 	]);
 	globalThis.__mobilePasswordAccepted = true;
+});
+
+function createStandaloneView(overrides = {}) {
+	globalThis.__mobileSDTView = null;
+	let { view, ...rest } = createMobileView({
+		type: 'sdt',
+		sourceType: 'pdf',
+		data: undefined,
+		...overrides,
+	});
+	return { ...rest, view };
+}
+
+function createStandaloneSDT() {
+	return {
+		structure: {
+			content: [
+				{ type: 'paragraph' },
+				{ type: 'image', anchor: { pageRects: [[1, 100, 200, 300, 400]] } },
+			],
+			catalog: {
+				outline: [],
+				pages: [
+					{ label: 'i', viewRect: [0, 0, 612, 792], contentRange: [[0], [1]] },
+					{ viewRect: [0, 0, 612, 792], contentRange: [[1], [2]] },
+				],
+			},
+		},
+		mapper: {
+			getSortIndex: position => `sortIndex-${position.pageIndex}`,
+		},
+	};
+}
+
+test('standalone Reading Mode requires a supported source type', () => {
+	assert.throws(() => createStandaloneView({ sourceType: 'snapshot' }), /not supported for 'snapshot'/);
+});
+
+test('standalone Reading Mode creates its view once the SDT pack is set', async () => {
+	let initialized = 0;
+	let annotations = [
+		{ id: 'H', type: 'highlight' },
+		{ id: 'I', type: 'ink' },
+		{ id: 'N', type: 'note' },
+	];
+	let { sdtDocumentSession, view } = createStandaloneView({
+		annotations,
+		tool: { type: 'ink', color: '#f00' },
+		onInitialized: () => initialized++,
+		// Skip the empty text annotation cleanup, which the fake manager lacks
+		onDeleteAnnotations: undefined,
+	});
+	assert.equal(sdtDocumentSession.options.documentType, 'pdf');
+	assert.equal(globalThis.__mobileSDTView, null);
+	// Calls before the view exists are safe
+	view.setTool({ type: 'underline' });
+	view.selectAnnotations(['H']);
+
+	globalThis.__mobileSDTDocument = createStandaloneSDT();
+	view.setSDTPack({ bytes: new Uint8Array([1]), packVersion: 1, schemaMajorVersion: 1 });
+	await view._standaloneQueue;
+
+	let sdtView = globalThis.__mobileSDTView;
+	assert.equal(view._view, sdtView);
+	assert.equal(initialized, 1);
+	assert.equal(sdtView.options.data.paged, true);
+	assert.deepEqual(sdtView.options.tool, { type: 'underline' });
+	assert.deepEqual(sdtView.options.selectedAnnotationIDs, ['H']);
+	assert.deepEqual(sdtView.options.annotations.map(x => x.id), ['H', 'N']);
+	// Only text annotation tools work in Reading Mode
+	view.setTool({ type: 'ink', color: '#f00' });
+	assert.deepEqual(sdtView.calls.at(-1), ['setTool', { type: 'pointer' }]);
+});
+
+test('standalone Reading Mode derives annotation metadata and page stats from the SDT', async () => {
+	let stats = [];
+	let { view } = createStandaloneView({
+		pageLabels: [],
+		onChangeViewStats: value => stats.push(value),
+	});
+	globalThis.__mobileSDTDocument = createStandaloneSDT();
+	view.setSDTPack({ bytes: new Uint8Array([1]), packVersion: 1, schemaMajorVersion: 1 });
+	await view._standaloneQueue;
+	let { data, onChangeViewStats } = globalThis.__mobileSDTView.options;
+
+	assert.deepEqual(
+		data.getSourceAnnotationMeta({ pageIndex: 0, rects: [[0, 0, 1, 1]] }),
+		{ sortIndex: 'sortIndex-0', pageLabel: 'i' }
+	);
+	// App-provided page labels take precedence, and pages without one are numbered
+	view.setPageLabels(['A']);
+	assert.equal(data.getSourceAnnotationMeta({ pageIndex: 0, rects: [] }).pageLabel, 'A');
+	assert.equal(data.getSourceAnnotationMeta({ pageIndex: 1, rects: [] }).pageLabel, '2');
+
+	onChangeViewStats({ canZoomIn: true });
+	data.syncBaseView(1);
+	await new Promise(resolve => setTimeout(resolve, 150));
+	assert.deepEqual(stats.at(-1), { canZoomIn: true, pageIndex: 1, pageLabel: '2', pagesCount: 2 });
+});
+
+test('standalone Reading Mode requests figure crops from the app', async () => {
+	let requests = [];
+	let { view } = createStandaloneView({
+		onRequestPageRegionImages: request => requests.push(request),
+	});
+	globalThis.__mobileSDTDocument = createStandaloneSDT();
+	view.setSDTPack({ bytes: new Uint8Array([1]), packVersion: 1, schemaMajorVersion: 1 });
+	await view._standaloneQueue;
+
+	let [crop] = globalThis.__mobileSDTView.options.data.getBlockCrops([1]);
+	let image = crop.render();
+	assert.equal(requests.length, 1);
+	assert.equal(requests[0].pageIndex, 1);
+	assert.deepEqual(requests[0].rects, [[100, 200, 300, 400]]);
+	assert.ok(requests[0].scale > 0);
+	view.setPageRegionImages(requests[0].requestID, ['data:image/png;base64,AAAA']);
+	assert.equal(await image, 'data:image/png;base64,AAAA');
+});
+
+test('standalone Reading Mode reports when the SDT is unavailable', async () => {
+	let failed = 0;
+	let initialized = 0;
+	let { view } = createStandaloneView({
+		onInitialized: () => initialized++,
+		onInitializeFailed: () => failed++,
+	});
+	globalThis.__mobileSDTDocument = null;
+	view.setSDTPack({ bytes: new Uint8Array([1]), packVersion: 1, schemaMajorVersion: 1 });
+	await view._standaloneQueue;
+	assert.equal(view._view, null);
+	assert.equal(failed, 1);
+	assert.equal(initialized, 0);
 });

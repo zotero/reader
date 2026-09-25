@@ -2,6 +2,7 @@ import type {
 	ContentBlockNode,
 	PageContentRange,
 	PdfAnchor,
+	RefPath,
 	StructuredDocumentText,
 	TextNode,
 } from '../../../structured-document-text/schema';
@@ -10,7 +11,7 @@ import {
 	parseTextMap,
 } from '../../../structured-document-text/src/pdf/decode';
 import { isWhitespaceChar } from '../../../structured-document-text/src/pdf/utils';
-import { refKey, walkContentRangeLeafBlocks } from '../../../structured-document-text/src/range';
+import { compareRefs, refKey, walkContentRangeLeafBlocks } from '../../../structured-document-text/src/range';
 import type {
 	AnnotationType,
 	PDFPosition,
@@ -18,6 +19,7 @@ import type {
 	SourcePosition,
 } from '../types';
 import { PDF_NOTE_DIMENSIONS } from '../defines';
+import { formatSortIndex, getSortIndexRect } from '../../pdf/selection';
 import {
 	getTextNodeSpans,
 	type SDTPositionMapper,
@@ -213,6 +215,49 @@ export class PDFPositionMapper implements SDTPositionMapper {
 				top,
 			]],
 		};
+	}
+
+	/**
+	 * sortIndex for a PDF position, for when no pdf.js page data is available
+	 * (standalone Reading Mode). Follows the pdf.js-based getSortIndex(), but
+	 * the character offset counts the SDT's non-whitespace characters on the
+	 * page, so it can differ slightly from one computed from pdf.js chars.
+	 */
+	getSortIndex(position: PDFPosition): string {
+		let { pageIndex } = position;
+		let page = this._structure.catalog.pages[pageIndex];
+		let rect = getSortIndexRect(position);
+		let top = 0;
+		if (page?.viewRect && rect) {
+			top = Math.max(0, (page.viewRect[3] - page.viewRect[1]) - rect[3]);
+		}
+		let offset = 0;
+		let start = this.sourceToSDTPosition(position)?.start;
+		let contentRange = page?.contentRange;
+		if (start && contentRange) {
+			let walkRange: PageContentRange = [
+				[contentRange[0][0]],
+				[Math.min(contentRange[1][0] + 1, this._structure.content.length)],
+			];
+			walkContentRangeTextNodes(this._structure.content, walkRange, (node, ref) => {
+				let runData = this._getRunData(node, ref);
+				let onPage = !runData && !!(node.anchor as PdfAnchor | undefined)?.pageRects
+					?.some(pageRect => pageRect[0] === pageIndex);
+				let runIndex = 0;
+				for (let ci = 0; ci < node.text.length; ci++) {
+					if (isWhitespaceChar(node.text[ci])) {
+						continue;
+					}
+					let run = runData?.[runIndex++];
+					let point: number[] = [...ref, ci];
+					if ((run ? run.pageIndex === pageIndex : onPage)
+							&& compareRefs(point as RefPath, start as RefPath) < 0) {
+						offset++;
+					}
+				}
+			});
+		}
+		return formatSortIndex(pageIndex, offset, top);
 	}
 
 	clearCache(): void {
