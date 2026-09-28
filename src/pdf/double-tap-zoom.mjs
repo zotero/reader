@@ -75,11 +75,16 @@ export function getTextBlockRect(chars, point) {
 		return null;
 	}
 
-	let start = closestIndex;
+	return getCharBlockRect(chars, closestIndex);
+}
+
+// Get the rect of the paragraph lines around a char that form one column
+function getCharBlockRect(chars, charIndex) {
+	let start = charIndex;
 	while (start > 0 && !chars[start - 1].paragraphBreakAfter) {
 		start--;
 	}
-	let end = closestIndex;
+	let end = charIndex;
 	while (end < chars.length - 1 && !chars[end].paragraphBreakAfter) {
 		end++;
 	}
@@ -112,10 +117,70 @@ export function getTextBlockRect(chars, point) {
 		}
 	}
 
-	return groups.find(group => closestIndex >= group.start && closestIndex <= group.end)?.rect || null;
+	return groups.find(group => charIndex >= group.start && charIndex <= group.end)?.rect || null;
 }
 
-export function getDoubleTapTargetScale(currentScale, blockWidth, viewportWidth) {
+/**
+ * When the point is in the gutter between two text columns, get the rect
+ * spanning both columns, so a double tap there zooms to the column pair
+ */
+export function getColumnSpanRect(chars, point) {
+	if (!Array.isArray(chars) || !chars.length
+			|| !Array.isArray(point) || point.length !== 2 || !point.every(Number.isFinite)) {
+		return null;
+	}
+
+	let [x, y] = point;
+	let closestLeft = -1;
+	let closestRight = -1;
+	let leftDistance = Infinity;
+	let rightDistance = Infinity;
+	for (let i = 0; i < chars.length; i++) {
+		let rect = !chars[i].ignorable && normalizeRect(chars[i].rect);
+		if (!rect) {
+			continue;
+		}
+		// Only text at the height of the point, allowing for the gap between lines
+		let lineHeight = rect[3] - rect[1];
+		if (y < rect[1] - lineHeight || y > rect[3] + lineHeight) {
+			continue;
+		}
+		if (rect[2] <= x) {
+			if (x - rect[2] < leftDistance) {
+				closestLeft = i;
+				leftDistance = x - rect[2];
+			}
+		}
+		else if (rect[0] >= x) {
+			if (rect[0] - x < rightDistance) {
+				closestRight = i;
+				rightDistance = rect[0] - x;
+			}
+		}
+		// The point is on text, not in a gutter
+		else {
+			return null;
+		}
+	}
+	if (closestLeft === -1 || closestRight === -1) {
+		return null;
+	}
+
+	let left = getCharBlockRect(chars, closestLeft);
+	let right = getCharBlockRect(chars, closestRight);
+	// A space between words has the same block on both sides
+	if (!left || !right || left[2] > x || right[0] < x) {
+		return null;
+	}
+	// Columns are separated by a gutter narrower than the columns themselves
+	let gap = right[0] - left[2];
+	if (gap > Math.min(left[2] - left[0], right[2] - right[0]) / 2) {
+		return null;
+	}
+	return mergeRects([left, right]);
+}
+
+export function getDoubleTapTargetScale(currentScale, blockWidth, viewportWidth, minZoomFactor = 1.25) {
 	if (!(currentScale > 0) || !(viewportWidth > 0)) {
 		return null;
 	}
@@ -125,6 +190,6 @@ export function getDoubleTapTargetScale(currentScale, blockWidth, viewportWidth)
 		: currentScale * 2;
 	return Math.min(
 		DOUBLE_TAP_MAX_SCALE,
-		Math.max(currentScale * 1.25, fittedScale)
+		Math.max(currentScale * minZoomFactor, fittedScale)
 	);
 }

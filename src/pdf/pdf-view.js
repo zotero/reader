@@ -82,6 +82,7 @@ import {
 } from './touch-annotation-transform.mjs';
 import {
 	DOUBLE_TAP_DELAY,
+	getColumnSpanRect,
 	getDoubleTapTargetScale,
 	getTextBlockRect,
 	isDoubleTap,
@@ -2011,7 +2012,10 @@ class PDFView {
 		}
 
 		let point = position.rects[0];
-		let blockRect = getTextBlockRect(this._pdfPages[position.pageIndex]?.chars, point.slice(0, 2));
+		let chars = this._pdfPages[position.pageIndex]?.chars;
+		// Tapping between two columns fits both of them rather than the closer one
+		let columnSpanRect = getColumnSpanRect(chars, point.slice(0, 2));
+		let blockRect = columnSpanRect || getTextBlockRect(chars, point.slice(0, 2));
 		let blockWidth = 0;
 		if (blockRect) {
 			let viewRect = p2v({ pageIndex: position.pageIndex, rects: [blockRect] }, page.viewport).rects[0];
@@ -2020,9 +2024,11 @@ class PDFView {
 		let targetScale = getDoubleTapTargetScale(
 			pdfViewer.currentScale,
 			blockWidth,
-			container.clientWidth
+			container.clientWidth,
+			// Both columns may already nearly fill the width, so don't zoom past them
+			columnSpanRect ? 1 : undefined
 		);
-		if (!targetScale) {
+		if (!targetScale || columnSpanRect && targetScale <= pdfViewer.currentScale * 1.01) {
 			return false;
 		}
 
