@@ -160,6 +160,7 @@ class View {
 			annotations: this._options.annotations || [],
 			viewState: this._options.viewState || null,
 			location: this._options.location || null,
+			contentFit: this._options.contentFit || null,
 			onChangeViewState: debounce(this._options.onChangeViewState, DEBOUNCE_STATE_CHANGE),
 			onChangeViewStats: (stats) => {
 				this._baseViewStats = stats;
@@ -480,6 +481,10 @@ class View {
 
 	zoomReset() {
 		this._activeView.zoomReset();
+	}
+
+	fitToContent(options) {
+		return this._view.fitToContent?.(options) ?? false;
 	}
 
 	navigate(location) {
