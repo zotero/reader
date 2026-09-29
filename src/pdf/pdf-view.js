@@ -313,6 +313,7 @@ class PDFView {
 				}
 				setOptions();
 				this._iframeWindow.onDestroyPage = this._handlePageDestroy.bind(this);
+				this._iframeWindow.getPageTextColorRegions = this._getPageTextColorRegions.bind(this);
 				this._iframeWindow.PDFViewerApplication.onPassword = handlePasswordRequest;
 				if (this._preview) {
 					// Necessary for view stats update
@@ -766,6 +767,14 @@ class PDFView {
 				textLayer.draggable = true;
 			}
 		}
+	}
+
+	_getPageTextColorRegions(originalPage) {
+		if (this._destroyed || this._preview) {
+			return [];
+		}
+		let pageIndex = originalPage.id - 1;
+		return Page.getTextColorRegions(this._pdfPages[pageIndex], pageIndex);
 	}
 
 	async _handlePageRendered(event) {

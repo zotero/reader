@@ -36,14 +36,18 @@ function round(value) {
 	return Math.round(value * 100) / 100;
 }
 
+function isTextColorOverlay(overlay) {
+	return overlay.type === 'citation' || overlay.type === 'internal-link' && overlay.source === 'matched';
+}
+
 // Renders the overlay (annotations, selection, find results, etc.) for a single
 // page as DOM elements positioned over the pdf.js page canvas, instead of
-// painting into the canvas. The canvas always contains pristine pdf.js output,
-// so no snapshot of it is ever needed, halving the memory cost of a rendered
-// page. Tint-like content that previously blended with page pixels through
-// globalCompositeOperation uses the equivalent mix-blend-mode, and everything
-// else was drawn with source-over compositing, which produces identical pixels
-// when drawn on a transparent layer above the canvas.
+// painting into the canvas. The canvas contains pdf.js output, including any
+// citation text coloring, so no snapshot is needed. Tint-like content that
+// previously blended with page pixels through globalCompositeOperation uses
+// the equivalent mix-blend-mode, and everything else was drawn with source-over
+// compositing, which produces identical pixels when drawn on a transparent
+// layer above the canvas.
 //
 // The overlay is described by a display list: a flat array of primitives in
 // paint order. Rect primitives become divs (they may need mix-blend-mode, which
@@ -349,7 +353,36 @@ export default class Page {
 		}
 	}
 
-	// Citation and matched internal-link overlay tints
+	// Citation and matched internal-link text colors, with overlay tints for
+	// regions where PDF.js cannot safely recolor text.
+	static getTextColorRegions(pageData, pageIndex) {
+		if (pageData?.semanticFlowRevision === undefined) {
+			return null;
+		}
+		let regions = [];
+		for (let overlay of pageData.overlays) {
+			if (!isTextColorOverlay(overlay)) {
+				continue;
+			}
+			let { position } = overlay;
+			let rects = position.pageIndex === pageIndex
+				? position.rects
+				: position.pageIndex + 1 === pageIndex ? position.nextPageRects : null;
+			for (let rect of rects || []) {
+				regions.push({ rect, color: '#245e91' });
+			}
+		}
+		return regions;
+	}
+
+	_updateTextColorRegions() {
+		let regions = this._layer._getPageTextColorRegions(this._originalPage);
+		// Keep existing colors until a new semantic generation is ready.
+		if (regions) {
+			this._originalPage.setTextColorRegions(regions);
+		}
+	}
+
 	_pushOverlays(items) {
 		let pageData = this._layer._pdfPages[this._pageIndex];
 		if (!pageData) {
@@ -362,7 +395,13 @@ export default class Page {
 			blend: dark ? 'lighten' : 'multiply'
 		};
 		for (let overlay of pageData.overlays) {
-			if (!(overlay.type === 'citation' || overlay.type === 'internal-link' && overlay.source === 'matched')) {
+			if (!isTextColorOverlay(overlay)) {
+				continue;
+			}
+			let rects = this._rectsForThisPage(overlay.position) || [];
+			if (rects.length && rects.every(rect => this._originalPage.coloredTextRegions.some(
+				region => region.rect.every((value, i) => value === rect[i])
+			))) {
 				continue;
 			}
 			this._pushPositionRects(items, overlay.position, style);
@@ -952,6 +991,7 @@ export default class Page {
 		if (!page.div || !page.viewport) {
 			return;
 		}
+		this._updateTextColorRegions();
 
 		this._renderTextAnnotations(this._layer._getPageAnnotations(this._pageIndex));
 
@@ -1053,8 +1093,8 @@ export default class Page {
 			this._drawNoteIconOnCanvas(ctx, annotation.color);
 		}
 		else if (annotation.type === 'image') {
-			// The page canvas contains pristine pdf.js output (the overlay is
-			// rendered in the DOM), so it can be sampled directly
+			// Sample the displayed page, without the DOM annotation overlay,
+			// for the image annotation's drag preview.
 			let sourceCanvas = this._originalPage.canvas;
 			if (sourceCanvas?.width) {
 				ctx.globalAlpha = 0.5;
