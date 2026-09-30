@@ -19,6 +19,7 @@ import { getBaseLanguage } from '../../read-aloud/lang';
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
 import { useMediaControls } from '../../read-aloud/components/use-media-controls';
 import { buildVoiceOptions } from '../../read-aloud/voice-options';
+import { areLocalVoicesUnavailable } from '../../read-aloud/local-voices-unavailable';
 import { formatTimeRemaining } from '../../lib/format-time-remaining';
 
 function ReadAloudPopup(props) {
@@ -359,7 +360,16 @@ function TierSelect(props) {
 		);
 	}
 	options.push(
-		{ value: 'local', label: l10n.getString('reader-read-aloud-voice-tier-local'), disabled: !tiers.has('local') },
+		{
+			value: 'local',
+			// TEMP: See local-voices-unavailable.ts
+			label: l10n.getString('reader-read-aloud-voice-tier-local') + (
+				areLocalVoicesUnavailable()
+					? ' (temporarily unavailable on macOS 27)'
+					: ''
+			),
+			disabled: !tiers.has('local'),
+		},
 	);
 
 	if (loggedIn || options.length > 1) {

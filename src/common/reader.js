@@ -33,6 +33,7 @@ import { addFTL, getLocalizedString } from '../fluent';
 import { getVoicePreferencesURL } from './lib/read-aloud-links';
 import { resolveLanguage } from './read-aloud/lang';
 import { ReadAloudManager } from './read-aloud/manager';
+import { setLocalVoicesUnavailable } from './read-aloud/local-voices-unavailable';
 import {
 	buildSDTReadAloudSegments,
 	findSegmentIndexForSDTPosition,
@@ -207,6 +208,10 @@ class Reader {
 		window.speechSynthesis.getVoices();
 
 		this._enableReadAloud = options.enableReadAloud || false;
+		// TEMP: See local-voices-unavailable.ts
+		if (options.readAloudLocalVoicesUnavailable) {
+			setLocalVoicesUnavailable(true);
+		}
 		this._readAloudRemoteInterface = options.readAloudRemoteInterface || null;
 
 		this._readAloudManager = new ReadAloudManager({

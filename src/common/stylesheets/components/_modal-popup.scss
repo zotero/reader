@@ -520,6 +520,10 @@
 				.voice-status {
 					margin-top: auto;
 
+					&.unavailable {
+						font-style: italic;
+					}
+
 					&.error {
 						color: var(--accent-red);
 					}

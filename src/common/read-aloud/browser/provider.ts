@@ -1,5 +1,6 @@
 import { ReadAloudProvider } from '../provider';
 import { BrowserReadAloudVoice } from './voice';
+import { areLocalVoicesUnavailable } from '../local-voices-unavailable';
 
 const VOICES_CHANGED_TIMEOUT = 3000;
 
@@ -9,6 +10,10 @@ export class BrowserReadAloudProvider implements ReadAloudProvider {
 	readonly premiumCreditsRemaining = null;
 
 	async getVoices(): Promise<BrowserReadAloudVoice[]> {
+		// TEMP: See local-voices-unavailable.ts
+		if (areLocalVoicesUnavailable()) {
+			return [];
+		}
 		if (!window.speechSynthesis.getVoices().length) {
 			await new Promise<void>((resolve) => {
 				let timeout: ReturnType<typeof setTimeout>;

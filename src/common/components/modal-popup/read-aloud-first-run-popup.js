@@ -9,6 +9,7 @@ import { getBaseLanguage, getPreferredRegion } from '../../read-aloud/lang';
 import { getVoicesForLanguage, getVoiceRegion, TIERS } from '../../read-aloud/voice';
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
 import { buildVoiceOptions } from '../../read-aloud/voice-options';
+import { areLocalVoicesUnavailable } from '../../read-aloud/local-voices-unavailable';
 import cx from 'classnames';
 import IconLoading from '../../../../res/icons/16/loading.svg';
 import IconPlayFill from '../../../../res/icons/16/play-fill.svg';
@@ -126,6 +127,15 @@ function TierStatus({ tier, status }) {
 		return <div className="voice-status">{'\u00A0'}</div>;
 	}
 
+	// TEMP: See local-voices-unavailable.ts
+	if (status.error === 'temporarily-unavailable') {
+		return (
+			<div className="voice-status unavailable">
+				Temporarily unavailable on macOS 27
+			</div>
+		);
+	}
+
 	if (status.error === 'unsupported') {
 		let languageName;
 		try {
@@ -181,6 +191,10 @@ function TierPreview({ tier, selected, onSelect, onPurchaseCredits, voices, sele
 		: loaded && !voices.length
 			? { error: 'unsupported', lang }
 			: null;
+	// TEMP: See local-voices-unavailable.ts
+	if (tier === 'local' && areLocalVoicesUnavailable()) {
+		status = { error: 'temporarily-unavailable' };
+	}
 
 	return (
 		<div className={cx('tier', { checked, disabled })} onClick={handleClick}>

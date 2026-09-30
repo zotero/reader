@@ -4,10 +4,16 @@ import { flushSync } from 'react-dom';
 import { LocalizationProvider, ReactLocalization } from '@fluent/react';
 import ReadAloudFirstRunPopup from './common/components/modal-popup/read-aloud-first-run-popup';
 import { addFTL, bundle } from './fluent';
+import { setLocalVoicesUnavailable } from './common/read-aloud/local-voices-unavailable';
 
 let l10n = new ReactLocalization([bundle]);
 
 window.createReadAloudFirstRun = (options) => {
+	// TEMP: See local-voices-unavailable.ts
+	if (options.readAloudLocalVoicesUnavailable) {
+		setLocalVoicesUnavailable(true);
+	}
+
 	if (Array.isArray(options.ftl)) {
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
