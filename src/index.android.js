@@ -219,6 +219,11 @@ window.setSDTPack = (options) => {
 	});
 };
 
+window.setAppearance = (options) => {
+	log("Set appearance: lineHeight=" + options.lineHeight + "; pageWidth=" + options.pageWidth);
+	window._view.setAppearance(options);
+};
+
 window.sdtAnchorToPosition = async (options) => {
 	const anchor = JSON.parse(decodeBase64(options.anchor));
 	const position = await window._view.sdtAnchorToPosition(anchor);

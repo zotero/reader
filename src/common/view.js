@@ -250,7 +250,7 @@ class View {
 			...this._getCommonViewOptions(),
 			tool: this._getSDTTool(this._tool),
 			annotations: this._getSDTAnnotations([...this._annotationManager._annotations]),
-			viewState: {},
+			viewState: this._appearance ? { appearance: this._appearance } : {},
 			location: baseView.getSDTLocation?.(sdt.structure) ?? null,
 			// The base view keeps providing the view state, since it's scroll-synced
 			// and can be restored without Reading Mode
@@ -552,6 +552,18 @@ class View {
 	setSpreadMode(mode) {
 		this._ensureType('pdf', 'epub');
 		this._view.setSpreadMode(mode);
+	}
+
+	setAppearance(appearance) {
+		this._appearance = {
+			...this._appearance,
+			lineHeight: appearance.lineHeight,
+			wordSpacing: appearance.wordSpacing,
+			letterSpacing: appearance.letterSpacing,
+			pageWidth: appearance.pageWidth,
+		};
+		this._view?.setAppearance?.(this._appearance);
+		this._sdtView?.setAppearance?.(this._appearance);
 	}
 
 	/**
