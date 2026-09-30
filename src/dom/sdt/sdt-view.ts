@@ -341,8 +341,12 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	private _convertOutline(items: StructuredDocumentText['catalog']['outline']): OutlineItem[] {
 		return items.map(item => ({
 			title: item.title,
-			location: item.ref ? { href: '#sdt-' + item.ref.join('.') } : {},
-			items: item.children ? this._convertOutline(item.children) : undefined,
+			location: item.ref
+				? { href: '#sdt-' + item.ref.join('.') }
+				: item.target?.position?.pageIndex !== undefined
+					? { pageIndex: item.target.position.pageIndex }
+					: {},
+			items: item.children ? this._convertOutline(item.children) : [],
 		}));
 	}
 

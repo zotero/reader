@@ -200,7 +200,7 @@ export class PDFDocumentData {
 		this._semanticDocument = document;
 		this._onMetadata?.({
 			pageLabels: document.pageLabels,
-			outline: document.outline,
+			outline: document.outline.length ? document.outline : this._nativeOutline ?? [],
 		});
 		if (this._outlineActive) {
 			this._resolveOutline();
@@ -437,7 +437,7 @@ export class PDFDocumentData {
 				if (this._outlineActive
 						&& !this._destroyed
 						&& this._semanticDocument === document) {
-					this._onMetadata?.({ outline });
+					this._onMetadata?.({ outline: outline?.length ? outline : this._nativeOutline ?? [] });
 				}
 				return outline;
 			})
