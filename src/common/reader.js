@@ -1947,7 +1947,7 @@ class Reader {
 				stats = merged;
 			}
 			this._updateState({ [stateKey]: stats });
-		}, DEBOUNCE_STATS_CHANGE);
+		}, DEBOUNCE_STATS_CHANGE, { maxWait: DEBOUNCE_STATS_CHANGE });
 
 		let onAddAnnotation = (annotation, select) => {
 			annotation = this._annotationManager.addAnnotation(annotation);
