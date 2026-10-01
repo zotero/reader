@@ -12,8 +12,13 @@ import {
 	ViewStats,
 	OutlineItem,
 } from "../../common/types";
-import type { StructuredDocumentText } from '../../../structured-document-text/schema';
+import type {
+	OutlineItem as SDTOutlineItem,
+	RefPath,
+	StructuredDocumentText,
+} from '../../../structured-document-text/schema';
 import { getPageBlockSpan } from '../../../structured-document-text/src/pages';
+import { compareRefs } from '../../../structured-document-text/src/range';
 import type { SDTPositionMapper } from '../../common/sdt/position-mapper';
 import { getSDTLang } from '../../common/read-aloud/sdt-segments';
 import {
@@ -93,6 +98,8 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	private _destroyed = false;
 
 	private _lastVisibleBlockIndex: number | null = null;
+
+	private _lastNavigationTime = 0;
 
 	private _pageProgressionRTL: boolean | null = null;
 
@@ -569,6 +576,7 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {
+		this._lastNavigationTime = Date.now();
 		if (location.href?.startsWith('#sdt-')) {
 			let el = this._iframeDocument.getElementById(location.href.slice(1));
 			if (el) {
@@ -660,8 +668,46 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 			canNavigateToLastPage: pageIndex !== null && pageIndex < this._pagesCount - 1,
 			canNavigateToNextPage: pageIndex !== null && pageIndex < this._pagesCount - 1,
 			appearance: this.appearance,
+			outlinePath: Date.now() - this._lastNavigationTime > 1500 ? this._getOutlinePath() : undefined,
 		};
 		this._options.onChangeViewStats(viewStats);
+	}
+
+	private _getOutlinePath(): number[] {
+		let blockIndex = this._lastVisibleBlockIndex ?? this.getVisibleBlockIndex();
+		let bestPath: number[] = [];
+		let bestRef: RefPath | null = null;
+		if (blockIndex === null) {
+			return bestPath;
+		}
+		let visit = (items: SDTOutlineItem[], path: number[]) => {
+			for (let [i, item] of items.entries()) {
+				let itemPath = [...path, i];
+				let ref = this._getOutlineItemRef(item);
+				if (ref && ref[0] <= blockIndex && (!bestRef || compareRefs(ref, bestRef) >= 0)) {
+					bestRef = ref;
+					bestPath = itemPath;
+				}
+				if (item.children) {
+					visit(item.children, itemPath);
+				}
+			}
+		};
+		visit(this._structure.catalog.outline ?? [], []);
+		return bestPath;
+	}
+
+	// Native outline entries can point to a page instead of a heading
+	private _getOutlineItemRef(item: SDTOutlineItem): RefPath | null {
+		if (item.ref) {
+			return item.ref;
+		}
+		let pageIndex = item.target?.position?.pageIndex;
+		if (pageIndex === undefined) {
+			return null;
+		}
+		let span = getPageBlockSpan(this._structure, pageIndex);
+		return span ? [span.startIndex] : null;
 	}
 
 	private get _pagesCount(): number {
