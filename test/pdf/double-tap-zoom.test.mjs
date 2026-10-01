@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
 	DOUBLE_TAP_DELAY,
 	DOUBLE_TAP_SLOP,
+	getColumnSpanRect,
 	getDoubleTapTargetScale,
 	getTextBlockRect,
 	isDoubleTap,
@@ -59,4 +60,51 @@ test('fits blocks with margins and bounds extreme zoom levels', () => {
 	assert.equal(getDoubleTapTargetScale(1, 1000, 432), 1.25);
 	assert.equal(getDoubleTapTargetScale(2, 10, 432), 4);
 	assert.equal(getDoubleTapTargetScale(1, 0, 432), 2);
+});
+
+// Two columns of two lines each, left at x 10-90, right at x 110-190
+function twoColumns() {
+	return [
+		char('A', [10, 80, 90, 90], { lineBreakAfter: true }),
+		char('B', [10, 65, 90, 75], { lineBreakAfter: true, paragraphBreakAfter: true }),
+		char('C', [110, 80, 190, 90], { lineBreakAfter: true }),
+		char('D', [110, 65, 190, 75], { lineBreakAfter: true, paragraphBreakAfter: true }),
+	];
+}
+
+test('spans both columns when tapping the gutter between them', () => {
+	assert.deepEqual(getColumnSpanRect(twoColumns(), [100, 70]), [10, 65, 190, 90]);
+	// Between lines in the gutter
+	assert.deepEqual(getColumnSpanRect(twoColumns(), [100, 77]), [10, 65, 190, 90]);
+});
+
+test('does not span columns when tapping on text', () => {
+	assert.equal(getColumnSpanRect(twoColumns(), [50, 70]), null);
+	assert.equal(getColumnSpanRect(twoColumns(), [150, 85]), null);
+});
+
+test('does not span when tapping outside the columns', () => {
+	assert.equal(getColumnSpanRect(twoColumns(), [5, 70]), null);
+	assert.equal(getColumnSpanRect(twoColumns(), [100, 200]), null);
+});
+
+test('does not treat a space between words as a gutter', () => {
+	let chars = [
+		char('A', [10, 80, 40, 90], { spaceAfter: true }),
+		char('B', [50, 80, 90, 90], { lineBreakAfter: true, paragraphBreakAfter: true }),
+	];
+	assert.equal(getColumnSpanRect(chars, [45, 85]), null);
+});
+
+test('does not span blocks separated by more than a gutter', () => {
+	let chars = [
+		char('A', [10, 80, 30, 90], { lineBreakAfter: true, paragraphBreakAfter: true }),
+		char('B', [170, 80, 190, 90], { lineBreakAfter: true, paragraphBreakAfter: true }),
+	];
+	assert.equal(getColumnSpanRect(chars, [100, 85]), null);
+});
+
+test('can fit a column pair without the minimum zoom step', () => {
+	assert.equal(getDoubleTapTargetScale(1, 400, 432, 1), 1);
+	assert.equal(getDoubleTapTargetScale(1, 400, 432), 1.25);
 });
