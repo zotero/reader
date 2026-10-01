@@ -69,7 +69,8 @@ class View {
 		this._baseViewOutline = undefined;
 		this._baseViewStats = null;
 		this._sdtViewStats = null;
-		this._emitViewStats = debounce(this._options.onChangeViewStats, DEBOUNCE_STATS_CHANGE);
+		this._emitViewStats = debounce(this._options.onChangeViewStats, DEBOUNCE_STATS_CHANGE,
+			{ maxWait: DEBOUNCE_STATS_CHANGE });
 
 		// Standalone Reading Mode: the view is created once the SDT pack is set
 		this._standaloneQueue = null;
