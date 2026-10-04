@@ -90,6 +90,12 @@ export function createColorContextMenu(reader, params) {
 					disabled: reader._state.readOnly,
 					checked: reader._state.tool.smoothing,
 					onCommand: () => reader.setTool({ smoothing: !reader._state.tool.smoothing })
+				},
+				reader._state.tool.type === 'ink' && {
+					label: reader._getString('reader-ink-pressure-experimental'),
+					disabled: reader._state.readOnly,
+					checked: reader._state.tool.pressure,
+					onCommand: () => reader.setTool({ pressure: !reader._state.tool.pressure })
 				}
 			],
 			...appendCustomItemGroups('createColorContextMenu', reader, params)

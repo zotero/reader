@@ -69,6 +69,7 @@ import PopupDelayer from '../common/lib/popup-delayer';
 import { adjustTextAnnotationPosition } from './lib/text-annotation';
 import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
 import { appendInkSamples, ensureInkDot, InkFrame, matchesInkPointer } from './ink-input.mjs';
+import { PressureInk } from './pressure-ink.mjs';
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
@@ -2839,6 +2840,9 @@ class PDFView {
 			action.lastEvent = event;
 			action.pointerId = event.pointerId;
 			action.smoothing = this._tool.smoothing !== false;
+			if (this._tool.pressure && event.pointerType === 'pen') {
+				action.pressureInk = new PressureInk(point, event);
+			}
 			if (event.pointerId !== undefined) {
 				let target = event.target.closest('#viewerContainer');
 				try {
@@ -2973,11 +2977,44 @@ class PDFView {
 		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[this.pointerDownPosition.pageIndex];
 		let rect = page.div.getBoundingClientRect();
 		appendInkSamples(this.action.annotation.position.paths[0], event, (sample) => {
-			return page.viewport.convertToPdfPoint(
+			let point = page.viewport.convertToPdfPoint(
 				sample.clientX + page.div.scrollLeft - rect.left,
 				sample.clientY + page.div.scrollTop - rect.top
 			);
+			this.action.pressureInk?.add(point, sample);
+			return point;
 		});
+	}
+
+	_getInkActionAnnotations(action, finish = false) {
+		if (!action.pressureInk) return [action.annotation];
+		return action.pressureInk.getPositions(
+			action.annotation.position.pageIndex,
+			action.annotation.position.width,
+			finish && action.smoothing
+		).map(position => ({ ...action.annotation, position }));
+	}
+
+	_savePressureInk(action) {
+		this._lastPressureAnnotationIDs ||= new Map();
+		for (let annotation of this._getInkActionAnnotations(action, true)) {
+			let { width, pageIndex } = annotation.position;
+			let key = `${pageIndex}:${annotation.color}:${width}`;
+			let id = this._lastPressureAnnotationIDs.get(key);
+			let previous = this._annotations.find(x => x.id === id);
+			let nearby = previous && !previous.readOnly
+				&& Date.now() - Date.parse(previous.dateModified) < 10000
+				&& distanceBetweenRects(getPositionBoundingRect(previous.position), getPositionBoundingRect(annotation.position)) < 50;
+			if (nearby) {
+				let position = { ...previous.position, paths: [...previous.position.paths, ...annotation.position.paths] };
+				this._onUpdateAnnotations([{ id, position, sortIndex: getSortIndex(this._pdfPages, position) }]);
+			}
+			else {
+				annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+				let added = this._onAddAnnotation(annotation);
+				if (added) this._lastPressureAnnotationIDs.set(key, added.id);
+			}
+		}
 	}
 
 	_handleInkPointerLost(event) {
@@ -3515,6 +3552,9 @@ class PDFView {
 							action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
 							this._onAddAnnotation(action.annotation);
 						}
+					}
+					else if (action.type === 'ink' && action.pressureInk) {
+						this._savePressureInk(action);
 					}
 					else if (action.type === 'ink' && action.annotation) {
 						let lastInkAnnotation = this._annotations.find(x => x.id === this._lastAddedInkAnnotationID);

@@ -106,6 +106,7 @@ class Reader {
 		this._onChangeSidebarWidth = options.onChangeSidebarWidth;
 		this._onChangeSidebarView = options.onChangeSidebarView;
 		this._onChangeInkSmoothing = options.onChangeInkSmoothing;
+		this._onChangeInkPressure = options.onChangeInkPressure;
 		this._onChangeViewState = options.onChangeViewState;
 		this._onOpenLink = options.onOpenLink;
 		this._onCopyImage = options.onCopyImage;
@@ -190,7 +191,8 @@ class Reader {
 				type: 'ink',
 				color: ANNOTATION_COLORS[3][1],
 				size: 2,
-				smoothing: options.inkSmoothing !== false
+				smoothing: options.inkSmoothing !== false,
+				pressure: !!options.inkPressure
 			},
 			eraser: {
 				type: 'eraser',
@@ -893,6 +895,9 @@ class Reader {
 		if (tool.type === 'ink' && params.smoothing !== undefined) {
 			this._onChangeInkSmoothing?.(tool.smoothing);
 		}
+		if (tool.type === 'ink' && params.pressure !== undefined) {
+			this._onChangeInkPressure?.(tool.pressure);
+		}
 		if (!['pointer', 'hand'].includes(tool.type)) {
 			this.setSelectedAnnotations([]);
 		}
@@ -923,6 +928,13 @@ class Reader {
 
 	setInkSmoothing(smoothing) {
 		this._tools.ink = { ...this._tools.ink, smoothing };
+		if (this._state.tool.type === 'ink') {
+			this._updateState({ tool: this._tools.ink });
+		}
+	}
+
+	setInkPressure(pressure) {
+		this._tools.ink = { ...this._tools.ink, pressure };
 		if (this._state.tool.type === 'ink') {
 			this._updateState({ tool: this._tools.ink });
 		}
