@@ -84,6 +84,14 @@ export function createColorContextMenu(reader, params) {
 					onCommand: (size) => reader.setTool({ size })
 				}
 			],
+			[
+				reader._state.tool.type === 'ink' && {
+					label: reader._getString('reader-ink-smoothing'),
+					disabled: reader._state.readOnly,
+					checked: reader._state.tool.smoothing,
+					onCommand: () => reader.setTool({ smoothing: !reader._state.tool.smoothing })
+				}
+			],
 			...appendCustomItemGroups('createColorContextMenu', reader, params)
 		])
 	};
