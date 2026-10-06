@@ -68,6 +68,8 @@ import { drawAnnotationsOnCanvas } from './lib/render';
 import PopupDelayer from '../common/lib/popup-delayer';
 import { adjustTextAnnotationPosition } from './lib/text-annotation';
 import { applyTransformationMatrixToInkPosition, eraseInk, smoothPath } from './lib/path';
+import { appendInkSamples, ensureInkDot, InkFrame, matchesInkPointer } from './ink-input.mjs';
+import { PressureInk } from './pressure-ink.mjs';
 import { History } from '../common/lib/history';
 import { FindState, PDFFindController } from './pdf-find-controller';
 import { getPageBlockSpan } from '../../structured-document-text/src/pages';
@@ -328,6 +330,11 @@ class PDFView {
 	}
 
 	async _init() {
+		this._inkFrame = new InkFrame(
+			callback => this._iframeWindow.requestAnimationFrame(callback),
+			id => this._iframeWindow.cancelAnimationFrame(id),
+			pages => this._render(pages)
+		);
 		// this._iframeWindow.document.body.draggable = true;
 
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
@@ -342,6 +349,7 @@ class PDFView {
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
+		this._iframeWindow.addEventListener('lostpointercapture', this._handleInkPointerLost.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
@@ -1076,6 +1084,8 @@ class PDFView {
 	}
 
 	destroy() {
+		this._inkFrame?.cancel();
+		this._releaseInkPointer();
 		this._overlayPopupDelayer.destroy();
 		this._nativeTextSelection?.destroy();
 	}
@@ -2687,6 +2697,9 @@ class PDFView {
 	}
 
 	_handlePointerDown(event) {
+		if (this.action?.type === 'ink') {
+			return;
+		}
 		if (this._nativeTextSelection?.handlePointerDown(event)) {
 			return;
 		}
@@ -2824,6 +2837,22 @@ class PDFView {
 		}
 		else if (action.type === 'ink') {
 			let point = position.rects[0].slice(0, 2);
+			action.lastEvent = event;
+			action.pointerId = event.pointerId;
+			action.smoothing = this._tool.smoothing !== false;
+			if (this._tool.pressure && event.pointerType === 'pen') {
+				action.pressureInk = new PressureInk(point, event);
+			}
+			if (event.pointerId !== undefined) {
+				let target = event.target.closest('#viewerContainer');
+				try {
+					target.setPointerCapture(event.pointerId);
+					this._inkCapture = { target, pointerId: event.pointerId };
+				}
+				catch {
+					// Window listeners still handle input if capture is unavailable.
+				}
+			}
 			action.annotation = {
 				type: 'ink',
 				color: this._tool.color,
@@ -2831,7 +2860,7 @@ class PDFView {
 				position: {
 					pageIndex: this.pointerDownPosition.pageIndex,
 					width: this._tool.size,
-					paths: [[...point]]
+					paths: [[...point, ...point]]
 				}
 			};
 			action.triggered = true;
@@ -2935,7 +2964,81 @@ class PDFView {
 		this._pointerDownTriggered = false;
 	}
 
-	_handlePointerMove = throttle((event) => {
+	_releaseInkPointer() {
+		let capture = this._inkCapture;
+		this._inkCapture = null;
+		if (capture?.target.hasPointerCapture(capture.pointerId)) {
+			capture.target.releasePointerCapture(capture.pointerId);
+		}
+	}
+
+	_appendInkEvent(event) {
+		this.action.lastEvent = event;
+		let page = this._iframeWindow.PDFViewerApplication.pdfViewer._pages[this.pointerDownPosition.pageIndex];
+		let rect = page.div.getBoundingClientRect();
+		appendInkSamples(this.action.annotation.position.paths[0], event, (sample) => {
+			let point = page.viewport.convertToPdfPoint(
+				sample.clientX + page.div.scrollLeft - rect.left,
+				sample.clientY + page.div.scrollTop - rect.top
+			);
+			this.action.pressureInk?.add(point, sample);
+			return point;
+		});
+	}
+
+	_getInkActionAnnotations(action, finish = false) {
+		if (!action.pressureInk) return [action.annotation];
+		return action.pressureInk.getPositions(
+			action.annotation.position.pageIndex,
+			action.annotation.position.width,
+			finish && action.smoothing
+		).map(position => ({ ...action.annotation, position }));
+	}
+
+	_savePressureInk(action) {
+		this._lastPressureAnnotationIDs ||= new Map();
+		for (let annotation of this._getInkActionAnnotations(action, true)) {
+			let { width, pageIndex } = annotation.position;
+			let key = `${pageIndex}:${annotation.color}:${width}`;
+			let id = this._lastPressureAnnotationIDs.get(key);
+			let previous = this._annotations.find(x => x.id === id);
+			let nearby = previous && !previous.readOnly
+				&& Date.now() - Date.parse(previous.dateModified) < 10000
+				&& distanceBetweenRects(getPositionBoundingRect(previous.position), getPositionBoundingRect(annotation.position)) < 50;
+			if (nearby) {
+				let position = { ...previous.position, paths: [...previous.position.paths, ...annotation.position.paths] };
+				this._onUpdateAnnotations([{ id, position, sortIndex: getSortIndex(this._pdfPages, position) }]);
+			}
+			else {
+				annotation.sortIndex = getSortIndex(this._pdfPages, annotation.position);
+				let added = this._onAddAnnotation(annotation);
+				if (added) this._lastPressureAnnotationIDs.set(key, added.id);
+			}
+		}
+	}
+
+	_handleInkPointerLost(event) {
+		if (this.action?.type === 'ink' && matchesInkPointer(this.action, event)) {
+			this._handlePointerUp(this.action.lastEvent);
+		}
+	}
+
+	_handlePointerMove(event) {
+		if (this.action?.type === 'ink') {
+			if (matchesInkPointer(this.action, event)) {
+				this._appendInkEvent(event);
+				this._inkFrame.schedule(this.pointerDownPosition.pageIndex);
+			}
+			return;
+		}
+		this._handleOtherPointerMove(event);
+	}
+
+	_handleOtherPointerMove = throttle((event) => {
+		// A queued hover event can run after a new pen stroke has started.
+		if (this.action?.type === 'ink') {
+			return;
+		}
 		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
 			return;
 		}
@@ -3276,11 +3379,6 @@ class PDFView {
 			};
 			action.triggered = true;
 		}
-		else if (action.type === 'ink') {
-			let point = originalPagePosition.rects[0].slice(0, 2);
-			action.annotation.position.paths[0].push(...point);
-			// Already triggered on pointerdown
-		}
 		else if (action.type === 'erase') {
 			let annotations = [];
 			for (let annotation of this._annotations) {
@@ -3376,6 +3474,14 @@ class PDFView {
 	}
 
 	_handlePointerUp(event) {
+		if (this.action?.type === 'ink') {
+			if (!matchesInkPointer(this.action, event)) {
+				return;
+			}
+			// Fast strokes can end between two pointermove events.
+			this._appendInkEvent(event);
+			this._inkFrame.cancel();
+		}
 		this._nativeTextSelection?.handlePointerUp();
 		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
 			this._clearPointerAction();
@@ -3447,10 +3553,16 @@ class PDFView {
 							this._onAddAnnotation(action.annotation);
 						}
 					}
+					else if (action.type === 'ink' && action.pressureInk) {
+						this._savePressureInk(action);
+					}
 					else if (action.type === 'ink' && action.annotation) {
 						let lastInkAnnotation = this._annotations.find(x => x.id === this._lastAddedInkAnnotationID);
 						let path = action.annotation.position.paths[0];
-						path = smoothPath(path);
+						if (action.smoothing) {
+							path = smoothPath(path);
+						}
+						path = ensureInkDot(path);
 						path = path.map(value => parseFloat(value.toFixed(3)));
 						action.annotation.position.paths[0] = path;
 						let dist;
@@ -3474,8 +3586,8 @@ class PDFView {
 						}
 						else {
 							action.annotation.sortIndex = getSortIndex(this._pdfPages, action.annotation.position);
-							let { id } = this._onAddAnnotation(action.annotation);
-							this._lastAddedInkAnnotationID = id;
+							let addedAnnotation = this._onAddAnnotation(action.annotation);
+							this._lastAddedInkAnnotationID = addedAnnotation?.id;
 						}
 					}
 					else if (action.type === 'erase' && action.triggered) {
@@ -3564,6 +3676,7 @@ class PDFView {
 			}
 			this.action = null;
 			this.pointerDownPosition = null;
+			this._releaseInkPointer();
 		}
 		if (handleBackdropTap) {
 			this._onBackdropTap(event);
@@ -3581,7 +3694,15 @@ class PDFView {
 		this._updateViewStats();
 	}
 
-	_handlePointerCancel() {
+	_handlePointerCancel(event) {
+		if (this.action?.type === 'ink') {
+			if (matchesInkPointer(this.action, event)) {
+				// Cancellation coordinates can be zero or stale. Keep the last
+				// real sample instead of discarding a completed part of a stroke.
+				this._handlePointerUp(this.action.lastEvent);
+			}
+			return;
+		}
 		this._nativeTextSelection?.handlePointerUp();
 		// Chrome cancels the pointer stream when a native drag operation
 		// starts, but the drag events keep driving the current action
@@ -3589,6 +3710,8 @@ class PDFView {
 			return;
 		}
 		this.action = null;
+		this._inkFrame?.cancel();
+		this._releaseInkPointer();
 		this.pointerDownPosition = null;
 		this._pointerDownTriggered = false;
 		this._pointerDownTap = null;
@@ -3596,6 +3719,8 @@ class PDFView {
 	}
 
 	cancel() {
+		this._inkFrame?.cancel();
+		this._releaseInkPointer();
 		this.setSelection();
 		this._hover = null;
 		this.action = null;
