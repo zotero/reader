@@ -24,6 +24,7 @@ class AnnotationManager {
 		this._onSave = options.onSave;
 		this._onDelete = options.onDelete;
 		this._onChangeHistory = options.onChangeHistory;
+		this._trashesAnnotations = options.trashesAnnotations;
 		this._adjustTextAnnotationPosition = options.adjustTextAnnotationPosition;
 		this.render = () => {
 			options.onRender([...this._annotations]);
@@ -70,14 +71,17 @@ class AnnotationManager {
 	}
 
 	// Called when deletions come from the client side
-	unsetAnnotations(ids) {
+	unsetAnnotations(ids, permanentlyDeleted) {
 		// Deletions we haven't applied yet are outside changes that our history
 		// can no longer be replayed over. Ones we have applied are our own
-		// deletions coming back to us, and undoing them is still valid.
-		let externalIDs = ids.filter(id => this._annotations.some(x => x.id === id));
+		// deletions coming back to us, and undoing them is still valid, unless
+		// the annotations were permanently deleted.
+		let clearIDs = permanentlyDeleted
+			? ids
+			: ids.filter(id => this._annotations.some(x => x.id === id));
 		this._annotations = this._annotations.filter(x => !ids.includes(x.id));
-		if (externalIDs.length) {
-			this._clearInterferingHistory(externalIDs);
+		if (clearIDs.length) {
+			this._clearInterferingHistory(clearIDs);
 		}
 		this.render();
 	}
@@ -633,8 +637,11 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
+			// Assign a new ID when undeleting to reduce sync conflicts,
+			// except if the client trashes instead of permanently deleting -
+			// in that case, keep the old ID so the client can match the
+			// trashed annotation and untrash it.
+			if (!prevAnnotation && !this._trashesAnnotations) {
 				let newID = this._generateObjectKey();
 				mapping.set(annotation.id, newID);
 				annotation.id = newID;
@@ -667,8 +674,10 @@ class AnnotationManager {
 			if (annotation) {
 				annotation.dateModified = (new Date()).toISOString();
 			}
-			// Assign new id when undeleting to reduce sync conflicts
-			if (!prevAnnotation) {
+			// Assign new id when undeleting to reduce sync conflicts. Clients that
+			// trash annotations keep the deleted one around, so undeleting restores
+			// it in place and the id has to stay the same for the client to find it.
+			if (!prevAnnotation && !this._trashesAnnotations) {
 				let newID = this._generateObjectKey();
 				mapping.set(annotation.id, newID);
 				annotation.id = newID;
