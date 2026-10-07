@@ -36,6 +36,25 @@ function round(value) {
 	return Math.round(value * 100) / 100;
 }
 
+// Preserve unchanged overlay nodes instead of detaching an entire annotated
+// page every time the active ink path receives another point.
+function reconcileChildren(parent, children) {
+	let next = parent.firstChild;
+	for (let child of children) {
+		if (child === next) {
+			next = next.nextSibling;
+		}
+		else {
+			parent.insertBefore(child, next);
+		}
+	}
+	while (next) {
+		let remove = next;
+		next = next.nextSibling;
+		remove.remove();
+	}
+}
+
 // Renders the overlay (annotations, selection, find results, etc.) for a single
 // page as DOM elements positioned over the pdf.js page canvas, instead of
 // painting into the canvas. The canvas always contains pristine pdf.js output,
@@ -58,6 +77,7 @@ export default class Page {
 		this._originalPage = originalPage;
 		this._pageIndex = originalPage.id - 1;
 		this._lastSignature = null;
+		this._overlayItemSignatures = new WeakMap();
 	}
 
 	get pageIndex() {
@@ -854,23 +874,43 @@ export default class Page {
 		}
 		let { width, height } = this._originalPage.viewport;
 		let children = [];
+		let previousChildren = Array.from(overlay.children);
 		let svg = null;
+		let vectors = [];
+		let previousVectors = [];
+		let createRect = this._createRectElement.bind(this);
+		let createVector = this._createVectorElement.bind(this);
+		let reuseItem = (previous, item, create) => {
+			let signature = JSON.stringify(item);
+			if (previous && this._overlayItemSignatures.get(previous) === signature) {
+				return previous;
+			}
+			let node = create(doc, item);
+			this._overlayItemSignatures.set(node, signature);
+			return node;
+		};
 		for (let item of items) {
 			if (item.kind === 'rect') {
-				children.push(this._createRectElement(doc, item));
+				if (svg) reconcileChildren(svg, vectors);
+				children.push(reuseItem(previousChildren[children.length], item, createRect));
 				svg = null;
 			}
 			else {
 				if (!svg) {
-					svg = doc.createElementNS(SVG_NS, 'svg');
-					svg.setAttribute('class', 'overlayVector');
-					svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+					let previous = previousChildren[children.length];
+					svg = previous?.localName === 'svg' ? previous : doc.createElementNS(SVG_NS, 'svg');
+					if (!previous || svg !== previous) svg.setAttribute('class', 'overlayVector');
+					let viewBox = `0 0 ${width} ${height}`;
+					if (svg.getAttribute('viewBox') !== viewBox) svg.setAttribute('viewBox', viewBox);
 					children.push(svg);
+					vectors = [];
+					previousVectors = Array.from(svg.children);
 				}
-				svg.append(this._createVectorElement(doc, item));
+				vectors.push(reuseItem(previousVectors[vectors.length], item, createVector));
 			}
 		}
-		overlay.replaceChildren(...children);
+		if (svg) reconcileChildren(svg, vectors);
+		reconcileChildren(overlay, children);
 	}
 
 	// DOM-based text annotations (editable textareas), diffed in place so that
