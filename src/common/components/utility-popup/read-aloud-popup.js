@@ -14,6 +14,7 @@ import IconLoading from '../../../../res/icons/16/loading.svg';
 import IconClock from '../../../../res/icons/12/clock.svg';
 import { Localized, useLocalization } from '@fluent/react';
 import CustomSelect from '../common/custom-select';
+import Listbox from '../common/listbox';
 import LanguageRegionSelect from '../../read-aloud/components/language-region-select';
 import { getBaseLanguage } from '../../read-aloud/lang';
 import { useSamplePlayback } from '../../read-aloud/components/use-sample-playback';
@@ -22,7 +23,7 @@ import { buildVoiceOptions } from '../../read-aloud/voice-options';
 import { formatTimeRemaining } from '../../lib/format-time-remaining';
 
 function ReadAloudPopup(props) {
-	let { manager, title, loggedIn, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onAddAnnotation, onLockPosition } = props;
+	let { manager, title, loggedIn, vertical, onOpenVoicePreferences, onPurchaseCredits, onLogIn, onAddAnnotation, onLockPosition } = props;
 
 	let [showOptions, setShowOptions] = useState(false);
 	let [showSpinner, setShowSpinner] = useState(false);
@@ -122,8 +123,12 @@ function ReadAloudPopup(props) {
 		await manager.resetCredits();
 	}
 
+	let errorRow = error !== null && error !== 'quota-exceeded'
+		? <ErrorMessage error={error} onRetry={() => manager.retry()}/>
+		: null;
+
 	return (
-		<UtilityPopup className={cx('read-aloud-popup', { expanded: showOptions })}>
+		<UtilityPopup className={cx('read-aloud-popup', { expanded: showOptions, vertical })}>
 			<PlaybackControls
 				showOptions={showOptions}
 				onToggleOptions={() => setShowOptions(!showOptions)}
@@ -146,48 +151,48 @@ function ReadAloudPopup(props) {
 				}}
 				onLockPosition={onLockPosition}
 			/>
-			{showOptions && <>
-				<SpeedSlider
-					speed={speed}
-					paused={paused}
-					isLocal={selectedTier === 'local'}
-					onSetSpeed={(s) => manager.setSpeed(s)}
-					onPersistSpeed={() => manager.setSpeed(manager.speed, true)}
-					onPause={() => manager.pause()}
-					onPlay={() => manager.play()}
-				/>
-				<TierSelect
-					loggedIn={loggedIn}
-					value={selectedTier}
-					tiers={tiers}
-					onChange={handleTierChange}
-					onLogIn={onLogIn}
-				/>
-				<LanguageRegionSelect
-					languages={languages}
-					lang={currentVoiceRegion ? `${lang}-${currentVoiceRegion}` : lang}
-					onLangChange={handleLangChange}
-					tabIndex="-1"
-				/>
-				<VoiceSelect
-					voiceID={selectedVoiceID}
-					voices={voicesForLanguage}
-					onChange={handleUserVoiceSelect}
-					onOpenVoicePreferences={selectedTier === 'local' ? onOpenVoicePreferences : null}
-				/>
-				<RemainingTime
-					minutesRemaining={minutesRemaining}
-					isQuotaExceeded={isQuotaExceeded}
-					isQuotaLow={isQuotaLow}
-					switchTo={hasStandardMinutesRemaining ? 'standard' : 'local'}
-					devMode={devMode}
-					onPurchaseCredits={onPurchaseCredits}
-					onResetCredits={handleResetCredits}
-				/>
-			</>}
-			{error !== null && error !== 'quota-exceeded' && (
-				<ErrorMessage error={error} onRetry={() => manager.retry()}/>
-			)}
+			{(showOptions || errorRow) && <div className="options">
+				{showOptions && <>
+					<SpeedSlider
+						speed={speed}
+						paused={paused}
+						isLocal={selectedTier === 'local'}
+						onSetSpeed={(s) => manager.setSpeed(s)}
+						onPersistSpeed={() => manager.setSpeed(manager.speed, true)}
+						onPause={() => manager.pause()}
+						onPlay={() => manager.play()}
+					/>
+					<TierSelect
+						loggedIn={loggedIn}
+						value={selectedTier}
+						tiers={tiers}
+						onChange={handleTierChange}
+						onLogIn={onLogIn}
+					/>
+					<LanguageRegionSelect
+						languages={languages}
+						lang={currentVoiceRegion ? `${lang}-${currentVoiceRegion}` : lang}
+						onLangChange={handleLangChange}
+						tabIndex="-1"
+					/>
+					<VoiceSelect
+						voiceID={selectedVoiceID}
+						voices={voicesForLanguage}
+						onChange={handleUserVoiceSelect}
+						onOpenVoicePreferences={selectedTier === 'local' ? onOpenVoicePreferences : null}
+					/>
+					<RemainingTime
+						minutesRemaining={minutesRemaining}
+						isQuotaExceeded={isQuotaExceeded}
+						isQuotaLow={isQuotaLow}
+						switchTo={hasStandardMinutesRemaining ? 'standard' : 'local'}
+						devMode={devMode}
+						onPurchaseCredits={onPurchaseCredits}
+						onResetCredits={handleResetCredits}
+					/>
+				</>}
+				{errorRow}
+			</div>}
 		</UtilityPopup>
 	);
 }
@@ -390,34 +395,33 @@ function VoiceSelect(props) {
 
 	let { voiceID, voices, onChange, onOpenVoicePreferences } = props;
 
-	function handleVoiceChange(optionValue) {
-		if (optionValue === 'more-voices') {
-			onOpenVoicePreferences?.();
-			return;
-		}
-		onChange(optionValue);
-	}
-
 	if (!voices.length) {
 		return null;
 	}
 
 	let { options, selectedValue } = buildVoiceOptions(voices, voiceID);
-	if (onOpenVoicePreferences) {
-		options.push({ value: 'more-voices', label: l10n.getString('reader-read-aloud-more-voices') });
-	}
 
 	return (
-		<div className="row voices" data-tabstop={1}>
-			<CustomSelect
-				aria-label={l10n.getString('reader-read-aloud-voice')}
-				value={selectedValue}
-				tabIndex="-1"
-				onChange={handleVoiceChange}
-				showSecondaryLabelOnMenu
-				options={options}
-			/>
-		</div>
+		<>
+			<div className="row voices" data-tabstop={1}>
+				<Listbox
+					aria-label={l10n.getString('reader-read-aloud-voice')}
+					value={selectedValue}
+					tabIndex="-1"
+					onChange={onChange}
+					showSecondaryLabel
+					options={options}
+				/>
+			</div>
+			{onOpenVoicePreferences && (
+				<div className="row more-voices" data-tabstop={1}>
+					<button
+						tabIndex="-1"
+						onClick={onOpenVoicePreferences}
+					>{l10n.getString('reader-read-aloud-more-voices')}</button>
+				</div>
+			)}
+		</>
 	);
 }
 
