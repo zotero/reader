@@ -48,6 +48,28 @@ export function smoothPath(points) {
 	return points;
 }
 
+export function densifyPath(points, maxStep = 2) {
+	if (points.length < 4) {
+		return points;
+	}
+
+	const densePath = [points[0], points[1]];
+	for (let i = 2; i < points.length; i += 2) {
+		const x1 = densePath[densePath.length - 2];
+		const y1 = densePath[densePath.length - 1];
+		const x2 = points[i];
+		const y2 = points[i + 1];
+		const distance = Math.hypot(x2 - x1, y2 - y1);
+		const steps = Math.max(1, Math.ceil(distance / maxStep));
+		for (let j = 1; j <= steps; j++) {
+			const t = j / steps;
+			densePath.push(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t);
+		}
+	}
+
+	return densePath;
+}
+
 export function applyTransformationMatrixToInkPosition(matrix, position) {
 	const { paths, width } = position;
 	const a = matrix[0], b = matrix[1], c = matrix[2], d = matrix[3], e = matrix[4], f = matrix[5];
