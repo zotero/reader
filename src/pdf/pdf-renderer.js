@@ -399,20 +399,10 @@ class PDFRenderer {
 		ctx.globalCompositeOperation = 'multiply';
 		if (rect[2] - rect[0] < 5 || rect[3] - rect[1] < 5) {
 			let radius = 7;
-			let centerX = (rect[0] + rect[2]) / 2;
-			let centerY = (rect[1] + rect[3]) / 2;
-			if (centerX < rect2[0]) {
-				centerX = radius;
-			}
-			else if (centerX > rect2[2]) {
-				centerX = rect2[2] - radius;
-			}
-			if (centerY < rect2[1]) {
-				centerY = radius;
-			}
-			else if (centerY > rect2[3]) {
-				centerY = rect2[3] - radius;
-			}
+			let centerX = (rect[0] + rect[2]) / 2 - rect2[0];
+			let centerY = (rect[1] + rect[3]) / 2 - rect2[1];
+			centerX = Math.max(radius, Math.min(canvas2.width - radius, centerX));
+			centerY = Math.max(radius, Math.min(canvas2.height - radius, centerY));
 			ctx.beginPath();
 			ctx.arc(centerX, centerY, 7, 0, Math.PI * 2, false);
 			ctx.fill();
