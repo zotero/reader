@@ -156,6 +156,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 						onNavigateToPreviousPage={props.onNavigateToPreviousPage}
 						onNavigateToNextPage={props.onNavigateToNextPage}
 						onChangePageNumber={props.onChangePageNumber}
+						onFocusView={props.onFocusView}
 						onChangePageIndex={props.onChangePageIndex}
 						onChangeTool={props.onChangeTool}
 						onOpenColorContextMenu={props.onOpenColorContextMenu}
