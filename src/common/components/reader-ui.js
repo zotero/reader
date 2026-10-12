@@ -43,6 +43,10 @@ function View(props) {
 		props.onCloseOverlayPopup(primary);
 	}
 
+	function handleOverlayPopupPersistenceChange(persistent) {
+		props.onSetOverlayPopupPersistent(primary, persistent);
+	}
+
 	return (
 		<div className={name + '-view'}>
 			<div
@@ -80,10 +84,17 @@ function View(props) {
 				/>}
 			{state[name + 'ViewOverlayPopup'] &&
 				<OverlayPopup
+					platform={props.platform}
+					colorScheme={state.colorScheme}
 					params={state[name + 'ViewOverlayPopup']}
+					referencePopupOwner={name}
+					referencePopupBridge={props.referencePopupBridge}
+					previewedReferences={state.previewedReferences}
 					onOpenLink={props.onOpenLink}
+					onPreviewReference={props.onPreviewReference}
 					onNavigate={props.onNavigate}
 					onClose={handleOverlayPopupClose}
+					onSetPersistent={handleOverlayPopupPersistenceChange}
 				/>
 			}
 			{state[name + 'ViewFindState'].popupOpen &&

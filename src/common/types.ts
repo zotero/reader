@@ -179,7 +179,140 @@ type ImagePopupParams = {
 	rect: ArrayRect;
 }
 
-export type OverlayPopupParams = FootnotePopupParams | LinkPopupParams | ImagePopupParams;
+export type ReferenceChar = {
+	c: string;
+	bold?: boolean;
+	italic?: boolean;
+	url?: string;
+	ignorable?: boolean;
+	spaceAfter?: boolean;
+	lineBreakAfter?: boolean;
+}
+
+export type OverlayReference = {
+	// Stable only within the currently loaded structured document.
+	sourceKey: string;
+	position: PDFPosition;
+	text: string;
+	chars: ReferenceChar[];
+}
+
+type ReferencePopupParams = {
+	source: 'sdt';
+	rect: ArrayRect;
+	position: PDFPosition;
+	references: OverlayReference[];
+	persistent?: boolean;
+} & ({ type: 'citation' } | { type: 'reference' })
+
+export type OverlayPopupParams =
+	| FootnotePopupParams
+	| LinkPopupParams
+	| ImagePopupParams
+	| ReferencePopupParams;
+
+export type ReferencePart = {
+	text: string;
+}
+
+export type ReferenceAction =
+	| 'add-to-library'
+	| 'show-in-library'
+	| 'open-attachment'
+	| 'view-online';
+
+export type ReferenceDisplayData = {
+	itemType: string;
+	title: string;
+	firstCreator: string | null;
+	year: string | null;
+	abstract?: string | null;
+}
+
+export type ReferenceResultDTO = {
+	// Opaque host token. It must not expose an item, attachment, or library ID.
+	resultID: string;
+	libraryState: 'existing' | 'unsaved';
+	display: ReferenceDisplayData;
+	actions: ReferenceAction[];
+}
+
+export type ReferenceLookupStatus =
+	| 'strong'
+	| 'no-match'
+	| 'invalid'
+	| 'offline'
+	| 'rate-limited'
+	| 'timeout'
+	| 'cancelled'
+	| 'error'
+	| 'expired'
+	| 'incomplete';
+
+export type MatchReferenceRequest = {
+	requestID: string;
+	sourceKey: string;
+	referenceParts: ReferencePart[];
+}
+
+export type FindReferenceOnlineRequest = {
+	requestID: string;
+	referenceKey: string;
+}
+
+export type ReferenceLookupResponse = {
+	requestID: string;
+	// A positive online result restored by the local callback, without network work.
+	lookupSource?: 'online';
+} & ({
+	status: 'strong';
+	result: ReferenceResultDTO;
+	referenceKey: string;
+} | {
+	status: 'no-match';
+	result?: never;
+	referenceKey: string;
+} | {
+	status: Exclude<ReferenceLookupStatus, 'strong' | 'no-match'>;
+	result?: never;
+	referenceKey?: string;
+})
+
+export type PerformReferenceActionRequest = {
+	requestID: string;
+	referenceKey: string;
+	resultID: string;
+	action: ReferenceAction;
+}
+
+export type ReferenceActionResponse = {
+	requestID: string;
+	referenceKey: string;
+	status:
+		| 'ok'
+		| 'existing'
+		| 'saved'
+		| 'stale'
+		| 'failed'
+		| 'duplicate-conflict';
+	result?: ReferenceResultDTO;
+}
+
+export type ReferencePopupCallbacks = {
+	onMatchReference?: (
+		request: MatchReferenceRequest,
+		callback: (response: ReferenceLookupResponse) => void
+	) => void;
+	onFindReferenceOnline?: (
+		request: FindReferenceOnlineRequest,
+		callback: (response: ReferenceLookupResponse) => void
+	) => void;
+	onCancelReferenceLookup?: (request: { requestID: string }) => void;
+	onPerformReferenceAction?: (
+		request: PerformReferenceActionRequest,
+		callback: (response: ReferenceActionResponse) => void
+	) => void;
+}
 
 export type ArrayRect = [left: number, top: number, right: number, bottom: number];
 
@@ -308,4 +441,3 @@ export type ViewContextMenuOverlay =
 		type: 'image';
 		image: ImageBitmapSource;
 	};
-

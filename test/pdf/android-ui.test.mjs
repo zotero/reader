@@ -5,6 +5,7 @@ import { registerHooks } from 'node:module';
 import test from 'node:test';
 import { PageViewport } from '../../pdfjs/pdf.js/src/display/display_utils.js';
 import { getScrollTarget } from '../../src/pdf/scroll-target.mjs';
+import PopupDelayer from '../../src/common/lib/popup-delayer.js';
 
 globalThis.window ??= {};
 window.computedFontFamily = 'sans-serif';
@@ -67,9 +68,117 @@ function createRoot() {
 	};
 }
 
+test('delayed native preview does not replace a newer pinned citation', async () => {
+	let finish;
+	let published;
+	let native = { type: 'internal-link', position: { pageIndex: 0, rects: [[0, 0, 1, 1]] } };
+	let citation = { type: 'citation', position: native.position };
+	let view = {
+		_citationAndLinkPreviewsEnabled: true, _overlayRevision: 1,
+		getClientRect: () => [10, 20, 30, 40],
+		_pdfRenderer: { renderPreviewPage: () => new Promise(resolve => finish = resolve) },
+		_onSetOverlayPopup: popup => published = popup,
+	};
+	let pending = PDFView.prototype._openOverlayPopup.call(view, native);
+	await PDFView.prototype._openOverlayPopup.call(view, citation, 1, true);
+	finish({ image: 'preview' });
+	await pending;
+	assert.equal(view._overlayPopup.type, 'citation');
+	assert.equal(view._overlayPopup.persistent, true);
+	assert.equal(view._selectedOverlay, citation);
+	assert.deepEqual(view._overlayPopup.rect, [10, 20, 30, 40]);
+	assert.equal(published, view._overlayPopup);
+});
+
+test('a cancelled native preview can be hovered again without publishing stale content', async (t) => {
+	let previousWindow = globalThis.window;
+	globalThis.window = { ...previousWindow, addEventListener() {}, removeEventListener() {} };
+	t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000000 });
+	let pending = [];
+	let published = [];
+	let overlay = { type: 'internal-link', position: { pageIndex: 0, rects: [[0, 0, 1, 1]] } };
+	let hovered = overlay;
+	let view = createPDFViewInstance();
+	let delayer = new PopupDelayer({ open: false });
+	t.after(() => {
+		delayer.destroy();
+		globalThis.window = previousWindow;
+	});
+	Object.assign(view, {
+		_nativeTextSelection: null, _scrolling: false, pointerDownPosition: null,
+		_citationAndLinkPreviewsEnabled: true, _selectedOverlay: null, _overlayRevision: 1,
+		_iframeWindow: { PDFViewerApplication: { pdfViewer: { _pages: [] } } },
+		pointerEventToPosition: () => overlay.position,
+		getClientRect: () => [0, 0, 1, 1],
+		getActionAtPosition: () => ({ action: { type: 'none' }, selectAnnotations: [] }),
+		_getSelectableOverlay: () => hovered,
+		updateCursor() {}, _updateReadAloudJumpButton() {}, _render() {},
+		_pdfRenderer: { renderPreviewPage: () => new Promise(resolve => pending.push(resolve)) },
+		_overlayPopupDelayer: delayer,
+		_onSetOverlayPopup(popup) {
+			published.push(popup);
+			PDFView.prototype.setOverlayPopup.call(view, popup);
+		},
+	});
+	view._handlePointerMove({ button: 0 });
+	t.mock.timers.tick(101);
+	assert.equal(pending.length, 1);
+	hovered = null;
+	view._handlePointerMove({ button: 0 });
+	assert.equal(view._overlayPopupRequest, null);
+	assert.equal(view._selectedOverlay, null);
+	t.mock.timers.tick(51);
+	hovered = overlay;
+	view._handlePointerMove({ button: 0 });
+	t.mock.timers.tick(101);
+	assert.equal(pending.length, 2, 'returning to A must start a new valid preview');
+	pending[1]({ image: 'new A' });
+	await Promise.resolve();
+	pending[0]({ image: 'old A' });
+	await Promise.resolve();
+	t.mock.timers.tick(501);
+	assert.equal(published.length, 1, 'only the new hover may publish');
+	assert.equal(view._overlayPopup.image, 'new A');
+});
+
 function createClassList(...names) {
 	let values = new Set(names);
 	return { contains: name => values.has(name) };
+}
+
+function createPDFViewInstance() {
+	let previousDocument = globalThis.document;
+	let previousMatchMedia = window.matchMedia;
+	let previousAddEventListener = window.addEventListener;
+	let iframe = {
+		style: {},
+		classList: { add() {} },
+		addEventListener() {},
+	};
+	globalThis.document = { createElement: () => iframe };
+	window.matchMedia = () => ({ matches: false, addEventListener() {} });
+	window.addEventListener = () => {};
+	try {
+		return new PDFView({
+			primary: true,
+			mobile: false,
+			readOnly: true,
+			preview: true,
+			container: { append() {} },
+			tools: { pointer: {} },
+			outline: [],
+			annotations: [],
+			selectedAnnotationIDs: [],
+			tool: { type: 'pointer' },
+			onSetFindState() {},
+			onKeyDown() {},
+		});
+	}
+	finally {
+		globalThis.document = previousDocument;
+		window.matchMedia = previousMatchMedia;
+		window.addEventListener = previousAddEventListener;
+	}
 }
 
 test('Citation and Link Previews disables PDF overlay previews', async () => {
@@ -97,6 +206,7 @@ test('Citation and Link Previews disables PDF overlay previews', async () => {
 		_isOverlayInteractionEnabled: PDFView.prototype._isOverlayInteractionEnabled,
 		_render: () => renderCalls++,
 	};
+	Object.setPrototypeOf(view, PDFView.prototype);
 	let position = { pageIndex: 0, rects: [[0.5, 0.5, 0.5, 0.5]] };
 	assert.equal(PDFView.prototype._getSelectableOverlay.call(view, position), semanticOverlay);
 
@@ -114,6 +224,143 @@ test('Citation and Link Previews disables PDF overlay previews', async () => {
 
 	await PDFView.prototype._openOverlayPopup.call(view, { type: 'citation' });
 	assert.equal(view._selectedOverlay, null);
+});
+
+test('citation groups have one authoritative hover, click and keyboard target', async (t) => {
+	t.mock.timers.enable({ apis: ['Date'], now: 1000 });
+	let citation = { type: 'citation', source: 'sdt', position: { pageIndex: 0, rects: [[2, 2, 8, 8]] },
+		references: [{ position: { pageIndex: 3, rects: [[0, 0, 1, 1]] } }, { position: { pageIndex: 4, rects: [[0, 0, 1, 1]] } }] };
+	let native = { type: 'internal-link', source: 'annotation', position: { pageIndex: 0, rects: [[1, 1, 5, 5], [10, 1, 12, 5]] },
+		destinationPosition: citation.references[1].position };
+	let separate = { ...native, position: { pageIndex: 0, rects: [[20, 20, 24, 24]] } };
+	let semanticLink = { ...native, source: 'sdt', position: { pageIndex: 0, rects: [[1, 1, 7, 7]] } };
+	let sdtLink = { ...semanticLink, position: { pageIndex: 0, rects: [[19, 19, 25, 25]] } };
+	let point = { pageIndex: 0, rects: [[3, 3, 3, 3]] };
+	let opened = [], focused;
+	let view = createPDFViewInstance();
+	Object.assign(view, {
+		_nativeTextSelection: null, _scrolling: false, pointerDownPosition: null,
+		_citationAndLinkPreviewsEnabled: true, _overlayRevision: 1,
+		_pdfPages: [{ overlays: [native, semanticLink, citation, separate, sdtLink] }], _annotations: [],
+		_iframeWindow: { PDFViewerApplication: { pdfViewer: {
+			_pages: [], scroll: { lastX: 0, lastY: 0 }, _getVisiblePages: () => ({ views: [{ id: 1 }] }),
+		} } },
+		_getVisibleObjects(objects) {
+			focused = objects.map(entry => entry.object);
+			return objects.map(entry => ({ ...entry, pageIndex: 0, rect: entry.object.position.rects[0] }));
+		},
+		_onFocusAnnotation() {}, pointerEventToPosition: () => point,
+		getActionAtPosition: () => ({ action: { type: 'none' }, selectAnnotations: [] }),
+		getClientRect: () => [0, 0, 1, 1], updateCursor() {}, _updateReadAloudJumpButton() {}, _render() {},
+		_overlayPopupDelayer: { open: (overlay, callback) => opened.push({ overlay, callback }),
+			close: () => assert.fail('moving inside a citation group must not close it') },
+		_onSetOverlayPopup() {},
+	});
+	assert.equal(view._focusNext(), true);
+	assert.deepEqual(focused, [citation, sdtLink]);
+	view._handlePointerMove({ button: 0 });
+	assert.equal(opened[0].overlay, citation);
+	await opened[0].callback();
+	assert.equal(view._overlayPopup.persistent, false);
+	point = { pageIndex: 0, rects: [[6, 3, 6, 3]] };
+	t.mock.timers.tick(51);
+	view._handlePointerMove({ button: 0 });
+	assert.equal(opened.length, 1, 'moving between numbers keeps the same popup');
+	assert.equal(view._getSelectableOverlay(point), citation);
+	assert.equal(view._getSelectableOverlay({ pageIndex: 0, rects: [[1.5, 3, 1.5, 3]] }), undefined);
+	assert.equal(view._getSelectableOverlay({ pageIndex: 0, rects: [[11, 2, 11, 2]] }), undefined, 'conflicts are suppressed whole');
+	view._citationAndLinkPreviewsEnabled = false;
+	assert.equal(view._getSelectableOverlay(point), undefined);
+	assert.equal(view._getSelectableOverlay({ pageIndex: 0, rects: [[3, 3, 3, 3]] }), native, 'authored links remain the fallback');
+	view._citationAndLinkPreviewsEnabled = true;
+
+	let navigated, popupOpens = 0;
+	let { view: clickView, setPosition } = createPointerView('zotero');
+	setPosition(point);
+	Object.assign(clickView, {
+		_citationAndLinkPreviewsEnabled: true, _pdfPages: view._pdfPages,
+		_getSelectableOverlay: PDFView.prototype._getSelectableOverlay,
+		getSelectableAnnotations: () => [],
+		getActionAtPosition: () => ({ action: { type: 'none', triggered: false }, selectAnnotations: [] }),
+		navigate: value => navigated = value, _openOverlayPopup: () => popupOpens++,
+	});
+	let event = createPointerEvent('');
+	event.type = 'mousedown';
+	clickView._handlePointerDown(event);
+	clickView._handlePointerUp(event);
+	assert.deepEqual(navigated, { position: citation.references[0].position }, 'a group click navigates to its first reference');
+	assert.equal(popupOpens, 0);
+
+	let keyboardOpen;
+	view._textAnnotationFocused = () => false;
+	view._selectedOverlay = null;
+	view._focusedObject = { type: 'overlay', object: citation };
+	view._openOverlayPopup = (...args) => keyboardOpen = args;
+	view._handleKeyDown({ key: 'Enter', code: 'Enter', target: { classList: { contains: () => false } },
+		preventDefault() {}, stopPropagation() {} });
+	assert.deepEqual(keyboardOpen, [citation, 1, true]);
+});
+
+test('a pinned reference popup ignores hover close until its page is destroyed', () => {
+	let closed = [];
+	let originalPage = { id: 1 };
+	let popup = { type: 'citation', position: { pageIndex: 0, rects: [[0, 0, 1, 1]] }, persistent: false };
+	let view = Object.setPrototypeOf({
+		_overlayPopupDelayer: { setOpen() {} },
+		_onSetOverlayPopup: value => closed.push(value),
+		_pages: [{ originalPage }],
+		_documentData: { releasePage() {} },
+	}, PDFView.prototype);
+	view.setOverlayPopup(popup);
+	assert.equal(view._closeOverlayPopup(), true, 'an unpinned popup closes on hover exit');
+	view.setOverlayPopup({ ...popup, persistent: true });
+	assert.equal(view._closeOverlayPopup(), false);
+	view._handlePageDestroy(originalPage);
+	assert.equal(view._overlayPopup, null);
+	assert.deepEqual(closed, [null, null]);
+});
+
+test('pending keyboard previews ignore hover moves and already queued hover opens', async (t) => {
+	t.mock.timers.enable({ apis: ['Date'], now: 1000 });
+	let native = { type: 'internal-link', position: { pageIndex: 0, rects: [[0, 0, 1, 1]] } };
+	let citation = { type: 'citation', position: native.position };
+	let finish;
+	let hovered;
+	let published = [];
+	let view = createPDFViewInstance();
+	Object.assign(view, {
+		_citationAndLinkPreviewsEnabled: true,
+		_overlayRevision: 1,
+		_iframeWindow: { PDFViewerApplication: { pdfViewer: { _pages: [] } } },
+		pointerEventToPosition: () => native.position,
+		_getSelectableOverlay: () => hovered,
+		getActionAtPosition: () => ({ action: { type: 'none' }, selectAnnotations: [] }),
+		getClientRect: () => [0, 0, 1, 1],
+		_pdfRenderer: { renderPreviewPage: () => new Promise(resolve => finish = resolve) },
+		_overlayPopupDelayer: {
+			open: () => assert.fail('hover cannot replace a keyboard preview'),
+			close: () => assert.fail('hover cannot close a keyboard preview'),
+		},
+		_onSetOverlayPopup: popup => published.push(popup),
+		updateCursor() {}, _updateReadAloudJumpButton() {}, _render() {},
+	});
+	let pending = view._openOverlayPopup(native, 1, true);
+	let request = view._overlayPopupRequest;
+	for (let overlay of [null, citation]) {
+		hovered = overlay;
+		view._handlePointerMove({ button: 0 });
+		t.mock.timers.tick(51);
+		assert.equal(view._overlayPopupRequest, request);
+	}
+	assert.equal(view._closeOverlayPopup(), false);
+	await view._openOverlayPopup(citation);
+	assert.equal(view._overlayPopupRequest, request, 'an already queued hover must not replace keyboard intent');
+	finish({ image: 'keyboard' });
+	await pending;
+	await view._openOverlayPopup(citation);
+	assert.equal(published.length, 1);
+	assert.equal(view._overlayPopup.image, 'keyboard');
+	assert.equal(view._overlayPopup.persistent, true);
 });
 
 test('Citation and Link Previews disables PDF overlay highlights', () => {
@@ -633,6 +880,7 @@ test('destroying a mobile PDF view releases native selection', () => {
 		_cancelPendingPageTurn: PDFView.prototype._cancelPendingPageTurn,
 		_pendingPageTurn: { cancel: () => calls.push(['pageTurn']) },
 	};
+	Object.setPrototypeOf(view, PDFView.prototype);
 	try {
 		PDFView.prototype.destroy.call(view);
 	}
@@ -752,6 +1000,7 @@ function createPointerView(platform = 'android', annotation = { id: 'annotation'
 		_updateViewStats() {},
 		updateCursor() {},
 	};
+	Object.setPrototypeOf(view, PDFView.prototype);
 	return {
 		selected,
 		setPosition: position => currentPosition = position,
