@@ -3,8 +3,6 @@ import cx from 'classnames';
 
 const VIEW_MIN_SIZE = 20; // Percent
 
-// TODO: Reset size on resizer double click
-
 function SplitViewResizer(props) {
 	const [resizing, setResizing] = useState(false);
 	const resizerRef = useRef();
@@ -91,11 +89,17 @@ function SplitViewResizer(props) {
 		setResizing(true);
 	}
 
+	function handleDoubleClick(event) {
+		event.preventDefault();
+		props.onDoubleClick?.();
+	}
+
 	return (
 		<div
 			ref={resizerRef}
 			className={cx('split-view-resizer', { resizing })}
 			onPointerDown={handlePointerDown}
+			onDoubleClick={handleDoubleClick}
 		/>
 	);
 }
