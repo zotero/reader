@@ -88,10 +88,14 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 	let currentTheme = currentColorScheme === 'light' ? lightTheme : darkTheme;
 	let bg = '#FFFFFF';
 	let fg = '#000000';
+	let lc = '#0000EE';
+	let vlc = '#551A8B';
 	let inv = false;
 	if (currentTheme) {
 		bg = currentTheme.background;
 		fg = currentTheme.foreground;
+		lc = currentTheme.linkColor || '';
+		vlc = currentTheme.visitedLinkColor || '';
 		inv = currentTheme.invertImages;
 	}
 
@@ -99,6 +103,8 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 	let [label, setLabel] = useState(params.theme?.label || '');
 	let [background, setBackground] = useState(params.theme?.background || bg);
 	let [foreground, setForeground] = useState(params.theme?.foreground || fg);
+	let [linkColor, setLinkColor] = useState(params.theme?.linkColor || params.theme?.foreground || lc);
+	let [visitedLinkColor, setVisitedLinkColor] = useState(params.theme?.visitedLinkColor || params.theme?.foreground || vlc);
 	let [invertImages, setInvertImages] = useState(params.theme?.invertImages ?? inv);
 
 	let themeIsDark = isDarkTheme(background, foreground);
@@ -136,6 +142,18 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 		theme.label = label.trim();
 		theme.background = background;
 		theme.foreground = foreground;
+		if (linkColor && isValidHexColor(linkColor)) {
+			theme.linkColor = linkColor;
+		}
+		else {
+			delete theme.linkColor;
+		}
+		if (visitedLinkColor && isValidHexColor(visitedLinkColor)) {
+			theme.visitedLinkColor = visitedLinkColor;
+		}
+		else {
+			delete theme.visitedLinkColor;
+		}
 		if (invertImages) {
 			theme.invertImages = true;
 		}
@@ -181,6 +199,8 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 		!nameInvalid
 		&& isValidHexColor(background)
 		&& isValidHexColor(foreground)
+		&& (!linkColor || isValidHexColor(linkColor))
+		&& (!visitedLinkColor || isValidHexColor(visitedLinkColor))
 	);
 
 	return (
@@ -202,6 +222,10 @@ function ThemePopup({ params, customThemes, colorScheme, lightTheme, darkTheme, 
 					<div className="input"><ColorPicker color={background} onChange={handleBackgroundChange}/></div>
 					<label>{l10n.getString('reader-foreground')}</label>
 					<div className="input"><ColorPicker color={foreground} onChange={handleForegroundChange}/></div>
+					<label>{l10n.getString('reader-link-color')}</label>
+					<div className="input"><ColorPicker color={linkColor} onChange={setLinkColor}/></div>
+					<label>{l10n.getString('reader-visited-link-color')}</label>
+					<div className="input"><ColorPicker color={visitedLinkColor} onChange={setVisitedLinkColor}/></div>
 					<div></div>
 					<div>
 						<div className="option">
