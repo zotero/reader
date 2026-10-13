@@ -225,6 +225,7 @@ export type ReadAloudState = {
 	segmentAnnotations: Map<number, string>;
 	savedPosition?: Position | null;
 	highlightGranularity: ReadAloudGranularity;
+	verticalControls: boolean;
 };
 
 /**

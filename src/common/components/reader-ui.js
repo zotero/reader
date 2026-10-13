@@ -274,6 +274,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 							manager={props.readAloudManager}
 							title={state.title}
 							loggedIn={state.loggedIn}
+							vertical={state.readAloudState.verticalControls}
 							onOpenVoicePreferences={props.onOpenVoicePreferences}
 							onPurchaseCredits={props.onPurchaseReadAloudCredits}
 							onLogIn={props.onLogIn}
