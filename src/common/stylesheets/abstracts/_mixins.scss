@@ -237,6 +237,13 @@
 	}
 }
 
+@mixin hairline-border($property: border, $color: currentColor, $width: 0.5px) {
+	#{$property}: $width solid $color;
+	@media (resolution: 1dppx) {
+		#{$property}-width: 1px;
+	}
+}
+
 @mixin popup {
 	position: absolute;
 	z-index: $z-index-find-popup;
