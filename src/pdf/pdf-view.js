@@ -84,6 +84,15 @@ import {
 	getTextBlockRect,
 	isDoubleTap,
 } from './double-tap-zoom.mjs';
+import {
+	combineBounds,
+	getContentFitMarginPx,
+	getContentFitOffset,
+	getContentFitScale,
+	getInkBounds,
+	getSamplePageIndexes,
+	isContentFitOffset,
+} from './content-fit.mjs';
 
 // How many recently used off-screen pages to keep rendered, in addition to the
 // visible pages and their immediate neighbors. pdf.js's own buffer keeps 10
@@ -97,10 +106,15 @@ const PAGE_TURN_TAP_AXIS_TOLERANCE_PX = 10;
 const VERTICAL_SCROLL_MODE = 0;
 const HORIZONTAL_SCROLL_MODE = 1;
 const WRAPPED_SCROLL_MODE = 2;
+// Pages rendered to detect the content area, and their render width in pixels
+const CONTENT_FIT_SAMPLE_PAGES = 8;
+const CONTENT_FIT_SAMPLE_WIDTH = 400;
 
 class PDFView {
 	constructor(options) {
 		this._options = options;
+		// Fit to Content settings, so double-tapping can return to the fit
+		this._contentFit = options.contentFit || null;
 		this._primary = options.primary;
 		this._mobile = options.mobile;
 		this._readOnly = options.readOnly;
@@ -423,6 +437,7 @@ class PDFView {
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
 		this._iframeWindow.addEventListener('lostpointercapture', this._handleTouchTransformInterrupted.bind(this));
 		this._iframeWindow.addEventListener('resize', this._handleTouchTransformInterrupted.bind(this));
+		this._iframeWindow.addEventListener('resize', this._handleContentFitResize.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
 		this._iframeWindow.addEventListener('dragend', this._handleDragEnd.bind(this));
 		this._iframeWindow.addEventListener('dragover', this._handlePointerMove.bind(this), { passive: true });
@@ -512,6 +527,11 @@ class PDFView {
 
 		if (this._location) {
 			this.navigate(this._location);
+		}
+		// A zoom restored from the view state takes precedence over fitting
+		else if (this._contentFit && this._contentFit.fitOnOpen !== false) {
+			// Not awaited, so the view can initialize while pages are sampled
+			this.fitToContent({ margin: this._contentFit.margin, alignTop: true });
 		}
 
 		this._resolveInitializedPromise?.(true);
@@ -1817,6 +1837,178 @@ class PDFView {
 		this._iframeWindow.PDFViewerApplication.pdfViewer.currentScaleValue = 'auto';
 	}
 
+	/**
+	 * Set the Fit to Content settings that double-tapping returns to
+	 *
+	 * @param {{ margin: number } | null} contentFit Null when Fit to Content is off
+	 */
+	setContentFit(contentFit) {
+		this._contentFit = contentFit || null;
+	}
+
+	/**
+	 * Zoom so the page content, detected from sampled pages, fills the viewport
+	 *
+	 * @param {Object} [options]
+	 * @param {number} [options.margin] Space to keep around the content, as a fraction of the smaller viewport side
+	 * @param {boolean} [options.alignTop] In vertical scroll mode, scroll to the top of the current page's content
+	 * @returns {Promise<boolean>} Whether the zoom was applied
+	 */
+	async fitToContent({ margin = 0, alignTop = false } = {}) {
+		if (this._destroyed || this._preview) {
+			return false;
+		}
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		// Spreads would need the bounds of two pages side by side
+		if (!viewer.pdfDocument || viewer.spreadMode !== 0) {
+			return false;
+		}
+		// Replaced by a newer request, or cleared when the user touches the view
+		let request = this._contentFitRequest = {};
+		this._contentBoundsPromise ??= this._computeContentBounds();
+		let bounds = await this._contentBoundsPromise;
+		if (this._destroyed || this._contentFitRequest !== request || !bounds) {
+			return false;
+		}
+		this._contentFitRequest = null;
+		let { container } = viewer;
+		let pageView = viewer.getPageView(viewer.currentPageNumber - 1);
+		if (!pageView) {
+			return false;
+		}
+		let vertical = viewer.scrollMode !== HORIZONTAL_SCROLL_MODE;
+		let { div } = pageView;
+		let topFraction = (container.scrollTop - div.offsetTop - div.clientTop) / div.clientHeight;
+		let scale = getContentFitScale({
+			scale: viewer.currentScale,
+			pageWidth: div.clientWidth,
+			pageHeight: div.clientHeight,
+			bounds,
+			viewportWidth: container.clientWidth,
+			viewportHeight: container.clientHeight,
+			margin,
+			// In vertical scrolling the reader scrolls through the height anyway
+			fitHeight: !vertical,
+		});
+		if (!scale) {
+			return false;
+		}
+		this._cancelPendingPageTurn();
+		viewer.currentScale = Math.max(0.1, Math.min(scale, 10));
+
+		// PDF.js lays out pages synchronously when the scale changes.
+		// Like page turns, only position the axes the page overflows
+		let { clientWidth, clientHeight } = container;
+		if (div.clientWidth > clientWidth) {
+			container.scrollLeft = div.offsetLeft + div.clientLeft
+				+ getContentFitOffset(bounds[0], bounds[2], div.clientWidth, clientWidth);
+		}
+		if (vertical) {
+			let top = alignTop
+				? bounds[1] * div.clientHeight - getContentFitMarginPx(margin, clientWidth, clientHeight)
+				: topFraction * div.clientHeight;
+			container.scrollTop = div.offsetTop + div.clientTop + Math.max(0, top);
+		}
+		else if (div.clientHeight > clientHeight) {
+			container.scrollTop = div.offsetTop + div.clientTop
+				+ getContentFitOffset(bounds[1], bounds[3], div.clientHeight, clientHeight);
+		}
+		this._appliedContentFit = {
+			margin,
+			bounds,
+			scale: viewer.currentScale,
+			width: clientWidth,
+			height: clientHeight,
+		};
+		return true;
+	}
+
+	// Whether the view still shows the content fit, i.e. the user hasn't zoomed or
+	// panned since. Scrolling through a page in vertical scroll mode and turning
+	// pages keep the fit
+	_isAtContentFit() {
+		let fit = this._appliedContentFit;
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		if (!fit || fit.scale !== viewer.currentScale || fit.margin !== this._contentFit?.margin) {
+			return false;
+		}
+		let div = viewer.getPageView(viewer.currentPageNumber - 1)?.div;
+		if (!div) {
+			return false;
+		}
+		let { container } = viewer;
+		let { bounds } = fit;
+		return isContentFitOffset(container.scrollLeft - div.offsetLeft - div.clientLeft,
+			bounds[0], bounds[2], div.clientWidth, fit.width)
+			&& (viewer.scrollMode !== HORIZONTAL_SCROLL_MODE
+				|| isContentFitOffset(container.scrollTop - div.offsetTop - div.clientTop,
+					bounds[1], bounds[3], div.clientHeight, fit.height));
+	}
+
+	// The viewport grows when the Android top bar hides. Refit an unchanged fit
+	// to the larger viewport, but not when it shrinks again, so toggling the
+	// bars doesn't re-zoom (and redraw an e-ink screen) every time
+	_handleContentFitResize() {
+		let fit = this._appliedContentFit;
+		if (!fit) {
+			return;
+		}
+		// Let PDF.js update the layout first
+		this._iframeWindow.requestAnimationFrame(() => {
+			if (this._destroyed || this._appliedContentFit !== fit) {
+				return;
+			}
+			let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+			if (viewer.currentScale !== fit.scale) {
+				// Zoomed since fitting
+				this._appliedContentFit = null;
+				return;
+			}
+			let { clientWidth, clientHeight } = viewer.container;
+			if (clientWidth > fit.width + 1 || clientHeight > fit.height + 1) {
+				this.fitToContent({ margin: fit.margin });
+			}
+		});
+	}
+
+	async _computeContentBounds() {
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		let { pdfDocument, pagesRotation } = viewer;
+		let pageBounds = [];
+		for (let pageIndex of getSamplePageIndexes(pdfDocument.numPages, CONTENT_FIT_SAMPLE_PAGES)) {
+			if (this._destroyed) {
+				return null;
+			}
+			try {
+				let page = await pdfDocument.getPage(pageIndex + 1);
+				pageBounds.push(await this._getPageInkBounds(page, (page.rotate + pagesRotation) % 360));
+			}
+			catch (e) {
+				console.error(e);
+			}
+		}
+		return combineBounds(pageBounds);
+	}
+
+	async _getPageInkBounds(page, rotation) {
+		let { width } = page.getViewport({ scale: 1, rotation });
+		let viewport = page.getViewport({ scale: CONTENT_FIT_SAMPLE_WIDTH / width, rotation });
+		let canvas = this._iframeWindow.document.createElement('canvas');
+		canvas.width = Math.ceil(viewport.width);
+		canvas.height = Math.ceil(viewport.height);
+		let ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: true });
+		try {
+			ctx.fillStyle = '#ffffff';
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			await page.render({ canvasContext: ctx, viewport }).promise;
+			return getInkBounds(ctx.getImageData(0, 0, canvas.width, canvas.height));
+		}
+		finally {
+			canvas.width = 0;
+			canvas.height = 0;
+		}
+	}
+
 	_clearPendingBackdropTap(call = false) {
 		let tap = this._pendingBackdropTap;
 		if (!tap) {
@@ -1937,7 +2129,15 @@ class PDFView {
 			return false;
 		}
 
-		if (page.div.getBoundingClientRect().width > container.clientWidth * 1.05) {
+		// With Fit to Content, zooming out returns to the fit instead of the page width,
+		// and a fitted view zooms in like a page-width one
+		if (this._contentFit && pdfViewer.spreadMode === 0) {
+			if (!this._isAtContentFit()) {
+				this.fitToContent({ margin: this._contentFit.margin });
+				return true;
+			}
+		}
+		else if (page.div.getBoundingClientRect().width > container.clientWidth * 1.05) {
 			pdfViewer.currentScaleValue = 'page-width';
 			this._adjustDoubleTapZoom(position, event);
 			return true;
@@ -3182,6 +3382,8 @@ class PDFView {
 	}
 
 	_handlePointerDown(event) {
+		// A pending content fit must not override the user's own zooming and scrolling
+		this._contentFitRequest = null;
 		// Android WebView dispatches a compatibility mousedown after touchend. Suppress
 		// the one following a handled double tap so it cannot start native selection.
 		if (this._options.platform === 'android'
@@ -4183,13 +4385,16 @@ class PDFView {
 	_handleViewAreaUpdate = (event) => {
 		let { scale, top, left } = event.location;
 		let pageIndex = event.location.pageNumber - 1;
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		this._onChangeViewState({
 			pageIndex,
 			scale,
 			top,
 			left,
-			scrollMode: this._iframeWindow.PDFViewerApplication.pdfViewer.scrollMode,
-			spreadMode: this._iframeWindow.PDFViewerApplication.pdfViewer.spreadMode
+			scrollMode: viewer.scrollMode,
+			spreadMode: viewer.spreadMode,
+			// The zoom comes from fitToContent() rather than the user, so it can be refitted
+			...(this._appliedContentFit?.scale === viewer.currentScale && { contentFitted: true }),
 		});
 		if (!this._pendingHistorySave && !this._navigationGroup) {
 			this._history.save({ dest: [pageIndex, { name: 'XYZ' }, left, top, null] }, true);

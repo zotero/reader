@@ -149,6 +149,16 @@ window.setContainerInsets = (options) => {
 	style.setProperty('--safe-area-inset-left', (options.left || 0) + 'px');
 };
 
+window.fitToContent = (options) => {
+	log("Fit to content: " + JSON.stringify(options));
+	window._view.fitToContent(options);
+};
+
+window.setContentFit = (options) => {
+	log("Set content fit: " + JSON.stringify(options));
+	window._view.setContentFit(options);
+};
+
 window.setTool = (options) => {
 	log("Set tool: " + options.type + "; color: " + options.color);
 	window._view.setTool(options);
