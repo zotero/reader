@@ -73,6 +73,26 @@ test('ignores a centered page number and a running header', () => {
 	assertBounds(bounds, [0.15, 0.1, 0.85, 0.9]);
 });
 
+test('ignores a running header above a rule close to the body', () => {
+	let bounds = getInkBounds(page([
+		// Title and rule, as in CoRL papers, with less than the usual gap below
+		[0.2, 0.05, 0.8, 0.058],
+		[0.15, 0.062, 0.85, 0.064],
+		...textBlock(0.15, 0.08, 0.85, 0.9),
+	]));
+	assertBounds(bounds, [0.15, 0.08, 0.85, 0.9]);
+});
+
+test('keeps a table caption above the table rule', () => {
+	let bounds = getInkBounds(page([
+		[0.2, 0.05, 0.8, 0.058],
+		// The table starts right below its top rule
+		[0.15, 0.062, 0.85, 0.064],
+		...textBlock(0.15, 0.068, 0.85, 0.9),
+	]));
+	assertBounds(bounds, [0.15, 0.05, 0.85, 0.9]);
+});
+
 test('keeps a wide footnote at the bottom of the page', () => {
 	let bounds = getInkBounds(page([
 		...textBlock(0.15, 0.1, 0.85, 0.85),

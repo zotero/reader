@@ -2,6 +2,8 @@
 // paper body instead of the full page. Outer bands that are thin and separated
 // from the rest of the page are treated as marginalia and ignored, e.g. the
 // rotated arXiv identifier, line numbers, running headers and page numbers.
+// A running header underlined by a full-width rule can sit closer to the body,
+// e.g. in CoRL papers.
 
 // A pixel counts as ink when any channel is darker than this
 const INK_THRESHOLD = 235;
@@ -16,6 +18,8 @@ const MARGINALIA_MIN_GAP = 0.02;
 // Top/bottom bands shorter than this and at least this far from the rest are headers/footers
 const HEADER_FOOTER_MAX_HEIGHT = 0.03;
 const HEADER_FOOTER_MIN_GAP = 0.02;
+// A row inked across this much of the body width is a horizontal rule
+const RULE_MIN_FILL = 0.9;
 // Bottom bands wider than this are footnotes rather than page numbers, and are kept
 const FOOTER_MAX_WIDTH = 0.25;
 const MAX_TRIMMED_BANDS_PER_SIDE = 2;
@@ -47,13 +51,20 @@ function getBands(profile, mergeGap) {
 	return bands;
 }
 
-function trimOuterBands(bands, size, maxBandSize, minGap, { canTrimStart = () => true, canTrimEnd = () => true } = {}) {
+// `isRuledStart` tells whether a start band ends with a rule, which separates
+// it from the rest regardless of the gap
+function trimOuterBands(bands, size, maxBandSize, minGap, {
+	canTrimStart = () => true,
+	canTrimEnd = () => true,
+	isRuledStart = () => false,
+} = {}) {
 	let first = 0;
 	let last = bands.length - 1;
-	let isTrimmable = (band, neighbor) => band.end - band.start < maxBandSize * size
-		&& Math.max(neighbor.start - band.end, band.start - neighbor.end) >= minGap * size;
+	let isTrimmable = (band, neighbor, ruled = false) => band.end - band.start < maxBandSize * size
+		&& (ruled || Math.max(neighbor.start - band.end, band.start - neighbor.end) >= minGap * size);
 	for (let i = 0; i < MAX_TRIMMED_BANDS_PER_SIDE && first < last; i++) {
-		if (!isTrimmable(bands[first], bands[first + 1]) || !canTrimStart(bands[first])) {
+		if (!isTrimmable(bands[first], bands[first + 1], isRuledStart(bands[first]))
+				|| !canTrimStart(bands[first])) {
 			break;
 		}
 		first++;
@@ -128,7 +139,13 @@ export function getInkBounds({ data, width, height }) {
 		height,
 		HEADER_FOOTER_MAX_HEIGHT,
 		HEADER_FOOTER_MIN_GAP,
-		{ canTrimEnd: band => getBandWidth(band) < FOOTER_MAX_WIDTH * width }
+		{
+			canTrimEnd: band => getBandWidth(band) < FOOTER_MAX_WIDTH * width,
+			// Check the last two rows, as an anti-aliased rule can be split across them
+			isRuledStart: band => [band.end - 1, band.end - 2].some(
+				y => y >= band.start && rows[y] >= RULE_MIN_FILL * (x1 - x0)
+			),
+		}
 	);
 	if (!yBands.length) {
 		return null;
