@@ -6,6 +6,7 @@ import {
 	getContentFitScale,
 	getInkBounds,
 	getSamplePageIndexes,
+	isContentFitOffset,
 } from '../../src/pdf/content-fit.mjs';
 
 const WIDTH = 400;
@@ -162,4 +163,12 @@ test('centers content within the page and constrains the offset', () => {
 	assert.equal(getContentFitOffset(0.1, 0.9, 1000, 800), 100);
 	assert.equal(getContentFitOffset(0, 0.5, 1000, 800), 0);
 	assert.equal(getContentFitOffset(0.6, 1, 1000, 800), 200);
+});
+
+test('detects whether the view is still at the fitted offset', () => {
+	assert.equal(isContentFitOffset(100, 0.1, 0.9, 1000, 800), true);
+	assert.equal(isContentFitOffset(101.5, 0.1, 0.9, 1000, 800), true);
+	assert.equal(isContentFitOffset(140, 0.1, 0.9, 1000, 800), false);
+	// The page fits in the viewport, so it can't have been panned
+	assert.equal(isContentFitOffset(-50, 0.1, 0.9, 700, 800), true);
 });

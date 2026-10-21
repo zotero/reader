@@ -254,3 +254,12 @@ export function getContentFitOffset(start, end, pageSize, viewportSize) {
 	let offset = (start + end) / 2 * pageSize - viewportSize / 2;
 	return Math.max(0, Math.min(offset, pageSize - viewportSize));
 }
+
+/**
+ * Whether a scroll offset within the page is where fitting put it along one axis.
+ * A page that doesn't overflow the viewport can't be panned
+ */
+export function isContentFitOffset(offset, start, end, pageSize, viewportSize) {
+	return pageSize <= viewportSize
+		|| Math.abs(offset - getContentFitOffset(start, end, pageSize, viewportSize)) <= 2;
+}

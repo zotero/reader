@@ -487,6 +487,10 @@ class View {
 		return this._view.fitToContent?.(options) ?? false;
 	}
 
+	setContentFit(contentFit) {
+		this._view.setContentFit?.(contentFit);
+	}
+
 	navigate(location) {
 		this._activeView.navigate(location);
 	}

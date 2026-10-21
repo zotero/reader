@@ -93,6 +93,7 @@ import {
 	getContentFitScale,
 	getInkBounds,
 	getSamplePageIndexes,
+	isContentFitOffset,
 } from './content-fit.mjs';
 
 // How many recently used off-screen pages to keep rendered, in addition to the
@@ -115,6 +116,8 @@ const CONTENT_FIT_SAMPLE_WIDTH = 400;
 class PDFView {
 	constructor(options) {
 		this._options = options;
+		// Fit to Content settings, so double-tapping can return to the fit
+		this._contentFit = options.contentFit || null;
 		this._primary = options.primary;
 		this._mobile = options.mobile;
 		this._readOnly = options.readOnly;
@@ -527,9 +530,10 @@ class PDFView {
 		if (this._location) {
 			this.navigate(this._location);
 		}
-		else if (this._options?.contentFit) {
+		// A zoom restored from the view state takes precedence over fitting
+		else if (this._contentFit && this._contentFit.fitOnOpen !== false) {
 			// Not awaited, so the view can initialize while pages are sampled
-			this.fitToContent({ ...this._options.contentFit, alignTop: true });
+			this.fitToContent({ margin: this._contentFit.margin, alignTop: true });
 		}
 
 		this._resolveInitializedPromise?.(true);
@@ -1901,6 +1905,15 @@ class PDFView {
 	}
 
 	/**
+	 * Set the Fit to Content settings that double-tapping returns to
+	 *
+	 * @param {{ margin: number } | null} contentFit Null when Fit to Content is off
+	 */
+	setContentFit(contentFit) {
+		this._contentFit = contentFit || null;
+	}
+
+	/**
 	 * Zoom so the page content, detected from sampled pages, fills the viewport
 	 *
 	 * @param {Object} [options]
@@ -1967,8 +1980,36 @@ class PDFView {
 			container.scrollTop = div.offsetTop + div.clientTop
 				+ getContentFitOffset(bounds[1], bounds[3], div.clientHeight, clientHeight);
 		}
-		this._appliedContentFit = { margin, scale: viewer.currentScale, width: clientWidth, height: clientHeight };
+		this._appliedContentFit = {
+			margin,
+			bounds,
+			scale: viewer.currentScale,
+			width: clientWidth,
+			height: clientHeight,
+		};
 		return true;
+	}
+
+	// Whether the view still shows the content fit, i.e. the user hasn't zoomed or
+	// panned since. Scrolling through a page in vertical scroll mode and turning
+	// pages keep the fit
+	_isAtContentFit() {
+		let fit = this._appliedContentFit;
+		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
+		if (!fit || fit.scale !== viewer.currentScale || fit.margin !== this._contentFit?.margin) {
+			return false;
+		}
+		let div = viewer.getPageView(viewer.currentPageNumber - 1)?.div;
+		if (!div) {
+			return false;
+		}
+		let { container } = viewer;
+		let { bounds } = fit;
+		return isContentFitOffset(container.scrollLeft - div.offsetLeft - div.clientLeft,
+			bounds[0], bounds[2], div.clientWidth, fit.width)
+			&& (viewer.scrollMode !== HORIZONTAL_SCROLL_MODE
+				|| isContentFitOffset(container.scrollTop - div.offsetTop - div.clientTop,
+					bounds[1], bounds[3], div.clientHeight, fit.height));
 	}
 
 	// The viewport grows when the Android top bar hides. Refit an unchanged fit
@@ -2155,7 +2196,15 @@ class PDFView {
 			return false;
 		}
 
-		if (page.div.getBoundingClientRect().width > container.clientWidth * 1.05) {
+		// With Fit to Content, zooming out returns to the fit instead of the page width,
+		// and a fitted view zooms in like a page-width one
+		if (this._contentFit && pdfViewer.spreadMode === 0) {
+			if (!this._isAtContentFit()) {
+				this.fitToContent({ margin: this._contentFit.margin });
+				return true;
+			}
+		}
+		else if (page.div.getBoundingClientRect().width > container.clientWidth * 1.05) {
 			pdfViewer.currentScaleValue = 'page-width';
 			this._adjustDoubleTapZoom(position, event);
 			return true;
