@@ -97,6 +97,9 @@ const PAGE_TURN_TAP_AXIS_TOLERANCE_PX = 10;
 const VERTICAL_SCROLL_MODE = 0;
 const HORIZONTAL_SCROLL_MODE = 1;
 const WRAPPED_SCROLL_MODE = 2;
+// There's no way to detect whether a stylus is physically connected, so a pen
+// is treated as in use for this long after it was last seen (same as dom-view)
+const PEN_ACTIVE_TIMEOUT = 5 * 60 * 1000;
 
 class PDFView {
 	constructor(options) {
@@ -166,6 +169,9 @@ class PDFView {
 		this._scrolling = false;
 		this._dragging = false;
 		this._touchTransform = null;
+		this._penActive = options.penActive ?? false;
+		this._penActiveTimeout = null;
+		this._penExclusive = options.penExclusive ?? false;
 		this._readAloudPositionLocked = true;
 		this._readAloudScrolling = false;
 
@@ -284,6 +290,7 @@ class PDFView {
 			this._updateColorScheme();
 			let root = this._iframeWindow.document.documentElement;
 			root.toggleAttribute('data-mobile-reader', !!this._mobile);
+			this._updatePenActiveState();
 			// This is necessary to make sure this is called after webviewerloaded
 			setTimeout(() => {
 				if (this._destroyed) {
@@ -418,6 +425,9 @@ class PDFView {
 		// Touch events are passive by default
 		this._iframeWindow.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
+		// A hovering pen is detected before it touches the screen, so a palm landing
+		// after it is already treated as a finger that shouldn't annotate
+		this._iframeWindow.addEventListener('pointermove', this._handlePenHover.bind(this), { capture: true, passive: true });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
@@ -1130,6 +1140,7 @@ class PDFView {
 		this._overlayPopupDelayer.destroy();
 		this._nativeTextSelection?.destroy();
 		this._clearPendingBackdropTap();
+		clearTimeout(this._penActiveTimeout);
 	}
 
 	// Log once and disable a memory feature if the pdf.js fork stops exposing
@@ -1375,6 +1386,64 @@ class PDFView {
 		this._readOnly = readOnly;
 	}
 
+	setPenActive(penActive) {
+		if (penActive) {
+			this._markPenActive();
+		}
+		else {
+			this._clearPenActive();
+		}
+	}
+
+	setPenExclusive(penExclusive) {
+		this._penExclusive = penExclusive;
+		this._updatePenActiveState();
+	}
+
+	_isPenInUse() {
+		return this._penActive || this._penExclusive;
+	}
+
+	// A pen only matters while annotating, so it isn't tracked with the pointer and hand tools
+	_isAnnotationToolActive() {
+		return !['pointer', 'hand'].includes(this._tool.type);
+	}
+
+	_markPenActive() {
+		this._penActive = true;
+		this._updatePenActiveState();
+		clearTimeout(this._penActiveTimeout);
+		this._penActiveTimeout = setTimeout(() => this._clearPenActive(), PEN_ACTIVE_TIMEOUT);
+	}
+
+	_clearPenActive() {
+		this._penActive = false;
+		clearTimeout(this._penActiveTimeout);
+		this._penActiveTimeout = null;
+		this._updatePenActiveState();
+	}
+
+	// Exposed to CSS, which can't tell a pen from a finger when choosing touch-action
+	_updatePenActiveState() {
+		this._iframeWindow?.document.documentElement.toggleAttribute('data-pen-active', this._isPenInUse());
+	}
+
+	_handlePenHover(event) {
+		if (event.pointerType === 'pen' && this._isAnnotationToolActive()) {
+			this._markPenActive();
+		}
+	}
+
+	// A pointer other than the one that started the current pointer action, e.g. a palm
+	// resting on the screen while a pen is drawing
+	_isForeignPointer(event) {
+		let pointerDownTap = this._pointerDownTap;
+		return !!pointerDownTap
+			&& pointerDownTap.pointerId !== undefined
+			&& event?.pointerId !== undefined
+			&& event.pointerId !== pointerDownTap.pointerId;
+	}
+
 	setTool(tool) {
 		if (this._options.platform === 'android'
 			&& tool.type !== this._tool.type
@@ -1396,6 +1465,9 @@ class PDFView {
 			this._options.platform === 'android' && !['pointer', 'hand'].includes(tool.type)
 		);
 		this._tool = tool;
+		if (!this._isAnnotationToolActive()) {
+			this._clearPenActive();
+		}
 		this._nativeTextSelection?.updateEnabledState();
 		this.updateCursor();
 	}
@@ -3009,10 +3081,13 @@ class PDFView {
 		if (event.altKey) {
 			return { action: { type: 'selectText' }, selectAnnotations: [] };
 		}
-		if (this._tool.type === 'ink') {
+		// While a pen is in use, fingers (and palms) only scroll and select existing annotations,
+		// they don't use the active annotation tool
+		let touchWithPen = event.pointerType === 'touch' && this._isPenInUse();
+		if (this._tool.type === 'ink' && !touchWithPen) {
 			return { action: { type: 'ink' }, selectAnnotations: [] };
 		}
-		else if (this._tool.type === 'eraser') {
+		else if (this._tool.type === 'eraser' && !touchWithPen) {
 			return { action: { type: 'erase', annotations: new Map() }, selectAnnotations: [] };
 		}
 		if (this._selectionRanges.length && ![2, 3].includes(event.detail)) {
@@ -3070,6 +3145,9 @@ class PDFView {
 		}
 		else {
 			selectAnnotations = [];
+			if (touchWithPen) {
+				return { action: { type: 'none' }, selectAnnotations };
+			}
 			if (this._tool.type === 'note') {
 				action = { type: 'note' };
 			}
@@ -3191,6 +3269,9 @@ class PDFView {
 			event.preventDefault();
 			return;
 		}
+		if (event.pointerType === 'pen' && this._isAnnotationToolActive()) {
+			this._markPenActive();
+		}
 		let doubleTap = this._isDoubleTapCandidate(event);
 		if (this._nativeTextSelection?.handlePointerDown(event)) {
 			return;
@@ -3208,6 +3289,15 @@ class PDFView {
 		if (event.pointerType === 'mouse') {
 			return;
 		}
+		// A pen landing after a finger means that the finger was a palm, so drop
+		// whatever it started instead of letting it block the pen
+		if (this._pointerDownTriggered
+				&& event.pointerType === 'pen'
+				&& this._pointerDownTap?.pointerType === 'touch') {
+			this._clearPointerAction();
+			this._setSelectionRanges();
+			this._render();
+		}
 		if (this._pointerDownTriggered) {
 			return;
 		}
@@ -3221,6 +3311,8 @@ class PDFView {
 			x: event.clientX,
 			y: event.clientY,
 			button: event.button,
+			pointerId: event.pointerId,
+			pointerType: event.pointerType,
 			inViewerContainer: !!event.target.closest('#viewerContainer'),
 			hadSelection: !this._isSelectionCollapsed() || !!this._selectedAnnotationIDs.length,
 			doubleTap,
@@ -3438,8 +3530,10 @@ class PDFView {
 			return;
 		}
 		if (
-			// Prevent default touch action (which is scroll) if any tool is enabled
+			// Prevent default touch action (which is scroll) if any tool is enabled,
+			// except for fingers while a pen is in use, which are left to scroll
 			this._tool.type !== 'pointer' && event.target.id !== 'viewer'
+				&& (!this._isPenInUse() || this._pointerDownTap?.pointerType === 'pen')
 			// Or a text selection action is triggered using a pen in the page (not the gray area)
 			|| this.action?.type === 'selectText'
 			// Or a selected annotation is being transformed by touch
@@ -3461,7 +3555,10 @@ class PDFView {
 		if (event.cancelable) {
 			event.preventDefault();
 		}
-		this._pointerDownTriggered = false;
+		// A palm lifting while a pen is still touching must not end the pen's action
+		if (!event.touches.length) {
+			this._pointerDownTriggered = false;
+		}
 	}
 
 	_handlePointerMove = throttle((event) => {
@@ -3473,7 +3570,7 @@ class PDFView {
 		// when the highlight/underline tool is enabled
 		this._creationTimeout = null;
 
-		if (this._scrolling) {
+		if (this._scrolling || this._isForeignPointer(event)) {
 			return;
 		}
 
@@ -3913,6 +4010,9 @@ class PDFView {
 			this._clearPointerAction();
 			return;
 		}
+		if (this._isForeignPointer(event)) {
+			return;
+		}
 		if (this._touchTransform && event.pointerId !== this._touchTransform.pointerID) {
 			return;
 		}
@@ -4143,11 +4243,15 @@ class PDFView {
 		this._updateViewStats();
 	}
 
-	_handlePointerCancel() {
+	_handlePointerCancel(event) {
 		this._nativeTextSelection?.handlePointerUp();
 		// Chrome cancels the pointer stream when a native drag operation
 		// starts, but the drag events keep driving the current action
 		if (this._dragging) {
+			return;
+		}
+		// Android cancels a palm touch when a pen lands, which mustn't cancel the pen's action
+		if (this._isForeignPointer(event)) {
 			return;
 		}
 		if (this._pointerDownTap?.doubleTap) {

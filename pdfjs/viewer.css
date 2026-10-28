@@ -315,7 +315,9 @@ body.portal #viewerContainer::-webkit-scrollbar { /* WebKit */
 	-webkit-touch-callout: none;
 }
 
-:root[data-android-annotation-tool] .textLayer {
+/* touch-action can't depend on the pointer type, so while a pen is in use fingers are allowed to pan and
+   pdf-view.js prevents the pen's touchmove default instead */
+:root[data-android-annotation-tool]:not([data-pen-active]) .textLayer {
 	touch-action: none;
 }
 
