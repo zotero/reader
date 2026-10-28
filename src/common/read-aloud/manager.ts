@@ -499,6 +499,8 @@ export class ReadAloudManager {
 		}
 		this._paused = false;
 		if (this._controller) {
+			// Refetch segments that previously failed
+			this._controller.clearFailures();
 			this._controller.paused = false;
 		}
 		this._stateChanged();

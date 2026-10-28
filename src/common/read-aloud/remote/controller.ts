@@ -432,6 +432,14 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 		this._speak();
 	}
 
+	override clearFailures(): void {
+		this._failedIndices.clear();
+		if (this._error) {
+			this._error = null;
+			this.dispatchEvent(new ReadAloudEvent('ErrorCleared', this._currentSegment));
+		}
+	}
+
 	private async _prefetchFrom(startIndex: number) {
 		const MAX_WINDOW = 3;
 		const MAX_CONCURRENT_FETCHES = 2;
