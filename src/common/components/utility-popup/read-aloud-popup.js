@@ -441,7 +441,7 @@ function RemainingTime(props) {
 		[minutesRemaining]
 	);
 
-	if (remainingFormatted === null) {
+	if (remainingFormatted === null && !isQuotaExceeded) {
 		return null;
 	}
 
@@ -450,24 +450,22 @@ function RemainingTime(props) {
 			className="row remaining-time"
 			aria-label={l10n.getString('reader-read-aloud-remaining-time')}
 		>
-			<div className={cx('time-indicator', { urgent: isQuotaLow })}>
-				<IconClock/>
-				{devMode
-					? <button className="reset" onClick={onResetCredits}>{remainingFormatted}</button>
-					: remainingFormatted}
-				{!isQuotaExceeded && (
-					<button className="purchase-credits" onClick={onPurchaseCredits}>
-						{l10n.getString('reader-read-aloud-add-more-time')}
-					</button>
-				)}
-			</div>
-			{isQuotaExceeded && (
-				<Localized id="reader-read-aloud-quota-exceeded-message" elems={{
+			{isQuotaExceeded
+				? <Localized id="reader-read-aloud-quota-exceeded-message" elems={{
 					'add-more-time': <button onClick={onPurchaseCredits}/>,
 				}} vars={{ tier: switchTo }}>
 					<div className="message"/>
 				</Localized>
-			)}
+				: <div className={cx('time-indicator', { urgent: isQuotaLow })}>
+					<IconClock/>
+					{devMode
+						? <button className="reset" onClick={onResetCredits}>{remainingFormatted}</button>
+						: remainingFormatted}
+					<button className="purchase-credits" onClick={onPurchaseCredits}>
+						{l10n.getString('reader-read-aloud-add-more-time')}
+					</button>
+				</div>
+			}
 		</div>
 	);
 }
