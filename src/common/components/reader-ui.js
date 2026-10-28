@@ -102,6 +102,7 @@ function View(props) {
 
 const ReaderUI = React.forwardRef((props, ref) => {
 	let [state, setState] = useState(props.state);
+	let [l10n] = useState(() => new ReactLocalization([bundle]));
 	let sidebarRef = useRef();
 	let annotationsViewRef = useRef();
 
@@ -118,7 +119,7 @@ const ReaderUI = React.forwardRef((props, ref) => {
 	let showContextPaneToggle = state.showContextPaneToggle && (stackedView || !state.contextPaneOpen);
 
 	return (
-		<LocalizationProvider l10n={new ReactLocalization([bundle])}>
+		<LocalizationProvider l10n={l10n}>
 			<Fragment>
 				<div>
 					<Toolbar
