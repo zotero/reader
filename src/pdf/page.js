@@ -62,6 +62,7 @@ export default class Page {
 		this._originalPage = originalPage;
 		this._pageIndex = originalPage.id - 1;
 		this._lastSignature = null;
+		this._inkPathCache = new WeakMap();
 	}
 
 	get pageIndex() {
@@ -261,21 +262,29 @@ export default class Page {
 		});
 	}
 
-	_pushInk(items, annotation) {
-		let position = this._p2v(annotation.position);
-		let d = '';
-		for (let path of position.paths) {
-			for (let i = 0; i < path.length - 1; i += 2) {
-				let x = round(path[i]);
-				let y = round(path[i + 1]);
-				d += (i === 0 ? `M${x} ${y}` : '') + `L${x} ${y}`;
+	_pushInk(items, annotation, cache = false) {
+		let { position } = annotation;
+		let transform = this._transform;
+		let cached = cache && this._inkPathCache.get(position);
+		let d = cached?.d;
+		if (!cached || !cached.transform.every((value, i) => value === transform[i])) {
+			d = '';
+			for (let path of this._p2v(position).paths) {
+				for (let i = 0; i < path.length - 1; i += 2) {
+					let x = round(path[i]);
+					let y = round(path[i + 1]);
+					d += (i === 0 ? `M${x} ${y}` : '') + `L${x} ${y}`;
+				}
+			}
+			if (cache) {
+				this._inkPathCache.set(position, { transform: transform.slice(), d });
 			}
 		}
 		items.push({
 			kind: 'path',
 			d,
 			stroke: darkenHex(annotation.color, DARKEN_INK_AND_TEXT_COLOR),
-			strokeWidth: round(position.width),
+			strokeWidth: round(position.width * this._scale),
 			cap: 'round',
 			join: 'round'
 		});
@@ -732,7 +741,8 @@ export default class Page {
 					this._pushInk(items, { ...annotation, position });
 				}
 				else {
-					this._pushInk(items, annotation);
+					// Completed positions are replaced on edits; live previews remain uncached.
+					this._pushInk(items, annotation, true);
 				}
 			}
 		}
