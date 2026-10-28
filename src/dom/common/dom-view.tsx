@@ -179,6 +179,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _touchAnnotationStartPosition: CaretPosition | null = null;
 
+	protected _touchAnnotationPointerType: string | null = null;
+
 	protected _draggingNoteAnnotation: WADMAnnotation | null = null;
 
 	protected _resizingAnnotationID: string | null = null;
@@ -1033,7 +1035,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 
-		if (this._tool.type == 'note') {
+		if (this._tool.type == 'note' && !this._isTouchIgnoredBecauseOfPen(event)) {
 			let range = this._getNoteTargetRange(event);
 			if (range) {
 				this._previewAnnotation = this.getAnnotationFromRange(range, 'note', this._tool.color);
@@ -1719,6 +1721,11 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// since we know this is a new interaction
 		this._handledPointerIDs.delete(event.pointerId);
 
+		this._handlePenSignal(event);
+		if (this._isTouchDuringPenAnnotation(event)) {
+			return;
+		}
+
 		if ((event.buttons & 1) === 1 && event.isPrimary) {
 			this._gotPointerUp = false;
 			this._pointerMovementWhileDown = 0;
@@ -1730,6 +1737,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			let touchCaretPosition = this._getTouchAnnotationStartPosition(event);
 			if (touchCaretPosition) {
 				this._touchAnnotationStartPosition = touchCaretPosition;
+				this._touchAnnotationPointerType = event.pointerType;
 				this._iframeDocument.body.classList.add('creating-touch-annotation');
 				event.stopPropagation();
 			}
@@ -1746,7 +1754,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Create note annotation on pointer down event, if note tool is active.
 		// The note tool will be automatically deactivated in reader.js,
 		// because this is what we do in PDF reader
-		if ((event.buttons & 1) === 1 && this._tool.type == 'note' && this._previewAnnotation) {
+		if ((event.buttons & 1) === 1 && this._tool.type == 'note' && this._previewAnnotation
+				&& !this._isTouchIgnoredBecauseOfPen(event)) {
 			this._options.onAddAnnotation(this._finalizeAnnotation(this._previewAnnotation!), true);
 			this._previewAnnotation = null;
 			this._renderAnnotations(true);
@@ -1772,6 +1781,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handlePointerUp(event: PointerEvent) {
 		this._handledPointerIDs.delete(event.pointerId);
+
+		if (this._isTouchDuringPenAnnotation(event)) {
+			return;
+		}
 
 		if (!event.isPrimary || event.defaultPrevented) {
 			return;
@@ -1808,15 +1821,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			}
 		}
 		this._touchAnnotationStartPosition = null;
+		this._touchAnnotationPointerType = null;
 		this._selectionChangedWhilePointerDown = false;
 		this._renderAnnotations();
 		this._iframeDocument.body.classList.remove('creating-touch-annotation');
 	}
 
 	protected _handlePointerMove(event: PointerEvent) {
+		this._handlePenSignal(event);
 		this._handlePointerMoveForReadAloud(event);
 
-		if ((event.buttons & 1) !== 1 || !event.isPrimary) {
+		if ((event.buttons & 1) !== 1 || !event.isPrimary || this._isTouchDuringPenAnnotation(event)) {
 			return;
 		}
 		if (this._lastPointerPosition) {
@@ -1851,9 +1866,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					this._previewAnnotation = annotation;
 					this._renderAnnotations();
 				}
-			}
-			if (event.pointerType === 'pen') {
-				this._markPenActive();
 			}
 			event.stopPropagation();
 		}
@@ -1986,6 +1998,31 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			clearTimeout(this._penActiveTimeout);
 			this._penActiveTimeout = null;
 		}
+	}
+
+	protected _isPenInUse() {
+		return this._penActive || this._penExclusive;
+	}
+
+	/**
+	 * A pen is only tracked while annotating, so a hovering or touching pen
+	 * switches fingers to scrolling before a palm lands.
+	 */
+	protected _handlePenSignal(event: PointerEvent) {
+		if (event.pointerType === 'pen' && this._tool.type !== 'pointer') {
+			this._markPenActive();
+		}
+	}
+
+	protected _isTouchIgnoredBecauseOfPen(event: PointerEvent): boolean {
+		return event.pointerType === 'touch' && this._isPenInUse();
+	}
+
+	// A touch while a pen is annotating, e.g. a palm resting on the screen while highlighting
+	protected _isTouchDuringPenAnnotation(event: PointerEvent): boolean {
+		return this._touchAnnotationStartPosition !== null
+			&& this._touchAnnotationPointerType === 'pen'
+			&& event.pointerType === 'touch';
 	}
 
 	protected _getTouchAnnotationStartPosition(event: PointerEvent): CaretPosition | null {
