@@ -281,6 +281,12 @@ export class ReadAloudManager {
 		this._region = this.currentVoiceRegion ?? this._region;
 		// Restore persisted voice for this tier, if any
 		this._voiceID = this._persistedVoices.tierVoices?.[tier] ?? null;
+		// If the restored voice is for this language, use its region instead,
+		// so that a region the previous tier fell back to doesn't replace it
+		let tierVoice = this._allVoices.find(v => v.id === this._voiceID && v.tier === tier);
+		if (tierVoice && getBaseLanguage(tierVoice.language) === this._lang) {
+			this._region = getVoiceRegion(tierVoice);
+		}
 		this._pendingSetVoice = true;
 		this._resolveVoice();
 		this._stateChanged();
