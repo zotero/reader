@@ -13,7 +13,7 @@ function filterClosePoints(points, minThreshold) {
 		const currentPoint = [points[i], points[i + 1]];
 		const distance = euclideanDistance(prevPoint, currentPoint);
 
-		if (distance >= minThreshold) {
+		if (distance >= minThreshold || i === points.length - 2) {
 			filteredPoints.push(currentPoint[0], currentPoint[1]);
 		}
 	}

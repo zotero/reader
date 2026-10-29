@@ -659,7 +659,9 @@ export default class Page {
 		}
 		else if (action.type === 'ink' && action.annotation) {
 			if (action.annotation.position.pageIndex === this._pageIndex) {
-				this._pushInk(items, action.annotation);
+				for (let annotation of this._layer._getInkActionAnnotations(action)) {
+					this._pushInk(items, annotation);
+				}
 			}
 		}
 	}
