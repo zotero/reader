@@ -105,6 +105,7 @@ class Reader {
 		this._onToggleSidebar = options.onToggleSidebar;
 		this._onChangeSidebarWidth = options.onChangeSidebarWidth;
 		this._onChangeSidebarView = options.onChangeSidebarView;
+		this._onChangeInkSmoothing = options.onChangeInkSmoothing;
 		this._onChangeViewState = options.onChangeViewState;
 		this._onOpenLink = options.onOpenLink;
 		this._onCopyImage = options.onCopyImage;
@@ -188,7 +189,8 @@ class Reader {
 			ink: {
 				type: 'ink',
 				color: ANNOTATION_COLORS[3][1],
-				size: 2
+				size: 2,
+				smoothing: options.inkSmoothing !== false
 			},
 			eraser: {
 				type: 'eraser',
@@ -888,6 +890,9 @@ class Reader {
 			tool[key] = params[key];
 		}
 		this._updateState({ tool });
+		if (tool.type === 'ink' && params.smoothing !== undefined) {
+			this._onChangeInkSmoothing?.(tool.smoothing);
+		}
 		if (!['pointer', 'hand'].includes(tool.type)) {
 			this.setSelectedAnnotations([]);
 		}
@@ -914,6 +919,13 @@ class Reader {
 
 	setAutoDisableNoteTool(autoDisable) {
 		this._updateState({ autoDisableNoteTool: autoDisable });
+	}
+
+	setInkSmoothing(smoothing) {
+		this._tools.ink = { ...this._tools.ink, smoothing };
+		if (this._state.tool.type === 'ink') {
+			this._updateState({ tool: this._tools.ink });
+		}
 	}
 
 	setAutoDisableTextTool(autoDisable) {
