@@ -33,7 +33,7 @@
 
 		&::after {
 			top: -$border-y;
-			border-bottom-color: var(--color-background);
+			border-bottom-color: var(--popover-surface, var(--color-background));
 		}
 	}
 
@@ -56,7 +56,7 @@
 
 		&::after {
 			bottom: -$border-y;
-			border-top-color: var(--color-background);
+			border-top-color: var(--popover-surface, var(--color-background));
 		}
 	}
 
@@ -80,7 +80,7 @@
 		&::after {
 			/*! rtl:begin:ignore */
 			right: -$border-x;
-			border-left-color: var(--color-background);
+			border-left-color: var(--popover-surface, var(--color-background));
 			/*! rtl:end:ignore */
 		}
 	}
@@ -105,7 +105,7 @@
 		&::after {
 			/*! rtl:begin:ignore */
 			left: -$border-x;
-			border-right-color: var(--color-background);
+			border-right-color: var(--popover-surface, var(--color-background));
 			/*! rtl:end:ignore */
 		}
 	}
@@ -129,7 +129,7 @@
 
 		&::after {
 			bottom: -$border-y;
-			border-top-color: var(--color-background);
+			border-top-color: var(--popover-surface, var(--color-background));
 		}
 	}
 
@@ -150,7 +150,7 @@
 
 		&::after {
 			bottom: -$border-y;
-			border-top-color: var(--color-background);
+			border-top-color: var(--popover-surface, var(--color-background));
 		}
 	}
 
@@ -171,7 +171,7 @@
 
 		&::after {
 			top: -$border-y;
-			border-bottom-color: var(--color-background);
+			border-bottom-color: var(--popover-surface, var(--color-background));
 		}
 	}
 
@@ -192,7 +192,7 @@
 
 		&::after {
 			top: -$border-y;
-			border-bottom-color: var(--color-background);
+			border-bottom-color: var(--popover-surface, var(--color-background));
 		}
 	}
 }
@@ -247,6 +247,52 @@
 				0 0   3px  0 rgba(255, 255, 255, 0.1) inset;
 	display: flex;
 	flex-direction: column;
+}
+
+@mixin form-buttons {
+	.form-button {
+		height: 22px;
+		padding: 0 7px;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		align-items: center;
+		border-radius: 5px;
+		background: var(--material-button);
+		box-shadow: $shadow-button;
+
+		&.primary {
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.00) 100%), var(--accent-blue);
+			color: var(--accent-white);
+
+			&:active:not(:disabled), &.active:not(:disabled), &.active-pseudo-class-fix:not(:disabled) {
+				background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), darken(#0a6cf5, 6%); // Replaced $gradient-btn-active-bg
+			}
+		}
+
+		&:-moz-focusring {
+			box-shadow: 0 0 0 4px rgba(#0a6cf5, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12); // Replaced $overlay-btn-focus-box-shadow
+		}
+
+		&:focus-visible {
+			box-shadow: 0 0 0 4px rgba(#0a6cf5, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12); // Replaced $overlay-btn-focus-box-shadow
+		}
+
+		&:active:not(:disabled), &.active:not(:disabled), &.active-pseudo-class-fix:not(:disabled) {
+			background: var(--fill-quarternary);
+		}
+
+		&:disabled {
+			opacity: 0.7;
+		}
+
+		@media (-moz-platform: macos) {
+			&:-moz-window-inactive {
+				background: var(--material-button);
+				box-shadow: $shadow-button;
+			}
+		}
+	}
 }
 
 @mixin control-popup {
@@ -326,49 +372,7 @@
 		}
 	}
 
-	.form-button {
-		height: 22px;
-		padding: 0 7px;
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		border-radius: 5px;
-		background: var(--material-button);
-		box-shadow: $shadow-button;
-
-		&.primary {
-			background: linear-gradient(180deg, rgba(255, 255, 255, 0.17) 0%, rgba(255, 255, 255, 0.00) 100%), var(--accent-blue);
-			color: var(--accent-white);
-
-			&:active:not(:disabled), &.active:not(:disabled), &.active-pseudo-class-fix:not(:disabled) {
-				background: linear-gradient(to bottom, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.05)), darken(#0a6cf5, 6%); // Replaced $gradient-btn-active-bg
-			}
-		}
-
-		&:-moz-focusring {
-			box-shadow: 0 0 0 4px rgba(#0a6cf5, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12); // Replaced $overlay-btn-focus-box-shadow
-		}
-
-		&:focus-visible {
-			box-shadow: 0 0 0 4px rgba(#0a6cf5, 0.5), 0 0 0 1px rgba(0, 0, 0, 0.15), 0 1px 0 1px rgba(0, 0, 0, 0.03), 0 1px 0 rgba(0, 0, 0, 0.12); // Replaced $overlay-btn-focus-box-shadow
-		}
-
-		&:active:not(:disabled), &.active:not(:disabled), &.active-pseudo-class-fix:not(:disabled) {
-			background: var(--fill-quarternary);
-		}
-
-		&:disabled {
-			opacity: 0.7;
-		}
-
-		@media (-moz-platform: macos) {
-			&:-moz-window-inactive {
-				background: var(--material-button);
-				box-shadow: $shadow-button;
-			}
-		}
-	}
+	@include form-buttons;
 }
 
 @mixin link-button {

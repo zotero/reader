@@ -42,6 +42,8 @@ import {
 import { createPositionMapper } from './sdt/create-position-mapper';
 import { SDTDocumentSession } from './sdt/document-session.mjs';
 import { PDFSDTIntegration } from '../pdf/sdt-integration.mjs';
+import { ReferencePopupBridge } from './reference-popup/bridge.mjs';
+import { getFocusAnnouncement } from './focus-announcement.mjs';
 import { isSDTPosition } from './types';
 import {
 	openStructuredDocumentTextPack,
@@ -121,6 +123,7 @@ class Reader {
 		this._onSaveCustomThemes = options.onSaveCustomThemes;
 		this._onSetLightTheme = options.onSetLightTheme;
 		this._onSetDarkTheme = options.onSetDarkTheme;
+		this._onSetCitationAndLinkPreviews = options.onSetCitationAndLinkPreviews;
 		// Only used on Zotero client, sets text/plain and text/html values from Note Markdown and Note HTML translators
 		this._onSetDataTransferAnnotations = options.onSetDataTransferAnnotations;
 		this._onSetZoom = options.onSetZoom;
@@ -132,6 +135,12 @@ class Reader {
 		this._onSetPopupPosition = options.onSetPopupPosition;
 		this._onChangeUndoHistory = options.onChangeUndoHistory;
 		this._externalUndoHistory = !!options.onChangeUndoHistory;
+		this._referencePopupBridge = new ReferencePopupBridge({
+			onMatchReference: options.onMatchReference,
+			onFindReferenceOnline: options.onFindReferenceOnline,
+			onCancelReferenceLookup: options.onCancelReferenceLookup,
+			onPerformReferenceAction: options.onPerformReferenceAction,
+		});
 
 		for (let ftl of options.ftl) {
 			addFTL(ftl);
@@ -241,6 +250,7 @@ class Reader {
 			authorName: typeof options.authorName === 'string' ? options.authorName : '',
 			title: options.title || '',
 			loggedIn: options.loggedIn ?? false,
+			previewedReferences: new Set(),
 			fontSize: options.fontSize || 1,
 			fontFamily: options.fontFamily,
 			hyphenate: options.hyphenate,
@@ -270,6 +280,7 @@ class Reader {
 			passwordPopup: null,
 			printPopup: null,
 			appearancePopup: null,
+			citationAndLinkPreviewsEnabled: options.citationAndLinkPreviews !== false,
 			themePopup: null,
 			contextMenu: null,
 			readAloudState: {
@@ -391,6 +402,7 @@ class Reader {
 			createRoot(document.getElementById('reader-ui')).render(
 				<ReaderContext.Provider value={this._readerContext}>
 					<ReaderUI
+						platform={this._platform}
 						type={this._type}
 						state={this._state}
 						ref={this._readerRef}
@@ -409,6 +421,16 @@ class Reader {
 						enableReadAloud={this._enableReadAloud}
 						readAloudManager={this._readAloudManager}
 						readAloudRemoteInterface={this._readAloudRemoteInterface}
+						referencePopupBridge={this._referencePopupBridge}
+						onPreviewReference={(reference) => {
+							if (this._state.previewedReferences.has(reference.sourceKey)) return;
+							this._updateState({
+								previewedReferences: new Set([
+									...this._state.previewedReferences,
+									reference.sourceKey,
+								]),
+							});
+						}}
 						onSetReadAloudVoice={this._setReadAloudVoice.bind(this)}
 						onOpenVoicePreferences={this.openVoicePreferences.bind(this)}
 						onPurchaseReadAloudCredits={this._onPurchaseReadAloudCredits}
@@ -489,12 +511,17 @@ class Reader {
 						onOpenLink={this._onOpenLink}
 						onChangeAppearance={this._handleAppearanceChange.bind(this)}
 						onChangeReadingModeEnabled={this._handleReadingModeEnabledChange.bind(this)}
+						onChangeCitationAndLinkPreviewsEnabled={(enabled) => {
+							this.setCitationAndLinkPreviews(enabled);
+							this._onSetCitationAndLinkPreviews?.(enabled);
+						}}
 						onChangeFindState={this._handleFindStateChange.bind(this)}
 						onFindNext={this.findNext.bind(this)}
 						onFindPrevious={this.findPrevious.bind(this)}
 						onToggleContextPane={this._onToggleContextPane}
 						onChangeTextSelectionAnnotationMode={this.setTextSelectionAnnotationMode.bind(this)}
 						onCloseOverlayPopup={this._handleOverlayPopupClose.bind(this)}
+						onSetOverlayPopupPersistent={this._handleOverlayPopupPersistent.bind(this)}
 						onChangeSplitType={(type) => {
 							if (type === 'horizontal') {
 								this.toggleHorizontalSplit(true);
@@ -645,6 +672,11 @@ class Reader {
 			for (let view of this._views) {
 				view.setShowAnnotations(this._state.showAnnotations);
 			}
+		}
+
+		if (this._state.citationAndLinkPreviewsEnabled !== previousState.citationAndLinkPreviewsEnabled) {
+			this._primaryView?.setCitationAndLinkPreviewsEnabled?.(this._state.citationAndLinkPreviewsEnabled);
+			this._secondaryView?.setCitationAndLinkPreviewsEnabled?.(this._state.citationAndLinkPreviewsEnabled);
 		}
 
 		if (this._state.outline !== previousState.outline) {
@@ -1083,6 +1115,13 @@ class Reader {
 
 	_handleOverlayPopupClose(primary) {
 		this._updateState({ [primary ? 'primaryViewOverlayPopup' : 'secondaryViewOverlayPopup']: null });
+	}
+
+	_handleOverlayPopupPersistent(primary, persistent) {
+		let key = primary ? 'primaryViewOverlayPopup' : 'secondaryViewOverlayPopup';
+		let popup = this._state[key];
+		if (!popup || popup.persistent === persistent) return;
+		this._updateState({ [key]: { ...popup, persistent } });
 	}
 
 	setTextSelectionAnnotationMode(mode) {
@@ -2068,21 +2107,14 @@ class Reader {
 		};
 
 		let onFocusAnnotation = (annotation) => {
-			if (!annotation) return;
-			// Announce the link url
-			if (annotation.type == 'external-link') {
-				this.setA11yMessage(annotation.url);
-				return;
+			let message = getFocusAnnouncement(
+				annotation,
+				this._getString.bind(this),
+				this._state.pageLabels
+			);
+			if (message) {
+				this.setA11yMessage(message);
 			}
-			// Announce the content of a focused citation
-			if (annotation.type == 'citation') {
-				this.setA11yMessage(`${annotation.references.map(r => r.text).join('')}`);
-				return;
-			}
-			// Announce the type and content of annotations added by the user
-			let annotationType = this._getString(`reader-${annotation.type}-annotation`);
-			let annotationContent = `${annotationType}. ${annotation.text || annotation.comment}`;
-			this.setA11yMessage(annotationContent);
 		};
 
 		let data;
@@ -2170,6 +2202,7 @@ class Reader {
 		else if (this._type === 'pdf') {
 			view = new PDFView({
 				...common,
+				citationAndLinkPreviews: this._state.citationAndLinkPreviewsEnabled,
 				password: this._password,
 				pageLabels: this._state.pageLabels,
 				createSDTIntegration: this._sdtDocumentSession
@@ -2655,6 +2688,18 @@ class Reader {
 		this._updateState({ darkTheme });
 	}
 
+	setCitationAndLinkPreviews(enabled) {
+		enabled = !!enabled;
+		if (enabled === this._state.citationAndLinkPreviewsEnabled) {
+			return;
+		}
+		this._updateState({
+			citationAndLinkPreviewsEnabled: enabled,
+			primaryViewOverlayPopup: null,
+			secondaryViewOverlayPopup: null,
+		});
+	}
+
 	toggleSidebar(open) {
 		if (open === undefined) {
 			open = !this._state.sidebarOpen;
@@ -2694,6 +2739,10 @@ class Reader {
 		this._updateState({ loggedIn });
 	}
 
+	updateReferenceResult(update) {
+		this._referencePopupBridge.updateReferenceResult(update);
+	}
+
 	focusView(primary = true) {
 		primary = primary || !this._secondaryView;
 		this._lastViewPrimary = primary;
@@ -2704,7 +2753,7 @@ class Reader {
 		if (primary) {
 			this._updateState({ secondaryViewAnnotationPopup: null });
 			this._updateState({ secondaryViewSelectionPopup: null });
-			this._updateState({ secondaryViewOverlyPopup: null });
+			this._updateState({ secondaryViewOverlayPopup: null });
 		}
 		else {
 			this._updateState({ primaryViewAnnotationPopup: null });
@@ -2800,6 +2849,7 @@ class Reader {
 		}
 		if (this._type === 'pdf') {
 			this._updateState({
+				previewedReferences: new Set(),
 				outline: null,
 				pageLabels: [],
 				sdtProgress: null,

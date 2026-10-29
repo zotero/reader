@@ -83,8 +83,9 @@ test('pending citation data does not start preparation before painting', () => {
 	assert.equal(PDFView.prototype._getPageTextColorRegions.call(view, { id: 1 }), null);
 });
 
-test('preview views and destroyed views do not supply citation colors', () => {
+test('disabled previews, preview views and destroyed views do not supply citation colors', () => {
 	for (let state of [
+		{ _citationAndLinkPreviewsEnabled: false },
 		{ _preview: true },
 		{ _destroyed: true },
 	]) {

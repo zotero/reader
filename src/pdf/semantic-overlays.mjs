@@ -403,6 +403,7 @@ async function getReferenceData(
 		referenceCache.set(cacheKey, null);
 		return null;
 	}
+	let sourceKey = refKey(reference.ref);
 	let entries = await getTextEntriesForRef(
 		structure,
 		reference.ref,
@@ -446,7 +447,7 @@ async function getReferenceData(
 		}
 	}
 	let text = textParts.join('');
-	let data = { position, text, chars };
+	let data = { sourceKey, position, text, chars };
 	referenceCache.set(cacheKey, data);
 	return data;
 }

@@ -414,6 +414,22 @@ function AppearancePopup(props) {
 						</div>
 					</div>
 				</div>
+				{type === 'pdf' && !props.readingModeEnabled && (
+					<div className="group">
+						<div className="option">
+							<label htmlFor="citation-and-link-previews-enabled">{l10n.getString('reader-citation-and-link-previews')}</label>
+							<input
+								data-tabstop={1}
+								tabIndex={-1}
+								className="switch"
+								type="checkbox"
+								id="citation-and-link-previews-enabled"
+								checked={props.citationAndLinkPreviewsEnabled}
+								onChange={e => props.onChangeCitationAndLinkPreviewsEnabled(e.target.checked)}
+							/>
+						</div>
+					</div>
+				)}
 				{!(type === 'epub' && props.viewStats.fixedLayout) && (
 					<div className="group">
 						<div className="option themes">

@@ -504,6 +504,7 @@ test('projects PDF SDT links, citations, and exact text-flow geometry', async ()
 	let { page } = await projectStructurePage(structure);
 	assert.equal(page.overlays[0].type, 'external-link');
 	assert.equal(page.overlays[1].type, 'citation');
+	assert.equal(page.overlays[1].references[0].sourceKey, '1');
 	assert.equal(page.overlays[1].references[0].text, 'Reference entry');
 	assert.equal(page.overlays[1].references[0].chars[0].bold, true);
 	assert.equal(page.overlays[2].type, 'internal-link');

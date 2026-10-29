@@ -1,17 +1,23 @@
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import cx from 'classnames';
+import { getStableAttachment } from './stable-attachment.mjs';
 
 // TODO: Resizing window doesn't properly reposition annotation popup on x axis, in EPUB view
-function ViewPopup({ id, rect, anchorPoint, className, uniqueRef, padding, preferTop, preferLeft, children, onRender }) {
+function ViewPopup({ id: _id, rect, anchorPoint, className, uniqueRef, padding, preferTop, preferLeft, children, onRender, popupRef, stableAttachment }) {
 	const [popupPosition, setPopupPosition] = useState(null);
 	const containerRef = useRef();
 	const xrect = useRef();
 
 	const initialized = useRef(false);
 	const pos = useRef(null);
+	let stable = !!stableAttachment;
+	let stableWidth = stableAttachment?.width;
+	let stableHeight = stableAttachment?.height;
 
 	// Update the popup position when the `rect` changes
 	useEffect(() => {
+		if (stable) return;
 		if (xrect.current) {
 			let dx = rect[0] - xrect.current[0];
 			let dy = rect[1] - xrect.current[1];
@@ -25,19 +31,52 @@ function ViewPopup({ id, rect, anchorPoint, className, uniqueRef, padding, prefe
 		else {
 			xrect.current = rect;
 		}
-	}, [rect]);
+	}, [rect, stable]);
 
 	useLayoutEffect(() => {
 		if (initialized.current) {
 			onRender && onRender();
 		}
+		// Preserve existing callback timing: a new callback alone does not reposition.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [popupPosition]);
 
 	useLayoutEffect(() => {
+		if (stable) return undefined;
 		updatePopupPosition();
 		// Editor needs more time to get its final dimensions
-		setTimeout(updatePopupPosition, 0);
-	}, [uniqueRef, rect, anchorPoint]);
+		let timer = setTimeout(updatePopupPosition, 0);
+		return () => clearTimeout(timer);
+		// Preserve the legacy measurement triggers; content does not own stable placement.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [uniqueRef, rect, anchorPoint, stable]);
+
+	useLayoutEffect(() => {
+		if (!stable) return undefined;
+		let parent = containerRef.current.parentNode;
+		let active = true;
+		let update = () => {
+			if (!active) return;
+			let viewport = parent.getBoundingClientRect();
+			let next = getStableAttachment({ rect, viewport: [viewport.width, viewport.height],
+				width: stableWidth, height: stableHeight, padding });
+			if (JSON.stringify(pos.current) === JSON.stringify(next)) return;
+			pos.current = next;
+			xrect.current = rect;
+			initialized.current = true;
+			setPopupPosition(next);
+		};
+		update();
+		// Only observe the containing viewport, not content whose growth we constrain.
+		let observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+		observer?.observe(parent);
+		window.addEventListener('resize', update);
+		return () => {
+			active = false;
+			observer?.disconnect();
+			window.removeEventListener('resize', update);
+		};
+	}, [rect, stable, stableWidth, stableHeight, padding]);
 
 	function updatePopupPosition() {
 		if (!containerRef.current) {
@@ -162,9 +201,12 @@ function ViewPopup({ id, rect, anchorPoint, className, uniqueRef, padding, prefe
 
 	return (
 		<div
-			ref={containerRef}
-			className={cx('view-popup', className, { ...pointerClass })}
-			style={pos.current ? { transform: `translate(${pos.current.left}px, ${pos.current.top}px)` } : {}}
+			ref={(node) => {
+				containerRef.current = node;
+				if (popupRef) popupRef.current = node;
+			}}
+			className={cx('view-popup', className, { ...pointerClass, 'stable-attachment': !!stableAttachment })}
+			style={stableAttachment ? pos.current?.style : pos.current ? { transform: `translate(${pos.current.left}px, ${pos.current.top}px)` } : {}}
 		>
 			{children}
 		</div>
