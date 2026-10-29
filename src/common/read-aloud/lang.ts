@@ -1,6 +1,7 @@
 // Equivalents for nonstandard language codes
 const LANGUAGE_EQUIVALENTS: Record<string, string> = {
 	cmn: 'zh', // Chinese
+	tl: 'fil', // Tagalog → Filipino
 };
 
 // And region codes
