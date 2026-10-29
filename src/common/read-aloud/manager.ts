@@ -355,6 +355,19 @@ export class ReadAloudManager {
 			voicesForLang = getVoicesForLanguage(tierVoices, lang);
 		}
 
+		// If there are no voices for the current region (e.g., after switching
+		// to a tier without voices for that region), fall back to any region
+		// of the language. The region is updated below to match the chosen voice.
+		let regionFallback = false;
+		if (!voicesForLang.length && this._region) {
+			let baseLangVoices = getVoicesForLanguage(tierVoices, this._lang);
+			if (baseLangVoices.length) {
+				this._region = null;
+				voicesForLang = baseLangVoices;
+				regionFallback = true;
+			}
+		}
+
 		// Fall back to local when selected tier becomes unavailable
 		let tiers = this.tiers;
 		if (this._selectedTier !== null && !tiers.has(this._selectedTier) && tiers.has('local')) {
@@ -375,6 +388,10 @@ export class ReadAloudManager {
 				this._applyVoice();
 			}
 			voiceResolved = true;
+		}
+
+		if (regionFallback) {
+			this._region = this.currentVoiceRegion;
 		}
 
 		// Persist if this change was initiated by the user
@@ -416,9 +433,15 @@ export class ReadAloudManager {
 		if (!regionChanged && isAvailable(persistedVoice)) {
 			return persistedVoice!;
 		}
-		// 3. First voice matching the selected, persisted, or preferred region
-		let region = this._region || persistedRegion || getPreferredRegion(this._lang ?? '');
-		if (region) {
+		// 3. First voice matching the selected, persisted, or preferred region,
+		// trying the preferred region if the persisted region has no voices
+		// (e.g., after switching to a tier without voices for that region)
+		let regions = [
+			this._region || persistedRegion,
+			getPreferredRegion(this._lang ?? ''),
+		];
+		for (let region of regions) {
+			if (!region) continue;
 			let regionMatch = pool.find(v => getVoiceRegion(v) === region);
 			if (regionMatch) {
 				return regionMatch.id;
