@@ -39,6 +39,7 @@ import {
 	transform
 } from './lib/utilities';
 import {
+	basicDeepEqual,
 	debounceUntilScrollFinishes,
 	getAffectedAnnotations,
 	getCodeCombination,
@@ -1299,6 +1300,8 @@ class PDFView {
 	setAnnotations(annotations) {
 		let affected = getAffectedAnnotations(this._annotations, annotations, true);
 		let { created, updated, deleted } = affected;
+		let popupAnnotation = updated.find(x => x.type === 'text' && x.id === this._annotationPopup?.annotation.id);
+		let previousPopupAnnotation = popupAnnotation && this._annotations.find(x => x.id === popupAnnotation.id);
 		this._annotations = annotations;
 		if (this._focusedObject?.type === 'annotation') {
 			if (updated.find(x => x.id === this._focusedObject.object.id)) {
@@ -1321,6 +1324,13 @@ class PDFView {
 		let all = [...created, ...updated, ...deleted];
 		let pageIndexes = getPageIndexesFromAnnotations(all);
 		this._render(pageIndexes);
+		// Keep an open text annotation popup anchored to the resized annotation.
+		if (popupAnnotation && !basicDeepEqual(popupAnnotation.position, previousPopupAnnotation.position)) {
+			let rect = this.getClientRectForPopup(popupAnnotation.position);
+			if (!basicDeepEqual(rect, this._annotationPopup.rect)) {
+				this._onSetAnnotationPopup({ ...this._annotationPopup, rect, annotation: popupAnnotation });
+			}
+		}
 		if (this._primary && !this._preview) {
 			this._pdfThumbnails?.render(pageIndexes, true);
 			this._pdfRenderer?.start();
