@@ -422,15 +422,18 @@ class PDFView {
 		this._iframeWindow.addEventListener('pointerdown', this._handlePointerDown.bind(this), true);
 		// mousedown event is necessary to get event.detail, but for touch pointerdown is necessary
 		this._iframeWindow.addEventListener('mousedown', this._handlePointerDown.bind(this), true);
+		this._iframeWindow.addEventListener('touchstart', this._handleTouchStart.bind(this), { capture: true, passive: true });
 		// Touch events are passive by default
 		this._iframeWindow.addEventListener('touchmove', this._handleTouchMove.bind(this), { passive: false });
 		this._iframeWindow.addEventListener('touchend', this._handleTouchEnd.bind(this), { passive: false });
 		// A hovering pen is detected before it touches the screen, so a palm landing
 		// after it is already treated as a finger that shouldn't annotate
-		this._iframeWindow.addEventListener('pointermove', this._handlePenHover.bind(this), { capture: true, passive: true });
+		this._iframeWindow.addEventListener('pointermove', this._handlePenSignal.bind(this), { capture: true, passive: true });
 		this._iframeWindow.addEventListener('pointermove', this._handlePointerMove.bind(this), { passive: true });
 		this._iframeWindow.addEventListener('pointerup', this._handlePointerUp.bind(this));
 		this._iframeWindow.addEventListener('pointercancel', this._handlePointerCancel.bind(this));
+		this._iframeWindow.addEventListener('pointerup', this._handlePenPointerRelease.bind(this), true);
+		this._iframeWindow.addEventListener('pointercancel', this._handlePenPointerRelease.bind(this), true);
 		this._iframeWindow.addEventListener('lostpointercapture', this._handleTouchTransformInterrupted.bind(this));
 		this._iframeWindow.addEventListener('resize', this._handleTouchTransformInterrupted.bind(this));
 		this._iframeWindow.addEventListener('dragstart', this._handleDragStart.bind(this), { capture: true });
@@ -1401,7 +1404,8 @@ class PDFView {
 	}
 
 	_isPenInUse() {
-		return this._penActive || this._penExclusive;
+		// Web annotation tools retain touch-action:none for iOS Safari.
+		return this._options.platform !== 'web' && (this._penActive || this._penExclusive);
 	}
 
 	// A pen only matters while annotating, so it isn't tracked with the pointer and hand tools
@@ -1428,7 +1432,7 @@ class PDFView {
 		this._iframeWindow?.document.documentElement.toggleAttribute('data-pen-active', this._isPenInUse());
 	}
 
-	_handlePenHover(event) {
+	_handlePenSignal(event) {
 		if (event.pointerType === 'pen' && this._isAnnotationToolActive()) {
 			this._markPenActive();
 		}
@@ -1438,8 +1442,7 @@ class PDFView {
 	// resting on the screen while a pen is drawing
 	_isForeignPointer(event) {
 		let pointerDownTap = this._pointerDownTap;
-		return !!pointerDownTap
-			&& pointerDownTap.pointerId !== undefined
+		return pointerDownTap?.pointerType === 'pen'
 			&& event?.pointerId !== undefined
 			&& event.pointerId !== pointerDownTap.pointerId;
 	}
@@ -3269,8 +3272,18 @@ class PDFView {
 			event.preventDefault();
 			return;
 		}
-		if (event.pointerType === 'pen' && this._isAnnotationToolActive()) {
-			this._markPenActive();
+		// A fresh non-touch contact can recover a pen action whose release was lost.
+		// A pen's compatibility mousedown must not cancel its own action.
+		if (this._pointerDownTap?.pointerType === 'pen'
+				&& event.type === 'pointerdown'
+				&& (event.pointerType === 'mouse' || event.pointerType === 'pen')) {
+			this._clearPointerAction();
+			this._setSelectionRanges();
+			this._render();
+		}
+		if (event.pointerType === 'pen') {
+			this._clearPendingBackdropTap();
+			this._handlePenSignal(event);
 		}
 		let doubleTap = this._isDoubleTapCandidate(event);
 		if (this._nativeTextSelection?.handlePointerDown(event)) {
@@ -3525,12 +3538,33 @@ class PDFView {
 		this._render();
 	}
 
+	_handleTouchStart(event) {
+		// Keep PDF.js from treating a pen and palm as a two-finger pinch.
+		if (this._pointerDownTap?.pointerType === 'pen') {
+			event.stopPropagation();
+		}
+	}
+
+	_handlePenPointerRelease(event) {
+		let pointerDownTap = this._pointerDownTap;
+		if (pointerDownTap?.pointerType !== 'pen' || event.pointerId !== pointerDownTap.pointerId) {
+			return;
+		}
+		// PDF.js can swallow releases during a pinch. Let normal teardown run
+		// first, then cancel only if that same pen action is still active.
+		setTimeout(() => {
+			if (!this._destroyed && this._pointerDownTap === pointerDownTap) {
+				this._handlePointerCancel(event);
+			}
+		}, 0);
+	}
+
 	_handleTouchMove(event) {
 		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
 			return;
 		}
 		if (
-			// Prevent default touch action (which is scroll) if any tool is enabled,
+			// Prevent default touch action (which is scroll) if any tool is enabled
 			// except for fingers while a pen is in use, which are left to scroll
 			this._tool.type !== 'pointer' && event.target.id !== 'viewer'
 				&& (!this._isPenInUse() || this._pointerDownTap?.pointerType === 'pen')
@@ -3555,13 +3589,20 @@ class PDFView {
 		if (event.cancelable) {
 			event.preventDefault();
 		}
-		// A palm lifting while a pen is still touching must not end the pen's action
-		if (!event.touches.length) {
+		// Keep live touch actions eligible for pen takeover. Pen contacts may
+		// be pointer-only, so leave their teardown to pointerup/cancel.
+		if (!event.touches.length && this._pointerDownTap?.pointerType !== 'pen') {
 			this._pointerDownTriggered = false;
 		}
 	}
 
-	_handlePointerMove = throttle((event) => {
+	_handlePointerMove(event) {
+		if (!this._isForeignPointer(event)) {
+			this._handlePointerMoveThrottled(event);
+		}
+	}
+
+	_handlePointerMoveThrottled = throttle((event) => {
 		if (this._nativeTextSelection?.shouldDeferEvent(event)) {
 			return;
 		}
@@ -3570,6 +3611,7 @@ class PDFView {
 		// when the highlight/underline tool is enabled
 		this._creationTimeout = null;
 
+		// Ownership can change while this move is queued.
 		if (this._scrolling || this._isForeignPointer(event)) {
 			return;
 		}

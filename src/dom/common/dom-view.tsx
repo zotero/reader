@@ -1617,6 +1617,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _handleAnnotationPointerUp = (id: string, event: React.PointerEvent) => {
 		event.stopPropagation();
 
+		if (this._touchAnnotationPointerType === 'pen'
+				&& (event.pointerType === 'pen' || event.pointerType === 'touch')) {
+			this._handlePointerUp(event.nativeEvent);
+			return;
+		}
+
 		// If pointerdown already performed an action due to this pointer, don't do anything
 		if (this._handledPointerIDs.has(event.pointerId)) {
 			this._handledPointerIDs.delete(event.pointerId);
@@ -1723,6 +1729,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		this._handlePenSignal(event);
 		if (this._isTouchDuringPenAnnotation(event)) {
+			event.stopPropagation();
 			return;
 		}
 
@@ -2000,10 +2007,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
-	protected _isPenInUse() {
-		return this._penActive || this._penExclusive;
-	}
-
 	/**
 	 * A pen is only tracked while annotating, so a hovering or touching pen
 	 * switches fingers to scrolling before a palm lands.
@@ -2015,13 +2018,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _isTouchIgnoredBecauseOfPen(event: PointerEvent): boolean {
-		return event.pointerType === 'touch' && this._isPenInUse();
+		return event.pointerType === 'touch' && (this._penActive || this._penExclusive);
 	}
 
 	// A touch while a pen is annotating, e.g. a palm resting on the screen while highlighting
 	protected _isTouchDuringPenAnnotation(event: PointerEvent): boolean {
-		return this._touchAnnotationStartPosition !== null
-			&& this._touchAnnotationPointerType === 'pen'
+		return this._touchAnnotationPointerType === 'pen'
 			&& event.pointerType === 'touch';
 	}
 

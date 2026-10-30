@@ -70,19 +70,14 @@ function createClassList(...names) {
 	return { contains: name => values.has(name) };
 }
 
-// Fixtures that run pointer, touch or tool handlers need the real view's pen state helpers
+// Use real view methods without running the browser-dependent constructor.
 function withPenState(view) {
-	return Object.assign(view, {
+	return Object.assign(Object.create(PDFView.prototype), {
+		_options: { platform: 'android' },
 		_penActive: false,
 		_penExclusive: false,
 		_penActiveTimeout: null,
-		_isPenInUse: PDFView.prototype._isPenInUse,
-		_isAnnotationToolActive: PDFView.prototype._isAnnotationToolActive,
-		_markPenActive: PDFView.prototype._markPenActive,
-		_clearPenActive: PDFView.prototype._clearPenActive,
-		_updatePenActiveState: PDFView.prototype._updatePenActiveState,
-		_isForeignPointer: PDFView.prototype._isForeignPointer,
-	});
+	}, view);
 }
 
 function createNativeSelectionFixture() {
@@ -549,6 +544,9 @@ test('mobile PDF initialization installs native-selection and touch-transform ev
 
 	await PDFView.prototype._init.call(view);
 	assert.equal(view._nativeTextSelection instanceof PDFNativeTextSelection, true);
+	assert.equal(listeners.some(([type, options]) => type === 'touchstart' && options?.capture), true);
+	assert.equal(listeners.some(([type, options]) => type === 'pointerup' && options === true), true);
+	assert.equal(listeners.some(([type, options]) => type === 'pointercancel' && options === true), true);
 	assert.equal(listeners.some(([type]) => type === 'touchmove'), true);
 	assert.equal(listeners.some(([type]) => type === 'touchend'), true);
 	assert.equal(listeners.some(([type]) => type === 'lostpointercapture'), true);
@@ -1344,6 +1342,21 @@ test('Android backdrop taps wait for a possible second tap', (t) => {
 	assert.equal(view._pendingBackdropTap, null);
 });
 
+test('pen contact cancels a pending Android backdrop or edge tap', (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout'] });
+	let { view } = createPointerView();
+	view._iframeWindow.setTimeout = setTimeout;
+	view._iframeWindow.clearTimeout = clearTimeout;
+	let resolved = 0;
+	view._resolveBackdropTap = () => resolved++;
+	PDFView.prototype._scheduleBackdropTap.call(view, createPointerEvent('touch'), 'next');
+	assert.notEqual(view._pendingBackdropTap, null);
+	PDFView.prototype._handlePointerDown.call(view, createPointerEvent('pen'));
+	assert.equal(view._pendingBackdropTap, null);
+	t.mock.timers.tick(300);
+	assert.equal(resolved, 0);
+});
+
 test('Android edge taps tolerate boundary drift and use the delayed pointer path', (t) => {
 	t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1000 });
 	let fixture = createPointerView();
@@ -1757,13 +1770,13 @@ test('a hovering or touching pen is tracked only while an annotation tool is act
 		updateCursor() {},
 	});
 
-	PDFView.prototype._handlePenHover.call(view, { pointerType: 'pen' });
+	PDFView.prototype._handlePenSignal.call(view, { pointerType: 'pen' });
 	assert.equal(view._isPenInUse(), false);
 
 	PDFView.prototype.setTool.call(view, { type: 'highlight' });
-	PDFView.prototype._handlePenHover.call(view, { pointerType: 'touch' });
+	PDFView.prototype._handlePenSignal.call(view, { pointerType: 'touch' });
 	assert.equal(view._isPenInUse(), false);
-	PDFView.prototype._handlePenHover.call(view, { pointerType: 'pen' });
+	PDFView.prototype._handlePenSignal.call(view, { pointerType: 'pen' });
 	assert.equal(view._isPenInUse(), true);
 	assert.equal(root.hasAttribute('data-pen-active'), true);
 
@@ -1771,7 +1784,7 @@ test('a hovering or touching pen is tracked only while an annotation tool is act
 	assert.equal(view._isPenInUse(), false);
 	assert.equal(root.hasAttribute('data-pen-active'), false);
 
-	PDFView.prototype._handlePenHover.call(view, { pointerType: 'pen' });
+	PDFView.prototype._handlePenSignal.call(view, { pointerType: 'pen' });
 	PDFView.prototype.setTool.call(view, { type: 'pointer' });
 	assert.equal(view._isPenInUse(), false);
 	assert.equal(root.hasAttribute('data-pen-active'), false);
@@ -1811,14 +1824,114 @@ test('while a pen is in use fingers get no tool actions but still select annotat
 	}
 });
 
+test('web pen settings preserve finger annotation input', (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout'] });
+	let view = withPenState({
+		_options: { platform: 'web' },
+		_tool: { type: 'ink' },
+	});
+	PDFView.prototype.setPenActive.call(view, true);
+	PDFView.prototype.setPenExclusive.call(view, true);
+	assert.equal(view._isPenInUse(), false);
+	assert.equal(PDFView.prototype.getActionAtPosition.call(view, {}, { pointerType: 'touch' }).action.type, 'ink');
+});
+
+test('a swallowed pen release is cancelled without touching a completed or newer action', (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout'] });
+	let { view } = createPointerView();
+	let pen = { ...createPointerEvent('pen'), pointerId: 2 };
+	let start = () => {
+		view._pointerDownTap = { pointerType: 'pen', pointerId: 2 };
+		view._pointerDownTriggered = true;
+		view.pointerDownPosition = view.pointerEventToPosition(pen);
+		view.action = { type: 'none' };
+	};
+	start();
+	PDFView.prototype._handlePenPointerRelease.call(view, pen);
+	assert.notEqual(view.action, null);
+	t.mock.timers.tick(0);
+	assert.equal(view.action, null);
+	assert.equal(view._pointerDownTriggered, false);
+
+	start();
+	PDFView.prototype._handlePenPointerRelease.call(view, pen);
+	PDFView.prototype._handlePointerUp.call(view, pen);
+	t.mock.timers.tick(0);
+	assert.equal(view._pointerDownTap, null);
+	assert.equal(view.action, null);
+
+	start();
+	PDFView.prototype._handlePenPointerRelease.call(view, pen);
+	start();
+	let nextTap = view._pointerDownTap;
+	t.mock.timers.tick(0);
+	assert.equal(view._pointerDownTap, nextTap);
+	assert.equal(view._pointerDownTriggered, true);
+});
+
+test('a new mouse or pen contact recovers a missing pen release without accepting palm or compatibility events', () => {
+	for (let [pointerType, pointerId] of [['mouse', 1], ['pen', 2], ['pen', 3]]) {
+		let { view } = createPointerView('zotero');
+		let pen = { ...createPointerEvent('pen'), type: 'pointerdown', pointerId: 2 };
+		view._handlePointerDown(pen);
+		let previousTap = view._pointerDownTap;
+		view._handlePointerDown({ ...createPointerEvent('touch'), type: 'pointerdown' });
+		view._handlePointerDown({ ...createPointerEvent(), type: 'mousedown', pointerType: undefined, pointerId: undefined });
+		assert.equal(view._pointerDownTap, previousTap);
+
+		let contact = { ...createPointerEvent(pointerType), type: 'pointerdown', pointerId };
+		view._handlePointerDown(contact);
+		assert.notEqual(view._pointerDownTap, previousTap, `${pointerType} ${pointerId}`);
+		if (pointerType === 'mouse') {
+			assert.equal(view.action, null);
+			view._handlePointerDown({ ...contact, type: 'mousedown', pointerType: undefined, pointerId: undefined });
+		}
+		assert.equal(view._pointerDownTriggered, true);
+		view._handlePointerUp(contact);
+		assert.equal(view._pointerDownTap, null);
+		assert.equal(view.action, null);
+	}
+});
+
+test('only a pen-owned action keeps touchstart away from PDF.js pinch handling', () => {
+	let stopped = 0;
+	let view = { _penActive: true };
+	let start = () => PDFView.prototype._handleTouchStart.call(view, { stopPropagation: () => stopped++ });
+	start();
+	view._pointerDownTap = { pointerType: 'touch' };
+	start();
+	assert.equal(stopped, 0);
+	view._pointerDownTap = { pointerType: 'pen' };
+	start();
+	assert.equal(stopped, 1);
+});
+
+test('palm moves cannot replace queued pen moves, and finger-only input keeps its release handling', () => {
+	let queued = [];
+	let { view } = createPointerView();
+	let pen = { ...createPointerEvent('pen'), pointerId: 2 };
+	let palm = createPointerEvent('touch');
+	view._pointerDownTap = { pointerId: pen.pointerId, pointerType: 'pen' };
+	view._handlePointerMoveThrottled = event => queued.push(event);
+	PDFView.prototype._handlePointerMove.call(view, pen);
+	PDFView.prototype._handlePointerMove.call(view, palm);
+	assert.deepEqual(queued, [pen]);
+
+	view._pointerDownTap = { pointerId: 2, pointerType: 'touch' };
+	view._pointerDownTriggered = true;
+	PDFView.prototype._handlePointerMove.call(view, palm);
+	assert.deepEqual(queued, [pen, palm]);
+	PDFView.prototype._handlePointerUp.call(view, palm);
+	assert.equal(view._pointerDownTap, null);
+	assert.equal(view._pointerDownTriggered, false);
+});
+
 test('a palm cannot end or cancel the action of a pen, and a pen takes over from a palm', (t) => {
 	t.mock.timers.enable({ apis: ['setTimeout'] });
 	let createFixture = () => {
 		let { view } = createPointerView();
 		view._tool = { type: 'highlight' };
 		view._iframeWindow.document = { documentElement: createRoot() };
-		view._clearPointerAction = PDFView.prototype._clearPointerAction;
-		view._setSelectionRanges = PDFView.prototype._setSelectionRanges;
 		return view;
 	};
 	let pen = { ...createPointerEvent('pen'), pointerId: 2 };
@@ -1831,6 +1944,8 @@ test('a palm cannot end or cancel the action of a pen, and a pen takes over from
 	PDFView.prototype._handlePointerDown.call(view, palm);
 	PDFView.prototype._handlePointerUp.call(view, palm);
 	PDFView.prototype._handlePointerCancel.call(view, palm);
+	PDFView.prototype._handleTouchEnd.call(view, { touches: [], cancelable: false });
+	PDFView.prototype._handlePointerDown.call(view, palm);
 	assert.equal(view._pointerDownTap.pointerId, 2);
 	assert.notEqual(view.action, null);
 	assert.equal(view._pointerDownTriggered, true);
