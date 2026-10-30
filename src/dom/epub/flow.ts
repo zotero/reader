@@ -615,7 +615,7 @@ export class PaginatedFlow extends AbstractFlow {
 
 	private _swipeIndicators: HTMLElement;
 
-	private _touchDown = false;
+	private _touchPointerID: number | null = null;
 
 	private _touchStartX = 0;
 
@@ -637,6 +637,8 @@ export class PaginatedFlow extends AbstractFlow {
 		this._swipeIndicators = this._iframeDocument.querySelector('.swipe-indicators') as HTMLElement;
 
 		this._iframeDocument.documentElement.addEventListener('keydown', this._handleKeyDown, { capture: true });
+		// A new contact cancels the old swipe even if annotation handling consumes pointerdown.
+		this._iframeDocument.addEventListener('pointerdown', this._resetSwipe, true);
 		this._iframeDocument.documentElement.addEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.documentElement.addEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.documentElement.addEventListener('pointerup', this._handlePointerUp);
@@ -651,6 +653,7 @@ export class PaginatedFlow extends AbstractFlow {
 	override destroy(): void {
 		super.destroy();
 		this._iframeDocument.documentElement.removeEventListener('keydown', this._handleKeyDown, { capture: true });
+		this._iframeDocument.removeEventListener('pointerdown', this._resetSwipe, true);
 		this._iframeDocument.documentElement.removeEventListener('pointerdown', this._handlePointerDown);
 		this._iframeDocument.documentElement.removeEventListener('pointermove', this._handlePointerMove);
 		this._iframeDocument.documentElement.removeEventListener('pointerup', this._handlePointerUp);
@@ -949,7 +952,7 @@ export class PaginatedFlow extends AbstractFlow {
 			}
 		}
 
-		this._touchDown = true;
+		this._touchPointerID = event.pointerId;
 		this._touchStartX = event.clientX;
 		this._touchStartY = event.clientY;
 		this._touchLastX = event.clientX;
@@ -957,7 +960,7 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerMove = (event: PointerEvent) => {
-		if (!this._touchDown
+		if (event.pointerId !== this._touchPointerID
 				|| !event.isPrimary
 				|| event.buttons % 1 !== 0
 				|| !this._iframeDocument.getSelection()!.isCollapsed) {
@@ -980,7 +983,7 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerUp = (event: PointerEvent) => {
-		if (!this._touchDown
+		if (event.pointerId !== this._touchPointerID
 				|| !event.isPrimary
 				// No event.buttons check - "buttons" have now been released
 				|| !this._iframeDocument.getSelection()!.isCollapsed) {
@@ -992,7 +995,7 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _handlePointerCancel = (event: PointerEvent) => {
-		if (!this._touchDown
+		if (event.pointerId !== this._touchPointerID
 				|| !event.isPrimary) {
 			// No event.buttons check - "buttons" have now been released
 			return;
@@ -1008,7 +1011,7 @@ export class PaginatedFlow extends AbstractFlow {
 		// pointerout bubbles as the pointer crosses element boundaries mid-drag,
 		// so only treat it as the end of the gesture when the pointer leaves the
 		// document entirely
-		if (!this._touchDown
+		if (event.pointerId !== this._touchPointerID
 				|| !event.isPrimary
 				|| event.relatedTarget) {
 			return;
@@ -1017,8 +1020,7 @@ export class PaginatedFlow extends AbstractFlow {
 	};
 
 	private _endSwipe(clientX: number, clientY: number, target: Element | null): boolean {
-		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
-		this._touchDown = false;
+		this._resetSwipe();
 
 		// Switch pages after swiping
 		let swipeAmount = (clientX - this._touchStartX) / PAGE_TURN_SWIPE_LENGTH_PX;
@@ -1074,8 +1076,12 @@ export class PaginatedFlow extends AbstractFlow {
 		if (this._iframeDocument.getSelection()!.isCollapsed) {
 			return;
 		}
+		this._resetSwipe();
+	};
+
+	private _resetSwipe = () => {
 		this._swipeIndicators.style.setProperty('--swipe-amount', '0');
-		this._touchDown = false;
+		this._touchPointerID = null;
 	};
 
 	private* _visibleRenderers(): Generator<SectionRenderer> {
