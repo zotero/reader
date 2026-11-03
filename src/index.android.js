@@ -27,6 +27,20 @@ function log(data) {
 	sendToPort("logHandler", data);
 }
 
+// Saves made while stepping through the undo history are reported as such, so that the client can
+// refresh what it shows for the annotations they changed
+let replayingHistory = false;
+
+function replayHistory(callback) {
+	replayingHistory = true;
+	try {
+		callback();
+	}
+	finally {
+		replayingHistory = false;
+	}
+}
+
 function base64ToBytes(base64) {
 	const text = atob(base64);
 	const length = text.length;
@@ -76,7 +90,7 @@ window.createView = (encodedOptions) => {
 			postMessage('onRequestPageRegionImages', { requestID, pageIndex, rects, scale });
 		},
 		onSaveAnnotations: (annotations) => {
-			postMessage('onSaveAnnotations', { annotations });
+			postMessage('onSaveAnnotations', { annotations, history: replayingHistory });
 
 			// Select a just-created note annotation. Match by dateCreated to avoid
 			// re-selecting an existing note whose pending edit landed in the same batch.
@@ -86,6 +100,9 @@ window.createView = (encodedOptions) => {
 			if (newNote && !window._view.getFocusedTextAnnotationID()) {
 				window._view.selectAnnotations([newNote.id]);
 			}
+		},
+		onChangeUndoHistory: ({ undoSteps, redoSteps }) => {
+			postMessage('onChangeUndoHistory', { canUndo: undoSteps.length > 0, canRedo: redoSteps.length > 0 });
 		},
 		onSetOutline: (outline) => {
 			postMessage('onSetOutline', { outline });
@@ -161,6 +178,43 @@ window.clearTool = () => {
 
 window.finishTextAnnotationEditing = () => {
 	return window._view?.finishTextAnnotationEditing() || false;
+};
+
+window.addAnnotation = (options) => {
+	const annotation = JSON.parse(decodeBase64(options.annotation));
+	log("Add annotation: " + annotation.type);
+	window._view.addAnnotation(annotation);
+};
+
+// Edits properties of an existing annotation (e.g. color), so that the change gets into the undo history
+window.editAnnotation = (options) => {
+	const annotation = JSON.parse(decodeBase64(options.annotation));
+	log("Edit annotation: " + JSON.stringify(annotation));
+	try {
+		window._view.updateAnnotations([annotation]);
+	}
+	catch (error) {
+		log("Could not edit annotation: " + error);
+	}
+};
+
+window.deleteAnnotations = (options) => {
+	const ids = JSON.parse(decodeBase64(options.ids));
+	log("Delete annotations: " + JSON.stringify(ids));
+	window._view.deleteAnnotations(ids);
+};
+
+window.undo = () => {
+	log("Undo");
+	replayHistory(() => window._view.undo());
+	// The view drops its selection on undo without notifying, so let the client know
+	postMessage('onSelectAnnotations', { ids: [] });
+};
+
+window.redo = () => {
+	log("Redo");
+	replayHistory(() => window._view.redo());
+	postMessage('onSelectAnnotations', { ids: [] });
 };
 
 window.updateAnnotations = (options) => {

@@ -88,6 +88,8 @@ class View {
 			saveNewAnnotationsImmediately: true,
 			onSave: options.onSaveAnnotations,
 			onDelete: options.onDeleteAnnotations || nop,
+			// Optional, lets the client mirror whether undo/redo are available
+			onChangeHistory: options.onChangeUndoHistory,
 			adjustTextAnnotationPosition: (annotation, adjustOptions) => this._view.adjustTextAnnotationPosition(annotation, adjustOptions),
 			onRender: (annotations) => {
 				if (this._type === 'sdt') {
@@ -602,13 +604,37 @@ class View {
 	}
 
 	undo() {
-		this._annotationManager.undo();
+		this._saveImmediately(() => this._annotationManager.undo());
 		this._deselectAnnotations();
 	}
 
 	redo() {
-		this._annotationManager.redo();
+		this._saveImmediately(() => this._annotationManager.redo());
 		this._deselectAnnotations();
+	}
+
+	// Goes through the annotation manager, so that the change gets into the undo history
+	addAnnotation(annotation) {
+		return this._annotationManager.addAnnotation(annotation);
+	}
+
+	updateAnnotations(annotations) {
+		this._saveImmediately(() => this._annotationManager.updateAnnotations(annotations));
+	}
+
+	deleteAnnotations(ids) {
+		return this._saveImmediately(() => this._annotationManager.deleteAnnotations(ids));
+	}
+
+	// Let the client know about a change made on its behalf right away instead of debouncing it
+	_saveImmediately(callback) {
+		this._annotationManager._skipAnnotationSavingDebounce = true;
+		try {
+			return callback();
+		}
+		finally {
+			this._annotationManager._skipAnnotationSavingDebounce = false;
+		}
 	}
 
 	// Deselect without the empty-text-annotation cleanup, so that undo/redo
