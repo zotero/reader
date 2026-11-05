@@ -113,6 +113,7 @@ globalThis.window = {
 globalThis.document = { body: {} };
 
 const { default: View } = await import('../../src/common/view.js');
+const { default: AnnotationManager } = await import('../../src/common/annotation-manager.js');
 
 function createMobileView(overrides = {}) {
 	let callbacks = {
@@ -175,6 +176,42 @@ test('mobile View wires Android PDF integration and immediate annotation saving'
 		['setScrollMode', 2],
 		['renderThumbnails', [1, 2], { maxWidth: 80, maxHeight: 64 }],
 	]);
+});
+
+test('PDF erasure uses history and immediate saving only when the embedder supports deletion', () => {
+	let { annotationManager, pdfView } = createMobileView();
+	let deleted = [];
+	annotationManager.deleteAnnotations = (ids) => {
+		assert.equal(annotationManager._skipAnnotationSavingDebounce, true);
+		deleted.push(...ids);
+	};
+	pdfView.options.onDeleteAnnotations(['INK']);
+	assert.deepEqual(deleted, ['INK']);
+	assert.equal(annotationManager._skipAnnotationSavingDebounce, false);
+
+	let unsupported = createMobileView({ onDeleteAnnotations: undefined });
+	unsupported.annotationManager.deleteAnnotations = () => assert.fail('deletion is unsupported');
+	unsupported.pdfView.options.onDeleteAnnotations(['INK']);
+});
+
+test('mobile Undo and Redo deliver saves before returning', async (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: 1_000_000 });
+	let saves = [];
+	let { view, annotationManager } = createMobileView({
+		annotations: [{ id: 'A', color: '#ffd400', sortIndex: '00000|000000|00000' }],
+		onSaveAnnotations: annotations => saves.push(annotations.map(x => x.color)),
+	});
+	view._annotationManager = new AnnotationManager(annotationManager.options);
+	view._annotationManager.updateAnnotations([{ id: 'A', color: '#ff0000' }]);
+	await new Promise(resolve => setImmediate(resolve));
+	view._annotationManager.updateAnnotations([{ id: 'A', color: '#00ff00' }]);
+	assert.deepEqual(saves, [['#ff0000']]);
+	view.undo();
+	assert.deepEqual(saves, [['#ff0000'], ['#ff0000']]);
+	await new Promise(resolve => setImmediate(resolve));
+	view.redo();
+	assert.deepEqual(saves, [['#ff0000'], ['#ff0000'], ['#00ff00']]);
+	await new Promise(resolve => setImmediate(resolve));
 });
 
 test('mobile View stores SDT packs in its shared document session', async () => {

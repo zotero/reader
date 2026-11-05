@@ -28,6 +28,9 @@ export default class FakeView {
 		return true;
 	}
 	setTool(tool) { this._record('setTool', tool); }
+	addAnnotation(annotation) { this._record('addAnnotation', annotation); }
+	updateAnnotations(annotations) { this._record('updateAnnotations', annotations); }
+	deleteAnnotations(ids) { this._record('deleteAnnotations', ids); }
 	unsetAnnotations(ids) { this._record('unsetAnnotations', ids); }
 	setAnnotations(annotations) { this._record('setAnnotations', annotations); }
 	find(params) { this._record('find', params); }
@@ -241,4 +244,38 @@ test('Android PDF UI commands decode their inputs and delegate to the view', () 
 		['renderAnnotationImages', ['image', 'ink']],
 		['enterPassword', 'slaptažodis'],
 	]);
+});
+
+test('Android app annotation changes use the history-aware view methods', () => {
+	let view = createView();
+	let annotation = { type: 'highlight', text: 'Selected text' };
+	let changes = { id: 'A', comment: 'Updated comment' };
+	window.addAnnotation({ annotation: encode(annotation) });
+	window.editAnnotation({ annotation: encode(changes) });
+	window.deleteAnnotations({ ids: encode(['A']) });
+	assert.deepEqual(view.calls, [
+		['addAnnotation', annotation],
+		['updateAnnotations', [changes]],
+		['deleteAnnotations', ['A']],
+	]);
+	view.updateAnnotations = () => {
+		throw new Error('Rejected edit');
+	};
+	assert.doesNotThrow(() => window.editAnnotation({ annotation: encode(changes) }));
+});
+
+test('Android labels Undo and Redo saves without labeling later edits', () => {
+	let view = createView();
+	let annotation = { id: 'A', type: 'highlight' };
+	view.undo = view.redo = () => view.options.onSaveAnnotations([annotation]);
+	window.undo();
+	window.redo();
+	view.options.onSaveAnnotations([annotation]);
+	assert.deepEqual(textEvents().filter(x => x.event === 'onSaveAnnotations').map(x => x.params.history), [true, true, false]);
+	assert.deepEqual(textEvents().filter(x => x.event === 'onSelectAnnotations').map(x => x.params.ids), [[], []]);
+	view.options.onChangeUndoHistory({ undoSteps: [{ id: 1 }], redoSteps: [] });
+	assert.deepEqual(textEvents().at(-1), {
+		event: 'onChangeUndoHistory',
+		params: { canUndo: true, canRedo: false },
+	});
 });

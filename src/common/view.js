@@ -214,7 +214,7 @@ class View {
 				onRenderAnnotationImage: this._options.onRenderAnnotationImage,
 				onSetPageLabels: this._options.onSetPageLabels || nop,
 				// PDF can delete annotations inside the view, for example by completely erasing ink.
-				onDeleteAnnotations: this._options.onDeleteAnnotations || nop
+				onDeleteAnnotations: this._options.onDeleteAnnotations ? ids => this.deleteAnnotations(ids) : nop
 			});
 		}
 		else if (this._type === 'epub') {
