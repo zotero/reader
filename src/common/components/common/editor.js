@@ -314,11 +314,21 @@ function Toolbar({ onCommand }) {
 let Content = React.forwardRef((props, ref) => {
 	// Store last value to prevent contenteditable content updating while typing, which reset cursor position
 	let lastValueRef = useRef();
+	// Last received props. The text prop can lag behind what the user typed (e.g., when the
+	// annotation manager defers rendering), so the content is only replaced when the props
+	// actually changed (new text or a new version, e.g. dateModified), and never when the
+	// component re-renders for another reason with the same, possibly stale, text
+	let lastPropsRef = useRef();
 	let innerRef = useRef();
 	let rendererRef = useRef();
 
 	useEffect(() => {
-		if (lastValueRef.current !== props.text) {
+		let lastProps = lastPropsRef.current;
+		let propsChanged = !lastProps
+			|| lastProps.text !== props.text
+			|| lastProps.version !== props.version;
+		lastPropsRef.current = { text: props.text, version: props.version };
+		if (propsChanged && lastValueRef.current !== props.text) {
 			lastValueRef.current = props.text;
 			let savedSelection = getSelectionOffsets(innerRef.current);
 			innerRef.current.innerText = props.text;
@@ -392,6 +402,7 @@ function Editor(props) {
 				ref={contentRef}
 				id={props.id}
 				text={props.text}
+				version={props.version}
 				readOnly={props.readOnly}
 				enableRichText={props.enableRichText}
 				placeholder={props.placeholder}

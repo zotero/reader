@@ -1479,9 +1479,12 @@ class PDFView {
 		let affected = getAffectedAnnotations(this._annotations, annotations, true);
 		let { created, updated, deleted } = affected;
 		this._annotations = annotations;
+		// Look up focused annotations among all annotations, not only the ones that
+		// affect the view (e.g., a highlight whose comment changed isn't re-rendered)
 		if (this._focusedObject?.type === 'annotation') {
-			if (updated.find(x => x.id === this._focusedObject.object.id)) {
-				this._focusedObject.object = updated.find(x => x.id === this._focusedObject.object.id);
+			let annotation = annotations.find(x => x.id === this._focusedObject.object.id);
+			if (annotation) {
+				this._focusedObject.object = annotation;
 			}
 			else if (deleted.find(x => x.id === this._focusedObject.object.id)) {
 				this._focusedObject = null;
@@ -1489,8 +1492,9 @@ class PDFView {
 		}
 
 		if (this._lastFocusedObject?.type === 'annotation') {
-			if (updated.find(x => x.id === this._lastFocusedObject.object.id)) {
-				this._lastFocusedObject.object = updated.find(x => x.id === this._lastFocusedObject.object.id);
+			let annotation = annotations.find(x => x.id === this._lastFocusedObject.object.id);
+			if (annotation) {
+				this._lastFocusedObject.object = annotation;
 			}
 			else if (deleted.find(x => x.id === this._lastFocusedObject.object.id)) {
 				this._lastFocusedObject = null;

@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import React, { memo, useCallback, useContext, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useLocalization } from '@fluent/react';
 import cx from 'classnames';
 import { SidebarPreview } from '../common/preview';
@@ -7,8 +7,11 @@ import { ANNOTATION_COLORS } from "../../defines";
 import { pressedNextKey, pressedPreviousKey, setCaretToEnd } from '../../lib/utilities';
 import { ReaderContext } from '../../reader';
 
+let collator = new Intl.Collator();
 
-function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickColor, onClickAuthor, onChange }) {
+// Memoized, since tags, colors, authors and the handlers only change when
+// annotations or the filter change, and not on every sidebar render
+const Selector = memo(function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickColor, onClickAuthor, onChange }) {
 	let { l10n } = useLocalization();
 
 	function handleDragOver(event) {
@@ -75,7 +78,7 @@ function Selector({ tags, colors, authors, onContextMenu, onClickTag, onClickCol
 			</div>}
 		</div>
 	);
-}
+});
 
 // We get significant performance boost here because `props.annotation`
 // reference is updated only when annotation data is updated
@@ -108,6 +111,119 @@ const Annotation = React.memo((props) => {
 	);
 });
 
+/**
+ * Get tags, colors and authors to show in the selector
+ */
+function getSelectorItems(annotations, filteredAnnotations, filter, authorName) {
+	let tags = {};
+	let colors = {};
+	let authors = {};
+	for (let annotation of annotations) {
+		for (let tag of annotation.tags) {
+			if (!tags[tag.name]) {
+				tags[tag.name] = { ...tag };
+				tags[tag.name].selected = filter.tags.includes(tag.name);
+				tags[tag.name].inactive = true;
+			}
+		}
+		let color = annotation.color;
+		if (!colors[color]) {
+			let predefinedColor = ANNOTATION_COLORS.find(x => x[1] === color);
+			colors[color] = {
+				color,
+				selected: filter.colors.includes(color),
+				inactive: true,
+				name: predefinedColor ? predefinedColor[0] : null
+			};
+		}
+		let author = annotation.authorName;
+		if (author && !authors[author]) {
+			authors[author] = {
+				author,
+				selected: filter.authors.includes(author),
+				inactive: true,
+				current: author === authorName
+			};
+		}
+	}
+
+	// If filter has tags, colors or authors that no longer exist in any annotation,
+	// add them directly from filter to selector to avoid state when selector doesn't show
+	// anything and annotations list is empty
+	for (let tag of filter.tags) {
+		if (!tags[tag]) {
+			tags[tag] = { name: tag, selected: true, inactive: false };
+		}
+	}
+
+	for (let color of filter.colors) {
+		if (!colors[color]) {
+			colors[color] = { color, selected: true, inactive: false, name: null };
+		}
+	}
+
+	for (let author of filter.authors) {
+		if (!authors[author]) {
+			authors[author] = { author, selected: true, inactive: false, current: author === authorName };
+		}
+	}
+
+	for (let annotation of filteredAnnotations) {
+		for (let tag of annotation.tags) {
+			tags[tag.name].inactive = false;
+		}
+		colors[annotation.color].inactive = false;
+		let author = annotation.authorName;
+		if (author) {
+			authors[author].inactive = false;
+		}
+	}
+
+	let coloredTags = [];
+	for (let key in tags) {
+		let tag = tags[key];
+		if (tag.color) {
+			coloredTags.push(tag);
+			delete tags[key];
+		}
+	}
+
+	// Sort colored tags and place at beginning
+	coloredTags.sort((a, b) => {
+		return a.position - b.position;
+	});
+
+	let primaryColors = [];
+	for (let annotationColor of ANNOTATION_COLORS) {
+		if (colors[annotationColor[1]]) {
+			primaryColors.push(colors[annotationColor[1]]);
+			delete colors[annotationColor[1]];
+		}
+	}
+
+	tags = Object.values(tags);
+	tags.sort(function (a, b) {
+		return collator.compare(a.name, b.name);
+	});
+	tags = [...coloredTags, ...tags];
+
+	colors = Object.values(colors);
+	colors = [...primaryColors, ...colors];
+
+	authors = Object.values(authors);
+	authors.sort(function (a, b) {
+		if (a.current) {
+			return -1;
+		}
+		else if (b.current) {
+			return 1;
+		}
+		return collator.compare(a.author, b.author);
+	});
+
+	return { tags, colors, authors };
+}
+
 const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	let { l10n } = useLocalization();
 	// Expansion state:
@@ -125,9 +241,11 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 	const expansionStateRef = useRef();
 	const selectedIDsRef = useRef();
 	const annotationsRef = useRef();
+	const filterRef = useRef();
 	expansionStateRef.current = expansionState;
 	selectedIDsRef.current = props.selectedIDs;
 	annotationsRef.current = props.annotations;
+	filterRef.current = props.filter;
 
 	function scrollAnnotationIntoView(id) {
 		setTimeout(() => {
@@ -213,38 +331,41 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		}
 	}
 
-	function handleColorClick(color) {
-		let { colors } = props.filter;
+	let handleColorClick = useCallback((color) => {
+		let filter = filterRef.current;
+		let { colors } = filter;
 		if (colors.includes(color)) {
 			colors = colors.filter(x => x !== color);
 		}
 		else {
 			colors = [...colors, color];
 		}
-		props.onChangeFilter({ ...props.filter, colors });
-	}
+		props.onChangeFilter({ ...filter, colors });
+	}, []);
 
-	function handleTagClick(tag) {
-		let { tags } = props.filter;
+	let handleTagClick = useCallback((tag) => {
+		let filter = filterRef.current;
+		let { tags } = filter;
 		if (tags.includes(tag)) {
 			tags = tags.filter(x => x !== tag);
 		}
 		else {
 			tags = [...tags, tag];
 		}
-		props.onChangeFilter({ ...props.filter, tags });
-	}
+		props.onChangeFilter({ ...filter, tags });
+	}, []);
 
-	function handleAuthorClick(author) {
-		let { authors } = props.filter;
+	let handleAuthorClick = useCallback((author) => {
+		let filter = filterRef.current;
+		let { authors } = filter;
 		if (authors.includes(author)) {
 			authors = authors.filter(x => x !== author);
 		}
 		else {
 			authors = [...authors, author];
 		}
-		props.onChangeFilter({ ...props.filter, authors });
-	}
+		props.onChangeFilter({ ...filter, authors });
+	}, []);
 
 	const handleSelectorChange = useCallback((remove, tag, color) => {
 		let selectedAnnotations = annotationsRef.current.filter(x => window._draggingAnnotationIDs.includes(x.id));
@@ -274,7 +395,7 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		props.onUpdateAnnotations(annotations);
 	}, []);
 
-	function handleSelectorContextMenu(event) {
+	let handleSelectorContextMenu = useCallback((event) => {
 		if (platform === 'web') {
 			return;
 		}
@@ -286,9 +407,9 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		props.onOpenSelectorContextMenu({
 			x: event.clientX,
 			y: event.clientY,
-			enableClearSelection: props.filter.colors.length || props.filter.tags.length || props.filter.authors.length
+			enableClearSelection: filterRef.current.colors.length || filterRef.current.tags.length || filterRef.current.authors.length
 		});
-	}
+	}, [platform]);
 
 	let handleSidebarAnnotationSectionClick = useCallback((id, section, event) => {
 		let ctrl = event.ctrlKey || event.metaKey;
@@ -344,117 +465,19 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 		props.onOpenAnnotationContextMenu(params);
 	}, []);
 
-	let filteredAnnotations = props.annotations.filter(x => !x._hidden);
-	if (props.filter.query.length) {
-		filteredAnnotations.sort((a, b) => b._score - a._score);
-	}
+	let filteredAnnotations = useMemo(() => {
+		let filteredAnnotations = props.annotations.filter(x => !x._hidden);
+		if (props.filter.query.length) {
+			filteredAnnotations.sort((a, b) => b._score - a._score);
+		}
+		return filteredAnnotations;
+	}, [props.annotations, props.filter.query]);
 
-	let tags = {};
-	let colors = {};
-	let authors = {};
-	for (let annotation of props.annotations) {
-		for (let tag of annotation.tags) {
-			if (!tags[tag.name]) {
-				tags[tag.name] = { ...tag };
-				tags[tag.name].selected = props.filter.tags.includes(tag.name);
-				tags[tag.name].inactive = true;
-			}
-		}
-		let color = annotation.color;
-		if (!colors[color]) {
-			let predefinedColor = ANNOTATION_COLORS.find(x => x[1] === color);
-			colors[color] = {
-				color,
-				selected: props.filter.colors.includes(color),
-				inactive: true,
-				name: predefinedColor ? predefinedColor[0] : null
-			};
-		}
-		let author = annotation.authorName;
-		if (author && !authors[author]) {
-			authors[author] = {
-				author,
-				selected: props.filter.authors.includes(author),
-				inactive: true,
-				current: author === props.authorName
-			};
-		}
-	}
-
-	// If filter has tags, colors or authors that no longer exist in any annotation,
-	// add them directly from filter to selector to avoid state when selector doesn't show
-	// anything and annotations list is empty
-	for (let tag of props.filter.tags) {
-		if (!tags[tag]) {
-			tags[tag] = { name: tag, selected: true, inactive: false };
-		}
-	}
-
-	for (let color of props.filter.colors) {
-		if (!colors[color]) {
-			colors[color] = { color, selected: true, inactive: false, name: null };
-		}
-	}
-
-	for (let author of props.filter.authors) {
-		if (!authors[author]) {
-			authors[author] = { author, selected: true, inactive: false, current: author === props.authorName };
-		}
-	}
-
-	for (let annotation of filteredAnnotations) {
-		for (let tag of annotation.tags) {
-			tags[tag.name].inactive = false;
-		}
-		colors[annotation.color].inactive = false;
-		let author = annotation.authorName;
-		if (author) {
-			authors[author].inactive = false;
-		}
-	}
-
-	let coloredTags = [];
-	for (let key in tags) {
-		let tag = tags[key];
-		if (tag.color) {
-			coloredTags.push(tag);
-			delete tags[key];
-		}
-	}
-
-	// Sort colored tags and place at beginning
-	coloredTags.sort((a, b) => {
-		return a.position - b.position;
-	});
-
-	let primaryColors = [];
-	for (let annotationColor of ANNOTATION_COLORS) {
-		if (colors[annotationColor[1]]) {
-			primaryColors.push(colors[annotationColor[1]]);
-			delete colors[annotationColor[1]];
-		}
-	}
-
-	tags = Object.values(tags);
-	let collator = new Intl.Collator();
-	tags.sort(function (a, b) {
-		return collator.compare(a.name, b.name);
-	});
-	tags = [...coloredTags, ...tags];
-
-	colors = Object.values(colors);
-	colors = [...primaryColors, ...colors];
-
-	authors = Object.values(authors);
-	authors.sort(function (a, b) {
-		if (a.current) {
-			return -1;
-		}
-		else if (b.current) {
-			return 1;
-		}
-		return collator.compare(a.author, b.author);
-	});
+	let { tags, colors, authors } = useMemo(
+		() => getSelectorItems(props.annotations, filteredAnnotations, props.filter, props.authorName),
+		[props.annotations, filteredAnnotations, props.filter, props.authorName]
+	);
+	let selectedIDs = useMemo(() => new Set(props.selectedIDs), [props.selectedIDs]);
 
 	return (
 		<React.Fragment>
@@ -465,9 +488,9 @@ const AnnotationsView = memo(React.forwardRef((props, ref) => {
 							type={props.type}
 							key={annotation.id}
 							readOnly={props.readOnly || annotation.readOnly}
-							isSelected={props.selectedIDs.includes(annotation.id)}
+							isSelected={selectedIDs.has(annotation.id)}
 							annotation={annotation}
-							expansionState={props.selectedIDs.includes(annotation.id) ? expansionState : 0}
+							expansionState={selectedIDs.has(annotation.id) ? expansionState : 0}
 							onFocus={handleAnnotationFocus}
 							onChange={handleAnnotationChange}
 							onClickAnnotationSection={handleSidebarAnnotationSectionClick}
