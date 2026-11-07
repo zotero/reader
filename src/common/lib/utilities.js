@@ -271,6 +271,16 @@ export function basicDeepEqual(x, y) {
  * @param viewOnly Get annotations that only affect view i.e. position or color changes
  * @returns {{deleted: *[], created: *[], updated: *[]}}
  */
+// Views only draw the comment of text annotations. Other annotations only
+// show whether they have a comment (e.g., the comment icon on highlights), so
+// typing a comment doesn't need to re-render the page and its thumbnail
+function isCommentChangeVisibleInView(oldAnnotation, newAnnotation) {
+	if (newAnnotation.comment === oldAnnotation.comment) {
+		return false;
+	}
+	return newAnnotation.type === 'text' || !newAnnotation.comment !== !oldAnnotation.comment;
+}
+
 export function getAffectedAnnotations(oldAnnotations, newAnnotations, viewOnly) {
 	let deleted = [];
 	// Annotations that newly appeared or disappeared
@@ -292,7 +302,7 @@ export function getAffectedAnnotations(oldAnnotations, newAnnotations, viewOnly)
 		else if (newAnnotation !== oldAnnotation) {
 			if (viewOnly) {
 				if (newAnnotation.color !== oldAnnotation.color
-					|| newAnnotation.comment !== oldAnnotation.comment
+					|| isCommentChangeVisibleInView(oldAnnotation, newAnnotation)
 					|| !basicDeepEqual(newAnnotation.position, oldAnnotation.position)) {
 					updated.push(newAnnotation);
 				}

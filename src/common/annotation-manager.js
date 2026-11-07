@@ -7,6 +7,12 @@ import { getEmptyTextAnnotationIDs } from './annotation-cleanup.mjs';
 
 const DEBOUNCE_TIME = 1000; // 1s
 const DEBOUNCE_MAX_TIME = 10000; // 10s
+// Rendering pushes the whole annotations array through React state and every
+// view, which gets slow with many annotations. While the user is typing a
+// comment or text the editor shows its own content, so those renders can be
+// coalesced
+const RENDER_DEFER_TIME = 300;
+const RENDER_DEFER_MAX_TIME = 1000;
 
 class AnnotationManager {
 	constructor(options) {
@@ -25,7 +31,12 @@ class AnnotationManager {
 		this._onDelete = options.onDelete;
 		this._onChangeHistory = options.onChangeHistory;
 		this._adjustTextAnnotationPosition = options.adjustTextAnnotationPosition;
+		this._renderTimeout = null;
+		this._firstDeferredRenderTime = 0;
 		this.render = () => {
+			clearTimeout(this._renderTimeout);
+			this._renderTimeout = null;
+			this._firstDeferredRenderTime = 0;
 			options.onRender([...this._annotations]);
 		};
 
@@ -145,11 +156,21 @@ class AnnotationManager {
 			}
 		}
 
+		// Only a text/comment-only update to an annotation that isn't drawn with its
+		// comment (i.e. not a text annotation, whose box is resized as the user types)
+		// can have its rendering deferred
+		let deferRender = true;
 		for (let annotation of annotations) {
+			let existingAnnotation = this._getAnnotationByID(annotation.id);
 			if (Object.keys(annotation).length === 2 && (annotation.text || annotation.comment)) {
 				this._highVolatilityAnnotationIDs.add(annotation.id);
+				if (existingAnnotation.type === 'text') {
+					deferRender = false;
+				}
 			}
-			let existingAnnotation = this._getAnnotationByID(annotation.id);
+			else {
+				deferRender = false;
+			}
 			if (annotation.position || annotation.color) {
 				annotation.image = undefined;
 			}
@@ -187,7 +208,7 @@ class AnnotationManager {
 			annotation.position = roundPositionValues(annotation.position);
 			changedAnnotations.set(annotation.id, annotation);
 		}
-		this._applyChanges(changedAnnotations, 'update-annotations', changedAnnotations.size);
+		this._applyChanges(changedAnnotations, 'update-annotations', changedAnnotations.size, { deferRender });
 	}
 
 	deleteAnnotations(ids) {
@@ -335,13 +356,14 @@ class AnnotationManager {
 	 * @param {Map | null} changedAnnotations Annotation ID -> new annotation, or null to delete
 	 * @param {string} action Action that produced the changes, for the history point
 	 * @param {number} count Number of annotations the action was performed on
+	 * @param {Object} [options]
+	 * @param {boolean} [options.deferRender] Coalesce rendering with other deferred changes
 	 */
-	_applyChanges(changedAnnotations, action, count) {
+	_applyChanges(changedAnnotations, action, count, { deferRender } = {}) {
 		if (!changedAnnotations.size) {
 			return;
 		}
 		this._lastChangeTime = Date.now();
-		let annotations = new Map(this._annotations.map(x => [x.id, x]));
 		for (let [id, changedAnnotation] of changedAnnotations) {
 			changedAnnotation = changedAnnotation && { ...changedAnnotation };
 			if (changedAnnotation && !this._unsavedAnnotations.get(id)?.image) {
@@ -350,11 +372,60 @@ class AnnotationManager {
 			this._unsavedAnnotations.set(id, changedAnnotation);
 		}
 		this._historySave(changedAnnotations, action, count);
-		annotations = new Map([...annotations, ...changedAnnotations]);
-		this._annotations = [...annotations.values()].filter(x => x);
-		this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		if (!this._replaceAnnotationsInPlace(changedAnnotations)) {
+			let annotations = new Map(this._annotations.map(x => [x.id, x]));
+			annotations = new Map([...annotations, ...changedAnnotations]);
+			this._annotations = [...annotations.values()].filter(x => x);
+			this._annotations.sort((a, b) => (a.sortIndex > b.sortIndex) - (a.sortIndex < b.sortIndex));
+		}
 		this._triggerSaving();
-		this.render();
+		if (deferRender) {
+			this._deferRender();
+		}
+		else {
+			this.render();
+		}
+	}
+
+	/**
+	 * Replace existing annotations without rebuilding and re-sorting the whole
+	 * array, which is only possible when no annotation is added or deleted and
+	 * no sortIndex changes (e.g., when a comment is edited)
+	 *
+	 * @param {Map} changedAnnotations
+	 * @returns {boolean} Whether the changes were applied
+	 */
+	_replaceAnnotationsInPlace(changedAnnotations) {
+		let indexes = [];
+		for (let [id, changedAnnotation] of changedAnnotations) {
+			if (!changedAnnotation) {
+				return false;
+			}
+			let index = this._annotations.findIndex(x => x.id === id);
+			if (index === -1 || this._annotations[index].sortIndex !== changedAnnotation.sortIndex) {
+				return false;
+			}
+			indexes.push([index, changedAnnotation]);
+		}
+		for (let [index, changedAnnotation] of indexes) {
+			this._annotations[index] = changedAnnotation;
+		}
+		return true;
+	}
+
+	// Debounce rendering, but never postpone it by more than RENDER_DEFER_MAX_TIME.
+	// Any other render, which always uses the latest annotations, flushes it
+	_deferRender() {
+		let now = Date.now();
+		if (!this._firstDeferredRenderTime) {
+			this._firstDeferredRenderTime = now;
+		}
+		let delay = Math.min(
+			RENDER_DEFER_TIME,
+			this._firstDeferredRenderTime + RENDER_DEFER_MAX_TIME - now
+		);
+		clearTimeout(this._renderTimeout);
+		this._renderTimeout = setTimeout(() => this.render(), Math.max(0, delay));
 	}
 
 	_applyImageChange(id, image) {
@@ -509,12 +580,9 @@ class AnnotationManager {
 			return;
 		}
 
-		let annotations = new Map(this._annotations.map(x => [x.id, x]));
-
 		let oldAnnotations = new Map();
-		for (let [id, changedAnnotation] of changedAnnotations) {
-			let existingAnnotation = annotations.get(id);
-			oldAnnotations.set(id, existingAnnotation);
+		for (let id of changedAnnotations.keys()) {
+			oldAnnotations.set(id, this._getAnnotationByID(id));
 		}
 
 		let point = this._undoStack[this._undoStack.length - 1];

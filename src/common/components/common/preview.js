@@ -104,6 +104,7 @@ export function PopupPreview(props) {
 					<Editor
 						id={annotation.id}
 						text={annotation.comment}
+						version={annotation.dateModified}
 						ariaLabel={l10n.getString('reader-annotation-comment')}
 						placeholder={
 							props.readOnly
@@ -242,6 +243,7 @@ export function SidebarPreview(props) {
 			<ExpandableEditor
 				id={annotation.id}
 				text={annotation.text}
+				version={annotation.dateModified}
 				placeholder={l10n.getString('reader-no-extracted-text')}
 				ariaLabel={l10n.getString('reader-annotation-text')}
 				readOnly={props.readOnly || state !== 3}
@@ -264,6 +266,7 @@ export function SidebarPreview(props) {
 			<ExpandableEditor
 				id={annotation.id}
 				text={annotation.comment}
+				version={annotation.dateModified}
 				readOnly={props.readOnly || !(state === 1 || state === 2 || state === 3)}
 				expanded={state >= 1}
 				placeholder={l10n.getString('reader-add-comment')}
