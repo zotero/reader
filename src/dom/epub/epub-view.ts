@@ -184,10 +184,6 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 			}
 		}
 
-		if (this._options.fontFamily) {
-			this.setFontFamily(this._options.fontFamily);
-		}
-
 		this._sectionsContainer.hidden = false;
 		this.pageMapping = this._initPageMapping(viewState.savedPageMapping);
 		this._initOutline();

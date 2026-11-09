@@ -405,6 +405,9 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected async _handleViewCreated(viewState: Partial<Readonly<State>>): Promise<void> {
 		this.setHyphenate(this._options.hyphenate ?? true);
+		if (this._options.fontFamily) {
+			this.setFontFamily(this._options.fontFamily);
+		}
 
 		if (viewState.appearance) {
 			this.setAppearance(viewState.appearance);
@@ -2387,12 +2390,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	setFontFamily(fontFamily: string) {
 		this._iframeDocument.documentElement.style.setProperty('--content-font-family', fontFamily);
-		this._renderAnnotations(true);
+		this._handleViewUpdate();
 	}
 
 	setHyphenate(hyphenate: boolean) {
 		this._iframeDocument.documentElement.classList.toggle('hyphenate', hyphenate);
-		this._renderAnnotations(true);
+		this._handleViewUpdate();
 	}
 
 	setPenActive(penActive: boolean) {

@@ -2163,6 +2163,8 @@ class Reader {
 			}
 			view = new SDTView({
 				...common,
+				fontFamily: this._state.fontFamily,
+				hyphenate: this._state.hyphenate,
 				viewState: this._state[primary ? 'primaryViewState' : 'secondaryViewState']?.sdtViewState ?? {},
 				data: {
 					structure: this._sdt.structure,
