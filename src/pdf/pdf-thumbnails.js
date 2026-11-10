@@ -115,6 +115,10 @@ class PDFThumbnails {
 		this._thumbnails = [];
 		this._renderOptions = [];
 		this._initialized = false;
+		this._generation = 0;
+		// Pages whose thumbnails were requested and haven't been delivered yet, with their render options
+		this._requested = new Map();
+		this._inFlight = new Map();
 		this._renderQueue = queue({
 			concurrency: 1,
 			autostart: true
@@ -142,7 +146,23 @@ class PDFThumbnails {
 	}
 
 	async _render(pageIndex, options) {
+		let generation = this._generation;
+		this._requested.delete(pageIndex);
+		this._inFlight.set(pageIndex, options);
+		try {
+			await this._renderThumbnail(pageIndex, options);
+		}
+		finally {
+			// After clear() the entry belongs to the render that was started again
+			if (generation === this._generation) {
+				this._inFlight.delete(pageIndex);
+			}
+		}
+	}
+
+	async _renderThumbnail(pageIndex, options) {
 		let { pdfDocument } = this._window.PDFViewerApplication;
+		let generation = this._generation;
 
 		let pdfPage = await pdfDocument.getPage(pageIndex + 1);
 		let viewport = pdfPage.getViewport({ scale: 1 });
@@ -186,16 +206,20 @@ class PDFThumbnails {
 		}
 		finally {
 			await this._pdfView.renderPageAnnotationsOnCanvas(canvas, drawViewport, pageIndex);
-			const reducedCanvas = this._reduceImage(canvas, canvasWidth, canvasHeight);
-			renderedThumbnail = {
-				pageIndex,
-				width: canvasWidth,
-				height: canvasHeight,
-				image: reducedCanvas.toDataURL()
-			};
-			this._thumbnails = this._thumbnails.slice();
-			this._thumbnails[pageIndex] = renderedThumbnail;
-			this._renderOptions[pageIndex] = options;
+			// Thumbnails are cleared when the color scheme changes. A render that started before that
+			// would be using the previous scheme, so its result must not be kept
+			if (generation === this._generation) {
+				const reducedCanvas = this._reduceImage(canvas, canvasWidth, canvasHeight);
+				renderedThumbnail = {
+					pageIndex,
+					width: canvasWidth,
+					height: canvasHeight,
+					image: reducedCanvas.toDataURL()
+				};
+				this._thumbnails = this._thumbnails.slice();
+				this._thumbnails[pageIndex] = renderedThumbnail;
+				this._renderOptions[pageIndex] = options;
+			}
 
 			// Zeroing the width and height causes Firefox to release graphics
 			// resources immediately, which can greatly reduce memory consumption.
@@ -229,7 +253,15 @@ class PDFThumbnails {
 		// clear the rendering queue to only render the thumbnails that were recently
 		// scrolled into view in the sidebar thumbnails view
 		if (!this._thumbnails.some(x => x.forceRerender)) {
+			// Ending the queue also drops renders that were requested but haven't started yet.
+			// The app requests thumbnails one page at a time and expects every one of them
+			// to be delivered, so keep those
+			let notStarted = Array.from(this._requested);
 			this._renderQueue.end();
+			this._requested.clear();
+			for (let [pageIndex, pageOptions] of notStarted) {
+				this._enqueue(pageIndex, pageOptions);
+			}
 		}
 		for (let pageIndex of pageIndexes) {
 			let thumbnail = this._thumbnails[pageIndex];
@@ -247,15 +279,33 @@ class PDFThumbnails {
 			let pageOptions = rerenderOnly
 				? this._renderOptions[pageIndex]
 				: options;
-			this._renderQueue.unshift(async () => this._render(pageIndex, pageOptions));
+			if (rerenderOnly) {
+				this._renderQueue.unshift(async () => this._render(pageIndex, pageOptions));
+			}
+			else {
+				this._enqueue(pageIndex, pageOptions);
+			}
 		}
 	}
 
+	_enqueue(pageIndex, options) {
+		this._requested.set(pageIndex, options);
+		this._renderQueue.unshift(async () => this._render(pageIndex, options));
+	}
+
 	clear() {
+		this._generation++;
 		this._renderQueue.end();
 		this._thumbnails = this._thumbnails.map(x => ({ ...x, image: undefined }));
 		this._renderOptions = [];
 		this._onUpdate(this._thumbnails);
+		// Ending the queue dropped the pending renders and the ones in flight are discarded,
+		// so render everything that was asked for again with the new color scheme
+		let outstanding = new Map([...this._requested, ...this._inFlight]);
+		this._requested.clear();
+		for (let [pageIndex, options] of outstanding) {
+			this._enqueue(pageIndex, options);
+		}
 	}
 
 	_getPageDrawContext(upscaleFactor = 1, canvasWidth, canvasHeight) {

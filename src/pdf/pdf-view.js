@@ -116,6 +116,8 @@ class PDFView {
 		this._lightTheme = options.lightTheme;
 		this._darkTheme = options.darkTheme;
 		this._preferedColorTheme = options.colorScheme;
+		// Without this the first pages are rendered using the system color scheme until setColorScheme() is called
+		this._forcedColorScheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
 		this._onInitThumbnails = options.onInitThumbnails;
 		this._onSetThumbnails = options.onSetThumbnails;
@@ -639,8 +641,14 @@ class PDFView {
 				this._themeColorScheme = 'light';
 			}
 
-			for (let page of this._pages) {
-				page.originalPage.reset();
+			// this._pages only has pages that finished rendering. A page that is still rendering would finish using
+			// the previous theme and never be rendered again, so reset every page that has started rendering
+			let pageViews = this._iframeWindow.PDFViewerApplication.pdfViewer?._pages || [];
+			for (let pageView of pageViews) {
+				// RenderingStates.INITIAL
+				if (pageView.renderingState !== 0) {
+					pageView.reset();
+				}
 			}
 			await this._iframeWindow.PDFViewerApplication.initializedPromise;
 			if (!this._destroyed) {
