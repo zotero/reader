@@ -2,6 +2,7 @@
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import queue from 'queue';
 
 import { getThumbnailDimensions, PDFThumbnails } from '../../src/pdf/pdf-thumbnails.js';
 
@@ -39,6 +40,11 @@ function createThumbnails() {
 	Object.assign(thumbnails, {
 		_pdfView: { renderPageAnnotationsOnCanvas: async () => {} },
 		_onRender: thumbnail => rendered.push(thumbnail),
+		_onUpdate() {},
+		_generation: 0,
+		_requested: new Map(),
+		_inFlight: new Map(),
+		_renderQueue: queue({ concurrency: 1, autostart: true }),
 		_renderOptions: [],
 		_thumbnails: [{ pageIndex: 0, width: 120, height: 160 }],
 		_window: {
@@ -111,4 +117,43 @@ test('annotation rerenders preserve the requested thumbnail bounds', async () =>
 
 	assert.equal(renderContexts.length, 2);
 	assert.deepEqual(dimensions(rendered.at(-1)), [80, 60]);
+});
+
+test('thumbnails requested before a clear are rendered again and the stale render is discarded', async () => {
+	globalThis.window = { devicePixelRatio: 1 };
+	let { pdfPage, rendered, thumbnails } = createThumbnails();
+	let release;
+	let gate = new Promise((resolve) => {
+		release = resolve;
+	});
+	thumbnails._window.PDFViewerApplication.pdfDocument.getPage = async () => {
+		await gate;
+		return pdfPage;
+	};
+
+	thumbnails.render([0], { maxWidth: 80, maxHeight: 64 });
+	thumbnails.clear();
+	release();
+	await new Promise(resolve => setTimeout(resolve, 20));
+
+	assert.equal(rendered.length, 1);
+	assert.equal(rendered[0].pageIndex, 0);
+	assert.equal(thumbnails._inFlight.size, 0);
+});
+
+test('requesting thumbnails keeps the requests that have not started yet', () => {
+	let { thumbnails } = createThumbnails();
+	let jobs = [];
+	thumbnails._renderQueue = {
+		end() {
+			jobs.length = 0;
+		},
+		unshift: job => jobs.unshift(job),
+	};
+
+	thumbnails.render([0]);
+	thumbnails.render([1]);
+
+	assert.equal(jobs.length, 2);
+	assert.deepEqual(Array.from(thumbnails._requested.keys()), [0, 1]);
 });
