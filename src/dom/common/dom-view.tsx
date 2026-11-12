@@ -161,6 +161,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handledPointerIDs = new Set<number>();
 
+	private _pendingIOSTap: { event: PointerEvent; action: () => void } | null = null;
+
 	protected _lastScrollTime: number | null = null;
 
 	protected _isCtrlKeyDown = false;
@@ -331,7 +333,37 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return this._iframeWindow;
 	}
 
+	runOnConfirmedTap(event: PointerEvent, action: () => void) {
+		if (this._options.platform === 'ios') {
+			// Tapping outside a native menu sends pointer events without a click.
+			this._pendingIOSTap = { event, action };
+		}
+		else {
+			action();
+		}
+	}
+
 	protected async _handleIFrameLoaded(): Promise<void> {
+		this._pendingIOSTap = null;
+		if (this._options.platform === 'ios') {
+			// An element-level listener lets WebKit generate clicks for taps on book content.
+			this._iframeDocument.documentElement.addEventListener('click', (event) => {
+				let tap = this._pendingIOSTap;
+				this._pendingIOSTap = null;
+				if (!tap || !event.isTrusted) {
+					return;
+				}
+				// Older WebKit sends MouseEvent for clicks, without a pointer ID.
+				let matchesTap = 'pointerId' in event
+					? event.pointerId === tap.event.pointerId
+					: event.detail > 0
+						&& Math.abs(event.clientX - tap.event.clientX) <= 1
+						&& Math.abs(event.clientY - tap.event.clientY) <= 1;
+				if (matchesTap) {
+					tap.action();
+				}
+			}, true);
+		}
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
@@ -1726,6 +1758,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
+		this._pendingIOSTap = null;
 		// Clean up in case this pointer was left behind in _handledPointerIDs,
 		// since we know this is a new interaction
 		this._handledPointerIDs.delete(event.pointerId);
@@ -1790,6 +1823,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerUp(event: PointerEvent) {
+		// EPUB edge taps can already have queued an action during this pointerup.
+		if (event.type === 'pointercancel') {
+			this._pendingIOSTap = null;
+		}
 		this._handledPointerIDs.delete(event.pointerId);
 
 		if (this._isTouchDuringPenAnnotation(event)) {
@@ -1827,7 +1864,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					&& !this._handledPointerIDs.has(event.pointerId)
 					&& !this._hadSelectionOnPointerDown
 					&& !(event.target as Element).closest('a')) {
-				this._options.onBackdropTap?.(event);
+				this.runOnConfirmedTap(event, () => this._options.onBackdropTap?.(event));
 			}
 		}
 		this._touchAnnotationStartPosition = null;

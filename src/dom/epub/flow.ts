@@ -989,7 +989,7 @@ export class PaginatedFlow extends AbstractFlow {
 				|| !this._iframeDocument.getSelection()!.isCollapsed) {
 			return;
 		}
-		if (this._endSwipe(event.clientX, event.clientY, event.target as Element)) {
+		if (this._endSwipe(event.clientX, event.clientY, event)) {
 			event.preventDefault();
 		}
 	};
@@ -1019,7 +1019,7 @@ export class PaginatedFlow extends AbstractFlow {
 		this._endSwipe(this._touchLastX, this._touchLastY, null);
 	};
 
-	private _endSwipe(clientX: number, clientY: number, target: Element | null): boolean {
+	private _endSwipe(clientX: number, clientY: number, event: PointerEvent | null): boolean {
 		this._resetSwipe();
 
 		// Switch pages after swiping
@@ -1035,20 +1035,24 @@ export class PaginatedFlow extends AbstractFlow {
 			return true;
 		}
 		// If there's no selection, allow single-tap page turns
-		else if (target
+		else if (event
 				&& this._iframeWindow.getSelection()!.isCollapsed
 				&& !this._view.selectedAnnotationIDs.length
 				&& Math.abs(clientX - this._touchStartX) < EPSILON_PX
 				&& Math.abs(clientY - this._touchStartY) < EPSILON_PX
-				&& !target.closest('a, .clickable-image')) {
-			if (clientX >= this._iframeWindow.innerWidth * (1 - PAGE_TURN_TAP_MARGIN_FRACTION)) {
-				this._onManualNavigation();
-				this.navigateRight();
-				return true;
-			}
-			else if (clientX <= this._iframeWindow.innerWidth * PAGE_TURN_TAP_MARGIN_FRACTION) {
-				this._onManualNavigation();
-				this.navigateLeft();
+				&& !(event.target as Element).closest('a, .clickable-image')) {
+			let rightEdge = clientX >= this._iframeWindow.innerWidth * (1 - PAGE_TURN_TAP_MARGIN_FRACTION);
+			let leftEdge = clientX <= this._iframeWindow.innerWidth * PAGE_TURN_TAP_MARGIN_FRACTION;
+			if (rightEdge || leftEdge) {
+				this._view.runOnConfirmedTap(event, () => {
+					this._onManualNavigation();
+					if (rightEdge) {
+						this.navigateRight();
+					}
+					else {
+						this.navigateLeft();
+					}
+				});
 				return true;
 			}
 		}
