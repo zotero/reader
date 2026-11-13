@@ -115,8 +115,6 @@ class PDFView {
 		this._outline = options.outline;
 		this._lightTheme = options.lightTheme;
 		this._darkTheme = options.darkTheme;
-		this._preferedColorTheme = options.colorScheme;
-		// Without this the first pages are rendered using the system color scheme until setColorScheme() is called
 		this._forcedColorScheme = options.colorScheme;
 		this._onRequestPassword = options.onRequestPassword;
 		this._onInitThumbnails = options.onInitThumbnails;
@@ -610,6 +608,9 @@ class PDFView {
 	}
 
 	async _updateColorScheme() {
+		if (this._destroyed) {
+			return;
+		}
 		if (this._forcedColorScheme === 'light') {
 			this._colorScheme = 'light';
 		}
@@ -641,19 +642,17 @@ class PDFView {
 				this._themeColorScheme = 'light';
 			}
 
-			// this._pages only has pages that finished rendering. A page that is still rendering would finish using
-			// the previous theme and never be rendered again, so reset every page that has started rendering
-			let pageViews = this._iframeWindow.PDFViewerApplication.pdfViewer?._pages || [];
-			for (let pageView of pageViews) {
-				// RenderingStates.INITIAL
-				if (pageView.renderingState !== 0) {
+			// Cached canvases include in-flight renders and pages retained while zooming.
+			for (let pageView of this._iframeWindow.PDFViewerApplication.pdfViewer?.getCachedPageViews() || []) {
+				if (pageView.canvas) {
 					pageView.reset();
 				}
 			}
+			// Invalidate before yielding so an old thumbnail cannot be delivered in the gap.
+			this._pdfThumbnails?.clear();
 			await this._iframeWindow.PDFViewerApplication.initializedPromise;
 			if (!this._destroyed) {
 				this._iframeWindow.PDFViewerApplication.pdfViewer.update();
-				this._pdfThumbnails?.clear();
 			}
 		}
 	}
@@ -1525,6 +1524,9 @@ class PDFView {
 	}
 
 	setColorScheme(colorScheme) {
+		if (this._forcedColorScheme === colorScheme) {
+			return;
+		}
 		this._forcedColorScheme = colorScheme;
 		this._updateColorScheme();
 	}

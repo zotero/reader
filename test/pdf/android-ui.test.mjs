@@ -41,6 +41,57 @@ const [
 	import('../../src/pdf/native-text-selection.js'),
 ]);
 
+test('PDF initialization honors an explicit scheme rather than the system preference', (t) => {
+	let update = PDFView.prototype._updateColorScheme;
+	let matchMedia = window.matchMedia;
+	let stop = new Error('appearance checked');
+	t.after(() => window.matchMedia = matchMedia);
+	window.matchMedia = () => ({ matches: true, addEventListener() {} });
+	// Inspect the first appearance update before the constructor creates its iframe.
+	t.mock.method(PDFView.prototype, '_updateColorScheme', function _updateColorScheme() {
+		update.call(this);
+		assert.equal(this._colorScheme, 'light');
+		throw stop;
+	});
+	assert.throws(() => new PDFView({ colorScheme: 'light' }), error => error === stop);
+});
+
+test('PDF theme changes invalidate thumbnails synchronously and reset cached canvases', async () => {
+	let resets = [];
+	let updates = 0;
+	let clears = 0;
+	let initialized = Promise.withResolvers();
+	let root = { dataset: {}, style: { setProperty() {} } };
+	let view = Object.assign(Object.create(PDFView.prototype), {
+		_forcedColorScheme: 'light',
+		_iframeWindow: {
+			document: { documentElement: root },
+			PDFViewerApplication: {
+				initializedPromise: initialized.promise,
+				pdfViewer: {
+					getCachedPageViews: () => [
+						{ canvas: {}, reset: () => resets.push('rendering') },
+						{ canvas: {}, renderingState: 0, reset: () => resets.push('zooming') },
+						{ reset: () => resets.push('empty') },
+					],
+					update: () => updates++,
+				},
+			},
+		},
+		_pdfThumbnails: { clear: () => clears++ },
+	});
+	let updating = view._updateColorScheme();
+	assert.equal(clears, 1);
+	initialized.resolve();
+	await updating;
+	view.setColorScheme('light');
+	view._destroyed = true;
+	await view._updateColorScheme();
+	assert.deepEqual(resets, ['rendering', 'zooming']);
+	assert.equal(updates, 1);
+	assert.equal(clears, 1);
+});
+
 function createRoot() {
 	let attributes = new Set();
 	return {
