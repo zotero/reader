@@ -37,7 +37,11 @@ type VoicesResponseTier = {
 };
 
 export type RemoteInterface = {
-	getVoices(): Promise<{
+	/**
+	 * @param options.customOnly Only return voices from a user-configured
+	 *   custom endpoint (e.g. when not logged in)
+	 */
+	getVoices(options?: { customOnly?: boolean }): Promise<{
 		error?: ErrorState;
 		voices?: VoicesResponse;
 		devMode: boolean;

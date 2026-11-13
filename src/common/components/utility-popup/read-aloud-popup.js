@@ -365,6 +365,12 @@ function TierSelect(props) {
 	options.push(
 		{ value: 'local', label: l10n.getString('reader-read-aloud-voice-tier-local'), disabled: !tiers.has('local') },
 	);
+	// Only offered when a custom endpoint is configured
+	if (tiers.has('custom')) {
+		options.push(
+			{ value: 'custom', label: l10n.getString('reader-read-aloud-voice-tier-custom') },
+		);
+	}
 
 	if (loggedIn || options.length > 1) {
 		return (
