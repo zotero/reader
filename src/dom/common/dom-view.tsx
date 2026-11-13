@@ -1850,18 +1850,26 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (event.type === 'pointercancel') {
 			this._pendingIOSTap = null;
 		}
-		let deselectOnTap = event.button === 0 && this.shouldDeselectAnnotationsForPointer(event);
+		let shouldDeselect = this.shouldDeselectAnnotationsForPointer(event);
 		this._handledPointerIDs.delete(event.pointerId);
 
 		if (this._isTouchDuringPenAnnotation(event)) {
 			return;
 		}
 
+		// Closing the native popover during a drag can interrupt the pointer sequence.
+		if (shouldDeselect
+				&& !this._pendingIOSTap
+				&& (event.pointerType === 'touch' || event.pointerType === 'pen')
+				&& this._pointerMovementWhileDown > 5) {
+			this.deselectAnnotationsFromPointer(event);
+		}
+
 		if (!event.isPrimary || event.defaultPrevented) {
 			return;
 		}
 
-		if (event.type === 'pointerup' && deselectOnTap && this._pointerMovementWhileDown <= 5) {
+		if (event.type === 'pointerup' && event.button === 0 && shouldDeselect && this._pointerMovementWhileDown <= 5) {
 			this.runOnConfirmedTap(event, () => this.deselectAnnotationsFromPointer(event));
 		}
 
@@ -1913,12 +1921,6 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._pointerMovementWhileDown
 				+= Math.abs(event.clientX - this._lastPointerPosition.x)
 				+ Math.abs(event.clientY - this._lastPointerPosition.y);
-		}
-		// Movement beyond the tap threshold confirms a document drag before release.
-		if ((event.pointerType === 'touch' || event.pointerType === 'pen')
-				&& this._pointerMovementWhileDown > 5
-				&& this.shouldDeselectAnnotationsForPointer(event)) {
-			this.deselectAnnotationsFromPointer(event);
 		}
 		this._lastPointerPosition = { x: event.clientX, y: event.clientY };
 		if (this._touchAnnotationStartPosition
