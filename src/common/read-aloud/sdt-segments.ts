@@ -550,7 +550,8 @@ function makePosition(chain: ChainText, rawStart: number, rawEnd: number): SDTPo
 /**
  * Convert a character offset in a chain's text to an SDT content point.
  * Offsets that land between mappings (part separators, skipped reference
- * markers) snap inward.
+ * markers) snap inward. Points are offsets in the node's text: a mapping may
+ * cover only part of its node (from `start`) when another part was elided.
  */
 function offsetToPoint(chain: ChainText, offset: number, isEnd: boolean): number[] | null {
 	let { mappings } = chain;
@@ -562,19 +563,19 @@ function offsetToPoint(chain: ChainText, offset: number, isEnd: boolean): number
 		for (let i = mappings.length - 1; i >= 0; i--) {
 			let mapping = mappings[i];
 			if (mapping.absStart < offset) {
-				return [...mapping.ref, Math.min(offset, mapping.absEnd) - mapping.absStart];
+				return [...mapping.ref, mapping.start + Math.min(offset, mapping.absEnd) - mapping.absStart];
 			}
 		}
-		return [...mappings[0].ref, 0];
+		return [...mappings[0].ref, mappings[0].start];
 	}
 	// First mapping that ends past the offset
 	for (let mapping of mappings) {
 		if (mapping.absEnd > offset) {
-			return [...mapping.ref, Math.max(offset, mapping.absStart) - mapping.absStart];
+			return [...mapping.ref, mapping.start + Math.max(offset, mapping.absStart) - mapping.absStart];
 		}
 	}
 	let last = mappings[mappings.length - 1];
-	return [...last.ref, last.absEnd - last.absStart];
+	return [...last.ref, last.end];
 }
 
 function getTextSpans(chain: ChainText, rawStart: number, rawEnd: number): TextNodeSpan[] {
