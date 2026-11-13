@@ -58,9 +58,9 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 			}
 		};
 
-		let handleWindowPointerUp = (event: PointerEvent) => {
+		let handleWindowPointerEnd = (event: PointerEvent) => {
 			setAltDown(event.altKey);
-			if (event.button == 0) {
+			if (event.button == 0 || event.type === 'pointercancel') {
 				setPointerDownOutside(false);
 			}
 		};
@@ -78,7 +78,8 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		};
 
 		win.addEventListener('pointerdown', handleWindowPointerDown, { passive: true });
-		win.addEventListener('pointerup', handleWindowPointerUp, { passive: true });
+		win.addEventListener('pointerup', handleWindowPointerEnd, { capture: true, passive: true });
+		win.addEventListener('pointercancel', handleWindowPointerEnd, { capture: true, passive: true });
 		// Listen for Alt on the iframe window and the root window, because the iframe window doesn't get the event
 		// when an annotation text field is focused
 		win.addEventListener('keydown', handleWindowKeyDownCapture, { capture: true, passive: true });
@@ -87,7 +88,8 @@ export const AnnotationOverlay: React.FC<AnnotationOverlayProps> = (props) => {
 		window.addEventListener('keyup', handleWindowKeyUpCapture, { capture: true, passive: true });
 		return () => {
 			win.removeEventListener('pointerdown', handleWindowPointerDown);
-			win.removeEventListener('pointerup', handleWindowPointerUp);
+			win.removeEventListener('pointerup', handleWindowPointerEnd, { capture: true });
+			win.removeEventListener('pointercancel', handleWindowPointerEnd, { capture: true });
 			win.removeEventListener('keydown', handleWindowKeyDownCapture, { capture: true });
 			win.removeEventListener('keyup', handleWindowKeyUpCapture, { capture: true });
 			window.removeEventListener('keydown', handleWindowKeyDownCapture, { capture: true });

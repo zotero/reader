@@ -161,6 +161,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	protected _handledPointerIDs = new Set<number>();
 
+	private _pendingIOSTap: { event: PointerEvent; action: (event: MouseEvent) => void } | null = null;
+
 	protected _lastScrollTime: number | null = null;
 
 	protected _isCtrlKeyDown = false;
@@ -176,6 +178,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	protected _iframeCoordScaleFactor = 1;
 
 	protected _previewAnnotation: NewAnnotation<WADMAnnotation> | null = null;
+
+	private _pendingIOSNote: { pointerId: number; note: NewAnnotation<WADMAnnotation> } | null = null;
 
 	protected _touchAnnotationStartPosition: CaretPosition | null = null;
 
@@ -331,7 +335,49 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		return this._iframeWindow;
 	}
 
+	runOnConfirmedTap(event: PointerEvent, action: (event: MouseEvent) => void) {
+		if (this._options.platform === 'ios') {
+			// Tapping outside a native menu sends pointer events without a click.
+			this._pendingIOSTap = { event, action };
+		}
+		else {
+			action(event);
+		}
+	}
+
+	shouldDeselectAnnotationsForPointer(event: PointerEvent): boolean {
+		return this._options.platform === 'ios'
+			&& event.isPrimary
+			&& event.target !== this._annotationShadowRoot.host
+			&& this._selectedAnnotationIDs.length > 0
+			&& this._handledPointerIDs.has(event.pointerId);
+	}
+
+	deselectAnnotationsFromPointer(event: PointerEvent) {
+		this._options.onSelectAnnotations([], event);
+	}
+
 	protected async _handleIFrameLoaded(): Promise<void> {
+		this._pendingIOSTap = null;
+		if (this._options.platform === 'ios') {
+			// An element-level listener lets WebKit generate clicks for taps on book content.
+			this._iframeDocument.documentElement.addEventListener('click', (event) => {
+				let tap = this._pendingIOSTap;
+				this._pendingIOSTap = null;
+				if (!tap || !event.isTrusted) {
+					return;
+				}
+				// Older WebKit sends MouseEvent for clicks, without a pointer ID.
+				let matchesTap = 'pointerId' in event
+					? event.pointerId === tap.event.pointerId
+					: event.detail > 0
+						&& Math.abs(event.clientX - tap.event.clientX) <= 1
+						&& Math.abs(event.clientY - tap.event.clientY) <= 1;
+				if (matchesTap) {
+					tap.action(event);
+				}
+			}, true);
+		}
 		this._iframeWindow.addEventListener('contextmenu', this._handleContextMenu.bind(this));
 		this._iframeWindow.addEventListener('keydown', this._handleKeyDown.bind(this), true);
 		this._iframeWindow.addEventListener('keyup', this._handleKeyUp.bind(this));
@@ -1620,6 +1666,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	private _handleAnnotationPointerUp = (id: string, event: React.PointerEvent) => {
 		event.stopPropagation();
 
+		if (this._queueIOSNoteTap(event.nativeEvent)) {
+			return;
+		}
+
 		if (this._touchAnnotationPointerType === 'pen'
 				&& (event.pointerType === 'pen' || event.pointerType === 'touch')) {
 			this._handlePointerUp(event.nativeEvent);
@@ -1647,11 +1697,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			? (idsHere.indexOf(selectedID) + 1) % idsHere.length
 			: 0;
 		let nextID = idsHere[nextIDIndex];
-		this._options.onSelectAnnotations([nextID], event.nativeEvent);
-		if (this._selectedAnnotationIDs.length == 1) {
-			this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+		if (!nextID) {
+			return;
 		}
-		this._lastKeyboardFocusedAnnotationID = null;
+		let pointerEvent = event.nativeEvent;
+		this.runOnConfirmedTap(pointerEvent, () => {
+			this._options.onSelectAnnotations([nextID], pointerEvent);
+			if (this._selectedAnnotationIDs.length == 1) {
+				this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+			}
+			this._lastKeyboardFocusedAnnotationID = null;
+		});
 	};
 
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
@@ -1726,6 +1782,8 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	protected _handlePointerDown(event: PointerEvent) {
+		this._pendingIOSTap = null;
+		this._pendingIOSNote = null;
 		// Clean up in case this pointer was left behind in _handledPointerIDs,
 		// since we know this is a new interaction
 		this._handledPointerIDs.delete(event.pointerId);
@@ -1761,43 +1819,105 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		// Hide focus rings
 		this._annotationRenderRootEl.classList.remove('keyboard-focus');
 
-		// Create note annotation on pointer down event, if note tool is active.
-		// The note tool will be automatically deactivated in reader.js,
-		// because this is what we do in PDF reader
-		if ((event.buttons & 1) === 1 && this._tool.type == 'note' && this._previewAnnotation
-				&& !this._isTouchIgnoredBecauseOfPen(event)) {
-			this._options.onAddAnnotation(this._finalizeAnnotation(this._previewAnnotation!), true);
-			this._previewAnnotation = null;
-			this._renderAnnotations(true);
-			this._openAnnotationPopup();
-			event.preventDefault();
-
-			// preventDefault() doesn't stop pointerup/click from firing, so our link handler will still fire
-			// if the note is added to a link. "Fix" this by eating any click event in the next half second.
-			// Very silly.
-			this._preventNextClickEvent();
-
-			return;
+		if ((event.buttons & 1) === 1 && this._tool.type === 'note' && !this._isTouchIgnoredBecauseOfPen(event)) {
+			if (this._options.platform === 'ios') {
+				if (event.isPrimary) {
+					let range = this._getNoteTargetRange(event);
+					let note = range && this.getAnnotationFromRange(range, 'note', this._tool.color);
+					if (note) {
+						this._pendingIOSNote = { pointerId: event.pointerId, note };
+						return;
+					}
+				}
+			}
+			else if (this._previewAnnotation) {
+				this._placeNote(this._previewAnnotation);
+				event.preventDefault();
+				// Consume the subsequent click so placing a note over a link does not open it.
+				this._preventNextClickEvent();
+				return;
+			}
 		}
 
 		if (event.target !== this._annotationShadowRoot.host) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
-				this._options.onSelectAnnotations([], event);
-				this._handledPointerIDs.add(event.pointerId);
+				if (this._options.platform !== 'ios') {
+					this.deselectAnnotationsFromPointer(event);
+					this._handledPointerIDs.add(event.pointerId);
+				}
+				else if (event.isPrimary && event.button === 0) {
+					this._handledPointerIDs.add(event.pointerId);
+				}
 			}
 		}
 	}
 
+	private _placeNote(note: NewAnnotation<WADMAnnotation>) {
+		this._options.onAddAnnotation(this._finalizeAnnotation(note), true);
+		this._previewAnnotation = null;
+		this._renderAnnotations(true);
+		this._openAnnotationPopup();
+	}
+
+	canPlaceIOSNoteOnTap(event: PointerEvent): boolean {
+		return this._pendingIOSNote?.pointerId === event.pointerId
+			&& this._tool.type === 'note'
+			&& event.type === 'pointerup'
+			&& event.button === 0
+			&& event.isPrimary
+			&& !event.defaultPrevented
+			&& this._pointerMovementWhileDown <= 5;
+	}
+
+	private _queueIOSNoteTap(event: PointerEvent): boolean {
+		if (!this.canPlaceIOSNoteOnTap(event)) {
+			return false;
+		}
+		let { note } = this._pendingIOSNote!;
+		this._pendingIOSNote = null;
+		this.runOnConfirmedTap(event, (click) => {
+			if (this._tool.type === 'note') {
+				click.preventDefault();
+				click.stopPropagation();
+				this._placeNote(note);
+			}
+		});
+		return true;
+	}
+
 	protected _handlePointerUp(event: PointerEvent) {
+		// EPUB edge taps can already have queued an action during this pointerup.
+		if (event.type === 'pointercancel') {
+			this._pendingIOSTap = null;
+		}
+		let shouldDeselect = this.shouldDeselectAnnotationsForPointer(event);
 		this._handledPointerIDs.delete(event.pointerId);
 
 		if (this._isTouchDuringPenAnnotation(event)) {
 			return;
 		}
 
+		// Closing the native popover during a drag can interrupt the pointer sequence.
+		if (shouldDeselect
+				&& !this._pendingIOSTap
+				&& (event.pointerType === 'touch' || event.pointerType === 'pen')
+				&& this._pointerMovementWhileDown > 5) {
+			this.deselectAnnotationsFromPointer(event);
+		}
+
 		if (!event.isPrimary || event.defaultPrevented) {
 			return;
+		}
+
+		if (this._queueIOSNoteTap(event)) {
+			this._gotPointerUp = true;
+			return;
+		}
+		this._pendingIOSNote = null;
+
+		if (event.type === 'pointerup' && event.button === 0 && shouldDeselect && this._pointerMovementWhileDown <= 5) {
+			this.runOnConfirmedTap(event, () => this.deselectAnnotationsFromPointer(event));
 		}
 
 		this._gotPointerUp = true;
@@ -1827,7 +1947,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 					&& !this._handledPointerIDs.has(event.pointerId)
 					&& !this._hadSelectionOnPointerDown
 					&& !(event.target as Element).closest('a')) {
-				this._options.onBackdropTap?.(event);
+				this.runOnConfirmedTap(event, () => this._options.onBackdropTap?.(event));
 			}
 		}
 		this._touchAnnotationStartPosition = null;
@@ -2278,6 +2398,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	setTool(tool: Tool) {
 		this._tool = tool;
+		this._pendingIOSNote = null;
 
 		this._iframeDocument.body.dataset.tool = tool.type;
 
