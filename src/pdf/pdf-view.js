@@ -3299,7 +3299,7 @@ class PDFView {
 			this._creationTimeout = null;
 		}
 
-		if (event.pointerType === 'mouse') {
+		if (event.pointerType === 'mouse' && !this._mobile) {
 			return;
 		}
 		// A pen landing after a finger means that the finger was a palm, so drop
