@@ -116,13 +116,11 @@ class PDFThumbnails {
 		this._renderOptions = [];
 		this._initialized = false;
 		this._generation = 0;
-		// Pages whose thumbnails were requested and haven't been delivered yet, with their render options
-		this._requested = new Map();
-		this._inFlight = new Map();
 		this._renderQueue = queue({
 			concurrency: 1,
 			autostart: true
 		});
+		this._renderQueue.on('error', error => console.error(error));
 		this._init();
 	}
 
@@ -146,25 +144,10 @@ class PDFThumbnails {
 	}
 
 	async _render(pageIndex, options) {
-		let generation = this._generation;
-		this._requested.delete(pageIndex);
-		this._inFlight.set(pageIndex, options);
-		try {
-			await this._renderThumbnail(pageIndex, options);
-		}
-		finally {
-			// After clear() the entry belongs to the render that was started again
-			if (generation === this._generation) {
-				this._inFlight.delete(pageIndex);
-			}
-		}
-	}
-
-	async _renderThumbnail(pageIndex, options) {
 		let { pdfDocument } = this._window.PDFViewerApplication;
-		let generation = this._generation;
 
 		let pdfPage = await pdfDocument.getPage(pageIndex + 1);
+		let generation = this._generation;
 		let viewport = pdfPage.getViewport({ scale: 1 });
 		let { width: canvasWidth, height: canvasHeight, scale }
 			= getThumbnailDimensions(viewport, options);
@@ -206,8 +189,6 @@ class PDFThumbnails {
 		}
 		finally {
 			await this._pdfView.renderPageAnnotationsOnCanvas(canvas, drawViewport, pageIndex);
-			// Thumbnails are cleared when the color scheme changes. A render that started before that
-			// would be using the previous scheme, so its result must not be kept
 			if (generation === this._generation) {
 				const reducedCanvas = this._reduceImage(canvas, canvasWidth, canvasHeight);
 				renderedThumbnail = {
@@ -218,7 +199,6 @@ class PDFThumbnails {
 				};
 				this._thumbnails = this._thumbnails.slice();
 				this._thumbnails[pageIndex] = renderedThumbnail;
-				this._renderOptions[pageIndex] = options;
 			}
 
 			// Zeroing the width and height causes Firefox to release graphics
@@ -232,7 +212,14 @@ class PDFThumbnails {
 				pdfPage: this.pdfPage,
 			});
 		}
-		if (this._onRender && renderedThumbnail) {
+		// Callback hosts still need a reply; the sidebar requests visible pages again.
+		if (generation !== this._generation) {
+			if (this._onRender) {
+				// Retry inside this job to keep the queue's single-render concurrency.
+				await this._render(pageIndex, this._renderOptions[pageIndex]);
+			}
+		}
+		else if (this._onRender && renderedThumbnail) {
 			this._onRender(renderedThumbnail);
 		}
 		else {
@@ -249,19 +236,10 @@ class PDFThumbnails {
 	}
 
 	_queueRender(pageIndexes, options, rerenderOnly = false) {
-		// If there are no thumbnails being rerendered due to annotation changes,
-		// clear the rendering queue to only render the thumbnails that were recently
-		// scrolled into view in the sidebar thumbnails view
-		if (!this._thumbnails.some(x => x.forceRerender)) {
-			// Ending the queue also drops renders that were requested but haven't started yet.
-			// The app requests thumbnails one page at a time and expects every one of them
-			// to be delivered, so keep those
-			let notStarted = Array.from(this._requested);
+		// Callback hosts expect every request delivered. The sidebar only needs its
+		// latest viewport, but annotation rerenders must survive viewport changes.
+		if (!this._onRender && !this._thumbnails.some(x => x.forceRerender)) {
 			this._renderQueue.end();
-			this._requested.clear();
-			for (let [pageIndex, pageOptions] of notStarted) {
-				this._enqueue(pageIndex, pageOptions);
-			}
 		}
 		for (let pageIndex of pageIndexes) {
 			let thumbnail = this._thumbnails[pageIndex];
@@ -276,36 +254,22 @@ class PDFThumbnails {
 					continue;
 				}
 			}
-			let pageOptions = rerenderOnly
-				? this._renderOptions[pageIndex]
-				: options;
-			if (rerenderOnly) {
-				this._renderQueue.unshift(async () => this._render(pageIndex, pageOptions));
+			if (!rerenderOnly) {
+				this._renderOptions[pageIndex] = options;
 			}
-			else {
-				this._enqueue(pageIndex, pageOptions);
-			}
+			// A queued request may have been superseded by newer size bounds.
+			this._renderQueue.unshift(async () => this._render(pageIndex, this._renderOptions[pageIndex]));
 		}
-	}
-
-	_enqueue(pageIndex, options) {
-		this._requested.set(pageIndex, options);
-		this._renderQueue.unshift(async () => this._render(pageIndex, options));
 	}
 
 	clear() {
 		this._generation++;
-		this._renderQueue.end();
-		this._thumbnails = this._thumbnails.map(x => ({ ...x, image: undefined }));
-		this._renderOptions = [];
-		this._onUpdate(this._thumbnails);
-		// Ending the queue dropped the pending renders and the ones in flight are discarded,
-		// so render everything that was asked for again with the new color scheme
-		let outstanding = new Map([...this._requested, ...this._inFlight]);
-		this._requested.clear();
-		for (let [pageIndex, options] of outstanding) {
-			this._enqueue(pageIndex, options);
+		if (!this._onRender) {
+			this._renderQueue.end();
 		}
+		// Discarded renders will not replace these objects and clear their rerender flags.
+		this._thumbnails = this._thumbnails.map(x => ({ ...x, image: undefined, forceRerender: false }));
+		this._onUpdate(this._thumbnails);
 	}
 
 	_getPageDrawContext(upscaleFactor = 1, canvasWidth, canvasHeight) {
