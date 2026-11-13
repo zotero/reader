@@ -1037,6 +1037,7 @@ export class PaginatedFlow extends AbstractFlow {
 		// Allow an edge tap that would clear the annotation selection to also turn the page.
 		let deselectOnTap = event && event.button === 0 && this._view.shouldDeselectAnnotationsForPointer(event);
 		if (event
+				&& !this._view.canPlaceIOSNoteOnTap(event)
 				&& this._iframeWindow.getSelection()!.isCollapsed
 				&& (!this._view.selectedAnnotationIDs.length || deselectOnTap)
 				&& Math.abs(clientX - this._touchStartX) < EPSILON_PX
