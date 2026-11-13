@@ -975,11 +975,25 @@ class Reader {
 	}
 
 	/**
+	 * Text selected in the view the user last used. The position is in the
+	 * document's annotation position format, also in Reading Mode
+	 * @returns {{ text: string, position: Object, pageLabel?: string } | null}
+	 */
+	getSelection() {
+		let annotation = this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
+			?.annotation;
+		if (!annotation) {
+			return null;
+		}
+		let { text, position, pageLabel } = annotation;
+		return { text, position, pageLabel: pageLabel || undefined };
+	}
+
+	/**
 	 * @returns {Object | null}
 	 */
 	getSelectionPosition() {
-		return this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
-			?.annotation?.position ?? null;
+		return this.getSelection()?.position ?? null;
 	}
 
 	_handleAppearanceChange(params) {
@@ -2975,6 +2989,19 @@ class Reader {
 
 	get toolType() {
 		return this._state.tool.type;
+	}
+
+	get selectedAnnotationIDs() {
+		return this._state.selectedAnnotationIDs;
+	}
+
+	// Current page of the view the user last used. Undefined for snapshots
+	get pageIndex() {
+		return this._state[this._lastViewPrimary ? 'primaryViewStats' : 'secondaryViewStats'].pageIndex;
+	}
+
+	get pageLabel() {
+		return this._state[this._lastViewPrimary ? 'primaryViewStats' : 'secondaryViewStats'].pageLabel || undefined;
 	}
 
 	get zoomAutoEnabled() {
