@@ -343,6 +343,18 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		}
 	}
 
+	shouldDeselectAnnotationsForPointer(event: PointerEvent): boolean {
+		return this._options.platform === 'ios'
+			&& event.isPrimary
+			&& event.target !== this._annotationShadowRoot.host
+			&& this._selectedAnnotationIDs.length > 0
+			&& this._handledPointerIDs.has(event.pointerId);
+	}
+
+	deselectAnnotationsFromPointer(event: PointerEvent) {
+		this._options.onSelectAnnotations([], event);
+	}
+
 	protected async _handleIFrameLoaded(): Promise<void> {
 		this._pendingIOSTap = null;
 		if (this._options.platform === 'ios') {
@@ -1679,11 +1691,17 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			? (idsHere.indexOf(selectedID) + 1) % idsHere.length
 			: 0;
 		let nextID = idsHere[nextIDIndex];
-		this._options.onSelectAnnotations([nextID], event.nativeEvent);
-		if (this._selectedAnnotationIDs.length == 1) {
-			this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+		if (!nextID) {
+			return;
 		}
-		this._lastKeyboardFocusedAnnotationID = null;
+		let pointerEvent = event.nativeEvent;
+		this.runOnConfirmedTap(pointerEvent, () => {
+			this._options.onSelectAnnotations([nextID], pointerEvent);
+			if (this._selectedAnnotationIDs.length == 1) {
+				this._openAnnotationPopup(this._annotationsByID.get(nextID)!);
+			}
+			this._lastKeyboardFocusedAnnotationID = null;
+		});
 	};
 
 	private _getAnnotationsAtPoint(clientX: number, clientY: number): string[] {
@@ -1816,8 +1834,13 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (event.target !== this._annotationShadowRoot.host) {
 			// Deselect annotations when clicking outside the annotation layer
 			if (this._selectedAnnotationIDs.length) {
-				this._options.onSelectAnnotations([], event);
-				this._handledPointerIDs.add(event.pointerId);
+				if (this._options.platform !== 'ios') {
+					this.deselectAnnotationsFromPointer(event);
+					this._handledPointerIDs.add(event.pointerId);
+				}
+				else if (event.isPrimary && event.button === 0) {
+					this._handledPointerIDs.add(event.pointerId);
+				}
 			}
 		}
 	}
@@ -1827,6 +1850,7 @@ abstract class DOMView<State extends DOMViewState, Data> {
 		if (event.type === 'pointercancel') {
 			this._pendingIOSTap = null;
 		}
+		let deselectOnTap = event.button === 0 && this.shouldDeselectAnnotationsForPointer(event);
 		this._handledPointerIDs.delete(event.pointerId);
 
 		if (this._isTouchDuringPenAnnotation(event)) {
@@ -1835,6 +1859,10 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 		if (!event.isPrimary || event.defaultPrevented) {
 			return;
+		}
+
+		if (event.type === 'pointerup' && deselectOnTap && this._pointerMovementWhileDown <= 5) {
+			this.runOnConfirmedTap(event, () => this.deselectAnnotationsFromPointer(event));
 		}
 
 		this._gotPointerUp = true;
@@ -1885,6 +1913,12 @@ abstract class DOMView<State extends DOMViewState, Data> {
 			this._pointerMovementWhileDown
 				+= Math.abs(event.clientX - this._lastPointerPosition.x)
 				+ Math.abs(event.clientY - this._lastPointerPosition.y);
+		}
+		// Movement beyond the tap threshold confirms a document drag before release.
+		if ((event.pointerType === 'touch' || event.pointerType === 'pen')
+				&& this._pointerMovementWhileDown > 5
+				&& this.shouldDeselectAnnotationsForPointer(event)) {
+			this.deselectAnnotationsFromPointer(event);
 		}
 		this._lastPointerPosition = { x: event.clientX, y: event.clientY };
 		if (this._touchAnnotationStartPosition
