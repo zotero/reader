@@ -622,11 +622,25 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		if (!range) {
 			return;
 		}
-		let rect = getBoundingPageRect(range);
+		// Text of a block displayed as a source crop is hidden, so a range in it
+		// has no layout and would scroll relative to an empty rect. Scroll to the
+		// nearest displayed ancestor (the crop) instead.
+		let target: Range | Element = range;
+		if (!range.getClientRects().length) {
+			let element = closestElement(range.commonAncestorContainer);
+			while (element && !element.getClientRects().length) {
+				element = element.parentElement;
+			}
+			if (!element) {
+				return;
+			}
+			target = element;
+		}
+		let rect = getBoundingPageRect(target);
 		if (!rect || options.ifNeeded && isPageRectVisible(rect, this._iframeWindow, options.visibilityMargin ?? 0)) {
 			return;
 		}
-		scrollIntoView(range, {
+		scrollIntoView(target, {
 			behavior: options.behavior ?? 'smooth',
 			block: options.block ?? 'center',
 		});
