@@ -41,7 +41,7 @@ import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import { isPageRectVisible } from "../common/lib/rect";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { isRTLLang } from "../../common/lib/rtl";
-import { isSafari } from "../../common/lib/utilities";
+import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
 import { renderSDT } from "./lib/renderer";
 import sdtSCSS from './stylesheets/sdt.scss';
 
@@ -102,6 +102,8 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	private _lastNavigationTime = 0;
 
 	private _pageProgressionRTL: boolean | null = null;
+
+	private _restoringScrollPosition = false;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -635,6 +637,76 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		this._updateViewState();
 		this._updateViewStats();
 		this._pushHistoryPoint(true);
+	}
+
+	protected override _onManualNavigation() {
+		// Restoring the position after a resize isn't the user navigating away
+		if (this._restoringScrollPosition) {
+			return;
+		}
+		super._onManualNavigation();
+	}
+
+	protected override _resizeIframeImmediate() {
+		// Reflowing the content at a different width keeps the scroll offset, which
+		// moves the content. Keep the block at the top of the viewport in place.
+		let anchor = this._iframeDocument && !this._destroyed ? this._getScrollAnchor() : null;
+		super._resizeIframeImmediate();
+		if (anchor) {
+			this._restoreScrollAnchor(anchor);
+		}
+	}
+
+	/**
+	 * The innermost block at the top of the viewport, with how far into it the
+	 * viewport starts (as a fraction of its height), or how far below the top
+	 * it starts when the top falls between blocks
+	 */
+	private _getScrollAnchor(): { element: Element, fraction: number, gap: number } | null {
+		if (this._iframeWindow.scrollY <= 0) {
+			return null;
+		}
+		let element: Element | null = null;
+		for (let block of this._iframeDocument.querySelectorAll('#sdt-content > [data-ref-path]')) {
+			let rect = block.getBoundingClientRect();
+			if (rect.bottom > 0 && rect.height > 0) {
+				element = block;
+				break;
+			}
+		}
+		if (!element) {
+			return null;
+		}
+		// Nested blocks (list items, blockquote paragraphs) anchor more precisely
+		for (let child of element.querySelectorAll('[data-ref-path]')) {
+			let rect = child.getBoundingClientRect();
+			if (rect.top <= 0 && rect.bottom > 0) {
+				element = child;
+			}
+		}
+		let rect = element.getBoundingClientRect();
+		return {
+			element,
+			fraction: rect.top < 0 ? -rect.top / rect.height : 0,
+			gap: Math.max(rect.top, 0),
+		};
+	}
+
+	private _restoreScrollAnchor({ element, fraction, gap }: { element: Element, fraction: number, gap: number }) {
+		if (!element.isConnected) {
+			return;
+		}
+		let rect = element.getBoundingClientRect();
+		// Rects are in unscaled coordinates in Safari
+		let delta = (rect.top + fraction * rect.height - gap) * this._iframeCoordScaleFactor;
+		if (Math.abs(delta) < 1) {
+			return;
+		}
+		this._restoringScrollPosition = true;
+		this._iframeWindow.scrollBy({ top: delta, behavior: 'instant' });
+		debounceUntilScrollFinishes(this._iframeDocument).then(() => {
+			this._restoringScrollPosition = false;
+		});
 	}
 
 	protected override _handleViewUpdate(synchronous = true) {
