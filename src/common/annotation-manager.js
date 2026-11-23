@@ -38,6 +38,10 @@ class AnnotationManager {
 			this._clientKnownAnnotationIDs = new Set(this._annotations.map(x => x.id));
 		}
 
+		// Saves are debounced to batch frequent changes, e.g. typing a comment.
+		// A client which doesn't edit annotations that way can opt out, so that
+		// every change is saved right away
+		this._skipAnnotationSavingDebounce = !!options.skipSavingDebounce;
 		this._lastChangeTime = 0;
 		this._lastSaveTime = 0;
 		this._saveTimeout = null;

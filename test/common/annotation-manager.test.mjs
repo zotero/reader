@@ -61,3 +61,34 @@ test('without saveNewAnnotationsImmediately (desktop), rapid consecutive creatio
 	t.mock.timers.tick(1000);
 	assert.deepEqual(savedBatches, [[first.id], [second.id]]);
 });
+
+test('skipSavingDebounce: updates of an existing annotation save synchronously', async (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: START_TIME });
+	let { manager, savedBatches } = setup({ saveNewAnnotationsImmediately: true, skipSavingDebounce: true });
+
+	let annotation = manager.addAnnotation(newAnnotation());
+	assert.deepEqual(savedBatches, [[annotation.id]]);
+	await drain();
+
+	// Within both debounce windows of the previous save
+	manager.updateAnnotations([{ id: annotation.id, color: '#ff6666' }]);
+	assert.deepEqual(savedBatches, [[annotation.id], [annotation.id]]);
+	await drain();
+
+	manager.updateAnnotations([{ id: annotation.id, color: '#5fb236' }]);
+	assert.deepEqual(savedBatches, [[annotation.id], [annotation.id], [annotation.id]]);
+});
+
+test('without skipSavingDebounce, updates of an existing annotation are debounced', async (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout', 'Date'], now: START_TIME });
+	let { manager, savedBatches } = setup({ saveNewAnnotationsImmediately: true });
+
+	let annotation = manager.addAnnotation(newAnnotation());
+	await drain();
+
+	manager.updateAnnotations([{ id: annotation.id, color: '#ff6666' }]);
+	assert.equal(savedBatches.length, 1);
+
+	t.mock.timers.tick(1000);
+	assert.deepEqual(savedBatches, [[annotation.id], [annotation.id]]);
+});

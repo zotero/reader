@@ -86,6 +86,7 @@ class View {
 			// events (e.g. onSelectAnnotations) can reference annotation IDs, so a new
 			// annotation must always be delivered before anything can refer to it
 			saveNewAnnotationsImmediately: true,
+			skipSavingDebounce: options.skipAnnotationSavingDebounce,
 			onSave: options.onSaveAnnotations,
 			onDelete: options.onDeleteAnnotations || nop,
 			adjustTextAnnotationPosition: (annotation, adjustOptions) => this._view.adjustTextAnnotationPosition(annotation, adjustOptions),

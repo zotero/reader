@@ -36,6 +36,10 @@ window.createView = (options) => {
 		...options,
 		platform: 'ios',
 		annotations: annotations,
+		// Comments are edited natively, so there is nothing to batch. A delayed
+		// save could also overwrite newer changes made in the app, or be lost
+		// when the view is closed
+		skipAnnotationSavingDebounce: true,
 		container: document.getElementById('view'),
 		penActive: false,
 		data: { url },
