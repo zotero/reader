@@ -978,7 +978,7 @@ class Reader {
 	 * Text selected in the view the user last used. The position is in the
 	 * document's annotation position format (e.g. PDF rects), even when the
 	 * text is selected in Reading Mode
-	 * @returns {{ text: string, position: Object, pageLabel?: string } | null}
+	 * @returns {Pick<import('./types').Annotation, 'text' | 'position' | 'pageLabel'> | null}
 	 */
 	getSelection() {
 		let annotation = this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
