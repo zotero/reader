@@ -41,7 +41,7 @@ import DefaultFindProcessor, { createSearchContext } from "../common/lib/find";
 import { isPageRectVisible } from "../common/lib/rect";
 import { scrollIntoView } from "../common/lib/scroll-into-view";
 import { isRTLLang } from "../../common/lib/rtl";
-import { debounceUntilScrollFinishes, isSafari } from "../../common/lib/utilities";
+import { isSafari } from "../../common/lib/utilities";
 import { renderSDT } from "./lib/renderer";
 import sdtSCSS from './stylesheets/sdt.scss';
 
@@ -102,8 +102,6 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	private _lastNavigationTime = 0;
 
 	private _pageProgressionRTL: boolean | null = null;
-
-	private _restoringScrollPosition = false;
 
 	private get _searchContext() {
 		let searchContext = createSearchContext(getVisibleTextNodes(this._iframeDocument.body));
@@ -639,14 +637,6 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		this._pushHistoryPoint(true);
 	}
 
-	protected override _onManualNavigation() {
-		// Restoring the position after a resize isn't the user navigating away
-		if (this._restoringScrollPosition) {
-			return;
-		}
-		super._onManualNavigation();
-	}
-
 	protected override _resizeIframeImmediate() {
 		// Reflowing the content at a different width keeps the scroll offset, which
 		// moves the content. Keep the block at the top of the viewport in place.
@@ -699,14 +689,9 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		let rect = element.getBoundingClientRect();
 		// Rects are in unscaled coordinates in Safari
 		let delta = (rect.top + fraction * rect.height - gap) * this._iframeCoordScaleFactor;
-		if (Math.abs(delta) < 1) {
-			return;
+		if (Math.abs(delta) >= 1) {
+			this._iframeWindow.scrollBy({ top: delta, behavior: 'instant' });
 		}
-		this._restoringScrollPosition = true;
-		this._iframeWindow.scrollBy({ top: delta, behavior: 'instant' });
-		debounceUntilScrollFinishes(this._iframeDocument).then(() => {
-			this._restoringScrollPosition = false;
-		});
 	}
 
 	protected override _handleViewUpdate(synchronous = true) {
