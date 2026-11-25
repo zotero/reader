@@ -236,7 +236,11 @@ export class ReadAloudManager {
 			return [] as ReadAloudVoice[];
 		};
 		let [remoteVoices, browserVoices] = await Promise.all([
-			loadRemote && remoteProvider ? remoteProvider.getVoices().catch(handleError) : [],
+			// Custom endpoint voices don't require a Zotero account, so
+			// load them even when Zotero voices are disabled
+			remoteProvider
+				? remoteProvider.getVoices({ customOnly: !loadRemote }).catch(handleError)
+				: [],
 			browserProvider.getVoices().catch(handleError),
 		]);
 		this._allVoices = [...remoteVoices, ...browserVoices];

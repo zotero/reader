@@ -53,9 +53,9 @@ export abstract class ReadAloudVoice {
 	abstract getSampleController(segments: ReadAloudSegment[]): ReadAloudController;
 }
 
-export type Tier = 'local' | 'standard' | 'premium';
+export type Tier = 'local' | 'standard' | 'premium' | 'custom';
 
-export const TIERS: Tier[] = ['standard', 'premium', 'local'];
+export const TIERS: Tier[] = ['standard', 'premium', 'local', 'custom'];
 
 export function resolveEnabledVoiceIDs(
 	tierVoices: ReadAloudVoice[],

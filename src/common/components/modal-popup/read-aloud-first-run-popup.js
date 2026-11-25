@@ -217,6 +217,7 @@ const TIER_OPTIONS = [
 	{ tier: 'standard', showPurchaseCredits: false },
 	{ tier: 'premium', showPurchaseCredits: true },
 	{ tier: 'local', showPurchaseCredits: false },
+	{ tier: 'custom', showPurchaseCredits: false },
 ];
 
 const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang, remoteInterface, loggedIn, onPurchaseCredits, onLogIn, onCancel, onDone, standalone, onSetDoneMode }, ref) {
@@ -244,12 +245,14 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 		local: allBrowserVoices !== null,
 		standard: allRemoteVoices !== null,
 		premium: allRemoteVoices !== null,
+		custom: allRemoteVoices !== null,
 	};
 
 	let tierError = {
 		local: browserVoicesError,
 		standard: remoteVoicesError,
 		premium: remoteVoicesError,
+		custom: remoteVoicesError,
 	};
 
 	let voicesByTier = useMemo(() => {
@@ -259,6 +262,7 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 			local: localVoices,
 			standard: remoteVoices.filter(v => v.tier === 'standard'),
 			premium: remoteVoices.filter(v => v.tier === 'premium'),
+			custom: remoteVoices.filter(v => v.tier === 'custom'),
 		};
 	}, [allBrowserVoices, allRemoteVoices, effectiveLang]);
 
@@ -279,7 +283,8 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 		}
 	}, [voicesByTier, selectedTier]);
 
-	let isRemoteTier = selectedTier && selectedTier !== 'local';
+	// Tiers that require a Zotero account
+	let isRemoteTier = selectedTier === 'standard' || selectedTier === 'premium';
 	let needsLogIn = isRemoteTier && !loggedIn;
 	let canSubmit = !!selectedTier && !!selectedVoices[selectedTier]?.voice;
 
@@ -317,22 +322,25 @@ const ReadAloudFirstRunPopup = forwardRef(function ReadAloudFirstRunPopup({ lang
 				</div>
 			</div>
 			<div className="row tiers">
-				{TIER_OPTIONS.map(({ tier, showPurchaseCredits }) => (
-					<TierPreview
-						key={tier}
-						tier={tier}
-						selected={selectedTier}
-						onSelect={setSelectedTier}
-						onPurchaseCredits={showPurchaseCredits ? onPurchaseCredits : undefined}
-						voices={voicesByTier[tier]}
-						selectedVoice={selectedVoices[tier]?.voice || null}
-						lang={effectiveLang}
-						onSetVoice={voice => setSelectedVoice(tier, voice)}
-						disabled={!voicesByTier[tier].length && tierLoaded[tier]}
-						loaded={tierLoaded[tier]}
-						error={tierError[tier]}
-					/>
-				))}
+				{TIER_OPTIONS
+					// Only show the custom tier when a custom endpoint is configured
+					.filter(({ tier }) => tier !== 'custom' || voicesByTier.custom.length)
+					.map(({ tier, showPurchaseCredits }) => (
+						<TierPreview
+							key={tier}
+							tier={tier}
+							selected={selectedTier}
+							onSelect={setSelectedTier}
+							onPurchaseCredits={showPurchaseCredits ? onPurchaseCredits : undefined}
+							voices={voicesByTier[tier]}
+							selectedVoice={selectedVoices[tier]?.voice || null}
+							lang={effectiveLang}
+							onSetVoice={voice => setSelectedVoice(tier, voice)}
+							disabled={!voicesByTier[tier].length && tierLoaded[tier]}
+							loaded={tierLoaded[tier]}
+							error={tierError[tier]}
+						/>
+					))}
 			</div>
 		</>
 	);

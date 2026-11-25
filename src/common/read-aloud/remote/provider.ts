@@ -27,14 +27,14 @@ export class RemoteReadAloudProvider implements ReadAloudProvider {
 		this.remote = remote;
 	}
 
-	async getVoices(): Promise<RemoteReadAloudVoice[]> {
+	async getVoices(options?: { customOnly?: boolean }): Promise<RemoteReadAloudVoice[]> {
 		let {
 			error,
 			voices,
 			standardCreditsRemaining,
 			premiumCreditsRemaining,
 			devMode,
-		} = await this.remote.getVoices();
+		} = await this.remote.getVoices(options);
 		if (error || !voices) {
 			throw new RemoteVoicesError(error || 'unknown');
 		}

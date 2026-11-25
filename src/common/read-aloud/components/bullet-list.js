@@ -5,6 +5,7 @@ const TIER_BULLETS = {
 	local: ['os-provided', 'offline', 'no-account', 'free'],
 	standard: ['natural-sounding', 'online-only', 'account-required', 'limited-languages', 'no-multilingual', 'internal-processing', 'unlimited-with-subscription'],
 	premium: ['highest-quality', 'online-only', 'account-required', 'broad-languages', 'multilingual', 'external-processing', 'subscription-minutes'],
+	custom: ['custom-server', 'no-account', 'external-processing'],
 };
 
 export function BulletList({ tier, onPurchaseCredits }) {

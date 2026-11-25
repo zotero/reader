@@ -401,6 +401,8 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	private _speakInternalWithSkipDebounce = debounce(() => this._speakInternal(), SKIP_DEBOUNCE_DELAY);
 
 	override async refreshCreditsRemaining() {
+		// Custom endpoints don't use Zotero credits
+		if (this.voice.tier === 'custom') return;
 		let { standardCreditsRemaining, premiumCreditsRemaining } = await this.voice.provider.remote.getCreditsRemaining();
 		if (standardCreditsRemaining !== null) {
 			this.voice.provider.standardCreditsRemaining = standardCreditsRemaining;
@@ -411,6 +413,7 @@ export class RemoteReadAloudController extends RemoteReadAloudControllerBase {
 	}
 
 	override async resetCredits() {
+		if (this.voice.tier === 'custom') return;
 		let { standardCreditsRemaining, premiumCreditsRemaining } = await this.voice.provider.remote.resetCredits();
 		if (standardCreditsRemaining !== null) {
 			this.voice.provider.standardCreditsRemaining = standardCreditsRemaining;
