@@ -648,6 +648,14 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		this._pushHistoryPoint(true);
 	}
 
+	protected override _resizeIframeImmediate() {
+		this._keepScrollPosition(() => super._resizeIframeImmediate());
+	}
+
+	protected override _getScrollAnchorCandidates() {
+		return this._iframeDocument.querySelectorAll('#sdt-content [data-ref-path]');
+	}
+
 	protected override _handleViewUpdate(synchronous = true) {
 		if (this._destroyed) {
 			return;
@@ -877,15 +885,17 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	protected override _setScale(scale: number) {
-		this.scale = scale;
-		let scaleString = scale.toFixed(3);
-		if (CSS.supports('scale', scaleString)) {
-			this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
-			if (isSafari) {
-				// Scaling doesn't affect getClientRects() in Safari
-				this._iframeCoordScaleFactor = scale;
+		this._keepScrollPosition(() => {
+			this.scale = scale;
+			let scaleString = scale.toFixed(3);
+			if (CSS.supports('scale', scaleString)) {
+				this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
+				if (isSafari) {
+					// Scaling doesn't affect getClientRects() in Safari
+					this._iframeCoordScaleFactor = scale;
+				}
 			}
-		}
+		});
 	}
 
 	override getReadAloudBlock(element: Element): Element | null {
