@@ -979,11 +979,36 @@ class Reader {
 	}
 
 	/**
+	 * Text selected in the view the user last used. The position is in the
+	 * document's annotation position format (e.g. PDF rects), even when the
+	 * text is selected in Reading Mode
+	 * @returns {Pick<import('./types').Annotation, 'text' | 'position' | 'pageLabel'> | null}
+	 */
+	getSelection() {
+		let annotation = this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
+			?.annotation;
+		if (!annotation) {
+			return null;
+		}
+		let { text, position, pageLabel } = annotation;
+		return { text, position, pageLabel: pageLabel || undefined };
+	}
+
+	/**
+	 * Where the user is in the view they last used, in the document's
+	 * annotation position format, also in Reading Mode: { pageIndex } for
+	 * PDFs, a selector for the first visible text for EPUBs and snapshots
+	 * @returns {import('./types').SourcePosition | null}
+	 */
+	getCurrentPosition() {
+		return this._lastView?.getCurrentPosition() ?? null;
+	}
+
+	/**
 	 * @returns {Object | null}
 	 */
 	getSelectionPosition() {
-		return this._state[this._lastViewPrimary ? 'primaryViewSelectionPopup' : 'secondaryViewSelectionPopup']
-			?.annotation?.position ?? null;
+		return this.getSelection()?.position ?? null;
 	}
 
 	_handleAppearanceChange(params) {
@@ -2979,6 +3004,10 @@ class Reader {
 
 	get toolType() {
 		return this._state.tool.type;
+	}
+
+	get selectedAnnotationIDs() {
+		return this._state.selectedAnnotationIDs;
 	}
 
 	get zoomAutoEnabled() {

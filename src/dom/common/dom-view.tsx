@@ -59,7 +59,7 @@ import {
 	placeA11yVirtualCursor,
 	throttle
 } from "../../common/lib/utilities";
-import { closestElement, getContainingBlock, getLang, isBlock, isRTL } from "./lib/nodes";
+import { closestElement, getAllTextNodes, getContainingBlock, getLang, isBlock, isRTL } from "./lib/nodes";
 import { debounce } from "../../common/lib/debounce";
 import {
 	expandRect,
@@ -479,6 +479,22 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	clearSelection() {
 		this._iframeWindow.getSelection()?.removeAllRanges();
+	}
+
+	// Position of the first text in the viewport that has one
+	getCurrentPosition(): Position | null {
+		let range = this._iframeDocument.createRange();
+		for (let node of getAllTextNodes(this._iframeDocument.body)) {
+			range.selectNodeContents(node);
+			let rect = range.getBoundingClientRect();
+			if (rect.width && rect.height && rect.bottom > 0 && rect.top < this._iframeWindow.innerHeight) {
+				let selector = this.toSelector(range);
+				if (selector) {
+					return selector;
+				}
+			}
+		}
+		return null;
 	}
 
 	protected _getAnnotationDisplayedRange(annotation: Partial<WADMAnnotation> & Pick<WADMAnnotation, 'type' | 'position'>): Range | null {

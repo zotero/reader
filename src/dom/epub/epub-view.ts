@@ -466,6 +466,18 @@ class EPUBView extends DOMView<EPUBViewState, EPUBViewData> {
 		}
 	}
 
+	override getCurrentPosition(): FragmentSelector | null {
+		let cfi = this.flow?.startCFI;
+		if (!cfi) {
+			return null;
+		}
+		return {
+			type: 'FragmentSelector',
+			conformsTo: FragmentSelectorConformsTo.EPUB3,
+			value: cfi.toString(true)
+		};
+	}
+
 	protected override _getHistoryLocation(): NavLocation | null {
 		let cfi = this.flow.startCFI?.toString();
 		if (!cfi) return null;
