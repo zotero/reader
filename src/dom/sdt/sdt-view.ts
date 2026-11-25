@@ -570,6 +570,15 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 		return null;
 	}
 
+	// For PDFs, only the page, like the base view
+	override getCurrentPosition(): Position | null {
+		if (this._options.data.paged) {
+			let pageIndex = this._getVisiblePageIndex();
+			return pageIndex === null ? null : { pageIndex };
+		}
+		return super.getCurrentPosition();
+	}
+
 	protected override _getHistoryLocation(): NavLocation | null {
 		if (this._destroyed) {
 			return null;

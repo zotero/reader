@@ -2040,6 +2040,11 @@ class PDFView {
 		return true;
 	}
 
+	getCurrentPosition() {
+		let currentPageNumber = this._iframeWindow?.PDFViewerApplication?.pdfViewer?.currentPageNumber;
+		return currentPageNumber ? { pageIndex: currentPageNumber - 1 } : null;
+	}
+
 	_getHistoryLocation() {
 		let viewer = this._iframeWindow.PDFViewerApplication.pdfViewer;
 		// Scrolling changes the viewport before PDF.js's next animation-frame update.

@@ -991,6 +991,16 @@ class Reader {
 	}
 
 	/**
+	 * Where the user is in the view they last used, in the document's
+	 * annotation position format, also in Reading Mode: { pageIndex } for
+	 * PDFs, a selector for the first visible text for EPUBs and snapshots
+	 * @returns {import('./types').SourcePosition | null}
+	 */
+	getCurrentPosition() {
+		return this._lastView?.getCurrentPosition() ?? null;
+	}
+
+	/**
 	 * @returns {Object | null}
 	 */
 	getSelectionPosition() {
@@ -2994,15 +3004,6 @@ class Reader {
 
 	get selectedAnnotationIDs() {
 		return this._state.selectedAnnotationIDs;
-	}
-
-	// Current page of the view the user last used. Undefined for snapshots
-	get pageIndex() {
-		return this._state[this._lastViewPrimary ? 'primaryViewStats' : 'secondaryViewStats'].pageIndex;
-	}
-
-	get pageLabel() {
-		return this._state[this._lastViewPrimary ? 'primaryViewStats' : 'secondaryViewStats'].pageLabel || undefined;
 	}
 
 	get zoomAutoEnabled() {
