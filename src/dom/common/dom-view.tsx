@@ -2116,6 +2116,89 @@ abstract class DOMView<State extends DOMViewState, Data> {
 	}
 
 	/**
+	 * Run a change which reflows the content (e.g. a resize or zoom), keeping the
+	 * content at the top of the viewport in place. Reflowing keeps the scroll
+	 * offset, so the content would move otherwise. Browser scroll anchoring
+	 * can't be relied on (e.g. Safari supports it only since 27).
+	 */
+	protected _keepScrollPosition<T>(callback: () => T): T {
+		let anchor = this._iframeDocument ? this._getScrollAnchor() : null;
+		let result = callback();
+		if (anchor) {
+			this._restoreScrollAnchor(anchor);
+		}
+		return result;
+	}
+
+	/**
+	 * Elements, in document order, which the content at the top of the viewport
+	 * can be anchored to by _keepScrollPosition()
+	 */
+	protected _getScrollAnchorCandidates(): Iterable<Element> {
+		return this._iframeDocument.body.querySelectorAll('p, li, dt, dd, h1, h2, h3, h4, h5, h6, blockquote, pre, figure, img, table');
+	}
+
+	/**
+	 * The innermost candidate at the top of the viewport, with how far into it the
+	 * viewport starts (as a fraction of its height), or the first candidate below
+	 * the top of the viewport, with its distance from it
+	 */
+	private _getScrollAnchor(): ScrollAnchor | null {
+		if (this._iframeWindow.scrollY <= 0) {
+			return null;
+		}
+		// Rects are in unscaled coordinates in Safari
+		let scaleFactor = this._iframeCoordScaleFactor;
+		let viewportHeight = this._iframeWindow.innerHeight / scaleFactor;
+		let atTop: Element | null = null;
+		let belowTop: Element | null = null;
+		for (let element of this._getScrollAnchorCandidates()) {
+			let rect = element.getBoundingClientRect();
+			if (!rect.height || rect.bottom <= 0 || rect.top >= viewportHeight || this._isFixedPosition(element)) {
+				continue;
+			}
+			if (rect.top <= 0) {
+				// Nested candidates follow their ancestors, so the last one is the innermost
+				atTop = element;
+			}
+			else if (!belowTop) {
+				belowTop = element;
+			}
+		}
+		let element = atTop || belowTop;
+		if (!element) {
+			return null;
+		}
+		let rect = element.getBoundingClientRect();
+		return {
+			element,
+			fraction: rect.top < 0 ? -rect.top / rect.height : 0,
+			gap: Math.max(rect.top, 0) * scaleFactor,
+		};
+	}
+
+	private _restoreScrollAnchor({ element, fraction, gap }: ScrollAnchor) {
+		if (!element.isConnected) {
+			return;
+		}
+		let rect = element.getBoundingClientRect();
+		let delta = (rect.top + fraction * rect.height) * this._iframeCoordScaleFactor - gap;
+		if (Math.abs(delta) >= 1) {
+			this._iframeWindow.scrollBy({ top: delta, behavior: 'instant' });
+		}
+	}
+
+	private _isFixedPosition(element: Element): boolean {
+		for (let el: Element | null = element; el && el !== this._iframeDocument.body; el = el.parentElement) {
+			let position = this._iframeWindow.getComputedStyle(el).position;
+			if (position === 'fixed' || position === 'sticky') {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Attempt to apply a width-only resize without masking the transition or saving and restoring the
 	 * reading position, for views that can absorb the change with their margins alone. Returns true if
 	 * the resize was handled, or false to fall back to the masked resize path.
@@ -2524,6 +2607,14 @@ abstract class DOMView<State extends DOMViewState, Data> {
 
 	abstract print(): Promise<void>;
 }
+
+type ScrollAnchor = {
+	element: Element;
+	/** How far into the element the viewport starts, as a fraction of its height */
+	fraction: number;
+	/** Distance of the element below the top of the viewport, in viewport pixels */
+	gap: number;
+};
 
 export type DOMViewOptions<State extends DOMViewState, Data> = {
 	primary?: boolean;

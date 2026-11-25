@@ -704,30 +704,36 @@ class SnapshotView extends DOMView<SnapshotViewState, SnapshotViewData> {
 		}
 	}
 
+	protected override _resizeIframeImmediate() {
+		this._keepScrollPosition(() => super._resizeIframeImmediate());
+	}
+
 	protected _setScale(scale: number) {
-		this.scale = scale;
+		this._keepScrollPosition(() => {
+			this.scale = scale;
 
-		let scaleString = scale.toFixed(3);
-		if (CSS.supports('scale', scaleString)) {
-			this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
-			if (isSafari) {
-				// Scaling doesn't affect getClientRects() in Safari
-				this._iframeCoordScaleFactor = scale;
+			let scaleString = scale.toFixed(3);
+			if (CSS.supports('scale', scaleString)) {
+				this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
+				if (isSafari) {
+					// Scaling doesn't affect getClientRects() in Safari
+					this._iframeCoordScaleFactor = scale;
+				}
 			}
-		}
-		else {
-			if (scale == 1) {
+			else {
+				if (scale == 1) {
+					this._iframeDocument.documentElement.style.fontSize = '';
+					return;
+				}
+
+				// Calculate the default root font size, then multiply by scale.
+				// Can't just set font-size to an em value -- the page itself might set a font-size on <html>, and we need to
+				// scale relative to that.
 				this._iframeDocument.documentElement.style.fontSize = '';
-				return;
+				let defaultSize = parseFloat(getComputedStyle(this._iframeDocument.documentElement).fontSize);
+				this._iframeDocument.documentElement.style.fontSize = (defaultSize * scale) + 'px';
 			}
-
-			// Calculate the default root font size, then multiply by scale.
-			// Can't just set font-size to an em value -- the page itself might set a font-size on <html>, and we need to
-			// scale relative to that.
-			this._iframeDocument.documentElement.style.fontSize = '';
-			let defaultSize = parseFloat(getComputedStyle(this._iframeDocument.documentElement).fontSize);
-			this._iframeDocument.documentElement.style.fontSize = (defaultSize * scale) + 'px';
-		}
+		});
 	}
 
 	override navigate(location: NavLocation, options: NavigateOptions = {}) {

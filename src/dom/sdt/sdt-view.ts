@@ -638,60 +638,11 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	protected override _resizeIframeImmediate() {
-		// Reflowing the content at a different width keeps the scroll offset, which
-		// moves the content. Keep the block at the top of the viewport in place.
-		let anchor = this._iframeDocument && !this._destroyed ? this._getScrollAnchor() : null;
-		super._resizeIframeImmediate();
-		if (anchor) {
-			this._restoreScrollAnchor(anchor);
-		}
+		this._keepScrollPosition(() => super._resizeIframeImmediate());
 	}
 
-	/**
-	 * The innermost block at the top of the viewport, with how far into it the
-	 * viewport starts (as a fraction of its height), or how far below the top
-	 * it starts when the top falls between blocks
-	 */
-	private _getScrollAnchor(): { element: Element, fraction: number, gap: number } | null {
-		if (this._iframeWindow.scrollY <= 0) {
-			return null;
-		}
-		let element: Element | null = null;
-		for (let block of this._iframeDocument.querySelectorAll('#sdt-content > [data-ref-path]')) {
-			let rect = block.getBoundingClientRect();
-			if (rect.bottom > 0 && rect.height > 0) {
-				element = block;
-				break;
-			}
-		}
-		if (!element) {
-			return null;
-		}
-		// Nested blocks (list items, blockquote paragraphs) anchor more precisely
-		for (let child of element.querySelectorAll('[data-ref-path]')) {
-			let rect = child.getBoundingClientRect();
-			if (rect.top <= 0 && rect.bottom > 0) {
-				element = child;
-			}
-		}
-		let rect = element.getBoundingClientRect();
-		return {
-			element,
-			fraction: rect.top < 0 ? -rect.top / rect.height : 0,
-			gap: Math.max(rect.top, 0),
-		};
-	}
-
-	private _restoreScrollAnchor({ element, fraction, gap }: { element: Element, fraction: number, gap: number }) {
-		if (!element.isConnected) {
-			return;
-		}
-		let rect = element.getBoundingClientRect();
-		// Rects are in unscaled coordinates in Safari
-		let delta = (rect.top + fraction * rect.height - gap) * this._iframeCoordScaleFactor;
-		if (Math.abs(delta) >= 1) {
-			this._iframeWindow.scrollBy({ top: delta, behavior: 'instant' });
-		}
+	protected override _getScrollAnchorCandidates() {
+		return this._iframeDocument.querySelectorAll('#sdt-content [data-ref-path]');
 	}
 
 	protected override _handleViewUpdate(synchronous = true) {
@@ -911,15 +862,17 @@ class SDTView extends DOMView<DOMViewState, SDTViewData> {
 	}
 
 	protected override _setScale(scale: number) {
-		this.scale = scale;
-		let scaleString = scale.toFixed(3);
-		if (CSS.supports('scale', scaleString)) {
-			this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
-			if (isSafari) {
-				// Scaling doesn't affect getClientRects() in Safari
-				this._iframeCoordScaleFactor = scale;
+		this._keepScrollPosition(() => {
+			this.scale = scale;
+			let scaleString = scale.toFixed(3);
+			if (CSS.supports('scale', scaleString)) {
+				this._iframeDocument.documentElement.style.setProperty('--scale', scaleString);
+				if (isSafari) {
+					// Scaling doesn't affect getClientRects() in Safari
+					this._iframeCoordScaleFactor = scale;
+				}
 			}
-		}
+		});
 	}
 
 	override getReadAloudBlock(element: Element): Element | null {
