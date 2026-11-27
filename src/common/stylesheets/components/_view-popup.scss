@@ -39,8 +39,8 @@
 					.spinner {
 						width: 16px;
 						height: 16px;
-						border: 3px solid #f3f3f3;
-						border-top: 3px solid #7e7e7e;
+						border: 3px solid var(--fill-quinary);
+						border-top: 3px solid var(--fill-secondary);
 						border-radius: 50%;
 						animation: spin1 1.5s linear infinite;
 					}
@@ -120,6 +120,9 @@
 			border-radius: 6px;
 			color: var(--fill-secondary);
 			border: 0.5px solid transparent;
+			@media (resolution: 1dppx) {
+				border-width: 1px;
+			}
 
 			&.active, &:active, &.active-pseudo-class-fix {
 				background: var(--material-button, #FFFFFF);
@@ -141,6 +144,10 @@
 		width: 100%;
 		color: var(--fill-primary);
 		height: 22px;
+
+		&:active {
+			background: var(--fill-quarternary);
+		}
 	}
 
 	.custom-sections {
