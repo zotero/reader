@@ -19,4 +19,12 @@ body.force-static-theme {
 		background-color: transparent !important;
 		color: var(--text-color);
 	}
+
+	:link {
+		color: var(--link-color) !important;
+	}
+
+	:visited {
+		color: var(--visited-link-color) !important;
+	}
 }
