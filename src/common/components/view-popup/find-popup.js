@@ -55,20 +55,26 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 	function handleInputKeyDown(event) {
 		let key = getKeyCombination(event);
 		let code = getCodeCombination(event);
+
+		let actualQuery = inputRef.current.value;
+		let queryChanged = (
+			actualQuery !== currentParamsRef.current.query
+		);
+
 		if (key === 'Enter') {
-			if (params.active) {
+			if (params.active && !queryChanged) {
 				onFindNext();
-			}
-			else {
-				onChange({ ...params, active: true });
+			} else {
+				setQuery(actualQuery);
+				onChange({ ...params, query:actualQuery, active: true });
 			}
 		}
 		else if (key === 'Shift-Enter') {
-			if (params.active) {
+			if (params.active && !queryChanged) {
 				onFindPrevious();
-			}
-			else {
-				onChange({ ...params, active: true });
+			} else {
+				setQuery(actualQuery);
+				onChange({ ...params, query:actualQuery, active: true });
 			}
 		}
 		else if (key === 'Escape') {
@@ -76,7 +82,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 			event.preventDefault();
 			event.stopPropagation();
 		}
-		else if (code === 'Ctrl-Alt-Digit1') {
+		else if (code === 'Ctrl-Alt-Digit1' && !queryChanged) {
 			preventInputRef.current = true;
 			if (params.result?.annotation) {
 				onAddAnnotation({ ...params.result.annotation, type: 'highlight', color: tools['highlight'].color }, true);
@@ -84,7 +90,7 @@ function FindPopup({ params, onChange, onFindNext, onFindPrevious, onAddAnnotati
 				onChange({ ...params, popupOpen: false, active: false, result: null });
 			}
 		}
-		else if (code === 'Ctrl-Alt-Digit2') {
+		else if (code === 'Ctrl-Alt-Digit2'&& !queryChanged) {
 			preventInputRef.current = true;
 			if (params.result?.annotation) {
 				onAddAnnotation({ ...params.result.annotation, type: 'underline', color: tools['underline'].color }, true);
