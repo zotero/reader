@@ -126,8 +126,22 @@ function determineScrollIntoViewPosition(
 
 	return {
 		x: currentPosition.x + xOffset,
-		y: currentPosition.y + yOffset
+		y: clampBlockScrollPosition(currentPosition.y + yOffset, scrollingBox)
 	};
+}
+
+/**
+ * Keep the vertical position within the scrollable range. Browsers should clamp
+ * it when scrolling, but WebKit on iOS can scroll past the edges with smooth
+ * scrolling. The horizontal position isn't clamped, since it's negative in
+ * right-to-left and vertical writing modes.
+ */
+function clampBlockScrollPosition(y: number, scrollingBox: ScrollingBox): number {
+	let element = isElement(scrollingBox)
+		? scrollingBox
+		: scrollingBox.document.scrollingElement ?? scrollingBox.document.documentElement;
+	let maxY = Math.max(element.scrollHeight - element.clientHeight, 0);
+	return Math.min(Math.max(y, 0), maxY);
 }
 
 function getTargetRect(target: ScrollTarget): DOMRect {
